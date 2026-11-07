@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceGetCurrentUser,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -14,20 +13,14 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import ProjectHeader from "../../../../../features/projects/header/ProjectHeader.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
@@ -35,6 +28,10 @@
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -68,6 +65,15 @@
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
   $: devTtlSeconds = $projectQuery.data?.project?.devTtlSeconds;
 
+  $: primaryProjectQuery = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    { query: baseGetProjectQueryOptions },
+  );
+  $: hasPrimaryDeployment =
+    !!$primaryProjectQuery.data?.project?.primaryDeploymentId;
+
   // Deployment data and credentials come from GetProject (no separate API needed)
   $: deployment = $projectQuery.data?.deployment;
   $: deploymentStatus = deployment?.status;
@@ -75,20 +81,16 @@
   $: instanceId = deployment?.runtimeInstanceId ?? null;
   $: jwt = $projectQuery.data?.jwt ?? null;
 
-  const user = createAdminServiceGetCurrentUser();
-
-  $: currentUserId = $user.data?.user?.id;
-
-  $: isOtherOwner =
-    !!deployment && !!currentUserId && deployment.ownerUserId !== currentUserId;
-
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
 
+  // Wait for `primaryProjectQuery` too: the cloud readonly notice is gated on
+  // `hasPrimaryDeployment`, and it must be registered before `<slot />` renders
+  // any file editor (getReadonlyNotice reads the notice non-reactively).
   $: isLoading =
     $projectQuery.isPending ||
-    $user.isPending ||
+    $primaryProjectQuery.isPending ||
     starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
@@ -105,10 +107,7 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING) &&
     runtimeHost !== null &&
     instanceId !== null &&
-    jwt !== null &&
-    !isOtherOwner;
-
-  $: branchUrl = `/${organization}/${project}${branchPathPrefix(branch)}`;
+    jwt !== null;
 
   $: inProjectWelcomePage = isProjectWelcomePage($page);
 
@@ -126,7 +125,18 @@
     });
   };
 
-  setCloudReadonlyNotice(envEditDisabled);
+  // Only surface the env notice once the project has a primary deployment.
+  // Fail closed: env becomes editable only once we've positively confirmed the
+  // project has no primary deployment. A failed or otherwise inconclusive lookup
+  // keeps the notice set, so a published project never exposes editable `.env`
+  // files while the deployment state is unknown.
+  // `isLoading` blocks `<slot />` until `primaryProjectQuery` resolves, so this
+  // has run before any file editor reads the notice.
+  $: if (!$primaryProjectQuery.isPending) {
+    const envEditable = $primaryProjectQuery.isSuccess && !hasPrimaryDeployment;
+    setCloudReadonlyNotice(envEditable ? undefined : envEditDisabled);
+    fileArtifacts.recheckReadonlyStatus();
+  }
 
   onDestroy(() => {
     $editorRoutePrefix = "";
@@ -134,31 +144,7 @@
 </script>
 
 <div class="edit-session">
-  {#if isOtherOwner}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <CtaLayoutContainer>
-      <CtaContentContainer>
-        <h1
-          class="text-8xl font-extrabold bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text"
-        >
-          403
-        </h1>
-        <h2 class="text-lg font-semibold">
-          This editing session belongs to another user
-        </h2>
-        <CtaMessage>You can preview this branch in read-only mode.</CtaMessage>
-        <CtaButton variant="secondary" href={branchUrl}>
-          Preview this branch
-        </CtaButton>
-      </CtaContentContainer>
-    </CtaLayoutContainer>
-  {:else if isLoading}
+  {#if isLoading}
     <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
   {:else if isErrored}
     <SlimProjectHeader
@@ -189,10 +175,10 @@
       status={deploymentStatus}
       canManage={!!projectPermissions?.manageDev}
       {branch}
-      onStarted={() => (starting = true)}
+      bind:starting
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}`}
+    {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
@@ -206,6 +192,8 @@
             {planDisplayName}
             {organizationLogoUrl}
             editContext={true}
+            editSessionDeploymentId={deployment.id}
+            editSessionJwt={jwt}
           />
           <EditSessionTimeoutBanner
             usedOn={deployment.usedOn}
@@ -217,18 +205,10 @@
           {onBeforeReconnect}
           errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
         >
-          <div class="flex flex-1 overflow-hidden">
-            {#if !inProjectWelcomePage}
-              <WelcomeRedirector />
-              <Navigation showFooterLinks={false} />
-            {/if}
-            <section class="flex flex-1 overflow-hidden">
-              <div class="flex-1 overflow-hidden">
-                <slot />
-              </div>
-              <DeveloperChat />
-            </section>
-          </div>
+          {#if !inProjectWelcomePage}
+            <WelcomeRedirector />
+          {/if}
+          <slot />
         </FileAndResourceWatcher>
       </RuntimeProvider>
     {/key}
@@ -248,15 +228,34 @@
   {/if}
 </div>
 
+{#if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
+
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    <InfoIcon size={14} /> Manage environment variables in
+    <InfoIcon size={14} />
+    {m.edit_env_manage_in_settings()}
     <a
       href="/{organization}/{project}/-/settings/environment-variables"
       target="_blank"
       rel="noopener"
     >
-      Settings →
+      {m.edit_env_settings_link()}
     </a>
   </div>
 {/snippet}

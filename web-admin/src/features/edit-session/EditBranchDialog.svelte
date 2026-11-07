@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import {
     createAdminServiceCreateDeployment,
-    createAdminServiceGetCurrentUser,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
@@ -23,6 +22,7 @@
   import { Select as SelectPrimitive } from "bits-ui";
   import { GitBranchIcon, GitBranchPlusIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let organization: string;
@@ -32,7 +32,6 @@
   /** The project's primary branch, used as the source for new branches. */
   export let primaryBranch: string | undefined = undefined;
 
-  const user = createAdminServiceGetCurrentUser();
   const devDeployments = useDevDeployments(organization, project);
   const createMutation = createAdminServiceCreateDeployment();
 
@@ -41,16 +40,14 @@
   let selectedBranchId = "";
   let createError = "";
 
-  $: currentUserId = $user.data?.user?.id;
   $: deployments = $devDeployments.data?.deployments ?? [];
   $: sourceBranch = primaryBranch || "main";
 
-  // Editable deployments owned by the current user, sorted by most recently
-  // updated. Stopped/errored branches show so the user can resume or retry.
+  // Editable deployments sorted by most recently updated.
+  // Stopped/errored branches show so the user can resume or retry.
   $: ownDeployments = deployments
     .filter(
       (d) =>
-        d.ownerUserId === currentUserId &&
         d.editable &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING &&
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED,
@@ -61,16 +58,10 @@
   $: hasOwnSessions = ownDeployments.length > 0;
   $: isStarting = $createMutation.isPending;
 
-  // Banner condition: active branch is owned but not editable
+  // Banner condition: active branch not editable
   $: activeBranchIsNonEditable =
     !!activeBranch &&
-    !!currentUserId &&
-    deployments.some(
-      (d) =>
-        d.branch === activeBranch &&
-        d.ownerUserId === currentUserId &&
-        !d.editable,
-    );
+    deployments.some((d) => d.branch === activeBranch && !d.editable);
 
   // Reset all state every time the dialog opens.
   $: if (open) {
@@ -126,7 +117,7 @@
 
     // Front-run the obvious failure: same name as an existing branch.
     if (ownDeployments.some((d) => d.branch === requestedBranch)) {
-      createError = `A branch named "${requestedBranch}" already exists.`;
+      createError = m.edit_branch_already_exists({ branch: requestedBranch });
       return;
     }
 
@@ -145,8 +136,7 @@
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
-      createError =
-        getRpcErrorMessage(err as any) ?? "Failed to start edit session.";
+      createError = getRpcErrorMessage(err) ?? m.edit_failed_to_start();
     }
   }
 
@@ -166,15 +156,12 @@
   </Dialog.Trigger>
   <Dialog.Content class="max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Start editing</Dialog.Title>
+      <Dialog.Title>{m.edit_start_title()}</Dialog.Title>
       <Dialog.Description>
         {#if hasOwnSessions}
-          Edit an existing branch or create a new one from
-          <code class="font-mono text-fg-primary">{sourceBranch}</code>.
+          {m.edit_start_existing_description({ sourceBranch })}
         {:else}
-          We'll create a branch from
-          <code class="font-mono text-fg-primary">{sourceBranch}</code>
-          for your edits.
+          {m.edit_start_new_description({ sourceBranch })}
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -183,7 +170,7 @@
       <div
         class="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800"
       >
-        This branch is read-only. Pick another branch or create a new one.
+        {m.edit_branch_read_only()}
       </div>
     {/if}
 
@@ -197,19 +184,21 @@
             class="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-sm transition-all data-[state=active]:bg-surface-overlay data-[state=active]:font-semibold data-[state=active]:shadow-sm"
           >
             <GitBranchIcon size="14" />
-            Existing branch
+            {m.edit_existing_branch()}
           </TabsTrigger>
           <TabsTrigger
             value="new"
             class="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-sm transition-all data-[state=active]:bg-surface-overlay data-[state=active]:font-semibold data-[state=active]:shadow-sm"
           >
             <GitBranchPlusIcon size="14" />
-            New branch
+            {m.edit_new_branch()}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="existing" class="mt-4 space-y-1.5">
-          <span class="text-sm font-medium text-fg-primary">Branch</span>
+          <span class="text-sm font-medium text-fg-primary"
+            >{m.branch_branch()}</span
+          >
           <SelectPrimitive.Root
             type="single"
             value={selectedBranchId}
@@ -230,7 +219,7 @@
                     <span
                       class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
                     >
-                      latest
+                      {m.edit_latest()}
                     </span>
                   {/if}
                 </div>
@@ -249,7 +238,7 @@
                         <span
                           class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
                         >
-                          latest
+                          {m.edit_latest()}
                         </span>
                       {/if}
                     </div>
@@ -263,7 +252,7 @@
         <TabsContent value="new" class="mt-4">
           <Input
             id="new-branch-name"
-            label="Branch name"
+            label={m.edit_branch_name()}
             placeholder="branch-name"
             size="xl"
             additionalClass="[&_input]:!text-sm"
@@ -281,7 +270,7 @@
     {:else}
       <Input
         id="new-branch-name"
-        label="Branch name"
+        label={m.edit_branch_name()}
         placeholder="branch-name"
         size="xl"
         additionalClass="[&_input]:!text-sm"
@@ -297,24 +286,26 @@
     {/if}
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.common_cancel()}</Button
+      >
       {#if hasOwnSessions && currentTab === "existing"}
         <Button
           type="primary"
           disabled={!selectedBranchId || isStarting}
           onClick={handleResume}
         >
-          Continue editing
+          {m.edit_continue_editing()}
         </Button>
       {:else}
         <Button
           type="primary"
           disabled={!branchName.trim() || isStarting}
           loading={isStarting}
-          loadingCopy="Starting..."
+          loadingCopy={m.edit_starting()}
           onClick={handleCreate}
         >
-          Create &amp; edit
+          {m.edit_create_and_edit()}
         </Button>
       {/if}
     </Dialog.Footer>

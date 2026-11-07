@@ -62,7 +62,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name)) // uses alias since it selects inner from inner query
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(b.ast.Dialect.SanitizeDisplayName(displayName)))
 	}
 
 	for i, f := range n.MeasureFields {
@@ -76,7 +76,7 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.Dialect.EscapeAlias(f.Name)) // uses alias since it selects inner from inner query
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.Dialect.EscapeAlias(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeAlias(b.ast.Dialect.SanitizeDisplayName(displayName)))
 	}
 
 	b.out.WriteString(" FROM (")

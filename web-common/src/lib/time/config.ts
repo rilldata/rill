@@ -4,6 +4,7 @@
  * manually define these in the dashboard configuration.
  */
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { Duration, DurationUnit } from "luxon";
 import {
@@ -33,7 +34,9 @@ export type TimeRangeMetaSet = Partial<Record<TimeRangePreset, TimeRangeMeta>>;
  */
 export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_SIX_HOURS]: {
-    label: "Last 6 Hours",
+    get label() {
+      return m.time_last_n_hours({ count: 6 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -62,7 +65,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
 
   [TimeRangePreset.LAST_24_HOURS]: {
-    label: "Last 24 Hours",
+    get label() {
+      return m.time_last_n_hours({ count: 24 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
@@ -90,7 +95,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
 
   [TimeRangePreset.LAST_7_DAYS]: {
-    label: "Last 7 Days",
+    get label() {
+      return m.time_last_n_days({ count: 7 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
@@ -117,7 +124,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.LAST_14_DAYS]: {
-    label: "Last 14 Days",
+    get label() {
+      return m.time_last_n_days({ count: 14 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -144,7 +153,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.LAST_4_WEEKS]: {
-    label: "Last 4 Weeks",
+    get label() {
+      return m.time_last_n_weeks({ count: 4 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -171,7 +182,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.LAST_3_MONTHS]: {
-    label: "Last 3 Months",
+    get label() {
+      return m.time_last_n_months({ count: 3 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -198,7 +211,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.LAST_12_MONTHS]: {
-    label: "Last 12 Months",
+    get label() {
+      return m.time_last_n_months({ count: 12 });
+    },
 
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
@@ -238,7 +253,9 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
  */
 export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
-    label: "Today",
+    get label() {
+      return m.time_today();
+    },
     defaultGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
@@ -264,7 +281,9 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.WEEK_TO_DATE]: {
-    label: "Week to Date",
+    get label() {
+      return m.time_week_to_date_title();
+    },
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
@@ -290,7 +309,9 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.MONTH_TO_DATE]: {
-    label: "Month to Date",
+    get label() {
+      return m.time_month_to_date_title();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -317,7 +338,9 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.QUARTER_TO_DATE]: {
-    label: "Quarter to Date",
+    get label() {
+      return m.time_quarter_to_date_title();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_WEEK,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -344,7 +367,9 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.YEAR_TO_DATE]: {
-    label: "Year to Date",
+    get label() {
+      return m.time_year_to_date_title();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -374,7 +399,9 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
 
 export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.YESTERDAY_COMPLETE]: {
-    label: "Yesterday",
+    get label() {
+      return m.time_yesterday();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -404,7 +431,9 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
-    label: "Previous week",
+    get label() {
+      return m.time_previous_week();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -434,7 +463,9 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
-    label: "Previous month",
+    get label() {
+      return m.time_previous_month();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -464,7 +495,9 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
-    label: "Previous quarter",
+    get label() {
+      return m.time_previous_quarter();
+    },
 
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -494,7 +527,9 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
-    label: "Previous year",
+    get label() {
+      return m.time_previous_year();
+    },
     defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -525,20 +560,26 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
 };
 
 export const ALL_TIME = {
-  label: "All Time",
+  get label() {
+    return m.time_all_time_title();
+  },
   rangePreset: RangePresetType.ALL_TIME,
   // this comparison period is a no-op
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const CUSTOM = {
-  label: "Custom",
+  get label() {
+    return m.time_custom();
+  },
   rangePreset: RangePresetType.FIXED_RANGE,
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const DEFAULT = {
-  label: "Default",
+  get label() {
+    return m.time_default();
+  },
   rangePreset: RangePresetType.FIXED_RANGE,
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
@@ -568,7 +609,10 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
 export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_MILLISECOND: {
     grain: V1TimeGrain.TIME_GRAIN_MILLISECOND,
-    label: "millisecond",
+    unit: "millisecond",
+    get label() {
+      return m.time_grain_millisecond();
+    },
     duration: Period.MILLISECOND,
     d3format: "%H:%M:%S.%L",
     formatDate: {
@@ -583,7 +627,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_SECOND: {
     grain: V1TimeGrain.TIME_GRAIN_SECOND,
-    label: "second",
+    unit: "second",
+    get label() {
+      return m.time_grain_second();
+    },
     duration: Period.SECOND,
     d3format: "%H:%M:%S",
     formatDate: {
@@ -597,7 +644,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-    label: "minute",
+    unit: "minute",
+    get label() {
+      return m.time_grain_minute();
+    },
     duration: Period.MINUTE,
     d3format: "%M:%S",
     formatDate: {
@@ -610,7 +660,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_HOUR: {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
-    label: "hour",
+    unit: "hour",
+    get label() {
+      return m.time_grain_hour();
+    },
     duration: Period.HOUR,
     d3format: "%H:%M",
     formatDate: {
@@ -622,7 +675,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_DAY: {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
-    label: "day",
+    unit: "day",
+    get label() {
+      return m.time_grain_day();
+    },
     duration: Period.DAY,
     d3format: "%b %d",
     formatDate: {
@@ -633,7 +689,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_WEEK: {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
-    label: "week",
+    unit: "week",
+    get label() {
+      return m.time_grain_week();
+    },
     duration: Period.WEEK,
     d3format: "%b %d",
     formatDate: {
@@ -644,7 +703,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_MONTH: {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
-    label: "month",
+    unit: "month",
+    get label() {
+      return m.time_grain_month();
+    },
     duration: Period.MONTH,
     d3format: "%b %Y",
     formatDate: {
@@ -654,7 +716,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_QUARTER: {
     grain: V1TimeGrain.TIME_GRAIN_QUARTER,
-    label: "quarter",
+    unit: "quarter",
+    get label() {
+      return m.time_grain_quarter();
+    },
     duration: Period.QUARTER,
     d3format: "Q%q %Y",
     formatDate: {
@@ -664,7 +729,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   },
   TIME_GRAIN_YEAR: {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
-    label: "year",
+    unit: "year",
+    get label() {
+      return m.time_grain_year();
+    },
     duration: Period.YEAR,
     d3format: "%Y",
     formatDate: {
@@ -677,7 +745,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   // but this entry prevents lookup failures in UI formatting code.
   TIME_GRAIN_UNSPECIFIED: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-    label: "minute",
+    unit: "minute",
+    get label() {
+      return m.time_grain_minute();
+    },
     duration: Period.MINUTE,
     d3format: "%M:%S",
     formatDate: {
@@ -691,72 +762,107 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
 };
 
 /** The default configurations for time comparisons. */
-export const TIME_COMPARISON = {
+export const TIME_COMPARISON: Record<
+  TimeComparisonOption,
+  {
+    readonly label: string;
+    shorthand: string;
+    description: string;
+    comparisonType: TimeComparisonOption;
+    offsetIso: string;
+    rillTimeOffset?: string;
+  }
+> = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Previous period",
+    get label() {
+      return m.time_comparison_previous_period();
+    },
     shorthand: "prev. period",
-    description: "Compare the current time range to the previous time range",
+    get description() {
+      return m.time_comparison_previous_period_description();
+    },
     comparisonType: TimeComparisonOption.CONTIGUOUS,
     offsetIso: "",
     rillTimeOffset: "-1P",
   },
   [TimeComparisonOption.CUSTOM]: {
-    label: "Custom range",
+    get label() {
+      return m.time_custom_range();
+    },
     shorthand: "comparing",
-    description: "Compare the current time range to a custom time range",
+    get description() {
+      return m.time_comparison_custom_description();
+    },
     comparisonType: TimeComparisonOption.CUSTOM,
     offsetIso: "",
   },
   [TimeComparisonOption.DAY]: {
-    label: "Previous day",
+    get label() {
+      return m.time_comparison_previous_day();
+    },
     shorthand: "prev. day",
-    description:
-      "Compare the current time range to the same time range the day before",
+    get description() {
+      return m.time_comparison_previous_day_description();
+    },
     comparisonType: TimeComparisonOption.DAY,
     offsetIso: "P1D",
     rillTimeOffset: "-1D",
   },
   [TimeComparisonOption.WEEK]: {
-    label: "Previous week",
+    get label() {
+      return m.time_previous_week();
+    },
     shorthand: "prev. wk",
-    description:
-      "Compare the current time range to the same time range the week before",
+    get description() {
+      return m.time_comparison_previous_week_description();
+    },
     comparisonType: TimeComparisonOption.WEEK,
     offsetIso: "P1W",
     rillTimeOffset: "-1W",
   },
   [TimeComparisonOption.MONTH]: {
-    label: "Previous month",
+    get label() {
+      return m.time_previous_month();
+    },
     shorthand: "prev. month",
-    description:
-      "Compare the current time range to the same time range the month before",
+    get description() {
+      return m.time_comparison_previous_month_description();
+    },
     comparisonType: TimeComparisonOption.MONTH,
     // Setting this to P1M prevents month over month comparisons for 31-day months
     offsetIso: "P31D",
     rillTimeOffset: "-1M",
   },
   [TimeComparisonOption.QUARTER]: {
-    label: "Previous quarter",
+    get label() {
+      return m.time_previous_quarter();
+    },
     shorthand: "prev. qtr",
-    description:
-      "Compare the current time range to the same time range the quarter before",
+    get description() {
+      return m.time_comparison_previous_quarter_description();
+    },
     comparisonType: TimeComparisonOption.QUARTER,
     offsetIso: "P3M",
     rillTimeOffset: "-1Q",
   },
 
   [TimeComparisonOption.YEAR]: {
-    label: "Previous year",
+    get label() {
+      return m.time_previous_year();
+    },
     shorthand: "prev. yr",
-    description:
-      "Compare the current time range to the same time range the year before",
+    get description() {
+      return m.time_comparison_previous_year_description();
+    },
     comparisonType: TimeComparisonOption.YEAR,
     offsetIso: "P1Y",
     rillTimeOffset: "-1Y",
   },
 };
 
-export const NO_COMPARISON_LABEL = "No comparison dimension";
+export function getNoComparisonLabel(): string {
+  return m.time_no_comparison_dimension();
+}
 
 export const DEFAULT_TIMEZONES = [
   "UTC",

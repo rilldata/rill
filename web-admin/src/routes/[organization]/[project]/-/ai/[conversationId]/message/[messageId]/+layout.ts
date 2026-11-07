@@ -3,9 +3,14 @@ import { fetchMessage } from "@rilldata/web-common/features/chat/core/citation-u
 export async function load({ params: { conversationId, messageId }, parent }) {
   const { runtime } = await parent();
 
-  const message = await fetchMessage(runtime, conversationId, messageId);
+  const { message, result } = await fetchMessage(
+    runtime,
+    conversationId,
+    messageId,
+  );
 
   return {
     message,
+    result,
   };
 }

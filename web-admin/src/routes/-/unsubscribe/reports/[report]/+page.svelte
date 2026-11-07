@@ -4,12 +4,13 @@
     type AdminServiceUnsubscribeAlertBodyBody,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-admin/features/scheduled-reports/unsubscribe-report-using-token.ts";
+  import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   /**
    * Unsubscribe uses just a token with access to only unsub so we do not need to query project or organization details.
@@ -19,14 +20,15 @@
   $: organization = $page.url.searchParams.get("org") ?? "";
   $: project = $page.url.searchParams.get("project") ?? "";
   $: report = $page.params.report;
-  $: token = $page.url.searchParams.get("token");
   $: email = $page.url.searchParams.get("email");
   $: slackUser = $page.url.searchParams.get("slack_user");
 
   // using this instead of reportUnsubscriber to avoid a flicker before reportUnsubscriber is triggered
   let loading = true;
 
-  const reportUnsubscriber = createAdminServiceUnsubscribeReportUsingToken();
+  const reportUnsubscriber = createAdminServiceUnsubscribeReportUsingToken(
+    $page.url.searchParams.get("token") ?? "",
+  );
 
   $: error =
     ($reportUnsubscriber.error as unknown as AxiosError<RpcStatus>)?.response
@@ -38,11 +40,10 @@
     if (slackUser) data.slackUser = slackUser;
 
     await $reportUnsubscriber.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: report,
       data,
-      token,
     });
     loading = false;
   }
@@ -54,14 +55,14 @@
   <CtaContentContainer>
     <div class="flex flex-col gap-y-2">
       {#if error}
-        <h2 class="text-lg font-semibold">Failed to unsubscribe.</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribe_failed()}</h2>
         <CtaMessage>
           {error}
         </CtaMessage>
       {:else if loading}
-        <h2 class="text-lg font-semibold">Unsubscribing...</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribing()}</h2>
       {:else}
-        <h2 class="text-lg font-semibold">Unsubscribed from report.</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribed()}</h2>
       {/if}
     </div>
   </CtaContentContainer>

@@ -2,13 +2,25 @@ import {
   type ChatConfig,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
-import { readable } from "svelte/store";
+import {
+  createProjectPromptsStore,
+  resolveSuggestedPrompts,
+} from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import { derived, readable } from "svelte/store";
 
 export const projectChat = {
   agent: ToolName.ANALYST_AGENT,
   additionalContextStoreGetter: () => readable({}),
-  emptyChatLabel: "Happy to help explore your data",
-  placeholder:
-    "Type a question, or press @ to insert a metric, dimension, or measure.",
+  suggestedPromptsStoreGetter: (client) =>
+    derived(createProjectPromptsStore(client), (projectPrompts) =>
+      resolveSuggestedPrompts([projectPrompts]),
+    ),
+  get emptyChatLabel() {
+    return m.chat_empty_label();
+  },
+  get placeholder() {
+    return m.chat_placeholder_analyst();
+  },
   minChatHeight: "min-h-[2.5rem]",
 } satisfies ChatConfig;

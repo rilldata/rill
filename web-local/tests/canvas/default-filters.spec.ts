@@ -6,8 +6,9 @@ test.describe("canvas time filters", () => {
   test.use({ project: "AdBids" });
 
   test("save default filters button works", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+
+    await expect(page.getByText("Total records 1,122")).toBeVisible();
 
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();
@@ -50,8 +51,9 @@ test.describe("canvas time filters", () => {
   });
 
   test("default filters load", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+
+    await expect(page.getByText("Total records 1,122")).toBeVisible();
 
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();
@@ -83,14 +85,14 @@ test.describe("canvas time filters", () => {
 
     await page.goto(`${currentUrl}`);
 
-    await page.waitForTimeout(1000);
+    // The app redirects to a URL carrying the default-filter params after load.
+    await page.waitForURL("**/*f.AdBids_metrics=*");
     expect(page.url()).toContain(
       "?tr=PT24H&compare_tr=rill-PP&f.AdBids_metrics=domain+IN+%28%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%29",
     );
   });
 
   test("legacy filters without prefix still work", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
     const currentUrl = new URL(page.url());
 

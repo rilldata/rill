@@ -13,6 +13,11 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
   import { onDestroy } from "svelte";
+  import {
+    precisionStateFor,
+    type PrecisionChipProps,
+  } from "../exact-measures/exact-measures";
+  import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { useTimeDimensionDataStore } from "./time-dimension-data-store";
@@ -21,85 +26,125 @@
     hoverIndex,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let exploreName: string;
-  export let expandedMeasureName: string;
-  export let hideStartPivotButton = false;
+  interface Props {
+    exploreName: string;
+    expandedMeasureName: string;
+    hideStartPivotButton?: boolean;
+  }
 
-  $: isEmbedded = EmbedStore.isEmbedded();
+  let {
+    exploreName,
+    expandedMeasureName,
+    hideStartPivotButton = false,
+  }: Props = $props();
+
+  const isEmbedded = $derived(EmbedStore.isEmbedded());
 
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { unselectedDimensionValues },
       measures: { allMeasures },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
-      dimensionsFilter: {
-        toggleDimensionValueSelection,
-        selectItemsInFilter,
-        deselectItemsInFilter,
-      },
       sorting: { toggleSort },
+      exactMeasures: { toggleExactMeasure },
     },
+    expressionFilterManager,
   } = getStateManagers();
 
   const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
   const timeControlStore = useTimeControlStore(stateManagers);
 
-  $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
-  $: comparing = $timeDimensionDataStore?.comparing;
+  const dimensionName = $derived(
+    $dashboardStore?.selectedComparisonDimension ?? "",
+  );
+  const comparing = $derived($timeDimensionDataStore?.comparing);
 
-  $: pinIndex = $dashboardStore?.tdd.pinIndex;
+  const pinIndex = $derived($dashboardStore?.tdd.pinIndex);
 
-  $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
+  const timeGrain = $derived($timeControlStore.selectedTimeRange?.interval);
 
-  $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
-
-  $: measureLabel = measure?.displayName ?? "";
-
-  let dimensionLabel = "";
-  $: if (comparing === "dimension") {
-    dimensionLabel =
-      $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
-  } else if (comparing === "time") {
-    dimensionLabel = "Time";
-  } else if (comparing === "none") {
-    dimensionLabel = "No Comparison";
-  }
-
-  // Create a copy of the data to avoid flashing of table in transient states
-  let timeDimensionDataCopy: TableData;
-  let comparisonCopy: TDDComparison | undefined;
-  $: if (
-    $timeDimensionDataStore?.data &&
-    $timeDimensionDataStore?.data?.columnHeaderData
-  ) {
-    comparisonCopy = comparing;
-    timeDimensionDataCopy = $timeDimensionDataStore.data;
-  }
-  $: formattedData = timeDimensionDataCopy;
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
-
-  $: rowHeaderLabels =
-    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
-
-  $: areAllTableRowsSelected = rowHeaderLabels?.every(
-    (val) => val !== undefined && formattedData?.selectedValues?.includes(val),
+  const measure = $derived(
+    $allMeasures.find((m) => m.name === expandedMeasureName),
   );
 
-  $: columnHeaders = formattedData?.columnHeaderData?.flat();
+  const measureLabel = $derived(measure?.displayName ?? "");
 
-  $: highlightedColStart = $hoverIndex?.start;
-  $: highlightedColEnd = $hoverIndex?.end;
+  // Precision chip of the measure header; undefined when it has no exact variant.
+  const measurePrecision = $derived.by((): PrecisionChipProps | undefined => {
+    const state = precisionStateFor(
+      expandedMeasureName,
+      $exactMeasureContext(exploreExactSurface.tdd),
+    );
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel,
+      loading: state !== "approx" && !!$timeDimensionDataStore?.isFetching,
+      onToggle: () =>
+        toggleExactMeasure(exploreExactSurface.tdd, expandedMeasureName),
+    };
+  });
+
+  const dimensionLabel = $derived.by(() => {
+    if (comparing === "dimension") {
+      return (
+        $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? ""
+      );
+    } else if (comparing === "time") {
+      return m.dashboard_tdd_time();
+    } else if (comparing === "none") {
+      return m.dashboard_tdd_no_comparison();
+    }
+    return "";
+  });
+
+  // Create a copy of the data to avoid flashing of table in transient states
+  let timeDimensionDataCopy = $state<TableData>();
+  let comparisonCopy = $state<TDDComparison | undefined>();
+  $effect(() => {
+    if (
+      $timeDimensionDataStore?.data &&
+      $timeDimensionDataStore?.data?.columnHeaderData
+    ) {
+      comparisonCopy = comparing;
+      timeDimensionDataCopy = $timeDimensionDataStore.data;
+    }
+  });
+  const formattedData = $derived(timeDimensionDataCopy);
+  const excludeMode = $derived(
+    expressionFilterManager.sortedFilterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
+
+  const rowHeaderLabels = $derived(
+    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [],
+  );
+
+  const areAllTableRowsSelected = $derived(
+    rowHeaderLabels?.every(
+      (val) =>
+        val !== undefined && formattedData?.selectedValues?.includes(val),
+    ),
+  );
+
+  const columnHeaders = $derived(formattedData?.columnHeaderData?.flat());
+
+  const highlightedColStart = $derived($hoverIndex?.start);
+  const highlightedColEnd = $derived($hoverIndex?.end);
 
   // Create a time formatter for the column headers
-  $: timeFormatter = timeFormat(
-    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
-  ) as (d: Date) => string;
+  const timeFormatter = $derived(
+    timeFormat(timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M") as (
+      d: Date,
+    ) => string,
+  );
 
   function highlightCell(x: number | undefined, y: number | undefined) {
     if (x === undefined || y === undefined) {
@@ -126,8 +171,11 @@
 
   const debounceHighlightCell = debounce(highlightCell, 50);
 
-  function toggleFilter(label: string | null) {
-    toggleDimensionValueSelection(dimensionName, label);
+  function toggleFilter(label: string) {
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleValue(label, false),
+    );
   }
 
   function toggleAllSearchItems() {
@@ -138,46 +186,54 @@
     if (headerHasUndefined) return;
 
     if (areAllTableRowsSelected) {
-      deselectItemsInFilter(
+      expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        rowHeaderLabels as (string | null)[],
+        (dimensionManager) =>
+          dimensionManager.removeSelectedValues(rowHeaderLabels as string[]),
       );
 
       eventBus.emit("notification", {
-        message: `Removed ${rowHeaderLabels.length} items from filter`,
+        message: m.dashboard_removed_items_filter({
+          count: rowHeaderLabels.length.toString(),
+        }),
       });
       return;
     } else {
-      const newValuesSelected = $unselectedDimensionValues(
+      const newValuesSelected = expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        rowHeaderLabels,
+        (dimensionManager) =>
+          dimensionManager.appendSelectedValues(rowHeaderLabels as string[]),
       );
-      selectItemsInFilter(dimensionName, rowHeaderLabels as (string | null)[]);
-      eventBus.emit("notification", {
-        message: `Added ${newValuesSelected.length} items to filter`,
-      });
+      if (newValuesSelected?.length) {
+        eventBus.emit("notification", {
+          message: m.dashboard_added_items_filter({
+            count: newValuesSelected.length.toString(),
+          }),
+        });
+      }
     }
   }
 
   function togglePin() {
     let newPinIndex = -1;
+    const selectedCount = formattedData?.selectedValues?.length ?? 0;
 
     // Pin if some selected items are not pinned yet
-    if (pinIndex > -1 && pinIndex < formattedData?.selectedValues?.length - 1) {
-      newPinIndex = formattedData?.selectedValues?.length - 1;
+    if (pinIndex > -1 && pinIndex < selectedCount - 1) {
+      newPinIndex = selectedCount - 1;
     }
     // Pin if no items are pinned yet
     else if (pinIndex === -1) {
-      newPinIndex = formattedData?.selectedValues?.length - 1;
+      newPinIndex = selectedCount - 1;
     }
     metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: KeyboardEvent) {
     if (comparisonCopy !== "dimension") return;
     // Select all items on Meta+A
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-      if (e.target.tagName === "INPUT") return;
+      if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       e.preventDefault();
       if (areAllTableRowsSelected) return;
       toggleAllSearchItems();
@@ -196,8 +252,8 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 <div
-  class="h-full w-full flex flex-col border-t bg-surface-base"
-  aria-label="{expandedMeasureName} Time Dimension Display"
+  class="h-full w-full flex flex-col bg-surface-base"
+  aria-label={m.dashboard_tdd_display_aria({ name: expandedMeasureName })}
 >
   <TDDHeader
     {areAllTableRowsSelected}
@@ -218,15 +274,18 @@
     >
       <div class="text-center">
         <div class="text-red-600 mt-1 text-lg">
-          We encountered an error while loading the data. Please try refreshing
-          the page.
+          {m.dashboard_tdd_error()}
         </div>
         {#if !isEmbedded}
           <div class="text-fg-secondary">
-            If the issue persists, please contact us on <a
+            {m.dashboard_tdd_contact_discord()}
+            <a
               target="_blank"
               rel="noopener noreferrer"
-              href="https://discord.gg/2ubRfjC7Rh">Discord</a
+              href="https://discord.gg/2ubRfjC7Rh"
+            >
+              <!-- i18n-ignore: standalone product name -->
+              Discord</a
             >.
           </div>
         {/if}
@@ -238,6 +297,7 @@
       {excludeMode}
       {dimensionLabel}
       {measureLabel}
+      precision={measurePrecision}
       sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
       sortType={$dashboardStore.dashboardSortType}
       comparing={comparisonCopy}
@@ -262,17 +322,17 @@
       <div class="flex flex-col items-center justify-center h-full text-sm">
         <Compare size="32px" />
         <div class="font-semibold text-fg-secondary mt-1">
-          No comparison dimension selected
+          {m.dashboard_no_comparison_dimension()}
         </div>
         <div class="text-fg-secondary">
-          To see more values, select a comparison dimension above.
+          {m.dashboard_select_comparison_hint()}
         </div>
       </div>
     </div>
   {:else if comparing === "dimension" && formattedData?.rowCount === 1}
     <div class="w-full h-full">
       <div class="flex flex-col items-center h-full text-sm">
-        <div class="text-fg-secondary">No search results to show</div>
+        <div class="text-fg-secondary">{m.dashboard_no_search_results()}</div>
       </div>
     </div>
   {/if}

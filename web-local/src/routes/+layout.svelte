@@ -11,10 +11,6 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import {
-    initPosthog,
-    posthogIdentify,
-  } from "@rilldata/web-common/lib/analytics/posthog";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     errorEventHandler,
@@ -69,10 +65,6 @@
 
     if (shouldSendAnalytics) {
       await initMetrics(config, host); // Proxies events through the Rill "intake" service
-      initPosthog(config.version);
-      posthogIdentify(config.userId, {
-        installId: config.installId,
-      });
 
       removeJavascriptListeners =
         errorEventHandler.addJavascriptErrorListeners();

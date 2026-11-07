@@ -12,27 +12,55 @@
   import { parseDocument } from "yaml";
   import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
+    canvasItemInstanceId,
+    componentNameFromInstanceId,
     generateNewAssets,
     mapGuard,
     mousePosition,
     rowsGuard,
+    tabNamePrefix,
+    tabRowsPath,
+    tabTargetFromPath,
+    type AddableItem,
+    type EditTarget,
   } from "./layout-util";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "../entity-management/resource-selectors";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
+  import { rowColFromPath } from "./stores/canvas-entity";
+  import { rowIndexAfterMove } from "./stores/tab-group";
+  import {
+    addTab,
+    addTabGroup,
+    addTabGroupAt,
+    convertRowToTabGroup,
+    deleteTab,
+    duplicateTab,
+    duplicateTabGroup,
+    moveItemAcrossContainers,
+    moveTab,
+    moveTabGroup,
+    renameTab,
+    tabHasContent,
+  } from "./stores/tab-edit";
   import { activeDivider, dropZone } from "./stores/ui-stores";
-  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
 
@@ -43,33 +71,46 @@
   const runtimeClient = useRuntimeClient();
 
   const MIN_DRAG_DISTANCE = 8;
+  // A tab group ghost follows the pointer like a component ghost, but only shows the strip
+  // and a slice of the body: dragging a full-height copy of a many-row group would cover
+  // the drop zones the author is aiming for.
+  const MAX_BLOCK_GHOST_HEIGHT = 200;
 
   let initialMousePosition: { x: number; y: number } | null = null;
-  let clientWidth: number;
+  let clientWidth: number = 0;
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
   let pendingDragComponent: BaseCanvasComponent | null = null;
+  // Whole-block drags: the top-level index of the tab group being moved.
+  let dragBlockIndex: number | null = null;
+  let pendingDragBlockIndex: number | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
   let openSidebarAfterSelection = false;
   let pendingComponentDelete: string | undefined = undefined;
+  let pendingTabDelete: { blockIndex: number; tabIndex: number } | undefined =
+    undefined;
 
   $: ({
     canvasEntity: {
+      setActiveTabInURL,
       setSelectedComponent,
+      setSelectedTabGroup,
+      rekeyTabGroups,
       selectedComponent,
       componentsStore,
       processRows,
       specStore,
-      unsubscribe,
       _rows,
+      layout,
       firstLoad,
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: layoutRows = $_rows;
+  $: blocks = $layout;
 
   $: ({ instanceId } = runtimeClient);
 
@@ -81,6 +122,17 @@
   $: metricsViewQuery = useDefaultMetrics(
     runtimeClient,
     metricsViews?.[0]?.[0],
+  );
+
+  // Project component resources by name, used when adding component references.
+  $: componentResourcesQuery = useFilteredResources(
+    runtimeClient,
+    ResourceKind.Component,
+  );
+  $: componentResourceMap = Object.fromEntries(
+    ($componentResourcesQuery?.data ?? [])
+      .filter((res) => !!res.meta?.name?.name)
+      .map((res) => [res.meta!.name!.name as string, res]),
   );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
@@ -106,10 +158,7 @@
 
   $: maxWidth = canvasMaxWidth || DEFAULT_DASHBOARD_WIDTH;
 
-  $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
-
-  $: rawYamlRows = rowsGuard(contents?.get("rows"));
-  $: yamlCanvasRows = mapGuard(rawYamlRows);
+  $: specCanvasRows = structuredClone(rows);
 
   $: columnWidth = clientWidth / 12;
 
@@ -124,14 +173,44 @@
     pendingDragComponent = null;
   }
 
+  $: if (pendingDragBlockIndex !== null && mouseDelta >= MIN_DRAG_DISTANCE) {
+    handleBlockDragStart(pendingDragBlockIndex);
+    pendingDragBlockIndex = null;
+  }
+
   $: defaultMetrics = $metricsViewQuery?.data;
 
-  $: activelyDragging = !!dragComponent;
+  $: activelyDragging = !!dragComponent || dragBlockIndex !== null;
 
-  function updateComponentWidths(rowIndex: number, newWidths: number[]) {
+  // The tabs of the tab group being dragged, for its ghost (null when no group is dragged).
+  $: dragBlock = dragBlockIndex !== null ? blocks[dragBlockIndex] : undefined;
+  $: dragGroupTabs =
+    dragBlock?.kind === "tab-group" ? dragBlock.group.tabs : null;
+
+  // Resolve the YAML rows path, name prefix, and current spec rows for an edit target.
+  // undefined target => the top-level rows; a tab target => one tab's rows.
+  function resolveTarget(target: EditTarget | undefined) {
+    if (!target) {
+      return { rowsPath: ["rows"], namePrefix: "", specRows: specCanvasRows };
+    }
+    return {
+      rowsPath: tabRowsPath(target.blockIndex, target.tabIndex),
+      namePrefix: tabNamePrefix(target.blockIndex, target.tabIndex),
+      specRows:
+        specCanvasRows[target.blockIndex]?.tabGroup?.tabs?.[target.tabIndex]
+          ?.rows ?? [],
+    };
+  }
+
+  function updateComponentWidths(
+    rowIndex: number,
+    newWidths: number[],
+    target?: EditTarget,
+  ) {
+    const { rowsPath } = resolveTarget(target);
     newWidths.forEach((width, i) => {
       try {
-        contents.setIn(["rows", rowIndex, "items", i, "width"], width);
+        contents.setIn([...rowsPath, rowIndex, "items", i, "width"], width);
       } catch (e) {
         console.error(e);
       }
@@ -140,8 +219,12 @@
     updateContents();
   }
 
-  function getId(row: number | undefined, column: number | undefined) {
-    return `${canvasName}--component-${row ?? 0}-${column ?? 0}`;
+  function getId(
+    row: number | undefined,
+    column: number | undefined,
+    namePrefix = "",
+  ) {
+    return `${canvasName}--component-${namePrefix}${row ?? 0}-${column ?? 0}`;
   }
 
   function calculateMouseDelta(
@@ -155,7 +238,9 @@
     dragComponent = component;
 
     const id = component.id;
-    const element = document.querySelector("#" + id);
+    // getElementById, not querySelector: instance ids of referenced components
+    // contain "::", which is not valid in a CSS selector.
+    const element = document.getElementById(id);
     if (!element) return;
 
     const width = element.clientWidth;
@@ -171,7 +256,26 @@
     };
   }
 
-  $: if (dragComponent) {
+  function handleBlockDragStart(blockIndex: number) {
+    const element = document.getElementById(`tab-group-region-${blockIndex}`);
+    if (!element) return;
+
+    dragBlockIndex = blockIndex;
+    setSelectedComponent(null);
+
+    const { top, left, width, height } = element.getBoundingClientRect();
+    dragItemDimensions = {
+      width,
+      height: Math.min(height, MAX_BLOCK_GHOST_HEIGHT),
+    };
+
+    offset = {
+      x: left - (initialMousePosition?.x ?? $mousePosition.x),
+      y: top - (initialMousePosition?.y ?? $mousePosition.y),
+    };
+  }
+
+  $: if (dragComponent || dragBlockIndex !== null) {
     dragItemPosition = {
       top: $mousePosition.y + offset.y,
       left: $mousePosition.x + offset.x,
@@ -180,6 +284,7 @@
 
   function onDragEnd() {
     dragComponent = null;
+    dragBlockIndex = null;
     // Safety net: remove portal ghost if Svelte 5's {#if} cleanup didn't
     document
       .querySelectorAll("#rill-portal .drag-container")
@@ -192,9 +297,10 @@
     }
 
     pendingDragComponent = null;
+    pendingDragBlockIndex = null;
     initialMousePosition = null;
 
-    if (dragComponent) {
+    if (dragComponent || dragBlockIndex !== null) {
       onDragEnd();
     }
 
@@ -206,9 +312,14 @@
     dropZone.clear();
   }
 
-  function updateRowHeight(newHeight: number, rowIndex: number) {
+  function updateRowHeight(
+    newHeight: number,
+    rowIndex: number,
+    target?: EditTarget,
+  ) {
+    const { rowsPath } = resolveTarget(target);
     try {
-      contents.setIn(["rows", rowIndex, "height"], newHeight + "px");
+      contents.setIn([...rowsPath, rowIndex, "height"], newHeight + "px");
     } catch (e) {
       console.error(e);
     }
@@ -216,43 +327,62 @@
     updateContents();
   }
 
-  function spreadEvenly(index: number) {
-    const specRowsClone = structuredClone(specCanvasRows);
-    const yamlRowsClone = structuredClone(yamlCanvasRows);
+  function spreadEvenly(index: number, target?: EditTarget) {
+    const { rowsPath, specRows } = resolveTarget(target);
+    const specRowsClone = structuredClone(specRows);
+    const yamlRowsClone = structuredClone(
+      mapGuard(rowsGuard(contents.getIn(rowsPath))),
+    );
     const specRow = specRowsClone[index];
     const yamlRow = yamlRowsClone[index];
     if (!specRow?.items || !yamlRow?.items) return;
 
-    const baseSize = COLUMN_COUNT / specRow.items.length;
+    const specItems = specRow.items;
+    const yamlItems = yamlRow.items;
+    const baseSize = COLUMN_COUNT / specItems.length;
 
-    yamlRow.items.forEach((_, i) => {
-      if (!specRow?.items?.[i] || !yamlRow.items[i]) return;
-      specRow.items[i].width = baseSize;
-      yamlRow.items[i].width = baseSize;
+    yamlItems.forEach((_, i) => {
+      if (!specItems[i] || !yamlItems[i]) return;
+      specItems[i].width = baseSize;
+      yamlItems[i].width = baseSize;
     });
 
-    updateAssets(specRowsClone, yamlRowsClone);
+    updateAssets(specRowsClone, yamlRowsClone, undefined, target);
   }
 
+  // Apply the result of an edit. specRows/yamlRows are the rows of the targeted
+  // container (top-level or a single tab). For a tab target, the container's rows
+  // are spliced back into the full spec before reprocessing so the whole tree stays valid.
   function updateAssets(
     specRows: V1CanvasRow[],
     yamlRows: YAMLRow[],
-    resolvedComponents?: Record<string, V1Resource>,
+    newResolvedComponents?: Record<string, V1Resource>,
+    target?: EditTarget,
   ) {
-    specCanvasRows = specRows;
+    const { rowsPath } = resolveTarget(target);
 
-    if (resolvedComponents) {
+    if (!target) {
+      specCanvasRows = specRows;
+    } else {
+      const full = structuredClone(specCanvasRows);
+      const tabGroup = full[target.blockIndex]?.tabGroup;
+      const tab = tabGroup?.tabs?.[target.tabIndex];
+      if (tab) tab.rows = specRows;
+      specCanvasRows = full;
+    }
+
+    if (newResolvedComponents) {
       processRows({
-        components: resolvedComponents,
-
+        // Merge with the existing resolved components so untouched containers still resolve.
+        components: { ...resolvedComponents, ...newResolvedComponents },
         canvas: {
-          rows: specRows,
+          rows: specCanvasRows,
         },
       });
     }
 
     try {
-      contents.setIn(["rows"], yamlRows);
+      contents.setIn(rowsPath, yamlRows);
     } catch (e) {
       console.error(e);
     }
@@ -260,26 +390,37 @@
     updateContents();
   }
 
-  function performTransaction(transaction: Transaction, selectedId?: string) {
+  function performTransaction(
+    transaction: Transaction,
+    selectedId?: string,
+    target?: EditTarget,
+  ) {
     if (!defaultMetrics) return;
+
+    const { namePrefix, specRows, rowsPath } = resolveTarget(target);
+    const yamlRows = mapGuard(rowsGuard(contents.getIn(rowsPath)));
 
     try {
       const { newSpecRows, newYamlRows, newResolvedComponents, mover } =
         generateNewAssets({
-          yamlRows: yamlCanvasRows,
-          specRows: specCanvasRows,
+          yamlRows,
+          specRows,
           canvasName,
+          namePrefix,
           defaultMetrics,
           resolvedComponents,
           transaction,
+          componentResources: componentResourceMap,
         });
 
       if (selectedId) {
-        const idsAtPositions = specCanvasRows.map((row) => {
+        // Selection ids are per-position instance ids (which for items that
+        // reference an external component differ from the item's component name).
+        const idsAtPositions = specRows.map((row, rowIdx) => {
           return {
-            items: row.items?.map((item) => {
-              return item.component ?? "";
-            }),
+            items: row.items?.map((item, colIdx) =>
+              canvasItemInstanceId(item, rowIdx, colIdx, namePrefix),
+            ),
           };
         });
 
@@ -294,14 +435,16 @@
         const colIndex = ids[rowIndex]?.items?.indexOf(selectedId);
 
         if (colIndex !== undefined && colIndex !== -1 && rowIndex !== -1) {
-          const newIdOfSelected = getId(rowIndex, colIndex);
+          const newIdOfSelected = selectedId.includes("::")
+            ? `${componentNameFromInstanceId(selectedId)}::${namePrefix}${rowIndex}-${colIndex}`
+            : getId(rowIndex, colIndex, namePrefix);
 
           if (selectedId && newIdOfSelected)
             setSelectedComponent(newIdOfSelected);
         }
       }
 
-      updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
+      updateAssets(newSpecRows, newYamlRows, newResolvedComponents, target);
     } catch {
       // no-op
     }
@@ -309,25 +452,55 @@
 
   function addItems(
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
+    target?: EditTarget,
   ) {
     if (!defaultMetrics) return;
 
-    performTransaction({
-      operations: items.map((type, i) => ({
-        type: "add",
-        componentType: type,
-        destination: {
-          row: position.row,
-          col: position.column + i,
-        },
-      })),
-    });
+    performTransaction(
+      {
+        operations: items.map((item, i) => ({
+          type: "add",
+          ...(typeof item === "string"
+            ? { componentType: item }
+            : {
+                componentType: "component_ref" as const,
+                componentName: item.componentName,
+              }),
+          destination: {
+            row: position.row,
+            col: position.column + i,
+          },
+        })),
+      },
+      undefined,
+      target,
+    );
 
-    const id = getId(position.row, position.column);
+    const { namePrefix } = resolveTarget(target);
+    const id = getInstanceId(
+      items[0],
+      position.row,
+      position.column,
+      namePrefix,
+    );
 
     setSelectedComponent(id);
     openSidebar();
+  }
+
+  // The client-side instance id an added item will get: the generated resource name
+  // for inline components, or the positional reference id for component references.
+  function getInstanceId(
+    item: AddableItem | undefined,
+    row: number,
+    column: number,
+    namePrefix = "",
+  ) {
+    if (item && typeof item !== "string") {
+      return `${item.componentName}::${namePrefix}${row}-${column}`;
+    }
+    return getId(row, column, namePrefix);
   }
 
   function updateContents() {
@@ -339,63 +512,230 @@
     }
   }
 
-  function initializeRow(row: number, type: CanvasComponentType) {
+  // Tab group authoring. These mutate the YAML document directly (see stores/tab-edit)
+  // and persist via updateContents; the spec round-trip rebuilds the layout.
+  function addTabGroupAction() {
+    addTabGroup(contents);
+    updateContents();
+    setTimeout(() => scrollToBottom(), 200);
+  }
+
+  function addTabGroupAtAction(index: number) {
+    addTabGroupAt(contents, index);
+    updateContents();
+  }
+
+  function addTabAction(blockIndex: number) {
+    const newTabIndex = addTab(contents, blockIndex);
+    if (newTabIndex >= 0) {
+      const block = blocks[blockIndex];
+      if (block?.kind === "tab-group") {
+        block.group.activateWhenReady(newTabIndex);
+      }
+    }
+    updateContents();
+  }
+
+  function renameTabAction(
+    blockIndex: number,
+    tabIndex: number,
+    label: string,
+  ) {
+    renameTab(contents, blockIndex, tabIndex, label);
+    updateContents();
+  }
+
+  function deleteTabAction(blockIndex: number, tabIndex: number) {
+    // Confirm before deleting a tab that has content (deleting the last tab unwraps
+    // the group, so layout is never lost, but the user should still confirm).
+    if (tabHasContent(contents, blockIndex, tabIndex)) {
+      pendingTabDelete = { blockIndex, tabIndex };
+      return;
+    }
+    deleteTab(contents, blockIndex, tabIndex);
+    updateContents();
+  }
+
+  function confirmDeleteTab() {
+    if (!pendingTabDelete) return;
+    deleteTab(contents, pendingTabDelete.blockIndex, pendingTabDelete.tabIndex);
+    pendingTabDelete = undefined;
+    updateContents();
+  }
+
+  function moveTabAction(
+    blockIndex: number,
+    tabIndex: number,
+    direction: -1 | 1,
+  ) {
+    moveTab(contents, blockIndex, tabIndex, direction);
+    updateContents();
+  }
+
+  function duplicateTabAction(blockIndex: number, tabIndex: number) {
+    const newTabIndex = duplicateTab(contents, blockIndex, tabIndex);
+    if (newTabIndex >= 0) {
+      const block = blocks[blockIndex];
+      if (block?.kind === "tab-group") {
+        block.group.activateWhenReady(newTabIndex);
+      }
+    }
+    updateContents();
+  }
+
+  function selectTabGroup(name: string) {
+    setSelectedTabGroup(name);
+    openSidebar();
+  }
+
+  function duplicateTabGroupAction(blockIndex: number) {
+    const newIndex = duplicateTabGroup(contents, blockIndex);
+    if (newIndex < 0) return;
+    // The copy pushes every block after the original down one row.
+    rekeyTabGroups((rowIndex) =>
+      rowIndex > blockIndex ? rowIndex + 1 : rowIndex,
+    );
+    updateContents();
+    // The copy has no name, so it is keyed by its index; select it like a duplicated tab.
+    selectTabGroup(`group-${newIndex}`);
+  }
+
+  function convertRowToTabGroupAction(rowIndex: number) {
+    if (convertRowToTabGroup(contents, rowIndex)) updateContents();
+  }
+
+  // Drop the dragged tab group into the top-level slot `to` (a row drop zone index).
+  function dropTabGroup(from: number, to: number) {
+    const block = blocks[from];
+    if (block?.kind !== "tab-group") return;
+
+    const newIndex = moveTabGroup(contents, from, to);
+    if (newIndex < 0) return;
+
+    // Index-keyed groups (the moved one and any it slid past) follow their rows.
+    rekeyTabGroups(rowIndexAfterMove(from, newIndex));
+
+    // Mirror the move in the optimistic spec and reprocess, so the canvas reorders now
+    // rather than on the next reconcile (component names are re-derived then).
+    const full = structuredClone(specCanvasRows);
+    const [moved] = full.splice(from, 1);
+    full.splice(newIndex, 0, moved);
+    specCanvasRows = full;
+    processRows({
+      components: resolvedComponents,
+      canvas: { rows: specCanvasRows },
+    });
+
+    updateContents();
+  }
+
+  function handleTabGroupMouseDown(blockIndex: number, event: MouseEvent) {
+    if (event.button !== 0) return;
+    if (event.shiftKey) return;
+
+    initialMousePosition = $mousePosition;
+
+    if (dragTimeout) clearTimeout(dragTimeout);
+
+    // Ensure cleanup on mouseup even if svelte:window handler fails
+    window.addEventListener("mouseup", reset, { once: true });
+
+    dragTimeout = setTimeout(() => {
+      pendingDragBlockIndex = blockIndex;
+    }, 150);
+  }
+
+  function initializeRow(row: number, item: AddableItem, target?: EditTarget) {
     if (!defaultMetrics) return;
 
-    const id = getId(row, 0);
+    const { namePrefix } = resolveTarget(target);
+    const id = getInstanceId(item, row, 0, namePrefix);
 
-    performTransaction({
-      operations: [
-        {
-          type: "add",
-          insertRow: true,
-          componentType: type,
-          destination: {
-            row,
-            col: 0,
+    performTransaction(
+      {
+        operations: [
+          {
+            type: "add",
+            insertRow: true,
+            ...(typeof item === "string"
+              ? { componentType: item }
+              : {
+                  componentType: "component_ref" as const,
+                  componentName: item.componentName,
+                }),
+            destination: {
+              row,
+              col: 0,
+            },
           },
-        },
-      ],
-    });
+        ],
+      },
+      undefined,
+      target,
+    );
 
     setSelectedComponent(id);
     openSidebar();
   }
 
-  function onDrop(row: number, column: number | null) {
+  function sameTarget(a: EditTarget | undefined, b: EditTarget | undefined) {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a.blockIndex === b.blockIndex && a.tabIndex === b.tabIndex;
+  }
+
+  function onDrop(row: number, column: number | null, target?: EditTarget) {
     if (!$dropZone) return;
     dropZone.clear();
 
-    if (dragComponent) {
-      const [, fromRow, , fromCol] = dragComponent.pathInYAML;
-      if (row === fromRow && (column === fromCol || column === fromCol + 1)) {
-        return;
-      }
-
-      performTransaction(
-        {
-          operations: [
-            {
-              type: "move",
-              insertRow: column === null,
-              source: {
-                row: fromRow,
-                col: fromCol,
-              },
-              destination: {
-                row,
-                col: column ?? 0,
-              },
-            },
-          ],
-        },
-        dragComponent.id,
-      );
+    // A dragged tab group only lands in top-level row slots (never inside a tab or a row).
+    if (dragBlockIndex !== null) {
+      if (!target && column === null) dropTabGroup(dragBlockIndex, row);
+      return;
     }
+
+    if (!dragComponent) return;
+
+    const sourceTarget = tabTargetFromPath(dragComponent.pathInYAML);
+    const { row: fromRow, col: fromCol } = rowColFromPath(
+      dragComponent.pathInYAML,
+    );
+
+    // Cross-container move (between top-level and a tab, or between tabs).
+    if (!sameTarget(sourceTarget, target)) {
+      moveComponentToTarget(dragComponent, target, { row, col: column });
+      return;
+    }
+
+    if (row === fromRow && (column === fromCol || column === fromCol + 1)) {
+      return;
+    }
+
+    performTransaction(
+      {
+        operations: [
+          {
+            type: "move",
+            insertRow: column === null,
+            source: {
+              row: fromRow,
+              col: fromCol,
+            },
+            destination: {
+              row,
+              col: column ?? 0,
+            },
+          },
+        ],
+      },
+      dragComponent.id,
+      target,
+    );
   }
 
   function resetSelection() {
     setSelectedComponent(null);
+    setSelectedTabGroup(null);
   }
 
   function scrollToBottom() {
@@ -406,23 +746,155 @@
   }
 
   function deleteComponent(component: BaseCanvasComponent) {
-    const [, row, , col] = component.pathInYAML;
+    const { row, col } = rowColFromPath(component.pathInYAML);
+    const target = tabTargetFromPath(component.pathInYAML);
 
     if (component.id === $selectedComponent) {
       resetSelection();
     }
 
-    performTransaction({
-      operations: [
-        {
-          type: "delete",
-          target: {
-            row,
-            col,
+    performTransaction(
+      {
+        operations: [
+          {
+            type: "delete",
+            target: {
+              row,
+              col,
+            },
           },
-        },
-      ],
-    });
+        ],
+      },
+      undefined,
+      target,
+    );
+  }
+
+  // Move a component out of its current container into another (top-level <-> tab, or
+  // between tabs). Used for drag-across-tabs and dropping onto a tab strip. The YAML edit
+  // and the optimistic spec are updated in lockstep, then the spec is reprocessed so the
+  // moved component's path is refreshed immediately; skipping the reprocess leaves stale
+  // paths that corrupt the document on the next edit.
+  function moveComponentToTarget(
+    component: BaseCanvasComponent,
+    destTarget: EditTarget | undefined,
+    destPos?: { row: number; col: number | null },
+  ) {
+    const sourceTarget = tabTargetFromPath(component.pathInYAML);
+    const { row: fromRow, col: fromCol } = rowColFromPath(component.pathInYAML);
+
+    const sourcePath = resolveTarget(sourceTarget).rowsPath;
+    const destPath = resolveTarget(destTarget).rowsPath;
+
+    const moved = moveItemAcrossContainers(
+      contents,
+      { rowsPath: sourcePath, row: fromRow, col: fromCol },
+      { rowsPath: destPath, row: destPos?.row, col: destPos?.col ?? null },
+    );
+    if (!moved) return;
+
+    // Mirror the same move in the optimistic spec (proto shape) and reprocess so grids and
+    // component paths update now rather than only on the next reconcile.
+    const full = structuredClone(specCanvasRows);
+    const containerRows = (t: EditTarget | undefined) =>
+      t ? full[t.blockIndex]?.tabGroup?.tabs?.[t.tabIndex]?.rows : full;
+    const srcRows = containerRows(sourceTarget);
+    const dstRows = containerRows(destTarget);
+    const specItem = srcRows?.[fromRow]?.items?.[fromCol];
+
+    if (srcRows && dstRows && specItem) {
+      srcRows[fromRow].items?.splice(fromCol, 1);
+      if (srcRows[fromRow].items?.length === 0) srcRows.splice(fromRow, 1);
+
+      const destRow = destPos?.row;
+      const destItems =
+        destRow !== undefined ? dstRows[destRow]?.items : undefined;
+      // Mirror moveItemAcrossContainers: join an existing row only if it has room (<4).
+      if (destPos?.col != null && destItems && destItems.length < 4) {
+        destItems.splice(Math.min(destPos.col, destItems.length), 0, specItem);
+      } else {
+        dstRows.splice(Math.min(destRow ?? dstRows.length, dstRows.length), 0, {
+          items: [specItem],
+        });
+      }
+
+      specCanvasRows = full;
+      processRows({
+        components: resolvedComponents,
+        canvas: { rows: specCanvasRows },
+      });
+    }
+
+    updateContents();
+  }
+
+  // Drop the currently-dragged component onto a tab (appends a new row in that tab).
+  function dropComponentOnTab(blockIndex: number, tabIndex: number) {
+    if (!dragComponent) return;
+    const target = { blockIndex, tabIndex };
+    // Releasing over the label of the tab the component already lives in has no positional
+    // intent, so skip it: otherwise the move would pull the item from its row and re-append
+    // it as a new last row, reshaping the tab for a harmless release.
+    if (sameTarget(tabTargetFromPath(dragComponent.pathInYAML), target)) return;
+    moveComponentToTarget(dragComponent, target);
+  }
+
+  function handleComponentMouseDown({
+    event,
+    id,
+  }: {
+    event: MouseEvent;
+    id: string;
+  }) {
+    if (event.button !== 0) return;
+    if (event.shiftKey) return;
+    const component = componentsStore.getNonReactive(id);
+    if (!component) return;
+
+    initialMousePosition = $mousePosition;
+
+    setSelectedComponent(id);
+
+    if (dragTimeout) clearTimeout(dragTimeout);
+
+    openSidebarAfterSelection = true;
+
+    // Ensure cleanup on mouseup even if svelte:window handler fails
+    window.addEventListener("mouseup", reset, { once: true });
+
+    dragTimeout = setTimeout(() => {
+      openSidebarAfterSelection = false;
+      pendingDragComponent = component;
+    }, 150);
+  }
+
+  function duplicateComponent(
+    rowIndex: number,
+    columnIndex: number,
+    target?: EditTarget,
+  ) {
+    if (!defaultMetrics) return;
+
+    performTransaction(
+      {
+        operations: [
+          {
+            type: "copy",
+            insertRow: true,
+            source: {
+              row: rowIndex,
+              col: columnIndex,
+            },
+            destination: {
+              row: rowIndex + 1,
+              col: 0,
+            },
+          },
+        ],
+      },
+      undefined,
+      target,
+    );
   }
 
   onDestroy(() => {
@@ -433,8 +905,6 @@
     if (timeout) {
       clearTimeout(timeout);
     }
-
-    unsubscribe();
   });
 </script>
 
@@ -464,68 +934,69 @@
   builder
   bind:clientWidth
 >
-  {#each layoutRows as row, rowIndex (rowIndex)}
-    <EditableCanvasRow
-      {row}
-      {maxWidth}
-      {rowIndex}
-      {components}
-      {columnWidth}
-      {dragComponent}
-      {selectedComponent}
-      zIndex={layoutRows.length - rowIndex}
-      {onDrop}
-      {addItems}
-      {spreadEvenly}
-      {initializeRow}
-      {updateRowHeight}
-      {updateComponentWidths}
-      onDelete={({ component }) => {
-        deleteComponent(component);
-      }}
-      onDuplicate={({ columnIndex }) => {
-        if (!defaultMetrics) return;
-
-        performTransaction({
-          operations: [
-            {
-              type: "copy",
-              insertRow: true,
-              source: {
-                row: rowIndex,
-                col: columnIndex,
-              },
-              destination: {
-                row: rowIndex + 1,
-                col: 0,
-              },
-            },
-          ],
-        });
-      }}
-      onComponentMouseDown={({ event, id }) => {
-        if (event.button !== 0) return;
-        if (event.shiftKey) return;
-        const component = componentsStore.getNonReactive(id);
-        if (!component) return;
-
-        initialMousePosition = $mousePosition;
-
-        setSelectedComponent(id);
-
-        if (dragTimeout) clearTimeout(dragTimeout);
-
-        openSidebarAfterSelection = true;
-
-        // Ensure cleanup on mouseup even if svelte:window handler fails
-        window.addEventListener("mouseup", reset, { once: true });
-
-        dragTimeout = setTimeout(() => {
-          openSidebarAfterSelection = false;
-          pendingDragComponent = component;
-        }, 150);
-      }}
-    />
+  {#each blocks as block, blockIndex (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
+    {#if block.kind === "tab-group"}
+      <EditableCanvasTabGroup
+        group={block.group}
+        blockIndex={block.rowIndex}
+        zIndex={blocks.length - blockIndex}
+        isLastBlock={blockIndex === blocks.length - 1}
+        {maxWidth}
+        {columnWidth}
+        {components}
+        {dragComponent}
+        {dragBlockIndex}
+        {selectedComponent}
+        hasValidMetrics={!!defaultMetrics}
+        {onDrop}
+        {addItems}
+        {spreadEvenly}
+        {initializeRow}
+        {updateRowHeight}
+        {updateComponentWidths}
+        onComponentMouseDown={handleComponentMouseDown}
+        onDuplicate={duplicateComponent}
+        onDelete={({ component }) => deleteComponent(component)}
+        onAddTab={addTabAction}
+        onRenameTab={renameTabAction}
+        onDeleteTab={deleteTabAction}
+        onMoveTab={moveTabAction}
+        onDuplicateTab={duplicateTabAction}
+        onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
+        onSelectGroup={() => selectTabGroup(block.group.name)}
+        onGroupMouseDown={handleTabGroupMouseDown}
+        onDuplicateGroup={duplicateTabGroupAction}
+        onDropOnTab={dropComponentOnTab}
+        onAddTabGroup={addTabGroupAtAction}
+      />
+    {:else if layoutRows[block.freeRowIndex]}
+      {@const rowIndex = block.rowIndex}
+      <EditableCanvasRow
+        row={layoutRows[block.freeRowIndex]}
+        {maxWidth}
+        {rowIndex}
+        {components}
+        {columnWidth}
+        {dragComponent}
+        blockDragging={dragBlockIndex !== null}
+        {selectedComponent}
+        zIndex={blocks.length - blockIndex}
+        {onDrop}
+        {addItems}
+        {spreadEvenly}
+        {initializeRow}
+        {updateRowHeight}
+        {updateComponentWidths}
+        onDelete={({ component }) => {
+          deleteComponent(component);
+        }}
+        onDuplicate={({ columnIndex }) =>
+          duplicateComponent(rowIndex, columnIndex)}
+        onConvertToTabGroup={() => convertRowToTabGroupAction(rowIndex)}
+        onAddTabGroup={addTabGroupAtAction}
+        onComponentMouseDown={handleComponentMouseDown}
+      />
+    {/if}
   {:else}
     {#if $firstLoad}
       <div class="h-72 flex items-center justify-center">
@@ -548,9 +1019,13 @@
               onItemClick={(type) => {
                 initializeRow(specCanvasRows.length, type);
               }}
+              onAddComponentRef={(componentName) => {
+                initializeRow(specCanvasRows.length, { componentName });
+              }}
+              onAddTabGroup={addTabGroupAction}
             />
           {:else if canvasData}
-            <ComponentError error="No valid metrics view in project" />
+            <ComponentError error={m.canvas_no_valid_metrics_view()} />
           {/if}
         </ItemWrapper>
       </RowWrapper>
@@ -566,6 +1041,11 @@
       initializeRow(specCanvasRows.length, type);
       setTimeout(() => scrollToBottom(), 500);
     }}
+    onAddComponentRef={(componentName) => {
+      initializeRow(specCanvasRows.length, { componentName });
+      setTimeout(() => scrollToBottom(), 500);
+    }}
+    onAddTabGroup={addTabGroupAction}
   />
 {/if}
 
@@ -588,6 +1068,26 @@
   </div>
 {/if}
 
+{#if dragGroupTabs}
+  <div
+    use:portal
+    class="absolute pointer-events-none drag-container"
+    style:z-index="1000"
+    style:top="{dragItemPosition.top}px"
+    style:left="{dragItemPosition.left}px"
+    style:width="{dragItemDimensions.width}px"
+    style:height="{dragItemDimensions.height}px"
+  >
+    <div class="tab-group-ghost">
+      <div class="tab-group-ghost-strip">
+        {#each $dragGroupTabs ?? [] as tab (tab.name)}
+          <span>{tab.displayName}</span>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if pendingComponentDelete !== undefined}
   <AlertDialog.Root
     open
@@ -596,10 +1096,10 @@
     }}
   >
     <AlertDialog.Content>
-      <AlertDialog.Title>Delete widget?</AlertDialog.Title>
+      <AlertDialog.Title>{m.canvas_delete_widget()}</AlertDialog.Title>
 
       <AlertDialog.Description>
-        This widget and its configuration will be permanently removed.
+        {m.canvas_delete_widget_description()}
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
@@ -613,7 +1113,7 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Cancel
+              {m.canvas_cancel()}
             </Button>
           {/snippet}
         </AlertDialog.Cancel>
@@ -634,7 +1134,54 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Delete
+              {m.canvas_delete()}
+            </Button>
+          {/snippet}
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
+{/if}
+
+{#if pendingTabDelete !== undefined}
+  <AlertDialog.Root
+    open
+    onOpenChange={(open) => {
+      if (!open) pendingTabDelete = undefined;
+    }}
+  >
+    <AlertDialog.Content>
+      <AlertDialog.Title>{m.canvas_delete_tab()}</AlertDialog.Title>
+
+      <AlertDialog.Description>
+        {m.canvas_delete_tab_description()}
+      </AlertDialog.Description>
+
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="secondary"
+              onClick={() => {
+                pendingTabDelete = undefined;
+              }}
+            >
+              {m.common_cancel()}
+            </Button>
+          {/snippet}
+        </AlertDialog.Cancel>
+
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              large
+              type="destructive"
+              onClick={confirmDeleteTab}
+            >
+              {m.common_delete()}
             </Button>
           {/snippet}
         </AlertDialog.Action>
@@ -647,5 +1194,16 @@
   .drag-container {
     container-type: inline-size;
     container-name: component-container;
+  }
+
+  /* Ghost of a tab group being dragged: the strip's labels over a faded body. */
+  .tab-group-ghost {
+    @apply size-full overflow-hidden rounded-md border border-primary-400 px-3 py-2;
+    @apply bg-surface-subtle/80 opacity-80 shadow-md;
+  }
+
+  .tab-group-ghost-strip {
+    @apply flex h-9 items-end gap-x-4 border-b border-gray-200 pb-2;
+    @apply text-sm font-medium text-fg-secondary;
   }
 </style>

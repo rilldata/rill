@@ -6,6 +6,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let statusCode: number | null | undefined = undefined;
   export let header: string;
@@ -32,7 +33,7 @@
       <div class="cta-actions">
         <slot name="cta" />
         {#if !fatal && !onEmbedPage}
-          <Button type="ghost" {href}>Back to home</Button>
+          <Button type="ghost" {href}>{m.error_back_to_home()}</Button>
         {/if}
       </div>
     {/if}
@@ -43,9 +44,9 @@
           onclick={() => (showDetail = !showDetail)}
         >
           {#if !showDetail}
-            Show details
+            {m.error_show_details()}
           {:else}
-            Hide details
+            {m.error_hide_details()}
           {/if}
         </button>
         {#if showDetail}

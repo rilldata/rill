@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
@@ -111,7 +112,7 @@
                   type="tertiary"
                   onClick={deleteBookmark}
                   disabled={disableDelete}
-                  label="Delete bookmark"
+                  label={m.bookmark_delete_bookmark()}
                 >
                   <Trash size="16px" />
                 </Button>
@@ -119,7 +120,9 @@
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">
-                Delete {bookmark.resource.default ? "Home " : ""}bookmark
+                {bookmark.resource.default
+                  ? m.bookmark_delete_home_bookmark()
+                  : m.bookmark_delete_bookmark()}
               </Tooltip.Content>
             {/if}
           </Tooltip.Root>

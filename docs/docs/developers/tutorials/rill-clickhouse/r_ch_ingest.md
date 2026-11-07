@@ -24,7 +24,7 @@ features:
 Once this is enabled, you'll be able to create model files and add sources in the UI and use these for SQL transformations, as you would with DuckDB. 
 
 :::note
-Currently not all the functionality is supported but our team is working on this to add more features! Please reach out to us on our community or via GitHub for any specific missing functionality that you looking for.
+Currently, not all functionality is supported, but our team is working to add more features. Please reach out to us through our community or via GitHub if there is specific missing functionality you're looking for.
 :::
 
 ## Ingestion directly from Snowflake to ClickHouse
@@ -60,7 +60,7 @@ AWS_ACCESS_KEY_ID=""
 AWS_SECRET_ACCESS_KEY=""
 ```
 :::note
-If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
+If you already set up ClickHouse via the `.env` file, you will just need to add your Snowflake and S3 credentials.
 :::
 
 

@@ -8,11 +8,12 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let name: string;
   export let onRefresh: () => Promise<void> | void;
-  export let refreshType: "full" | "incremental" = "full";
+  export let refreshType: "refresh" | "full" | "incremental" = "full";
 
   let isRefreshing = false;
 
@@ -42,18 +43,21 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        {refreshType === "full" ? "Full Refresh" : "Incremental Refresh"}
+        {refreshType === "full"
+          ? m.status_action_full_refresh()
+          : refreshType === "incremental"
+            ? m.status_action_incremental_refresh()
+            : m.status_action_refresh()}
         <span class="font-semibold" title={name}>{truncateName(name)}</span>?
       </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
           {#if refreshType === "full"}
-            ⚠️ Warning: A full refresh will re-ingest ALL data from scratch.
-            This operation can take a significant amount of time and will update
-            all dependent resources. Only proceed if you're certain this is
-            necessary.
+            {m.status_full_refresh_warning()}
+          {:else if refreshType === "incremental"}
+            {m.status_incremental_refresh_description()}
           {:else}
-            Refreshing this resource will update all dependent resources.
+            {m.status_refresh_description()}
           {/if}
         </div>
       </AlertDialogDescription>
@@ -64,13 +68,13 @@
         disabled={isRefreshing}
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.status_cancel()}</Button
       >
       <Button
         type="primary"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        loading={isRefreshing}>Yes, refresh</Button
+        loading={isRefreshing}>{m.status_yes_refresh()}</Button
       >
     </AlertDialogFooter>
   </AlertDialogContent>

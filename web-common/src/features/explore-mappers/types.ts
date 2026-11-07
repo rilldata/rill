@@ -28,7 +28,8 @@ export type TransformerArgs<R extends TransformerProperties> = {
   req: R;
   metricsView: V1MetricsViewSpec;
   explore: V1ExploreSpec;
-  timeRangeSummary: V1TimeRangeSummary;
+  // Undefined when the metrics view has no time dimension.
+  timeRangeSummary: V1TimeRangeSummary | undefined;
   executionTime?: string;
   exploreProtoState?: string;
   ignoreFilters?: boolean;

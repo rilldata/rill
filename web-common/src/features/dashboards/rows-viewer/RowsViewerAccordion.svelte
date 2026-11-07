@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { usePivotForExplore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -6,12 +7,14 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import type { PivotFilter } from "../pivot/types";
   import RowsViewer from "./RowsViewer.svelte";
 
@@ -20,6 +23,7 @@
 
   export let metricsViewName: string;
   export let exploreName: string;
+  export let whereFilter: V1Expression | undefined;
 
   const DEFAULT_LABEL = "Model Data";
   const INITIAL_HEIGHT_EXPANDED = 300;
@@ -44,7 +48,6 @@
   const client = useRuntimeClient();
 
   $: exploreState = useExploreState(exploreName);
-  $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: ({ activeCellFilters } = $pivotDataStore);
   $: showPivot = $showPivotStore;
@@ -64,10 +67,7 @@
 
   $: filters = isPivotCellSelected
     ? sanitiseExpression((activeCellFilters as PivotFilter).filters, undefined)
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
-        undefined,
-      );
+    : sanitiseExpression(whereFilter, undefined);
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -87,7 +87,7 @@
             where: filters,
           },
         ],
-        enabled: $timeControlsStore.ready && !!$exploreState?.whereFilter,
+        enabled: $timeControlsStore.ready,
       },
     },
   );
@@ -135,13 +135,7 @@
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
         timeDimension: $exploreState?.selectedTimeDimension,
-        where: sanitiseExpression(
-          mergeDimensionAndMeasureFilters(
-            $exploreState.whereFilter,
-            $exploreState.dimensionThresholdFilters,
-          ),
-          undefined,
-        ),
+        where: sanitiseExpression(whereFilter, undefined),
       },
     };
   }
@@ -161,7 +155,7 @@
   />
   <div class="bar">
     <button
-      aria-label="Toggle rows viewer"
+      aria-label={m.dashboard_toggle_rows_viewer_aria()}
       class="text-xs text-fg-secondary rounded-sm hover:bg-surface-subtle h-6 px-1.5 py-px flex items-center gap-1"
       onclick={toggle}
     >
@@ -173,7 +167,10 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportMenu label="Export model data" getQuery={getExportQuery} />
+        <ExportMenu
+          label={m.dashboard_export_model_data()}
+          getQuery={getExportQuery}
+        />
       </div>
     {/if}
   </div>

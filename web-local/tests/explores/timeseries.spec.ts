@@ -89,15 +89,47 @@ async function verifyChartTooltipData(
 
     const expectedValue = point.records[measureName];
     if (expectedValue !== null && expectedValue !== undefined) {
-      const formatter = createMeasureValueFormatter({
-        formatPreset: "humanize",
-      });
+      // The chart formats hover readouts with the tooltip context
+      const formatter = createMeasureValueFormatter(
+        { formatPreset: "humanize" },
+        "tooltip",
+      );
       expect(valueText!.trim()).toBe(formatter(expectedValue));
     }
 
     verifiedPoints++;
 
     if (verifiedPoints >= expectedPoints) break;
+  }
+}
+
+/**
+ * Selects each time range from the menu and checks the chart against the API response.
+ * The grain is adaptive, so selecting the range is what sets the grain and fires the query.
+ */
+async function verifyTimeRangeCases(page: Page, dashboardTZ: string) {
+  for (const testCase of TIME_RANGE_TEST_CASES) {
+    let timeseriesPromise: ReturnType<typeof interceptTimeseriesResponse>;
+    await interactWithTimeRangeMenu(page, async () => {
+      // Registered once the menu is open so the initial load's response is not picked up.
+      timeseriesPromise = interceptTimeseriesResponse(page);
+      await page.getByRole("menuitem", { name: testCase.menuItem }).click();
+    });
+
+    await expect(
+      page.getByRole("button", { name: "Select aggregation grain" }),
+    ).toContainText(`by ${V1TimeGrainToDateTimeUnit[testCase.grain]}`);
+
+    const apiData = await timeseriesPromise!;
+    expect(apiData.data.length).toBe(testCase.expectedDataPoints);
+
+    await verifyChartTooltipData(
+      page,
+      apiData,
+      testCase.grain,
+      "total_records",
+      dashboardTZ,
+    );
   }
 }
 
@@ -114,7 +146,6 @@ test.describe("timeseries charts (rendering)", () => {
     test(`chart data matches API response (dashboard: ${dashboardTZ})`, async ({
       page,
     }) => {
-      await page.getByLabel("/dashboards").click();
       await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
       await expect(
@@ -129,39 +160,7 @@ test.describe("timeseries charts (rendering)", () => {
 
       await setDashboardTimezone(page, dashboardTZ);
 
-      for (const testCase of TIME_RANGE_TEST_CASES) {
-        await interactWithTimeRangeMenu(page, async () => {
-          await page.getByRole("menuitem", { name: testCase.menuItem }).click();
-        });
-
-        await page
-          .getByRole("button", {
-            name: "Select aggregation grain",
-          })
-          .click();
-
-        const timeseriesPromise = interceptTimeseriesResponse(page);
-        await page
-          .getByRole("menuitemcheckbox", {
-            name: V1TimeGrainToDateTimeUnit[testCase.grain],
-            exact: true,
-          })
-          .click();
-
-        // Wait for chart to update with new data
-        await page.waitForTimeout(500);
-
-        const apiData = await timeseriesPromise;
-        expect(apiData.data.length).toBe(testCase.expectedDataPoints);
-
-        await verifyChartTooltipData(
-          page,
-          apiData,
-          testCase.grain,
-          "total_records",
-          dashboardTZ,
-        );
-      }
+      await verifyTimeRangeCases(page, dashboardTZ);
     });
   }
 });
@@ -179,7 +178,6 @@ test.describe("timeseries charts system TZ independence", () => {
   }) => {
     const dashboardTZ = "America/Los_Angeles";
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await expect(
@@ -194,37 +192,6 @@ test.describe("timeseries charts system TZ independence", () => {
 
     await setDashboardTimezone(page, dashboardTZ);
 
-    for (const testCase of TIME_RANGE_TEST_CASES) {
-      await interactWithTimeRangeMenu(page, async () => {
-        await page.getByRole("menuitem", { name: testCase.menuItem }).click();
-      });
-
-      await page
-        .getByRole("button", {
-          name: "Select aggregation grain",
-        })
-        .click();
-
-      const timeseriesPromise = interceptTimeseriesResponse(page);
-      await page
-        .getByRole("menuitemcheckbox", {
-          name: V1TimeGrainToDateTimeUnit[testCase.grain],
-          exact: true,
-        })
-        .click();
-
-      await page.waitForTimeout(500);
-
-      const apiData = await timeseriesPromise;
-      expect(apiData.data.length).toBe(testCase.expectedDataPoints);
-
-      await verifyChartTooltipData(
-        page,
-        apiData,
-        testCase.grain,
-        "total_records",
-        dashboardTZ,
-      );
-    }
+    await verifyTimeRangeCases(page, dashboardTZ);
   });
 });

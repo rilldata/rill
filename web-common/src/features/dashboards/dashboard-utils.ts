@@ -1,10 +1,11 @@
 import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -139,6 +140,8 @@ export function getComparisonRequestMeasures(
   ];
 }
 
+export const URI_DIMENSION_SUFFIX = "__rill_uri";
+
 export function getURIRequestMeasure(
   dimensionName: string,
 ): V1MetricsViewAggregationMeasure {
@@ -150,17 +153,69 @@ export function getURIRequestMeasure(
   };
 }
 
+// uri template or "true" string literal or undefined
+export function makeHref(
+  uriTemplateOrBoolean: string | boolean | null,
+  dimensionValue: string,
+) {
+  if (!uriTemplateOrBoolean) {
+    return undefined;
+  }
+
+  // temporary fix where uriTemplateOrBoolean is coming in as 0/1 instead of false/true
+  if (typeof uriTemplateOrBoolean === "number") {
+    uriTemplateOrBoolean = Boolean(uriTemplateOrBoolean);
+  }
+
+  // TODO: what should the value be if uriTemplateOrBoolean=false?
+  let uri = dimensionValue;
+  if (typeof uriTemplateOrBoolean === "string") {
+    uri = uriTemplateOrBoolean.replace(/\s/g, "");
+  }
+
+  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
+
+  if (!hasProtocol) {
+    return "https://" + uri;
+  } else {
+    return uri;
+  }
+}
+
+/**
+ * Resolves the external link href for a dimension cell from the row's resolved
+ * URI field (requested via `getURIRequestMeasure`). Returns undefined when the
+ * dimension has no URI to link to.
+ */
+export function makeDimensionHref(
+  rowData: Record<string, unknown> | undefined,
+  dimensionName: string,
+  dimensionValue: string,
+): string | undefined {
+  const resolvedUri = rowData?.[dimensionName + URI_DIMENSION_SUFFIX] as
+    | string
+    | null
+    | undefined;
+  return makeHref(resolvedUri ?? null, dimensionValue);
+}
+
 export function getBreadcrumbOptions(
   exploreResources: V1Resource[],
   canvasResources: V1Resource[],
 ): Map<string, PathOption> {
+  // Keyed by kind as well as name: an explore and a canvas may share a name.
   const exploreOptions = exploreResources.reduce((map, exploreResource) => {
     const name = exploreResource.meta?.name?.name ?? "";
     const label =
       exploreResource.explore?.state?.validSpec?.displayName || name;
 
     if (label && name)
-      map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
+      map.set(resourceKey(ResourceKind.Explore, name), {
+        label,
+        section: "explore",
+        depth: 0,
+        param: name.toLowerCase(),
+      });
 
     return map;
   }, new Map<string, PathOption>());
@@ -170,7 +225,12 @@ export function getBreadcrumbOptions(
     const label = canvasResource?.canvas?.spec?.displayName || name;
 
     if (label && name)
-      map.set(name.toLowerCase(), { label, section: "canvas", depth: 0 });
+      map.set(resourceKey(ResourceKind.Canvas, name), {
+        label,
+        section: "canvas",
+        depth: 0,
+        param: name.toLowerCase(),
+      });
 
     return map;
   }, new Map<string, PathOption>());

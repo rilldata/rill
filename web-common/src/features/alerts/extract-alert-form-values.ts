@@ -1,5 +1,6 @@
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   getEmptyMeasureFilterEntry,
   mapExprToMeasureFilter,
@@ -12,6 +13,7 @@ import {
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
+  V1ExportFormat,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
@@ -22,6 +24,7 @@ export type AlertFormValuesSubset = Pick<
   | "splitByDimension"
   | "criteria"
   | "criteriaOperation"
+  | "ephemeralMeasures"
 >;
 
 export function extractAlertFormValues(
@@ -44,6 +47,8 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
+    // An edited alert carries its ephemeral definitions in the saved query.
+    ephemeralMeasures: ephemeralDefsFromRequestMeasures(measures),
   };
 }
 
@@ -110,6 +115,18 @@ export function getExistingAlertInitialFormValues(
     refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
     ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
     ...extractAlertNotification(alertSpec),
+    exportAttach: alertSpec.exportAttach ?? false,
+    // Alerts that don't attach an export have no format, so default to CSV for when attaching is enabled
+    exportFormat:
+      alertSpec.exportFormat &&
+      alertSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? alertSpec.exportFormat
+        : V1ExportFormat.EXPORT_FORMAT_CSV,
+    exportLimit:
+      !alertSpec.exportLimit || alertSpec.exportLimit === "0"
+        ? ""
+        : alertSpec.exportLimit,
+    exportIncludeHeader: alertSpec.exportIncludeHeader ?? false,
     ...extractAlertFormValues(queryArgsJson),
   };
 }

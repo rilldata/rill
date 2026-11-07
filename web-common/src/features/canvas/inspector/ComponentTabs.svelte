@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
@@ -11,21 +12,21 @@
   const tabs = [
     {
       tab: "options",
-      label: "Options",
+      label: m.canvas_options(),
     },
   ];
 
   $: if (hasFilters) {
     tabs.push({
       tab: "filters",
-      label: "Filters",
+      label: m.canvas_time_and_filters_tab(),
     });
   }
 
   $: if (isChartComponentType(componentType)) {
     tabs.push({
       tab: "config",
-      label: "Config",
+      label: m.canvas_config(),
     });
   }
 

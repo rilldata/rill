@@ -1,12 +1,12 @@
 ---
 title: "Managed GCS Bucket"
-description: Setting up gcs access
+description: Setting up GCS access
 sidebar_label: "GCS Bucket"
 sidebar_position: 20
 ---
 
 :::warning
-Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your provider's documentation on the correct permissions required to connect to your service.
 :::
 
 ## Setup instructions
@@ -24,7 +24,7 @@ Follow the instructions below to grant Rill access to your Google Cloud Storage 
 5. Click Add to open the modal to add members to your bucket.
 ![](https://images.contentful.com/ve6smfzbifwz/2Ki9BiKaHYMivZ5DPTiwbd/762b2a071d3d6fb58a1b08fd13973dc2/8fa34b8-permissions_add.png)
 
-6. In the New members field, enter your google service account. You can find your google service account in the Settings page for your workspace in RCC. This will typically have the form  `{workspace}`-`{organization}`@rilldata.iam.gserviceaccount.com.
+6. In the New members field, enter your Google service account. You can find your Google service account in the Settings page for your workspace in RCC. This will typically have the form  `{workspace}`-`{organization}`@rilldata.iam.gserviceaccount.com.
 ![](https://images.contentful.com/ve6smfzbifwz/50nIholwjMFJkaMTw8bMjy/c3334709d2eb6c8516e056f72f424957/42d2803-new_members_modal.png)
 
 7. Select the role Cloud Storage -> Storage Object Viewer. 

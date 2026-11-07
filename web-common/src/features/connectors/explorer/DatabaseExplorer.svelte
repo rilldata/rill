@@ -7,6 +7,7 @@
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -33,14 +34,18 @@
 
 <div class="wrapper">
   {#if hasError}
-    <span class="message pl-6">Error: {connector.errorMessage}</span>
+    <span class="message pl-6">
+      {m.connector_explorer_error({ error: connector.errorMessage ?? "" })}
+    </span>
   {:else if isLoading && queryEnabled}
-    <span class="message pl-6">Loading tables...</span>
+    <span class="message pl-6">{m.status_loading_tables_short()}</span>
   {:else if error && queryEnabled}
-    <span class="message pl-6">Error: {extractErrorMessage(error)}</span>
+    <span class="message pl-6">
+      {m.connector_explorer_error({ error: extractErrorMessage(error) })}
+    </span>
   {:else if data}
     {#if data.length === 0}
-      <span class="message pl-6">No tables found</span>
+      <span class="message pl-6">{m.status_no_tables()}</span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}

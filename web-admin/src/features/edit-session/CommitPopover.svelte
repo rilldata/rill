@@ -13,6 +13,7 @@
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let commitMessage = "";
   let isCommitting = false;
@@ -38,7 +39,7 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: "Changes committed and pushed",
+        message: m.edit_changes_committed_pushed(),
       });
       commitMessage = "";
       open = false;
@@ -46,7 +47,7 @@
       const message = getRpcErrorMessage(err as RpcStatus);
       eventBus.emit("notification", {
         type: "error",
-        message: message ?? "Failed to commit and push changes",
+        message: message ?? m.edit_failed_to_commit(),
       });
     } finally {
       isCommitting = false;
@@ -70,7 +71,7 @@
           type="secondary"
           disabled={!hasChanges || isCommitting}
         >
-          Commit
+          {m.edit_commit()}
         </Button>
       {/snippet}
     </Popover.Trigger>
@@ -80,7 +81,7 @@
           class="commit-input"
           bind:value={commitMessage}
           onkeydown={handleKeydown}
-          placeholder="Describe your changes..."
+          placeholder={m.edit_describe_changes()}
           rows="3"
         ></textarea>
         <Button
@@ -88,10 +89,10 @@
           small
           disabled={!commitMessage.trim() || isCommitting}
           loading={isCommitting}
-          loadingCopy="Pushing..."
+          loadingCopy={m.edit_pushing()}
           onClick={handleCommit}
         >
-          Commit & push
+          {m.edit_commit_and_push()}
         </Button>
       </div>
     </Popover.Content>
@@ -99,9 +100,9 @@
   <TooltipContent slot="tooltip-content">
     <span class="text-xs">
       {#if hasChanges}
-        Commit and push changes to this branch
+        {m.edit_commit_tooltip()}
       {:else}
-        No uncommitted changes detected
+        {m.edit_no_uncommitted_changes()}
       {/if}
     </span>
   </TooltipContent>

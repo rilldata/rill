@@ -15,6 +15,26 @@ import {
 import type { SourceConnectionType, SourceFileType } from "./SourceEventTypes";
 
 export class BehaviourEventFactory extends MetricsEventFactory {
+  public pageViewEvent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    screen_name: MetricsEventScreenName,
+    resource_type: string,
+    resource_name: string,
+  ): BehaviourEvent {
+    const event = this.getBaseMetricsEvent(
+      "behavioral",
+      BehaviourEventAction.PageView,
+      commonFields,
+      commonUserFields,
+    ) as BehaviourEvent;
+    event.action = BehaviourEventAction.PageView;
+    event.screen_name = screen_name;
+    event.resource_type = resource_type;
+    event.resource_name = resource_name;
+    return event;
+  }
+
   public navigationEvent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,

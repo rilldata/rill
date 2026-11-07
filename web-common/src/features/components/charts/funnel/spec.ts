@@ -11,7 +11,7 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import { resolveCSSVariable } from "../util";
-import type { FunnelChartSpec } from "./FunnelChartProvider";
+import type { FunnelChartSpec, FunnelPercentMode } from "./FunnelChartProvider";
 import {
   createFunnelSortEncoding,
   getFormatType,
@@ -29,7 +29,9 @@ function createModeTransforms(
         window: [{ op: "row_number", as: "funnel_rank" }],
         sort: [
           {
-            field: isMultiMeasure ? "value" : measureField!,
+            field: isMultiMeasure
+              ? "value"
+              : sanitizeValueForVega(measureField!),
             order: "descending",
           },
         ],
@@ -51,72 +53,114 @@ function createModeTransforms(
   }
 }
 
+// Format a numeric percentage (0-100) at one decimal, then drop a trailing `.0`
+// so 32.1% stays "32.1%" but 32.0% becomes "32%". Keeps round numbers clean
+// while letting neighboring values stay visually distinct.
+function formatPercentExpr(valueExpr: string): string {
+  return (
+    `(!isValid(${valueExpr}) ? '' : ` +
+    `replace(format(${valueExpr}, '.1f'), /\\.0$/, '') + '%')`
+  );
+}
+
 function createPercentageTransforms(
   measureField: string | undefined,
   funnelSort: string[] | null,
   stageField: string | undefined,
   isMultiMeasure: boolean,
+  percentMode: FunnelPercentMode | undefined,
 ): Transform[] {
+  const valueExpr = isMultiMeasure
+    ? "datum.value"
+    : `datum['${sanitizeValueForVega(measureField!)}']`;
+  const transforms: Transform[] = [];
+
   if (isMultiMeasure) {
-    return [
-      {
-        window: [
-          {
-            op: "first_value",
-            field: "value",
-            as: "reference_value",
-          },
-        ],
-      },
-      {
-        calculate: `round((datum.value / datum.reference_value) * 100) + '%'`,
-        as: "percentage",
-      },
-    ];
-  } else {
-    const transforms: Transform[] = [];
-
-    if (Array.isArray(funnelSort) && funnelSort.length > 0 && stageField) {
-      // Use joinaggregate to create a reference value field
-      const firstStageInSort = funnelSort[0];
-      transforms.push(
-        {
-          // Mark rows that match the first stage in custom sort
-          calculate: `datum['${sanitizeValueForVega(stageField)}'] === '${sanitizeValueForVega(firstStageInSort)}' ? datum['${sanitizeValueForVega(measureField!)}'] : 0`,
-          as: "is_reference_stage",
-        },
-        {
-          // Use joinaggregate to get the maximum value where is_reference_stage > 0
-          // This gives us the measure value for the first stage in custom sort
-          joinaggregate: [
-            {
-              op: "max",
-              field: "is_reference_stage",
-              as: "reference_value",
-            },
-          ],
-        },
-      );
-    } else {
-      // For non-custom sort, use the first value in data order
-      transforms.push({
-        window: [
-          {
-            op: "first_value",
-            field: measureField!,
-            as: "reference_value",
-          },
-        ],
-      });
-    }
-
+    // Multi-measure: rows arrive in fold order, which matches the user-configured
+    // measure order. Use that as the funnel order for both reference computations.
     transforms.push({
-      calculate: `round((datum['${sanitizeValueForVega(measureField!)}'] / datum.reference_value) * 100) + '%'`,
-      as: "percentage",
+      window: [
+        { op: "first_value", field: "value", as: "top_value" },
+        { op: "lag", field: "value", as: "prev_value" },
+      ],
     });
+  } else if (Array.isArray(funnelSort) && funnelSort.length > 0 && stageField) {
+    // Custom sort: explicit stage order. Tag each row with its position in the
+    // sort array so we can derive both top and previous values via window ops.
+    const sanitizedStage = sanitizeValueForVega(stageField);
+    const positionExpr =
+      funnelSort
+        .map(
+          (stage, idx) =>
+            `datum['${sanitizedStage}'] === '${sanitizeValueForVega(stage)}' ? ${idx} : `,
+        )
+        .join("") + `${funnelSort.length}`;
 
-    return transforms;
+    transforms.push(
+      { calculate: positionExpr, as: "funnel_position" },
+      {
+        window: [
+          {
+            op: "first_value",
+            field: sanitizeValueForVega(measureField!),
+            as: "top_value",
+          },
+          {
+            op: "lag",
+            field: sanitizeValueForVega(measureField!),
+            as: "prev_value",
+          },
+        ],
+        sort: [{ field: "funnel_position", order: "ascending" }],
+      },
+    );
+  } else {
+    // Default sort: data is sorted by measure (asc/desc) at query time, so first
+    // row is the top of the funnel and lag returns the immediately prior stage.
+    transforms.push({
+      window: [
+        {
+          op: "first_value",
+          field: sanitizeValueForVega(measureField!),
+          as: "top_value",
+        },
+        {
+          op: "lag",
+          field: sanitizeValueForVega(measureField!),
+          as: "prev_value",
+        },
+      ],
+    });
   }
+
+  transforms.push(
+    {
+      calculate: `(${valueExpr} / datum.top_value) * 100`,
+      as: "pct_of_top_num",
+    },
+    {
+      // Top stage has no previous; show 100% there.
+      calculate: `!isValid(datum.prev_value) ? 100 : (${valueExpr} / datum.prev_value) * 100`,
+      as: "pct_of_prev_num",
+    },
+    {
+      calculate: formatPercentExpr("datum.pct_of_top_num"),
+      as: "pct_of_top",
+    },
+    {
+      calculate: formatPercentExpr("datum.pct_of_prev_num"),
+      as: "pct_of_previous",
+    },
+    {
+      calculate:
+        percentMode === "previous"
+          ? "datum.pct_of_previous"
+          : "datum.pct_of_top",
+      as: "percentage",
+    },
+  );
+
+  return transforms;
 }
 
 export function generateVLFunnelChartSpec(
@@ -129,6 +173,13 @@ export function generateVLFunnelChartSpec(
   const textColor = data.isDarkMode ? "#eeeeee" : "#353535";
 
   const isMultiMeasure = config.breakdownMode === "measures";
+  // Vega field references for the configured measure and stage.
+  const measureRef = config.measure?.field
+    ? sanitizeValueForVega(config.measure.field)
+    : undefined;
+  const stageRef = config.stage?.field
+    ? sanitizeValueForVega(config.stage.field)
+    : undefined;
 
   const measureDisplayNames: Record<string, string> = {};
   if (isMultiMeasure && config.measure?.field) {
@@ -163,7 +214,20 @@ export function generateVLFunnelChartSpec(
 
   const yEncoding = isMultiMeasure
     ? { field: "Measure", type: "nominal" as const }
-    : createPositionEncoding(config.stage, data);
+    : createPositionEncoding(config.stage, data, "y");
+
+  const percentTooltipFields = [
+    {
+      field: "pct_of_top",
+      title: "% of top",
+      type: "nominal" as const,
+    },
+    {
+      field: "pct_of_previous",
+      title: "% of previous",
+      type: "nominal" as const,
+    },
+  ];
 
   const tooltip = isMultiMeasure
     ? [
@@ -173,8 +237,12 @@ export function generateVLFunnelChartSpec(
           title: "Measure",
         },
         { field: "value", title: "Value", type: "quantitative" as const },
+        ...percentTooltipFields,
       ]
-    : createDefaultTooltipEncoding([config.stage, config.measure], data);
+    : [
+        ...createDefaultTooltipEncoding([config.stage, config.measure], data),
+        ...percentTooltipFields,
+      ];
 
   const funnelSort = isMultiMeasure
     ? getMultiMeasures(config.measure)
@@ -189,7 +257,7 @@ export function generateVLFunnelChartSpec(
     // Transform data for multi-measure funnel
     transforms.push(
       {
-        fold: measures,
+        fold: measures.map((measure) => sanitizeValueForVega(measure)),
         as: ["Measure", "value"],
       },
       {
@@ -214,6 +282,7 @@ export function generateVLFunnelChartSpec(
       Array.isArray(funnelSort) ? funnelSort : null,
       config.stage?.field,
       isMultiMeasure,
+      config.percentMode,
     );
 
     transforms.push(...modeTransforms, ...percentageTransforms);
@@ -239,7 +308,10 @@ export function generateVLFunnelChartSpec(
 
   // Main bar layer
   const barLayer: UnitSpec<Field> = {
-    mark: "bar",
+    mark: {
+      type: "bar",
+      cornerRadius: 4,
+    },
     encoding: {
       x: {
         field: "funnel_width",
@@ -253,7 +325,7 @@ export function generateVLFunnelChartSpec(
         },
       },
       color: {
-        field: colorField,
+        field: colorField ? sanitizeValueForVega(colorField) : undefined,
         type: (colorType === "value" ? "nominal" : colorType) as
           | "quantitative"
           | "ordinal"
@@ -301,6 +373,7 @@ export function generateVLFunnelChartSpec(
     mark: {
       type: "text",
       fontWeight: 600,
+      fontSize: 14,
       dx: {
         expr: `-(scale('x', datum['funnel_width']) / 2)`,
       },
@@ -316,7 +389,7 @@ export function generateVLFunnelChartSpec(
         stack: "center",
       },
       text: {
-        field: isMultiMeasure ? "value" : config.measure?.field,
+        field: isMultiMeasure ? "value" : measureRef,
         type: isMultiMeasure
           ? "quantitative"
           : config.measure?.type === "value"
@@ -349,7 +422,7 @@ export function generateVLFunnelChartSpec(
             type: "nominal",
           }
         : {
-            field: config.stage?.field,
+            field: stageRef,
             type: "nominal",
           },
     },

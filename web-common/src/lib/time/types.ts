@@ -171,8 +171,10 @@ export interface DashboardTimeControls extends TimeRange {
 export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;
-  /** a human-readable name, e.g. minute, second, etc. */
-  label: DateTimeUnit;
+  /** the locale-independent Luxon unit used for date arithmetic. */
+  unit: DateTimeUnit;
+  /** the localized human-readable name. */
+  label: string;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
   /** the d3 time format string that outputs a human-readable

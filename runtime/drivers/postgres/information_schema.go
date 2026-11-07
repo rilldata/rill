@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -128,7 +129,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, rows.Err()
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := `
 	SELECT 
 		CASE WHEN lower(t.table_type) = 'view' THEN true ELSE false END AS view,
@@ -145,9 +146,9 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	var args []any
 	if databaseSchema != "" {
-		args = append(args, databaseSchema, table)
+		args = append(args, databaseSchema, name)
 	} else {
-		args = append(args, nil, table)
+		args = append(args, nil, name)
 	}
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -155,17 +156,93 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 	defer rows.Close()
 
-	columns := make(map[string]string)
-	var name, typ string
 	var view bool
+	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		if err := rows.Scan(&view, &name, &typ); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		columns[name] = typ
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: databaseTypeToPB(typ),
+		})
 	}
-	return &drivers.TableMetadata{
-		View:   view,
-		Schema: columns,
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
 	}, rows.Err()
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+// Note: table.Database is not used; in Postgres, the database is determined by the connection.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	schema := table.DatabaseSchema
+	if schema == "" {
+		if err := db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schema); err != nil {
+			return err
+		}
+	}
+
+	if table.View {
+		// For views: use pg_get_viewdef
+		var ddl string
+		q := `
+			SELECT 'CREATE VIEW ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' AS ' || pg_get_viewdef(c.oid, true)
+			FROM pg_class c
+			JOIN pg_namespace n ON n.oid = c.relnamespace
+			WHERE n.nspname = $1 AND c.relname = $2 AND c.relkind IN ('v', 'm')
+		`
+		err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+		if err != nil {
+			return err
+		}
+		table.DDL = ddl
+		return nil
+	}
+
+	// Postgres does not have a built-in way to get the DDL for a table, so we reconstruct a basic CREATE TABLE statement from the available metadata (won't include indexes, constraints, etc.).
+	q := `
+		SELECT
+			'CREATE TABLE ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' (' ||
+			string_agg(
+				quote_ident(a.attname) || ' ' || format_type(a.atttypid, a.atttypmod) ||
+				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END,
+				', ' ORDER BY a.attnum
+			) || ')'
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE n.nspname = $1 AND c.relname = $2 AND a.attnum > 0 AND NOT a.attisdropped
+		GROUP BY n.nspname, c.relname
+	`
+	var ddl string
+	err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
 }

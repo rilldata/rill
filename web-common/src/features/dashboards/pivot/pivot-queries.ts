@@ -24,8 +24,9 @@ import {
   getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
+  getUriMeasuresForDimensions,
   isTimeDimension,
-  prepareMeasureForComparison,
+  prepareMeasuresForRequest,
 } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -78,7 +79,11 @@ export function createPivotAggregationRowQuery(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: prepareMeasureForComparison(measures),
+          measures: prepareMeasuresForRequest(
+            measures,
+            config.ephemeralMeasures,
+            config.exactMeasures,
+          ),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
@@ -100,7 +105,7 @@ export function createPivotAggregationRowQuery(
         },
         {
           query: {
-            enabled,
+            enabled: enabled && config.ready !== false,
             placeholderData: keepPreviousData,
           },
         },
@@ -122,6 +127,9 @@ export function getAxisForDimensions(
   timeRange: TimeRangeString | undefined = undefined,
   limit = "100",
   offset = "0",
+  // When true, append URI measures for dimensions that declare a `uri`, so the
+  // resolved URL rides along on each row. Used for row (not column) dimensions.
+  includeUriMeasures = false,
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
@@ -163,10 +171,27 @@ export function getAxisForDimensions(
           },
         ];
       }
+      // Append the URI measure for this dimension (if it has one) without
+      // affecting the sort, which was derived from `measures` above.
+      // Never append it to a sort-only query, whose single measure carries a
+      // measure-level filter: the runtime rejects that filter as soon as the
+      // query has a second measure. Such a query only selects and orders the
+      // row values; the totals shown for them, links included, come from
+      // getAxisQueryForMeasureTotals.
+      const measuresForDimension =
+        includeUriMeasures &&
+        !dimension.alias &&
+        !measures.some((m) => m.filter)
+          ? [
+              ...measures,
+              ...getUriMeasuresForDimensions([dimension.name], config),
+            ]
+          : measures;
+
       return createPivotAggregationRowQuery(
         ctx,
         config,
-        measures,
+        measuresForDimension,
         [dimension],
         whereFilter,
         sortByForDimension,
@@ -194,6 +219,13 @@ export function getAxisForDimensions(
         };
       }
 
+      // A disabled query reports `isFetching: false` with no data at all: canvas
+      // components gate their queries on `visible`, so a pivot that just mounted
+      // sits in that state until the intersection observer fires. That is not an
+      // empty result (which still carries a `data` object), so keep waiting
+      // rather than reporting zero axis values downstream.
+      if (data.some((d) => d?.data === undefined)) return { isFetching: true };
+
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];
 
@@ -213,6 +245,12 @@ export function getAxisForDimensions(
   );
 }
 
+/**
+ * When the rows are sorted by a measure, the row axis query is a sort-only
+ * query that merely selects and orders the row values. This query fetches the
+ * totals displayed for those rows, along with the URI measures that render
+ * row dimension values as links.
+ */
 export function getAxisQueryForMeasureTotals(
   ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
@@ -250,6 +288,9 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
+      "100",
+      "0",
+      true,
     );
   }
 

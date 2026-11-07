@@ -5,21 +5,37 @@ import {
 import { CustomChartComponent } from "@rilldata/web-common/features/canvas/components/charts/custom-chart";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
+import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
+import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
+import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
+import MapIcon from "@rilldata/web-common/features/canvas/icons/MapIcon.svelte";
+import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
+import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import {
+  type V1CanvasItem,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
   type V1ResolveCanvasResponseResolvedComponents,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import {
+  CHART_CONFIG,
+  type ChartMetadataConfig,
+} from "@rilldata/web-common/features/components/charts/config.ts";
+import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
+import { readable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
+import { ComponentRefComponent } from "./component-ref";
 import { ImageComponent } from "./image";
 import { LeaderboardComponent } from "./leaderboard";
+import { MapComponent } from "./map";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
 import type {
@@ -27,49 +43,51 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
-import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
-import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
-import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
-import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
-import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
-import {
-  CHART_CONFIG,
-  type ChartMetadataConfig,
-} from "@rilldata/web-common/features/components/charts/config.ts";
-import { readable } from "svelte/store";
-import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
-import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
-export const commonOptions: Record<
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
+/**
+ * Returns the common component options.
+ *
+ * This is a factory rather than a module-scope constant because the `label` and
+ * `placeholder` strings come from `m.*()`, which resolve against the active
+ * locale at call time. Evaluating them once at module load would freeze the
+ * labels in whatever locale was active when this module was first imported and
+ * leave them stale after a locale switch. Each call site already spreads the
+ * result inside its `inputParams()` getter, so resolution stays lazy.
+ */
+export function getCommonOptions(): Record<
   keyof ComponentCommonProperties,
   ComponentInputParam
-> = {
-  title: {
-    type: "text",
-    optional: true,
-    showInUI: true,
-    label: "Title",
-    meta: { placeholder: "Add a title to describe this component" },
-  },
-  description: {
-    type: "text",
-    optional: true,
-    showInUI: true,
-    label: "Description",
-    meta: {
-      placeholder: "Add additional context for this component",
+> {
+  return {
+    title: {
+      type: "text",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_title_label(),
+      meta: { placeholder: m.canvas_title_placeholder() },
     },
-  },
-  show_description_as_tooltip: {
-    type: "boolean",
-    optional: true,
-    showInUI: true,
-    label: "Show description as tooltip",
-    meta: {
-      layout: "grouped",
+    description: {
+      type: "text",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_description_label(),
+      meta: {
+        placeholder: m.canvas_description_placeholder(),
+      },
     },
-  },
-};
+    show_description_as_tooltip: {
+      type: "boolean",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_show_description_as_tooltip_label(),
+      meta: {
+        layout: "grouped",
+      },
+    },
+  };
+}
 
 export function getFilterOptions(
   hasComparison = true,
@@ -105,7 +123,9 @@ const NON_CHART_TYPES = [
   "table",
   "pivot",
   "leaderboard",
+  "map",
   "custom_chart",
+  "component_ref",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -137,13 +157,16 @@ const baseComponentMap = {
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
+  map: MapComponent,
   custom_chart: CustomChartComponent,
+  component_ref: ComponentRefComponent,
 } as const;
 const IconMap = {
   markdown: TextIcon,
   kpi_grid: BigNumberIcon,
   leaderboard: LeaderboardIcon,
   table: TableIcon,
+  map: MapIcon,
 };
 
 const chartComponentMap = Object.fromEntries(
@@ -163,7 +186,9 @@ const baseDisplayMap = {
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
+  map: "Map",
   custom_chart: "Custom Chart",
+  component_ref: "Custom viz",
 } as const;
 
 const chartDisplayMap = Object.fromEntries(
@@ -179,14 +204,53 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
+  item?: V1CanvasItem,
+  instanceId?: string,
 ): BaseCanvasComponent<any> {
-  const type = resource.component?.spec?.renderer as CanvasComponentType;
+  const type = getComponentInstanceType(resource, item);
+  if (type === "component_ref") {
+    const component = new ComponentRefComponent(resource, parent, path, item);
+    // Items referencing an external component share one resource, so the
+    // resource name can't identify the instance: use the positional instance id
+    // (also the components-store key and the selection id) so two references to
+    // the same component get distinct DOM ids and selection/cleanup state.
+    if (instanceId) component.id = instanceId;
+    return component;
+  }
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
     return new ComponentClass(resource, parent, path);
   }
   return new CartesianChartComponent(resource, parent, path);
+}
+
+/**
+ * Determines the component class type for a canvas item.
+ * Flint or parameterized custom charts render through the component_ref wrapper;
+ * legacy and non-chart component references keep their renderer-specific class.
+ */
+export function getComponentInstanceType(
+  resource: V1Resource | undefined,
+  item?: V1CanvasItem,
+  allowUnvalidatedSpec = true,
+): CanvasComponentType {
+  const spec =
+    resource?.component?.state?.validSpec ??
+    (allowUnvalidatedSpec ? resource?.component?.spec : undefined);
+  // Flint and parameterized custom charts need the component-ref wrapper to compile specs,
+  // resolve bindings, and expose generated inspector controls. Legacy standalone component
+  // files keep using their existing renderer classes (including multi-query Vega charts).
+  if (
+    item &&
+    !item.definedInCanvas &&
+    item.component &&
+    spec?.renderer === "custom_chart" &&
+    ((spec.params?.length ?? 0) > 0 || !!spec.rendererProperties?.spec)
+  ) {
+    return "component_ref";
+  }
+  return spec?.renderer as CanvasComponentType;
 }
 
 export function isCanvasComponentType(

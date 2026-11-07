@@ -2,19 +2,40 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { slide } from "svelte/transition";
   import DragList from "./DragList.svelte";
+  import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
-  import { PivotChipType, type PivotChipData, type PivotState } from "./types";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotMeasureFormatting,
+    type PivotState,
+  } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
   export let setRows: (items: PivotChipData[]) => void;
   export let setColumns: (items: PivotChipData[]) => void;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  export let onEditEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
+  export let onDeleteEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
 
-  $: ({ rows, columns, tableMode } = pivotState);
+  $: ({ rows, columns, tableMode, measureFormatting } = pivotState);
+  $: ephemeralMeasureNames = new Set(
+    ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
   $: splitColumns = splitPivotChips(columns);
   $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
   $: isFlat = tableMode === "flat";
+  $: columnsForList = isFlat ? columns : fullColumns;
 
   function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
@@ -32,35 +53,43 @@
 
 <div class="header" transition:slide>
   {#if !isFlat}
-    <div
-      class="header-row"
-      transition:slide={{
-        duration: 200,
-        axis: "y",
-      }}
-    >
+    <div class="header-row" transition:slide={{ duration: 200, axis: "y" }}>
       <span class="row-label">
-        <Row size="16px" /> Rows
+        <Row size="16px" />
+        {m.dashboard_rows()}
       </span>
       <DragList
         zone="rows"
-        placeholder="Drag dimensions here"
+        placeholder={m.dashboard_drag_dimensions()}
         items={rows}
         onUpdate={updateRows}
       />
     </div>
+    <PivotAutoArrangeZone
+      {rows}
+      columns={columnsForList}
+      setRows={updateRows}
+      setColumns={updateColumn}
+    />
   {/if}
   <div class="header-row">
     <div class="row-label">
-      <Column size="16px" /> Columns
+      <Column size="16px" />
+      {m.dashboard_columns()}
     </div>
 
     <DragList
       zone="columns"
       {tableMode}
-      items={isFlat ? columns : fullColumns}
-      placeholder="Drag dimensions or measures here"
+      items={columnsForList}
+      placeholder={m.dashboard_drag_dimensions_or_measures()}
       onUpdate={updateColumn}
+      {measureFormatting}
+      {setMeasureFormatting}
+      {lowerIsBetterMap}
+      {ephemeralMeasureNames}
+      {onEditEphemeralMeasure}
+      {onDeleteEphemeralMeasure}
     />
   </div>
 </div>

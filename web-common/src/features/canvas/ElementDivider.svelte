@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
+  import type { AddableItem } from "./layout-util";
   import { dropZone, activeDivider } from "./stores/ui-stores";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -11,12 +13,13 @@
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
+  export let zoneScope = "canvas";
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
   export let addItems: (
     position: { row: number; column: number },
-    item: CanvasComponentType[],
+    item: AddableItem[],
   ) => void;
   export let onColumnResizeStart: ((columnIndex: number) => void) | undefined =
     undefined;
@@ -27,11 +30,11 @@
   $: firstElement = addIndex === 0;
   $: lastElement = addIndex === rowLength;
 
-  $: dividerId = `row:${rowIndex}::column:${resizeIndex}`;
+  $: dividerId = `${zoneScope}::row:${rowIndex}::column:${resizeIndex}`;
 
   $: isActiveDivider = $activeDivider === dividerId;
 
-  $: dropId = `row:${rowIndex}::column:${addIndex}`;
+  $: dropId = `${zoneScope}::row:${rowIndex}::column:${addIndex}`;
   $: isDropZone = $dropZone === dropId;
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
@@ -54,6 +57,12 @@
       addItems({ row: rowIndex, column: addIndex }, [type]);
     }
   }
+
+  function onAddComponentRef(componentName: string) {
+    if (componentName) {
+      addItems({ row: rowIndex, column: addIndex }, [{ componentName }]);
+    }
+  }
 </script>
 
 <div
@@ -64,7 +73,10 @@
 >
   {#if !addDisabled || !isSpreadEvenly || isDropZone}
     <button
-      aria-label="Resize row {rowIndex + 1} column {resizeIndex + 1}"
+      aria-label={m.canvas_resize_aria({
+        row: String(rowIndex + 1),
+        col: String(resizeIndex + 1),
+      })}
       disabled={resizeDisabled}
       data-width={columnWidth}
       data-row={rowIndex}
@@ -100,6 +112,7 @@
         {rowIndex}
         columnIndex={addIndex}
         {onItemClick}
+        {onAddComponentRef}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
             activeDivider.set(null);
@@ -125,7 +138,7 @@
           </button>
 
           <TooltipContent slot="tooltip-content" side="bottom">
-            Evenly distribute widgets
+            {m.canvas_evenly_distribute()}
           </TooltipContent>
         </Tooltip>
       {/if}

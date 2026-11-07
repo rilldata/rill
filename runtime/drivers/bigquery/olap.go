@@ -42,7 +42,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
@@ -144,79 +144,6 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	client, err := c.getClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	q := fmt.Sprintf("SELECT ddl FROM `%s.%s.INFORMATION_SCHEMA.TABLES` WHERE table_name = @name", table.Database, table.DatabaseSchema)
-	cq := client.Query(q)
-	cq.Parameters = []bigquery.QueryParameter{
-		{Name: "name", Value: table.Name},
-	}
-
-	it, err := cq.Read(ctx)
-	if err != nil {
-		return err
-	}
-
-	var row struct {
-		DDL string `bigquery:"ddl"`
-	}
-	err = it.Next(&row)
-	if err != nil {
-		return err
-	}
-	table.DDL = row.DDL
-	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	client, err := c.getClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
-	}
-
-	var table *bigquery.Table
-	if db != "" {
-		table = client.DatasetInProject(db, schema).Table(name)
-	} else {
-		table = client.Dataset(schema).Table(name)
-	}
-
-	meta, err := table.Metadata(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get table metadata: %w", err)
-	}
-	runtimeSchema, err := fromBQSchema(meta.Schema)
-	if err != nil {
-		return nil, err
-	}
-	tbl := &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.Type == bigquery.ViewTable,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
-		PhysicalSizeBytes: 0,
-	}
-	return tbl, nil
 }
 
 func (c *Connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {

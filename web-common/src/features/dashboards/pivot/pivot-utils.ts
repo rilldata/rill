@@ -1,3 +1,7 @@
+import {
+  itemsInTag,
+  type TagIndex,
+} from "@rilldata/web-common/components/menu/tag-utils";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -6,12 +10,13 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  Period,
   TimeOffsetType,
   type AvailableTimeGrain,
   type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
@@ -20,10 +25,21 @@ import type {
 import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import type { Row } from "tanstack-table-8-svelte-5";
-import { SHOW_MORE_BUTTON } from "./pivot-constants";
+import type { Column, Row } from "tanstack-table-8-svelte-5";
+import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+import {
+  MAX_PIVOT_COMPARISON_MEASURES,
+  PIVOT_TOTALS_ROW_ID,
+  SHOW_MORE_BUTTON,
+} from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -38,6 +54,25 @@ import {
   type PivotTimeConfig,
   type TimeFilters,
 } from "./types";
+
+/**
+ * Returns URI request measures for the given row dimensions that declare a
+ * `uri` in their spec. These resolve a per-value URL so dimension values can
+ * be rendered as clickable links. Time dimensions are skipped since they
+ * cannot have a URI.
+ */
+export function getUriMeasuresForDimensions(
+  dimensionNames: string[],
+  config: PivotDataStoreConfig,
+): V1MetricsViewAggregationMeasure[] {
+  return dimensionNames
+    .filter(
+      (name) =>
+        !isTimeDimension(name, config.time.timeDimension) &&
+        !!config.allDimensions.find((d) => d.name === name)?.uri,
+    )
+    .map((name) => getURIRequestMeasure(name));
+}
 
 /**
  * Construct a key for a pivot config to store expanded table data
@@ -61,6 +96,8 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowLimit,
     outermostRowLimit,
   } = pivot;
+  const showTotalsColumn = pivot.showTotalsColumn !== false;
+  const showTotalsRow = pivot.showTotalsRow !== false;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -68,8 +105,14 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
+  // Ephemeral measure definitions are part of the key so editing an
+  // expression (without renaming) refetches instead of serving cached data.
+  const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
+  // The exact selection is part of the key so switching a measure to exact
+  // refetches instead of serving cached approximate rows.
+  const exactMeasuresKey = JSON.stringify(config.exactMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}_${exactMeasuresKey}`;
 }
 
 /**
@@ -97,7 +140,7 @@ export function getTimeForQuery(
       startTimeOfLastInterval = startTimeDt;
     }
 
-    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
+    const duration = TIME_GRAIN[filter.interval]?.duration;
     const endTimeDt = getOffset(
       startTimeOfLastInterval,
       duration,
@@ -311,59 +354,80 @@ export function sortAcessors(accessors: string[]) {
   });
 }
 
+/**
+ * Extract column dimension name/value pairs from a minimized accessor string.
+ * Used by getFiltersForCell/getFiltersFromRow to combine with row dim entries
+ * before passing to buildPivotFilter.
+ */
+function getColumnDimEntriesFromAccessor(
+  config: PivotDataStoreConfig,
+  accessor: string,
+  columnDimensionAxes: Record<string, string[]> = {},
+): Array<{ name: string; value: string }> {
+  const { colDimensionNames } = config;
+  const [accessorWithoutMeasure] = accessor.split("m");
+  const accessorParts = accessorWithoutMeasure.split("_");
+
+  if (accessorParts[0] === "") return [];
+
+  return accessorParts.map((part) => {
+    const { c, v } = extractNumbers(part);
+    const name = colDimensionNames[c];
+    const value = columnDimensionAxes[name][v];
+    return { name, value };
+  });
+}
+
+/**
+ * Legacy wrapper: returns column filters as V1Expression + timeRange.
+ * Still used by sorting and other non-click-to-filter code paths.
+ */
 function getColumnFiltersFromMinimizedAccessor(
   config: PivotDataStoreConfig,
   accessor: string,
   columnDimensionAxes: Record<string, string[]> = {},
 ) {
-  const { colDimensionNames } = config;
+  const entries = getColumnDimEntriesFromAccessor(
+    config,
+    accessor,
+    columnDimensionAxes,
+  );
 
-  // Strip the measure string from the accessor
-  const [accessorWithoutMeasure] = accessor.split("m");
-  const accessorParts = accessorWithoutMeasure.split("_");
-
-  let colDimensionFilters: V1Expression[];
   const timeFilters: TimeFilters[] = [];
-  if (accessorParts[0] === "") {
-    // There are no column dimensions in the accessor
-    colDimensionFilters = [];
-  } else {
-    colDimensionFilters = accessorParts
-      .map((part) => {
-        const { c, v } = extractNumbers(part);
-        const columnDimensionName = colDimensionNames[c];
-        const value = columnDimensionAxes[columnDimensionName][v];
+  const dimExprs: V1Expression[] = [];
 
-        return createInExpression(columnDimensionName, [value]);
-      })
-      .filter((colFilter) => {
-        if (
-          isTimeDimension(
-            colFilter.cond?.exprs?.[0].ident,
-            config.time.timeDimension,
-          )
-        ) {
-          timeFilters.push({
-            timeStart: colFilter.cond?.exprs?.[1].val as string,
-            interval: getTimeGrainFromDimension(
-              colFilter.cond?.exprs?.[0].ident as string,
-            ),
-          });
-          return false;
-        } else return true;
+  for (const { name, value } of entries) {
+    if (isTimeDimension(name, config.time.timeDimension)) {
+      timeFilters.push({
+        timeStart: value,
+        interval: getTimeGrainFromDimension(name),
       });
+    } else {
+      dimExprs.push(createInExpression(name, [value]));
+    }
   }
 
-  let filterForSort: V1Expression | undefined;
-
-  if (colDimensionFilters.length) {
-    filterForSort = createAndExpression(colDimensionFilters);
-  }
+  const filterForSort =
+    dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
-  return {
-    filters: filterForSort,
-    timeRange,
-  };
+  return { filters: filterForSort, timeRange };
+}
+
+/**
+ * Returns column dimension entries for a cell click, or an empty array
+ * when the column is a row header dimension, a measure, or the table is flat.
+ */
+function getColumnDimEntries(
+  config: PivotDataStoreConfig,
+  colId: string,
+  colDimensionAxes: Record<string, string[]>,
+): Array<{ name: string; value: string }> {
+  const { rowDimensionNames, measureNames, isFlat } = config;
+  const firstDimension = rowDimensionNames?.[0];
+  if (firstDimension === colId || measureNames.includes(colId) || isFlat) {
+    return [];
+  }
+  return getColumnDimEntriesFromAccessor(config, colId, colDimensionAxes);
 }
 
 /**
@@ -492,14 +556,51 @@ export function prepareMeasureForComparison(
   });
 }
 
+/**
+ * Maps plain measure names to request measures: comparison-suffixed names get
+ * their comparison compute, ephemeral measure names get the `expression`
+ * compute carrying their definition, and exact measures (and the comparison
+ * measures derived from them) get `exact: true`.
+ */
+export function prepareMeasuresForRequest(
+  measures: V1MetricsViewAggregationMeasure[],
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+  exactMeasures?: Iterable<string>,
+): V1MetricsViewAggregationMeasure[] {
+  return applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      prepareMeasureForComparison(measures),
+      ephemeralMeasures,
+    ),
+    exactMeasures ? new Set(exactMeasures) : undefined,
+  );
+}
+
+/**
+ * The precision chip of a pivot column header. Only the main measure columns
+ * get one: their delta and percent companions share the base measure in their
+ * column meta but are named with a comparison suffix.
+ */
+export function precisionForColumn(
+  column: Column<PivotDataRow, unknown>,
+  precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined,
+): PrecisionChipProps | undefined {
+  if (!precisionFor) return undefined;
+  const measureName = column.columnDef.meta?.measureName;
+  const columnName = (column.columnDef as { name?: string }).name;
+  if (!measureName || columnName !== measureName) return undefined;
+  return precisionFor(measureName);
+}
+
 export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 10 measures
-
+  // Disable if there are too many measures to compare
   const measures = splitPivotChips(pivotState.columns).measure;
-  if (measures.length > 10) {
+  if (measures.length > MAX_PIVOT_COMPARISON_MEASURES) {
     return false;
   }
   // Disable if time comparison is not present
@@ -531,18 +632,16 @@ export function getSortFilteredMeasureBody(
   return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
 }
 
-function getValuesForFlatTable(
+export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,
-  hasTotalsRow: boolean,
 ): string[] {
-  let index = parseInt(rowId, 10);
   const dimensionValues: string[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (rowId === PIVOT_TOTALS_ROW_ID) return dimensionValues;
 
-  if (hasTotalsRow) index = index - 1;
-
-  const row = tableData?.[index];
+  const row = tableData?.[parseInt(rowId, 10)];
   if (!row) return dimensionValues;
 
   // For flat tables, collect all dimension values in order
@@ -555,89 +654,107 @@ function getValuesForFlatTable(
   return dimensionValues;
 }
 
+/**
+ * Shared core for all pivot filter builders. Takes dimension name/value pairs,
+ * separates time dimensions into TimeFilters, creates IN expressions for the rest,
+ * and computes the narrowed time range.
+ *
+ * The returned expression describes only the clicked element; the dashboard's
+ * global where filter is deliberately left out. Click-to-filter reads these
+ * expressions back to decide which dimension values to toggle, so folding the
+ * global filter in here would make deselecting a pivot cell also drop unrelated
+ * global filters. Callers that query data with the result (the rows viewer)
+ * merge config.whereFilter themselves.
+ *
+ * Every public getFiltersFor* function delegates here after extracting its
+ * dimension entries from whichever data source it uses (positional rowId,
+ * direct rowData, column header path, etc.).
+ */
+export function buildPivotFilter(
+  config: PivotDataStoreConfig,
+  dimEntries: Array<{ name: string; value: string | null }>,
+): PivotFilter {
+  const timeFilters: TimeFilters[] = [];
+  const dimExprs: V1Expression[] = [];
+
+  for (const { name, value } of dimEntries) {
+    const expr = createInExpression(name, [value]);
+    if (isTimeDimension(name, config.time.timeDimension)) {
+      timeFilters.push({
+        timeStart: value as string,
+        interval: getTimeGrainFromDimension(name),
+      });
+    } else {
+      dimExprs.push(expr);
+    }
+  }
+
+  const dimFilter =
+    dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
+  const timeRange = getTimeForQuery(config.time, timeFilters);
+
+  return { filters: dimFilter, timeRange };
+}
+
 export function getFiltersForCell(
   config: PivotDataStoreConfig,
   rowId: string,
   colId: string,
   colDimensionAxes: Record<string, string[]> = {},
   tableData: PivotDataRow[],
+  upToDimensionIndex?: number,
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const defaultTimeRange = {
-    start: config.time.timeStart,
-    end: config.time.timeEnd,
-  };
+  const { rowDimensionNames, isFlat } = config;
 
   let values: string[];
-
   if (isFlat) {
-    // TODO: Update this when columns can be mixed with measures
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
+    values = getValuesForFlatTable(tableData, rowDimensionNames, rowId);
+    if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
+      values = values.slice(0, upToDimensionIndex + 1);
+    }
   } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      measureNames.length > 0,
-    );
+    values = getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
   }
 
-  const rowNestTimeFilters: TimeFilters[] = [];
-  const rowNestFilters = values
-    .map((value, index) =>
-      createInExpression(rowDimensionNames[index], [value]),
-    )
-    .filter((f) => {
-      if (
-        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
-      ) {
-        rowNestTimeFilters.push({
-          timeStart: f.cond?.exprs?.[1].val as string,
-          interval: getTimeGrainFromDimension(
-            f.cond?.exprs?.[0].ident as string,
-          ),
-        });
-        return false;
-      } else return true;
-    });
+  const rowEntries = values.map((value, index) => ({
+    name: rowDimensionNames[index],
+    value,
+  }));
 
-  let rowFilters: V1Expression | undefined = undefined;
-  if (rowNestFilters.length) {
-    rowFilters = createAndExpression(rowNestFilters);
+  const colEntries = getColumnDimEntries(config, colId, colDimensionAxes);
+  return buildPivotFilter(config, [...rowEntries, ...colEntries]);
+}
+
+/**
+ * Like getFiltersForCell but reads dimension values directly from a
+ * PivotDataRow object instead of doing parseInt(rowId) array indexing.
+ * This makes selections stable across sorting and data refreshes.
+ */
+export function getFiltersFromRow(
+  config: PivotDataStoreConfig,
+  rowData: PivotDataRow,
+  colId: string,
+  colDimensionAxes: Record<string, string[]> = {},
+  upToDimensionIndex?: number,
+): PivotFilter {
+  let dimNames = config.rowDimensionNames;
+  if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
+    dimNames = config.rowDimensionNames.slice(0, upToDimensionIndex + 1);
   }
 
-  const timeRangeRow: TimeRangeString = getTimeForQuery(
-    config.time,
-    rowNestTimeFilters,
-  );
-
-  // Get filters for column dimensions
-  let columnFilters: V1Expression | undefined;
-  let timeRangeCol: TimeRangeString;
-  const firstDimension = rowDimensionNames?.[0];
-  if (firstDimension === colId || measureNames.includes(colId) || isFlat) {
-    columnFilters = undefined;
-    timeRangeCol = defaultTimeRange;
-  } else {
-    const { filters, timeRange } = getColumnFiltersFromMinimizedAccessor(
-      config,
-      colId,
-      colDimensionAxes,
-    );
-    columnFilters = filters;
-    timeRangeCol = timeRange;
+  const rowEntries: Array<{ name: string; value: string | null }> = [];
+  for (const dim of dimNames) {
+    const val = rowData[dim];
+    if (val === undefined) continue;
+    if (val === null) {
+      rowEntries.push({ name: dim, value: null });
+    } else if (typeof val === "string" || typeof val === "number") {
+      rowEntries.push({ name: dim, value: String(val) });
+    }
   }
 
-  const timeRange = mergeTimeStrings(timeRangeRow, timeRangeCol);
-  const cellFilters = mergeFilters(rowFilters, columnFilters);
-  const filters = mergeFilters(cellFilters, config.whereFilter);
-
-  return { filters, timeRange };
+  const colEntries = getColumnDimEntries(config, colId, colDimensionAxes);
+  return buildPivotFilter(config, [...rowEntries, ...colEntries]);
 }
 
 export function getErrorFromResponse(
@@ -694,4 +811,90 @@ export function splitPivotChips(data: PivotChipData[]): {
 export function isShowMoreRow(row: Row<PivotDataRow>): boolean {
   const firstCell = row?.getVisibleCells()?.[0];
   return firstCell?.getValue() === SHOW_MORE_BUTTON;
+}
+
+/**
+ * Project a dimension or measure spec into the PivotChipData shape used by
+ * the sidebar and bulk-add paths. Mirrors the projection in
+ * state-managers/selectors/pivot.ts so chips look identical regardless of
+ * whether they came from drag-and-drop or a tag bulk-add.
+ */
+export function dimensionToChipData(
+  d: MetricsViewSpecDimension,
+): PivotChipData {
+  return {
+    id: d.name || d.column || "Unknown",
+    title: d.displayName || d.name || d.column || "Unknown",
+    type: PivotChipType.Dimension,
+    description: d.description,
+  };
+}
+
+export function measureToChipData(m: MetricsViewSpecMeasure): PivotChipData {
+  return {
+    id: m.name || "Unknown",
+    title: m.displayName || m.name || "Unknown",
+    type: PivotChipType.Measure,
+    description: m.description,
+  };
+}
+
+/**
+ * Split the items in a tag into dimension chips and measure chips, preserving
+ * spec order. Used by the pivot sidebar's bulk-add actions: "Add all to rows"
+ * consumes the dimensions output, "Add all to columns" concatenates both, and
+ * "Auto-arrange" routes each list to its natural zone.
+ */
+export function splitTagItems(
+  tagName: string,
+  dimensionTagIndex: TagIndex,
+  measureTagIndex: TagIndex,
+): { dimensions: PivotChipData[]; measures: PivotChipData[] } {
+  const dimensions = itemsInTag(dimensionTagIndex, tagName).map((d) =>
+    dimensionToChipData(d as MetricsViewSpecDimension),
+  );
+  const measures = itemsInTag(measureTagIndex, tagName).map((m) =>
+    measureToChipData(m as MetricsViewSpecMeasure),
+  );
+  return { dimensions, measures };
+}
+
+/**
+ * Append new chips to a zone, skipping any whose id already exists in the
+ * zone or in the opposite zone. Used for tag bulk-add when the caller has
+ * access to both zones (cross-zone dedup keeps a dimension from appearing
+ * in both rows and columns). Returns a new array; preserves the original
+ * order of the zone followed by the new items.
+ */
+export function appendChipsToZone(
+  zoneItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+  newItems: PivotChipData[],
+): PivotChipData[] {
+  const existing = new Set([
+    ...zoneItems.map((c) => c.id),
+    ...otherZoneItems.map((c) => c.id),
+  ]);
+  const additions: PivotChipData[] = [];
+  for (const item of newItems) {
+    if (existing.has(item.id)) continue;
+    existing.add(item.id);
+    additions.push(item);
+  }
+  return [...zoneItems, ...additions];
+}
+
+/**
+ * Replace a zone's contents with new chips, removing those chips' ids from
+ * the opposite zone so a dimension never appears in both zones at once.
+ */
+export function replaceZoneCleaningOther(
+  newItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+): { zone: PivotChipData[]; other: PivotChipData[] } {
+  const ids = new Set(newItems.map((v) => v.id));
+  return {
+    zone: newItems,
+    other: otherZoneItems.filter((c) => !ids.has(c.id)),
+  };
 }

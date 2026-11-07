@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CriteriaForm from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaForm.svelte";
   import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
@@ -36,9 +37,9 @@
               bind:value={$form["criteriaOperation"]}
               id="field"
               label=""
-              ariaLabel="Criteria group operation"
+              ariaLabel={m.alert_form_criteria_group_aria()}
               options={CriteriaGroupOptions}
-              placeholder="Measure"
+              placeholder={m.alert_form_criteria_measure_placeholder()}
             />
           </div>
         </div>
@@ -53,6 +54,8 @@
         <CriteriaForm {superFormInstance} {timeControls} {index} />
       </div>
     {/each}
-    <Button type="tertiary" onClick={handleAddCriteria}>+ Add Criteria</Button>
+    <Button type="tertiary" onClick={handleAddCriteria}
+      >+ {m.alert_form_add_criteria()}</Button
+    >
   </div>
 {/if}

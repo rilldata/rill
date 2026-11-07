@@ -42,6 +42,24 @@ describe("inferResourceName", () => {
       `\n\n-- @type : invalid\nselect * from AdBids`,
       ResourceKind.Model,
     ],
+    [
+      "matches the correct type key",
+      "dashboards/canvas.yaml",
+      `rows:\n  type: invalid\ntype: canvas`,
+      ResourceKind.Canvas,
+    ],
+    [
+      "implicit kind for dotted yaml",
+      "dashboards/dashboard.canvas.yaml",
+      `type: canvas\nrows: []`,
+      ResourceKind.Canvas,
+    ],
+    [
+      "implicit kind for dotted sql",
+      "models/orders.latest.sql",
+      `select * from orders`,
+      ResourceKind.Model,
+    ],
   ];
 
   testCases.forEach(([title, path, contents, expected]) => {

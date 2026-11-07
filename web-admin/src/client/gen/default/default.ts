@@ -35,6 +35,7 @@ import type {
   AdminServiceCreateDeploymentBody,
   AdminServiceCreateGithubPullRequestBody,
   AdminServiceCreateManagedGitRepoBody,
+  AdminServiceCreatePersonalFileBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -42,7 +43,9 @@ import type {
   AdminServiceCreateUsergroupBody,
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
+  AdminServiceEditPersonalFileBody,
   AdminServiceGetAlertMetaBody,
+  AdminServiceGetBillingCreditBalanceParams,
   AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentBody,
@@ -89,7 +92,9 @@ import type {
   AdminServiceSearchUsersParams,
   AdminServiceSetOrganizationMemberUserRoleBody,
   AdminServiceSetProjectMemberUserRoleBodyBody,
+  AdminServiceStartDeploymentBodyBody,
   AdminServiceSudoGetResourceParams,
+  AdminServiceSudoUpdateOrganizationBillingMessageBody,
   AdminServiceTriggerReconcileBodyBody,
   AdminServiceTriggerRefreshSourcesBody,
   AdminServiceUnsubscribeAlertBodyBody,
@@ -120,6 +125,7 @@ import type {
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
+  V1CreatePersonalFileResponse,
   V1CreateProjectResponse,
   V1CreateProjectWhitelistedDomainResponse,
   V1CreateReportResponse,
@@ -127,8 +133,11 @@ import type {
   V1CreateUsergroupResponse,
   V1CreateWhitelistedDomainResponse,
   V1DeleteAlertResponse,
+  V1DeleteConnectorOAuthTokenRequest,
+  V1DeleteConnectorOAuthTokenResponse,
   V1DeleteDeploymentResponse,
   V1DeleteOrganizationResponse,
+  V1DeletePersonalFileResponse,
   V1DeleteProjectResponse,
   V1DeleteReportResponse,
   V1DeleteServiceResponse,
@@ -137,21 +146,26 @@ import type {
   V1DeleteVirtualFileResponse,
   V1DenyProjectAccessResponse,
   V1EditAlertResponse,
+  V1EditPersonalFileResponse,
   V1EditReportResponse,
   V1GenerateAlertYAMLResponse,
   V1GenerateReportYAMLResponse,
   V1GetAlertMetaResponse,
   V1GetAlertYAMLResponse,
+  V1GetBillingCreditBalanceResponse,
   V1GetBillingProjectCredentialsRequest,
   V1GetBillingProjectCredentialsResponse,
   V1GetBillingSubscriptionResponse,
   V1GetBookmarkResponse,
   V1GetCloneCredentialsResponse,
+  V1GetConnectorOAuthTokenRequest,
+  V1GetConnectorOAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
   V1GetCurrentUserResponse,
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbedUserResponse,
   V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
@@ -160,6 +174,7 @@ import type {
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
   V1GetPaymentsPortalURLResponse,
+  V1GetPersonalFileResponse,
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
   V1GetProjectMemberUserResponse,
@@ -187,6 +202,7 @@ import type {
   V1ListOrganizationMemberUsergroupsResponse,
   V1ListOrganizationMemberUsersResponse,
   V1ListOrganizationsResponse,
+  V1ListPersonalFilesResponse,
   V1ListProjectInvitesResponse,
   V1ListProjectMemberServicesResponse,
   V1ListProjectMemberUsergroupsResponse,
@@ -244,19 +260,27 @@ import type {
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
+  V1SudoDeleteOrganizationBillingMessageResponse,
+  V1SudoExtendTrialRequest,
+  V1SudoExtendTrialResponse,
   V1SudoGetResourceResponse,
   V1SudoGrantTrialCreditsRequest,
   V1SudoGrantTrialCreditsResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
+  V1SudoReportUsageRequest,
+  V1SudoReportUsageResponse,
   V1SudoTriggerBillingRepairRequest,
   V1SudoTriggerBillingRepairResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
+  V1SudoUpdateOrganizationBillingMessageResponse,
   V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationDefaultProvisionerRequest,
+  V1SudoUpdateOrganizationDefaultProvisionerResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
@@ -556,6 +580,188 @@ export function createAdminServiceListPublicBillingPlans<
   return query;
 }
 
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const adminServiceGetConnectorOAuthToken = (
+  v1GetConnectorOAuthTokenRequest: V1GetConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceGetConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    TError,
+    { data: V1GetConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    { data: V1GetConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceGetConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>
+>;
+export type AdminServiceGetConnectorOAuthTokenMutationBody =
+  V1GetConnectorOAuthTokenRequest;
+export type AdminServiceGetConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const createAdminServiceGetConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+      TError,
+      { data: V1GetConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceGetConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const adminServiceDeleteConnectorOAuthToken = (
+  v1DeleteConnectorOAuthTokenRequest: V1DeleteConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1DeleteConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token/delete`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1DeleteConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceDeleteConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    TError,
+    { data: V1DeleteConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    { data: V1DeleteConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceDeleteConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>
+>;
+export type AdminServiceDeleteConnectorOAuthTokenMutationBody =
+  V1DeleteConnectorOAuthTokenRequest;
+export type AdminServiceDeleteConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const createAdminServiceDeleteConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+      TError,
+      { data: V1DeleteConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary DeleteDeployment deletes a deployment.
  */
@@ -1097,14 +1303,14 @@ export const createAdminServiceTriggerRefreshSources = <
  */
 export const adminServiceStartDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StartDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/start`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1116,13 +1322,13 @@ export const getAdminServiceStartDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStartDeployment"];
@@ -1136,7 +1342,7 @@ export const getAdminServiceStartDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1150,7 +1356,7 @@ export type AdminServiceStartDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>
 >;
 export type AdminServiceStartDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStartDeploymentMutationError = RpcStatus;
 
 /**
@@ -1164,7 +1370,7 @@ export const createAdminServiceStartDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStartDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1172,7 +1378,7 @@ export const createAdminServiceStartDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions =
@@ -1185,14 +1391,14 @@ export const createAdminServiceStartDeployment = <
  */
 export const adminServiceStopDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StopDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/stop`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1204,13 +1410,13 @@ export const getAdminServiceStopDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStopDeployment"];
@@ -1224,7 +1430,7 @@ export const getAdminServiceStopDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1238,7 +1444,7 @@ export type AdminServiceStopDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>
 >;
 export type AdminServiceStopDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStopDeploymentMutationError = RpcStatus;
 
 /**
@@ -1252,7 +1458,7 @@ export const createAdminServiceStopDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStopDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1260,7 +1466,7 @@ export const createAdminServiceStopDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions = getAdminServiceStopDeploymentMutationOptions(options);
@@ -2238,6 +2444,114 @@ export const createAdminServiceUpdateOrganization = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+export const adminServiceGetBillingCreditBalance = (
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetBillingCreditBalanceResponse>({
+    url: `/v1/orgs/${org}/billing/credits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryKey = (
+  org?: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+) => {
+  return [
+    `/v1/orgs/${org}/billing/credits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetBillingCreditBalanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingCreditBalanceQueryKey(org, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+  > = ({ signal }) => adminServiceGetBillingCreditBalance(org, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!org,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetBillingCreditBalanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>
+>;
+export type AdminServiceGetBillingCreditBalanceQueryError = RpcStatus;
+
+/**
+ * @summary GetBillingCreditBalance returns the organization's remaining trial credit balance
+ */
+
+export function createAdminServiceGetBillingCreditBalance<
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceGetBillingCreditBalanceParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetBillingCreditBalance>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetBillingCreditBalanceQueryOptions(
+    org,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
  */
@@ -5772,6 +6086,117 @@ export const createAdminServiceCreateDeployment = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+export const adminServiceGetEmbedUser = (
+  org: string,
+  project: string,
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbedUserResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/embed-users/${id}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbedUserQueryKey = (
+  org?: string,
+  project?: string,
+  id?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/embed-users/${id}`] as const;
+};
+
+export const getAdminServiceGetEmbedUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetEmbedUserQueryKey(org, project, id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+  > = ({ signal }) => adminServiceGetEmbedUser(org, project, id, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && id),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbedUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+>;
+export type AdminServiceGetEmbedUserQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+
+export function createAdminServiceGetEmbedUser<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbedUserQueryOptions(
+    org,
+    project,
+    id,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */
 export const adminServiceCreateGithubPullRequest = (
@@ -6926,6 +7351,513 @@ export function createAdminServiceListUsergroupsForProjectAndUser<
   return query;
 }
 
+/**
+ * @summary ListPersonalFiles lists the calling user's personal files.
+ */
+export const adminServiceListPersonalFiles = (
+  org: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListPersonalFilesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-files`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceListPersonalFilesQueryKey = (
+  org?: string,
+  project?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/personal-files`] as const;
+};
+
+export const getAdminServiceListPersonalFilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListPersonalFiles>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListPersonalFiles>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListPersonalFilesQueryKey(org, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListPersonalFiles>>
+  > = ({ signal }) => adminServiceListPersonalFiles(org, project, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListPersonalFiles>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListPersonalFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListPersonalFiles>>
+>;
+export type AdminServiceListPersonalFilesQueryError = RpcStatus;
+
+/**
+ * @summary ListPersonalFiles lists the calling user's personal files.
+ */
+
+export function createAdminServiceListPersonalFiles<
+  TData = Awaited<ReturnType<typeof adminServiceListPersonalFiles>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListPersonalFiles>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListPersonalFilesQueryOptions(
+    org,
+    project,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+ */
+export const adminServiceCreatePersonalFile = (
+  org: string,
+  project: string,
+  adminServiceCreatePersonalFileBody: AdminServiceCreatePersonalFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreatePersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-files`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreatePersonalFileBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreatePersonalFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>,
+    TError,
+    { org: string; project: string; data: AdminServiceCreatePersonalFileBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>,
+  TError,
+  { org: string; project: string; data: AdminServiceCreatePersonalFileBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreatePersonalFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>,
+    { org: string; project: string; data: AdminServiceCreatePersonalFileBody }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceCreatePersonalFile(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreatePersonalFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>
+>;
+export type AdminServiceCreatePersonalFileMutationBody =
+  AdminServiceCreatePersonalFileBody;
+export type AdminServiceCreatePersonalFileMutationError = RpcStatus;
+
+/**
+ * @summary CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+ */
+export const createAdminServiceCreatePersonalFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceCreatePersonalFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreatePersonalFile>>,
+  TError,
+  { org: string; project: string; data: AdminServiceCreatePersonalFileBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreatePersonalFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+ */
+export const adminServiceGetPersonalFile = (
+  org: string,
+  project: string,
+  name: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetPersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-files/${name}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetPersonalFileQueryKey = (
+  org?: string,
+  project?: string,
+  name?: string,
+) => {
+  return [
+    `/v1/orgs/${org}/projects/${project}/personal-files/${name}`,
+  ] as const;
+};
+
+export const getAdminServiceGetPersonalFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetPersonalFileQueryKey(org, project, name);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetPersonalFile>>
+  > = ({ signal }) => adminServiceGetPersonalFile(org, project, name, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && name),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetPersonalFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetPersonalFile>>
+>;
+export type AdminServiceGetPersonalFileQueryError = RpcStatus;
+
+/**
+ * @summary GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+ */
+
+export function createAdminServiceGetPersonalFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetPersonalFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetPersonalFileQueryOptions(
+    org,
+    project,
+    name,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary DeletePersonalFile deletes a personal virtual file the caller owns.
+ */
+export const adminServiceDeletePersonalFile = (
+  org: string,
+  project: string,
+  name: string,
+) => {
+  return httpClient<V1DeletePersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-files/${name}`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceDeletePersonalFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>,
+    TError,
+    { org: string; project: string; name: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>,
+  TError,
+  { org: string; project: string; name: string },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeletePersonalFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>,
+    { org: string; project: string; name: string }
+  > = (props) => {
+    const { org, project, name } = props ?? {};
+
+    return adminServiceDeletePersonalFile(org, project, name);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeletePersonalFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>
+>;
+
+export type AdminServiceDeletePersonalFileMutationError = RpcStatus;
+
+/**
+ * @summary DeletePersonalFile deletes a personal virtual file the caller owns.
+ */
+export const createAdminServiceDeletePersonalFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>,
+      TError,
+      { org: string; project: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeletePersonalFile>>,
+  TError,
+  { org: string; project: string; name: string },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeletePersonalFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+ */
+export const adminServiceEditPersonalFile = (
+  org: string,
+  project: string,
+  name: string,
+  adminServiceEditPersonalFileBody: AdminServiceEditPersonalFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1EditPersonalFileResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/personal-files/${name}`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceEditPersonalFileBody,
+    signal,
+  });
+};
+
+export const getAdminServiceEditPersonalFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceEditPersonalFile>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      name: string;
+      data: AdminServiceEditPersonalFileBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceEditPersonalFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    name: string;
+    data: AdminServiceEditPersonalFileBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceEditPersonalFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceEditPersonalFile>>,
+    {
+      org: string;
+      project: string;
+      name: string;
+      data: AdminServiceEditPersonalFileBody;
+    }
+  > = (props) => {
+    const { org, project, name, data } = props ?? {};
+
+    return adminServiceEditPersonalFile(org, project, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceEditPersonalFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceEditPersonalFile>>
+>;
+export type AdminServiceEditPersonalFileMutationBody =
+  AdminServiceEditPersonalFileBody;
+export type AdminServiceEditPersonalFileMutationError = RpcStatus;
+
+/**
+ * @summary EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+ */
+export const createAdminServiceEditPersonalFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceEditPersonalFile>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        name: string;
+        data: AdminServiceEditPersonalFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceEditPersonalFile>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    name: string;
+    data: AdminServiceEditPersonalFileBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceEditPersonalFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary RedeployProject creates a new production deployment for a project.
 If the project currently has another production deployment, the old deployment will be deprovisioned.
@@ -10324,12 +11256,144 @@ export const adminServiceListOrganizationMemberUsergroups = (
   });
 };
 
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey = (
+  org?: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+) => {
+  return [
+    "infinite",
+    `/v1/orgs/${org}/usergroups`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
 export const getAdminServiceListOrganizationMemberUsergroupsQueryKey = (
   org?: string,
   params?: AdminServiceListOrganizationMemberUsergroupsParams,
 ) => {
   return [`/v1/orgs/${org}/usergroups`, ...(params ? [params] : [])] as const;
 };
+
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions =
+  <
+    TData = InfiniteData<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    >,
+    TError = RpcStatus,
+  >(
+    org: string,
+    params?: AdminServiceListOrganizationMemberUsergroupsParams,
+    options?: {
+      query?: Partial<
+        CreateInfiniteQueryOptions<
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          TError,
+          TData,
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          QueryKey,
+          AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+        >
+      >;
+    },
+  ) => {
+    const { query: queryOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey(
+        org,
+        params,
+      );
+
+    const queryFn: QueryFunction<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > = ({ signal, pageParam }) =>
+      adminServiceListOrganizationMemberUsergroups(
+        org,
+        { ...params, pageToken: pageParam || params?.["pageToken"] },
+        signal,
+      );
+
+    return {
+      queryKey,
+      queryFn,
+      enabled: !!org,
+      ...queryOptions,
+    } as CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      TError,
+      TData,
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > & { queryKey: DataTag<QueryKey, TData, TError> };
+  };
+
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>
+  >;
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryError =
+  RpcStatus;
+
+/**
+ * @summary ListOrganizationMemberUsergroups lists the organization's user groups
+ */
+
+export function createAdminServiceListOrganizationMemberUsergroupsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+    AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+  >,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        TError,
+        TData,
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        QueryKey,
+        AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions(
+      org,
+      params,
+      options,
+    );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getAdminServiceListOrganizationMemberUsergroupsQueryOptions = <
   TData = Awaited<
@@ -13676,6 +14740,92 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const adminServiceSudoReportUsage = (
+  v1SudoReportUsageRequest: V1SudoReportUsageRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoReportUsageResponse>({
+    url: `/v1/superuser/organization/billing/report-usage`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoReportUsageRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoReportUsageMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    TError,
+    { data: V1SudoReportUsageRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoReportUsage"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+    { data: V1SudoReportUsageRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoReportUsage(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoReportUsageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>
+>;
+export type AdminServiceSudoReportUsageMutationBody = V1SudoReportUsageRequest;
+export type AdminServiceSudoReportUsageMutationError = RpcStatus;
+
+/**
+ * @summary SudoReportUsage reports a mock usage event for an organization.
+ */
+export const createAdminServiceSudoReportUsage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+      TError,
+      { data: V1SudoReportUsageRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoReportUsage>>,
+  TError,
+  { data: V1SudoReportUsageRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoReportUsageMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 It only updates the custom domain in the database, which is used to ensure correct redirects.
 The DNS records and ingress TLS must be configured separately.
@@ -13767,6 +14917,195 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 > => {
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationCustomDomainMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
+ */
+export const adminServiceSudoUpdateOrganizationDefaultProvisioner = (
+  v1SudoUpdateOrganizationDefaultProvisionerRequest: V1SudoUpdateOrganizationDefaultProvisionerRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationDefaultProvisionerResponse>({
+    url: `/v1/superuser/organization/default-provisioner`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationDefaultProvisionerRequest,
+  });
+};
+
+export const getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >,
+    TError,
+    { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+    TContext
+  > => {
+    const mutationKey = [
+      "adminServiceSudoUpdateOrganizationDefaultProvisioner",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest }
+    > = (props) => {
+      const { data } = props ?? {};
+
+      return adminServiceSudoUpdateOrganizationDefaultProvisioner(data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >
+  >;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationBody =
+  V1SudoUpdateOrganizationDefaultProvisionerRequest;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
+ */
+export const createAdminServiceSudoUpdateOrganizationDefaultProvisioner = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<
+    ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+  >,
+  TError,
+  { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions(
+      options,
+    );
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoExtendTrial extends the trial period for an organization
+ */
+export const adminServiceSudoExtendTrial = (
+  v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoExtendTrialResponse>({
+    url: `/v1/superuser/organization/trial/extend`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoExtendTrialRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoExtendTrialMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    TError,
+    { data: V1SudoExtendTrialRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  TError,
+  { data: V1SudoExtendTrialRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSudoExtendTrial"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    { data: V1SudoExtendTrialRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoExtendTrial(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoExtendTrialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>
+>;
+export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
+export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
+
+/**
+ * @summary SudoExtendTrial extends the trial period for an organization
+ */
+export const createAdminServiceSudoExtendTrial = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+      TError,
+      { data: V1SudoExtendTrialRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+  TError,
+  { data: V1SudoExtendTrialRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoExtendTrialMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -13872,7 +15211,8 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
     | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
     | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+    | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+    | "BILLING_ISSUE_TYPE_MESSAGE",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${org}/billing/issues/${type}`,
@@ -13899,7 +15239,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       },
       TContext
     >;
@@ -13918,7 +15259,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
         | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
         | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+        | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+        | "BILLING_ISSUE_TYPE_MESSAGE";
     },
     TContext
   > => {
@@ -13947,7 +15289,8 @@ export const getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions =
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       }
     > = (props) => {
       const { org, type } = props ?? {};
@@ -13991,7 +15334,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
           | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
           | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
           | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+          | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+          | "BILLING_ISSUE_TYPE_MESSAGE";
       },
       TContext
     >;
@@ -14012,12 +15356,208 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
       | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED"
       | "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL"
-      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED";
+      | "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED"
+      | "BILLING_ISSUE_TYPE_MESSAGE";
   },
   TContext
 > => {
   const mutationOptions =
     getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+ */
+export const adminServiceSudoDeleteOrganizationBillingMessage = (
+  org: string,
+) => {
+  return httpClient<V1SudoDeleteOrganizationBillingMessageResponse>({
+    url: `/v1/superuser/organizations/${org}/billing/message`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceSudoDeleteOrganizationBillingMessageMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      TError,
+      { org: string },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+    >,
+    TError,
+    { org: string },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceSudoDeleteOrganizationBillingMessage"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      { org: string }
+    > = (props) => {
+      const { org } = props ?? {};
+
+      return adminServiceSudoDeleteOrganizationBillingMessage(org);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoDeleteOrganizationBillingMessageMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>>
+  >;
+
+export type AdminServiceSudoDeleteOrganizationBillingMessageMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+ */
+export const createAdminServiceSudoDeleteOrganizationBillingMessage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>
+      >,
+      TError,
+      { org: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingMessage>>,
+  TError,
+  { org: string },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoDeleteOrganizationBillingMessageMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+ */
+export const adminServiceSudoUpdateOrganizationBillingMessage = (
+  org: string,
+  adminServiceSudoUpdateOrganizationBillingMessageBody: AdminServiceSudoUpdateOrganizationBillingMessageBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SudoUpdateOrganizationBillingMessageResponse>({
+    url: `/v1/superuser/organizations/${org}/billing/message`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSudoUpdateOrganizationBillingMessageBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoUpdateOrganizationBillingMessageMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      TError,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+    >,
+    TError,
+    { org: string; data: AdminServiceSudoUpdateOrganizationBillingMessageBody },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceSudoUpdateOrganizationBillingMessage"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      }
+    > = (props) => {
+      const { org, data } = props ?? {};
+
+      return adminServiceSudoUpdateOrganizationBillingMessage(org, data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>>
+  >;
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationBody =
+  AdminServiceSudoUpdateOrganizationBillingMessageBody;
+export type AdminServiceSudoUpdateOrganizationBillingMessageMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+ */
+export const createAdminServiceSudoUpdateOrganizationBillingMessage = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>
+      >,
+      TError,
+      {
+        org: string;
+        data: AdminServiceSudoUpdateOrganizationBillingMessageBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBillingMessage>>,
+  TError,
+  { org: string; data: AdminServiceSudoUpdateOrganizationBillingMessageBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoUpdateOrganizationBillingMessageMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

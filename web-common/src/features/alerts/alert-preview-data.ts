@@ -4,6 +4,7 @@ import {
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
 import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -11,10 +12,6 @@ import {
   ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import type {
-  Filters,
-  FiltersState,
-} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type {
   TimeControls,
   TimeControlState,
@@ -25,9 +22,11 @@ import {
   type StructTypeField,
   TypeCode,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
+  type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/query-core";
@@ -46,21 +45,20 @@ export function getAlertPreviewData(
   client: RuntimeClient,
   queryClient: QueryClient,
   formValues: AlertFormValues,
-  filters: Filters,
+  expr: V1Expression | undefined,
   timeControls: TimeControls,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
       useExploreValidSpec(client, formValues.exploreName),
-      filters.getStore(),
       timeControls.getStore(),
     ],
-    ([validExploreSpec, filtersState, timeControlsState], set) =>
+    ([validExploreSpec, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
         client,
         getAlertPreviewQueryRequest(
           formValues,
-          filtersState,
+          expr,
           timeControlsState,
           validExploreSpec.data?.explore ?? {},
         ),
@@ -77,13 +75,13 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
   const req = getAlertQueryArgsFromFormValues(
     formValues,
-    filtersArgs,
+    expr,
     timeControlArgs,
     exploreSpec,
   );
@@ -111,13 +109,22 @@ function getAlertPreviewQueryOptions(
     AlertPreviewResponse
   >
 > {
+  // Ephemeral measures have no spec entry; synthesize one so the preview
+  // column shows their display name and format instead of the raw name.
+  const measures = [
+    ...(metricsViewSpec?.measures ?? []),
+    ...(formValues.ephemeralMeasures ?? []).map(ephemeralMeasureToSpecMeasure),
+  ];
+
   return {
     enabled: !!formValues.measure && !!metricsViewSpec,
     select: (resp) => {
       return {
         rows: resp.data as V1MetricsViewAggregationResponseDataItem[],
         schema: (resp.schema?.fields
-          ?.map((field) => getSchemaEntryForField(metricsViewSpec ?? {}, field))
+          ?.map((field) =>
+            getSchemaEntryForField(metricsViewSpec ?? {}, measures, field),
+          )
           .filter(Boolean) ?? []) as VirtualizedTableColumns[],
       };
     },
@@ -126,6 +133,7 @@ function getAlertPreviewQueryOptions(
 
 function getSchemaEntryForField(
   metricsViewSpec: V1MetricsViewSpec,
+  measures: MetricsViewSpecMeasure[],
   field: StructTypeField,
 ): VirtualizedTableColumns | undefined {
   if (metricsViewSpec.dimensions) {
@@ -142,8 +150,8 @@ function getSchemaEntryForField(
     }
   }
 
-  if (metricsViewSpec.measures) {
-    for (const measure of metricsViewSpec.measures) {
+  if (measures.length) {
+    for (const measure of measures) {
       if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
         return undefined;
 

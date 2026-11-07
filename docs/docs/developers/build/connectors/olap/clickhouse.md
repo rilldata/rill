@@ -12,7 +12,7 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' /> <br />
 
-Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 :::note Supported Versions
@@ -119,16 +119,6 @@ You can configure your ClickHouse connector to operate in read-only mode by addi
 
 ```yaml
 mode: read # readwrite
-```
-
-## Advanced Configuration Options
-
-### Optimize Temporary Tables Before Partition Replace
-
-When using incremental models with partition overwrite strategies, you can enable automatic optimization of temporary tables before partition replacement operations. This can improve query performance by reducing the number of parts in each partition, but may increase processing time during model refreshes.
-
-```yaml
-optimize_temporary_tables_before_partition_replace: true # default: false
 ```
 
 ## Configuring Rill Cloud

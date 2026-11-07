@@ -59,6 +59,34 @@ mock_users:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLEmbedOpenURL(t *testing.T) {
+	ctx := context.Background()
+
+	// Not set by default
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	res, err := ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Empty(t, res.EmbedOpenURL)
+
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: https://app.acme.com/analytics/open?tenant=foo
+`})
+	res, err = ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://app.acme.com/analytics/open?tenant=foo", res.EmbedOpenURL)
+
+	// Must be an absolute http(s) URL
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: /analytics/open
+`})
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Contains(t, p.Errors[0].Message, `invalid property "embeds.open_url"`)
+}
+
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
@@ -925,6 +953,32 @@ driver: duckdb
 	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
+func TestConnectorTemplatedPropertiesOrder(t *testing.T) {
+	// The project parser compares specs with proto.Equal to detect changes,
+	// so re-parsing an unchanged connector must return its templated properties in the same order.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+mode: readwrite
+dsn: "{{ .env.dsn }}"
+write_dsn: "{{ .env.write_dsn }}"
+password: "{{ .env.password }}"
+`,
+	})
+
+	// Parse several times since an unstable order only shows up on some runs
+	for range 20 {
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"}]
+		require.NotNil(t, r)
+		require.Equal(t, []string{"dsn", "password", "write_dsn"}, r.ConnectorSpec.TemplatedProperties)
+	}
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{
@@ -1423,6 +1477,26 @@ notify:
 annotations:
   foo: bar
 `,
+		// Canvas PDF report: no data or query, rendered from a canvas in the browser
+		`reports/r3.yaml`: `
+type: report
+display_name: My Canvas PDF Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+export:
+  format: pdf
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+
+annotations:
+  canvas: c1
+`,
 	})
 
 	resources := []*Resource{
@@ -1480,11 +1554,313 @@ annotations:
 				IntervalsLimit:       10,
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r3"},
+			Paths: []string{"/reports/r3.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName: "My Canvas PDF Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
+				},
+				ExportFormat: runtimev1.ExportFormat_EXPORT_FORMAT_PDF,
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+				Annotations: map[string]string{"canvas": "c1"},
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestReportAIExploreRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`reports/r1.yaml`: `
+type: report
+display_name: AI Report
+
+refresh:
+  cron: 0 8 * * *
+
+watermark: inherit
+
+data:
+  ai:
+    prompt: Analyze key metrics
+    time_range:
+      expression: 1D as of latest/D
+    explore: e1
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Without an explore, the report has no refs.
+		`reports/r2.yaml`: `
+type: report
+display_name: AI Report
+
+refresh:
+  cron: 0 8 * * *
+
+data:
+  ai:
+    prompt: Analyze key metrics
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindExplore, Name: "e1"}},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:     "AI Report",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 8 * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt":     "Analyze key metrics",
+					"time_range": map[string]any{"expression": "1D as of latest/D"},
+					"explore":    "e1",
+				})),
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+				WatermarkInherit: true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:     "AI Report",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 8 * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt": "Analyze key metrics",
+				})),
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestReportPdfValidation(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// PDF export with a query is not allowed
+		`reports/r1.yaml`: `
+type: report
+export:
+  format: pdf
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  canvas: c1
+`,
+		// PDF export without a canvas annotation is not allowed
+		`reports/r2.yaml`: `
+type: report
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Reports without a data or query property must have PDF export format
+		`reports/r3.yaml`: `
+type: report
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
+		{
+			Message:  `export format "pdf" does not support "data" or "query" properties`,
+			FilePath: "/reports/r1.yaml",
+		},
+		{
+			Message:  `export format "pdf" requires the "canvas" annotation`,
+			FilePath: "/reports/r2.yaml",
+		},
+		{
+			Message:  `missing required property "data" or "query.name"`,
+			FilePath: "/reports/r3.yaml",
+		},
+	})
+}
+
+func TestReportAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based report run as the creator
+		`reports/r1.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: xlsx
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: creator
+`,
+		// Reports without a web open mode are run as the creator
+		`reports/r2.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for reports run as the recipient
+		`reports/r3.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: recipient
+`,
+		// Attachments are not supported for canvas PDF reports
+		`reports/r4.yaml`: `
+type: report
+export:
+  format: pdf
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  canvas: c1
+`,
+		// Attachments are not supported for AI reports
+		`reports/r5.yaml`: `
+type: report
+data:
+  ai:
+    prompt: Analyze key metrics
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resolverProps := must(structpb.NewStruct(map[string]any{
+		"query_name":      "MetricsViewAggregation",
+		"query_args_json": "{\"metrics_view\":\"mv1\"}",
+	}))
+	notifiers := []*runtimev1.Notifier{{
+		Connector:  "email",
+		Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+	}}
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R1",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+				Annotations:        map[string]string{"web_open_mode": "creator"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R2",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `"export.attach" is not supported for web_open_mode "recipient" (must be "creator")`,
+			FilePath: "/reports/r3.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r5.yaml",
+		},
+	})
 }
 
 func TestAlert(t *testing.T) {
@@ -1575,6 +1951,159 @@ annotations:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlertAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based alert with all export options
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: xlsx
+  include_header: true
+  limit: 100
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require an export format
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for alerts using "data"
+		`alerts/a3.yaml`: `
+type: alert
+data:
+  sql: SELECT 1
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// PDF exports are not supported for alerts
+		`alerts/a4.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require email recipients
+		`alerts/a5.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: csv
+notify:
+  slack:
+    channels:
+      - alerts
+`,
+		// Export options are ignored when not attaching
+		`alerts/a6.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				ExportAttach:        true,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportIncludeHeader: true,
+				ExportLimit:         100,
+				NotifyOnFail:        true,
+				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a6"},
+			Paths: []string{"/alerts/a6.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A6",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail: true,
+				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `missing required property "export.format"`,
+			FilePath: "/alerts/a2.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/alerts/a3.yaml",
+		},
+		{
+			Message:  `export format "pdf" is not supported for alerts`,
+			FilePath: "/alerts/a4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires email recipients`,
+			FilePath: "/alerts/a5.yaml",
+		},
+	})
 }
 
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
@@ -1883,6 +2412,738 @@ rows:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentInputDateValue(t *testing.T) {
+	// Regression test: yaml.v3 decodes a bare date like 2024-01-01 into a time.Time,
+	// which structpb.NewValue rejects and previously caused a panic that aborted the entire parse.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+markdown:
+  content: "Hello"
+input:
+  - name: start
+    type: string
+    value: 2024-01-01
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello"})),
+				Input: []*runtimev1.ComponentVariable{
+					{Name: "start", Type: "string", DefaultValue: structpb.NewStringValue("2024-01-01T00:00:00Z")},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentParams(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/trend.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+  - name: shape
+    type: string
+    default: line
+    options: [line, area]
+custom_chart:
+  metrics_sql: "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: "{{ .params.time_dim }}"}
+      y: {field: "{{ .params.measure }}"}
+`,
+		// Component with a templated metrics_view renderer property: it must not produce a ref.
+		`components/tpl.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		// Component with a defaulted metrics_view param: the default must produce a ref,
+		// since the component depends on it even when no canvas binds the param.
+		`components/defaulted.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    default: mv_default
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: trend
+    params:
+      metrics_view: mv1
+      measure: total
+      time_dim: __time
+      limit: 100
+    width: 6
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "trend"},
+			Paths: []string{"/components/trend.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName: "Trend",
+				Renderer:    "custom_chart",
+				RendererProperties: must(structpb.NewStruct(map[string]any{
+					"metrics_sql": "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}",
+					"spec": map[string]any{
+						"chartType": "Line Chart",
+						"encodings": map[string]any{
+							"x": map[string]any{"field": "{{ .params.time_dim }}"},
+							"y": map[string]any{"field": "{{ .params.measure }}"},
+						},
+					},
+				})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+					{Name: "measure", Type: "measure", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "time_dim", Type: "time_dimension", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "limit", Type: "number", Default: structpb.NewNumberValue(500)},
+					{Name: "shape", Type: "string", Default: structpb.NewStringValue("line"), Options: []*structpb.Value{structpb.NewStringValue("line"), structpb.NewStringValue("area")}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "tpl"},
+			Paths: []string{"/components/tpl.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Tpl",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "defaulted"},
+			Paths: []string{"/components/defaulted.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv_default"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Defaulted",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Default: structpb.NewStringValue("mv_default")},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "trend"},
+				{Kind: ResourceKindMetricsView, Name: "mv1"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{
+								Component: "trend",
+								Params: must(structpb.NewStruct(map[string]any{
+									"metrics_view": "mv1",
+									"measure":      "total",
+									"time_dim":     "__time",
+									"limit":        100,
+								})),
+								Width: asPtr(uint32(6)),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentParamErrors(t *testing.T) {
+	ctx := context.Background()
+
+	component := func(params string) string {
+		return fmt.Sprintf("type: component\nparams:\n%s\nkpi:\n  metrics_view: foo\n", params)
+	}
+
+	cases := []struct {
+		name    string
+		files   map[string]string
+		wantErr string
+	}{
+		{
+			name:    "duplicate param name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n  - name: a\n    type: number")},
+			wantErr: `duplicate param name "a"`,
+		},
+		{
+			name:    "invalid type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: widget")},
+			wantErr: `invalid type "widget"`,
+		},
+		{
+			name:    "invalid name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: 1a\n    type: string")},
+			wantErr: `invalid param name "1a"`,
+		},
+		{
+			name:    "reserved name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: datum\n    type: string")},
+			wantErr: `param name "datum" is reserved`,
+		},
+		{
+			name:    "required with default",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    required: true\n    default: x")},
+			wantErr: "cannot both be required and have a default",
+		},
+		{
+			name:    "default type mismatch",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: number\n    default: x")},
+			wantErr: "expected a number",
+		},
+		{
+			name:    "field param without metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: measure")},
+			wantErr: `requires a param of type "metrics_view"`,
+		},
+		{
+			name:    "metrics_view param naming convention",
+			files:   map[string]string{`components/c.yaml`: component("  - name: mv\n    type: metrics_view")},
+			wantErr: `must be named "metrics_view" or end with "_metrics_view"`,
+		},
+		{
+			name:    "metrics_view name reserved for its type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: string")},
+			wantErr: `must have type "metrics_view"`,
+		},
+		{
+			name:    "back-reference to non-metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: string\n  - name: b\n    type: measure\n    metrics_view: a")},
+			wantErr: `not a declared param of type "metrics_view"`,
+		},
+		{
+			name:    "options on field param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: measure\n    options: [x, y]")},
+			wantErr: "options are only supported for scalar types",
+		},
+		{
+			name:    "default not in options",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    default: z\n    options: [x, y]")},
+			wantErr: "not one of its options",
+		},
+		{
+			name: "undeclared param reference in renderer properties",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+kpi:
+  metrics_view: foo
+  measure: "{{ .params.b }}"
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "undeclared param reference in a .fields reference",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.b.display_name }}"}'
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "field metadata reference to a scalar param",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.display_name }}"}'
+`},
+			wantErr: `param "a" is not of type measure, dimension, time_dimension`,
+		},
+		{
+			name: "unknown field metadata property",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.displayName }}"}'
+`},
+			wantErr: `".fields.a.displayName", which is not a field property`,
+		},
+		{
+			name: "params on inline component",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: Foo
+    params:
+      a: 1
+`},
+			wantErr: "cannot pass 'params' to an inline component",
+		},
+		{
+			name: "non-scalar param binding",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c
+    params:
+      a: [1, 2]
+`},
+			wantErr: "only scalar values are supported",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files := map[string]string{`rill.yaml`: ``}
+			for k, v := range tc.files {
+				files[k] = v
+			}
+			p, err := Parse(ctx, makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
+		})
+	}
+}
+
+func TestCanvasTabGroups(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c1
+- name: deep_dive
+  tabs:
+  - label: Overview
+    rows:
+    - items:
+      - markdown:
+          content: "Overview"
+  - label: Detail View
+    rows:
+    - items:
+      - markdown:
+          content: "Detail"
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Overview"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Detail"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "c1"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						TabGroup: &runtimev1.CanvasTabGroup{
+							Name: "deep_dive",
+							Tabs: []*runtimev1.CanvasTab{
+								{
+									Name:        "overview",
+									DisplayName: "Overview",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t0-0-0", DefinedInCanvas: true}}},
+									},
+								},
+								{
+									Name:        "detail-view",
+									DisplayName: "Detail View",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t1-0-0", DefinedInCanvas: true}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestCanvasTabGroupErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "items and tabs together",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+  tabs:
+  - label: A
+    rows: []
+`,
+		},
+		{
+			name: "nested tab groups",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: Outer
+    rows:
+    - tabs:
+      - label: Inner
+        rows: []
+`,
+		},
+		{
+			name: "empty tab group",
+			yaml: `
+type: canvas
+rows:
+- name: empty
+  tabs: []
+`,
+		},
+		{
+			name: "duplicate group names",
+			yaml: `
+type: canvas
+rows:
+- name: dup
+  tabs:
+  - label: A
+    rows: []
+- name: dup
+  tabs:
+  - label: B
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+		})
+	}
+}
+
+// TestCanvasTabNameUniqueness verifies that tab names are uniquified when labels slugify
+// to the same value, so each tab keeps a distinct URL key.
+func TestCanvasTabNameUniqueness(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - label: Sales
+    rows: []
+  - label: "Sales!"
+    rows: []
+  - label: "Sales?"
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	require.Equal(t, "sales", tabs[0].Name)
+	require.Equal(t, "sales-2", tabs[1].Name)
+	require.Equal(t, "sales-3", tabs[2].Name)
+}
+
+// TestCanvasTabExplicitName verifies a tab can carry an explicit URL `name` alongside its
+// display `label`, and that `name` defaults from the label when omitted.
+func TestCanvasTabExplicitName(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - name: ov
+    label: Overview
+    rows: []
+  - label: Deep Dive
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	// Explicit name + label.
+	require.Equal(t, "ov", tabs[0].Name)
+	require.Equal(t, "Overview", tabs[0].DisplayName)
+	// Name defaults from the label.
+	require.Equal(t, "deep-dive", tabs[1].Name)
+	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
+}
+
+func TestCanvasConditions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups }}'
+  items:
+  - if: '{{ .user.admin }}'
+    markdown:
+      content: "Admins in finance"
+  - component: c1
+    if: false
+- name: deep_dive
+  if: "'{{ .user.domain }}' = 'acme.com'"
+  tabs:
+  - label: Premium
+    if: '{{ eq .user.plan "premium" }}'
+    rows:
+    - items:
+      - markdown:
+          content: "Premium"
+  - label: Region
+    rows:
+    - if: '{{ .user.is_emea }}'
+      items:
+      - markdown:
+          content: "EMEA"
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	canvas := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}].CanvasSpec
+	require.Equal(t, `{{ has "finance" .user.groups }}`, canvas.Rows[0].ConditionExpression)
+	require.Equal(t, `{{ .user.admin }}`, canvas.Rows[0].Items[0].ConditionExpression)
+	require.Equal(t, "false", canvas.Rows[0].Items[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, canvas.Rows[1].ConditionExpression)
+	tabs := canvas.Rows[1].TabGroup.Tabs
+	require.Equal(t, `{{ eq .user.plan "premium" }}`, tabs[0].ConditionExpression)
+	require.Equal(t, "", tabs[1].ConditionExpression)
+	// A condition on a custom attribute can't be evaluated at parse time, but its template is valid.
+	require.Equal(t, `{{ .user.is_emea }}`, tabs[1].Rows[0].ConditionExpression)
+
+	// Inline components inherit the conditions of their item and its ancestors.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ eq .user.plan "premium" }})`, component("d1--component-g1-t0-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ .user.is_emea }})`, component("d1--component-g1-t1-0-0").ConditionExpression)
+	// Components defined in their own file can be shared by canvases, so they don't inherit a canvas item's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasConditionErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "invalid template on a row",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  items:
+  - markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid expression on an item",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - if: "'{{ .user.domain }}' = "
+    markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid template on a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    if: '{{ .user.plan'
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, "invalid 'if'")
+		})
+	}
 }
 
 func TestKindBackwardsCompatibility(t *testing.T) {
@@ -2467,6 +3728,171 @@ tests:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestMetadata(t *testing.T) {
+	// A generic "metadata:" map is parsed for all resource kinds, including strictly validated ones.
+	// Non-string scalars are coerced to strings, and an auto-generated inline explore inherits the metrics view's metadata.
+	files := map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+-- @metadata.pipeline: nightly
+SELECT 1 AS id
+`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner: data-team
+  tier: 1
+  pii: false
+  note:
+dimensions:
+- name: foo
+  expression: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata: {}
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:     ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths:    []string{"/models/m1.sql"},
+			Metadata: map[string]string{"pipeline": "nightly"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		{
+			Name:     ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Refs:     []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths:    []string{"/metrics_views/mv1.yaml"},
+			Metadata: map[string]string{"owner": "data-team", "tier": "1", "pii": "false", "note": ""},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Model:       "m1",
+				DisplayName: "Mv1",
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "foo", DisplayName: "Foo", Expression: "id"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{Name: "count", DisplayName: "Count", Expression: "COUNT(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+			},
+		},
+		{
+			// An empty metadata map is normalized to nil since it does not survive the catalog's proto marshalling.
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths: []string{"/metrics_views/mv2.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Model:       "m1",
+				DisplayName: "Mv2",
+				Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{Name: "count", DisplayName: "Count", Expression: "COUNT(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetadataErrors(t *testing.T) {
+	// Metadata values must be scalars, and unknown fields are still rejected.
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/nested.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner:
+    team: data
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/list.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owners: [alice, bob]
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/unknown.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner: data-team
+not_a_real_field: oops
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+	}
+
+	parseErrors := []*runtimev1.ParseError{
+		{
+			FilePath: "/metrics_views/nested.yaml",
+			Message:  "cannot unmarshal !!map into string",
+		},
+		{
+			FilePath: "/metrics_views/list.yaml",
+			Message:  "cannot unmarshal !!seq into string",
+		},
+		{
+			FilePath: "/metrics_views/unknown.yaml",
+			Message:  "field not_a_real_field not found in type",
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, parseErrors)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
@@ -2496,6 +3922,8 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.Name, got.Name)
 				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
 				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.ElementsMatch(t, want.Tags, got.Tags, "for resource %q", want.Name)
+				require.Equal(t, want.Metadata, got.Metadata, "for resource %q", want.Name)
 				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
@@ -2508,6 +3936,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.CanvasSpec, got.CanvasSpec, "for resource %q", want.Name)
 				require.Equal(t, want.APISpec, got.APISpec, "for resource %q", want.Name)
 				require.Equal(t, want.ConnectorSpec, got.ConnectorSpec, "for resource %q", want.Name)
+				require.Equal(t, want.SkillSpec, got.SkillSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
@@ -2521,7 +3950,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open(t.Context(), "file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -2678,6 +4107,34 @@ light:
 				},
 			},
 		},
+		{
+			name: "dimension and measure variables are accepted",
+			yaml: `
+type: theme
+light:
+  primary: red
+  dimension: "#f1f5f9"
+  dimension-foreground: "#0f172a"
+  dimension-border: "#cbd5e1"
+  measure: "#f1f5f9"
+  measure-foreground: "#0f172a"
+  measure-border: "#cbd5e1"
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary: "red",
+					Variables: map[string]string{
+						"dimension":            "#f1f5f9",
+						"dimension-foreground": "#0f172a",
+						"dimension-border":     "#cbd5e1",
+						"measure":              "#f1f5f9",
+						"measure-foreground":   "#0f172a",
+						"measure-border":       "#cbd5e1",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2726,4 +4183,127 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// TestTemplatesRejectProjectVariables verifies that templates whose results are served to viewers or that users write can't reference project variables,
+// which commonly hold secrets, or the full template data that includes them: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
+// Models, which the server resolves on the project's behalf, may reference them.
+func TestTemplatesRejectProjectVariables(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/markdown.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Region: {{ .env.region }}"
+`,
+		`canvases/chart.yaml`: `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      metrics_sql: "SELECT count FROM {{ .env.mv }}"
+      vega_spec: "{}"
+`,
+		`canvases/nested.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: '{{ metrics_sql "SELECT count FROM {{ .env.mv }}" }}'
+`,
+		`canvases/condition.yaml`: `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+    if: '{{ eq .env.secret "guess" }}'
+`,
+		`components/standalone.yaml`: `
+type: component
+markdown:
+  content: '{{ env "secret" }}'
+`,
+		// Uses the full template data without naming the variables; it is rejected too, since the data includes them.
+		`canvases/root.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ index . "user" "email" }}'
+`,
+		`alerts/a.yaml`: `
+type: alert
+display_name: Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: "SELECT count FROM mv1 WHERE country = '{{ .env.secret }}'"
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`reports/r.yaml`: `
+type: report
+display_name: Report
+refresh:
+  cron: 0 * * * *
+data:
+  sql: "SELECT '{{ .env.secret }}' AS v"
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`apis/a.yaml`: `
+type: api
+sql: "SELECT '{{ .env.secret }}' AS v"
+`,
+		// Allowed: user attributes and metrics queries in dashboards, and models the server resolves on the project's behalf.
+		`canvases/ok.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ .user.name }}: {{ metrics_sql "SELECT count FROM mv1" }}'
+    if: '{{ .user.admin }}'
+`,
+		`models/ok.sql`: `SELECT '{{ .env.secret }}' AS v`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+
+	wantErrors := map[string]string{
+		"/canvases/markdown.yaml":     `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/chart.yaml":        `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/nested.yaml":       `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/condition.yaml":    `"if" conditions can't access project variables (".env") or the full template data ("." or "$")`,
+		"/components/standalone.yaml": `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/root.yaml":         `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/alerts/a.yaml":              `templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/reports/r.yaml":             `templates in report properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/apis/a.yaml":                `templates in API properties can't access project variables (".env") or the full template data ("." or "$")`,
+	}
+	gotErrors := make(map[string]string)
+	for _, e := range p.Errors {
+		gotErrors[e.FilePath] = e.Message
+	}
+	for path, want := range wantErrors {
+		require.Contains(t, gotErrors[path], want, "for path %q", path)
+	}
+	require.NotContains(t, gotErrors, "/canvases/ok.yaml")
+	require.NotContains(t, gotErrors, "/models/ok.sql")
+	require.Len(t, gotErrors, len(wantErrors))
 }

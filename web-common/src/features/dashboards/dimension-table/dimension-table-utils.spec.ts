@@ -6,6 +6,8 @@ import {
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computePercentOfTotal,
+  getDimensionFilterWithSearch,
+  getDimensionTableRowKey,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
 import { describe, it, expect } from "vitest";
@@ -94,6 +96,39 @@ const expectedPOTData = [
   },
 ];
 
+describe("getDimensionFilterWithSearch", () => {
+  it("should apply the search text when there are no active filters", () => {
+    const updatedFilter = getDimensionFilterWithSearch(
+      undefined,
+      "apple",
+      "fruit",
+    );
+    expect(updatedFilter).toEqual(
+      createAndExpression([createLikeExpression("fruit", "%apple%")]),
+    );
+  });
+  it("should return an empty filter when there are no active filters and no search text", () => {
+    const updatedFilter = getDimensionFilterWithSearch(undefined, "", "fruit");
+    expect(updatedFilter).toEqual(createAndExpression([]));
+  });
+  it("should replace the filter on the searched dimension and keep the others", () => {
+    const updatedFilter = getDimensionFilterWithSearch(
+      createAndExpression([
+        createInExpression("fruit", ["banana"]),
+        createInExpression("color", ["red"]),
+      ]),
+      "apple",
+      "fruit",
+    );
+    expect(updatedFilter).toEqual(
+      createAndExpression([
+        createInExpression("color", ["red"]),
+        createLikeExpression("fruit", "%apple%"),
+      ]),
+    );
+  });
+});
+
 describe("computePercentOfTotal", () => {
   const values = [
     { fruit: "banana", measure_0: 20 },
@@ -129,5 +164,31 @@ describe("computePercentOfTotal", () => {
     }));
 
     expect(computedValues).toEqual(expected);
+  });
+});
+
+describe("getDimensionTableRowKey", () => {
+  it("gives the same key to the same value", () => {
+    expect(getDimensionTableRowKey("USA")).toBe(getDimensionTableRowKey("USA"));
+    expect(getDimensionTableRowKey(42)).toBe(getDimensionTableRowKey(42));
+    expect(getDimensionTableRowKey(null)).toBe(getDimensionTableRowKey(null));
+  });
+
+  it("keeps a null value apart from the string null and from row indices", () => {
+    const keys = [null, "null", 0, 1, "1", true, "true"].map(
+      getDimensionTableRowKey,
+    );
+    // The virtualizer keys a row that is not loaded yet by its index.
+    keys.push("row-0", "row-1");
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("keeps nested values apart", () => {
+    expect(getDimensionTableRowKey({ a: 1 })).not.toBe(
+      getDimensionTableRowKey({ a: 2 }),
+    );
+    expect(getDimensionTableRowKey(["a", "b"])).not.toBe(
+      getDimensionTableRowKey(["a,b"]),
+    );
   });
 });

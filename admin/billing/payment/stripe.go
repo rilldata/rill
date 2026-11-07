@@ -108,6 +108,11 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 			Currency:   stripe.String(string(stripe.CurrencyUSD)),
 			SuccessURL: stripe.String(returnURL),
 			CancelURL:  stripe.String(returnURL),
+			CustomText: &stripe.CheckoutSessionCustomTextParams{
+				Submit: &stripe.CheckoutSessionCustomTextSubmitParams{
+					Message: stripe.String("Note that there will be 3% surcharge for all credit card (CC) payments."),
+				},
+			},
 		}
 		sess, err := checkout.New(params)
 		if err != nil {

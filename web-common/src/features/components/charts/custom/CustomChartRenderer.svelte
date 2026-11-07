@@ -14,8 +14,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
-  import { derived } from "svelte/store";
-  import { convertV1ExpressionToMapstructure } from "./expression-utils";
+  import { derived, get } from "svelte/store";
+  import { metricsSQLFilterProperties } from "./expression-utils";
 
   export let spec: string | undefined = undefined;
   export let metricsSQL: string[] = [];
@@ -24,6 +24,9 @@
   export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
+  export let onMetaChange:
+    | ((meta: Record<string, unknown> | undefined) => void)
+    | undefined = undefined;
 
   const viewOptions = ["Chart", "Data"];
 
@@ -39,8 +42,11 @@
   // Create a unique key that includes whereFilter and timeRange to ensure queries are invalidated when they change
   $: filterKey = JSON.stringify({ whereFilter, timeRange });
 
-  // Only enable queries when the time range has resolved
-  $: hasValidTimeRange = !!timeRange?.start && !!timeRange?.end;
+  // Only enable queries when the time range has resolved. When no timeRange is
+  // provided at all (e.g. standalone component preview, outside a canvas), queries
+  // run unfiltered instead of waiting for one.
+  $: hasValidTimeRange =
+    timeRange === undefined || (!!timeRange?.start && !!timeRange?.end);
 
   // Create queries that are reactive to whereFilter changes
   $: dataQueries = metricsSQL.map((sql, index) =>
@@ -50,19 +56,20 @@
         resolver: "metrics_sql",
         resolverProperties: {
           sql,
-          ...(whereFilter?.cond?.exprs?.length
-            ? {
-                additional_where:
-                  convertV1ExpressionToMapstructure(whereFilter),
-              }
-            : {}),
-          ...(timeRange ? { additional_time_range: timeRange } : {}),
+          ...metricsSQLFilterProperties(whereFilter, timeRange),
         } as unknown as PartialMessage<Struct>,
       },
       {
         query: {
           enabled: !!sql && hasValidTimeRange,
-          queryKey: [`metrics_sql`, name, index, sql, filterKey],
+          queryKey: [
+            `metrics_sql`,
+            runtimeClient.instanceId,
+            name,
+            index,
+            sql,
+            filterKey,
+          ],
         },
       },
     ),
@@ -80,6 +87,13 @@
       error: query.error,
     })),
   );
+
+  $: if (onMetaChange && $combinedResults[0]?.isSuccess) {
+    const firstMeta = get(dataQueries[0])?.data?.meta;
+    if (firstMeta) {
+      onMetaChange(firstMeta as Record<string, unknown>);
+    }
+  }
 
   $: vegaData = $combinedResults.reduce<Record<string, unknown>>(
     (acc, result, idx) => {

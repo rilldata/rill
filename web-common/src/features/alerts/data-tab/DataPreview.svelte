@@ -2,36 +2,47 @@
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
   import AlertPreviewTable from "@rilldata/web-common/features/alerts/AlertPreviewTable.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
+  import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
 
-  export let formValues: AlertFormValues;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
+  let {
+    formValues,
+    filters,
+    timeControls,
+  }: {
+    formValues: AlertFormValues;
+    filters: ExpressionFilterManager;
+    timeControls: TimeControls;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  $: alertPreviewQuery = getAlertPreviewData(
-    runtimeClient,
-    queryClient,
-    {
-      ...formValues,
-      criteria: [],
-    },
-    filters,
-    timeControls,
+  let alertPreviewQuery = $derived(
+    getAlertPreviewData(
+      runtimeClient,
+      queryClient,
+      {
+        ...formValues,
+        criteria: [],
+      },
+      filters.topLevelJoiner.expr[formValues.metricsViewName],
+      timeControls,
+    ),
   );
 
-  $: queryResult = $alertPreviewQuery;
+  let queryResult = $derived($alertPreviewQuery);
 
-  $: rows = (queryResult.data?.rows as DimensionTableRow[] | undefined) ?? [];
-  $: columns = queryResult.data?.schema ?? [];
+  let rows = $derived(
+    (queryResult.data?.rows as DimensionTableRow[] | undefined) ?? [],
+  );
+  let columns = $derived(queryResult.data?.schema ?? []);
 </script>
 
 {#if queryResult.isFetching}
@@ -40,7 +51,7 @@
   </div>
 {:else if !queryResult.data}
   <PreviewEmpty
-    topLine="No data to preview"
+    topLine={m.alert_form_no_data()}
     bottomLine="To see a preview, select measures above."
   />
 {:else}

@@ -15,19 +15,14 @@ import (
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
-	cligitutil "github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/archive"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -95,12 +90,12 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	client := github.NewTokenClient(ctx, token)
 	// List all the private organizations for the authenticated user
-	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	orgs, err := listOrganizations(ctx, client, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
 	// List all the public organizations for the authenticated user
-	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
+	publicOrgs, err := listOrganizations(ctx, client, user.GithubUsername)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
@@ -421,7 +416,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	if proj.ArchiveAssetID != nil {
-		author := &object.Signature{
+		author := gitutil.Signature{
 			Name:  user.GithubUsername,
 			Email: user.Email,
 		}
@@ -434,7 +429,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		if err != nil {
 			return nil, err
 		}
-		err = s.mirrorGitRepo(ctx, *proj.GitRemote, req.Remote, mgdRepoToken, token)
+		err = mirrorGitRepo(ctx, *proj.GitRemote, req.Remote, mgdRepoToken, token)
 		if err != nil {
 			return nil, err
 		}
@@ -1207,44 +1202,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	return token, nil
 }
 
-func (s *Server) mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, destToken string) error {
-	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(gitPath)
-
-	repo, err := git.PlainCloneContext(ctx, gitPath, false, &git.CloneOptions{
-		URL:  srcGitRemote,
-		Auth: &githttp.BasicAuth{Username: "x-access-token", Password: srcToken},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to clone git repo: %w", err)
-	}
-
-	_, err = repo.CreateRemote(&config.RemoteConfig{
-		Name: "dest",
-		URLs: []string{destGitRemote},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-
-	// Push everything (all refs, like git push --mirror)
-	err = repo.PushContext(ctx, &git.PushOptions{
-		Auth:       &githttp.BasicAuth{Username: "x-access-token", Password: destToken},
-		RemoteName: "dest",
-		RefSpecs: []config.RefSpec{
-			"+refs/*:refs/*", // force-push all refs
-		},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author *object.Signature) error {
+func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author gitutil.Signature) error {
 	asset, err := s.admin.DB.FindAsset(ctx, assetID)
 	if err != nil {
 		return err
@@ -1267,13 +1225,13 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		return err
 	}
 
-	config := &cligitutil.Config{
+	config := &gitutil.Config{
 		Remote:        remote,
 		Username:      "x-access-token",
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
+	return gitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {
@@ -1290,11 +1248,68 @@ func (s *Server) githubAppInstallationURL(state githubConnectState) (string, err
 	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJSON)}), nil
 }
 
+// listOrganizations returns all organizations visible for the given user,
+// following pagination. An empty user lists the organizations of the
+// authenticated user.
+func listOrganizations(ctx context.Context, client *github.Client, user string) ([]*github.Organization, error) {
+	orgs := make([]*github.Organization, 0)
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		page, resp, err := client.Organizations.List(ctx, user, opts)
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, page...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return orgs, nil
+}
+
 func fromStringPtr(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
+}
+
+func mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, destToken string) error {
+	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(gitPath)
+
+	srcURL, err := gitRemoteWithToken(srcGitRemote, srcToken)
+	if err != nil {
+		return fmt.Errorf("failed to build source git url: %w", err)
+	}
+
+	// Mirror-clone into the temp dir
+	if _, err := gitutil.Run(ctx, "", "clone", "--mirror", srcURL, gitPath); err != nil {
+		return fmt.Errorf("failed to clone git repo: %w", err)
+	}
+
+	destURL, err := gitRemoteWithToken(destGitRemote, destToken)
+	if err != nil {
+		return fmt.Errorf("failed to build destination git url: %w", err)
+	}
+
+	// Force-push every ref, equivalent to `git push --mirror`.
+	if err := gitutil.Push(ctx, gitPath, destURL, "+refs/*:refs/*"); err != nil {
+		return fmt.Errorf("failed to push git repo: %w", err)
+	}
+	return nil
+}
+
+func gitRemoteWithToken(remote, token string) (string, error) {
+	if token == "" {
+		return remote, nil
+	}
+	cfg := &gitutil.Config{Remote: remote, Username: "x-access-token", Password: token}
+	return cfg.FullyQualifiedRemote()
 }
 
 // normalizeGitRemote adds a .git suffix to the Git remote URL if it doesn't already have one.

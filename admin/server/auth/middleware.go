@@ -9,13 +9,28 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
+
+// embedTokenAllowedMethods are the gRPC methods that embed tokens are allowed to call.
+// Embed users are untrusted outside users, but many handlers only check the ReadProject or ReadProd permissions that embed tokens have.
+// So we deny embed tokens by default, and handlers on this list must do their own checks for embed users.
+var embedTokenAllowedMethods = map[string]bool{
+	adminv1.AdminService_CreateReport_FullMethodName:      true,
+	adminv1.AdminService_EditReport_FullMethodName:        true,
+	adminv1.AdminService_DeleteReport_FullMethodName:      true,
+	adminv1.AdminService_TriggerReport_FullMethodName:     true,
+	adminv1.AdminService_UnsubscribeReport_FullMethodName: true,
+}
 
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
 func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata.MD {
@@ -42,6 +57,10 @@ func (a *Authenticator) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 
+		if GetClaims(newCtx).OwnerType() == OwnerTypeEmbed && !embedTokenAllowedMethods[info.FullMethod] {
+			return nil, status.Error(codes.PermissionDenied, "embed tokens are not allowed to call this method")
+		}
+
 		return handler(newCtx, req)
 	}
 }
@@ -53,6 +72,10 @@ func (a *Authenticator) StreamServerInterceptor() grpc.StreamServerInterceptor {
 		newCtx, err := a.parseClaimsFromBearer(ss.Context(), authHeader)
 		if err != nil {
 			return status.Error(codes.Unauthenticated, err.Error())
+		}
+
+		if GetClaims(newCtx).OwnerType() == OwnerTypeEmbed {
+			return status.Error(codes.PermissionDenied, "embed tokens are not allowed to call this method")
 		}
 
 		wrapped := grpc_middleware.WrapServerStream(ss)
@@ -91,13 +114,25 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 }
 
 // CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
-// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
-// Note that it does not update the auth token encrypted inside the cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age (browserSessionTTL).
+// Once per day we refresh the auth token TTL if it's still valid.
 func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := a.cookies.Get(r, cookieName)
 		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
-			// Re-save the cookie to refresh its expiration
+			validatedToken, err := a.admin.ValidateAuthToken(r.Context(), authToken)
+			if err != nil {
+				// Token validation failures can be due to expiry or transient context issues.
+				// Clear the cookie and continue down the chain rather than failing the request.
+				delete(sess.Values, cookieFieldAccessToken)
+				a.logger.Warn("failed to validate auth token", zap.Error(err), observability.ZapCtx(r.Context()))
+			} else {
+				if err := a.admin.ExtendBrowserSessionAuthToken(r.Context(), validatedToken, browserSessionTTL, browserSessionTTLRefreshThreshold); err != nil {
+					a.logger.Warn("failed to extend browser session auth token TTL", zap.Error(err), observability.ZapCtx(r.Context()))
+				}
+			}
+
+			// Re-save the cookie to refresh its expiration after successful validation.
 			if err := sess.Save(r, w); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -177,6 +212,15 @@ func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorization
 }
 
 func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) (context.Context, error) {
+	// Embed tokens are JWTs, which unlike other auth tokens don't have the auth token prefix.
+	if !strings.HasPrefix(token, authtoken.Prefix+"_") {
+		embedToken, err := a.admin.ValidateEmbedToken(token)
+		if err != nil {
+			return nil, err
+		}
+		return WithClaims(ctx, &embedClaims{token: embedToken, admin: a.admin}), nil
+	}
+
 	// Validate token against database
 	validated, err := a.admin.ValidateAuthToken(ctx, token)
 	if err != nil {
@@ -190,6 +234,10 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 	// Set user ID in span and request log
 	if claims.OwnerType() == OwnerTypeUser {
 		observability.AddRequestAttributes(ctx, semconv.EnduserID(claims.OwnerID()))
+		// If a superuser is assuming this user, record the superuser's own ID.
+		if assumedByUserID, ok := claims.AssumedByUserID(); ok {
+			observability.AddRequestAttributes(ctx, attribute.String("auth.assumed_by_user_id", assumedByUserID))
+		}
 	}
 
 	return ctx, nil

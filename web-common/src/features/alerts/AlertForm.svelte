@@ -58,9 +58,13 @@
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { onDestroy } from "svelte";
 
   export let onClose: () => void;
   export let onCancel: () => void;
@@ -103,27 +107,33 @@
       ? createAdminServiceCreateAlert()
       : createAdminServiceEditAlert();
 
-  $: ({ filters, timeControls } =
-    props.mode === "create"
-      ? getNewAlertInitialFiltersFormValues(
-          runtimeClient,
-          metricsViewName,
-          exploreName,
-          $exploreState!,
-        )
-      : getFiltersAndTimeControlsFromAggregationRequest(
-          runtimeClient,
-          metricsViewName,
-          exploreName,
-          JSON.parse(
-            props.alertSpec.queryArgsJson ||
-              (props.alertSpec.resolverProperties?.query_args_json as
-                | string
-                | undefined) ||
-              "{}",
-          ),
-          $allTimeRangeResp.data?.timeRangeSummary,
-        ));
+  let filters: ExpressionFilterManager;
+  let timeControls: TimeControls;
+  let cleanup: (() => void) | undefined = undefined;
+  $: {
+    cleanup?.();
+    ({ filters, timeControls, cleanup } =
+      props.mode === "create"
+        ? getNewAlertInitialFiltersFormValues(
+            runtimeClient,
+            metricsViewName,
+            exploreName,
+            $exploreState!,
+          )
+        : getFiltersAndTimeControlsFromAggregationRequest(
+            runtimeClient,
+            metricsViewName,
+            exploreName,
+            JSON.parse(
+              props.alertSpec.queryArgsJson ||
+                (props.alertSpec.resolverProperties?.query_args_json as
+                  | string
+                  | undefined) ||
+                "{}",
+            ),
+            $allTimeRangeResp.data?.timeRangeSummary,
+          ));
+  }
   $: ({ selectedComparisonTimeRange } = timeControls);
 
   const superFormInstance = superForm(
@@ -145,9 +155,15 @@
     superFormInstance;
 
   const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  $: dialogTitle = isCreateForm
+    ? m.alert_form_create_title()
+    : m.alert_form_edit_title();
 
-  const tabs = ["Data", "Criteria", "Delivery"];
+  $: tabs = [
+    m.alert_form_tab_data(),
+    m.alert_form_tab_criteria(),
+    m.alert_form_tab_delivery(),
+  ];
 
   /**
    * Because this form's fields are spread over multiple tabs, we implement our own `isValid` logic for each tab.
@@ -178,7 +194,7 @@
           queryArgsJson: JSON.stringify(
             getAlertQueryArgsFromFormValues(
               values,
-              filters.toState(),
+              filters.topLevelJoiner.expr[metricsViewName],
               timeControls.toState(),
               exploreSpec,
             ),
@@ -193,6 +209,15 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
+          // Attachments are only sent with emails, and the export options only apply to attachments
+          ...(values.enableEmailNotification && values.exportAttach
+            ? {
+                exportAttach: true,
+                exportFormat: values.exportFormat,
+                exportLimit: values.exportLimit || undefined,
+                exportIncludeHeader: values.exportIncludeHeader,
+              }
+            : { exportAttach: false }),
           refreshCron: !values.refreshWhenDataRefreshes ? refreshCron : "", // for testing: "* * * * *"
           refreshTimeZone: values.timeZone,
           renotify: !!values.snooze,
@@ -221,15 +246,15 @@
     onClose();
     if (isCreateForm) {
       eventBus.emit("notification", {
-        message: "Alert created",
+        message: m.alert_form_created(),
         link: {
           href: `/${organization}/${project}/-/alerts`,
-          text: "Go to alerts",
+          text: m.alert_form_go_to_alerts(),
         },
       });
     } else {
       eventBus.emit("notification", {
-        message: "Alert edited",
+        message: m.alert_form_edited(),
         type: "success",
       });
     }
@@ -273,11 +298,17 @@
     if (!name) return;
     $form.name = name;
   }
+
+  onDestroy(() => {
+    cleanup?.();
+  });
 </script>
 
+<!-- Cap the form to the viewport so the dialog never overflows a small window.
+     The tab body keeps a 600px height on large screens but shrinks and scrolls when space is tight. -->
 <form
   autocomplete="off"
-  class="flex flex-col gap-y-3"
+  class="flex flex-col gap-y-3 max-h-[calc(100dvh-2rem)]"
   id={formId}
   onsubmit={(e) => {
     e.preventDefault();
@@ -293,16 +324,15 @@
       <X strokeWidth={3} size={16} class="text-fg-secondary" />
     </Button>
   </DialogTitle>
-  <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t">
+  <DialogTabs.Root value={tabs[currentTabIndex]} class="flex flex-col min-h-0">
+    <DialogTabs.List class="border-t flex w-full">
       {#each tabs as tab, i (i)}
-        <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
-        <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
+        <DialogTabs.Trigger value={tab} tabIndex={i} class="flex-1 w-auto">
           {tab}
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
+    <div class="p-3 bg-surface-subtle h-[600px] min-h-0 shrink overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
@@ -317,15 +347,21 @@
   <div class="px-6 py-3 flex items-center gap-x-2">
     <div class="grow"></div>
     {#if currentTabIndex === 0}
-      <Button onClick={handleCancel} type="secondary">Cancel</Button>
+      <Button onClick={handleCancel} type="secondary">
+        {m.alert_form_cancel()}
+      </Button>
     {:else}
-      <Button onClick={handleBack} type="secondary">Back</Button>
+      <Button onClick={handleBack} type="secondary">
+        {m.alert_form_back()}
+      </Button>
     {/if}
     {#if currentTabIndex !== 2}
-      <Button type="primary" onClick={handleNextTab}>Next</Button>
+      <Button type="primary" onClick={handleNextTab}>
+        {m.alert_form_next()}
+      </Button>
     {:else}
       <Button type="primary" disabled={$submitting} form={formId} submitForm>
-        {isCreateForm ? "Create" : "Update"}
+        {isCreateForm ? m.alert_form_create() : m.alert_form_update()}
       </Button>
     {/if}
   </div>

@@ -12,7 +12,6 @@
   } from "@rilldata/web-admin/client";
   import type { AxiosError } from "axios";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import { projectWelcomeEnabled } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
 
   const createOrgMutation = createAdminServiceCreateOrganization();
   $: ({ isPending, error } = $createOrgMutation);
@@ -34,12 +33,7 @@
     });
 
     // This navigation gets cancelled if we do not have `setTimeout` here.
-    setTimeout(
-      () =>
-        void goto(
-          projectWelcomeEnabled ? `/${name}/-/create-project` : `/${name}`,
-        ),
-    );
+    setTimeout(() => void goto(`/${name}/-/create-project`));
   }
 </script>
 

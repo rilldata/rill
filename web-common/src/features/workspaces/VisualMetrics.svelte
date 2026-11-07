@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -23,7 +24,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { PlusIcon } from "lucide-svelte";
+  import { Clock, PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
@@ -216,9 +217,7 @@
 
   $: columns = columnsResponse?.profileColumns ?? [];
 
-  $: timeOptions = columns
-    .filter(({ type }) => type && TIMESTAMPS.has(type))
-    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+  $: timeColumns = columns.filter(({ type }) => type && TIMESTAMPS.has(type));
 
   $: typeOfSelectedTimeDimension = columns.find(
     ({ name }) => name === timeDimension,
@@ -248,6 +247,39 @@
         ? createDimensions(raw.dimensions, dimensions)
         : [],
   };
+
+  // Time dimensions defined in the metrics view can be selected as the primary
+  // time dimension in addition to raw timestamp columns.
+  $: timeDimensionOptions = itemGroups.dimensions
+    .filter((d) => d.type === "time")
+    .map((d) => {
+      const value = d.name || d.resourceName;
+      return {
+        value,
+        label: d.display_name || value,
+        tooltip: d.description || undefined,
+        icon: Clock,
+        group: "Time dimensions",
+      };
+    })
+    .filter(({ value }) => value);
+
+  $: timeDimensionValues = new Set(
+    timeDimensionOptions.map(({ value }) => value),
+  );
+
+  $: timeOptions = [
+    ...timeDimensionOptions,
+    ...timeColumns
+      .filter(({ name }) => !timeDimensionValues.has(name ?? ""))
+      .map(({ name, type }) => ({
+        value: name ?? "",
+        label: name ?? "",
+        type,
+        // Only label the columns section when time dimensions are also listed.
+        group: timeDimensionOptions.length ? "Columns" : undefined,
+      })),
+  ];
 
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
     (acc, { name, display_name, resourceName }) => {
@@ -446,7 +478,10 @@
       [type]: itemsCopy.filter((i) => i && i instanceof YAMLMap),
     });
 
-    eventBus.emit("notification", { message: "Item moved", type: "success" });
+    eventBus.emit("notification", {
+      message: m.visual_metrics_item_moved(),
+      type: "success",
+    });
   }
 
   function triggerDelete(index?: number, type?: ItemType) {
@@ -471,7 +506,7 @@
 
       if (!(sequence instanceof YAMLSeq)) {
         eventBus.emit("notification", {
-          message: "Error deleting items",
+          message: m.visual_metrics_items_delete_error(),
           type: "error",
         });
         return;
@@ -501,7 +536,10 @@
       resetEditing();
     }
 
-    eventBus.emit("notification", { message: "Item deleted", type: "success" });
+    eventBus.emit("notification", {
+      message: m.visual_metrics_item_deleted(),
+      type: "success",
+    });
   }
 
   function duplicateItem(index: number, type: ItemType) {
@@ -543,7 +581,7 @@
     updateProperties({ [type]: items });
 
     eventBus.emit("notification", {
-      message: "Item duplicated",
+      message: m.visual_metrics_item_duplicated(),
       type: "success",
     });
   }
@@ -569,14 +607,14 @@
     <div class="flex gap-x-4 border-b pb-4">
       {#if showConnectorExplorer}
         <div class="flex flex-col gap-y-1 w-full">
-          <InputLabel label="Table" id="table">
+          <InputLabel label={m.visual_metrics_table_label()} id="table">
             <svelte:fragment slot="mode-switch">
               {#if isModelingSupported && !yamlConnector}
                 <button
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
-                  Select model
+                  {m.visual_metrics_select_model()}
                 </button>
               {/if}
             </svelte:fragment>
@@ -591,7 +629,9 @@
                  "
                 >
                   {#if !hasValidOLAPTableSelected}
-                    <span class="text-fg-muted truncate">Select table</span>
+                    <span class="text-fg-muted truncate">
+                      {m.visual_metrics_select_table()}
+                    </span>
                   {:else}
                     {#if analyzedConnector}
                       <span class="flex-none">
@@ -637,8 +677,8 @@
             truncate
             value={noTableProperties ? modelOrSourceOrTableName : undefined}
             options={modelAndSourceOptions}
-            placeholder="Select a model"
-            label="Model"
+            placeholder={m.visual_metrics_select_model_placeholder()}
+            label={m.visual_metrics_model_label()}
             leadingIcon={analyzedConnector
               ? connectorIconMapping[getConnectorIconKey(analyzedConnector)]
               : undefined}
@@ -665,7 +705,7 @@
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
-                  Select table
+                  {m.visual_metrics_select_table()}
                 </button>
               {/if}
             </svelte:fragment>
@@ -680,12 +720,12 @@
         truncate
         value={timeDimension}
         options={timeOptions}
-        placeholder="Select time column"
-        label="Time column"
+        placeholder={m.visual_metrics_select_time_column()}
+        label={m.visual_metrics_time_column_label()}
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
-        hint="Column from model that will be used as primary time dimension in dashboards"
+        hint="Time dimension or timestamp column used as the primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperties({ timeseries: value });
         }}
@@ -697,8 +737,8 @@
         truncate
         value={smallestTimeGrain}
         options={availableGrainOptions}
-        placeholder="Select time grain"
-        label="Smallest time grain"
+        placeholder={m.visual_metrics_select_time_grain()}
+        label={m.visual_metrics_smallest_time_grain_label()}
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
           await updateProperties({ smallest_time_grain: value });
@@ -711,7 +751,7 @@
         <Input
           full
           textClass="text-sm"
-          placeholder="Search"
+          placeholder={m.common_search()}
           bind:value={searchValue}
           onInput={(value) => {
             searchValue = value;
@@ -726,8 +766,7 @@
           class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
-            {totalSelected}
-            {totalSelected > 1 ? "items" : "item"} selected:
+            {m.visual_metrics_items_selected({ count: totalSelected })}
           </div>
           <button
             onclick={() => {
@@ -736,7 +775,7 @@
             class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Trash size="16px" />
-            Delete
+            {m.common_delete()}
           </button>
 
           <button
@@ -785,7 +824,9 @@
               type="ghost"
               square
               noStroke
-              label="Add new {type.slice(0, -1)}"
+              label={type === "measures"
+                ? m.visual_metrics_add_new_measure()
+                : m.visual_metrics_add_new_dimension()}
               onClick={() => {
                 editingItemData.set({
                   type,

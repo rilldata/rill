@@ -9,6 +9,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon, CodeIcon } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -28,32 +29,33 @@
 
   $: isLoading = $triggerMutation.isPending;
 
+  $: isModel = resourceKind === ResourceKind.Model;
   $: supportsIncremental =
-    resourceKind === ResourceKind.Model &&
-    resource?.model?.spec?.incremental === true;
+    isModel && resource?.model?.spec?.incremental === true;
 
-  async function handleRefresh(refreshType: "full" | "incremental") {
+  async function handleRefresh(
+    refreshType: "refresh" | "full" | "incremental",
+  ) {
     if (isLoading) return;
 
     try {
-      const body =
-        resourceKind === ResourceKind.Model
-          ? {
-              models: [
-                {
-                  model: resourceName,
-                  full: refreshType === "full",
-                },
-              ],
-            }
-          : {
-              resources: [
-                {
-                  kind: resourceKind,
-                  name: resourceName,
-                },
-              ],
-            };
+      const body = isModel
+        ? {
+            models: [
+              {
+                model: resourceName,
+                full: refreshType === "full",
+              },
+            ],
+          }
+        : {
+            resources: [
+              {
+                kind: resourceKind,
+                name: resourceName,
+              },
+            ],
+          };
 
       await $triggerMutation.mutateAsync(body);
 
@@ -79,7 +81,7 @@
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
-          <span class="ml-2">Describe</span>
+          <span class="ml-2">{m.status_action_describe()}</span>
         </div>
       </DropdownMenu.Item>
     {/if}
@@ -88,13 +90,17 @@
         class="font-normal flex items-center"
         disabled={isLoading}
         onclick={() => {
-          handleRefresh("full");
+          handleRefresh(isModel ? "full" : "refresh");
         }}
       >
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
           <span class="ml-2"
-            >{isLoading ? "Refreshing..." : "Full Refresh"}</span
+            >{isLoading
+              ? m.status_refreshing()
+              : isModel
+                ? m.status_action_full_refresh()
+                : m.status_action_refresh()}</span
           >
         </div>
       </DropdownMenu.Item>
@@ -108,7 +114,7 @@
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Incremental Refresh</span>
+            <span class="ml-2">{m.status_action_incremental_refresh()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}

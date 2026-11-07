@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -92,6 +93,16 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Validation
 	if len(eventTypes) == 0 {
 		http.Error(w, "must specify at least one event type via the 'events' parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Check controller is open
+	if _, err := s.runtime.Controller(req.Context(), instanceID); err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			http.Error(w, "instance not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "controller is not open", http.StatusConflict)
 		return
 	}
 

@@ -7,6 +7,7 @@ import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { getChroma } from "../../themes/theme-utils";
+import { OTHER_VALUE } from "./circular/constants";
 import {
   ChartSortType,
   type ChartDataResult,
@@ -175,6 +176,8 @@ export function isDomainStringArray(
     : false;
 }
 
+export const OTHER_BUCKET_COLOR = "var(--color-gray-400)";
+
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
@@ -187,9 +190,12 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const isOther = value === OTHER_VALUE;
     const colorVar =
       overrideColor?.color ||
-      COMPARISON_COLORS[index % COMPARISON_COLORS.length];
+      (isOther
+        ? OTHER_BUCKET_COLOR
+        : COMPARISON_COLORS[index % COMPARISON_COLORS.length]);
 
     return {
       value,
@@ -331,9 +337,36 @@ export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
     sort === ChartSortType.MEASURE_ASC ||
     sort === ChartSortType.MEASURE_DESC ||
     sort === ChartSortType.Y_DELTA_ASC ||
-    sort === ChartSortType.Y_DELTA_DESC
+    sort === ChartSortType.Y_DELTA_DESC ||
+    sort === ChartSortType.X_DELTA_ASC ||
+    sort === ChartSortType.X_DELTA_DESC
   ) {
     return undefined;
   }
   return sort;
+}
+
+// Matches `axisX.labelFont` and `labelFontSize` in `components/vega/vega-config.ts`.
+const AXIS_LABEL_FONT = "11px Inter, sans-serif";
+// Average advance width of an 11px Inter glyph; used when no canvas context is available (e.g. jsdom).
+const AXIS_LABEL_FALLBACK_CHAR_WIDTH = 6.2;
+let axisLabelMeasureContext: CanvasRenderingContext2D | null | undefined;
+
+/**
+ * Estimates the rendered width in pixels of an axis label.
+ * Measures with a cached canvas 2D context when one is available and falls back to a
+ * per-character estimate otherwise, so spec building stays deterministic outside a browser.
+ */
+export function estimateAxisLabelWidth(text: string): number {
+  if (axisLabelMeasureContext === undefined) {
+    axisLabelMeasureContext =
+      typeof document === "undefined"
+        ? null
+        : document.createElement("canvas").getContext("2d");
+    if (axisLabelMeasureContext) axisLabelMeasureContext.font = AXIS_LABEL_FONT;
+  }
+  if (!axisLabelMeasureContext) {
+    return text.length * AXIS_LABEL_FALLBACK_CHAR_WIDTH;
+  }
+  return axisLabelMeasureContext.measureText(text).width;
 }

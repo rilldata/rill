@@ -5,7 +5,10 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import {
+    directoryState,
+    isDirectoryExpanded,
+  } from "@rilldata/web-common/features/file-explorer/directory-store";
   import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import {
@@ -37,7 +40,7 @@
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
 
   $: id = `${dir.path}-nav-entry`;
-  $: expanded = $directoryState[dir.path];
+  $: expanded = isDirectoryExpanded($directoryState, dir.path);
   $: padding = getPaddingFromPath(dir.path);
   $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);

@@ -1,5 +1,5 @@
 ---
-title: "Bring Your Own  OLAP Engine (Live Connector)"
+title: "Bring Your Own OLAP Engine (Live Connector)"
 description: Configure the OLAP engine used by Rill
 sidebar_label: "OLAP Engines"
 sidebar_position: 0
@@ -23,8 +23,8 @@ Rill also offers the ability to ingest and create tables directly from a [data s
 
 
 
-In order to connect Rill to your OLAP Engine:
-1. Create the connector via the UI 
+In order to connect Rill to your OLAP engine:
+1. Create the connector via the UI.
 2. [Create the YAML](/reference/project-files/connectors#olap-engines) and set the [default OLAP engine](/reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
 
 :::note `olap_connector` in rill.yaml
@@ -85,7 +85,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
-    referenceLink="ducklake"
+    referenceLink="duckdb"
   />
 
   <ConnectorIcon

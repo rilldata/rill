@@ -7,7 +7,8 @@
     ChartScales,
     ChartSeries,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
-  import { bridgeSmallGaps } from "./sparse-data-utils";
+  import { clampToRange } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
+  import { bridgeGaps } from "./sparse-data-utils";
 
   const numAccessor = (d: number | null) => d;
   const numClone = (_d: number | null, v: number): number | null => v;
@@ -27,9 +28,11 @@
     defined: (d) => d !== null,
   });
 
+  // With a dynamic y-axis the domain can exclude zero, putting scales.y(0) outside the plot.
+  // Clamp the area's baseline to the scale's range so the fill stays inside the plot area.
   $: areaGen = createAreaGenerator<number | null>({
     x: (_d, i) => scales.x(i),
-    y0: scales.y(0),
+    y0: clampToRange(scales.y(0), scales.y.range()),
     y1: (d) => scales.y(d ?? 0),
     defined: (d) => d !== null,
   });
@@ -37,13 +40,7 @@
   $: primarySeries = series[0];
 
   $: primaryBridgeResult = primarySeries
-    ? bridgeSmallGaps(
-        primarySeries.values,
-        numAccessor,
-        numClone,
-        scales.x,
-        connectNulls,
-      )
+    ? bridgeGaps(primarySeries.values, numAccessor, numClone, connectNulls)
     : {
         values: [] as (number | null)[],
         inputSegments: [],
@@ -63,13 +60,7 @@
     : [];
 
   $: secondarySeries = series.slice(1).map((s) => {
-    const bridged = bridgeSmallGaps(
-      s.values,
-      numAccessor,
-      numClone,
-      scales.x,
-      connectNulls,
-    );
+    const bridged = bridgeGaps(s.values, numAccessor, numClone, connectNulls);
     const singletons = bridged.bridgedSegments
       .filter((seg) => seg.startIndex === seg.endIndex)
       .map((seg) => seg.startIndex);

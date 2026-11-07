@@ -62,7 +62,9 @@ test.describe.serial("Org management flow", () => {
     // Click the continue button to deploy
     await anonPage.getByRole("button", { name: "Continue" }).click();
 
-    await anonPage.waitForURL(`http://localhost:3000/${welcomeUserOrg}`);
+    await anonPage.waitForURL(
+      `http://localhost:3000/${welcomeUserOrg}/-/create-project`,
+    );
   });
 
   test("Should delete the org created in welcome flow", async ({

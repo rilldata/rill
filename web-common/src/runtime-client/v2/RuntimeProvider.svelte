@@ -9,6 +9,7 @@
     RUNTIME_CONTEXT_KEY,
   } from "./context";
   import type { AuthContext } from "./runtime-client";
+  import { createEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
 
   const queryClient = useQueryClient();
 
@@ -23,6 +24,8 @@
   setContext(RUNTIME_CONTEXT_KEY, client);
   featureFlags.setRuntimeClient(client);
 
+  const envStoreUnsub = createEnvFileStore(client);
+
   // Handle JWT-only changes (15-min refresh, View As with same host)
   $: {
     const authContextChanged = client.updateJwt(jwt, authContext);
@@ -34,6 +37,7 @@
     featureFlags.clearRuntimeClient();
     evictRuntimeClient(client);
     client.dispose();
+    envStoreUnsub();
   });
 </script>
 

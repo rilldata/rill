@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import FieldList from "@rilldata/web-common/features/scheduled-reports/fields/FieldList.svelte";
   import { getFieldsForExplore } from "@rilldata/web-common/features/scheduled-reports/fields/selectors.ts";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
@@ -9,12 +11,17 @@
   export let columns: string[];
   export let columnErrors: ValidationErrors<ReportValues>["columns"];
   export let exploreName: string;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
   $: selectedFields = new Set([...rows, ...columns]);
 
-  $: fieldsForExplore = getFieldsForExplore(runtimeClient, exploreName);
+  $: fieldsForExplore = getFieldsForExplore(
+    runtimeClient,
+    exploreName,
+    ephemeralMeasures,
+  );
   $: ({ displayMap, allowedRows, allowedColumns } = $fieldsForExplore ?? {});
 
   $: hasSomeRow = rows.length > 0;
@@ -46,17 +53,19 @@
     bind:fields={rows}
     allowedFields={allowedRows.filter((r) => !selectedFields.has(r))}
     {displayMap}
-    label="Rows"
+    label={m.report_form_rows()}
     onUpdate={(newRows) => (rows = newRows)}
   >
-    <div slot="empty-fields" class="text-fg-secondary">No rows selected</div>
+    <div slot="empty-fields" class="text-fg-secondary">
+      {m.report_form_no_rows_selected()}
+    </div>
   </FieldList>
 
   <FieldList
     bind:fields={columns}
     allowedFields={allowedColumns.filter((r) => !selectedFields.has(r))}
     {displayMap}
-    label="Columns"
+    label={m.report_form_columns()}
     disableDragDrop={disableColumnDragDrop}
     onUpdate={handleColumnUpdate}
   >
@@ -64,7 +73,7 @@
       slot="empty-fields"
       class={hasColumnErrors ? "text-red-600" : "text-fg-secondary"}
     >
-      Must select one column
+      {m.report_form_must_select_one_column()}
     </div>
   </FieldList>
 {/if}

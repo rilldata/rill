@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -33,28 +34,25 @@
 
   // Available Vega-Lite color schemes
   // https://vega.github.io/vega/docs/schemes/
-  const colorSchemes: {
-    label: string;
-    value: ColorScheme | "sequential" | "diverging";
-  }[] = [
-    { label: "Sequential (Theme)", value: "sequential" },
-    { label: "Diverging (Theme)", value: "diverging" },
-    { label: "Teal blues", value: "tealblues" },
-    { label: "Viridis", value: "viridis" },
-    { label: "Magma", value: "magma" },
-    { label: "Inferno", value: "inferno" },
-    { label: "Plasma", value: "plasma" },
-    { label: "Cividis", value: "cividis" },
-    { label: "Blues", value: "blues" },
-    { label: "Teals", value: "teals" },
-    { label: "Greens", value: "greens" },
-    { label: "Greys", value: "greys" },
-    { label: "Oranges", value: "oranges" },
-    { label: "Purples", value: "purples" },
-    { label: "Reds", value: "reds" },
-    { label: "Turbo", value: "turbo" },
-    { label: "Spectral", value: "spectral" },
-  ];
+  $: colorSchemes = [
+    { label: m.canvas_sequential_theme(), value: "sequential" as const },
+    { label: m.canvas_diverging_theme(), value: "diverging" as const },
+    { label: m.canvas_teal_blues(), value: "tealblues" as ColorScheme },
+    { label: m.canvas_viridis(), value: "viridis" as ColorScheme },
+    { label: m.canvas_magma(), value: "magma" as ColorScheme },
+    { label: m.canvas_inferno(), value: "inferno" as ColorScheme },
+    { label: m.canvas_plasma(), value: "plasma" as ColorScheme },
+    { label: m.canvas_cividis(), value: "cividis" as ColorScheme },
+    { label: m.canvas_blues(), value: "blues" as ColorScheme },
+    { label: m.canvas_teals(), value: "teals" as ColorScheme },
+    { label: m.canvas_greens(), value: "greens" as ColorScheme },
+    { label: m.canvas_greys(), value: "greys" as ColorScheme },
+    { label: m.canvas_oranges(), value: "oranges" as ColorScheme },
+    { label: m.canvas_purples(), value: "purples" as ColorScheme },
+    { label: m.canvas_reds(), value: "reds" as ColorScheme },
+    { label: m.canvas_turbo(), value: "turbo" as ColorScheme },
+    { label: m.canvas_spectral(), value: "spectral" as ColorScheme },
+  ] as { label: string; value: ColorScheme | "sequential" | "diverging" }[];
 
   $: ({
     canvasEntity: { theme },
@@ -165,10 +163,9 @@
       <!-- Mode Switcher -->
       <FieldSwitcher
         small
-        fields={["Scheme", "Gradient"]}
+        fields={[m.canvas_scheme(), m.canvas_gradient()]}
         selected={currentMode === "scheme" ? 0 : 1}
-        onClick={(i, value) =>
-          handleModeSwitch(value === "Scheme" ? "scheme" : "gradient")}
+        onClick={(i) => handleModeSwitch(i === 0 ? "scheme" : "gradient")}
       />
 
       {#if currentMode === "scheme"}
@@ -195,7 +192,7 @@
             )}
             labelFirst
             allowLightnessControl
-            label="Start color"
+            label={m.canvas_start_color()}
             onChange={handleStartColorChange}
           />
         {/key}
@@ -210,14 +207,16 @@
             )}
             labelFirst
             allowLightnessControl
-            label="End color"
+            label={m.canvas_end_color()}
             onChange={handleEndColorChange}
           />
         {/key}
       {/if}
 
       <div class="px-1 flex items-center justify-end">
-        <Button type="text" onClick={resetToDefault}>Reset to default</Button>
+        <Button type="text" onClick={resetToDefault}
+          >{m.canvas_reset_to_default()}</Button
+        >
       </div>
     </div>
   </div>

@@ -73,6 +73,17 @@ const expectedOneMeasureOneDim = [
   [], // dummy row added for virtualization
 ];
 
+// With the totals row pinned to the bottom it leaves the body for the footer.
+const expectedOneMeasureOneDimTotalsAtBottom = [
+  [], // dummy row added for virtualization
+  ["null", "32.9k"],
+  ["Facebook", "19.3k"],
+  ["Google", "18.8k"],
+  ["Yahoo", "18.6k"],
+  ["Microsoft", "10.4k"],
+  [], // dummy row added for virtualization
+];
+
 const expectedTwoMeasureRowDimColDim = [
   [],
   [
@@ -532,13 +543,13 @@ const expectedFlatTable = [
   ["instagram.com", "Facebook", "8.8k", "25.0k"],
   ["news.google.com", "Google", "8.6k", "24.7k"],
   ["sports.yahoo.com", "Yahoo", "8.6k", "24.9k"],
-  ["msn.com", "", "5.1k", "16.0k"],
-  ["facebook.com", "", "5.1k", "15.9k"],
-  ["google.com", "", "5.0k", "15.5k"],
-  ["news.yahoo.com", "", "4.9k", "15.1k"],
-  ["instagram.com", "", "4.3k", "12.1k"],
-  ["sports.yahoo.com", "", "4.3k", "12.1k"],
-  ["news.google.com", "", "4.2k", "12.1k"],
+  ["msn.com", "null", "5.1k", "16.0k"],
+  ["facebook.com", "null", "5.1k", "15.9k"],
+  ["google.com", "null", "5.0k", "15.5k"],
+  ["news.yahoo.com", "null", "4.9k", "15.1k"],
+  ["instagram.com", "null", "4.3k", "12.1k"],
+  ["sports.yahoo.com", "null", "4.3k", "12.1k"],
+  ["news.google.com", "null", "4.2k", "12.1k"],
   [],
 ];
 
@@ -576,8 +587,6 @@ test.describe("pivot run through", () => {
 
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -617,8 +626,39 @@ test.describe("pivot run through", () => {
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureOneDim);
 
-    // add second measure using menu and add column dimension
+    // Pin the totals row to the bottom: it moves into a sticky footer and the
+    // URL records the position. Then move it back to the top.
+    const totalsRowPosition = page.getByLabel("Totals row position");
+    await totalsRowPosition.click();
+    await page.getByRole("option", { name: "Bottom" }).click();
+    await expect(page.locator("table > tfoot > tr > td").first()).toHaveText(
+      "Total",
+    );
+    await validateTableContents(
+      page,
+      "table",
+      expectedOneMeasureOneDimTotalsAtBottom,
+    );
+    expect(page.url()).toContain("totals_row_position=bottom");
+    await totalsRowPosition.click();
+    await page.getByRole("option", { name: "Top" }).click();
+    await expect(page.locator("table > tfoot")).toHaveCount(0);
+    await validateTableContents(page, "table", expectedOneMeasureOneDim);
+    expect(page.url()).not.toContain("totals_row_position");
+
+    // add column dimension; the domain columns overflow the container
     await dragPivotChip(page, domain, columnZone);
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    // Fit to width shrinks every column once so no horizontal scroll remains
+    const tableWrapper = page.locator(".table-wrapper");
+    const horizontalOverflow = () =>
+      tableWrapper.evaluate((el) => el.scrollWidth - el.clientWidth);
+    await expect.poll(horizontalOverflow).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Fit to width" }).click();
+    await expect.poll(horizontalOverflow).toBeLessThanOrEqual(0);
+
+    // add second measure using menu
     const addColumnField = page
       .getByRole("button", { name: "Add filter button" })
       .nth(2);
@@ -628,12 +668,12 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Pivot table" }).click();
+    await page.getByRole("button", { name: "Flat", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Flat table" }).click();
+    await page.getByRole("button", { name: "Pivot", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
@@ -667,7 +707,12 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
-    await page.waitForTimeout(100);
+    // Wait for the new time range to apply before dragging chips. The running
+    // status can flip too quickly to observe reliably, so assert the applied
+    // range instead.
+    await expect(page.getByLabel("Select time range")).toContainText(
+      "Last 4 Weeks",
+    );
 
     // add measure and time week to column
     await dragPivotChip(page, totalRecords, columnZone);

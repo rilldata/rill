@@ -95,16 +95,16 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	inst := &drivers.Instance{
-		ID:             req.InstanceId,
-		Environment:    req.Environment,
-		OLAPConnector:  req.OlapConnector,
-		RepoConnector:  req.RepoConnector,
-		AdminConnector: req.AdminConnector,
-		AIConnector:    req.AiConnector,
-		Connectors:     req.Connectors,
-		Variables:      req.Variables,
-		Annotations:    req.Annotations,
-		FrontendURL:    req.FrontendUrl,
+		ID:              req.InstanceId,
+		Environment:     req.Environment,
+		OLAPConnector:   req.OlapConnector,
+		RepoConnector:   req.RepoConnector,
+		AdminConnector:  req.AdminConnector,
+		AIConnector:     req.AiConnector,
+		Connectors:      req.Connectors,
+		SystemVariables: req.SystemVariables,
+		Annotations:     req.Annotations,
+		FrontendURL:     req.FrontendUrl,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -168,8 +168,10 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		Connectors:           connectors,
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		ProjectVariables:     oldInst.ProjectVariables,
+		SystemVariables:      oldInst.SystemVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		AIInstructions:       oldInst.AIInstructions,
+		AIPrompts:            oldInst.AIPrompts,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -308,8 +310,10 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 		UpdatedOn:          timestamppb.New(inst.UpdatedOn),
 		FeatureFlags:       featureFlags,
 		AiInstructions:     inst.AIInstructions,
+		AiPrompts:          inst.AIPrompts,
 		FrontendUrl:        inst.FrontendURL,
 		Theme:              inst.Theme,
+		EmbedOpenUrl:       inst.EmbedOpenURL,
 	}
 
 	if sensitive {

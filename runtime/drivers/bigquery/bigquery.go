@@ -58,13 +58,16 @@ type configProperties struct {
 	// MaxBytesBilled is the maximum number of bytes billed for a query. This is a safety mechanism to prevent accidentally running large queries.
 	// Set this to 0 for project defaults.
 	// Only applies to dashboard queries and does not apply when ingesting data from BigQuery into Rill.
-	MaxBytesBilled  int64 `mapstructure:"max_bytes_billed"`
-	AllowHostAccess bool  `mapstructure:"allow_host_access"`
+	MaxBytesBilled int64 `mapstructure:"max_bytes_billed"`
+	// AllowStandardAPI lets users query BigQuery using the standard API instead of the Storage Read API.
+	// This is less efficient but may be necessary if users don't have access to the Storage Read API.
+	AllowStandardAPI bool `mapstructure:"allow_standard_api"`
+	AllowHostAccess  bool `mapstructure:"allow_host_access"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.
 	LogQueries bool `mapstructure:"log_queries"`
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("bigquery driver can't be shared")
 	}
@@ -75,10 +78,14 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		return nil, err
 	}
 
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	conn := &Connection{
 		config:   conf,
 		storage:  st,
 		logger:   logger,
+		ctx:      bgctx,
+		cancel:   cancel,
 		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
@@ -102,6 +109,12 @@ type Connection struct {
 	storage *storage.Client
 	logger  *zap.Logger
 
+	// ctx tracks the handle's lifetime and is cancelled by Close.
+	// The cached client's credentials capture it and reuse it to refresh tokens,
+	// so it must outlive any single request that happens to open the client.
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	client    *bigquery.Client // lazily populated using getClient
 	clientErr error
 	clientMu  *semaphore.Weighted
@@ -111,11 +124,11 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
+	// NOTE: Not closing the client here since getClient caches it for the handle's lifetime. Close does that.
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
-	defer client.Close()
 
 	// Run a simple query to verify connection
 	q := client.Query("SELECT 1")
@@ -141,6 +154,7 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
+	c.cancel()
 	if c.client != nil {
 		return c.client.Close()
 	}
@@ -225,6 +239,11 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
 }
 
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -241,7 +260,9 @@ func (c *Connection) getClient(ctx context.Context) (*bigquery.Client, error) {
 	if c.client != nil || c.clientErr != nil {
 		return c.client, c.clientErr
 	}
-	client, err := c.createClient(ctx, "")
+	// The client is cached for the handle's lifetime, so it's created with the handle's ctx instead of the caller's.
+	// Its credentials reuse that ctx to refresh tokens, which a cancelled request ctx would permanently break.
+	client, err := c.createClient(c.ctx, "")
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			// don't cache context errors

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -1605,6 +1606,201 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, newAttrs, updatedResp.Member.Attributes.AsMap())
 	})
 
+	t.Run("Invite with attributes", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+		_, c2 := fix.NewUser(t)
+
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+
+		inviteEmail := randomName() + "@example.com"
+
+		attrs := map[string]interface{}{"department": "engineering"}
+		attrStruct, err := structpb.NewStruct(attrs)
+		require.NoError(t, err)
+
+		// Invite a user who has not signed up yet, with attributes
+		res, err := c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        r1.Organization.Name,
+			Email:      inviteEmail,
+			Role:       database.OrganizationRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.NoError(t, err)
+		require.True(t, res.PendingSignup)
+
+		// The pending invite should expose the attributes
+		invites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, attrs, invites.Invites[0].Attributes.AsMap())
+
+		// Re-inviting without attributes preserves the existing attributes
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: inviteEmail,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, attrs, invites.Invites[0].Attributes.AsMap())
+
+		// Re-inviting with attributes updates them
+		newAttrs := map[string]interface{}{"department": "sales", "region": "emea"}
+		newAttrStruct, err := structpb.NewStruct(newAttrs)
+		require.NoError(t, err)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        r1.Organization.Name,
+			Email:      inviteEmail,
+			Role:       database.OrganizationRoleNameViewer,
+			Attributes: newAttrStruct,
+		})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, newAttrs, invites.Invites[0].Attributes.AsMap())
+
+		// UpdateOrganizationMemberUserAttributes updates a pending invite's attributes
+		pendingAttrs := map[string]interface{}{"department": "platform"}
+		pendingAttrStruct, err := structpb.NewStruct(pendingAttrs)
+		require.NoError(t, err)
+		_, err = c1.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      inviteEmail,
+			Attributes: pendingAttrStruct,
+		})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, pendingAttrs, invites.Invites[0].Attributes.AsMap())
+
+		// A non-member cannot update a pending invite's attributes
+		_, err = c2.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      inviteEmail,
+			Attributes: pendingAttrStruct,
+		})
+		require.Error(t, err)
+
+		// When the invited user signs up, the invite's attributes are applied to the membership
+		_, _ = fix.NewUserWithEmail(t, inviteEmail)
+		member, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: inviteEmail,
+		})
+		require.NoError(t, err)
+		require.Equal(t, pendingAttrs, member.Member.Attributes.AsMap())
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 0)
+
+		// Adding an existing user with attributes applies them immediately
+		u3, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        r1.Organization.Name,
+			Email:      u3.Email,
+			Role:       database.OrganizationRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.NoError(t, err)
+		member, err = c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u3.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, attrs, member.Member.Attributes.AsMap())
+
+		// Re-adding an existing member still fails with AlreadyExists (attributes are not overwritten)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        r1.Organization.Name,
+			Email:      u3.Email,
+			Role:       database.OrganizationRoleNameViewer,
+			Attributes: newAttrStruct,
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("Project invite with attributes", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
+
+		org, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        org.Organization.Name,
+			Project:    "proj-invite-attrs",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		attrs := map[string]interface{}{"department": "engineering"}
+		attrStruct, err := structpb.NewStruct(attrs)
+		require.NoError(t, err)
+
+		// Make u2 a project admin: they get ManageProjectMembers but only guest-level org permissions
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: proj.Project.Name,
+			Email:   u2.Email,
+			Role:    database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// A project admin without org-level member management cannot set attributes
+		_, err = c2.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      randomName() + "@example.com",
+			Role:       database.ProjectRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, "not allowed to set user attributes")
+
+		// u2 is already an org member, so the attributes have nowhere to go: the request must fail instead of dropping them
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      u2.Email,
+			Role:       database.ProjectRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, "already a member of the organization")
+
+		// An org admin can invite a new user to a project with attributes; they are stored on the guest org invite
+		inviteEmail := randomName() + "@example.com"
+		res, err := c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      inviteEmail,
+			Role:       database.ProjectRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.NoError(t, err)
+		require.True(t, res.PendingSignup)
+
+		invites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, attrs, invites.Invites[0].Attributes.AsMap())
+
+		// On signup, the attributes are applied to the guest org membership
+		_, _ = fix.NewUserWithEmail(t, inviteEmail)
+		member, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   org.Organization.Name,
+			Email: inviteEmail,
+		})
+		require.NoError(t, err)
+		require.Equal(t, database.OrganizationRoleNameGuest, member.Member.RoleName)
+		require.Equal(t, attrs, member.Member.Attributes.AsMap())
+	})
+
 	t.Run("Project member role updates preserve resource restrictions when omitted", func(t *testing.T) {
 		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
 		user, userClient := fix.NewUser(t)
@@ -1694,6 +1890,290 @@ func TestRBAC(t *testing.T) {
 		require.NotNil(t, rules[0].GetTransitiveAccess())
 		require.Equal(t, "rill.runtime.v1.Explore", rules[0].GetTransitiveAccess().Resource.Kind)
 		require.Equal(t, "explore", rules[0].GetTransitiveAccess().Resource.Name)
+	})
+
+	t.Run("Invite with usergroups", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+
+		org, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		g1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{Org: org.Organization.Name, Name: "g1"})
+		require.NoError(t, err)
+		g2, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{Org: org.Organization.Name, Name: "g2"})
+		require.NoError(t, err)
+
+		inviteEmail := randomName() + "@example.com"
+
+		// Invite a user who has not signed up yet, with a group
+		res, err := c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        org.Organization.Name,
+			Email:      inviteEmail,
+			Role:       database.OrganizationRoleNameViewer,
+			Usergroups: []string{g1.Usergroup.GroupName},
+		})
+		require.NoError(t, err)
+		require.True(t, res.PendingSignup)
+
+		// The pending invite exposes the group by name
+		invites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, []string{"g1"}, invites.Invites[0].Usergroups)
+
+		// The group's member list shows the invitee as pending
+		members, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1"})
+		require.NoError(t, err)
+		require.Len(t, members.Members, 1)
+		require.Equal(t, inviteEmail, members.Members[0].UserEmail)
+		require.True(t, members.Members[0].PendingAcceptance)
+		require.Empty(t, members.Members[0].UserId)
+
+		// Re-inviting without groups keeps the existing groups
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   org.Organization.Name,
+			Email: inviteEmail,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Equal(t, []string{"g1"}, invites.Invites[0].Usergroups)
+
+		// Re-inviting with another group merges, and repeating a group does not duplicate it
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        org.Organization.Name,
+			Email:      inviteEmail,
+			Role:       database.OrganizationRoleNameViewer,
+			Usergroups: []string{g2.Usergroup.GroupName, g1.Usergroup.GroupName, g2.Usergroup.GroupName},
+		})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Equal(t, []string{"g1", "g2"}, invites.Invites[0].Usergroups)
+
+		// A group can be removed from a pending invite
+		_, err = c1.RemoveUsergroupMemberUser(ctx, &adminv1.RemoveUsergroupMemberUserRequest{Org: org.Organization.Name, Usergroup: "g2", Email: inviteEmail})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Equal(t, []string{"g1"}, invites.Invites[0].Usergroups)
+		members, err = c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g2"})
+		require.NoError(t, err)
+		require.Empty(t, members.Members)
+
+		// Removing a group that is not on the invite fails
+		_, err = c1.RemoveUsergroupMemberUser(ctx, &adminv1.RemoveUsergroupMemberUserRequest{Org: org.Organization.Name, Usergroup: "g2", Email: inviteEmail})
+		require.Error(t, err)
+
+		// Deleting a group scrubs it from pending invites
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{Org: org.Organization.Name, Usergroup: "g2", Email: inviteEmail})
+		require.NoError(t, err)
+		_, err = c1.DeleteUsergroup(ctx, &adminv1.DeleteUsergroupRequest{Org: org.Organization.Name, Usergroup: "g2"})
+		require.NoError(t, err)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Equal(t, []string{"g1"}, invites.Invites[0].Usergroups)
+
+		// When the invited user signs up, they are added to the group and the invite is gone
+		_, _ = fix.NewUserWithEmail(t, inviteEmail)
+		members, err = c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1"})
+		require.NoError(t, err)
+		require.Len(t, members.Members, 1)
+		require.Equal(t, inviteEmail, members.Members[0].UserEmail)
+		require.False(t, members.Members[0].PendingAcceptance)
+		require.NotEmpty(t, members.Members[0].UserId)
+		invites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Empty(t, invites.Invites)
+
+		// Adding an existing user with groups applies them immediately, and re-adding to the same group is idempotent
+		u3, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        org.Organization.Name,
+			Email:      u3.Email,
+			Role:       database.OrganizationRoleNameViewer,
+			Usergroups: []string{"g1"},
+		})
+		require.NoError(t, err)
+		members, err = c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1"})
+		require.NoError(t, err)
+		require.Len(t, members.Members, 2)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{Org: org.Organization.Name, Usergroup: "g1", Email: u3.Email})
+		require.Error(t, err) // direct add of an existing member is still a conflict
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:        org.Organization.Name,
+			Email:      u3.Email,
+			Role:       database.OrganizationRoleNameViewer,
+			Usergroups: []string{"g1"},
+		})
+		require.Error(t, err) // already an org member
+	})
+
+	t.Run("Invite with usergroups validation", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
+
+		org, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		_, err = c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{Org: org.Organization.Name, Name: "admins"})
+		require.NoError(t, err)
+		_, err = c1.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{Org: org.Organization.Name, Usergroup: "admins", Role: database.OrganizationRoleNameAdmin})
+		require.NoError(t, err)
+
+		// Editors may manage members but not admins
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{Org: org.Organization.Name, Email: u2.Email, Role: database.OrganizationRoleNameEditor})
+		require.NoError(t, err)
+
+		cases := []struct {
+			name   string
+			client *client.Client
+			groups []string
+			errMsg string
+		}{
+			{"unknown group", c1, []string{"does-not-exist"}, "not found"},
+			{"managed group", c1, []string{database.UsergroupNameAutogroupUsers}, "cannot edit managed user group"},
+			{"admin-role group by non-admin", c2, []string{"admins"}, "not allowed to edit a group that has an admin role"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				inviteEmail := randomName() + "@example.com"
+				_, err := tc.client.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+					Org:        org.Organization.Name,
+					Email:      inviteEmail,
+					Role:       database.OrganizationRoleNameViewer,
+					Usergroups: tc.groups,
+				})
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errMsg)
+
+				// The request failed before anything was written
+				invites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+				require.NoError(t, err)
+				for _, inv := range invites.Invites {
+					require.NotEqual(t, inviteEmail, inv.Email)
+				}
+			})
+		}
+	})
+
+	t.Run("Project invite with usergroups", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
+
+		org, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        org.Organization.Name,
+			Project:    "proj-invite-groups",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{Org: org.Organization.Name, Name: "g1"})
+		require.NoError(t, err)
+
+		// Make u2 a project admin: they get ManageProjectMembers but only guest-level org permissions
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: proj.Project.Name,
+			Email:   u2.Email,
+			Role:    database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// A project admin without org-level member management cannot add to groups
+		_, err = c2.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      randomName() + "@example.com",
+			Role:       database.ProjectRoleNameViewer,
+			Usergroups: []string{"g1"},
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, "not allowed to manage user group members")
+
+		// Unlike attributes, groups can be applied to a user who is already an org member
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      u2.Email,
+			Role:       database.ProjectRoleNameViewer,
+			Usergroups: []string{"g1"},
+		})
+		require.NoError(t, err)
+		members, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1"})
+		require.NoError(t, err)
+		require.Len(t, members.Members, 1)
+		require.Equal(t, u2.Email, members.Members[0].UserEmail)
+
+		// An org admin can invite a new user to a project with groups; they are stored on the guest org invite
+		inviteEmail := randomName() + "@example.com"
+		res, err := c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      inviteEmail,
+			Role:       database.ProjectRoleNameViewer,
+			Usergroups: []string{"g1"},
+		})
+		require.NoError(t, err)
+		require.True(t, res.PendingSignup)
+		invites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: org.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, invites.Invites, 1)
+		require.Equal(t, []string{"g1"}, invites.Invites[0].Usergroups)
+
+		// On signup, the guest is added to the group
+		_, _ = fix.NewUserWithEmail(t, inviteEmail)
+		members, err = c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1"})
+		require.NoError(t, err)
+		require.Len(t, members.Members, 2)
+	})
+
+	t.Run("Pending invitees paginate with usergroup members", func(t *testing.T) {
+		_, c1 := fix.NewUser(t)
+
+		org, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		_, err = c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{Org: org.Organization.Name, Name: "g1"})
+		require.NoError(t, err)
+
+		var emails []string
+		for i := 0; i < 3; i++ {
+			u, _ := fix.NewUser(t)
+			emails = append(emails, u.Email)
+			_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{Org: org.Organization.Name, Email: u.Email, Role: database.OrganizationRoleNameViewer, Usergroups: []string{"g1"}})
+			require.NoError(t, err)
+		}
+		for i := 0; i < 2; i++ {
+			inviteEmail := randomName() + "@example.com"
+			emails = append(emails, inviteEmail)
+			_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{Org: org.Organization.Name, Email: inviteEmail, Role: database.OrganizationRoleNameViewer, Usergroups: []string{"g1"}})
+			require.NoError(t, err)
+		}
+
+		var got []string
+		pageToken := ""
+		for {
+			res, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1", PageSize: 2, PageToken: pageToken})
+			require.NoError(t, err)
+			for _, m := range res.Members {
+				got = append(got, m.UserEmail)
+			}
+			if res.NextPageToken == "" {
+				break
+			}
+			pageToken = res.NextPageToken
+		}
+		require.ElementsMatch(t, emails, got)
+		// The pages must follow the same order as a single unpaginated listing.
+		// The order itself is the database collation's, which need not match Go's byte order.
+		full, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1", PageSize: 10})
+		require.NoError(t, err)
+		var want []string
+		for _, m := range full.Members {
+			want = append(want, m.UserEmail)
+		}
+		require.Equal(t, want, got)
 	})
 
 	t.Run("Project usergroup role updates preserve resource restrictions when omitted", func(t *testing.T) {

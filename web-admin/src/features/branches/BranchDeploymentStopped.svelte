@@ -13,6 +13,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -20,52 +21,49 @@
   export let status: V1DeploymentStatus;
   export let canManage: boolean;
   export let branch: string | undefined;
-  export let onStarted: (() => void) | undefined = undefined;
+  export let starting: boolean = false;
 
   $: isStopping = status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING;
 
   const startMutation = createAdminServiceStartDeployment();
 
-  function handleStart() {
-    $startMutation.mutate(
-      { deploymentId, data: {} },
-      {
-        onSuccess: () => {
-          onStarted?.();
+  async function handleStart() {
+    starting = true;
 
-          const projectQueryKey = getAdminServiceGetProjectQueryKey(
-            organization,
-            project,
-            branch ? { branch } : undefined,
-          );
+    try {
+      await $startMutation.mutateAsync({ deploymentId, data: {} });
 
-          // Without this, the invalidation refetch may return the old STOPPED
-          // status (race condition), leaving the UI stuck on this page.
-          queryClient.setQueryData<V1GetProjectResponse>(
-            projectQueryKey,
-            (old) => {
-              if (!old?.deployment) return old;
-              return {
-                ...old,
-                deployment: {
-                  ...old.deployment,
-                  status: V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
-                },
-              };
-            },
-          );
+      const projectQueryKey = getAdminServiceGetProjectQueryKey(
+        organization,
+        project,
+        branch ? { branch } : undefined,
+      );
 
-          // Mark stale without immediate refetch; PENDING triggers polling
-          // (1–2s) which picks up the real server status.
-          void queryClient.invalidateQueries({
-            queryKey: projectQueryKey,
-            refetchType: "none",
-          });
+      // Without this, the invalidation refetch may return the old STOPPED
+      // status (race condition), leaving the UI stuck on this page.
+      queryClient.setQueryData<V1GetProjectResponse>(projectQueryKey, (old) => {
+        if (!old?.deployment) return old;
+        return {
+          ...old,
+          deployment: {
+            ...old.deployment,
+            status: V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
+          },
+        };
+      });
 
-          void invalidateDeployments(organization, project);
-        },
-      },
-    );
+      // Mark stale without immediate refetch; PENDING triggers polling
+      // (1–2s) which picks up the real server status.
+      void queryClient.invalidateQueries({
+        queryKey: projectQueryKey,
+        refetchType: "none",
+      });
+
+      void invalidateDeployments(organization, project);
+    } catch (e) {
+      console.error("Failed to start deployment", e);
+    }
+    starting = false;
   }
 </script>
 
@@ -75,18 +73,20 @@
       <div class="h-16">
         <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
       </div>
-      <CtaHeader variant="bold">Hibernating...</CtaHeader>
+      <CtaHeader variant="bold">{m.project_hibernating()}</CtaHeader>
     {:else}
-      <CtaHeader variant="bold">Branch hibernated</CtaHeader>
-      <p class="text-sm text-fg-secondary">This branch is hibernated.</p>
+      <CtaHeader variant="bold">{m.project_branch_hibernated()}</CtaHeader>
+      <p class="text-sm text-fg-secondary">
+        {m.project_branch_is_hibernated()}
+      </p>
       {#if canManage}
         <Button
           type="primary"
           loading={$startMutation.isPending}
-          loadingCopy="Starting..."
+          loadingCopy={m.project_starting()}
           onClick={handleStart}
         >
-          Resume branch
+          {m.project_resume_branch()}
         </Button>
       {/if}
     {/if}

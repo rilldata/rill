@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 </script>
 
 <div
@@ -8,12 +9,11 @@
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
     <div class="text-fg-secondary font-semibold">
-      You don't have any public URLs yet
+      {m.public_url_no_urls_title()}
     </div>
     <div>
       <span style="text-fg-secondary font-normal">
-        To create a public URL that you can share with anyone, click the Share
-        button in a dashboard.
+        {m.public_url_no_urls_description()}
       </span>
     </div>
   </div>

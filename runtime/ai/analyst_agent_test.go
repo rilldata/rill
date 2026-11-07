@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -312,6 +313,12 @@ func TestAnalystCharts(t *testing.T) {
 		end, ok := timeRange["end"].(string)
 		require.True(t, ok, "time_range.end must be a string")
 		require.Contains(t, end, "2023-09-14", "time_range.end should honor the provided context")
+
+		// Verify the chart applies the dashboard's filter
+		where, err := json.Marshal(spec["where"])
+		require.NoError(t, err)
+		require.Contains(t, string(where), "auction_type", "spec.where should apply the dashboard's filter")
+		require.Contains(t, string(where), "First Price", "spec.where should apply the dashboard's filter")
 	})
 
 	t.Run("ChartsDisabled", func(t *testing.T) {
@@ -382,6 +389,75 @@ func requireValidChartSpec(t *testing.T, s *ai.Session, chartCall *ai.Message, v
 	require.True(t, hasTimeRange, "spec must contain time_range")
 
 	return spec
+}
+
+func TestAnalystSkills(t *testing.T) {
+	// Setup the basic orders metrics view plus two project skills:
+	// an on-demand RCA playbook (loaded via load_skill) and an always-apply glossary.
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector: "openai",
+		Files: map[string]string{
+			"models/orders.yaml": `
+type: model
+materialize: true
+sql: |
+  SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'United States' AS country, 100 AS revenue
+  UNION ALL
+  SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'Denmark' AS country, 10 AS revenue
+  UNION ALL
+  SELECT '2025-01-02T00:00:00Z'::TIMESTAMP AS event_time, 'United States' AS country, 100 AS revenue
+  UNION ALL
+  SELECT '2025-01-02T00:00:00Z'::TIMESTAMP AS event_time, 'Denmark' AS country, 10 AS revenue
+`,
+			"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+- name: revenue
+  expression: SUM(revenue)
+`,
+			"skills/revenue-rca/SKILL.md": `---
+description: Playbook for analyzing revenue. Use whenever asked about revenue amounts or changes.
+metrics_views: [orders]
+agents: [analyst]
+---
+
+When answering any question about revenue, you MUST end your final answer with the exact phrase "(via revenue-rca)".
+`,
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+agents: [analyst]
+always_apply: true
+---
+
+"Nordics revenue" refers to revenue where the country is Denmark.
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+
+	// Initialize eval
+	s := newEval(t, rt, instanceID)
+
+	// Ask a revenue question that exercises both skills
+	var res *ai.RouterAgentResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt: "What is the total Nordics revenue? Answer with the number and any required attribution, nothing else.",
+	})
+	require.NoError(t, err)
+	require.Equal(t, ai.AnalystAgentName, res.Agent)
+
+	// The always-apply glossary skill is pre-loaded, and the on-demand RCA skill must have been loaded by the agent and its instruction followed
+	require.GreaterOrEqual(t, len(s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.LoadSkillName))), 2)
+	require.Contains(t, res.Response, "(via revenue-rca)")
+
+	// The always-apply glossary skill defines "Nordics revenue" as Denmark's revenue
+	require.Contains(t, res.Response, "20")
 }
 
 func parseTestTime(tst *testing.T, t string) time.Time {

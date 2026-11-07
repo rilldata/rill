@@ -4,7 +4,7 @@ title: rill billing subscription list
 ---
 ## rill billing subscription list
 
-List subscription for an organization
+List subscriptions for an organization
 
 ```
 rill billing subscription list [flags]
@@ -22,5 +22,5 @@ rill billing subscription list [flags]
 
 ### SEE ALSO
 
-* [rill billing subscription](subscription.md)	 - Manage organisation subscription
+* [rill billing subscription](subscription.md)	 - Manage organization subscriptions
 

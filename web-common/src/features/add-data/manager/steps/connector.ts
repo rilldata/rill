@@ -1,11 +1,14 @@
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetInstanceQueryKey,
   getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceListResourcesQueryKey,
   runtimeServiceDeleteFile,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceGetFile,
-  runtimeServicePushEnv,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -24,11 +27,7 @@ import {
   getConnectorSchema,
   isMultiStepConnector,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-import {
-  findRadioEnumKey,
-  getSchemaSecretKeys,
-} from "@rilldata/web-common/features/templates/schema-utils.ts";
-import { applyDuckLakeFormPipeline } from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
+import { findRadioEnumKey } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import {
   addLeadingSlash,
@@ -37,21 +36,27 @@ import {
 import { EntityType } from "@rilldata/web-common/features/entity-management/types.ts";
 import {
   maybeUnsetOlapConnectorInYaml,
-  replaceOrAddEnvVariable,
-  unsetResourceEnvVars,
-  updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { getConnectorYamlPreview } from "@rilldata/web-common/features/add-data/form/yaml-preview.ts";
+import {
+  fetchProjectParser,
+  fetchResource,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
+import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/connector-source-yaml-generator.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "@rilldata/web-common/features/entity-management/project-parser.ts";
-import { getRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
+import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import type { EnvStore } from "@rilldata/web-common/features/env-management/env-store.ts";
 
 export async function createConnector({
   runtimeClient,
@@ -61,7 +66,7 @@ export async function createConnector({
   schemaName,
   formValues,
   validate,
-  existingEnvBlob,
+  envEditSession,
 }: {
   runtimeClient: RuntimeClient;
   queryClient: QueryClient;
@@ -70,7 +75,7 @@ export async function createConnector({
   schemaName?: string;
   formValues: Record<string, unknown>;
   validate: boolean;
-  existingEnvBlob: string | null;
+  envEditSession: EnvEditSession;
 }) {
   await maybeInitProject(runtimeClient);
 
@@ -79,26 +84,10 @@ export async function createConnector({
   // their own schema fields.
   const schema = getConnectorSchema(schemaName ?? connectorDriver.name ?? "");
 
-  // DuckLake: compose Parameters tab into `attach` (with password fields
-  // stored in `.env` and referenced via template) and route raw-ATTACH
-  // catalog URIs through `.env`. Done before updateDotEnvWithSecrets so the
-  // same baseline blob drives env-var name conflict detection for all
-  // ducklake-derived secrets and any form-field secrets.
-  const duckLakeResult = applyDuckLakeFormPipeline(schema, formValues, {
-    connectorName: connectorDriver.name ?? "",
-    existingEnvBlob: existingEnvBlob ?? "",
-  });
-  formValues = duckLakeResult.transformedValues;
-  const duckLakeAttachSecrets = duckLakeResult.extractedSecrets;
-
   // Fast-path: public auth skips validation/test and advances directly
   if (isMultiStepConnector(schema) && isPublicAuth(schema, formValues)) {
     return connectorDriver.name!;
   }
-
-  const schemaSecretKeys = schema
-    ? getSchemaSecretKeys(schema, { step: "connector" })
-    : [];
 
   // Create connector file path outside try block for cleanup
   const newConnectorFilePath = addLeadingSlash(
@@ -106,32 +95,6 @@ export async function createConnector({
   );
 
   try {
-    // Capture original .env and compute updated contents up front
-    // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
-    const { newBlob: initialEnvBlob, originalBlob: originalEnvBlob } =
-      await updateDotEnvWithSecrets(
-        runtimeClient,
-        queryClient,
-        connectorDriver,
-        formValues,
-        {
-          secretKeys: schemaSecretKeys,
-          schema: schema ?? undefined,
-          existingEnvBlob: existingEnvBlob ?? undefined,
-        },
-      );
-    let newEnvBlob = initialEnvBlob;
-
-    // Persist DuckLake catalog URIs extracted from the raw ATTACH clause.
-    // These are not tied to a form field, so updateDotEnvWithSecrets cannot
-    // write them; append directly using the same env blob so write ordering
-    // matches the rest of the secret handling.
-    for (const [envVarName, rawValue] of Object.entries(
-      duckLakeAttachSecrets,
-    )) {
-      newEnvBlob = replaceOrAddEnvVariable(newEnvBlob, envVarName, rawValue);
-    }
-
     /**
      * Optimistic updates (Test and Connect):
      * 1. Write the `.env` file so secrets exist before connector reconciliation
@@ -139,40 +102,49 @@ export async function createConnector({
      * 3. Wait for reconciliation and surface any file errors
      */
 
-    // Get the project parser starting version
-    const projectParserStartingVersion = getProjectParserVersion(
-      runtimeClient.instanceId,
+    // Get the starting versions from the server; the cache can be stale if
+    // events were missed, which would let the waits below return early.
+    const projectParserStartingVersion = await getProjectParserVersion(
+      runtimeClient,
+      queryClient,
     );
-    // Get the starting version of the connector resource
-    const connectorStartingVersion = queryClient.getQueryData<{
-      resource: V1Resource | undefined;
-    }>(
-      getRuntimeServiceGetResourceQueryKey(runtimeClient.instanceId, {
-        name: { name: connectorName, kind: ResourceKind.Connector },
-      }),
-    )?.resource?.meta?.stateVersion;
-
-    if (existingEnvBlob !== newEnvBlob) {
-      await runtimeServicePutFile(runtimeClient, {
-        path: ".env",
-        blob: newEnvBlob,
-        create: true,
-        createOnly: false,
-      });
-      if (getRuntimeEditEnvironment() === "cloud") {
-        // Only push env on cloud for now. We will revisit this for rill-dev.
-        await runtimeServicePushEnv(runtimeClient, {});
+    let connectorStartingVersion: string | undefined;
+    try {
+      const connector = await fetchResource(
+        runtimeClient,
+        queryClient,
+        connectorName,
+        ResourceKind.Connector,
+        true,
+      );
+      connectorStartingVersion = connector?.meta?.stateVersion;
+    } catch (error) {
+      if (isControllerClosedError(error)) {
+        // The controller is restarting; fall back to the last known version.
+        connectorStartingVersion = queryClient.getQueryData<{
+          resource: V1Resource | undefined;
+        }>(
+          getRuntimeServiceGetResourceQueryKey(runtimeClient.instanceId, {
+            name: { name: connectorName, kind: ResourceKind.Connector },
+          }),
+        )?.resource?.meta?.stateVersion;
+      } else if (!isNotFoundError(error)) {
+        // Not found means this is a new connector with no prior state.
+        throw error;
       }
     }
 
+    const connectorYaml = getConnectorYAML({
+      connector: connectorDriver,
+      formValues,
+      schema,
+      envEditSession,
+    });
+    await envEditSession.commit();
+
     await runtimeServicePutFile(runtimeClient, {
       path: newConnectorFilePath,
-      blob: getConnectorYamlPreview({
-        connector: connectorDriver,
-        formValues,
-        schema,
-        existingEnvBlob: originalEnvBlob,
-      }),
+      blob: connectorYaml,
       create: true,
       createOnly: false,
     });
@@ -180,12 +152,14 @@ export async function createConnector({
     if (validate) {
       // Wait for project parser to finish updating before checking for errors.
       await waitForProjectParserVersion(
-        runtimeClient.instanceId,
+        runtimeClient,
         projectParserStartingVersion + 1,
+        queryClient,
       );
 
       await waitForResourceReconciliation(
         runtimeClient,
+        queryClient,
         connectorName,
         ResourceKind.Connector,
         connectorStartingVersion,
@@ -228,23 +202,12 @@ export async function maybeDeleteConnector(
   runtimeClient: RuntimeClient,
   queryClient: QueryClient,
   connectorName: string,
+  envEditSession: EnvEditSession,
 ) {
   const connectorFilePath = addLeadingSlash(
     getFileAPIPathFromNameAndType(connectorName, EntityType.Connector),
   );
   if (!fileArtifacts.hasFileArtifact(connectorFilePath)) return;
-
-  const connectorFileArtifact =
-    fileArtifacts.getFileArtifact(connectorFilePath);
-  const connectorYaml = await connectorFileArtifact.fetchContent();
-  if (!connectorYaml) return;
-
-  // Get the existing env and remove the connector's env vars
-  const envBlob = await unsetResourceEnvVars(
-    runtimeClient,
-    queryClient,
-    connectorYaml,
-  );
 
   // Delete the connector file
   await runtimeServiceDeleteFile(runtimeClient, {
@@ -252,10 +215,7 @@ export async function maybeDeleteConnector(
   });
 
   // Update the .env file with the removed env vars
-  await runtimeServicePutFile(runtimeClient, {
-    path: ".env",
-    blob: envBlob,
-  });
+  await envEditSession.rollback();
 
   // Update the rill.yaml file to remove the connector as the OLAP connector.
   await unsetOlapConnectorInRillYAML(runtimeClient, queryClient, connectorName);
@@ -269,7 +229,7 @@ export async function maybeInitProject(client: RuntimeClient) {
   await runtimeServiceUnpackEmpty(client, {
     displayName: EMPTY_PROJECT_TITLE,
   });
-  await waitForProjectParser(client.instanceId);
+  await waitForProjectParser(client);
 
   // Race condition: invalidate("init") must be called before we navigate to
   // `/files/${newFilePath}`. invalidate("init") is also called in the
@@ -292,6 +252,65 @@ async function setOlapConnectorInRillYAML(
     create: true,
     createOnly: false,
   });
+
+  // Writing rill.yaml returns before the OLAP setting is applied. Wait for the
+  // updated instance and a usable controller, then refresh the explorer before
+  // the form advances. This also works when restart notifications are missed.
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    try {
+      const { instance } = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {
+          sensitive: true,
+        }),
+        queryFn: ({ signal }) =>
+          runtimeServiceGetInstance(client, { sensitive: true }, { signal }),
+        staleTime: 0,
+      });
+      if (instance?.olapConnector === newConnectorName) {
+        const parser = await fetchProjectParser(client, queryClient, true);
+        const resource = await fetchResource(
+          client,
+          queryClient,
+          newConnectorName,
+          ResourceKind.Connector,
+          true,
+        );
+        const parserReady =
+          parser?.projectParser?.state?.watching ||
+          parser?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+        // An idle connector with a reconcile error is still accepted, so
+        // saving without testing keeps working with bad credentials.
+        const resourceReady =
+          resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+        if (parserReady && resourceReady) {
+          await queryClient.invalidateQueries({
+            queryKey: getRuntimeServiceListResourcesQueryKey(
+              client.instanceId,
+              {},
+            ),
+            refetchType: "none",
+          });
+          await fileArtifacts.init(client, queryClient);
+          await queryClient.fetchQuery({
+            queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
+              client.instanceId,
+            ),
+            queryFn: ({ signal }) =>
+              runtimeServiceAnalyzeConnectors(client, {}, { signal }),
+            staleTime: 0,
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      if (!isControllerClosedError(error) && !isNotFoundError(error)) {
+        throw error;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  throw new Error(`Timed out waiting for OLAP connector ${newConnectorName}`);
 }
 
 const ConnectorUnsetCheckMaxRetries = 5;
@@ -369,7 +388,7 @@ export function isPublicAuth(
 type CacheEntry = {
   name: string;
   formValues: Record<string, unknown>;
-  existingEnvBlob: string;
+  envEditSession: EnvEditSession;
 };
 
 export class ConnectorFormCache {
@@ -382,7 +401,11 @@ export class ConnectorFormCache {
     return id.toString();
   }
 
-  public async getOrCreate(schema: string, id: string): Promise<CacheEntry> {
+  public getOrCreate(
+    schema: string,
+    id: string,
+    envStore: EnvStore,
+  ): CacheEntry {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
     }
@@ -392,13 +415,16 @@ export class ConnectorFormCache {
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
 
-    const envFile = fileArtifacts.getFileArtifact(".env");
-    const envBlob = (await envFile.fetchContent(false)) ?? "";
+    const envEditSession = new EnvEditSession(
+      envStore,
+      name, // use generated connector name as prefix
+      getConnectorSchema(schema) ?? undefined,
+    );
 
     const entry = {
       name,
       formValues: {},
-      existingEnvBlob: envBlob,
+      envEditSession,
     };
     this.cache.set(id, entry);
     return entry;
@@ -409,6 +435,10 @@ export class ConnectorFormCache {
     if (entry) {
       entry.formValues = formValues;
     }
+  }
+
+  public delete(id: string) {
+    this.cache.delete(id);
   }
 
   public clear() {

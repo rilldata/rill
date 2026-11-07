@@ -44,8 +44,9 @@ type CatalogStore interface {
 	CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
-	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
+	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored, whereSkipped bool) error
 	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
+	UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, wherePending, whereErrored bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
@@ -54,9 +55,22 @@ type CatalogStore interface {
 	FindAISessions(ctx context.Context, ownerID string, userAgentPattern string) ([]*AISession, error)
 	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
 	InsertAISession(ctx context.Context, s *AISession) error
+	// UpdateAISession returns ErrNotFound if the session does not exist.
 	UpdateAISession(ctx context.Context, s *AISession) error
+	DeleteAISession(ctx context.Context, sessionID string) error
 	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
+	// InsertAIMessage returns ErrNotFound if the message's session does not exist.
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
+
+	FindAIMemories(ctx context.Context, ownerID string) ([]*AIMemory, error)
+	FindAIMemory(ctx context.Context, id int64) (*AIMemory, error)
+	// InsertAIMemory stores a new memory and sets its ID.
+	InsertAIMemory(ctx context.Context, m *AIMemory) error
+	UpdateAIMemory(ctx context.Context, m *AIMemory) error
+	DeleteAIMemory(ctx context.Context, id int64) error
+	// FindAIMemorySettings returns ErrNotFound when the owner has never changed their settings.
+	FindAIMemorySettings(ctx context.Context, ownerID string) (*AIMemorySettings, error)
+	UpsertAIMemorySettings(ctx context.Context, s *AIMemorySettings) error
 }
 
 // Resource is an entry in a catalog store
@@ -86,6 +100,9 @@ type ModelPartition struct {
 	Error string
 	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
+	// Skipped indicates the partition has been explicitly marked to be skipped.
+	// Skipped partitions are excluded from execution and from the model's error state until they are explicitly triggered.
+	Skipped bool
 }
 
 // FindModelPartitionsOptions is used to filter model partitions.
@@ -95,6 +112,7 @@ type FindModelPartitionsOptions struct {
 	WherePending     bool
 	WhereErrored     bool
 	WhereSuccessful  bool
+	WhereSkipped     bool
 	BeforeExecutedOn time.Time
 	AfterKey         string
 }
@@ -132,4 +150,29 @@ type AIMessage struct {
 	Tool        string    `db:"tool"`
 	ContentType string    `db:"content_type"`
 	Content     string    `db:"content"`
+}
+
+// AIMemory is a short fact or preference the AI has learned about a user in an instance.
+// It is scoped to (instance, owner) and is injected into the AI's prompts in later sessions.
+type AIMemory struct {
+	// ID is assigned by the store on insert. It is a small integer rather than a UUID because the AI copies it from its prompt into update_memory calls.
+	ID         int64  `db:"id"`
+	InstanceID string `db:"instance_id"`
+	OwnerID    string `db:"owner_id"`
+	// Agent is the name of the agent the memory applies to: the agent that learned it, or the one the user chose when adding it themselves.
+	// It is empty when the memory applies to every agent.
+	Agent   string `db:"agent"`
+	Content string `db:"content"`
+	// SourceSessionID is the session the memory was learned in. It is empty for memories the user added themselves.
+	SourceSessionID string    `db:"source_session_id"`
+	CreatedOn       time.Time `db:"created_on"`
+	UpdatedOn       time.Time `db:"updated_on"`
+}
+
+// AIMemorySettings holds a user's memory settings for an instance.
+type AIMemorySettings struct {
+	InstanceID string    `db:"instance_id"`
+	OwnerID    string    `db:"owner_id"`
+	Enabled    bool      `db:"enabled"` // when false, existing memories are neither used nor updated, but the user can still manage them
+	UpdatedOn  time.Time `db:"updated_on"`
 }

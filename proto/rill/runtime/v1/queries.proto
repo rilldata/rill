@@ -20,14 +20,6 @@ service QueryService {
     };
   }
 
-  // Batch request with different queries
-  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/batch",
-      body: "*"
-    };
-  }
-
   // Export builds a URL to download the results of a query as a file.
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -312,17 +304,6 @@ message QueryResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
-message QueryBatchRequest {
-  string instance_id = 1;
-  repeated Query queries = 2;
-}
-
-message QueryBatchResponse {
-  uint32 index = 1;
-  QueryResult result = 2;
-  string error = 3;
-}
-
 message ExportRequest {
   // Instance ID to run the query against.
   string instance_id = 1;
@@ -393,31 +374,6 @@ message Query {
     TableCardinalityRequest table_cardinality_request = 17;
     TableColumnsRequest table_columns_request = 18;
     TableRowsRequest table_rows_request = 19;
-  }
-}
-
-message QueryResult {
-  oneof result {
-    ProjectStorageResponse project_storage_response = 22;
-    MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
-    MetricsViewToplistResponse metrics_view_toplist_response = 3;
-    MetricsViewComparisonResponse metrics_view_comparison_response = 4;
-    MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
-    MetricsViewTotalsResponse metrics_view_totals_response = 6;
-    MetricsViewRowsResponse metrics_view_rows_response = 7;
-    ColumnRollupIntervalResponse column_rollup_interval_response = 8;
-    ColumnTopKResponse column_top_k_response = 9;
-    ColumnNullCountResponse column_null_count_response = 10;
-    ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
-    ColumnTimeGrainResponse column_time_grain_response = 12;
-    ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
-    ColumnRugHistogramResponse column_rug_histogram_response = 14;
-    ColumnTimeRangeResponse column_time_range_response = 15;
-    ColumnCardinalityResponse column_cardinality_response = 16;
-    ColumnTimeSeriesResponse column_time_series_response = 17;
-    TableCardinalityResponse table_cardinality_response = 18;
-    TableColumnsResponse table_columns_response = 19;
-    TableRowsResponse table_rows_response = 20;
   }
 }
 
@@ -516,7 +472,10 @@ message MetricsViewAggregationRequest {
   int32 priority = 11;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
-  bool exact = 17;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+  // That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+  bool exact = 17 [deprecated = true];
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
@@ -561,7 +520,11 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
     MetricsViewAggregationMeasureComputeURI uri = 11;
     MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
+    MetricsViewAggregationMeasureComputeExpression expression = 13;
   }
+  // Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+  // No-op for measures without an `exact_expression`, which only simple measures define.
+  bool exact = 14;
 }
 
 message MetricsViewAggregationMeasureComputeCount {}
@@ -592,6 +555,17 @@ message MetricsViewAggregationMeasureComputeURI {
 
 message MetricsViewAggregationMeasureComputeComparisonTime {
   string dimension = 1;
+}
+
+// Computes an ephemeral measure derived from other measures in the metrics view.
+// The expression may only contain measure references, numeric literals, NULL,
+// the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+// Referenced measures are subject to the metrics view's security policies.
+message MetricsViewAggregationMeasureComputeExpression {
+  // Arithmetic expression over existing measure names, e.g. "revenue - cost".
+  string expression = 1;
+  // Optional display name used in exports and result metadata.
+  string display_name = 2;
 }
 
 message MetricsViewAggregationSort {
@@ -670,8 +644,10 @@ message MetricsViewComparisonRequest {
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   // Optional
   int32 priority = 11;
-  // Optional, defaults to false
-  bool exact = 13;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+  // Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
+  bool exact = 13 [deprecated = true];
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
   // Optional. If true, the response will include traces of spans captured during execution.
@@ -760,7 +736,15 @@ message MetricsViewComparisonMeasureAlias {
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
+  // Names of measures in the metrics view to include.
+  // At least one of measure_names or ephemeral_measures must be provided.
+  repeated string measure_names = 3;
+  // Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+  // Only the `expression` compute is supported for time series.
+  repeated MetricsViewAggregationMeasure ephemeral_measures = 17;
+  // Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+  // No-op for measures without an `exact_expression`.
+  repeated string exact_measure_names = 18;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max
@@ -905,6 +889,9 @@ message MetricsViewTimeRangeRequest {
 message MetricsViewTimeRangeResponse {
   // Not optional, not null
   TimeRangeSummary time_range_summary = 1;
+  // The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+  // Zero if the metrics view does not configure max_query_time_range.
+  int64 max_query_time_range_millis = 3;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 2;
 }
@@ -977,6 +964,9 @@ message MetricsViewTimeRangesResponse {
   // The same values as resolved_time_ranges for backwards compatibility.
   // Deprecated: use resolved_time_ranges instead.
   repeated TimeRange time_ranges = 2;
+  // The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+  // Zero if the metrics view does not configure max_query_time_range.
+  int64 max_query_time_range_millis = 5;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 4;
 }
@@ -1060,6 +1050,10 @@ message ResolveCanvasRequest {
   // Only for use by the visual editor in Rill Developer. Must never be sent by
   // Rill Cloud, read-only previews, shared token access, or embedded viewers.
   bool unsafe = 4;
+  // If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+  // Used by the visual editor, which maps canvas elements to their position in the YAML.
+  // Requires permission to edit the canvas.
+  bool include_hidden = 5;
 }
 
 message ResolveCanvasResponse {
@@ -1071,6 +1065,9 @@ message ResolveCanvasResponse {
   map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   map<string, Resource> referenced_metrics_views = 3;
+  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+  // The paths follow the canvas YAML. Only set when include_hidden is true.
+  repeated string hidden_paths = 4;
 }
 
 message ResolveComponentRequest {
@@ -1085,6 +1082,8 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+  // The effective args used for resolution: the component's declared param defaults merged with the provided args.
+  google.protobuf.Struct resolved_args = 3;
 }
 
 message ResolveTemplatedStringRequest {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/databricks-sql-go/driverctx"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -32,7 +33,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
@@ -49,8 +50,24 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.config.LogQueries {
-		c.logger.Info("databricks query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("databricks query", fields...)
 	}
+
+	// Send the query attributes as Databricks query tags, recorded in the query_tags
+	// column of system.query.history. The driver attaches them per statement rather than
+	// per session, so they stay correct even though connections are pooled across users.
+	if len(stmt.QueryAttributes) > 0 {
+		ctx = driverctx.NewContextWithQueryTags(ctx, stmt.QueryAttributes)
+	}
+
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
@@ -101,90 +118,6 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return err
-	}
-
-	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
-
-	objectType := "TABLE"
-	if table.View {
-		objectType = "VIEW"
-	}
-
-	var ddl string
-	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
-	if err != nil {
-		return err
-	}
-	table.DDL = ddl
-	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
-	prefix := catalogPrefix(database)
-	q := fmt.Sprintf(`
-	SELECT
-		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM %sinformation_schema.tables t
-	JOIN %sinformation_schema.columns c
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-	WHERE t.table_schema = ? AND t.table_name = ?
-	ORDER BY c.ordinal_position
-	`, prefix, prefix)
-
-	conn, err := c.getDB(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := conn.QueryContext(ctx, q, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var isView bool
-	var fields []*runtimev1.StructType_Field
-	var colName, colType string
-	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
-			return nil, err
-		}
-		fields = append(fields, &runtimev1.StructType_Field{
-			Name: colName,
-			Type: databaseTypeToPB(colType),
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &drivers.OlapTable{
-		Database:       database,
-		DatabaseSchema: schema,
-		Name:           name,
-		View:           isView,
-		Schema:         &runtimev1.StructType{Fields: fields},
-	}, nil
 }
 
 // Head implements drivers.OLAPStore.

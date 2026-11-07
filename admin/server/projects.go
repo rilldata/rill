@@ -10,13 +10,14 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -26,9 +27,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
+
+// defaultProdSlots and defaultDevSlots are the slot counts applied when a CreateProject
+// request omits them (e.g. the UI, or older CLIs that don't pass these fields).
+const defaultProdSlots = 2
+
+const defaultDevSlots = 2
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
 // This TTL is not used for tokens created for internal communication between the admin and runtime services.
@@ -473,6 +480,17 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
+	// provisioner is a sudo-only field. Non-superusers get the org's default provisioner (or the global default).
+	if req.Provisioner != "" {
+		if !claims.Superuser(ctx) {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set provisioner")
+		}
+		err := s.validateRuntimeProvisioner(req.Provisioner)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
@@ -480,6 +498,16 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 		return nil, err
+	}
+
+	// Apply defaults when slots are omitted (e.g. the UI, or older CLIs that don't pass these fields).
+	prodSlots := int(req.ProdSlots)
+	if prodSlots == 0 {
+		prodSlots = defaultProdSlots
+	}
+	devSlots := int(req.DevSlots)
+	if devSlots == 0 {
+		devSlots = defaultDevSlots
 	}
 
 	// Check projects quota
@@ -490,13 +518,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if org.QuotaProjects >= 0 && usage.Projects >= org.QuotaProjects {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && prodSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.DevSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && devSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+	if org.QuotaSlotsTotal >= 0 && usage.Slots+prodSlots > org.QuotaSlotsTotal {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 	if org.QuotaDeployments >= 0 && usage.Deployments >= org.QuotaDeployments {
@@ -525,11 +553,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
-	devSlots := 8 // default value for older CLIs which will not pass this field
-	if req.DevSlots != 0 {
-		devSlots = int(req.DevSlots)
-	}
-
 	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -547,10 +570,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		PrimaryBranch:        "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdSlots:            int(req.ProdSlots),
+		ProdSlots:            prodSlots,
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
+		OverrideDiskGB:       nil, // default to no override; can be set later by superusers
 	}
 
 	// Check and validate the project file source.
@@ -677,6 +701,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
+	}
+	if req.DevTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_ttl_seconds", *req.DevTtlSeconds))
+	}
+	if req.OverrideDiskGb != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
 	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
@@ -812,6 +842,41 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	devTTLSeconds := proj.DevTTLSeconds
+	if req.DevTtlSeconds != nil {
+		if *req.DevTtlSeconds <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
+		}
+		devTTLSeconds = *req.DevTtlSeconds
+	}
+
+	// provisioner is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	if req.Provisioner != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set provisioner")
+		}
+		err := s.validateRuntimeProvisioner(*req.Provisioner)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	overrideDiskGB := proj.OverrideDiskGB
+	if req.OverrideDiskGb != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set override_disk_gb")
+		}
+		if *req.OverrideDiskGb == 0 {
+			overrideDiskGB = nil
+		} else if *req.OverrideDiskGb < 0 {
+			return nil, status.Error(codes.InvalidArgument, "override_disk_gb must be >= 0")
+		} else {
+			v := *req.OverrideDiskGb
+			overrideDiskGB = &v
+		}
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -829,7 +894,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
-		DevTTLSeconds:        proj.DevTTLSeconds,
+		DevTTLSeconds:        devTTLSeconds,
+		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -1113,6 +1179,15 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
+	// Attributes are org-scoped and feed security policies, so setting them requires org-level member management permission.
+	var attrs map[string]any
+	if req.Attributes != nil {
+		if !claims.OrganizationPermissions(ctx, proj.OrganizationID).ManageOrgMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to set user attributes")
+		}
+		attrs = req.Attributes.AsMap()
+	}
+
 	// Check outstanding invites quota
 	count, err := s.admin.DB.CountInvitesForOrganization(ctx, proj.OrganizationID)
 	if err != nil {
@@ -1122,6 +1197,14 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		return nil, err
 	}
+
+	// User groups are org-scoped, so adding to them requires org-level member management permission (checked by the resolver).
+	// Resolve them up front, so an invalid group fails the request before anything is written or emailed.
+	groups, err := s.resolveUsergroupsForMembership(ctx, org.Name, req.Usergroups, false)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := usergroupIDs(groups)
 	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q can at most have %d outstanding invitations", org.Name, org.QuotaOutstandingInvites)
 	}
@@ -1164,14 +1247,17 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		// Insert an organization guest invite (will fail with a constraint error if an org-level invite already exists).
 		// NOTE: Not using a transaction here for simplicity. The operation is idempotent and worst-case the user becomes a guest member with no access.
 		err = s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:     req.Email,
-			OrgID:     proj.OrganizationID,
-			RoleID:    guestRole.ID,
-			InviterID: invitedByUserID,
+			Email:        req.Email,
+			OrgID:        proj.OrganizationID,
+			RoleID:       guestRole.ID,
+			InviterID:    invitedByUserID,
+			UsergroupIDs: groupIDs,
+			Attributes:   attrs,
 		})
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
 		}
+		orgInviteExisted := errors.Is(err, database.ErrNotUnique)
 
 		// Find the organization invite
 		orgInvite, err := s.admin.DB.FindOrganizationInvite(ctx, proj.OrganizationID, req.Email)
@@ -1180,6 +1266,24 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 				return nil, err
 			}
 			return nil, fmt.Errorf("expected but failed to find organization invite: %w", err)
+		}
+
+		// If the org invite already existed, update its attributes only when explicitly provided, to avoid clearing them on a plain re-invite.
+		if orgInviteExisted && req.Attributes != nil {
+			err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, orgInvite.ID, attrs)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// User groups are additive: merge them with the groups already on the invite.
+		if orgInviteExisted {
+			if mergedGroupIDs, changed := mergeUnique(orgInvite.UsergroupIDs, groupIDs); changed {
+				err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, orgInvite.ID, mergedGroupIDs)
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		// Invite user to join the project
@@ -1229,8 +1333,20 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		}, nil
 	}
 
+	// Attributes are set on the guest org membership created below, so they can only be applied to users who are not org members yet.
+	// Reject the request instead of silently dropping them; an existing member's attributes are changed via UpdateOrganizationMemberUserAttributes.
+	if req.Attributes != nil {
+		_, err := s.admin.DB.FindOrganizationMemberUser(ctx, proj.OrganizationID, user.ID)
+		if err == nil {
+			return nil, status.Error(codes.FailedPrecondition, "user is already a member of the organization: update their attributes on the organization instead")
+		}
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+	}
+
 	// Add or update the user to the project with the requested role and resource scope.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, restrictResources, resources)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, attrs, restrictResources, resources)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1246,6 +1362,12 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		if err := s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, resources); err != nil {
 			return nil, err
 		}
+	}
+
+	// Unlike attributes, user groups are additive and org-scoped, so they can be applied whether or not the user was already an org member.
+	err = s.admin.DB.InsertUsergroupsMemberUser(ctx, user.ID, groupIDs)
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
@@ -1270,6 +1392,7 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.email", req.Email),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -1807,6 +1930,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -2134,6 +2258,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
 		DevTtlSeconds:       p.DevTTLSeconds,
+		OverrideDiskGb:      safeInt64(p.OverrideDiskGB),
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2240,6 +2365,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		ProdTTLSeconds:       p.ProdTTLSeconds,
 		DevSlots:             p.DevSlots,
 		DevTTLSeconds:        p.DevTTLSeconds,
+		OverrideDiskGB:       p.OverrideDiskGB,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 	})
@@ -2303,39 +2429,13 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 	}
 }
 
+// securityRulesFromResources returns security rules that limit access to the given resources, if restricted is true.
 func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
-	if !restricted {
-		// No resource restrictions
-		return nil
+	names := make([]*runtimev1.ResourceName, len(resources))
+	for i, r := range resources {
+		names[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
 	}
-	if len(resources) == 0 {
-		// No access to any resources
-		return []*runtimev1.SecurityRule{{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Allow: false,
-				},
-			},
-		}}
-	}
-
-	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
-	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-					Resource: &runtimev1.ResourceName{
-						Kind: r.Type,
-						Name: r.Name,
-					},
-				},
-			},
-		})
-	}
-	return rules
+	return runtime.SecurityRulesForResources(restricted, names)
 }
 
 func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {

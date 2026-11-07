@@ -20,20 +20,20 @@ func TestGetTable(t *testing.T) {
 		require.True(t, ok)
 
 		// Test getting metadata for the all_datatypes table
-		metadata, err := infoSchema.GetTable(ctx, "awsdatacatalog", "integration_test", "all_datatypes")
+		metadata, err := infoSchema.Lookup(ctx, "awsdatacatalog", "integration_test", "all_datatypes")
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 		require.False(t, metadata.View)
 		require.NotEmpty(t, metadata.Schema)
 
 		// Verify some expected columns exist
-		_, hasID := metadata.Schema["id"]
+		hasID := metadata.Schema.Fields[0].Name == "id"
 		require.True(t, hasID, "Expected 'id' column in table schema")
 
-		_, hasInt32 := metadata.Schema["int32_col"]
+		hasInt32 := metadata.Schema.Fields[2].Name == "int32_col"
 		require.True(t, hasInt32, "Expected 'int32_col' column in table schema")
 
-		_, hasFloat := metadata.Schema["float_col"]
+		hasFloat := metadata.Schema.Fields[4].Name == "float_col"
 		require.True(t, hasFloat, "Expected 'float_col' column in table schema")
 	})
 
@@ -53,17 +53,17 @@ func TestGetTable(t *testing.T) {
 		})
 
 		// Get metadata for the view
-		metadata, err := infoSchema.GetTable(ctx, "awsdatacatalog", "integration_test", "test_view")
+		metadata, err := infoSchema.Lookup(ctx, "awsdatacatalog", "integration_test", "test_view")
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 		require.True(t, metadata.View, "Expected test_view to be identified as a view")
 		require.NotEmpty(t, metadata.Schema)
 
 		// Verify columns from the view
-		_, hasID := metadata.Schema["id"]
+		hasID := metadata.Schema.Fields[0].Name == "id"
 		require.True(t, hasID, "Expected 'id' column in view schema")
 
-		_, hasInt32 := metadata.Schema["int32_col"]
+		hasInt32 := metadata.Schema.Fields[1].Name == "int32_col"
 		require.True(t, hasInt32, "Expected 'int32_col' column in view schema")
 	})
 }

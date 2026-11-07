@@ -1,7 +1,8 @@
 /**
- * Classification config for the query hooks code generator.
+ * Config for the query hooks code generator.
  * Determines whether each RPC method produces a query or mutation hook,
- * or should be skipped entirely (streaming methods).
+ * or should be skipped entirely (streaming methods), and whether its request
+ * and response are proto messages or the legacy Orval JSON types.
  */
 
 export type MethodClassification = "query" | "mutation" | "skip";
@@ -19,8 +20,6 @@ export const methodOverrides: Record<
     export: "mutation",
     exportReport: "mutation",
     query: "mutation",
-    // Streaming
-    queryBatch: "skip",
   },
   RuntimeService: {
     // Instance-management: admin-plane only, not used by frontend
@@ -34,6 +33,7 @@ export const methodOverrides: Record<
     completeStreaming: "skip",
     // Explicitly classified as queries (despite not matching Get/List prefix)
     gitStatus: "query",
+    gitDiff: "query",
     issueDevJWT: "query",
     analyzeConnectors: "query",
     analyzeVariables: "query",
@@ -78,4 +78,40 @@ export function classifyMethod(
   }
 
   return "query";
+}
+
+/**
+ * Methods migrated to proto messages, keyed by service.
+ *
+ * A migrated method takes a `PartialMessage<Request>` that is handed straight to
+ * the ConnectRPC client and returns the `Response` message instance. Every other
+ * method keeps the legacy JSON bridge: the request is parsed with `fromJson` and
+ * the response is converted back with `toJson`, so callers keep working with the
+ * Orval `V1*` JSON types.
+ *
+ * Migrating a method is a deliberate step, not a side effect of deleting a `V1*`
+ * type from `index.schemas.ts`: add the method here in the same change that
+ * updates its call sites to the proto messages.
+ */
+export const protoMessageMethods: Record<string, string[]> = {
+  QueryService: [
+    "columnCardinality",
+    "columnDescriptiveStatistics",
+    "columnNullCount",
+    "columnNumericHistogram",
+    "columnRollupInterval",
+    "columnRugHistogram",
+    "columnTimeGrain",
+    "columnTimeRange",
+    "columnTimeSeries",
+    "columnTopK",
+  ],
+};
+
+/** Whether a method's request and response are proto messages instead of Orval JSON types. */
+export function usesProtoMessages(
+  serviceName: string,
+  methodName: string,
+): boolean {
+  return !!protoMessageMethods[serviceName]?.includes(methodName);
 }

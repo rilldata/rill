@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting Performance in Rill
-description: Dev/Prod Setup
+description: Find and fix slow models, queries and dashboards in Rill
 sidebar_label: Optimize Performance in Rill
 sidebar_position: 10
 ---
@@ -24,7 +24,7 @@ Depending on the complexity of your underlying models and the size of the data m
 
 ### Consider which models to materialize
 
-By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
+By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue to grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend.
 
 In such scenarios, we recommend [materializing these models as tables.](/developers/build/models/performance#model-performance) However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
@@ -172,11 +172,11 @@ Some organizations might have both a development and production version of sourc
 
 ## Query Optimization
 
-Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/developers/build/connectors/olap), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 
+Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/developers/build/connectors/olap), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource-intensive it is to build models, how fast profiling queries run, and more.
 
 ### Use appropriate data types and avoid casting when possible
 
-Casting can be expensive, especially when the underlying models are views and not [materialized](#consider-which-models-to-materialize) as a table. For example, if a timestamp column is actually incorrectly typed as a string, then for timeseries charts, Rill ends up having to iterate across each row to try to infer the timestamp and a lot of time parsing has to occur. Similarly, for incorrectly typed or casted columns that are used in calculations, the calculations will have to be constantly looped through, which can be both inefficient and expensive over time (and simply make everything slower). 
+Casting can be expensive, especially when the underlying models are views and not [materialized](#consider-which-models-to-materialize) as a table. For example, if a timestamp column is actually incorrectly typed as a string, then for timeseries charts, Rill ends up having to iterate across each row to try to infer the timestamp and a lot of time parsing has to occur. Similarly, for incorrectly typed or cast columns that are used in calculations, the calculations will have to be constantly looped through, which can be both inefficient and expensive over time (and simply make everything slower).
 
 Similarly, choosing the right data type for each column is also important. Smaller data types, when applicable, consume less memory and can improve query performance. For example, use `INT` instead of `BIGINT` if your data range permits.
 
@@ -186,7 +186,7 @@ Because most [OLAP databases](/developers/build/connectors/olap) store data in a
 
 ### Consider sorting your data by an appropriate timestamp column
 
-Generally speaking, if possible, it is recommended to make sure that your upstream data is relatively well organized and/or sorted by timestamp before being ingested into Rill. This helps to ensure that timeseries queries are efficient when they execute against resulting models and can result in an order of magnitude difference in query performance. This can also help improve the effectiveness of filters by reducing IO.
+Generally speaking, if possible, it is recommended to make sure that your upstream data is relatively well organized and/or sorted by timestamp before being ingested into Rill. This helps to ensure that timeseries queries are efficient when they execute against resulting models and can result in an order of magnitude difference in query performance. This can also help improve the effectiveness of filters by reducing I/O.
 
 :::info When to sort vs not to sort?
 
@@ -196,7 +196,7 @@ Sorting, especially in DuckDB, _can also be computationally intensive_ and most 
 
 ### Use joins efficiently
 
-Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/developers/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set. 
+Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/developers/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well-chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set.
 
 ### Apply filters early and use WHERE clauses wisely
 
@@ -236,9 +236,9 @@ Dimension stripping is another tool to reduce data size by removing high cardina
 
 ### Sampling & Datasketches
 
-There are times where you may look at sampling data feeds to trade data accuracy for lower costs and faster query speeds. Sampling involves sending only a percentage of your data, then extrapolating the values to get an estimate. Rill does not recommend sampling your primary KPIs, any records that require a join or are tied to revenue. This filtered data should be decided in random fashion to not skew or bias the results. Please note, tracking uniques is not recommended if you choose to sample. 
+There are times when you may look at sampling data feeds to trade data accuracy for lower costs and faster query speeds. Sampling involves sending only a percentage of your data, then extrapolating the values to get an estimate. Rill does not recommend sampling your primary KPIs, any records that require a join or are tied to revenue. This filtered data should be decided in random fashion to not skew or bias the results. Please note, tracking uniques is not recommended if you choose to sample.
 
-If looking to track uniques, but with smaller datasets and significantly improved performance, you can load unique values (ip addresses, user ids, URLs, etc) with [datasketches](https://datasketches.apache.org). There are multiple types of datasketches supported depending on your engine. At a high level, datasketches use algorithms to approximate unique values. Common use cases for datasketches include count distincts (campaign reach, unique visitors) and quantiles (time spent, frequency). Check out the [Apache Datasketches](https://datasketches.apache.org/docs/Architecture/MajorSketchFamilies.html) site for more details on methodology and use cases.
+If looking to track uniques, but with smaller datasets and significantly improved performance, you can load unique values (IP addresses, user IDs, URLs, etc.) with [datasketches](https://datasketches.apache.org). There are multiple types of datasketches supported depending on your engine. At a high level, datasketches use algorithms to approximate unique values. Common use cases for datasketches include count distincts (campaign reach, unique visitors) and quantiles (time spent, frequency). Check out the [Apache Datasketches](https://datasketches.apache.org/docs/Architecture/MajorSketchFamilies.html) site for more details on methodology and use cases.
 
 ### Lookups
 

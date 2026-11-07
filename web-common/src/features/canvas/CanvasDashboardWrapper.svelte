@@ -5,27 +5,65 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+  import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
+  import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
+  import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
+  import { type Snippet } from "svelte";
 
-  const client = useRuntimeClient();
+  const runtimeClient = useRuntimeClient();
+  let instanceId = $derived(runtimeClient.instanceId);
 
-  export let maxWidth: number;
-  export let clientWidth = 0;
-  export let showGrabCursor = false;
-  export let filtersEnabled: boolean | undefined;
-  export let canvasName: string;
-  export let embedded: boolean = false;
-  export let builder = false;
-  export let onClick: () => void = () => {};
+  let {
+    children,
+    canvasName,
+    maxWidth,
+    clientWidth = $bindable(0),
+    showGrabCursor = false,
+    filtersEnabled = undefined,
+    embedded = false,
+    builder = false,
+    onClick = () => {},
+  }: {
+    children: Snippet;
+    canvasName: string;
+    maxWidth: number;
+    clientWidth?: number;
+    showGrabCursor?: boolean;
+    filtersEnabled?: boolean | undefined;
+    embedded?: boolean;
+    builder?: boolean;
+    onClick?: () => void;
+  } = $props();
 
-  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  let contentRect = $state(new DOMRectReadOnly(0, 0, 0, 0));
 
-  $: ({ instanceId } = client);
+  let {
+    canvasEntity: {
+      theme,
+      exportMode,
+      expressionFilterManager,
+      dashboardProvider,
+    },
+  } = $derived(getCanvasStore(canvasName, instanceId));
 
-  $: ({
-    canvasEntity: { theme },
-  } = getCanvasStore(canvasName, instanceId));
+  $effect(() => {
+    dashboardProvider.yamlConfigProvider.setEditable(builder);
+  });
 
-  $: ({ width: clientWidth } = contentRect);
+  let missingRequiredFilters = $derived(
+    getMissingRequiredFilters(
+      expressionFilterManager,
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+    ),
+  );
+  // Note that this can be false when metricsViewsProvider is resolving.
+  // TODO: make sure parent waits for metricsViewsProvider.ready
+  let hasMissingRequired = $derived(missingRequiredFilters.length > 0);
+
+  $effect(() => {
+    clientWidth = contentRect.width;
+  });
 </script>
 
 <ThemeProvider theme={$theme}>
@@ -42,8 +80,28 @@
           if (e.target === e.currentTarget) onClick();
         }}
       >
-        <CanvasFilters {canvasName} {maxWidth} {builder} />
+        <CanvasFilters {canvasName} {maxWidth} />
       </header>
+    {/if}
+
+    <!-- Off-screen, read-only full render of the canvas, mounted solely during a
+         PDF export as the capture target (see CanvasPdfExportView). Kept out of
+         the DOM otherwise: Playwright locators and the a11y tree match elements
+         regardless of CSS visibility, so an always-mounted copy would duplicate
+         the live dashboard's text/labels. -->
+    {#if $exportMode && !hasMissingRequired}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute"
+        style="left: -99999px; top: 0;"
+      >
+        <!-- Rendered at the canvas's own design width rather than the width it
+             happens to occupy on screen, so the same dashboard always exports
+             the same document. Following the viewport meant a phone produced a
+             narrow capture that the page then had to magnify, which inflated
+             every row past the page height and sliced charts across pages. -->
+        <CanvasPdfExportView {canvasName} {instanceId} width={maxWidth} />
+      </div>
     {/if}
 
     <div
@@ -58,14 +116,21 @@
         if (e.target === e.currentTarget) onClick();
       }}
     >
-      <div
-        class="w-full h-fit flex flex-col items-center row-container relative"
-        style:max-width="{maxWidth}px"
-        style:min-width="420px"
-        bind:contentRect
-      >
-        <slot />
-      </div>
+      {#if hasMissingRequired}
+        <MissingRequiredFiltersMessage
+          {missingRequiredFilters}
+          metricsViewsProvider={dashboardProvider.metricsViewsProvider}
+        />
+      {:else}
+        <div
+          class="w-full h-fit flex flex-col items-center row-container relative"
+          style:max-width="{maxWidth}px"
+          style:min-width="420px"
+          bind:contentRect
+        >
+          {@render children()}
+        </div>
+      {/if}
     </div>
 
     <CellInspector />

@@ -3,7 +3,11 @@
  *
  * Shared type constants that correspond to backend enums in runtime/ai/ai.go
  */
-import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
+import type {
+  RuntimeServiceCompleteBody,
+  V1AIPrompt,
+} from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { Readable } from "svelte/store";
 
 // =============================================================================
@@ -56,19 +60,36 @@ export const ToolName = {
   // Feedback agent
   FEEDBACK_AGENT: "feedback_agent",
 
+  // Memory tool
+  UPDATE_MEMORY: "update_memory",
+
   // Common tools
   NAVIGATE: "navigate",
+  CLICK_UI: "click_ui",
+  LIST_SKILLS: "list_skills",
+  LOAD_SKILL: "load_skill",
 } as const;
 
 // =============================================================================
 // CHAT CONFIG
 // =============================================================================
 
+/**
+ * The two AI surfaces in a Rill workspace. Used to scope sidebar-chat sessionStorage
+ * (open state, conversation ID) so a Cloud Rill Developer (`/-/edit/...`) session
+ * does not leak into the production tab opened on Publish.
+ */
+export type ChatSurface = "developer" | "dashboard";
+
 export type ChatConfig = {
   agent: string;
   additionalContextStoreGetter: () => Readable<
     Partial<RuntimeServiceCompleteBody>
   >;
+  // Starter prompts shown in the empty chat. Picking one sends it as a message.
+  suggestedPromptsStoreGetter?: (
+    client: RuntimeClient,
+  ) => Readable<V1AIPrompt[]>;
   emptyChatLabel: string;
   placeholder: string;
   minChatHeight: string;

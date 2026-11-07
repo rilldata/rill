@@ -10,8 +10,6 @@ test.describe("leaderboard context column", () => {
   test("Leaderboard context column", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // reset metrics, and add a metric with `valid_percent_of_total: true`

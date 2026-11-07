@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
 
@@ -28,12 +29,11 @@ export async function waitForProfiling(
   columns: Array<string>,
 ) {
   return Promise.all(
-    [
-      page.waitForResponse("**/rill.runtime.v1.QueryService/TableColumns"),
-      columns.map(() =>
-        page.waitForResponse("**/rill.runtime.v1.QueryService/ColumnNullCount"),
-      ),
-    ].flat(),
+    columns.map((c) =>
+      expect(page.getByLabel(`${c} profile`, { exact: true })).toBeVisible({
+        timeout: 30_000,
+      }),
+    ),
   );
 }
 

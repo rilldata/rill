@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Textarea from "@rilldata/web-common/components/forms/Textarea.svelte";
   import type { Conversation } from "../conversation";
   import CheckboxCard from "@rilldata/web-common/components/forms/CheckboxCard.svelte";
@@ -29,25 +30,25 @@
     }
   }
 
+  // Submit before handleClose(): onClose clears the messageId prop
+  // and resetForm clears the categories and comment.
+  // Both run in the same tick, so the modal still closes immediately.
   function handleSubmit() {
     if (!messageId || isSubmitDisabled) return;
-    // Close immediately - let the chat show the feedback response
-    handleClose();
-    // Submit asynchronously - conversation will handle streaming
     void conversation.submitFeedback(
       messageId,
       "negative",
       selectedCategories,
       comment || undefined,
     );
+    handleClose();
   }
 
   function handleSkip() {
     if (!messageId) return;
-    // Close immediately - let the chat show the feedback response
-    handleClose();
-    // Submit asynchronously with no categories
+    // Submit with no categories
     void conversation.submitFeedback(messageId, "negative");
+    handleClose();
   }
 
   function handleClose() {
@@ -69,8 +70,8 @@
 >
   <Dialog.Content class="max-w-lg">
     <Dialog.Header>
-      <Dialog.Title>Give feedback</Dialog.Title>
-      <Dialog.Description>Select all that apply.</Dialog.Description>
+      <Dialog.Title>{m.chat_feedback_title()}</Dialog.Title>
+      <Dialog.Description>{m.chat_feedback_select_all()}</Dialog.Description>
     </Dialog.Header>
 
     <div class="feedback-form">
@@ -86,18 +87,20 @@
 
       <Textarea
         id="feedback-comment"
-        label="Comments"
+        label={m.chat_feedback_comments()}
         optional
         bind:value={comment}
-        placeholder="Type here..."
+        placeholder={m.chat_feedback_placeholder()}
         rows={3}
       />
     </div>
 
     <Dialog.Footer class="gap-x-2">
-      <Button type="secondary" onClick={handleSkip}>Skip</Button>
+      <Button type="secondary" onClick={handleSkip}
+        >{m.chat_feedback_skip()}</Button
+      >
       <Button type="primary" onClick={handleSubmit} disabled={isSubmitDisabled}>
-        Submit
+        {m.chat_feedback_submit()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

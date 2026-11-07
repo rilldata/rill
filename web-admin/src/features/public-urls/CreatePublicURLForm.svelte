@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import {
     createAdminServiceIssueMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
-    type AdminServiceIssueMagicAuthTokenBody,
   } from "@rilldata/web-admin/client";
-  import { isCanvasDashboardPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -25,38 +23,81 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import CanvasFiltersSection from "./CanvasFiltersSection.svelte";
-  import ExploreFiltersSection from "./ExploreFiltersSection.svelte";
-  import { convertDateToMinutes } from "./form-utils";
+  import {
+    convertDateToMinutes,
+    createFieldsAndStateForKind,
+  } from "./form-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
+  import {
+    CanvasDashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { onDestroy } from "svelte";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
 
+  let {
+    dashboardResource,
+  }: { dashboardResource: { kind: ResourceKind; name: string } } = $props();
+
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
 
-  $: ({ organization, project, dashboard } = $page.params);
-  $: isCanvas = isCanvasDashboardPage($page);
+  let { organization, project, dashboard } = $derived(page.params);
 
-  $: isTitleEmpty = $form.title.trim() === "";
+  let url = $state<string | null>(null);
+  let setExpiration = $state(false);
+  let apiError: string = $state("");
+  let popoverOpen = $state(false);
+  let copied = $state(false);
 
-  let url: string | null = null;
-  let setExpiration = false;
-  let apiError: string;
-  let popoverOpen = false;
-  let copied = false;
+  // svelte-ignore state_referenced_locally
+  const { kind: dashboardKind, name: dashboardName } = dashboardResource;
+  const isExplore = dashboardKind === ResourceKind.Explore;
 
-  // These will be set by the child components via callbacks
-  let hasSomeFilter = false;
-  let dashboardDataProvider:
-    | (() => Partial<AdminServiceIssueMagicAuthTokenBody>)
-    | null = null;
+  const dashboardConfigProvider = isExplore
+    ? new ExploreDashboardConfigProvider(runtimeClient, dashboardName)
+    : new CanvasDashboardConfigProvider(runtimeClient, dashboardName);
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
 
-  function handleFilterStateChange(hasFilters: boolean) {
-    hasSomeFilter = hasFilters;
-  }
+  // Always load from current state. This is the only route to overwrite bookmark state.
+  // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
+  expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
 
-  function handleProvideFilters(
-    provider: () => Partial<AdminServiceIssueMagicAuthTokenBody>,
-  ) {
-    dashboardDataProvider = provider;
-  }
+  // A public URL shows a canvas the way its creator sees it, so point out content that only some viewers see.
+  const canvasQuery = useCanvas(runtimeClient, dashboardName, {
+    enabled: !isExplore,
+  });
+  let canvasFilePath = $derived(
+    isExplore ? "" : ($canvasQuery.data?.filePath ?? ""),
+  );
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(runtimeClient, canvasFilePath),
+  );
+  let hasConditionalContent = $derived(!!$conditionsCheck.data);
+
+  const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
+  const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
+
+  const sanitisedFilterState = createFieldsAndStateForKind(
+    dashboardKind,
+    expressionFilterManager,
+  );
+  let {
+    fields,
+    sanitizedState,
+    droppedEphemeralMeasures,
+    queryTimeStart,
+    queryTimeEnd,
+  } = $derived($sanitisedFilterState);
 
   const formId = "create-public-url-form";
 
@@ -67,7 +108,7 @@
 
   const validationSchema = object({
     expiresAt: string().nullable(),
-    title: string().required("Title is required"),
+    title: string().required(m.public_url_title_required()),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -81,18 +122,15 @@
         const values = form.data;
 
         try {
-          if (!dashboardDataProvider) {
-            throw new Error("Dashboard data provider not initialized");
-          }
-
-          const dashboardData = dashboardDataProvider();
-
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
             project,
             data: {
-              ...dashboardData,
+              resourceType: dashboardResource?.kind,
               resourceName: dashboard,
+              metricsViewFilters: exprByMetricsView,
+              fields,
+              state: sanitizedState,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
@@ -117,6 +155,24 @@
     },
   );
 
+  let isTitleEmpty = $derived($form.title.trim() === "");
+
+  $effect(() => {
+    if (setExpiration && $form.expiresAt === null) {
+      // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
+      $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
+      popoverOpen = true;
+    } else if (!setExpiration) {
+      $form.expiresAt = null;
+      popoverOpen = false;
+    }
+  });
+
+  let { length: allErrorsLength } = $derived($allErrors);
+  let maxExpirationDate = $derived(
+    DateTime.now().plus({ years: 1 }).startOf("day"),
+  );
+
   function onCopy() {
     copyToClipboard(url, "URL copied to clipboard", false);
     copied = true;
@@ -126,18 +182,9 @@
     }, 2_000);
   }
 
-  $: if (setExpiration && $form.expiresAt === null) {
-    // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
-    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
-    popoverOpen = true;
-  } else if (!setExpiration) {
-    $form.expiresAt = null;
-    popoverOpen = false;
-  }
-
-  $: ({ length: allErrorsLength } = $allErrors);
-
-  $: maxExpirationDate = DateTime.now().plus({ years: 1 }).startOf("day");
+  onDestroy(() => {
+    dashboardConfigProvider.cleanup?.();
+  });
 </script>
 
 {#if !url}
@@ -150,33 +197,38 @@
     use:enhance
   >
     <h3 class="text-xs text-fg-primary font-normal">
-      Create a shareable public URL for this view.
+      {m.public_url_create_heading()}
     </h3>
 
     <div class="flex flex-col gap-y-1 mt-4">
       <Input
         id="name-input"
         bind:value={$form.title}
-        placeholder="Label this URL"
+        placeholder={m.public_url_label_placeholder()}
       />
     </div>
 
     <div class="mt-4" class:mb-4={!hasSomeFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
-        <Label class="text-xs" for="has-expiration">Set expiration</Label>
+        <Label class="text-xs" for="has-expiration"
+          >{m.public_url_set_expiration()}</Label
+        >
       </div>
       {#if setExpiration}
         <div class="flex items-center gap-x-1 pl-[30px]">
           <label for="expires-at" class="text-fg-secondary font-medium">
-            Access expires {new Date($form.expiresAt).toLocaleDateString(
-              "en-US",
-              { year: "numeric", month: "short", day: "numeric" },
-            )}
+            {m.public_url_access_expires({
+              date: new Date($form.expiresAt).toLocaleDateString(getLocale(), {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }),
+            })}
           </label>
           <Popover bind:open={popoverOpen}>
             <PopoverTrigger>
-              <IconButton ariaLabel="Edit expiration date">
+              <IconButton ariaLabel={m.public_url_edit_expiration()}>
                 <Pencil size="14px" class="text-primary-600" />
               </IconButton>
             </PopoverTrigger>
@@ -197,45 +249,51 @@
       {/if}
     </div>
 
-    <!-- TODO: revisit when time range lock is implemented -->
-    <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
-      <div class="flex items-center gap-x-2">
-        <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
+    {#if hasSomeFilter}
+      <hr class="mt-4 mb-4" />
 
-        <div class="flex flex-row items-center gap-x-1">
-          <Label class="text-xs" for="lock-time-range">Lock time range</Label>
-          <Tooltip location="right" alignment="middle" distance={8}>
-            <div class="text-fg-secondary">
-              <InfoCircle size="12px" />
-            </div>
-            <TooltipContent maxWidth="400px" slot="tooltip-content">
-              Only data within this range will be visible
-            </TooltipContent>
-          </Tooltip>
+      <div class="flex flex-col gap-y-1">
+        <p class="text-xs text-fg-primary font-normal">
+          {m.public_url_filters_locked_hidden()}
+        </p>
+        <div class="flex flex-col gap-2 my-2">
+          <ReadonlyExpressionFilters
+            {expressionFilterManager}
+            {queryTimeStart}
+            {queryTimeEnd}
+          />
         </div>
       </div>
-      {#if lockTimeRange}
-        <div class="w-full pl-[30px]">
-          <label for="lock-time-range" class="text-fg-secondary font-medium">
-            {#if interval.isValid}
-              <RangeDisplay {interval} grain={activeTimeGrain} {abbreviation} />
-            {/if}
-          </label>
-        </div>
-      {/if}
-    </div> -->
 
-    {#if isCanvas}
-      <CanvasFiltersSection
-        {dashboard}
-        onFilterStateChange={handleFilterStateChange}
-        onProvideFilters={handleProvideFilters}
-      />
-    {:else}
-      <ExploreFiltersSection
-        onFilterStateChange={handleFilterStateChange}
-        onProvideFilters={handleProvideFilters}
-      />
+      {#if isExplore}
+        <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
+          {m.public_url_measures_dimensions_limited()}
+        </p>
+      {/if}
+    {/if}
+
+    {#if droppedEphemeralMeasures.length > 0}
+      <div class="flex flex-col gap-y-1 mb-4">
+        <p class="text-xs text-fg-primary font-normal">
+          {m.public_url_adhoc_measures_omitted()}
+        </p>
+        <ul class="text-xs text-fg-secondary list-disc pl-4">
+          {#each droppedEphemeralMeasures as dropped (dropped.name)}
+            <li>
+              {m.public_url_adhoc_measure_hidden_refs({
+                measure: dropped.displayName,
+                hidden: dropped.hiddenMeasures.join(", "),
+              })}
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
+    {#if hasConditionalContent}
+      <p class="text-xs text-fg-primary font-normal mb-4">
+        {m.canvas_visibility_public_url_note()}
+      </p>
     {/if}
 
     <Button
@@ -244,7 +302,7 @@
       form={formId}
       submitForm
     >
-      Create
+      {m.public_url_create_button()}
     </Button>
 
     {#if allErrorsLength > 0}
@@ -257,7 +315,7 @@
   </form>
 {:else}
   <div class="flex flex-col gap-y-4">
-    <h3>Success! A public URL has been created.</h3>
+    <h3>{m.public_url_success_message()}</h3>
     <Button
       type="secondary"
       onClick={onCopy}
@@ -265,9 +323,9 @@
     >
       {#if copied}
         <Check size="16px" />
-        Copied URL
+        {m.public_url_copied_button()}
       {:else}
-        Copy Public URL
+        {m.public_url_copy_button()}
       {/if}
     </Button>
   </div>

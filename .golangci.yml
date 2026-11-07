@@ -129,6 +129,10 @@ linters:
         - name: unreachable-code
         - name: var-declaration
         - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skipPackageNameChecks: true
     staticcheck:
       checks:
         - all

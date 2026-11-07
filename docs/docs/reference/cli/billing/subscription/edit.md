@@ -28,5 +28,5 @@ rill billing subscription edit [flags]
 
 ### SEE ALSO
 
-* [rill billing subscription](subscription.md)	 - Manage organisation subscription
+* [rill billing subscription](subscription.md)	 - Manage organization subscriptions
 

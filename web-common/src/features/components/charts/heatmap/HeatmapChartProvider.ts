@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -26,12 +27,18 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type HeatmapChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"nominal" | "time">;
   color?: FieldConfig<"quantitative">;
@@ -79,7 +86,7 @@ export class HeatmapChartProvider {
     let measures: V1MetricsViewAggregationMeasure[] = [];
 
     if (config.color?.field) {
-      measures = [{ name: config.color.field }];
+      measures = withEphemeralMeasures(config, [{ name: config.color.field }]);
     }
 
     // Create top level options store for X axis
@@ -89,7 +96,7 @@ export class HeatmapChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
           !Array.isArray(config.x?.sort);
@@ -134,7 +141,7 @@ export class HeatmapChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
           !Array.isArray(config.y?.sort);
@@ -185,7 +192,7 @@ export class HeatmapChartProvider {
 
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
             : true) &&
@@ -281,7 +288,11 @@ export class HeatmapChartProvider {
       },
     );
 
-    return createQuery(queryOptionsStore);
+    return combineChartDataQuery(
+      createQuery(queryOptionsStore),
+      [xAxisQuery, yAxisQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(): ChartDomainValues {

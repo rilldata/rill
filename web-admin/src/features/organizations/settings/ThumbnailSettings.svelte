@@ -9,6 +9,7 @@
   import UploadImagePopover from "@rilldata/web-admin/features/organizations/settings/UploadImagePopover.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -55,23 +56,22 @@
     loading={isLoading}
     disabled={isLoading}
   >
-    Remove
+    {m.settings_remove_button()}
   </Button>
 {/snippet}
 
 <SettingsContainer
-  title="Thumbnail"
+  title={m.settings_thumbnail_title()}
   action={organizationThumbnailUrl ? removeAction : undefined}
 >
   <div class="flex flex-col gap-y-2">
     <div>
-      Click to upload your thumbnail. The thumbnail will be used when sharing
-      links to Rill in applications like Slack.
+      {m.settings_thumbnail_description()}
     </div>
     <UploadImagePopover
       imageUrl={organizationThumbnailUrl}
       accept="image/png, image/jpeg, image/gif"
-      label="thumbnail"
+      label={m.settings_thumbnail_title()}
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
@@ -80,7 +80,7 @@
     >
       <img
         src="https://cdn.rilldata.com/images/rill-admin.png"
-        alt="thumbnail"
+        alt={m.settings_thumbnail_title()}
         class="h-10"
       />
     </UploadImagePopover>

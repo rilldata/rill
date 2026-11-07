@@ -27,6 +27,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
@@ -75,6 +76,7 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 
 	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testMetricsViewAggregation_measure_filters(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
@@ -116,11 +118,10 @@ func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 
 	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
-	// TODO: BigQuery rejects "Timestamp (day)"/"Timestamp (hour)" as column names
-	// TODO: handle later
-	// t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
-	// t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID, "Timestamp__day") })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID, "Timestamp__hour") })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testBigQueryMetricsViewAggregation_measure_filters(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
@@ -161,10 +162,12 @@ func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newDatabricksInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testDatabricksMetricsViewAggregation_measure_filters(t, rt, instanceID) })
@@ -208,6 +211,7 @@ func TestMetricViewAggregationAgainstDatabricks(t *testing.T) {
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
@@ -248,10 +252,12 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 }
 
 func TestMetricViewAggregationAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newSnowflakeInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
@@ -424,7 +430,7 @@ func testMetricsViewsAggregationURI(t *testing.T, rt *runtime.Runtime, instanceI
 	require.Equal(t, "http://localhost/Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
 }
 
-func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string, timeDisplayName ...string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -462,11 +468,16 @@ func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, i
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
 
+	timeCol := "Timestamp (day)"
+	if len(timeDisplayName) > 0 {
+		timeCol = timeDisplayName[0]
+	}
+
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (day)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", timeCol))
 }
 
-func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string, timeDisplayName ...string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -504,8 +515,13 @@ func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, 
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
 
+	timeCol := "Timestamp (hour)"
+	if len(timeDisplayName) > 0 {
+		timeCol = timeDisplayName[0]
+	}
+
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (hour)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", timeCol))
 }
 
 func testMetricsViewsAggregation_no_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
@@ -779,6 +795,38 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 
 	i := 0
 	require.Equal(t, "Facebook", fieldsToString(rows[i], "Publisher"))
+}
+
+func TestMetricsViewsAggregation_pivot_export_column_limit_exceeded(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.pivot_export_column_limit": "2",
+	})
+
+	limit := int64(1000)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "pub"},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_1"},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "pub"},
+		},
+		PivotOn:        []string{"timestamp"},
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
+	}
+	// The pivot spans three months, which exceeds the configured limit of 2 columns.
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "exceeds the limit of 2")
 }
 
 func TestMetricsViewsAggregation_pivot_export_labels(t *testing.T) {

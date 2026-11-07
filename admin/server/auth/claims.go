@@ -22,6 +22,7 @@ const (
 	OwnerTypeService        OwnerType = "service"
 	OwnerTypeDeployment     OwnerType = "deployment"
 	OwnerTypeMagicAuthToken OwnerType = "magic_auth_token" // nolint:gosec // It's not a credential
+	OwnerTypeEmbed          OwnerType = "embed"
 )
 
 // Claims resolves permissions for a requester.
@@ -30,6 +31,7 @@ type Claims interface {
 	OwnerID() string
 	AuthTokenID() string
 	AuthTokenModel() any
+	AssumedByUserID() (string, bool) // returns the id of superuser who assumed the token
 	Superuser(ctx context.Context) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
@@ -75,6 +77,10 @@ func (c anonClaims) AuthTokenID() string {
 
 func (c anonClaims) AuthTokenModel() any {
 	return nil
+}
+
+func (c anonClaims) AssumedByUserID() (string, bool) {
+	return "", false
 }
 
 func (c anonClaims) Superuser(ctx context.Context) bool {
@@ -138,6 +144,14 @@ func (c *authTokenClaims) AuthTokenID() string {
 
 func (c *authTokenClaims) AuthTokenModel() any {
 	return c.token.TokenModel()
+}
+
+func (c *authTokenClaims) AssumedByUserID() (string, bool) {
+	uat, ok := c.token.TokenModel().(*database.UserAuthToken)
+	if !ok || uat.RepresentingUserID == nil {
+		return "", false
+	}
+	return uat.UserID, true
 }
 
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {
@@ -263,4 +277,46 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 
 	c.orgPermissionsCache[orgID] = perm
 	return perm, true
+}
+
+// embedClaims represents claims for an embed user identified by an admin.EmbedToken.
+type embedClaims struct {
+	token *admin.EmbedToken
+	admin *admin.Service
+}
+
+// ensure *embedClaims implements Claims
+var _ Claims = &embedClaims{}
+
+func (c *embedClaims) OwnerType() OwnerType {
+	return OwnerTypeEmbed
+}
+
+// OwnerID returns the embed user ID, which is a hash that already includes the project ID.
+func (c *embedClaims) OwnerID() string {
+	return c.token.EmbedUserID
+}
+
+func (c *embedClaims) AuthTokenID() string {
+	return ""
+}
+
+func (c *embedClaims) AuthTokenModel() any {
+	return c.token
+}
+
+func (c *embedClaims) AssumedByUserID() (string, bool) {
+	return "", false
+}
+
+func (c *embedClaims) Superuser(ctx context.Context) bool {
+	return false
+}
+
+func (c *embedClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	return &adminv1.OrganizationPermissions{}
+}
+
+func (c *embedClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	return c.admin.ProjectPermissionsForEmbedToken(projectID, c.token)
 }

@@ -265,6 +265,21 @@ setup.describe("global setup", () => {
   });
 
   setup("should deploy the AdBids project", async ({ adminPage }) => {
+    // The trial is started in an async job after the 1st deploy, and it writes the org's quotas when it finishes.
+    // Wait for it to finish first; otherwise it can overwrite the quota we set below.
+    // The trial billing issue is written after the quotas, so its presence means the job is done.
+    await expect
+      .poll(
+        async () => {
+          const { stdout } = await execAsync(
+            `rill billing list-issues --org ${RILL_ORG_NAME}`,
+          );
+          return stdout;
+        },
+        { intervals: [1_000], timeout: 60_000 },
+      )
+      .toMatch(/BILLING_ISSUE_TYPE_ON_(CREDIT_)?TRIAL/);
+
     // increase project quota for the organization
     const { stdout: quotaUpdateStdout } = await execAsync(
       `rill sudo quota set --org ${RILL_ORG_NAME} --projects 10`,

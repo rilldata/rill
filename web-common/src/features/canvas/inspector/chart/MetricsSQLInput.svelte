@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { sql } from "@codemirror/lang-sql";
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
@@ -117,11 +118,13 @@
       <div class="query-block">
         {#if entries.length > 1}
           <div class="query-header">
-            <span class="query-number">Query {idx + 1}</span>
+            <span class="query-number">
+              {m.canvas_query_number({ idx: String(idx + 1) })}
+            </span>
             <button
               class="remove-btn"
               onclick={() => removeQuery(entry.id)}
-              aria-label="Remove query {idx + 1}"
+              aria-label={m.canvas_remove_query_aria({ idx: String(idx + 1) })}
             >
               <Trash size="14px" />
             </button>
@@ -141,7 +144,7 @@
         stroke-linecap="round"
       />
     </svg>
-    Add query
+    {m.canvas_add_query()}
   </button>
 </div>
 

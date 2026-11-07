@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -17,39 +18,51 @@
   import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
 
-  export let dimensionName: string;
-  export let areAllTableRowsSelected = false;
-  export let isRowsEmpty = true;
-  export let searchText: string;
-  export let hideStartPivotButton = false;
-  export let onToggleSearchItems: () => void;
+  let {
+    dimensionName,
+    areAllTableRowsSelected,
+    isRowsEmpty,
+    searchText = $bindable(""),
+    hideStartPivotButton,
+    onToggleSearchItems,
+  }: {
+    dimensionName: string;
+    areAllTableRowsSelected: boolean;
+    isRowsEmpty: boolean;
+    searchText: string;
+    hideStartPivotButton: boolean;
+    onToggleSearchItems: () => void;
+  } = $props();
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-      dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
-      dimensionsFilter: { toggleDimensionFilterMode },
       leaderboard: { toggleLeaderboardShowContextForAllMeasures },
     },
     timeRangeSummaryStore,
     dashboardStore,
     exploreName,
+    expressionFilterManager,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
-  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+  let exploreHasTimeDimension = $derived(!!$timeRangeSummaryStore.data);
 
-  $: excludeMode = $isFilterExcludeMode(dimensionName);
+  let excludeMode = $derived(
+    expressionFilterManager.sortedFilterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
 
-  let isLeaderboardActionsOpen = false;
+  let isLeaderboardActionsOpen = $state(false);
 
   function resetSearchText() {
     searchText = "";
@@ -71,10 +84,13 @@
     setPrimaryDimension("");
   };
   function toggleFilterMode() {
-    toggleDimensionFilterMode(dimensionName);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleExclude(),
+    );
   }
 
-  let showReplacePivotModal = false;
+  let showReplacePivotModal = $state(false);
   function startPivotForDimensionTable() {
     const pivot = $dashboardStore?.pivot;
 
@@ -130,7 +146,7 @@
       onClick={() => goBackToLeaderboard()}
     >
       <Back size="16px" />
-      <span>All Dimensions</span>
+      <span>{m.dashboard_menu_all_dimensions()}</span>
     </Button>
 
     <div class="shrink-0 flex items-center gap-x-1">
@@ -150,8 +166,8 @@
 
       {#if $exports}
         <ExportMenu
-          label="Export dimension table data"
-          includeScheduledReport={$adminServer && exploreHasTimeDimension}
+          label={m.dashboard_export_dimension_table_data()}
+          includeScheduledReport={exploreHasTimeDimension}
           getQuery={(isScheduled) =>
             getDimensionTableExportQuery(stateManagers, isScheduled)}
           exploreName={$exploreName}

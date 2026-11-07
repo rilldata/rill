@@ -48,7 +48,7 @@ func (n *noop) CustomerAddressUpdated(ctx context.Context, paymentCustomerID str
 	return nil, nil
 }
 
-func (n *noop) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error) {
+func (n *noop) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate time.Time) (*InsertResult, error) {
 	return nil, nil
 }
 
@@ -73,6 +73,10 @@ func (n *noop) InitOrgBilling(ctx context.Context, orgID string) (*InsertResult,
 }
 
 func (n *noop) RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error) {
 	return nil, nil
 }
 

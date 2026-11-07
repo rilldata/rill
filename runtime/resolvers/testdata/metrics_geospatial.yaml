@@ -62,6 +62,8 @@ tests:
         - name: area
       measures:
         - name: sum
+      sort:
+        - name: country
     result:
       - area:
           - - - 55.4761

@@ -21,10 +21,32 @@ function makeCanvasId(canvasName: string, instanceId: string): CanvasId {
 export function getCanvasStoreUnguarded(
   canvasName: string,
   instanceId: string,
+  allowUnvalidatedSpec?: boolean,
 ): CanvasStore | undefined {
   const id = makeCanvasId(canvasName, instanceId);
+  const store = canvasRegistry.get(id);
 
-  return canvasRegistry.get(id);
+  // Never reuse an entity disposed when its last consumer left. Resubscribing
+  // its spec query store after the query cache dropped the query (5 minutes
+  // without subscribers) never refetches, so the canvas would render its rows
+  // without components. Its runtime client may also have been disposed along
+  // with the project's RuntimeProvider.
+  if (store?.canvasEntity.disposed) {
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
+  if (
+    store &&
+    allowUnvalidatedSpec !== undefined &&
+    store.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    store.canvasEntity.dispose();
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
+  return store;
 }
 
 export function getCanvasStore(
@@ -49,9 +71,16 @@ export function removeCanvasStore(
   instanceId: string,
 ): void {
   const id = makeCanvasId(canvasName, instanceId);
+  // Tear down the entity's subscriptions before dropping it from the registry,
+  // otherwise the orphaned entity keeps reacting to spec emissions and races
+  // the entity created on the next visit.
+  canvasRegistry.get(id)?.canvasEntity.dispose();
   canvasRegistry.delete(id);
 }
 
+// The returned entity does not subscribe to its spec store until a consumer
+// calls `canvasEntity.acquire()`; callers are responsible for acquiring and
+// releasing their reference (see CanvasInitialization).
 export function setCanvasStore(
   canvasName: string,
   instanceId: string,
@@ -61,11 +90,16 @@ export function setCanvasStore(
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
-  if (canvasRegistry.has(id)) {
+  const existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
+  if (existingStore) {
     console.warn(
       `Canvas store for ID ${id} already exists. Returning existing store.`,
     );
-    return canvasRegistry.get(id)!;
+    return existingStore;
   }
 
   const canvasEntity = new CanvasEntity(

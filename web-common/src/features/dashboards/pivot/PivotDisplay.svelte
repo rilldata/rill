@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -6,8 +7,23 @@
   import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import {
+    DEFAULT_PIVOT_SIDEBAR_WIDTH,
+    DEFAULT_PIVOT_SIDEBAR_WIDTH_NO_TAGS,
+    MAX_PIVOT_SIDEBAR_WIDTH,
+    MIN_PIVOT_SIDEBAR_WIDTH,
+    pivotSidebarWidth,
+  } from "@rilldata/web-common/features/dashboards/workspace/dashboard-layout-store";
   import { derived } from "svelte/store";
+  import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
+  import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
+  import {
+    precisionStateFor,
+    type PrecisionChipProps,
+  } from "../exact-measures/exact-measures";
+  import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
@@ -26,11 +42,17 @@
     validSpecStore,
     selectors: {
       pivot: { columns, measures, dimensions },
+      tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
+      measures: { measureLabel },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     timeRangeSummaryStore,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
   $: timeControlsForPillActions = {
@@ -51,11 +73,28 @@
   });
 
   let showPanels = true;
+  let pivotTable: PivotTable | undefined;
 
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
 
   $: ({ isFetching, assembled } = $pivotDataStore);
+
+  // Precision chip of a measure column header; undefined when the measure has no exact variant.
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
+    const state = precisionStateFor(
+      measureName,
+      $exactMeasureContext(exploreExactSurface.pivot),
+    );
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel: $measureLabel(measureName),
+      loading: state !== "approx" && isFetching,
+      onToggle: () =>
+        toggleExactMeasure(exploreExactSurface.pivot, measureName),
+    };
+  };
 
   // Build a description lookup from the metricsView so pivot chips get
   // descriptions even when the metricsView loads after the pivot state
@@ -77,6 +116,13 @@
     });
   }
 
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($validSpecStore.data?.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
+
   $: enrichedPivotState = {
     ...$dashboardStore.pivot,
     rows: enrichDescriptions($dashboardStore.pivot.rows),
@@ -90,16 +136,49 @@
     if (!$dashboardStore.pivot.activeCell) return;
     metricsExplorerStore.removePivotActiveCell($exploreName);
   }
+
+  $: widthScopeKey = `explore:${$exploreName}`;
+
+  // Until the user explicitly drags the divider (stored width is null), fall
+  // back to the legacy tag-aware default (240px without tags, 400px with).
+  $: pivotHasTags = ($combinedTagIndex?.tags?.length ?? 0) > 0;
+  $: sidebarWidth =
+    $pivotSidebarWidth ??
+    (pivotHasTags
+      ? DEFAULT_PIVOT_SIDEBAR_WIDTH
+      : DEFAULT_PIVOT_SIDEBAR_WIDTH_NO_TAGS);
 </script>
 
 <div class="layout" class:h-full={!$dynamicHeight}>
   {#if showPanels}
-    <PivotSidebar
-      pivotState={enrichedPivotState}
-      measures={$measures}
-      dimensions={$dimensions}
-      {timeControlsForPillActions}
-    />
+    <div
+      class="sidebar-pane"
+      style="width: {sidebarWidth}px"
+      transition:slide={{ axis: "x" }}
+    >
+      <Resizer
+        direction="EW"
+        side="right"
+        min={MIN_PIVOT_SIDEBAR_WIDTH}
+        max={MAX_PIVOT_SIDEBAR_WIDTH}
+        basis={0}
+        dimension={sidebarWidth}
+        onUpdate={(d) => pivotSidebarWidth.set(d === 0 ? null : d)}
+      />
+      <PivotSidebar
+        pivotState={enrichedPivotState}
+        measures={$measures}
+        dimensions={$dimensions}
+        combinedTagIndex={$combinedTagIndex}
+        dimensionTagIndex={$dimensionTagIndex}
+        measureTagIndex={$measureTagIndex}
+        setRows={(rows) =>
+          metricsExplorerStore.setPivotRows($exploreName, rows)}
+        setColumns={(columns) =>
+          metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        {timeControlsForPillActions}
+      />
+    </div>
   {/if}
   <div
     class="flex flex-col overflow-hidden"
@@ -113,6 +192,26 @@
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
           metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        setMeasureFormatting={(measureName, fmt) =>
+          metricsExplorerStore.setPivotMeasureFormatting(
+            $exploreName,
+            measureName,
+            fmt,
+          )}
+        {lowerIsBetterMap}
+        ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+        onEditEphemeralMeasure={(id) => {
+          const def = $dashboardStore.ephemeralMeasures?.find(
+            (d) => d.name === id,
+          );
+          if (def) ephemeralMeasureDialog.set({ def });
+        }}
+        onDeleteEphemeralMeasure={(id) =>
+          metricsExplorerStore.removeEphemeralMeasure(
+            $exploreName,
+            id,
+            $validSpecStore.data?.explore,
+          )}
       />
     {/if}
     <div
@@ -134,16 +233,29 @@
           )}
         setRowLimit={(limit) =>
           metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
+        setShowTotals={(totals) =>
+          metricsExplorerStore.setPivotTotals(
+            $exploreName,
+            totals.showTotalsColumn,
+            totals.showTotalsRow,
+          )}
+        setTotalsRowPosition={(position) =>
+          metricsExplorerStore.setPivotTotalsRowPosition(
+            $exploreName,
+            position,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        fitToWidth={() => pivotTable?.fitColumnsToWidth()}
+        canFitToWidth={assembled && !!pivotTable}
         {isFetching}
         bind:showPanels
       >
         <svelte:fragment slot="export-menu">
           {#if $exports}
             <ExportMenu
-              label="Export pivot data"
-              includeScheduledReport={$adminServer && exploreHasTimeDimension}
+              label={m.dashboard_export_pivot_data()}
+              includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
               exploreName={$exploreName}
@@ -163,10 +275,13 @@
         />
       {:else}
         <PivotTable
+          bind:this={pivotTable}
+          {widthScopeKey}
           {pivotDataStore}
           overscan={60}
           config={pivotConfig}
           pivotState={pivotExploreState}
+          {precisionFor}
           setPivotExpanded={(expanded) =>
             metricsExplorerStore.setPivotExpanded($exploreName, expanded)}
           setPivotSort={(sorting) =>
@@ -197,6 +312,10 @@
 <style lang="postcss">
   .layout {
     @apply flex box-border overflow-hidden size-full;
+  }
+
+  .sidebar-pane {
+    @apply relative flex-none h-full;
   }
 
   .content {

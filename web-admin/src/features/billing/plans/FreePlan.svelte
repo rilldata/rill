@@ -1,42 +1,95 @@
 <script lang="ts">
-  import type { V1BillingPlan } from "@rilldata/web-admin/client";
-  import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
-  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
+  import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils.ts";
+  import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+  import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
-    plan,
+    upgrade,
   }: {
     organization: string;
-    plan: V1BillingPlan;
+    upgrade: () => void;
   } = $props();
 
-  let open = $state(false);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
+  let trialIssue = $derived($categorisedIssues.data?.trial);
+
+  let planCredits = $derived(getPlanCredits(organization, trialIssue));
+  let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Free Trial"}>
-  <div slot="body">
-    <div>
-      You're on the Free Trial plan. Ready to get started with Rill?
-      <a
-        href="https://www.rilldata.com/pricing"
-        target="_blank"
-        rel="noreferrer noopener">See pricing details -></a
-      >
+<PlanContainer
+  badge={m.billing_plan_badge_pro_trial()}
+  description={m.billing_free_credit_desc()}
+>
+  {#snippet info()}
+    {m.billing_no_time_limit()}<br />
+    {m.billing_pricing_details_compact()}<br />
+    {m.billing_unit_spec()}
+  {/snippet}
+
+  {#snippet action()}
+    <button class="subscribe-btn" onclick={upgrade}>
+      {m.billing_upgrade_to_paid_plan()}
+    </button>
+  {/snippet}
+
+  <div class="credit-section">
+    <div class="flex justify-between">
+      <span class="credit-label">{m.billing_used_credit()}</span>
+      <span class="credit-label">{m.billing_available_credit()}</span>
     </div>
-    <PlanQuotas {organization} />
+    <div class="flex justify-between items-end">
+      <span class="credit-used">{formatCredit(usedCredit)}</span>
+      <span class="credit-available">{formatCredit(availableCredit)}</span>
+    </div>
+    <div class="credit-bar-bg">
+      <div class="credit-bar-fill" style:width="{creditPercent}%"></div>
+    </div>
+    <span class="text-xs text-fg-tertiary font-medium">
+      {m.billing_credit_percent_used({ percent: String(creditPercent) })}
+    </span>
+
+    <PricingLink />
   </div>
-  <svelte:fragment slot="contact">
-    <span>For any questions,</span>
-    <ContactUs />
-  </svelte:fragment>
+</PlanContainer>
 
-  <Button type="primary" slot="action" onClick={() => (open = true)}>
-    Upgrade to Team plan
-  </Button>
-</SettingsContainer>
+<style lang="postcss">
+  .credit-section {
+    @apply flex flex-col gap-2 mt-4 pt-4 border-t;
+  }
 
-<StartTeamPlanDialog bind:open {organization} type="base" />
+  .credit-label {
+    @apply text-xs font-semibold text-fg-tertiary;
+    line-height: 1;
+  }
+
+  .credit-used {
+    @apply text-2xl font-semibold text-fg-tertiary;
+  }
+
+  .credit-available {
+    @apply text-4xl font-semibold text-green-600;
+  }
+
+  .credit-bar-bg {
+    @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .credit-bar-fill {
+    @apply h-full bg-primary-500 rounded-full transition-all;
+  }
+
+  .subscribe-btn {
+    @apply text-sm font-medium text-white bg-primary-500 px-5 py-2 cursor-pointer border-none rounded-none;
+  }
+
+  .subscribe-btn:hover {
+    @apply bg-primary-600;
+  }
+</style>

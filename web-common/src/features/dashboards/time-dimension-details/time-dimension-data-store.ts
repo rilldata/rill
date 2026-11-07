@@ -1,3 +1,5 @@
+import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
 import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -18,6 +20,7 @@ import {
   TIME_COMPARISON,
 } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -50,6 +53,26 @@ function sanitizeMeasure(value: unknown): MeasureValue {
   return null;
 }
 
+// Shown in place of a total the measure cannot have: a rolling window needs the time dimension,
+// which totals and per-dimension-value queries do not group by, so those queries omit the measure.
+const UNAVAILABLE_TOTAL = "–";
+
+function totalHeaderValue(total: MeasureValue): string {
+  if (total === undefined) return UNAVAILABLE_TOTAL;
+  return total?.toString() ?? "";
+}
+
+function percentOfTotalHeaderValue(
+  total: MeasureValue,
+  unfilteredTotal: number,
+): string {
+  if (total === undefined) return UNAVAILABLE_TOTAL;
+  const percOfTotal = (total ?? 0) / unfilteredTotal;
+  return isNaN(percOfTotal)
+    ? "...%"
+    : numberPartsToString(formatProperFractionAsPercent(percOfTotal));
+}
+
 function getHeaderDataForRow(
   row: DimensionDataItem,
   isAllTime: boolean,
@@ -59,21 +82,18 @@ function getHeaderDataForRow(
   unfilteredTotal: number,
 ) {
   const rowData = isAllTime ? row?.data?.slice(1) : row?.data?.slice(1, -1);
-  const dataRow = [
-    { value: row?.value },
+  const dataRow: HeaderData<string>[] = [
+    { value: row?.value, uri: row?.uri },
     {
-      value: row?.total?.toString() ?? "",
+      value: totalHeaderValue(row?.total),
       spark: createSparkline(rowData, (v) =>
         typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
     },
   ];
   if (validPercentOfTotal) {
-    const percOfTotal = (row?.total ?? 0) / unfilteredTotal;
     dataRow.push({
-      value: isNaN(percOfTotal)
-        ? "...%"
-        : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
+      value: percentOfTotalHeaderValue(row?.total, unfilteredTotal),
     });
   }
   return dataRow;
@@ -87,7 +107,7 @@ function getHeaderDataForRow(
 function prepareDimensionData(
   totalsData: TimeSeriesDatum[] | undefined,
   data: DimensionDataItem[],
-  total: number,
+  total: MeasureValue,
   unfilteredTotal: number,
   measure: MetricsViewSpecMeasure | undefined,
   selectedValues: string[],
@@ -138,7 +158,7 @@ function prepareDimensionData(
   const totalsRow = [
     { value: "Total" },
     {
-      value: total?.toString(),
+      value: totalHeaderValue(total),
       spark: createSparkline(totalsTableData, (v) =>
         typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
@@ -148,11 +168,8 @@ function prepareDimensionData(
   let fixedColCount = 2;
   if (validPercentOfTotal) {
     fixedColCount = 3;
-    const percOfTotal = total / unfilteredTotal;
     totalsRow.push({
-      value: isNaN(percOfTotal)
-        ? "...%"
-        : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
+      value: percentOfTotalHeaderValue(total, unfilteredTotal),
     });
   }
   let rowHeaderData: HeaderData<string>[][] = [totalsRow];
@@ -206,8 +223,8 @@ function prepareDimensionData(
  */
 function prepareTimeData(
   data: TimeSeriesDatum[] | undefined,
-  total: number,
-  comparisonTotal: number,
+  total: MeasureValue,
+  comparisonTotal: MeasureValue,
   currentLabel: string,
   comparisonLabel: string,
   measure: MetricsViewSpecMeasure | undefined,
@@ -228,7 +245,7 @@ function prepareTimeData(
   rowHeaderData.push([
     { value: "Total" },
     {
-      value: total?.toString() ?? "",
+      value: totalHeaderValue(total),
       spark: createSparkline(tableData, (v) =>
         typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
@@ -242,7 +259,7 @@ function prepareTimeData(
       [
         { value: currentLabel },
         {
-          value: total?.toString() ?? "",
+          value: totalHeaderValue(total),
           spark: createSparkline(tableData, (v) =>
             typeof v?.[measureName] === "number" ? v[measureName] : 0,
           ),
@@ -251,7 +268,7 @@ function prepareTimeData(
       [
         { value: comparisonLabel },
         {
-          value: comparisonTotal?.toString() ?? "",
+          value: totalHeaderValue(comparisonTotal),
           spark: createSparkline(tableData, (v) =>
             typeof v?.[`comparison.${measureName}`] === "number"
               ? (v[`comparison.${measureName}`] as number)
@@ -344,7 +361,12 @@ function createDimensionTableData(
     const measureName = dashboardStore?.tdd?.expandedMeasureName;
     if (!measureName) return set([]);
     return derived(
-      getDimensionValueTimeSeries(ctx, [measureName], "table"),
+      getDimensionValueTimeSeries(
+        ctx,
+        [measureName],
+        "table",
+        exploreExactSurface.tdd,
+      ),
       (data) => data,
     ).subscribe(set);
   });
@@ -396,19 +418,24 @@ export function createTimeDimensionDataStore(
       const pinIndex = dashboardStore?.tdd.pinIndex;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
-      // Fix types in V1MetricsViewAggregationResponseDataItem
-      const total =
-        timeSeries?.total && (timeSeries?.total[measureName] as number);
+      // A total is undefined when its query left the measure out; see UNAVAILABLE_TOTAL.
+      const total = sanitizeMeasure(timeSeries?.total?.[measureName]);
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
-      const comparisonTotal =
-        timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
+      const comparisonTotal = sanitizeMeasure(
+        timeSeries?.comparisonTotal?.[measureName],
+      );
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
-      const measure = validSpec.data?.metricsView?.measures?.find(
-        (m) => m.name === measureName,
-      );
+      const measure =
+        validSpec.data?.metricsView?.measures?.find(
+          (m) => m.name === measureName,
+        ) ??
+        // ephemeral measures have no spec entry; synthesize one.
+        dashboardStore?.ephemeralMeasures
+          ?.filter((def) => def.name === measureName)
+          .map(ephemeralMeasureToSpecMeasure)[0];
 
       let comparing;
       let data: TableData | undefined = undefined;
@@ -419,7 +446,7 @@ export function createTimeDimensionDataStore(
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           tableDimensionData,
-          total as number,
+          total,
           unfilteredTotal as number,
           measure,
           selectedValues.data,
@@ -430,20 +457,20 @@ export function createTimeDimensionDataStore(
         comparing = timeControls.showTimeComparison ? "time" : "none";
         const currentRange = timeControls?.selectedTimeRange?.name;
 
-        let currentLabel = "Custom Range";
+        let currentLabel: string = m.time_custom_range_title();
         if (currentRange && currentRange in DEFAULT_TIME_RANGES)
           currentLabel = DEFAULT_TIME_RANGES[currentRange].label;
 
         const comparisonRange = timeControls?.selectedComparisonTimeRange?.name;
-        let comparisonLabel = "Custom Range";
+        let comparisonLabel: string = m.time_custom_range_title();
 
         if (comparisonRange && comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
-          total as number,
-          comparisonTotal as number,
+          total,
+          comparisonTotal,
           currentLabel,
           comparisonLabel,
           measure,

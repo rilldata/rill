@@ -10,29 +10,36 @@
   import FiltersCell from "./cells/FiltersCell.svelte";
   import DateCell from "./cells/DateCell.svelte";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
+  import { InMemoryRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
   }
 
-  export let data: PublicURLRow[];
-  export let onDelete: (deletedTokenId: string) => void;
+  let {
+    data,
+    onDelete,
+  }: { data: PublicURLRow[]; onDelete: (deletedTokenId: string) => void } =
+    $props();
 
-  let searchText = "";
+  const searchTextStore = new InMemoryRuneStore<string>("");
 
-  $: filteredData = data.filter((row) => {
-    if (!searchText) return true;
-    const q = searchText.toLowerCase();
-    const label = (row.displayName || row.dashboardTitle || "").toLowerCase();
-    const dashboard = (row.dashboardTitle || "").toLowerCase();
-    const creator = String(row.attributes?.name || "").toLowerCase();
-    return label.includes(q) || dashboard.includes(q) || creator.includes(q);
-  });
+  let filteredData = $derived(
+    data.filter((row) => {
+      if (!searchTextStore.value) return true;
+      const q = searchTextStore.value.toLowerCase();
+      const label = (row.displayName || row.dashboardTitle || "").toLowerCase();
+      const dashboard = (row.dashboardTitle || "").toLowerCase();
+      const creator = String(row.attributes?.name || "").toLowerCase();
+      return label.includes(q) || dashboard.includes(q) || creator.includes(q);
+    }),
+  );
 
-  const columns: ColumnDef<PublicURLRow, any>[] = [
+  let columns = $derived([
     {
       accessorKey: "displayName",
-      header: "Label",
+      header: m.public_url_table_label_header(),
       cell: ({ row }) =>
         renderComponent(LabelCell, {
           displayName: row.original.displayName ?? "",
@@ -42,12 +49,12 @@
     },
     {
       accessorKey: "dashboardTitle",
-      header: "Dashboard",
+      header: m.public_url_table_dashboard_header(),
       enableSorting: false,
     },
     {
       accessorKey: "metricsViewFilters",
-      header: "Filters",
+      header: m.public_url_table_filters_header(),
       enableSorting: false,
       cell: ({ row }) =>
         renderComponent(FiltersCell, {
@@ -56,19 +63,19 @@
     },
     {
       accessorKey: "expiresOn",
-      header: "Expires on",
+      header: m.public_url_table_expires_header(),
       cell: ({ row }) =>
         renderComponent(DateCell, { value: row.original.expiresOn }),
     },
     {
       id: "createdBy",
-      header: "Created by",
+      header: m.public_url_table_created_by_header(),
       accessorFn: (row) => row.attributes?.name || "—",
       enableSorting: false,
     },
     {
       accessorKey: "usedOn",
-      header: "Last accessed",
+      header: m.public_url_table_last_accessed_header(),
       cell: ({ row }) =>
         renderComponent(DateCell, { value: row.original.usedOn }),
     },
@@ -83,15 +90,11 @@
           onDelete,
         }),
     },
-  ];
+  ] as ColumnDef<PublicURLRow, any>[]);
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
-  <TableToolbar
-    bind:searchText
-    searchDisabled={data.length === 0}
-    showSort={false}
-  />
+  <TableToolbar {searchTextStore} />
 
   <BasicTable
     data={filteredData}
@@ -102,15 +105,15 @@
       {#if data.length === 0}
         <ResourceListEmptyState
           icon={ExternalLinkIcon}
-          message="You don't have any public URLs yet"
+          message={m.public_url_no_urls_title()}
         >
           <span slot="action">
-            To create a public URL, click the Share button in a dashboard.
+            {m.public_url_no_urls_empty()}
           </span>
         </ResourceListEmptyState>
       {:else}
         <span class="text-fg-secondary text-sm font-semibold">
-          No public URLs match your search
+          {m.public_url_no_match_search()}
         </span>
       {/if}
     </div>

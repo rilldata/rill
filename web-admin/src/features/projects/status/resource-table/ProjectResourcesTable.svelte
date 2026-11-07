@@ -23,13 +23,19 @@
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
+  import {
+    getPersonalFileOwner,
+    isPersonalFile,
+  } from "@rilldata/web-admin/features/projects/status/selectors.ts";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1Resource[];
 
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
   let dialogResourceKind = "";
-  let dialogRefreshType: "full" | "incremental" = "full";
+  let dialogRefreshType: "refresh" | "full" | "incremental" = "refresh";
 
   let isSpecDialogOpen = false;
   let specResourceName = "";
@@ -49,10 +55,13 @@
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
+  const currentUser = createAdminServiceGetCurrentUser();
+  $: currentUserId = $currentUser.data?.user?.id;
+
   const openRefreshDialog = (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "refresh" | "full" | "incremental",
   ) => {
     dialogResourceName = resourceName;
     dialogResourceKind = resourceKind;
@@ -143,7 +152,7 @@
   const columns: ColumnDef<V1Resource, any>[] = [
     {
       accessorKey: "title",
-      header: "Type",
+      header: m.status_column_type(),
       accessorFn: (row) => row.meta.name.kind,
       cell: ({ row }) =>
         renderComponent(ResourceTypeBadge, {
@@ -152,15 +161,18 @@
     },
     {
       accessorFn: (row) => row.meta.name.name,
-      header: "Name",
-      cell: ({ getValue }) =>
+      header: m.status_column_name(),
+      cell: ({ getValue, row }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
+          isPersonal: isPersonalFile(row.original),
+          currentUserId,
+          ownerId: getPersonalFileOwner(row.original),
         }),
     },
     {
       accessorFn: (row) => row.meta.reconcileStatus,
-      header: "Status",
+      header: m.status_label_status(),
       sortingFn: (rowA, rowB) => {
         return (
           getStatusPriority(rowB.original.meta.reconcileStatus) -
@@ -179,7 +191,7 @@
     },
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
-      header: "Last refresh",
+      header: m.status_column_last_refresh(),
       sortDescFirst: true,
       cell: (info) =>
         renderComponent(RefreshCell, {
@@ -188,7 +200,7 @@
     },
     {
       accessorFn: (row) => row.meta.reconcileOn,
-      header: "Next refresh",
+      header: m.status_column_next_refresh(),
       cell: (info) =>
         renderComponent(RefreshCell, {
           date: info.getValue() as string,
@@ -233,7 +245,7 @@
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
   containerHeight={550}
-  emptyText="No resources match the current filters"
+  emptyText={m.status_no_resources_match_filters()}
 />
 
 <RefreshResourceConfirmDialog

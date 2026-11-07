@@ -33,3 +33,67 @@ tests:
     result:
       - country: US
         sum: 9
+  # The following tests run the same query back-to-back with identical (empty) user attributes,
+  # varying only the additional rules and skipped security checks.
+  # They protect against cached results leaking across different security contexts.
+  - name: cache_isolation_row_filter_dk
+    resolver: metrics
+    properties:
+      metrics_view: metrics_no_security
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: country
+    additional_rules:
+      - row_filter: country = 'DK'
+    result:
+      - country: DK
+        sum: 6
+  - name: cache_isolation_row_filter_us
+    resolver: metrics
+    properties:
+      metrics_view: metrics_no_security
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: country
+    additional_rules:
+      - row_filter: country = 'US'
+    result:
+      - country: US
+        sum: 9
+  - name: cache_isolation_no_rules
+    resolver: metrics
+    properties:
+      metrics_view: metrics_no_security
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: country
+    result:
+      - country: DK
+        sum: 6
+      - country: US
+        sum: 9
+  - name: cache_isolation_skip_checks
+    resolver: metrics
+    properties:
+      metrics_view: metrics_no_security
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: country
+    skip_security_checks: true
+    result:
+      - country: DK
+        sum: 6
+      - country: US
+        sum: 9

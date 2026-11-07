@@ -7,8 +7,24 @@
 <h3 align="center">Agent-first, human-friendly business intelligence</h3>
 
 <p align="center">
-  <a href="https://github.com/rilldata/rill/releases"><img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="License"></a>
+    <a href="LICENSE.md" target="_blank">
+        <img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="GitHub license">
+    </a>
+    <a href="https://github.com/rilldata/rill/releases" target="_blank">
+        <img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="GitHub tag (latest SemVer)">
+    </a>
+    <a href="https://github.com/rilldata/rill/commits" target="_blank">
+        <img src="https://img.shields.io/github/commit-activity/y/rilldata/rill.svg" alt="GitHub commit activity">
+    </a>
+    <a href="https://github.com/rilldata/rill/graphs/contributors" target="_blank">
+        <img src="https://img.shields.io/github/contributors-anon/rilldata/rill.svg" alt="GitHub contributors">
+    </a>
+    <a href="https://github.com/rilldata/rill/releases" target="_blank">
+        <img src="https://img.shields.io/github/downloads/rilldata/rill/total.svg" alt="GitHub downloads">
+    </a>
+    <a href="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml" target="_blank">
+        <img src="https://github.com/rilldata/rill/actions/workflows/rill-cloud.yml/badge.svg" alt="CI/CD">
+    </a>
 </p>
 
 <p align="center">
@@ -61,7 +77,7 @@ Success! Run the following command to start the project:
 ### Rill Developer (local)
 
 - [**Connectors**](https://docs.rilldata.com/build/connectors/) — S3, GCS, databases, and 20+ sources
-- [**OLAP Engines**](https://docs.rilldata.com/build/olap-engines/) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
+- [**OLAP Engines**](https://docs.rilldata.com/developers/build/connectors/olap) — Managed ClickHouse or DuckDB included, or connect an external engine (ClickHouse Cloud, Druid, Pinot, MotherDuck)
 - [**SQL Models**](https://docs.rilldata.com/build/models/) — Transform raw data with SQL, join models together
 - [**Data Profiling**](https://docs.rilldata.com/build/models) — Instant column stats and distributions
 - [**Incremental Ingestion**](https://docs.rilldata.com/build/models/incremental-models) — Load only new data on each run to keep large datasets current without full refreshes
@@ -76,7 +92,7 @@ Success! Run the following command to start the project:
 - [**Conversational BI**](https://docs.rilldata.com/explore/ai-chat) — Ask questions in natural language
 - [**MCP Server**](https://docs.rilldata.com/explore/mcp) — Connect Claude, ChatGPT, or any AI agent to your metrics
 - [**Custom APIs & Embedding**](https://docs.rilldata.com/build/custom-apis/) — Expose metrics via REST or embed dashboards
-- [**Alerts & Reports**](https://docs.rilldata.com/build/alerts) — Threshold alerting, code-defined or UI-defined
+- [**Alerts & Reports**](https://docs.rilldata.com/developers/build/alerts) — Threshold alerting, code-defined or UI-defined
 
 ## How It Works
 
@@ -135,6 +151,11 @@ rill deploy                      # push to Rill Cloud
 
 Your metrics view is immediately queryable on Rill Cloud — add YAML files to configure dashboards, alerts, and custom APIs.
 
+## Learn More
+
+[Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
+• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q) • [Agentic Analytics with Claude Code and Rill](https://www.youtube.com/watch?v=k6Lbu2cVH4g&t=2s)
+
 ## Examples
 
 | Example              | Description                                         | Links                                                                                                                                            |
@@ -151,4 +172,4 @@ Or explore a [live embedded dashboard](https://rill-embedding-example.netlify.ap
 
 ## Contributing
 
-We welcome contributions! See our [Contributing Guide](https://docs.rilldata.com/home/contribute) to get started.
+We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) to get started.

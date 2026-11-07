@@ -6,17 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -155,7 +154,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, err
 	}
 
-	name, err := s.generateAlertName(ctx, depl, req.Options.DisplayName)
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupAlert(ctx, depl, name)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -166,10 +168,12 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(name),
-		Data:        data,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -236,10 +240,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(req.Name),
-		Data:        data,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(req.Name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -262,6 +268,9 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -380,10 +389,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID:   proj.ID,
-			Environment: "prod",
-			Path:        virtualFilePathForManagedAlert(req.Name),
-			Data:        data,
+			ProjectID:    proj.ID,
+			Environment:  "prod",
+			Path:         virtualFilePathForManagedAlert(req.Name),
+			Data:         data,
+			OwnerID:      nil,
+			EmbedOwnerID: nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -532,6 +543,10 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.For.UserID = ownerUserID
 	res.Query.For.UserID = ownerUserID
+	err := setAlertExportYAML(&res, opts)
+	if err != nil {
+		return nil, err
+	}
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
@@ -575,6 +590,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
+	err := setAlertExportYAML(&res, opts)
+	if err != nil {
+		return nil, err
+	}
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
@@ -587,42 +606,25 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	return yaml.Marshal(res)
 }
 
-// generateAlertName generates a random alert name with the display name as a seed.
-// Example: "My alert!" -> "my-alert-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomAlertName(displayName)
-
-		_, err := s.admin.LookupAlert(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check alert name: %w", err)
-		}
+// setAlertExportYAML sets the options for attaching the rows that triggered the alert to emails.
+// It only sets them when attaching, since they only apply to attachments.
+func setAlertExportYAML(res *alertYAML, opts *adminv1.AlertOptions) error {
+	if !opts.ExportAttach {
+		return nil
 	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
-}
-
-var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomAlertName(displayName string) string {
-	name := alertNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
+	if opts.QueryName == "" || opts.Resolver != "" {
+		return fmt.Errorf("export attachments are only supported for query-based alerts")
 	}
-	return name
+	switch opts.ExportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV, runtimev1.ExportFormat_EXPORT_FORMAT_XLSX, runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+	default:
+		return fmt.Errorf("invalid export format %q for alert attachments", opts.ExportFormat.String())
+	}
+	res.Export.Attach = true
+	res.Export.Format = exportFormatYAML(opts.ExportFormat)
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
+	res.Export.Limit = opts.ExportLimit
+	return nil
 }
 
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
@@ -651,6 +653,12 @@ type alertYAML struct {
 			UserID string `yaml:"user_id"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	Export struct {
+		Attach        bool   `yaml:"attach"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint64 `yaml:"limit,omitempty"`
+	} `yaml:"export,omitempty"` // Omitted unless attaching, so runtimes that predate it can parse the YAML
 	Renotify      bool   `yaml:"renotify"`
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {

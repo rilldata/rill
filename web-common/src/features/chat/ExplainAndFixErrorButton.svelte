@@ -1,14 +1,14 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { SparklesIcon } from "lucide-svelte";
-  import { sidebarActions } from "./layouts/sidebar/sidebar-store";
+  import { developerChatActions } from "./layouts/sidebar/sidebar-store";
 
   export let filePath: string;
   export let large = false;
   export let variant: "compact" | "cta" = "compact";
 
   function handleClick() {
-    sidebarActions.startChat(`Fix the errors in \`${filePath}\``);
+    developerChatActions.startChat(`Fix the errors in \`${filePath}\``);
   }
 </script>
 

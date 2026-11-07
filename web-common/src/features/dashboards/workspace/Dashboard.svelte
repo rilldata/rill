@@ -5,6 +5,8 @@
     extractErrorStatusCode,
     isNotFoundError,
   } from "@rilldata/web-common/lib/errors";
+  import EphemeralMeasureDialog from "@rilldata/web-common/features/dashboards/ephemeral-measures/EphemeralMeasureDialog.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -12,8 +14,9 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { onDestroy } from "svelte";
-  import { readable, type Readable } from "svelte/store";
+  import { githubStarNudge } from "@rilldata/web-common/features/github-star/github-star.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { get, readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -30,14 +33,23 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import {
+    DEFAULT_TDD_CHART_HEIGHT,
+    DEFAULT_TIMESERIES_WIDTH,
+    MIN_TDD_CHART_HEIGHT,
+    MIN_TIMESERIES_WIDTH,
+    exploreTimeseriesWidth,
+    tddChartHeight,
+  } from "./dashboard-layout-store";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
 
-  const DEFAULT_TIMESERIES_WIDTH = 580;
-  const MIN_TIMESERIES_WIDTH = 440;
+  // Vertical space reserved below the chart for the chart toolbar, axis, big
+  // number, and a minimum detail table height when computing the drag maximum.
+  const TDD_RESERVED_HEIGHT = 280;
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -46,20 +58,24 @@
       pivot: { showPivot },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let exploreContainerHeight: number;
   let resizing = false;
 
   const client = useRuntimeClient();
 
-  $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
-    $dashboardStore);
+  $: ({ selectedTimeDimension } = $dashboardStore);
+  const filterStore =
+    expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
+  $: dimensionOnlyFilter = $filterStore?.dimensionOnlyExpr;
+  $: whereFilter = $filterStore?.expr;
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -136,6 +152,12 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
+  onMount(() => {
+    // Github star nudge is Rill developer only.
+    // Nudge on dashboard render.
+    if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
+  });
+
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
@@ -184,25 +206,48 @@
         class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
+        bind:clientHeight={exploreContainerHeight}
       >
         <div
           class="flex-none pl-4"
           class:pt-2={!showTimeDimensionDetail}
-          style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
+          style:width={showTimeDimensionDetail
+            ? "auto"
+            : `${$exploreTimeseriesWidth}px`}
         >
           {#key exploreName}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
+                {dimensionOnlyFilter}
+                {whereFilter}
                 hideStartPivotButton={hidePivot}
+                tddChartHeight={$tddChartHeight}
               />
             {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+              <MeasuresContainer {metricsViewName} {whereFilter} />
             {/if}
           {/key}
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
+          <div class="relative flex-none bg-border h-[1px]">
+            <Resizer
+              direction="NS"
+              side="bottom"
+              dimension={$tddChartHeight}
+              min={MIN_TDD_CHART_HEIGHT}
+              max={Math.max(
+                MIN_TDD_CHART_HEIGHT,
+                (exploreContainerHeight || 600) - TDD_RESERVED_HEIGHT,
+              )}
+              basis={DEFAULT_TDD_CHART_HEIGHT}
+              bind:resizing
+              onUpdate={(height: number) => {
+                tddChartHeight.set(height);
+              }}
+            />
+          </div>
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}
@@ -211,14 +256,14 @@
         {:else}
           <div class="relative flex-none bg-border w-[1px]">
             <Resizer
-              dimension={metricsWidth}
+              dimension={$exploreTimeseriesWidth}
               min={MIN_TIMESERIES_WIDTH}
               max={exploreContainerWidth - 500}
               basis={DEFAULT_TIMESERIES_WIDTH}
               bind:resizing
               side="right"
-              onUpdate={(width) => {
-                metricsWidth = width;
+              onUpdate={(width: number) => {
+                exploreTimeseriesWidth.set(width);
               }}
             />
           </div>
@@ -228,7 +273,6 @@
                 dimension={selectedDimension}
                 {metricsViewName}
                 {whereFilter}
-                {dimensionThresholdFilters}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}
@@ -239,7 +283,6 @@
               <LeaderboardDisplay
                 {metricsViewName}
                 {whereFilter}
-                {dimensionThresholdFilters}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}
@@ -253,9 +296,13 @@
     <CellInspector />
 
     {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
-      <RowsViewerAccordion {metricsViewName} {exploreName} />
+      <RowsViewerAccordion {metricsViewName} {exploreName} {whereFilter} />
     {/if}
   </article>
+
+  {#if $ephemeralMeasureDialog}
+    <EphemeralMeasureDialog />
+  {/if}
 </ThemeProvider>
 
 <style lang="postcss">

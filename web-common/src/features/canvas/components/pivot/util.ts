@@ -1,4 +1,13 @@
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import {
+  appendEphemeralSpecMeasures,
+  ephemeralMeasureNameSet,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { canvasExactRequestNames } from "@rilldata/web-common/features/canvas/components/exact-measures";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
@@ -18,14 +27,59 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  V1Expression,
-  V1MetricsViewSpec,
-  V1TimeRange,
+import {
+  V1Operation,
+  type V1Expression,
+  type V1MetricsViewSpec,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { type Readable, type Writable, derived, writable } from "svelte/store";
+import {
+  derived,
+  readable,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
+import {
+  applyFieldConfigToMetricsView,
+  fieldNames,
+  splitComparisonColumnId,
+} from "./field-config";
+
+/**
+ * Strips filters for the pivot's own dimensions from the where filter.
+ * This lets the pivot query return all rows; selection highlighting
+ * (via rowSelectionState) shows which rows match the active filters.
+ * Same pattern as leaderboard's getFiltersForOtherDimensions but for
+ * multiple dimensions at once.
+ */
+function excludeOwnDimensionFilters(
+  where: V1Expression | undefined,
+  dimensionNames: string[],
+): V1Expression | undefined {
+  if (!where?.cond?.exprs || dimensionNames.length === 0) return where;
+  const dimSet = new Set(dimensionNames);
+  // Only exclude IN expressions whose ident matches a self-filtered dimension.
+  // Other filter types (LIKE, NIN) are never produced by click-to-filter and
+  // must be preserved even if they share a dimension name.
+  const filtered = where.cond.exprs.filter((e) => {
+    if (e.cond?.op !== V1Operation.OPERATION_IN) return true;
+    return !dimSet.has(e.cond?.exprs?.[0]?.ident ?? "");
+  });
+  return createAndExpression(filtered);
+}
+
+export const ROW_LIMIT_ALL_VALUE = "all";
+
+export function normalizeRowLimit(
+  rowLimit: string | undefined,
+): number | undefined {
+  if (!rowLimit || rowLimit === ROW_LIMIT_ALL_VALUE) return undefined;
+  const parsed = parseInt(rowLimit, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
 
 type CacheEntry = {
   store: ReturnType<typeof createPivotDataStore>;
@@ -59,39 +113,79 @@ let lastKey: string | undefined = undefined;
 
 export function createPivotConfig(
   canvas: CanvasEntity,
+  // The exact-selection surface of the component; see `canvasExactSurface`.
+  surface: string,
   tableSpecStore: Readable<PivotSpec | TableSpec>,
   pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  selfFilteredDimensions?: Readable<Set<string>>,
 ): Readable<PivotDataStoreConfig> {
+  const selfFilteredStore = selfFilteredDimensions ?? readable(null);
+
   return derived(
-    [canvas.specStore, tableSpecStore, pivotState, timeAndFilterStore],
-    ([$canvasData, $tableSpec, $pivotState, $timeAndFilterStore]) => {
+    [
+      canvas.specStore,
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+      selfFilteredStore,
+      canvas.exactMeasures,
+    ],
+    ([
+      $canvasData,
+      $tableSpec,
+      $pivotState,
+      $timeAndFilterStore,
+      $selfFiltered,
+    ]) => {
       const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const metricsViewName = $tableSpec.metrics_view;
+      // The exact selection of this component. Read through the entity so the
+      // context-key check applies; `canvas.exactMeasures` above re-runs this
+      // derivation when the selection changes.
+      const selectedExact = canvas.currentExactMeasures(surface);
       const metricsView =
-        $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec ??
-        {};
+        $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec;
+      const ready =
+        !!metricsViewName &&
+        !!metricsView &&
+        ($timeAndFilterStore.hasTimeSeries === false ||
+          ($timeAndFilterStore.hasTimeSeries === true &&
+            !!timeRange?.start &&
+            !!timeRange?.end));
+
+      let queryWhere: V1Expression | undefined;
+      if (!$selfFiltered || $selfFiltered.size === 0) {
+        queryWhere = where;
+      } else {
+        // Only exclude dimensions the pivot itself applied via click-to-filter
+        queryWhere = excludeOwnDimensionFilters(where, [...$selfFiltered]);
+      }
 
       return "columns" in $tableSpec
         ? processFlat(
             $tableSpec,
             $pivotState,
-            where,
+            queryWhere,
             metricsView,
             $timeAndFilterStore,
             comparisonTimeRange,
             pivotState,
             timeRange,
+            ready,
+            selectedExact,
           )
         : processPivot(
             $tableSpec,
             $pivotState,
-            where,
+            queryWhere,
             metricsView,
             $timeAndFilterStore,
             comparisonTimeRange,
             pivotState,
             timeRange,
+            ready,
+            selectedExact,
           );
     },
   );
@@ -106,9 +200,12 @@ export function processPivot(
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
+  ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
+      ready: false,
       measureNames: [],
       rowDimensionNames: [],
       colDimensionNames: [],
@@ -127,11 +224,32 @@ export function processPivot(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
+
+  const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
+  const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
+  const baseMeasureNames = fieldNames($tableSpec?.measures);
+  const exactMeasures = canvasExactRequestNames(
+    baseMeasureNames,
+    selectedExact,
+  );
 
   const config: PivotDataStoreConfig = {
-    measureNames: ($tableSpec?.measures || []).flatMap((name) => {
+    ready,
+    exactMeasures,
+    measureNames: baseMeasureNames.flatMap((name) => {
       const group = [name];
-      if (enableComparison) {
+      // Comparison columns are not supported for ephemeral measures.
+      if (enableComparison && !ephemeralMeasureNames.has(name)) {
         group.push(
           `${name}${COMPARISON_DELTA}`,
           `${name}${COMPARISON_PERCENT}`,
@@ -139,14 +257,15 @@ export function processPivot(
       }
       return group;
     }),
-    rowDimensionNames: $tableSpec?.row_dimensions || [],
-    colDimensionNames: $tableSpec?.col_dimensions || [],
-    allMeasures: metricsView?.measures || [],
-    allDimensions: metricsView?.dimensions || [],
+    rowDimensionNames: fieldNames($tableSpec?.row_dimensions),
+    colDimensionNames: fieldNames($tableSpec?.col_dimensions),
+    allMeasures: fields.measures,
+    ephemeralMeasures,
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -170,6 +289,7 @@ export function processPivot(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 
@@ -185,9 +305,12 @@ export function processFlat(
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
+  ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
+      ready: false,
       measureNames: [],
       rowDimensionNames: [],
       colDimensionNames: [],
@@ -203,9 +326,13 @@ export function processFlat(
     };
   }
 
-  const columns = $tableSpec?.columns || [];
-  const allMeasureNames =
-    metricsView?.measures?.map((m) => m.name as string) || [];
+  const columns = fieldNames($tableSpec?.columns);
+  const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
+  const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+  const allMeasureNames = [
+    ...(metricsView?.measures?.map((m) => m.name as string) || []),
+    ...ephemeralMeasureNames,
+  ];
 
   const measures = columns.filter((c) => allMeasureNames.includes(c)) || [];
   const dimensions = columns.filter((c) => !measures.includes(c)) || [];
@@ -213,11 +340,25 @@ export function processFlat(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
+
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
+  const exactMeasures = canvasExactRequestNames(measures, selectedExact);
 
   const config: PivotDataStoreConfig = {
+    ready,
+    exactMeasures,
     measureNames: (measures || []).flatMap((name) => {
       const group = [name];
-      if (enableComparison) {
+      // Comparison columns are not supported for ephemeral measures.
+      if (enableComparison && !ephemeralMeasureNames.has(name)) {
         group.push(
           `${name}${COMPARISON_DELTA}`,
           `${name}${COMPARISON_PERCENT}`,
@@ -227,12 +368,13 @@ export function processFlat(
     }),
     rowDimensionNames: dimensions || [],
     colDimensionNames: [],
-    allMeasures: metricsView?.measures || [],
-    allDimensions: metricsView?.dimensions || [],
+    allMeasures: fields.measures,
+    ephemeralMeasures,
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -256,10 +398,27 @@ export function processFlat(
         ...state,
         rowPage: 1,
       }));
+      config.pivot.rowPage = 1;
     }
   }
 
   return config;
+}
+
+/**
+ * A sort on a measure's delta or percent-change column cannot outlive the
+ * comparison columns (the comparison may be switched off after the sort was
+ * seeded or clicked), so it falls back to the measure's own value.
+ */
+function withoutStaleComparisonSort(
+  state: PivotState,
+  enableComparison: boolean,
+): PivotState {
+  const first = state.sorting[0];
+  if (enableComparison || !first) return state;
+  const split = splitComparisonColumnId(first.id);
+  if (!split) return state;
+  return { ...state, sorting: [{ ...first, id: split.measure }] };
 }
 
 export const usePivotForCanvas = (
@@ -286,9 +445,13 @@ export const usePivotForCanvas = (
 export function tableFieldMapper(
   fields: string[],
   metricViewSpec: V1MetricsViewSpec | undefined,
+  ephemeralMeasures?: EphemeralMeasureSpec[],
 ) {
   const timeDimension = metricViewSpec?.timeDimension;
   const measures = metricViewSpec?.measures?.map((m) => m.name as string) || [];
+  const ephemeralByName = new Map(
+    (ephemeralMeasures ?? []).map((c) => [c.name, c]),
+  );
   return fields.map((field) => {
     if (timeDimension && isTimeDimension(field, timeDimension)) {
       const grain = getTimeGrainFromDimension(field);
@@ -298,10 +461,10 @@ export function tableFieldMapper(
         type: PivotChipType.Time,
       };
     }
-    if (measures.includes(field)) {
+    if (measures.includes(field) || ephemeralByName.has(field)) {
       return {
         id: field,
-        title: field,
+        title: ephemeralByName.get(field)?.display_name || field,
         type: PivotChipType.Measure,
       };
     }

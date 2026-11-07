@@ -211,6 +211,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
+	// Not set in system variables since it should be okay to override these on local to test.
 	vars := map[string]string{
 		"rill.download_limit_bytes": "0", // 0 means unlimited
 		"rill.stage_changes":        "false",

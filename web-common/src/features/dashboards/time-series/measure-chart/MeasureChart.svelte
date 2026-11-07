@@ -1,4 +1,11 @@
 <script lang="ts">
+  import {
+    applyExactMeasures,
+    exactTimeSeriesMeasureNames,
+    splitTimeSeriesMeasures,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -32,6 +39,9 @@
   const VISIBILITY_ROOT_MARGIN = "120px";
 
   export let measure: MetricsViewSpecMeasure;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  export let exact = false;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -60,9 +70,12 @@
   export let onScrubClear: (() => void) | undefined = undefined;
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
+  // Chart height when expanded in the Time Dimension Detail view. Driven by the
+  // resizable divider between the timeseries and the detail table.
+  export let tddChartHeight: number = 245;
 
   const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
@@ -79,7 +92,16 @@
   });
 
   $: measureName = measure.name ?? "";
-  $: height = showTimeDimensionDetail ? 245 : 145;
+  $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+  $: exactNames = exact ? new Set([measureName]) : undefined;
+  $: tsExactMeasureNames = exactTimeSeriesMeasureNames(
+    tsMeasureNames,
+    exactNames,
+  );
+  $: tsRequestEphemeralMeasures =
+    tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
+  $: height = showTimeDimensionDetail ? tddChartHeight : 145;
 
   $: effectiveChartType = resolveEffectiveChartType(
     tddChartType,
@@ -120,7 +142,9 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart,
@@ -141,7 +165,9 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart: comparisonTimeStart,
@@ -186,6 +212,7 @@
         client,
         metricsViewName,
         measureName,
+        ephemeralMeasures,
         comparisonDimension!,
         dimensionValues,
         dimensionWhere,
@@ -195,6 +222,7 @@
         timeGranularity!,
         timeZone,
         $visible && ready && !!timeStart,
+        exact,
       )
     : undefined;
 
@@ -204,6 +232,7 @@
           client,
           metricsViewName,
           measureName,
+          ephemeralMeasures,
           comparisonDimension!,
           dimensionValues,
           dimensionWhere,
@@ -212,8 +241,8 @@
           comparisonTimeEnd,
           timeGranularity!,
           timeZone,
-
           $visible && ready && !!comparisonTimeStart,
+          exact,
         )
       : undefined;
 
@@ -315,18 +344,12 @@
 
 <div bind:this={container} class="size-full relative">
   {#if !$visible || (isFetching && data.length === 0)}
-    <div
-      class="flex items-center justify-center h-[145px]"
-      class:h-[245px]={showTimeDimensionDetail}
-    >
+    <div class="flex items-center justify-center" style:height="{height}px">
       <Spinner status={EntityStatus.Running} size="24px" />
     </div>
   {:else if isError}
-    <div
-      class="flex items-center justify-center text-red-500 text-xs h-[145px]"
-      class:h-[245px]={showTimeDimensionDetail}
-    >
-      {error ?? "Error loading data"}
+    <div class="flex items-center justify-center" style:height="{height}px">
+      <InlineErrorIndicator message={error} />
     </div>
   {:else if usesVegaChart && data.length > 0}
     <div class="w-full" style:height="{height}px">
@@ -334,6 +357,8 @@
         chartType={effectiveChartType}
         {metricsViewName}
         {measure}
+        {ephemeralMeasures}
+        {exact}
         {timeDimension}
         {interval}
         comparisonInterval={showComparison ? comparisonInterval : undefined}
@@ -345,6 +370,7 @@
         {dimensionData}
         {showComparison}
         {showTimeDimensionDetail}
+        {dynamicYAxis}
         onChartHover={handleTddHover}
         onChartBrushEnd={handleTddBrushEnd}
         onChartBrushClear={handleTddBrushClear}
@@ -374,6 +400,7 @@
       {connectNulls}
       {dynamicYAxis}
       {tddChartType}
+      {tddChartHeight}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">

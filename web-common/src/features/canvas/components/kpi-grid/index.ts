@@ -1,6 +1,10 @@
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -23,6 +27,8 @@ import KPIGrid from "./KPIGrid.svelte";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "delta",
   "percent_change",
@@ -33,6 +39,8 @@ export interface KPIGridSpec
     ComponentFilterProperties {
   metrics_view: string;
   measures: string[];
+  // Ad-hoc measures derived from existing measures via an arithmetic expression.
+  adhoc_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
   // Defaults to false if undefined;
@@ -44,7 +52,7 @@ export interface KPIGridSpec
 export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
-  resetParams = ["measures"];
+  resetParams = ["measures", "adhoc_measures"];
   type: CanvasComponentType = "kpi_grid";
   component = KPIGrid;
 
@@ -65,6 +73,7 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     const spec = get(this.specStore);
     return {
       visibleMeasures: spec.measures,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       activePage: DashboardState_ActivePage.DEFAULT,
       allMeasuresVisible: false,
       leaderboardSortByMeasureName: spec.measures[0],
@@ -77,25 +86,39 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     );
 
     const timeSeriesOptions: InputParams<KPIGridSpec>["options"] = {
-      sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+      sparkline: {
+        type: "sparkline",
+        optional: true,
+        label: m.canvas_sparkline_label(),
+      },
       hide_time_range: {
         type: "boolean",
         optional: true,
-        label: "Time range display",
+        label: m.canvas_time_range_display_label(),
         meta: { invertBoolean: true },
       },
-      comparison: { type: "comparison_options", label: "Comparison values" },
+      comparison: {
+        type: "comparison_options",
+        label: m.canvas_comparison_values_label(),
+      },
     };
     const inputParams: InputParams<KPIGridSpec> = {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
         measures: {
           type: "multi_fields",
           meta: { allowedTypes: ["measure"] },
-          label: "Measures",
+          label: m.canvas_measures_label(),
+        },
+        adhoc_measures: {
+          type: "adhoc_measures",
+          label: m.canvas_ephemeral_measures_label(),
+          optional: true,
+          // Managed through the measures selector's create/edit dialog.
+          showInUI: false,
         },
         ...(hasTimeSeries ? timeSeriesOptions : {}),
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(),
     };

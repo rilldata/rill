@@ -15,6 +15,12 @@
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
+  import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import McpAuthRequiredBlock from "./mcp-auth-required/McpAuthRequiredBlock.svelte";
+  import SuggestedPrompts from "@rilldata/web-common/features/chat/core/suggested-prompts/SuggestedPrompts.svelte";
+  import MemoryUpdateChip from "@rilldata/web-common/features/chat/memory/MemoryUpdateChip.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { readable } from "svelte/store";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -53,6 +59,11 @@
   // Check if conversation is empty (for empty state display)
   $: isConversationEmpty =
     ($getConversationQuery.data?.messages?.length ?? 0) === 0;
+
+  // Starter prompts for the empty state
+  $: suggestedPromptsStore =
+    config.suggestedPromptsStoreGetter?.(runtimeClient) ?? readable([]);
+  $: suggestedPrompts = $suggestedPromptsStore;
 
   // Track previous block count to detect new content and previous block type to detect block changing.
   // This is used to determine whether to scroll to bottom of messages container or not.
@@ -115,28 +126,32 @@
       <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
-    <Error
-      headline="Unable to load conversation"
-      error={$conversationQueryError}
-    />
+    <Error headline={m.chat_unable_to_load()} error={$conversationQueryError} />
   {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
-      <div class="chat-empty-title">How can I help you today?</div>
+      <div class="chat-empty-title">{m.chat_how_can_i_help()}</div>
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
+      {#if suggestedPrompts.length > 0}
+        <SuggestedPrompts prompts={suggestedPrompts} {layout} />
+      {/if}
     </div>
   {:else}
     {#each blocks as block (block.id)}
-      {#if block.type === "text" && block.message.role === "user"}
-        <UserMessage message={block.message} />
-      {:else if block.type === "text" && block.message.role === "assistant"}
-        <AssistantMessage
-          {block}
-          conversation={currentConversation}
-          onDownvote={handleDownvote}
-        />
+      {#if block.type === "text"}
+        {#if block.isError}
+          <ErrorMessage message={block.message} />
+        {:else if block.message.role === "user"}
+          <UserMessage message={block.message} />
+        {:else if block.message.role === "assistant"}
+          <AssistantMessage
+            {block}
+            conversation={currentConversation}
+            onDownvote={handleDownvote}
+          />
+        {/if}
       {:else if block.type === "thinking"}
         <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}
@@ -147,11 +162,15 @@
         <FileDiffBlock {block} {tools} />
       {:else if block.type === "simple-tool-call-block"}
         <SimpleToolCallBlock {block} {tools} />
+      {:else if block.type === "memory-update"}
+        <MemoryUpdateChip {block} />
+      {:else if block.type === "mcp-auth-required"}
+        <McpAuthRequiredBlock {block} />
       {/if}
     {/each}
   {/if}
   {#if hasStreamError}
-    <Error headline="Failed to generate response" error={$streamErrorStore} />
+    <Error headline={m.chat_failed_to_generate()} error={$streamErrorStore} />
   {/if}
 </div>
 

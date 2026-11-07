@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -29,6 +30,7 @@ dimensions:
   lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix since it is a model in the same project
   lookup_key_column: id
   lookup_value_column: value
+  lookup_group_by_key: true
 - name: bar
   expression: id
   lookup_table: ext # Expect no ref since it is not a known model (assumed to be a pre-existing table)
@@ -83,6 +85,7 @@ measures:
 						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
+						LookupGroupByKey:  proto.Bool(true),
 					},
 					{
 						Name:              "bar",
@@ -110,6 +113,36 @@ measures:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetricsViewLookupGroupByKeyRequiresLookup(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+  lookup_group_by_key: true
+- name: bar
+  column: id
+  lookup_group_by_key: false
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Equal(t, "/metrics_views/mv1.yaml", p.Errors[0].FilePath)
+	require.Contains(t, p.Errors[0].Message, "lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column")
 }
 
 func TestMetricsViewDimensionSmallestTimeGrain(t *testing.T) {
@@ -814,6 +847,101 @@ rollups:
 `,
 			wantErr: `invalid "time_zone"`,
 		},
+		{
+			name: "invalid rollup data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "not a rilltime"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "invalid metrics view data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "garbage"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "unbounded metrics view data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "inf"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded metrics view data_time_range (earliest to now)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "earliest to now"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded rollup data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "inf"
+`,
+			wantErr: `must have a bounded start`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -831,4 +959,418 @@ rollups:
 			require.Contains(t, p.Errors[0].Message, tt.wantErr)
 		})
 	}
+}
+
+func TestMetricsViewAnnotationsValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "annotation with neither model nor table",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+annotations:
+- name: releases
+`,
+			wantErr: `must set a value for either the "model" field or the "table" field for annotation`,
+		},
+		{
+			name: "annotation with both model and table",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+annotations:
+- name: releases
+  model: a1
+  table: a1
+`,
+			wantErr: `cannot set both the "model" field and the "table" field for annotation`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id, 'a' AS publisher`,
+				`metrics_views/mv1.yaml`: tt.yaml,
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, tt.wantErr)
+		})
+	}
+}
+
+func TestMetricsViewAnnotationsOnDerivedMetricsView(t *testing.T) {
+	// Annotations declare their own model/table, so they must be accepted on a
+	// parent-based derived metrics view even though it has no model/table itself.
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher`,
+		`models/a1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+parent: mv1
+annotations:
+- name: releases
+  model: a1
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	mv2 := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"}]
+	require.NotNil(t, mv2)
+	require.Len(t, mv2.MetricsViewSpec.Annotations, 1)
+	require.Equal(t, "releases", mv2.MetricsViewSpec.Annotations[0].Name)
+	require.Equal(t, "a1", mv2.MetricsViewSpec.Annotations[0].Model)
+}
+
+func TestMetricsViewDataTimeRangeBounded(t *testing.T) {
+	// Bounded ranges (relative and absolute) must pass validation; only an unbounded start is rejected.
+	for _, expr := range []string{"-90d to now", "-1Y to now", "2020-01-01 to now", "-3M to -1M"} {
+		t.Run(expr, func(t *testing.T) {
+			yaml := `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "` + expr + `"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "` + expr + `"
+`
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`models/r1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: yaml,
+			}
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Empty(t, p.Errors)
+		})
+	}
+}
+
+func TestMetricsViewMaxQueryTimeRange(t *testing.T) {
+	mvBody := func(maxRange string) string {
+		s := `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`
+		if maxRange != "" {
+			s += "max_query_time_range: " + maxRange + "\n"
+		}
+		return s
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		files := map[string]string{
+			`rill.yaml`:              ``,
+			`models/m1.sql`:          `SELECT 1 AS id`,
+			`metrics_views/mv1.yaml`: mvBody("P90D"),
+		}
+		ctx := context.Background()
+		repo := makeRepo(t, files)
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		var mv *runtimev1.MetricsViewSpec
+		for _, r := range p.Resources {
+			if r.MetricsViewSpec != nil {
+				mv = r.MetricsViewSpec
+				break
+			}
+		}
+		require.NotNil(t, mv)
+		require.Equal(t, "P90D", mv.MaxQueryTimeRange)
+	})
+
+	for _, bad := range []string{"garbage", "rill-PM", "inf", "PT12H", "PT1H30M", "P1DT6H"} {
+		t.Run("invalid_"+bad, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: mvBody(bad),
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, "max_query_time_range")
+		})
+	}
+}
+
+func TestMetricsViewDataTimeRange(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: -5Y to now
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    data_time_range: -1Y to now
+    dimensions:
+      - publisher
+    measures:
+      - total_impressions
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Equal(t, "-5Y to now", mvSpec.DataTimeRange)
+	require.Len(t, mvSpec.Rollups, 1)
+	require.Equal(t, "-1Y to now", mvSpec.Rollups[0].DataTimeRange)
+}
+
+func TestMetricsViewInlineExploreFieldSelectors(t *testing.T) {
+	mvYAML := func(explore string) string {
+		return `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  expression: id
+measures:
+- name: count
+  expression: COUNT(*)
+` + explore
+	}
+
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		// No selectors: defaults to all dimensions and measures
+		`metrics_views/mv1.yaml`: mvYAML(`
+explore: {}
+`),
+		// Star and exclude selectors
+		`metrics_views/mv2.yaml`: mvYAML(`
+explore:
+  dimensions: '*'
+  measures:
+    exclude: count
+`),
+		// List and expression selectors
+		`metrics_views/mv3.yaml`: mvYAML(`
+explore:
+  dimensions: [foo]
+  measures:
+    regex: 'count.*'
+`),
+		// A null explore does not enable the inline explore
+		`metrics_views/mv4.yaml`: mvYAML(`
+explore:
+`),
+		// An explicitly skipped explore is not emitted either
+		`metrics_views/mv5.yaml`: mvYAML(`
+explore:
+  skip: true
+`),
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	explores := map[string]*runtimev1.ExploreSpec{}
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindExplore {
+			explores[r.Name.Name] = r.ExploreSpec
+		}
+	}
+	require.Len(t, explores, 3)
+
+	e1 := explores["mv1"]
+	require.True(t, e1.DefinedInMetricsView)
+	require.Equal(t, "mv1", e1.MetricsView)
+	require.Empty(t, e1.Dimensions)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e1.DimensionsSelector)
+	require.Empty(t, e1.Measures)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e1.MeasuresSelector)
+
+	e2 := explores["mv2"]
+	require.True(t, e2.DefinedInMetricsView)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e2.DimensionsSelector)
+	require.Equal(t, &runtimev1.FieldSelector{Invert: true, Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"count"}}}}, e2.MeasuresSelector)
+
+	e3 := explores["mv3"]
+	require.True(t, e3.DefinedInMetricsView)
+	require.Equal(t, []string{"foo"}, e3.Dimensions)
+	require.Nil(t, e3.DimensionsSelector)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_Regex{Regex: "count.*"}}, e3.MeasuresSelector)
+}
+
+func TestMetricsViewExactExpression(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("parsed into the spec", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+- name: records
+  expression: count(*)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		mv := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"}]
+		require.NotNil(t, mv)
+		require.Len(t, mv.MetricsViewSpec.Measures, 2)
+		require.Equal(t, "approx_count_distinct(user_id)", mv.MetricsViewSpec.Measures[0].Expression)
+		require.Equal(t, "count(DISTINCT user_id)", mv.MetricsViewSpec.Measures[0].ExactExpression)
+		require.Empty(t, mv.MetricsViewSpec.Measures[1].ExactExpression)
+	})
+
+	t.Run("requires expression", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  exact_expression: count(DISTINCT user_id)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+		require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set if "expression" is set`)
+	})
+
+	t.Run("only on simple measures without a window", func(t *testing.T) {
+		for name, measure := range map[string]string{
+			"derived": `
+- name: users_per_record
+  requires: [records]
+  expression: records / 2
+  exact_expression: records / 2
+`,
+			"window": `
+- name: running_users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+  window:
+    order: ts
+`,
+		} {
+			t.Run(name, func(t *testing.T) {
+				repo := makeRepo(t, map[string]string{
+					`rill.yaml`:     ``,
+					`models/m1.sql`: `SELECT 1 AS user_id, now() AS ts`,
+					`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: records
+  expression: count(*)
+` + measure,
+				})
+				p, err := Parse(ctx, repo, "", "", "duckdb", true)
+				require.NoError(t, err)
+				require.NotEmpty(t, p.Errors)
+				require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set on simple measures without a window`)
+			})
+		}
+	})
 }

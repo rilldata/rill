@@ -2,10 +2,12 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -67,7 +69,7 @@ func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+	if !isRillUserAgent(s) {
 		return false, nil
 	}
 	return true, nil
@@ -165,7 +167,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: analystAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
@@ -184,7 +186,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: developerAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
@@ -197,7 +199,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Args: args.FeedbackAgentArgs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, mapAgentErr(err)
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: FeedbackAgentName}, nil
 	}
@@ -228,14 +230,34 @@ You must answer with a single agent choice and no further explanation. Pick only
 var whitespaceRegexp = regexp.MustCompile(`\s+`)
 
 // promptToTitle generates a truncated conversation title from a prompt.
+// Chat references are kept as-is so that the UI can render them with up-to-date labels.
 func promptToTitle(message string) string {
 	// Collapse whitespace to single spaces.
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
 
-	// Truncate to 50 characters.
-	if len(title) > 50 {
-		title = title[:47] + "..."
+	// Truncate to 50 runes.
+	// A chat reference counts as 10 runes since the UI renders it as a short label.
+	// It is never split, so the UI can still parse it; if it doesn't fit, the cut is placed before it.
+	refs := chatReferenceRegexp.FindAllStringIndex(title, -1)
+	length, cut := 0, -1
+	for i := 0; i < len(title); {
+		end, size := 0, 0
+		if len(refs) > 0 && refs[0][0] == i {
+			end, size = refs[0][1], 10
+			refs = refs[1:]
+		} else {
+			_, n := utf8.DecodeRuneInString(title[i:])
+			end, size = i+n, 1
+		}
+		if cut < 0 && length+size > 47 {
+			cut = i
+		}
+		length += size
+		i = end
+	}
+	if length > 50 {
+		title = strings.TrimRight(title[:cut], " ") + "..."
 	}
 
 	// Fallback title if empty.
@@ -243,6 +265,20 @@ func promptToTitle(message string) string {
 		return "New Conversation"
 	}
 	return title
+}
+
+// mapAgentErr maps common agent errors to more user-friendly messages.
+//
+// NOTE: For context errors, it does not include the underlying error to keep messages clean.
+// The actual error is still available in the message containing the sub-agent's result.
+func mapAgentErr(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return fmt.Errorf("agent canceled")
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("agent timed out")
+	}
+	return fmt.Errorf("agent error: %w", err)
 }
 
 func must[T any](t T, ok bool) T {

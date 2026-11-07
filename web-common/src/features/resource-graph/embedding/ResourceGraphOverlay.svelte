@@ -5,6 +5,7 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { tick } from "svelte";
 
   export let open = false;
@@ -52,9 +53,11 @@
       : null;
 
   $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
-  $: graphHref = graphableKind
-    ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
-    : "/graph";
+  $: graphHref = withEditorPrefix(
+    graphableKind
+      ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
+      : "/graph",
+  );
 
   $: emptyReason = !anchorSeed ? "unsupported" : null;
 

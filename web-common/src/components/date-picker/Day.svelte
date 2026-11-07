@@ -119,11 +119,11 @@
   }
 
   .day:disabled {
-    @apply pointer-events-none text-gray-300;
+    @apply pointer-events-none text-fg-disabled;
   }
 
   button:hover .day:not(.potential) {
-    @apply bg-primary-300 text-white;
+    @apply bg-theme-300 text-fg-inverse;
   }
 
   button:hover .day:not(.in-range, .start, .end) {
@@ -134,7 +134,7 @@
   .start.potential,
   .end.potential,
   .full-interval.potential {
-    @apply bg-gray-200 text-fg-primary;
+    @apply bg-theme-100 text-theme-800;
   }
 
   .in-range,
@@ -142,7 +142,7 @@
   .end,
   .full-interval,
   .anchor.potential {
-    @apply bg-primary-400 text-white;
+    @apply bg-theme-400 text-fg-inverse;
   }
 
   .end,

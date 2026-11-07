@@ -1,6 +1,10 @@
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -31,6 +35,8 @@ import Leaderboard from "./LeaderboardDisplay.svelte";
 
 export { default as Leaderboard } from "./LeaderboardDisplay.svelte";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "delta",
   "percent_change",
@@ -41,6 +47,8 @@ export interface LeaderboardSpec
     ComponentFilterProperties {
   metrics_view: string;
   measures: string[];
+  // Ad-hoc measures derived from existing measures via an arithmetic expression.
+  adhoc_measures?: EphemeralMeasureSpec[];
   dimensions: string[];
   num_rows: number;
 }
@@ -48,7 +56,7 @@ export interface LeaderboardSpec
 export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   minSize = { width: 3, height: 3 };
   defaultSize = { width: 6, height: 3 };
-  resetParams = ["measures", "dimensions"];
+  resetParams = ["measures", "dimensions", "adhoc_measures"];
   type: CanvasComponentType = "leaderboard";
   component = Leaderboard;
   leaderboardState: Writable<LeaderboardState>;
@@ -83,6 +91,7 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
     const leaderboardState = get(this.leaderboardState);
     return {
       visibleMeasures: spec.measures,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       visibleDimensions: spec.dimensions,
       activePage: DashboardState_ActivePage.DEFAULT,
       allMeasuresVisible: false,
@@ -99,19 +108,26 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   inputParams(): InputParams<LeaderboardSpec> {
     return {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
         measures: {
           type: "multi_fields",
           meta: { allowedTypes: ["measure"] },
-          label: "Measures",
+          label: m.canvas_measures_label(),
+        },
+        adhoc_measures: {
+          type: "adhoc_measures",
+          label: m.canvas_ephemeral_measures_label(),
+          optional: true,
+          // Managed through the measures selector's create/edit dialog.
+          showInUI: false,
         },
         dimensions: {
           type: "multi_fields",
           meta: { allowedTypes: ["dimension"] },
-          label: "Dimensions",
+          label: m.canvas_dimensions_label(),
         },
-        num_rows: { type: "number", label: "Number of rows" },
-        ...commonOptions,
+        num_rows: { type: "number", label: m.canvas_number_of_rows_label() },
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(),
     };

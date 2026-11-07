@@ -79,7 +79,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 					fileName = sanitizeFileName(resTitle) + ".md"
 				}
 
-				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID))
+				resourceFilebuf.WriteString(ensureTrailingNewline(generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID)))
 
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
@@ -389,13 +389,13 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			propertiesValueNode := properties.Content[i+1]
 			required := ""
 			if requiredFields[propertiesName] {
-				required = "_(required)_"
+				required = " _(required)_"
 			}
 			if level == 1 {
 				doc.WriteString(fmt.Sprintf("\n\n### `%s`", propertiesName))
-				doc.WriteString(fmt.Sprintf("\n\n%s - %s %s", getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
+				doc.WriteString(fmt.Sprintf("\n\n%s - %s%s", getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
 			} else {
-				doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s %s", indent, propertiesName, getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
+				doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s%s", indent, propertiesName, getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
 			}
 
 			propType := getScalarValue(propertiesValueNode, "type")
@@ -521,6 +521,10 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		}
 	}
 	return doc.String()
+}
+
+func ensureTrailingNewline(s string) string {
+	return strings.TrimRight(s, " \t\r\n") + "\n"
 }
 
 func hasIf(node *yaml.Node) bool {

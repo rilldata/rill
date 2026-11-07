@@ -1,3 +1,4 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { V1Schedule } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import {
@@ -14,8 +15,9 @@ export enum ReportFrequency {
   Custom = "Custom",
 }
 
+// The form keeps the English day name as its value (see weekDayMap), so it must not follow the app locale.
 export function getTodaysDayOfWeek(): string {
-  return DateTime.now().toLocaleString({ weekday: "long" });
+  return DateTime.now().setLocale("en-US").toLocaleString({ weekday: "long" });
 }
 
 export function getTodaysDayOfMonth(): number {
@@ -134,7 +136,9 @@ export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
     return [
       {
         value: userLocalIANA,
-        label: getAbbreviationForIANA(currentDate, userLocalIANA) + " (Local)",
+        label:
+          getAbbreviationForIANA(currentDate, userLocalIANA) +
+          m.report_form_local_suffix(),
       },
       {
         value: UTCIana,
@@ -160,7 +164,9 @@ export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
   return Array.from(deduplicatedTimeZones).map(([abbreviation, value]) => {
     return {
       value: value,
-      label: abbreviation + (value === userLocalIANA ? " (Local)" : ""),
+      label:
+        abbreviation +
+        (value === userLocalIANA ? m.report_form_local_suffix() : ""),
     };
   });
 }
@@ -181,7 +187,10 @@ export function getExistingScheduleFormValues(
   if (!schedule?.cron) return getInitialScheduleFormValues();
   return {
     frequency: getFrequencyFromCronExpression(schedule?.cron),
-    dayOfWeek: getDayOfWeekFromCronExpression(schedule?.cron),
+    // Default to today when the cron has no single weekday (e.g. a daily schedule, or one saved with an invalid day),
+    // so that switching to or keeping a weekly frequency never builds a cron with an undefined day.
+    dayOfWeek:
+      getDayOfWeekFromCronExpression(schedule?.cron) || getTodaysDayOfWeek(),
     dayOfMonth: 1, // We only support 1st day of month as of now.
     timeOfDay: getTimeOfDayFromCronExpression(schedule?.cron),
     timeZone: schedule?.timeZone ?? getLocalIANA(),

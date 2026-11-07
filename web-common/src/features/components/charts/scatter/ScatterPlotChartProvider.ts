@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -24,10 +25,18 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  combineChartDataQuery,
+  getFilterWithNullHandling,
+} from "../query-util";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type ScatterPlotChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"quantitative" | "time">;
   y?: FieldConfig<"quantitative" | "time">;
   dimension?: FieldConfig<"nominal">;
@@ -57,7 +66,7 @@ export class ScatterPlotChartProvider {
     const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
-    const measures: V1MetricsViewAggregationMeasure[] = [];
+    let measures: V1MetricsViewAggregationMeasure[] = [];
     const dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.x?.field) {
@@ -79,6 +88,7 @@ export class ScatterPlotChartProvider {
     if (config.size?.type === "quantitative" && config.size?.field) {
       measures.push({ name: config.size.field });
     }
+    measures = withEphemeralMeasures(config, measures);
 
     if (config.dimension?.type === "nominal" && config.dimension?.field) {
       dimensions.push({ name: config.dimension.field });
@@ -95,14 +105,20 @@ export class ScatterPlotChartProvider {
       hasColorDimension = true;
     }
 
+    const hasTemporalDimension =
+      config.x?.type === "temporal" || config.y?.type === "temporal";
+
     const topNColorQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
       ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            timeRange,
+            hasTemporalDimension,
+          ) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
@@ -139,12 +155,16 @@ export class ScatterPlotChartProvider {
     const queryOptionsStore = derived(
       [timeAndFilterStore, topNColorQuery, visibleStore],
       ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain, hasTimeSeries } =
+          $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            timeRange,
+            hasTemporalDimension,
+          ) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension && colorDimensionName && colorLimit
@@ -169,9 +189,6 @@ export class ScatterPlotChartProvider {
         }
 
         let finalDimensions = dimensions;
-        const hasTemporalDimension =
-          config.x?.type === "temporal" || config.y?.type === "temporal";
-
         if (timeGrain && hasTemporalDimension) {
           finalDimensions = dimensions.map((d) => {
             if (
@@ -207,7 +224,11 @@ export class ScatterPlotChartProvider {
       },
     );
 
-    return createQuery(queryOptionsStore);
+    return combineChartDataQuery(
+      createQuery(queryOptionsStore),
+      [topNColorQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(): ChartDomainValues {

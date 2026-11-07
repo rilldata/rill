@@ -177,6 +177,7 @@ func TestMetricsViewsComparisonAgainstBigQuery(t *testing.T) {
 }
 
 func TestMetricsViewsComparisonAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newSnowflakeInstance(t)
@@ -220,6 +221,7 @@ func TestMetricsViewsComparisonAgainstSnowflake(t *testing.T) {
 }
 
 func TestMetricsViewsComparisonAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
 	testmode.Expensive(t)
 
 	rt, instanceID := newDatabricksInstance(t)

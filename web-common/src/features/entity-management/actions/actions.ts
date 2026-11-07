@@ -6,11 +6,13 @@ import {
 } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { isNotFoundError } from "@rilldata/web-common/lib/errors.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
-  runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
   type RuntimeServicePutFileBody,
@@ -26,84 +28,98 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "../project-parser.ts";
-import { ResourceKind } from "../resource-selectors.ts";
+import { fetchResource, ResourceKind } from "../resource-selectors.ts";
+import type { QueryClient } from "@tanstack/svelte-query";
+import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
 ) {
-  const projectParserStartingVersion = getProjectParserVersion(
-    client.instanceId,
-  );
+  const projectParserStartingVersion = await getProjectParserVersion(client);
 
   await runtimeServicePutFile(client, runtimeServicePutFileBody);
 
   // Wait for the file to be processed by the parser
-  await waitForProjectParserVersion(
-    client.instanceId,
-    projectParserStartingVersion + 1,
-  );
+  await waitForProjectParserVersion(client, projectParserStartingVersion + 1);
 }
 
-export async function waitForProjectParser(instanceId: string) {
-  let retryCount = 0;
-  while (retryCount < 5) {
-    try {
-      getProjectParserVersion(instanceId);
-      return;
-    } catch {
-      retryCount++;
-      await new Promise((resolve) =>
-        setTimeout(resolve, 300 + retryCount * 300),
-      );
-    }
-  }
-  throw new Error("Project parser version not found after 5 retries");
+export async function waitForProjectParser(
+  client: RuntimeClient,
+  queryClient: QueryClient = globalQueryClient,
+) {
+  await waitForProjectParserVersion(client, 1, queryClient);
 }
+
+const WaitForResourceReconciliationPollInterval = 2_000;
+const WaitForResourceReconciliationRetryCount = 5;
 
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   client: RuntimeClient,
+  queryClient: QueryClient,
   resourceName: string,
   resourceKind: ResourceKind,
   prevStateVersion?: string,
 ) {
-  const pollInterval = 2_000; // 2 seconds
   let attempt = 0;
+  const deadline = Date.now() + 60_000;
 
-  while (true) {
+  while (Date.now() < deadline) {
     attempt++;
     try {
-      const resource = await runtimeServiceGetResource(client, {
-        name: { kind: resourceKind, name: resourceName },
-      });
+      const resource = await fetchResource(
+        client,
+        queryClient,
+        resourceName,
+        resourceKind,
+        true,
+      );
 
-      const newStateVersion = resource.resource?.meta?.stateVersion;
+      const newStateVersion = resource?.meta?.stateVersion;
       const newVersionArrived =
         prevStateVersion && newStateVersion
-          ? newStateVersion > prevStateVersion
+          ? BigInt(newStateVersion) > BigInt(prevStateVersion)
           : true;
 
       // Check if there's a reconcile error
-      if (resource.resource?.meta?.reconcileError && newVersionArrived) {
+      if (resource?.meta?.reconcileError && newVersionArrived) {
         const error = new Error("Resource configuration failed to reconcile");
-        (error as any).details = resource.resource.meta.reconcileError;
+        (error as any).details = resource.meta.reconcileError;
         throw error;
       }
 
       // Check the reconcile status
-      const reconcileStatus = resource.resource?.meta?.reconcileStatus;
+      const reconcileStatus = resource?.meta?.reconcileStatus;
       if (reconcileStatus === "RECONCILE_STATUS_IDLE" && newVersionArrived) {
         return; // Success!
       }
 
       // Still reconciling, continue polling
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      continue;
+      await new Promise((resolve) =>
+        setTimeout(resolve, WaitForResourceReconciliationPollInterval),
+      );
     } catch (error) {
+      // Controller closed error could mean the controller is being restarted because there was env change
+      // Check this 1st since resource not found will be true.
+      if (
+        isControllerClosedError(error) &&
+        attempt <= WaitForResourceReconciliationRetryCount
+      ) {
+        // Wait and try again if the controller is closed
+        await new Promise((resolve) =>
+          setTimeout(
+            resolve,
+            // Wait longer for controller to restart
+            WaitForResourceReconciliationPollInterval * attempt,
+          ),
+        );
+        continue;
+      }
+
       // Resource not found could mean it was deleted due to reconcile failure
       if (isNotFoundError(error)) {
-        if (attempt >= 3) {
+        if (attempt >= WaitForResourceReconciliationRetryCount) {
           // After 6 seconds, assume reconcile failure
           throw new Error(
             `Resource configuration failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
@@ -111,7 +127,9 @@ export async function waitForResourceReconciliation(
         }
 
         // Wait and try again
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) =>
+          setTimeout(resolve, WaitForResourceReconciliationPollInterval),
+        );
         continue;
       }
 
@@ -119,6 +137,9 @@ export async function waitForResourceReconciliation(
       throw error;
     }
   }
+  throw new Error(
+    `Timed out waiting for resource ${resourceName} to reconcile`,
+  );
 }
 
 /**
@@ -248,6 +269,13 @@ export async function maybeDeleteFileArtifact(
 ) {
   if (!fileArtifacts.hasFileArtifact(filePath)) return;
   return deleteFileArtifact(client, filePath, force);
+}
+
+export async function waitForControllerRestart(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+) {
+  await waitForProjectParserVersion(client, 1, queryClient);
 }
 
 function extractMessage(msg: string) {

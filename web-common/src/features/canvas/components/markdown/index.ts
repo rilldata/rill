@@ -11,6 +11,8 @@ import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export const defaultMarkdownAlignment: ComponentAlignment = {
   vertical: "middle",
   horizontal: "left",
@@ -49,12 +51,12 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       options: {
         content: {
           type: "textarea",
-          label: "Markdown",
-          description: "Write text using the markdown syntax",
+          label: m.canvas_markdown_label(),
+          description: m.canvas_markdown_description(),
         },
         alignment: {
           type: "alignment",
-          label: "Alignment",
+          label: m.canvas_alignment_label(),
           meta: {
             defaultAlignment: defaultMarkdownAlignment,
           },
@@ -63,9 +65,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           type: "boolean",
           optional: true,
           showInUI: true,
-          label: "Apply measure value formatting",
-          description:
-            "Format measure values according to their format settings",
+          label: m.canvas_apply_measure_formatting_label(),
+          description: m.canvas_apply_measure_formatting_description(),
         },
       },
       filter: {},

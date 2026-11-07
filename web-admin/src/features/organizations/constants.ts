@@ -1,19 +1,22 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
 
-export const ORG_ROLES_OPTIONS = [
-  {
-    value: OrgUserRoles.Admin,
-    label: "Admin",
-    description: "Full control over organization settings and members",
-  },
-  {
-    value: OrgUserRoles.Editor,
-    label: "Editor",
-    description: "Can manage projects and most org resources",
-  },
-  {
-    value: OrgUserRoles.Viewer,
-    label: "Viewer",
-    description: "Read-only access to organization and projects",
-  },
-];
+export function getOrgRolesOptions() {
+  return [
+    {
+      value: OrgUserRoles.Admin,
+      label: m.role_admin(),
+      description: m.role_org_admin_desc(),
+    },
+    {
+      value: OrgUserRoles.Editor,
+      label: m.role_editor(),
+      description: m.role_org_editor_desc(),
+    },
+    {
+      value: OrgUserRoles.Viewer,
+      label: m.role_viewer(),
+      description: m.role_org_viewer_desc(),
+    },
+  ];
+}

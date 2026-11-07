@@ -9,6 +9,7 @@
   import UploadImagePopover from "@rilldata/web-admin/features/organizations/settings/UploadImagePopover.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -55,30 +56,29 @@
     loading={isLoading}
     disabled={isLoading}
   >
-    Remove
+    {m.settings_remove_button()}
   </Button>
 {/snippet}
 
 <SettingsContainer
-  title="Favicon"
+  title={m.settings_favicon_title()}
   action={organizationFaviconUrl ? removeAction : undefined}
 >
   <div class="flex flex-col gap-y-2">
     <div>
-      Click to upload your favicon and customize Rill for your organization.
-      Upload a square icon to get the best results.
+      {m.settings_favicon_description()}
     </div>
     <UploadImagePopover
       imageUrl={organizationFaviconUrl}
       accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
+      label={m.settings_favicon_title()}
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
       {onSave}
       {onRemove}
     >
-      <img src="/favicon.png" alt="favicon" class="h-10" />
+      <img src="/favicon.png" alt={m.settings_favicon_title()} class="h-10" />
     </UploadImagePopover>
   </div>
 </SettingsContainer>

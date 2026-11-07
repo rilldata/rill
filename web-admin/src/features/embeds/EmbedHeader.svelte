@@ -6,14 +6,20 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import type {
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
 
   export let activeResource: V1ResourceName;
-  export let navigationEnabled: boolean = true;
+  export let navigationBarEnabled: boolean = true;
 
   const runtimeClient = useRuntimeClient();
   const { twoTieredNavigation, dashboardChat } = featureFlags;
@@ -21,7 +27,7 @@
   $: onProjectPage = !activeResource;
   $: showDashboardChat = $dashboardChat && !onProjectPage;
 
-  $: shouldRender = navigationEnabled || showDashboardChat;
+  $: shouldRender = navigationBarEnabled || showDashboardChat;
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(runtimeClient);
@@ -50,13 +56,13 @@
 
 {#if $isErrorStoreEmpty && shouldRender}
   <div class="flex items-center w-full">
-    {#if navigationEnabled}
+    {#if navigationBarEnabled}
       <nav class="flex-1">
         <ol class="flex items-center pl-4">
           {#if !onProjectPage}
             <div class="flex gap-x-2">
               <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
-                Home
+                {m.embed_home()}
               </a>
               <span class="text-fg-muted">/</span>
             </div>
@@ -84,10 +90,11 @@
       <div class="flex-1"></div>
     {/if}
 
+    <EmbedReportButton />
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
-        <ChatToggle />
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       </div>
     {/if}
   </div>

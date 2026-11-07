@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
@@ -23,7 +24,7 @@
     class="inspector-wrapper"
     style:width="{width + 8}px"
     transition:slide={{ axis: "x", duration: 500 }}
-    aria-label="Inspector Panel"
+    aria-label={m.layout_inspector_panel_aria()}
   >
     <Resizer
       disabled={!resizable}

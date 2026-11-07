@@ -15,6 +15,7 @@
       measures: { getMeasureByName, visibleMeasures },
       leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { visibleDimensions, allDimensions },
+      tags: { dimensionTagIndex },
     },
     actions: {
       contextColumn: { setContextColumn },
@@ -33,11 +34,13 @@
   $: exploreState = $metricsExplorerStore.entities[exploreName];
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
+  // Leaderboards group by each visible dimension in turn and also query totals,
+  // so they cannot query measures with required dimensions.
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     exploreState,
     metricsViewSpec,
     $visibleMeasures,
-    false,
+    {},
   );
 
   $: activeLeaderboardMeasure = $getMeasureByName(
@@ -78,6 +81,7 @@
     onSelectedChange={(items) =>
       setDimensionVisibility(items, allDimensionNames)}
     allItems={$allDimensions}
+    tagIndex={$dimensionTagIndex}
     selectedItems={visibleDimensionsNames}
   />
   <LeaderboardMeasureNamesDropdown

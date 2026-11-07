@@ -4,13 +4,17 @@ import {
   V1TimeGrain,
   type V1ExploreTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { Settings } from "luxon";
+import { Duration, Settings } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
-import { TimeState, type MinMax } from "./time-state";
+import {
+  getDefaultComparisonRange,
+  TimeState,
+  type MinMax,
+} from "./time-state";
 
 export class TimeManager {
   minMaxTimeStamps: Readable<MinMax | undefined>;
@@ -25,6 +29,11 @@ export class TimeManager {
   timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
   availableTimeZonesStore = writable<string[]>([]);
   allowCustomRangeStore = writable<boolean>(true);
+  // Tightest max_query_time_range across referenced metrics views.
+  maxQueryTimeRangeStore = writable<Duration | undefined>(undefined);
+  // When set, relative time ranges are anchored at this time instead of now/latest.
+  // Used by scheduled report exports to render data as of the report's execution time.
+  executionTimeStore = writable<string | undefined>(undefined);
   specInitialized = false;
   state: TimeState;
 
@@ -78,14 +87,18 @@ export class TimeManager {
     const ranges = this.checkAndSetTimeRangeOptions(spec);
     this.checkAndSetDefaultTimeRange(spec, ranges);
     this.checkAndSetAvailableTimeZones(spec);
+    this.checkAndSetAllowCustomRange(spec);
     this.checkIfHasTimeSeries(spec);
     this.checkAndSetFirstDayOfWeek(spec);
+    this.checkAndSetMaxQueryTimeRange(spec);
 
     if (
       defaultPreset?.comparisonMode ===
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
     ) {
-      this.defaultComparisonRangeStore.set("rill-PP");
+      this.defaultComparisonRangeStore.set(
+        getDefaultComparisonRange(defaultPreset.timeRange, ranges),
+      );
     } else {
       this.defaultComparisonRangeStore.set(undefined);
     }
@@ -129,6 +142,31 @@ export class TimeManager {
 
     this.minTimeGrainMap.set(timeGrainMap);
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
+  }
+
+  checkAndSetMaxQueryTimeRange(response: CanvasResponse) {
+    const metricsViews = response.metricsViews || {};
+    let smallest: Duration | undefined;
+    let smallestMillis = Infinity;
+
+    for (const mv of Object.values(metricsViews)) {
+      const iso = mv?.state?.validSpec?.maxQueryTimeRange;
+      if (!iso) continue;
+      const d = Duration.fromISO(iso);
+      if (!d.isValid) continue;
+      const ms = d.as("milliseconds");
+      if (ms <= 0) continue;
+      if (ms < smallestMillis) {
+        smallestMillis = ms;
+        smallest = d;
+      }
+    }
+
+    const current = get(this.maxQueryTimeRangeStore);
+    const currentMs = current?.as("milliseconds") ?? 0;
+    if (currentMs !== (smallest?.as("milliseconds") ?? 0)) {
+      this.maxQueryTimeRangeStore.set(smallest);
+    }
   }
 
   checkAndSetAllowCustomRange = (response: CanvasResponse) => {

@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -66,6 +67,10 @@ type ModelOutputProperties struct {
 	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
 	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
+	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
+	PreExec string `mapstructure:"pre_exec"`
+	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
+	PostExec string `mapstructure:"post_exec"`
 }
 
 // validateAndApplyDefaults validates the model input and output properties and applies defaults.
@@ -175,6 +180,14 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		ip.SQL = ip.SQL + " SETTINGS " + op.QuerySettings
 	}
 
+	if ip != nil {
+		ip.PostExec = strings.TrimSpace(ip.PostExec)
+		ip.PreExec = strings.TrimSpace(ip.PreExec)
+	}
+	if op != nil {
+		op.PostExec = strings.TrimSpace(op.PostExec)
+		op.PreExec = strings.TrimSpace(op.PreExec)
+	}
 	return nil
 }
 
@@ -278,7 +291,13 @@ func (c *Connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
-	return err == nil, nil
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error {
@@ -341,8 +360,10 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
+const stagingTablePrefix = "__rill_tmp_model_"
+
 // stagingTableName returns a stable temporary table name for a destination table.
 // By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
 func stagingTableNameFor(table string) string {
-	return "__rill_tmp_model_" + table
+	return stagingTablePrefix + table
 }

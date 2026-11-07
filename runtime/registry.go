@@ -331,7 +331,17 @@ func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) erro
 		return err
 	}
 
-	return r.add(inst)
+	err = r.add(inst)
+	if err != nil {
+		return err
+	}
+
+	if !r.rt.AllowHostAccess() {
+		// envs for local runtimes are pulled on rill start taking into account CLI flag, only reload for runtimes on cloud
+		_, err = r.rt.ReloadConfig(ctx, inst.ID)
+		return err
+	}
+	return nil
 }
 
 func (r *registryCache) add(inst *drivers.Instance) error {
@@ -536,7 +546,7 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 		return
 	}
 
-	err = ctrl.Create(ctx, GlobalProjectParserName, nil, nil, nil, true, &runtimev1.Resource{
+	err = ctrl.Create(ctx, GlobalProjectParserName, nil, nil, nil, nil, nil, true, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_ProjectParser{
 			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
 		},

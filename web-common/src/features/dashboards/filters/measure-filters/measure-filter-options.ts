@@ -1,4 +1,6 @@
-import { V1Operation } from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export enum MeasureFilterType {
   Value = "Value",
@@ -35,33 +37,59 @@ for (const MeasureFilterOperation in MeasureFilterToProtoOperation) {
   ] = MeasureFilterOperation;
 }
 
+// Labels use lazy getters so they resolve in the active locale at access time
+// (render) rather than freezing to the locale active when this module loaded.
+// These option objects are only ever array-spread or read by property, so the
+// getters survive aggregation in AllMeasureFilter*Options below.
 export const MeasureFilterBaseTypeOptions = [
   {
     value: MeasureFilterType.Value,
-    label: "value",
+    get label() {
+      return m.filter_measure_type_value();
+    },
     shortLabel: "",
-    description: "value",
+    get description() {
+      return m.filter_measure_type_value();
+    },
   },
 ];
 export const MeasureFilterComparisonTypeOptions = [
   {
     value: MeasureFilterType.PercentChange,
-    label: "% change from",
-    shortLabel: "% change",
-    description: "% change",
+    get label() {
+      return m.filter_measure_type_percent_change_from();
+    },
+    get shortLabel() {
+      return m.filter_measure_type_percent_change();
+    },
+    get description() {
+      return m.filter_measure_type_percent_change();
+    },
   },
   {
     value: MeasureFilterType.AbsoluteChange,
-    label: "change from",
-    shortLabel: "change",
-    description: "change",
+    get label() {
+      return m.filter_measure_type_change_from();
+    },
+    get shortLabel() {
+      return m.filter_measure_type_change();
+    },
+    get description() {
+      return m.filter_measure_type_change();
+    },
   },
 ];
 export const MeasureFilterPercentOfTotalOption = {
   value: MeasureFilterType.PercentOfTotal,
-  label: "% of total",
-  shortLabel: "% of total",
-  description: "% of total",
+  get label() {
+    return m.filter_measure_type_percent_of_total();
+  },
+  get shortLabel() {
+    return m.filter_measure_type_percent_of_total();
+  },
+  get description() {
+    return m.filter_measure_type_percent_of_total();
+  },
 };
 export const AllMeasureFilterTypeOptions = [
   ...MeasureFilterBaseTypeOptions,
@@ -72,32 +100,44 @@ export const AllMeasureFilterTypeOptions = [
 export const MeasureFilterOperationOptions = [
   {
     value: MeasureFilterOperation.GreaterThan,
-    label: "Greater Than",
+    get label() {
+      return m.filter_measure_op_greater_than();
+    },
     shortLabel: ">",
   },
   {
     value: MeasureFilterOperation.GreaterThanOrEquals,
-    label: "Greater Than Or Equals",
+    get label() {
+      return m.filter_measure_op_greater_than_or_equals();
+    },
     shortLabel: ">=",
   },
   {
     value: MeasureFilterOperation.LessThan,
-    label: "Less Than",
+    get label() {
+      return m.filter_measure_op_less_than();
+    },
     shortLabel: "<",
   },
   {
     value: MeasureFilterOperation.LessThanOrEquals,
-    label: "Less Than Or Equals",
+    get label() {
+      return m.filter_measure_op_less_than_or_equals();
+    },
     shortLabel: "<=",
   },
   {
     value: MeasureFilterOperation.Between,
-    label: "Between",
+    get label() {
+      return m.filter_measure_op_between();
+    },
     shortLabel: "",
   },
   {
     value: MeasureFilterOperation.NotBetween,
-    label: "Not Between",
+    get label() {
+      return m.filter_measure_op_not_between();
+    },
     shortLabel: "",
   },
 ];
@@ -106,12 +146,16 @@ export const AllMeasureFilterOperationOptions = [
   ...MeasureFilterOperationOptions,
   {
     value: MeasureFilterOperation.Equals,
-    label: "Equals",
+    get label() {
+      return m.filter_measure_op_equals();
+    },
     shortLabel: "=",
   },
   {
     value: MeasureFilterOperation.NotEquals,
-    label: "Does Not Equal",
+    get label() {
+      return m.filter_measure_op_does_not_equal();
+    },
     shortLabel: "!=",
   },
 ];

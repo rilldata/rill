@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -20,9 +21,9 @@
     </div>
     <CtaHeader variant="bold">
       {#if branch}
-        Starting branch deployment...
+        {m.project_starting_branch_deployment()}
       {:else}
-        Hang tight! We're deploying your project...
+        {m.project_deploying()}
       {/if}
     </CtaHeader>
     {#if !onEmbedPage}

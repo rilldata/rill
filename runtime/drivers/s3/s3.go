@@ -130,7 +130,7 @@ type ConfigProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -285,6 +285,11 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -297,6 +302,30 @@ func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string
 		return "", fmt.Errorf("failed to load AWS config for bucket region detection (set `region` in s3 connector yaml): %w", err)
 	}
 	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+}
+
+// GetConfigWithTemporaryCredentials returns a new ConfigProperties with temporary credentials if the original config has a role ARN to assume.
+// If no role ARN is provided, it returns the original config.
+func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (*ConfigProperties, error) {
+	if confProp.RoleARN == "" {
+		return confProp, nil
+	}
+	credsProvider, err := newCredentialsProvider(ctx, confProp, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS credentials: %w", err)
+	}
+
+	creds, err := credsProvider.Retrieve(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+	}
+
+	cfg := *confProp
+	cfg.AccessKeyID = creds.AccessKeyID
+	cfg.SecretAccessKey = creds.SecretAccessKey
+	cfg.SessionToken = creds.SessionToken
+	cfg.RoleARN = ""
+	return &cfg, nil
 }
 
 func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {

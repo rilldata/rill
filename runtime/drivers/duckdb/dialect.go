@@ -11,6 +11,7 @@ import (
 
 type dialect struct {
 	drivers.BaseDialect
+	isGeneric bool
 }
 
 var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
@@ -19,16 +20,27 @@ var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
 	return d
 }()
 
+var DialectDuckDBGeneric drivers.Dialect = func() drivers.Dialect {
+	d := &dialect{
+		isGeneric: true,
+	}
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameDuckDB, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
+	return d
+}()
+
 func (d *dialect) CanPivot() bool { return true }
 
 // EscapeTable for DuckDB only uses the table name (no db/schema prefix).
-func (d *dialect) EscapeTable(_, _, table string) string {
+func (d *dialect) EscapeTable(db, schema, table string) string {
+	if d.isGeneric {
+		return d.BaseDialect.EscapeTable(db, schema, table)
+	}
 	return d.EscapeIdentifier(table)
 }
 
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-
-func (d *dialect) GetArrayContainsFunction() (string, error) { return "list_has_any", nil }
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool) {
+	return fmt.Sprintf("list_has_any(%s, [%s])", arrExpr, valuesExpr), true
+}
 
 func (d *dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)

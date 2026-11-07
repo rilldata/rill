@@ -17,9 +17,9 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 :::
 
-## Setting Up Environmental Variables
+## Setting Up Environment Variables
 
-You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/developers/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
+You can set up environment variables in several locations in Rill. Please review our [configure local credentials documentation](/developers/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
 
 ## Referencing Environment Variables
 
@@ -30,6 +30,8 @@ password: "{{ .env.POSTGRES_PASSWORD }}"
 google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
 aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
 ```
+
+Environment variables are available in connectors and models, which the server resolves on the project's behalf. They are not available in custom APIs, dashboards (canvas component properties, including Markdown content and chart SQL, and `if` conditions), alerts and reports, or templates sent through the API, since those produce results for viewers or are written by users, and the variables commonly hold secrets. The same templates also can't use the full template data (`.` or `$`), since it includes the variables. Use [user attributes](/developers/build/metrics-view/security#user-attributes) or canvas params there instead.
 
 :::tip Case-Insensitive Lookups
 The `'{{ env "VAR_NAME" }}'` function provides case-insensitive variable lookups, so `'{{ env "my_var" }}'` will match `MY_VAR` in your `.env` file.

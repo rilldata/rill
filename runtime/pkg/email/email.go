@@ -10,7 +10,6 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 //go:embed templates/gen/*
@@ -34,40 +33,46 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ReportTime      time.Time
-	DownloadFormat  string
-	OpenLink        string
-	DownloadLink    string
-	EditLink        string
-	UnsubscribeLink string
-	Summary         string // For AI reports
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ReportTime         time.Time
+	DownloadFormat     string
+	OpenLink           string
+	DownloadLink       string
+	EditLink           string
+	UnsubscribeLink    string
+	Summary            string      // For AI reports
+	Attachment         *Attachment // The exported file, if it is attached to the email
+	AttachmentTooLarge bool        // If true, the email explains that the exported file was too large to attach
 }
 
 type scheduledReportData struct {
-	DisplayName      string
-	ReportTimeString string // Will be inferred from ReportTime
-	DownloadFormat   string
-	OpenLink         template.URL
-	DownloadLink     template.URL
-	EditLink         template.URL
-	UnsubscribeLink  template.URL
-	Summary          string // For AI reports
+	DisplayName        string
+	ReportTimeString   string // Will be inferred from ReportTime
+	DownloadFormat     string
+	OpenLink           template.URL
+	DownloadLink       template.URL
+	EditLink           template.URL
+	UnsubscribeLink    template.URL
+	Summary            string // For AI reports
+	Attached           bool
+	AttachmentTooLarge bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		DisplayName:      opts.DisplayName,
-		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
-		DownloadFormat:   opts.DownloadFormat,
-		OpenLink:         template.URL(opts.OpenLink),
-		DownloadLink:     template.URL(opts.DownloadLink),
-		EditLink:         template.URL(opts.EditLink),
-		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-		Summary:          opts.Summary,
+		DisplayName:        opts.DisplayName,
+		ReportTimeString:   opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:     opts.DownloadFormat,
+		OpenLink:           template.URL(opts.OpenLink),
+		DownloadLink:       template.URL(opts.DownloadLink),
+		EditLink:           template.URL(opts.EditLink),
+		UnsubscribeLink:    template.URL(opts.UnsubscribeLink),
+		Summary:            opts.Summary,
+		Attached:           opts.Attachment != nil,
+		AttachmentTooLarge: opts.AttachmentTooLarge,
 	}
 
 	// Build subject
@@ -82,10 +87,30 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	var attachments []Attachment
+	if opts.Attachment != nil {
+		attachments = []Attachment{*opts.Attachment}
+	}
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
-func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
+type AlertStatus struct {
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ExecutionTime      time.Time
+	Status             runtimev1.AssertionStatus
+	IsRecover          bool
+	FailRow            map[string]any
+	ExecutionError     string
+	OpenLink           string
+	EditLink           string
+	UnsubscribeLink    string
+	Attachment         *Attachment // An export of the rows that triggered the alert; only sent for failed checks
+	AttachmentTooLarge bool        // If true, the email explains that the export was too large to attach
+}
+
+func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -105,6 +130,8 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
+			Attached:            opts.Attachment != nil,
+			AttachmentTooLarge:  opts.AttachmentTooLarge,
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -128,9 +155,11 @@ type alertFailData struct {
 	OpenLink            template.URL
 	EditLink            template.URL
 	UnsubscribeLink     template.URL
+	Attached            bool
+	AttachmentTooLarge  bool
 }
 
-func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
+func (c *Client) sendAlertFail(opts *AlertStatus, data *alertFailData) error {
 	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
@@ -140,7 +169,11 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	var attachments []Attachment
+	if opts.Attachment != nil {
+		attachments = []Attachment{*opts.Attachment}
+	}
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
 type alertStatusData struct {
@@ -155,7 +188,7 @@ type alertStatusData struct {
 	UnsubscribeLink     template.URL
 }
 
-func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
+func (c *Client) sendAlertStatus(opts *AlertStatus, data *alertStatusData) error {
 	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
@@ -168,7 +201,7 @@ func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusDat
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type CallToAction struct {
@@ -189,7 +222,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Informational struct {
@@ -207,7 +240,7 @@ func (c *Client) SendInformational(opts *Informational) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Welcome struct {
@@ -225,7 +258,7 @@ func (c *Client) SendWelcomeToTrial(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
@@ -235,7 +268,7 @@ func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type OrganizationInvite struct {
@@ -371,7 +404,7 @@ func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type ProjectAccessGranted struct {
@@ -540,6 +573,31 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
+type TrialStarted struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	FrontendURL  string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialStarted(opts *TrialStarted) error {
+	return c.SendWelcomeToTrial(&Welcome{
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
+		FrontendURL: opts.FrontendURL,
+		WelcomeText: template.HTML(fmt.Sprintf(`
+You now have access to Rill Cloud until <b>%s</b> to explore all features including:
+<ul>
+<li>User management (RBAC)</li>
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li>
+</ul>
+`, opts.TrialEndDate.Format(dateFormat))),
+	})
+}
+
 type TrialEndingSoon struct {
 	ToEmail      string
 	ToName       string
@@ -622,6 +680,23 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
+type TrialExtended struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialExtended(opts *TrialExtended) error {
+	return c.SendInformational(&Informational{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Your trial for <b>%q</b> has been extended until %s.", opts.OrgName, opts.TrialEndDate.Format(dateFormat))),
+		ShowFooter: true,
+	})
+}
+
 type CreditTrialStarted struct {
 	ToEmail          string
 	ToName           string
@@ -631,20 +706,25 @@ type CreditTrialStarted struct {
 }
 
 func (c *Client) SendCreditTrialStarted(opts *CreditTrialStarted) error {
-	return c.SendWelcomeToTrial(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("Your Rill Cloud trial for %s has started", opts.OrgName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have <b>%d Rill Cloud credits</b> to explore all features including:
-<ul>
-<li>User management (RBAC)</li>
-<li>Embedded dashboards</li>
-<li>Alerts and scheduled reports</li>
-</ul>
-We'll let you know when your balance is running low so you can upgrade whenever you're ready.
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Welcome to Rill — start using your $%d credit", opts.CreditAllocation),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi there,
+<br /><br />
+Welcome to Rill! Your account is ready and loaded with <b>$%d in free credit</b> to explore the full platform — dashboards, metrics, embedded analytics, AI-powered exploration, and more.
+<br /><br />
+Your usage is deducted from your credit at Starter plan rates — see our <a href="https://www.rilldata.com/pricing#full-comparison" style="color:#4736F5">pricing page</a> for details. There's no time limit — your credit is only consumed when your dashboards are running, so it typically gives you a few weeks to build and share real dashboards with your team. Don't forget to hibernate your project when you're not using it!
 `, opts.CreditAllocation)),
+		ButtonText: "Open Rill Cloud",
+		ButtonLink: opts.FrontendURL,
+		PostButton: template.HTML(`
+If you have any questions, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a> You can also check out <a href="https://docs.rilldata.com" style="color:#4736F5">docs.rilldata.com</a> to learn more.
+<br /><br />
+Happy exploring,
+`),
+		ShowFooter: false,
 	})
 }
 
@@ -654,6 +734,7 @@ type CreditTrialLow struct {
 	OrgName          string
 	FrontendURL      string
 	UpgradeURL       string
+	CreditAllocation int
 	RemainingBalance float64
 }
 
@@ -661,39 +742,60 @@ func (c *Client) SendCreditTrialLow(opts *CreditTrialLow) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are running low", opts.OrgName),
+		Subject: "Your Rill credit is getting low",
 		PreButton: template.HTML(fmt.Sprintf(`
-Your trial credit balance for <b>%s</b> has dropped to about <b>$%.2f</b>.
+Hi there,
 <br /><br />
-Upgrade now to keep your projects online before the credits run out.
-`, opts.OrgName, opts.RemainingBalance)),
+You have about <b>$%.2f</b> of your original $%d Rill credit remaining. Once it's used up, your dashboards will go into hibernation.
+<br /><br />
+Hibernation means your dashboards pause and go offline — but nothing is deleted. Your models, data connections, and configuration all stay intact. Upgrading to a paid plan reactivates everything, and any remaining free credit carries over so nothing goes to waste.
+<br /><br />
+See our <a href="https://www.rilldata.com/pricing#full-comparison" style="color:#4736F5">pricing page</a> for plan details.
+`, opts.RemainingBalance, opts.CreditAllocation)),
 		ButtonText: "Upgrade Now",
 		ButtonLink: opts.UpgradeURL,
-		ShowFooter: true,
+		PostButton: template.HTML(`
+If you have any questions, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+<br /><br />
+Happy building,
+`),
+		ShowFooter: false,
 	})
 }
 
 type CreditTrialDepleted struct {
-	ToEmail     string
-	ToName      string
-	OrgName     string
-	FrontendURL string
-	UpgradeURL  string
+	ToEmail          string
+	ToName           string
+	OrgName          string
+	FrontendURL      string
+	UpgradeURL       string
+	CreditAllocation int
 }
 
 func (c *Client) SendCreditTrialDepleted(opts *CreditTrialDepleted) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your Rill Cloud trial credits for %s are depleted", opts.OrgName),
+		Subject: "Your Rill dashboards are now hibernated",
 		PreButton: template.HTML(fmt.Sprintf(`
-Your trial credits for <b>%s</b> have run out, and the org's projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
+Hi there,
 <br /><br />
-Upgrade to bring your projects back online.
-`, opts.OrgName)),
+Your $%d Rill credit has been fully used and your dashboards are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation" style="color:#4736F5">hibernated</a>. All deployments are paused — your team and any embedded analytics are currently offline.
+<br /><br />
+<b>Nothing has been deleted.</b> Your entire project — data connections, models, dashboards, and configuration — is preserved exactly as you left it.
+<br /><br />
+To bring everything back online, upgrade to a paid plan. It takes under a minute: add a payment method, confirm the upgrade, and your dashboards reactivate with your existing configuration.
+`, opts.CreditAllocation)),
 		ButtonText: "Upgrade Now",
 		ButtonLink: opts.UpgradeURL,
-		ShowFooter: true,
+		PostButton: template.HTML(`
+Billing is usage-based with no contracts — see our <a href="https://www.rilldata.com/pricing#full-comparison" style="color:#4736F5">pricing page</a> for plan details.
+<br /><br />
+If you'd like to discuss your options or need a custom arrangement, feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+<br /><br />
+Hope to see you back soon,
+`),
+		ShowFooter: false,
 	})
 }
 
@@ -736,29 +838,30 @@ type PaidPlan struct {
 	ToName           string
 	OrgName          string
 	FrontendURL      string
+	BillingURL       string
 	PlanName         string
 	BillingStartDate time.Time
 }
 
 // SendPaidPlanStarted sends a customised plan-started email for a paid plan (Team or Pro).
 func (c *Client) SendPaidPlanStarted(opts *PaidPlan) error {
-	return c.SendWelcomeToTeam(&Welcome{
-		ToEmail:     opts.ToEmail,
-		ToName:      opts.ToName,
-		Subject:     fmt.Sprintf("Welcome to the %s plan", opts.PlanName),
-		FrontendURL: opts.FrontendURL,
-		WelcomeText: template.HTML(fmt.Sprintf(`
-Thank you! You’ve successfully upgraded %s to the %s plan.
+	return c.SendCallToAction(&CallToAction{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("You're on the %s plan", opts.PlanName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi there,
 <br /><br />
-Your next billing cycle starts on <b>%s</b>.
+You're all set on the Rill %s plan. Your next billing cycle starts on <b>%s</b>.
 <br /><br />
-As part of a paid plan, enjoy a complimentary 30-minute consultation call with our product experts 
-who can help optimize your setup (we can help tweak your data models/metrics, provide recommendations on setting up incremental refreshes, 
-help with work on security policies, or any other features and also share best practices. 
-<br /><br />
-Interested inscheduling a call?
-<a href="https://calendly.com/roy-endo-rilldata/30min" style="color:#4736F5">Book a time slot here</a>
-`, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
+Billing is usage-based with no contracts — you'll receive a monthly invoice with a full breakdown of compute hours and data storage.
+`, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
+		ButtonText: "View Your Billing Dashboard",
+		ButtonLink: opts.BillingURL,
+		PostButton: template.HTML(`
+Welcome aboard. Happy building,
+`),
+		ShowFooter: false,
 	})
 }
 
@@ -770,7 +873,7 @@ func (c *Client) SendPaidPlanRenewal(opts *PaidPlan) error {
 		Subject:     fmt.Sprintf("Your %s plan subscription for %s has been renewed", opts.PlanName, opts.OrgName),
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
-Thank you! You’ve successfully renewed to the <b>%s</b> for %s plan.
+Thank you! You’ve successfully renewed %s to the <b>%s</b> plan.
 <br /><br />
 Your next billing cycle starts on %s.
 `, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),

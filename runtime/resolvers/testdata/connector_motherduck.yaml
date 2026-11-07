@@ -1,13 +1,27 @@
 expensive: true
 connectors:
   - motherduck
+project_files:
+  retail_sales_metrics_view.yaml:
+    type: metrics_view
+    connector: motherduck
+    database_schema: main
+    model: retail_sales
+    dimensions:
+      - column: country
+      - column: category
+    measures:
+      - name: total_sales
+        expression: SUM(sales)
+      - name: total_quantity
+        expression: SUM(quantity)
 tests:
   # Note: Test queries Motherduck directly as an OLAP engine.
   - name: query_data_motherduck
     resolver: sql
     properties:
       connector: motherduck
-      sql: "select * from rilldata.integration_test.all_datatypes order by tinyint_col"
+      sql: "select * from all_datatypes order by tinyint_col"
     result_csv: |
       tinyint_col,smallint_col,integer_col,bigint_col,hugeint_col,utinyint_col,usmallint_col,uinteger_col,ubigint_col,float_col,double_col,decimal_col,boolean_col,varchar_col,blob_col,date_col,time_col,timestamp_col,timestamp_s_col,timestamp_ms_col,timestamp_ns_col,timestamptz_col,interval_col,uuid_col,list_int_col,list_float_col,list_varchar_col,list_boolean_col,list_timestamp_col,list_date_col,array_int_col,array_float_col,array_varchar_col,array_boolean_col,array_date_col,array_timestamp_col,map_int_col,map_float_col,map_varchar_col,map_boolean_col,map_date_col,map_timestamp_col,struct_col
       0,0,0,0,0,0,0,0,0,0,0,0,false,,,1970-01-01,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0,00000000-0000-0000-0000-000000000000,"[0,0]","[0,0]","["""",""""]","[false,false]","[""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z""]","[""1970-01-01"",""1970-01-01""]","[0,0,0]","[0,0,0]","["""","""",""""]","[false,false,false]","[""1970-01-01"",""1970-01-01"",""1970-01-01""]","[""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z""]","{"""":0}","{"""":0}","{"""":""""}","{"""":false}","{"""":""1970-01-01""}","{"""":""1970-01-01T00:00:00Z""}","{""field_bool"":false,""field_date"":""1970-01-01"",""field_float"":0,""field_int"":0,""field_str"":"""",""field_timestamp"":""1970-01-01T00:00:00Z""}"
@@ -18,7 +32,7 @@ tests:
     resolver: sql
     properties:
       connector: motherduck
-      sql: "describe rilldata.integration_test.all_datatypes"
+      sql: "describe all_datatypes"
     result_csv: |
       column_name,column_type,null,key,default,extra
       tinyint_col,TINYINT,YES,,,
@@ -64,3 +78,17 @@ tests:
       map_date_col,"MAP(VARCHAR, DATE)",YES,,,
       map_timestamp_col,"MAP(VARCHAR, TIMESTAMP)",YES,,,
       struct_col,"STRUCT(field_int INTEGER, field_float FLOAT, field_str VARCHAR, field_bool BOOLEAN, field_date DATE, field_timestamp TIMESTAMP)",YES,,,
+  - name: query_diffrent_database_schema_metrics_view
+    resolver: metrics
+    properties:
+      metrics_view: retail_sales_metrics_view
+      measures:
+        - name: total_sales
+      where:
+        cond:
+          op: eq
+          exprs:
+            - name: category
+            - val: Electronics
+    result:
+      - total_sales: 52000

@@ -44,7 +44,7 @@
     },
     {
       query: {
-        enabled: $timeControlsStore.ready && !!$exploreState?.whereFilter,
+        enabled: $timeControlsStore.ready,
       },
     },
   );

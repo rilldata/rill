@@ -55,10 +55,13 @@ func (o *Orb) DefaultQuotas() Quotas {
 	return Quotas{
 		StorageLimitBytesPerDeployment: toPtr(int64(10737418240)), // 10GB
 		NumProjects:                    toPtr(1),
-		NumDeployments:                 toPtr(20),
-		NumSlotsTotal:                  toPtr(40),
-		NumSlotsPerDeployment:          toPtr(8),
+		NumDeployments:                 toPtr(4),
+		NumSlotsTotal:                  toPtr(32),
+		NumSlotsPerDeployment:          toPtr(32),
 		NumOutstandingInvites:          toPtr(200),
+		NumSeats:                       toPtr(8),
+		NumAPICallsPerSeat:             toPtr(2500),
+		NumTokensPerSeat:               toPtr(1000000),
 	}
 }
 
@@ -223,24 +226,43 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 }
 
 // CreateCustomerCreditAlerts registers a credit_balance_dropped alert at the given threshold and a credit_balance_depleted alert for the customer in Orb. Required for Orb to deliver the corresponding webhook events.
+// Idempotent: if the alerts already exist for the customer/currency they are not re-created (Orb throws an error if the alert already exits).
 func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error {
-	_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
-		Currency: orb.String(currency),
-		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
-		Thresholds: orb.F([]orb.ThresholdParam{
-			{Value: orb.F(lowThreshold)},
-		}),
+	existing := make(map[orb.AlertType]bool)
+	iter := o.client.Alerts.ListAutoPaging(ctx, orb.AlertListParams{
+		ExternalCustomerID: orb.String(customerID),
 	})
-	if err != nil {
-		return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+	for iter.Next() {
+		a := iter.Current()
+		if a.Currency == currency {
+			existing[a.Type] = true
+		}
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("listing customer alerts: %w", err)
 	}
 
-	_, err = o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
-		Currency: orb.String(currency),
-		Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
-	})
-	if err != nil {
-		return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+	if !existing[orb.AlertTypeCreditBalanceDropped] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
+			Thresholds: orb.F([]orb.ThresholdParam{
+				{Value: orb.F(lowThreshold)},
+			}),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+		}
+	}
+
+	if !existing[orb.AlertTypeCreditBalanceDepleted] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+		}
 	}
 
 	return nil
@@ -696,6 +718,9 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
+		NumSeats:                       metadata.NumSeats,
+		NumAPICallsPerSeat:             metadata.NumAPICallsPerSeat,
+		NumTokensPerSeat:               metadata.NumTokensPerSeat,
 	}
 
 	trialPeriodDays := 0
@@ -775,6 +800,10 @@ func getPlanType(externalID string) PlanType {
 		return FreePlanType
 	case "pro_plan":
 		return ProPlanType
+	case "starter":
+		return StarterPlanType
+	case "growth":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -792,6 +821,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Free"
 	case "pro_plan":
 		return "Pro"
+	case "starter":
+		return "Starter"
+	case "growth":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}

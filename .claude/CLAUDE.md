@@ -66,6 +66,7 @@ General rules for writing Go code:
 - Functions should be sorted roughly in call order; functions should be grouped by receiver; plain utility functions belong towards the end of a file.
 - When adding a field to a struct or interface, don't automatically put at it at the end of the field list, instead put it where it makes the most sense (i.e. grouped with related fields and higher up than less important fields).
 - Prefer colons or semi-colons in code comments instead of hyphens or dashes. This keeps comments shorter, which makes them more readable in a monospace font.
+- Use semantic line breaks in comments: break at the end of a sentence, or after a comma, semicolon, or colon in longer sentences, rather than wrapping at a fixed column. Do not break a line mid-phrase to hit a character limit; a long line that expresses one complete thought reads better on a wide screen than an arbitrary mid-phrase wrap.
 - Before adding a dependency, check for newer major versions. Major versions 2+ require the `/vN` suffix in the import path (e.g., `go get github.com/foo/bar/v3@latest`). Without the suffix, `go get` only fetches v1.x.
 - Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
 - Avoid variables that only serve as aliases unless there's a large readability improvement (i.e. the expression is very long and used several times); for example, instead of `db := table.Database`, just reference `table.Database` directly.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
   import { ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
-  import type { Readable } from "svelte/store";
+  import { readable, type Readable } from "svelte/store";
   import type { PickerTreeNode } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
   import type { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
   import {
@@ -24,13 +24,13 @@
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  const item = node.item;
-  const context = item.context;
+  $: item = node.item;
+  $: ({ id, context, recentlyUsed, currentlyActive } = item);
 
   const runtimeClient = useRuntimeClient();
 
-  const typeConfig = InlineContextConfig[context.type];
-  const typeLabel = typeConfig.typeLabel;
+  $: typeConfig = InlineContextConfig[context.type];
+  $: typeLabel = typeConfig.typeLabel;
   const contextMetadataStore = getInlineChatContextMetadata(runtimeClient);
   $: icon = typeConfig?.getIcon?.(context, $contextMetadataStore);
   const selectedItemId = selectedChatContext
@@ -39,23 +39,24 @@
 
   const { focusedItemStore, enhancePickerNode } = keyboardNavigationManager;
   $: focusedItem = $focusedItemStore;
-  $: focused = focusedItem?.id === item.id;
-  $: selected = item.id === selectedItemId;
+  $: focused = focusedItem?.id === id;
+  $: selected = id === selectedItemId;
 
   $: childSelected =
     selectedChatContext !== null &&
     inlineContextIsWithin(context, selectedChatContext);
   $: shouldForceOpen =
     childSelected ||
-    item.recentlyUsed ||
-    item.currentlyActive ||
+    recentlyUsed ||
+    currentlyActive ||
     $searchTextStore.length > 0;
-  $: if (shouldForceOpen) uiState.expand(item.id);
+  $: if (shouldForceOpen) uiState.expand(id);
 
-  const openStore = uiState.getExpandedStore(item.id);
+  let openStore = readable(false);
+  $: openStore = id ? uiState.getExpandedStore(id) : openStore;
 
   function onClick() {
-    uiState.toggle(item.id);
+    uiState.toggle(id);
     focusEditor();
   }
 </script>

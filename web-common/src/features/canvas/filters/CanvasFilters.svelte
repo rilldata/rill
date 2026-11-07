@@ -1,54 +1,32 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
-  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
-  import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
-  import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
+  import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
+  import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
+  import ExpressionFilters from "../../dashboards/filters/ExpressionFilters.svelte";
 
-  export let readOnly = false;
-  export let maxWidth: number;
-  export let builder = false;
-  export let canvasName: string;
+  let {
+    maxWidth,
+    canvasName,
+  }: {
+    readOnly?: boolean;
+    maxWidth: number;
+    canvasName: string;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  /** the height of a row of chips */
-  const ROW_HEIGHT = "26px";
-
   let showDefaultItem = false;
 
-  $: ({ instanceId } = runtimeClient);
-  $: ({
+  let {
     canvasEntity: {
-      filterManager: {
-        allDimensionsStore,
-        allMeasuresStore,
-        activeUIFiltersStore,
-        filterMapStore,
-        temporaryFilterKeysStore,
-        actions: {
-          toggleDimensionValueSelections,
-          toggleDimensionFilterMode,
-          applyDimensionInListMode,
-          addTemporaryFilter,
-          applyDimensionContainsMode,
-          removeDimensionFilter,
-          setMeasureFilter,
-          removeMeasureFilter,
-          toggleFilterPin,
-        },
-        clearAllFilters,
-      },
-
       timeManager: {
         state: {
           comparisonIntervalStore,
@@ -58,6 +36,7 @@
           set,
           rangeStore,
           grainStore,
+          urlGrainStore,
           comparisonRangeStore,
           interval: intervalStore,
           minMaxTimeStamps,
@@ -68,45 +47,43 @@
         timeRangeOptionsStore,
         availableTimeZonesStore,
         allowCustomRangeStore,
+        maxQueryTimeRangeStore,
       },
+      expressionFilterManager,
     },
-  } = getCanvasStore(canvasName, instanceId));
+  } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
-  $: selectedRange = $rangeStore;
-  $: interval = $intervalStore;
-  $: minTimeGrain = $largestMinTimeGrain;
+  let selectedRange = $derived($rangeStore);
+  let interval = $derived($intervalStore);
+  let minTimeGrain = $derived($largestMinTimeGrain);
 
-  $: timeStart = interval?.start.toISO();
-  $: timeEnd = interval?.end.toISO();
+  let timeStart = $derived(interval?.start.toUTC().toISO());
+  let timeEnd = $derived(interval?.end.toUTC().toISO());
 
-  $: minMax = $minMaxTimeStamps;
+  let minMax = $derived($minMaxTimeStamps);
 
-  $: hasTimeSeries = $hasTimeSeriesStore;
+  let hasTimeSeries = $derived($hasTimeSeriesStore);
 
-  $: minDate = minMax?.min;
-  $: maxDate = minMax?.max;
-  $: showTimeComparison = $showTimeComparisonStore;
+  let minDate = $derived(minMax?.min);
+  let maxDate = $derived(minMax?.max);
+  let showTimeComparison = $derived($showTimeComparisonStore);
 
-  $: activeTimeZone = $timeZoneStore;
-  $: temporaryFilterKeys = $temporaryFilterKeysStore;
-  $: comparisonInterval = $comparisonIntervalStore;
-  $: comparisonRange = $comparisonRangeStore;
+  let activeTimeZone = $derived($timeZoneStore);
+  let comparisonInterval = $derived($comparisonIntervalStore);
+  let comparisonRange = $derived($comparisonRangeStore);
 
-  $: activeTimeGrain = $grainStore;
-  $: defaultTimeRange = $defaultTimeRangeStore;
-  $: availableTimeZones = $availableTimeZonesStore;
-  $: timeRanges = $timeRangeOptionsStore;
-  $: allowCustomTimeRange = $allowCustomRangeStore;
+  let activeTimeGrain = $derived($grainStore);
+  // The grain is adaptive unless the URL fixes one.
+  let adaptiveTimeGrain = $derived(!$urlGrainStore);
+  let defaultTimeRange = $derived($defaultTimeRangeStore);
+  let availableTimeZones = $derived($availableTimeZonesStore);
+  let timeRanges = $derived($timeRangeOptionsStore);
+  let allowCustomTimeRange = $derived($allowCustomRangeStore);
+  let maxQueryTimeRange = $derived($maxQueryTimeRangeStore);
 
-  $: ({
-    dimensionFilters,
-    hasFilters,
-    measureFilters,
-    complexFilters,
-    hasClearableFilters,
-  } = $activeUIFiltersStore);
+  let canPan = $derived($canPanStore);
 
-  $: canPan = $canPanStore;
+  let grainOptions = $derived(allowedGrainsForInterval(interval, minTimeGrain));
 
   function onPan(direction: "left" | "right") {
     if (!interval || !selectedRange) return;
@@ -130,6 +107,7 @@
 </script>
 
 <div
+  role="presentation"
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
@@ -158,7 +136,7 @@
             {minDate}
             {maxDate}
             selectedRangeAlias={selectedRange}
-            showPivot={false}
+            showPivot
             {minTimeGrain}
             {defaultTimeRange}
             {availableTimeZones}
@@ -173,6 +151,7 @@
             canPanRight={canPan.right}
             watermark={undefined}
             {allowCustomTimeRange}
+            {maxQueryTimeRange}
             {showDefaultItem}
             applyRange={(timeRange) => {
               const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
@@ -194,6 +173,7 @@
             {activeTimeZone}
             {minTimeGrain}
             {showTimeComparison}
+            {allowCustomTimeRange}
             onDisplayTimeComparison={set.comparison}
             onSetSelectedComparisonRange={(range) => {
               if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -204,84 +184,31 @@
               }
             }}
           />
+          {#if activeTimeGrain && grainOptions.length}
+            <AggregationGrainSelector
+              {activeTimeGrain}
+              options={grainOptions}
+              onSelect={set.grain}
+              defaultOption={{
+                label: m.time_grain_adaptive(),
+                description: m.time_grain_adaptive_description(),
+                hint: m.time_grain_adaptive_hint(),
+                selected: adaptiveTimeGrain,
+                onSelect: () => set.grain(undefined),
+              }}
+            />
+          {/if}
         </div>
       </div>
     </div>
   {/if}
-  <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
-    {#if !readOnly}
-      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
-    {/if}
-    <div
-      class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"
-    >
-      {#if !hasFilters}
-        <div
-          class="text-fg-muted grid ml-1 items-center"
-          style:min-height={ROW_HEIGHT}
-        >
-          No filters selected
-        </div>
-      {/if}
 
-      {#each complexFilters as filter, i (i)}
-        <AdvancedFilter advancedFilter={filter} />
-      {/each}
-
-      {#each dimensionFilters as [id, filterData] (id)}
-        <DimensionFilter
-          {readOnly}
-          {filterData}
-          {timeStart}
-          {timeEnd}
-          openOnMount={!!temporaryFilterKeys.get(id)}
-          timeControlsReady={!hasTimeSeries || !!interval}
-          expressionMap={$filterMapStore}
-          {removeDimensionFilter}
-          {toggleDimensionFilterMode}
-          {toggleDimensionValueSelections}
-          {applyDimensionInListMode}
-          {applyDimensionContainsMode}
-          toggleFilterPin={builder ? toggleFilterPin : undefined}
-        />
-      {/each}
-
-      {#each measureFilters as [id, filterData] (id)}
-        {@const metricsViewNames = filterData.measures
-          ? Array.from(filterData.measures.keys())
-          : []}
-
-        <MeasureFilter
-          {filterData}
-          allDimensions={filterData.dimensions ?? []}
-          openOnMount={temporaryFilterKeys.has(id)}
-          onRemove={async () => {
-            await removeMeasureFilter(
-              filterData.dimensionName,
-              filterData.name,
-              metricsViewNames,
-            );
-          }}
-          onApply={({ dimension, filter, oldDimension }) =>
-            setMeasureFilter(dimension, filter, oldDimension, metricsViewNames)}
-          toggleFilterPin={builder ? toggleFilterPin : undefined}
-        />
-      {/each}
-
-      {#if !readOnly}
-        <CanvasFilterButton
-          allDimensions={$allDimensionsStore}
-          filteredSimpleMeasures={$allMeasuresStore}
-          dimensionHasFilter={(name) => dimensionFilters.has(name)}
-          measureHasFilter={(name) => measureFilters.has(name)}
-          setTemporaryFilterName={addTemporaryFilter}
-        />
-        <!-- if filters are present, place a chip at the end of the flex container 
-      that enables clearing all filters -->
-        {#if hasClearableFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
-        {/if}
-      {/if}
-    </div>
+  <div class="pointer-events-auto ml-2">
+    <ExpressionFilters
+      {expressionFilterManager}
+      {timeStart}
+      {timeEnd}
+      timeControlsReady={!hasTimeSeries || !!interval}
+    />
   </div>
 </div>

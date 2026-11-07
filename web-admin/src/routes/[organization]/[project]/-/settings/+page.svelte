@@ -9,6 +9,7 @@
   import HibernateProject from "@rilldata/web-admin/features/projects/settings/HibernateProject.svelte";
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let organization = $derived($page.params.organization);
   let project = $derived($page.params.project);
@@ -26,7 +27,7 @@
 {/snippet}
 
 <SettingsContainer
-  title="GitHub"
+  title={m.settings_github_title()}
   action={isGithubConnected ? undefined : githubAction}
 >
   <div>
@@ -35,7 +36,7 @@
 </SettingsContainer>
 
 <div class="danger-zone-section">
-  <h3 class="danger-zone-title">Danger Zone</h3>
+  <h3 class="danger-zone-title">{m.settings_danger_zone_title()}</h3>
   <DangerZone>
     <ProjectVisibilitySettings {organization} {project} />
     <HibernateProject {organization} {project} />

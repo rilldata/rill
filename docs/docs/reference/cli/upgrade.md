@@ -13,6 +13,7 @@ rill upgrade [flags]
 ### Flags
 
 ```
+      --force            Reinstall even if the latest version is already installed
       --nightly          Install the latest nightly build
       --version string   Install a specific version of Rill
 ```

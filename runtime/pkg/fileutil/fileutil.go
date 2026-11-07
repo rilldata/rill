@@ -324,10 +324,18 @@ func ResolveLocalPath(path, root string, allowHostAccess bool) (string, error) {
 	if !filepath.IsAbs(path) {
 		finalPath = filepath.Join(root, path)
 	}
+	// Clean here so that ".." segments are resolved before the sandbox check below;
+	// filepath.Join already cleans the relative branch, but an absolute path does not pass through it.
+	finalPath = filepath.Clean(finalPath)
 
-	if !allowHostAccess && !strings.HasPrefix(finalPath, root) {
-		// path is outside the repo root
-		return "", fmt.Errorf("path is outside repo root")
+	if !allowHostAccess {
+		// Ensure the resolved path stays within the repo root.
+		// The trailing separator prevents a sibling directory whose name shares the root's prefix
+		// (e.g. root "/data/proj" matching "/data/proj-x") from passing the check.
+		root = filepath.Clean(root)
+		if finalPath != root && !strings.HasPrefix(finalPath, root+string(filepath.Separator)) {
+			return "", fmt.Errorf("path is outside repo root")
+		}
 	}
 	return finalPath, nil
 }

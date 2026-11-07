@@ -25,12 +25,12 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -115,26 +115,29 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
-	// Runtime provisioner - if startRt is false, we set up a provisioner that points to a non-existent runtime server.
+	// Runtime provisioners - if startRt is false, we set up provisioners that point to a non-existent runtime server.
+	// The "static-alt" provisioner points to the same runtime; it is used to test switching a deployment's provisioner.
 	runtimeAudienceURL := runtimeExternalURL
 	defaultProvisioner := "static"
-	provisionerSetJSON := must(json.Marshal(map[string]any{
-		"static": map[string]any{
-			"type": "static",
-			"spec": map[string]any{
-				"runtimes": []map[string]any{
-					{
-						"host":         runtimeExternalURL,
-						"slots":        1000000,
-						"audience_url": runtimeAudienceURL,
-					},
+	staticSpec := map[string]any{
+		"type": "static",
+		"spec": map[string]any{
+			"runtimes": []map[string]any{
+				{
+					"host":         runtimeExternalURL,
+					"slots":        1000000,
+					"audience_url": runtimeAudienceURL,
 				},
 			},
 		},
+	}
+	provisionerSetJSON := must(json.Marshal(map[string]any{
+		"static":     staticSpec,
+		"static-alt": staticSpec,
 	}))
 
 	// Initialize mock AI using drivers.Open pattern
-	mockAIHandle, err := drivers.Open("mock_ai", "", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+	mockAIHandle, err := drivers.Open(t.Context(), "mock_ai", "", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 	require.NoError(t, err)
 	t.Cleanup(func() { mockAIHandle.Close() })
 	mockAI, ok := mockAIHandle.AsAI("test")
@@ -338,6 +341,10 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repo
 
 func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (string, time.Time, error) {
 	return "", time.Time{}, nil
+}
+
+func (m *mockGithub) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
+	return nil
 }
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {

@@ -3,9 +3,9 @@ package sudo
 import (
 	"fmt"
 
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -37,13 +37,15 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			ep, err := transport.NewEndpoint(res.GitRepoUrl)
+			config := &gitutil.Config{
+				Remote:   res.GitRepoUrl,
+				Username: res.GitUsername,
+				Password: res.GitPassword,
+			}
+			cloneURL, err := config.FullyQualifiedRemote()
 			if err != nil {
 				return err
 			}
-			ep.User = res.GitUsername
-			ep.Password = res.GitPassword
-			cloneURL := ep.String()
 
 			fmt.Printf("\tgit clone %s\n\n", cloneURL)
 			fmt.Println("Full details:")

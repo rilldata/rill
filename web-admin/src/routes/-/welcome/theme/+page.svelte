@@ -6,6 +6,7 @@
     themeControl,
     type ThemeMode,
   } from "@rilldata/web-common/features/themes/theme-control.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const { preference } = themeControl;
   $: selectedPreference = $preference;
@@ -15,10 +16,18 @@
     value: ThemeMode;
     image: string;
   }[] = [
-    { label: "Light", value: "light", image: "/img/theme/light-mode.svg" },
-    { label: "Dark", value: "dark", image: "/img/theme/dark-mode.svg" },
     {
-      label: "System",
+      label: m.theme_light(),
+      value: "light",
+      image: "/img/theme/light-mode.svg",
+    },
+    {
+      label: m.theme_dark(),
+      value: "dark",
+      image: "/img/theme/dark-mode.svg",
+    },
+    {
+      label: m.theme_system(),
       value: "system",
       image: "/img/theme/system-mode.svg",
     },
@@ -42,7 +51,7 @@
 <div class="flex flex-col gap-4 justify-center">
   <RillLogoSquareNegative size="36px" />
   <div class="text-2xl font-extrabold text-fg-accent text-center">
-    Pick your color mode
+    {m.welcome_theme_heading()}
   </div>
   <div class="flex flex-row gap-8 pt-6 mx-auto">
     {#each ThemeOptions as themeOption (themeOption.value)}
@@ -50,14 +59,17 @@
       <button
         class="flex flex-col gap-4"
         onclick={() => handleThemeChange(themeOption.value)}
-        aria-label="Select {themeOption.label} theme"
+        aria-label={m.welcome_theme_option_aria({ theme: themeOption.label })}
       >
         <div
           class="border rounded-md transition-transform duration-200 hover:scale-110"
           class:shadow-lg={isSelected}
           class:border-ring-focus={isSelected}
         >
-          <img src={themeOption.image} alt="{themeOption.value} image" />
+          <img
+            src={themeOption.image}
+            alt={m.welcome_theme_preview_alt({ theme: themeOption.label })}
+          />
         </div>
         <div class="text-sm font-semibold text-fg-primary">
           {themeOption.label}
@@ -66,7 +78,9 @@
     {/each}
   </div>
   <div class="mx-auto pt-12 pb-24">
-    <Button type="primary" onClick={handleContinue} large>Continue</Button>
+    <Button type="primary" onClick={handleContinue} large
+      >{m.common_continue()}</Button
+    >
   </div>
 </div>
 

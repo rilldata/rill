@@ -18,8 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("gemini", driver{})
 	drivers.RegisterAsConnector("gemini", driver{})
@@ -73,7 +71,7 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
 			DisplayName: "Temperature",
-			Description: "Sampling temperature to use (0.0-2.0).",
+			Description: "Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.",
 		},
 		{
 			Key:         "top_p",
@@ -103,7 +101,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -113,7 +111,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	if conf.APIKey == "" {
 		return nil, errors.New("api_key is required")
 	}
-	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		Backend: genai.BackendGeminiAPI,
 		APIKey:  conf.APIKey,
 	})
@@ -153,13 +151,6 @@ func (c *configProperties) getModel() string {
 		return c.Model
 	}
 	return "gemini-3-flash-preview"
-}
-
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
-	}
-	return defaultTemperature
 }
 
 func (c *configProperties) getThinkingConfig() *genai.ThinkingConfig {
@@ -213,6 +204,11 @@ func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorO
 // AsModelManager implements drivers.Handle.
 func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (h *handle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.
@@ -290,7 +286,10 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		MaxOutputTokens:   int32(h.config.MaxOutputTokens),
 		SystemInstruction: systemInstructions,
 		ThinkingConfig:    h.config.getThinkingConfig(),
-		Temperature:       genai.Ptr(float32(h.config.getTemperature())),
+	}
+	// Only set temperature if configured, since Google warns that lowering it on Gemini 3 models can cause looping and degraded performance.
+	if h.config.Temperature != nil {
+		genConfig.Temperature = genai.Ptr(float32(*h.config.Temperature))
 	}
 	if h.config.TopP > 0 {
 		genConfig.TopP = genai.Ptr(float32(h.config.TopP))
@@ -326,11 +325,27 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("failed to convert response: %w", err)
 	}
 
+	inputTokens, cachedInputTokens, outputTokens := usageTokens(res.UsageMetadata)
 	return &drivers.CompleteResult{
-		Message:      resMsg,
-		InputTokens:  int(res.UsageMetadata.PromptTokenCount),
-		OutputTokens: int(res.UsageMetadata.CandidatesTokenCount),
+		Message:           resMsg,
+		Provider:          "gemini",
+		InputTokens:       inputTokens,
+		CachedInputTokens: cachedInputTokens,
+		OutputTokens:      outputTokens,
 	}, nil
+}
+
+// usageTokens maps Gemini's usage metadata to Rill's token counts.
+//
+// Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
+//
+// Gemini reports thinking tokens in ThoughtsTokenCount, separately from CandidatesTokenCount
+// (totalTokenCount is "prompt + thoughts + response candidates"), but bills them as output:
+// "response pricing is the sum of output tokens and thinking tokens". They are added to OutputTokens so it
+// reflects billed output, as it already does for OpenAI and Claude, whose output counts include reasoning.
+// See https://ai.google.dev/api/generate-content#UsageMetadata and https://ai.google.dev/gemini-api/docs/thinking#pricing.
+func usageTokens(u *genai.GenerateContentResponseUsageMetadata) (inputTokens, cachedInputTokens, outputTokens int) {
+	return int(u.PromptTokenCount), int(u.CachedContentTokenCount), int(u.CandidatesTokenCount + u.ThoughtsTokenCount)
 }
 
 // convertTools converts Rill tools to Gemini tool format.
@@ -482,6 +497,9 @@ func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string)
 				return nil, fmt.Errorf("failed to convert tool result: %w", err)
 			}
 			parts = append(parts, part)
+
+		case *aiv1.ContentBlock_Reasoning:
+			// Skip reasoning from other providers, which Gemini can't use.
 
 		default:
 			return nil, fmt.Errorf("unsupported message block type: %T", block.BlockType)

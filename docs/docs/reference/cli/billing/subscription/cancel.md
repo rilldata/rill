@@ -22,5 +22,5 @@ rill billing subscription cancel [flags]
 
 ### SEE ALSO
 
-* [rill billing subscription](subscription.md)	 - Manage organisation subscription
+* [rill billing subscription](subscription.md)	 - Manage organization subscriptions
 

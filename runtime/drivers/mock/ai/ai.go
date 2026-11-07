@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"strings"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	rillai "github.com/rilldata/rill/runtime/ai"
@@ -47,7 +48,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 	return nil, nil
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	toolCallingEnabled, _ := config["enable_tool_calling"].(bool)
 
 	return &connection{
@@ -155,6 +156,11 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -195,12 +201,21 @@ func (c *connection) handleToolCalling() *aiv1.CompletionMessage {
 	}
 }
 
+// userRequestMarker separates the analyst agent's templated user prompt preamble from the raw user request.
+// It must stay in sync with the template in runtime/ai/analyst_agent.go.
+const userRequestMarker = "The user's request:\n"
+
 // echoUserMessage finds the last user message and echoes it back
 func (c *connection) echoUserMessage(msgs []*aiv1.CompletionMessage) *aiv1.CompletionMessage {
 	text := c.findLastUserText(msgs)
 	if text == "" {
 		text = "No user message found"
 	} else {
+		// The analyst agent wraps the raw user request in a templated prompt with a leading preamble.
+		// Echo only the raw request when the marker is present; otherwise echo the full message.
+		if idx := strings.LastIndex(text, userRequestMarker); idx != -1 {
+			text = strings.TrimSpace(text[idx+len(userRequestMarker):])
+		}
 		text = "Echo: " + text
 	}
 

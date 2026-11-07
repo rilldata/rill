@@ -4,14 +4,21 @@
     CHART_CONFIG,
     VISIBLE_CHART_TYPES,
   } from "@rilldata/web-common/features/components/charts/config";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { Plus, PlusCircle } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Layers, Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
+  import MapIcon from "./icons/MapIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
   type MainMenuItem = {
@@ -22,34 +29,67 @@
 
   // Create menu items with a function to get random chart type when clicked
   export const menuItems: MainMenuItem[] = [
-    { id: "chart_submenu", label: "Chart", icon: ChartIcon },
-    { id: "table", label: "Table", icon: TableIcon },
-    { id: "markdown", label: "Text/Markdown", icon: TextIcon },
-    { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
-    { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
-    { id: "image", label: "Image", icon: ChartIcon },
+    { id: "chart_submenu", label: m.canvas_chart(), icon: ChartIcon },
+    { id: "table", label: m.canvas_table(), icon: TableIcon },
+    { id: "markdown", label: m.canvas_text_markdown(), icon: TextIcon },
+    { id: "kpi_grid", label: m.canvas_kpi(), icon: BigNumberIcon },
+    { id: "leaderboard", label: m.canvas_leaderboard(), icon: LeaderboardIcon },
+    { id: "image", label: m.canvas_image(), icon: ChartIcon },
+    { id: "map", label: m.canvas_map(), icon: MapIcon },
   ];
 
   export let disabled = false;
   export let componentForm = false;
   export let floatingForm = false;
+  // Label shown on the large (componentForm) add button.
+  export let label = m.canvas_add_widget();
   export let open = false;
   export let rowIndex: number | undefined = undefined;
   export let columnIndex: number | undefined = undefined;
   export let onItemClick: (type: CanvasComponentType) => void;
+  // When provided (and the customComponents flag is on), the menu lists the project's
+  // standalone components (custom viz) so they can be added as references.
+  export let onAddComponentRef: ((componentName: string) => void) | undefined =
+    undefined;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
+  // When provided, the menu offers "Tab group" as a final item. Only passed at the
+  // top level (tab groups cannot be nested inside a tab or a column).
+  export let onAddTabGroup: (() => void) | undefined = undefined;
 
-  const { customCharts } = featureFlags;
+  const { customCharts, customComponents } = featureFlags;
+
+  const client = useRuntimeClient();
+
+  $: componentsQuery = useFilteredResources(client, ResourceKind.Component);
+  // Standalone (custom viz) components only: inline canvas components are excluded.
+  $: customVizComponents = ($componentsQuery?.data ?? []).filter(
+    (res) =>
+      !res.component?.spec?.definedInCanvas &&
+      (res.component?.state?.validSpec?.renderer ??
+        res.component?.spec?.renderer) === "custom_chart" &&
+      !!res.meta?.name?.name &&
+      !res.meta.name.name.includes("--component-"),
+  );
 
   const ADD_DROPDOWN_CHART_TYPES = VISIBLE_CHART_TYPES.filter((type) => {
     return type !== "stacked_bar" && type !== "stacked_bar_normalized";
   });
 
   function getAriaLabel(row: number | undefined, column: number | undefined) {
-    return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
-      column !== undefined ? ` at column ${column + 1}` : ""
-    }`;
+    if (row !== undefined && column !== undefined) {
+      return m.canvas_insert_widget_at({
+        row: String(row + 1),
+        col: String(column + 1),
+      });
+    }
+    if (row !== undefined) {
+      return m.canvas_insert_widget_at_row({ row: String(row + 1) });
+    }
+    if (column !== undefined) {
+      return m.canvas_insert_widget_at_col({ col: String(column + 1) });
+    }
+    return m.canvas_insert_widget();
   }
 </script>
 
@@ -63,14 +103,14 @@
           class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
         >
           <PlusCircle class="w-6 h-6 text-fg-secondary" />
-          <span class="text-sm font-medium text-fg-secondary">Add widget</span>
+          <span class="text-sm font-medium text-fg-secondary">{label}</span>
         </button>
       {:else if floatingForm}
         <button
           {...props}
           {disabled}
           class:pr-3.5={open}
-          aria-label="Add widget"
+          aria-label={m.canvas_add_widget()}
           class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
         >
           <Plus size="20px" />
@@ -79,7 +119,7 @@
             class:not-sr-only={open}
             class="sr-only group-hover:not-sr-only font-semibold w-fit"
           >
-            Add widget
+            {m.canvas_add_widget()}
           </span>
         </button>
       {:else}
@@ -87,7 +127,7 @@
           {...props}
           {disabled}
           aria-label={getAriaLabel(rowIndex, columnIndex)}
-          title="Insert widget"
+          title={m.canvas_insert_widget()}
           class:bg-surface-background={open}
           class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
           onmouseenter={onMouseEnter}
@@ -130,7 +170,7 @@
                   onclick={() => onItemClick("custom_chart")}
                 >
                   <ChartIcon />
-                  Custom Chart
+                  {m.canvas_custom_chart()}
                 </DropdownMenu.Item>
               {/if}
             </DropdownMenu.SubContent>
@@ -145,6 +185,42 @@
           </DropdownMenu.Item>
         {/if}
       {/each}
+
+      {#if $customComponents && onAddComponentRef}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger class="flex flex-row gap-x-2">
+            <ChartIcon />
+            {m.canvas_your_components()}
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent class="min-w-[160px]">
+            {#each customVizComponents as res (res.meta?.name?.name)}
+              <DropdownMenu.Item
+                class="flex flex-row gap-x-2 text-fg-primary"
+                onclick={() => onAddComponentRef?.(res.meta?.name?.name ?? "")}
+              >
+                <ChartIcon />
+                {res.component?.spec?.displayName || res.meta?.name?.name}
+              </DropdownMenu.Item>
+            {:else}
+              <div class="px-2 py-1.5 text-xs text-fg-secondary">
+                {m.canvas_no_components_yet()}
+              </div>
+            {/each}
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      {/if}
+
+      {#if onAddTabGroup}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          class="flex flex-row gap-x-2 text-fg-primary"
+          onclick={() => onAddTabGroup?.()}
+        >
+          <Layers size="16px" />
+          {m.canvas_tab_group()}
+        </DropdownMenu.Item>
+      {/if}
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

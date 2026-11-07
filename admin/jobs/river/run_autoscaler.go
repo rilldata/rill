@@ -138,6 +138,7 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 			ProdTTLSeconds:       targetProject.ProdTTLSeconds,
 			DevSlots:             targetProject.DevSlots,
 			DevTTLSeconds:        targetProject.DevTTLSeconds,
+			OverrideDiskGB:       targetProject.OverrideDiskGB,
 			Provisioner:          targetProject.Provisioner,
 			Annotations:          targetProject.Annotations,
 		})

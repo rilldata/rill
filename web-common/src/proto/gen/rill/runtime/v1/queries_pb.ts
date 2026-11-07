@@ -258,98 +258,6 @@ export class QueryResponse extends Message<QueryResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.QueryBatchRequest
- */
-export class QueryBatchRequest extends Message<QueryBatchRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.Query queries = 2;
-   */
-  queries: Query[] = [];
-
-  constructor(data?: PartialMessage<QueryBatchRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.QueryBatchRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "queries", kind: "message", T: Query, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchRequest {
-    return new QueryBatchRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryBatchRequest {
-    return new QueryBatchRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryBatchRequest {
-    return new QueryBatchRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: QueryBatchRequest | PlainMessage<QueryBatchRequest> | undefined, b: QueryBatchRequest | PlainMessage<QueryBatchRequest> | undefined): boolean {
-    return proto3.util.equals(QueryBatchRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.QueryBatchResponse
- */
-export class QueryBatchResponse extends Message<QueryBatchResponse> {
-  /**
-   * @generated from field: uint32 index = 1;
-   */
-  index = 0;
-
-  /**
-   * @generated from field: rill.runtime.v1.QueryResult result = 2;
-   */
-  result?: QueryResult;
-
-  /**
-   * @generated from field: string error = 3;
-   */
-  error = "";
-
-  constructor(data?: PartialMessage<QueryBatchResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.QueryBatchResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "index", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "result", kind: "message", T: QueryResult },
-    { no: 3, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchResponse {
-    return new QueryBatchResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryBatchResponse {
-    return new QueryBatchResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryBatchResponse {
-    return new QueryBatchResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: QueryBatchResponse | PlainMessage<QueryBatchResponse> | undefined, b: QueryBatchResponse | PlainMessage<QueryBatchResponse> | undefined): boolean {
-    return proto3.util.equals(QueryBatchResponse, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.ExportRequest
  */
 export class ExportRequest extends Message<ExportRequest> {
@@ -767,182 +675,6 @@ export class Query extends Message<Query> {
 
   static equals(a: Query | PlainMessage<Query> | undefined, b: Query | PlainMessage<Query> | undefined): boolean {
     return proto3.util.equals(Query, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.QueryResult
- */
-export class QueryResult extends Message<QueryResult> {
-  /**
-   * @generated from oneof rill.runtime.v1.QueryResult.result
-   */
-  result: {
-    /**
-     * @generated from field: rill.runtime.v1.ProjectStorageResponse project_storage_response = 22;
-     */
-    value: ProjectStorageResponse;
-    case: "projectStorageResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
-     */
-    value: MetricsViewAggregationResponse;
-    case: "metricsViewAggregationResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewToplistResponse metrics_view_toplist_response = 3;
-     */
-    value: MetricsViewToplistResponse;
-    case: "metricsViewToplistResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewComparisonResponse metrics_view_comparison_response = 4;
-     */
-    value: MetricsViewComparisonResponse;
-    case: "metricsViewComparisonResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
-     */
-    value: MetricsViewTimeSeriesResponse;
-    case: "metricsViewTimeSeriesResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewTotalsResponse metrics_view_totals_response = 6;
-     */
-    value: MetricsViewTotalsResponse;
-    case: "metricsViewTotalsResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MetricsViewRowsResponse metrics_view_rows_response = 7;
-     */
-    value: MetricsViewRowsResponse;
-    case: "metricsViewRowsResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnRollupIntervalResponse column_rollup_interval_response = 8;
-     */
-    value: ColumnRollupIntervalResponse;
-    case: "columnRollupIntervalResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnTopKResponse column_top_k_response = 9;
-     */
-    value: ColumnTopKResponse;
-    case: "columnTopKResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnNullCountResponse column_null_count_response = 10;
-     */
-    value: ColumnNullCountResponse;
-    case: "columnNullCountResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
-     */
-    value: ColumnDescriptiveStatisticsResponse;
-    case: "columnDescriptiveStatisticsResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnTimeGrainResponse column_time_grain_response = 12;
-     */
-    value: ColumnTimeGrainResponse;
-    case: "columnTimeGrainResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
-     */
-    value: ColumnNumericHistogramResponse;
-    case: "columnNumericHistogramResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnRugHistogramResponse column_rug_histogram_response = 14;
-     */
-    value: ColumnRugHistogramResponse;
-    case: "columnRugHistogramResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnTimeRangeResponse column_time_range_response = 15;
-     */
-    value: ColumnTimeRangeResponse;
-    case: "columnTimeRangeResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnCardinalityResponse column_cardinality_response = 16;
-     */
-    value: ColumnCardinalityResponse;
-    case: "columnCardinalityResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ColumnTimeSeriesResponse column_time_series_response = 17;
-     */
-    value: ColumnTimeSeriesResponse;
-    case: "columnTimeSeriesResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.TableCardinalityResponse table_cardinality_response = 18;
-     */
-    value: TableCardinalityResponse;
-    case: "tableCardinalityResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.TableColumnsResponse table_columns_response = 19;
-     */
-    value: TableColumnsResponse;
-    case: "tableColumnsResponse";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.TableRowsResponse table_rows_response = 20;
-     */
-    value: TableRowsResponse;
-    case: "tableRowsResponse";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  constructor(data?: PartialMessage<QueryResult>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.QueryResult";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 22, name: "project_storage_response", kind: "message", T: ProjectStorageResponse, oneof: "result" },
-    { no: 21, name: "metrics_view_aggregation_response", kind: "message", T: MetricsViewAggregationResponse, oneof: "result" },
-    { no: 3, name: "metrics_view_toplist_response", kind: "message", T: MetricsViewToplistResponse, oneof: "result" },
-    { no: 4, name: "metrics_view_comparison_response", kind: "message", T: MetricsViewComparisonResponse, oneof: "result" },
-    { no: 5, name: "metrics_view_time_series_response", kind: "message", T: MetricsViewTimeSeriesResponse, oneof: "result" },
-    { no: 6, name: "metrics_view_totals_response", kind: "message", T: MetricsViewTotalsResponse, oneof: "result" },
-    { no: 7, name: "metrics_view_rows_response", kind: "message", T: MetricsViewRowsResponse, oneof: "result" },
-    { no: 8, name: "column_rollup_interval_response", kind: "message", T: ColumnRollupIntervalResponse, oneof: "result" },
-    { no: 9, name: "column_top_k_response", kind: "message", T: ColumnTopKResponse, oneof: "result" },
-    { no: 10, name: "column_null_count_response", kind: "message", T: ColumnNullCountResponse, oneof: "result" },
-    { no: 11, name: "column_descriptive_statistics_response", kind: "message", T: ColumnDescriptiveStatisticsResponse, oneof: "result" },
-    { no: 12, name: "column_time_grain_response", kind: "message", T: ColumnTimeGrainResponse, oneof: "result" },
-    { no: 13, name: "column_numeric_histogram_response", kind: "message", T: ColumnNumericHistogramResponse, oneof: "result" },
-    { no: 14, name: "column_rug_histogram_response", kind: "message", T: ColumnRugHistogramResponse, oneof: "result" },
-    { no: 15, name: "column_time_range_response", kind: "message", T: ColumnTimeRangeResponse, oneof: "result" },
-    { no: 16, name: "column_cardinality_response", kind: "message", T: ColumnCardinalityResponse, oneof: "result" },
-    { no: 17, name: "column_time_series_response", kind: "message", T: ColumnTimeSeriesResponse, oneof: "result" },
-    { no: 18, name: "table_cardinality_response", kind: "message", T: TableCardinalityResponse, oneof: "result" },
-    { no: 19, name: "table_columns_response", kind: "message", T: TableColumnsResponse, oneof: "result" },
-    { no: 20, name: "table_rows_response", kind: "message", T: TableRowsResponse, oneof: "result" },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryResult {
-    return new QueryResult().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryResult {
-    return new QueryResult().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryResult {
-    return new QueryResult().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: QueryResult | PlainMessage<QueryResult> | undefined, b: QueryResult | PlainMessage<QueryResult> | undefined): boolean {
-    return proto3.util.equals(QueryResult, a, b);
   }
 }
 
@@ -1371,7 +1103,12 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: bool exact = 17;
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+   * That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+   *
+   * @generated from field: bool exact = 17 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -1643,7 +1380,21 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonTime;
     case: "comparisonTime";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression expression = 13;
+     */
+    value: MetricsViewAggregationMeasureComputeExpression;
+    case: "expression";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+   * No-op for measures without an `exact_expression`, which only simple measures define.
+   *
+   * @generated from field: bool exact = 14;
+   */
+  exact = false;
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
@@ -1665,6 +1416,8 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
     { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
+    { no: 13, name: "expression", kind: "message", T: MetricsViewAggregationMeasureComputeExpression, oneof: "compute" },
+    { no: 14, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1971,6 +1724,58 @@ export class MetricsViewAggregationMeasureComputeComparisonTime extends Message<
 
   static equals(a: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined, b: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonTime, a, b);
+  }
+}
+
+/**
+ * Computes an ephemeral measure derived from other measures in the metrics view.
+ * The expression may only contain measure references, numeric literals, NULL,
+ * the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+ * Referenced measures are subject to the metrics view's security policies.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression
+ */
+export class MetricsViewAggregationMeasureComputeExpression extends Message<MetricsViewAggregationMeasureComputeExpression> {
+  /**
+   * Arithmetic expression over existing measure names, e.g. "revenue - cost".
+   *
+   * @generated from field: string expression = 1;
+   */
+  expression = "";
+
+  /**
+   * Optional display name used in exports and result metadata.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeExpression>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined, b: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeExpression, a, b);
   }
 }
 
@@ -2325,9 +2130,12 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   priority = 0;
 
   /**
-   * Optional, defaults to false
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+   * Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
    *
-   * @generated from field: bool exact = 13;
+   * @generated from field: bool exact = 13 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -2781,9 +2589,28 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   metricsViewName = "";
 
   /**
+   * Names of measures in the metrics view to include.
+   * At least one of measure_names or ephemeral_measures must be provided.
+   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
+
+  /**
+   * Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+   * Only the `expression` compute is supported for time series.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure ephemeral_measures = 17;
+   */
+  ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
+
+  /**
+   * Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+   * No-op for measures without an `exact_expression`.
+   *
+   * @generated from field: repeated string exact_measure_names = 18;
+   */
+  exactMeasureNames: string[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2878,6 +2705,8 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
+    { no: 18, name: "exact_measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -3640,6 +3469,14 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   timeRangeSummary?: TimeRangeSummary;
 
   /**
+   * The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+   * Zero if the metrics view does not configure max_query_time_range.
+   *
+   * @generated from field: int64 max_query_time_range_millis = 3;
+   */
+  maxQueryTimeRangeMillis = protoInt64.zero;
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 2;
@@ -3655,6 +3492,7 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
+    { no: 3, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -4084,6 +3922,14 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   timeRanges: TimeRange[] = [];
 
   /**
+   * The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+   * Zero if the metrics view does not configure max_query_time_range.
+   *
+   * @generated from field: int64 max_query_time_range_millis = 5;
+   */
+  maxQueryTimeRangeMillis = protoInt64.zero;
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 4;
@@ -4101,6 +3947,7 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
     { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
     { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
     { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+    { no: 5, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -4541,6 +4388,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   unsafe = false;
 
+  /**
+   * If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+   * Used by the visual editor, which maps canvas elements to their position in the YAML.
+   * Requires permission to edit the canvas.
+   *
+   * @generated from field: bool include_hidden = 5;
+   */
+  includeHidden = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4553,6 +4409,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
     { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "include_hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
@@ -4599,6 +4456,14 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
    */
   referencedMetricsViews: { [key: string]: Resource } = {};
 
+  /**
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * The paths follow the canvas YAML. Only set when include_hidden is true.
+   *
+   * @generated from field: repeated string hidden_paths = 4;
+   */
+  hiddenPaths: string[] = [];
+
   constructor(data?: PartialMessage<ResolveCanvasResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4610,6 +4475,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
     { no: 1, name: "canvas", kind: "message", T: Resource },
     { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
     { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 4, name: "hidden_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {
@@ -4695,6 +4561,13 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
    */
   rendererProperties?: Struct;
 
+  /**
+   * The effective args used for resolution: the component's declared param defaults merged with the provided args.
+   *
+   * @generated from field: google.protobuf.Struct resolved_args = 3;
+   */
+  resolvedArgs?: Struct;
+
   constructor(data?: PartialMessage<ResolveComponentResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4704,6 +4577,7 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 3, name: "resolved_args", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {

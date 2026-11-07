@@ -85,7 +85,7 @@ test.describe("Deploy journey", () => {
               .getAttribute("href"),
           { intervals: Array(15).fill(1_000), timeout: 15_000 },
         )
-        .toMatch(/deploying_dashboard/);
+        .toMatch(/target_dashboard/);
       await rillDevPage.getByRole("button", { name: "Continue" }).click();
 
       // Await for the popped up deploy page after hitting deploy

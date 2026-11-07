@@ -11,6 +11,7 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { onNavigate } from "$app/navigation";
+  import { isNetworkError } from "@rilldata/web-common/lib/errors";
   import { writable } from "svelte/store";
   import {
     type V1MetricsView,
@@ -18,6 +19,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import { getResolveCanvasRequest } from "./selector";
+  import { onDestroy } from "svelte";
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
@@ -26,6 +29,18 @@
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
   export let allowUnvalidatedSpec = false;
+  // When set, relative time ranges are anchored at this time instead of now/latest
+  // (e.g. for scheduled report exports). Applied when the store is resolved,
+  // before any component subscribes to the time interval.
+  export let executionTime: string | undefined = undefined;
+  // Isolated consumers (e.g. the scheduled report dialog and export page) apply canvas
+  // state without page-URL side effects: no redirects that would rewrite the host page's
+  // URL and no last-visited snapshot. Implied when urlStateOverride is set.
+  export let isolated = false;
+  // Canvas state (a URL search string) to apply instead of the page URL.
+  // Used by isolated consumers that render a canvas with stored state (e.g. a report's
+  // captured filters) on a page whose own URL does not carry canvas state.
+  export let urlStateOverride: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -33,15 +48,22 @@
 
   $: ({ url } = $page);
 
-  $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
+  $: existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
         client,
-        { canvas: canvasName, unsafe: allowUnvalidatedSpec },
+        getResolveCanvasRequest(canvasName, allowUnvalidatedSpec),
         {
           query: {
-            retry: 5,
+            // Retry transient network failures only. A PermissionDenied or NotFound is terminal,
+            // and retrying it would leave the user on a spinner for ~18s before the error renders.
+            retry: (failureCount, error) =>
+              isNetworkError(error) && failureCount < 5,
             refetchInterval: (query) => {
               const resource = query?.state?.data;
               if (!resource) return false;
@@ -60,11 +82,20 @@
 
   $: fetchedCanvas = fetchedCanvasQuery ? $fetchedCanvasQuery?.data : undefined;
 
+  // The runtime returns PermissionDenied for a canvas the user's security policies exclude, and the
+  // query can fail for ordinary reasons too. Either way there is no spec coming, so this must be
+  // kept out of isReconciling below, which would otherwise show a build spinner that never resolves.
+  $: queryError = fetchedCanvasQuery ? $fetchedCanvasQuery?.error : undefined;
+
   $: validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
   $: reconcileError = fetchedCanvas?.canvas?.meta?.reconcileError;
 
   $: isReconciling =
-    !existingStore && !validSpec && !reconcileError && !isLoading;
+    !existingStore &&
+    !validSpec &&
+    !reconcileError &&
+    !isLoading &&
+    !queryError;
 
   $: reconcileErrorMessage = !validSpec ? reconcileError : undefined;
 
@@ -77,9 +108,23 @@
 
   $: ready = !!resolvedStore;
 
+  $: effectiveUrl =
+    urlStateOverride !== undefined
+      ? new URL(
+          `${url.pathname}${urlStateOverride ? `?${urlStateOverride}` : ""}`,
+          url.origin,
+        )
+      : url;
+
+  // TODO: This doesnt handle the case where user pressed back button to go to empty url.
+  //       We need to use afterNavigate similar to explore.
   $: if (resolvedStore) {
     resolvedStore.canvasEntity
-      .onUrlChange({ url, projectId })
+      .onUrlChange({
+        url: effectiveUrl,
+        projectId,
+        isolated: isolated || urlStateOverride !== undefined,
+      })
       .catch(console.error);
   }
 
@@ -102,6 +147,8 @@
       },
     });
   }
+
+  let release: (() => void) | undefined = undefined;
 
   onNavigate(() => {
     if (hasBanner) {
@@ -136,6 +183,12 @@
     existingStore: CanvasStore | undefined,
     instanceId: string,
   ) {
+    // Always set (not just when defined): the store is cached and shared across surfaces,
+    // so an undefined executionTime must reset an anchor left behind by a previous consumer
+    // (e.g. the report export page), or the live dashboard would keep showing stale data.
+    existingStore?.canvasEntity.timeManager.executionTimeStore.set(
+      executionTime,
+    );
     if (fetchedCanvas && !isReconciling) {
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
       const refMetricsViews = fetchedCanvas?.referencedMetricsViews;
@@ -157,24 +210,44 @@
           components: fetchedCanvas?.resolvedComponents,
           metricsViews,
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
+          hiddenPaths: fetchedCanvas?.hiddenPaths,
         };
 
-        return setCanvasStore(
+        const newStore = setCanvasStore(
           canvasName,
           instanceId,
           processed,
           client,
           allowUnvalidatedSpec,
         );
+        newStore.canvasEntity.timeManager.executionTimeStore.set(executionTime);
+        newStore.canvasEntity.acquire();
+        release?.(); // release our reference to the previous entity, if any
+        release = newStore.canvasEntity.release;
+        return newStore;
       }
     }
 
+    existingStore?.canvasEntity?.acquire();
+    release?.(); // release our reference to the previous entity, if any
+    release = existingStore?.canvasEntity?.release;
+
     return existingStore;
   }
+
+  onDestroy(() => {
+    release?.();
+  });
 </script>
 
 <svelte:head>
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />
+<slot
+  {ready}
+  {reconcileErrorMessage}
+  {isLoading}
+  {isReconciling}
+  {queryError}
+/>

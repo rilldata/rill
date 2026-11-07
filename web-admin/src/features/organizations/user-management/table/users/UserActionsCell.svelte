@@ -15,6 +15,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let email: string;
   export let role: string;
@@ -26,6 +27,7 @@
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onConvertToMember: () => void;
+  export let onManageGroups: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -62,12 +64,12 @@
       await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: "User removed from organization",
+        message: m.users_removed_from_org(),
       });
     } catch (error) {
       console.error("Error removing user from organization", error);
       eventBus.emit("notification", {
-        message: "Error removing user from organization",
+        message: m.users_error_removing(),
         type: "error",
       });
     }
@@ -82,12 +84,20 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
+      {#if organizationPermissions.manageOrgMembers}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          onclick={onManageGroups}
+        >
+          {m.users_manage_groups()}
+        </DropdownMenu.Item>
+      {/if}
       {#if role === OrgUserRoles.Guest && !pendingAcceptance}
         <DropdownMenu.Item
           class="font-normal flex items-center"
           onclick={onConvertToMember}
         >
-          Convert to member
+          {m.users_convert_to_member()}
         </DropdownMenu.Item>
       {/if}
       <DropdownMenu.Item
@@ -95,7 +105,7 @@
         type="destructive"
         onclick={onRemoveClick}
       >
-        Remove
+        {m.users_remove()}
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

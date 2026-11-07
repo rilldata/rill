@@ -152,6 +152,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		defer cancel()
 	}
 
+	if cfg.DisableModels { // Global disable
+		return runtime.ReconcileResult{Err: errors.New("model execution is paused")}
+	}
+
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
@@ -162,7 +166,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			defer r.execSem.Release(1)
 
 			err = prevManager.Delete(ctx, prevResult)
-			return runtime.ReconcileResult{Err: err}
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 		}
 
 		err := r.clearPartitions(ctx, model)
@@ -186,6 +192,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 				renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
 				if err == nil {
+					// Update prevResult to point to the renamed output, so the existence check later in this function targets the renamed table instead of the old one.
+					prevResult = renameRes
 					err = r.updateStateWithResult(ctx, self, renameRes)
 				}
 				if err != nil {
@@ -208,7 +216,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		// If not staging changes, we need to drop the previous output (if any) before returning
+		// If not staging changes, we need to drop the previous output (if any) before returning.
+		// Note: ChangeMode is intentionally not checked here.
+		// When StageChanges is off, the manual/patch data-preservation guarantee does not apply,
+		// so dropping the previous output on invalid refs is acceptable.
 		if !modelEnv.StageChanges && prevManager != nil {
 			err := r.execSem.Acquire(ctx, 1)
 			if err != nil {
@@ -266,8 +277,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	var exists bool
 	if prevManager != nil {
 		exists, err = prevManager.Exists(ctx, prevResult)
+		// If the check errored, we can't know if the output is still there.
+		// Treating it as missing could trigger a destructive full reset on a transient failure,
+		// so we return the error instead and let the next reconcile retry.
+		// Exception: a manually triggered full refresh is an explicit instruction to rebuild,
+		// so we let it proceed as the escape hatch for a persistently failing check.
 		if err != nil {
-			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
+			if !model.Spec.TriggerFull {
+				// Note: not reusing refreshOn here since it is derived from the last successful refresh and may be in the past,
+				// where it would cause an immediate retrigger loop against a potentially failing connector.
+				retriggerOn, err2 := nextRefreshTime(time.Now(), model.Spec.RefreshSchedule)
+				if err2 != nil {
+					return runtime.ReconcileResult{Err: err2}
+				}
+				return runtime.ReconcileResult{
+					Err:       fmt.Errorf("failed to check if model output exists (trigger a full refresh to rebuild anyway): %w", err),
+					Retrigger: retriggerOn,
+				}
+			}
+			r.C.Logger.Warn("failed to check if model output exists, proceeding because a full refresh was manually triggered", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -294,6 +322,26 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
+		// If the model currently has partition errors, recompute whether that's still the case. The error state may
+		// have cleared without an execution if errored partitions were skipped (skipped partitions are excluded from
+		// the error check). Skipping can't introduce a new error, so we only need to recompute when an error is set.
+		if model.State.PartitionsHaveErrors && model.State.PartitionsModelId != "" {
+			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			partitionsHaveErrors, err := catalog.CheckModelPartitionsHaveErrors(ctx, model.State.PartitionsModelId)
+			release()
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			if !partitionsHaveErrors {
+				model.State.PartitionsHaveErrors = false
+				if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
+					return runtime.ReconcileResult{Err: err}
+				}
+			}
+		}
 		// Show if any partitions errored
 		if model.State.PartitionsHaveErrors && !cfg.ModelPartitionsWarnOnFailure {
 			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
@@ -313,7 +361,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
-	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
+	// This drop is not gated by StageChanges, so in manual/patch mode we never do it automatically:
+	// the old connector's data is left in place for the user to remove manually.
+	// Only reset mode drops the old output when the connector changes.
+	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector &&
+		model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL &&
+		model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH {
 		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
 			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
@@ -395,7 +448,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// If the build failed, clear the state only if we're not staging changes
+	// If the build failed, clear the state only if we're not staging changes.
+	// Note: ChangeMode is intentionally not checked here.
+	// When StageChanges is off, the manual/patch data-preservation guarantee does not apply,
+	// so clearing the state after a failed build is acceptable.
 	if execErr != nil {
 		if !modelEnv.StageChanges {
 			err := r.clearPartitions(ctx, model)
@@ -835,6 +891,31 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
+// updateTriggerFullToNormal replaces the model's spec.TriggerFull with spec.Trigger.
+// It is called once a full refresh has reset the model's output,
+// so that if the reconcile is cancelled, the next reconcile resumes incrementally instead of resetting again.
+func (r *ModelReconciler) updateTriggerFullToNormal(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n, true)
+	if err != nil {
+		return err
+	}
+
+	model := self.GetModel()
+	if model == nil {
+		return fmt.Errorf("not a model")
+	}
+	if !model.Spec.TriggerFull {
+		return nil
+	}
+
+	model.Spec.Trigger = true
+	model.Spec.TriggerFull = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
 // resolveIncrementalState resolves the incremental state of a model using its configured incremental state resolver.
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
@@ -852,6 +933,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
@@ -899,6 +981,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
 		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Args:               map[string]any{"state": incrementalState, "partitions_model_id": mdl.State.PartitionsModelId},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
@@ -1227,9 +1310,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
 		}
 
-		// Update the state so the next invocations will be incremental
+		// Update the state so the next invocations will be incremental.
+		// We also update incrementalState so that templating (e.g. the "incremental" helper) reflects the flip.
 		prevResult = res
 		incrementalRun = true
+		incrementalState["incremental"] = true
 		totalExecDuration.Add(int64(res.ExecDuration))
 		totalPartitionsProcessed.Add(1)
 
@@ -1239,6 +1324,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", self.Meta.Name.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
 		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, syncWarnings, newRowsTotal, newBytesTotal)
+		if err != nil {
+			return "", nil, false, 0, err
+		}
+
+		// The reset is done, so a manual full refresh must not reset again if this reconcile is cancelled.
+		err = r.updateTriggerFullToNormal(ctx, self.Meta.Name)
 		if err != nil {
 			return "", nil, false, 0, err
 		}
@@ -1363,7 +1454,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
-	r.C.Logger.Debug("Executing model partition", logArgs...)
+	r.C.Logger.Info("Executing model partition", logArgs...)
 	defer func() { r.C.Logger.Info("Executed model partition", logArgs...) }()
 
 	// Execute the partition.
@@ -1982,6 +2073,7 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
 		ResolverProperties: test.ResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 		Args:               map[string]any{"limit": 1},
 	})

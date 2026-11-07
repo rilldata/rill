@@ -45,11 +45,6 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org.BillingCustomerID = bc.ID
 
-	// Register credit-balance alerts on the customer; safe to call before any subscription / credit grant exists.
-	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
-		return nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
-	}
-
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
@@ -60,12 +55,14 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -157,10 +154,6 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		}
 	}
 
-	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
-		return nil, nil, fmt.Errorf("failed to register credit balance alerts: %w", err)
-	}
-
 	// update billing and payment customer id
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -172,12 +165,14 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -236,12 +231,14 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
+			DefaultProvisioner:                  org.DefaultProvisioner,
 			QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 			QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
 			QuotaSlotsTotal:                     biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
 			QuotaSlotsPerDeployment:             biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 			QuotaOutstandingInvites:             biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 			QuotaStorageLimitBytesPerDeployment: biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+			QuotaSeats:                          biggerOfInt(sub.Plan.Quotas.NumSeats, org.QuotaSeats),
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
@@ -263,6 +260,11 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 	plan, err := s.Biller.GetPlanByType(ctx, billing.FreePlanType)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get credit trial plan: %w", err)
+	}
+
+	// Register the credit-balance alerts on the customer.
+	if err := s.Biller.CreateCustomerCreditAlerts(ctx, org.BillingCustomerID, billing.CreditsCurrency, billing.CreditTrialLowBalanceThreshold); err != nil {
+		return nil, nil, fmt.Errorf("failed to register customer credit alerts: %w", err)
 	}
 
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
@@ -326,12 +328,14 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
 		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -430,12 +434,14 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
 		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -506,7 +512,7 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     orgID,
 			Type:      database.BillingIssueTypeNeverSubscribed,
-			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			Metadata:  &database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: creationTime,
 		})
 		if err != nil {

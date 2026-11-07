@@ -12,6 +12,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
   export let exploreName: string;
@@ -20,6 +21,8 @@
 
   let priorRange: DashboardTimeControls | null = null;
   let button: HTMLButtonElement;
+
+  const explainEnabled = measureSelection.getEnabledStore();
 
   const StateManagers = getStateManagers();
   const {
@@ -58,7 +61,8 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
-    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
+    const isExplainKey =
+      $explainEnabled && e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
@@ -179,7 +183,7 @@
       e.stopPropagation();
       handleClick();
     }}
-    aria-label={priorRange ? "Undo zoom" : "Zoom"}
+    aria-label={priorRange ? m.chart_undo_zoom() : m.chart_zoom()}
   >
     <div class="content-wrapper">
       <span class="flex-none text-icon-muted">
@@ -192,9 +196,9 @@
 
       <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
         {#if priorRange}
-          Undo Zoom (<MetaKey plusses={false} action="Z" />)
+          {m.chart_undo_zoom_label()} (<MetaKey plusses={false} action="Z" />)
         {:else}
-          Zoom (Z)
+          {m.chart_zoom_label()} (Z)
         {/if}
       </span>
     </div>

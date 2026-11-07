@@ -19,6 +19,7 @@ import {
   PREVIEW_ALLOWED_PREFIXES,
 } from "./route-constants";
 import { Settings } from "luxon";
+import { RuntimeFileIO } from "@rilldata/web-common/features/entity-management/file-io.ts";
 
 Settings.defaultLocale = "en";
 
@@ -72,7 +73,7 @@ export async function load({ url, depends, untrack, route }) {
 
   // Set the client on fileArtifacts early so child page load functions
   // (e.g., files/[...file]/+page.ts) can access it before components render.
-  fileArtifacts.setClient(client);
+  fileArtifacts.setClient(client, new RuntimeFileIO());
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),

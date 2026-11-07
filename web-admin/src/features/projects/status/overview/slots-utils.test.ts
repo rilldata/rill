@@ -20,8 +20,8 @@ describe("slots-utils", () => {
     expect(DEFAULT_MANAGED_SLOTS).toBe(2);
   });
 
-  it("self-managed default is 4 slots", () => {
-    expect(DEFAULT_SELF_MANAGED_SLOTS).toBe(4);
+  it("self-managed default is 2 slots", () => {
+    expect(DEFAULT_SELF_MANAGED_SLOTS).toBe(2);
   });
 
   it("all slot values are at least managed minimum", () => {

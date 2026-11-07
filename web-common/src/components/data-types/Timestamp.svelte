@@ -14,8 +14,7 @@
 <Base
   {truncate}
   {isNull}
-  classes="ui-copy-number font-semibold {customStyle} text-fg-primary {inTable &&
-    'text-left'}"
+  classes="ui-copy-number font-semibold {customStyle} {inTable && 'text-left'}"
   {color}
 >
   <slot name="value">

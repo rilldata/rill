@@ -169,12 +169,13 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
-	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
-	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
+	// SyncReplicas controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster.
+	// This ensures all inserted parts are visible across replicas before the partition swap. Defaults to true.
+	SyncReplicas bool `mapstructure:"sync_replicas"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
@@ -220,7 +221,7 @@ func (c *configProperties) validate() error {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -228,6 +229,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	// Parse config properties
 	conf := &configProperties{
 		CanScaleToZero: true,
+		SyncReplicas:   true,
 		MaxOpenConns:   20,
 		MaxIdleConns:   5,
 	}
@@ -294,7 +296,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		if err != nil {
 			return nil, err
 		}
-		opts, err = embed.start()
+		opts, err = embed.start(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +305,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	}
 
 	// Open the main database connection
-	db, err := openHandle(instanceID, conf, opts, logger)
+	db, err := openHandle(ctx, instanceID, conf, opts, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -315,13 +317,28 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
-		writeDB, err = openHandle(instanceID, conf, writeOpts, logger)
+		writeDB, err = openHandle(ctx, instanceID, conf, writeOpts, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	// It runs before the other statements below because they need to know the result.
+	// The probe itself is safe to run on the raw ctx:
+	// if the ctx has a deadline, clickhouse-go derives a `max_execution_time` setting from it,
+	// which a readonly server rejects with the same error we're matching on here.
+	supportSettings := true
+	if _, err := db.ExecContext(ctx, "SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
-	row := db.QueryRow(`
+	row := db.QueryRowContext(settingsCtx(ctx, supportSettings), `
         WITH
             splitByChar('.', version()) AS parts,
             toInt32(parts[1]) AS major,
@@ -335,17 +352,6 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	}
 	if !isSupported {
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
-	}
-
-	// Using the harmless, non–side-effecting setting
-	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
-	// whether the cluster mode supports modifying query settings. This setting
-	// has no practical use for our purposes.
-	supportSettings := true
-	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
-		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
-			supportSettings = false
-		}
 	}
 
 	// Compute OLAP queue size
@@ -362,7 +368,8 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		olapSemSize = 1
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
 		readDB:          db,
 		writeDB:         writeDB,
@@ -372,7 +379,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		instanceID:      instanceID,
 		connectorName:   connectorName,
 		supportSettings: supportSettings,
-		ctx:             ctx,
+		ctx:             bgctx,
 		cancel:          cancel,
 		metaSem:         semaphore.NewWeighted(1),
 		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
@@ -382,6 +389,10 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 
 	c.used()
 	go c.periodicallyEmitStats()
+	if conf.Mode == modeReadWrite {
+		// Only readwrite connections create temporary tables, and dropping them needs DDL privileges.
+		go c.periodicallyDropStaleTempTables()
+	}
 
 	return c, nil
 }
@@ -577,6 +588,11 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -611,11 +627,8 @@ func (c *Connection) periodicallyEmitStats() {
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
-	// Cache invalidation ticker to reset billing table existence cache
-	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
-	defer cacheInvalidationTicker.Stop()
-
 	skipEstimatedSizeEmission := false
+	skipRCUEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
@@ -627,16 +640,14 @@ func (c *Connection) periodicallyEmitStats() {
 			// Emit the estimated size of the database.
 			size, err := c.estimateSize(c.ctx)
 			if err == nil {
-				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size), attribute.Bool("managed_clickhouse", c.config.Managed))
 			} else if !errors.Is(err, c.ctx.Err()) {
 				lvl := zap.WarnLevel
 				if c.config.Managed {
 					lvl = zap.ErrorLevel
 				}
-
-				var chErr *clickhouse.Exception
-				if errors.As(err, &chErr) && chErr.Code == 497 {
-					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+				if isAccessDeniedErr(err) {
+					// Downgrade to debug level and skip future emissions.
 					lvl = zap.DebugLevel
 					skipEstimatedSizeEmission = true
 				}
@@ -657,11 +668,21 @@ func (c *Connection) periodicallyEmitStats() {
 				}
 			}
 
+			if skipRCUEmission {
+				continue
+			}
+
 			// Check if billing.events table exists (with caching).
 			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
-					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
+					lvl := zap.WarnLevel
+					if isAccessDeniedErr(err) {
+						// Downgrade to debug level and skip future emissions.
+						lvl = zap.DebugLevel
+						skipRCUEmission = true
+					}
+					c.logger.Log(lvl, "failed to check if billing table exists", zap.Error(err))
 				}
 				continue
 			}
@@ -681,39 +702,131 @@ func (c *Connection) periodicallyEmitStats() {
 			} else if !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
-		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache and skip size emission flag.
-			c.billingTableExists = nil
-			skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}
 	}
 }
 
+// periodicallyDropStaleTempTables drops the temporary tables that model executions left behind, e.g. because the runtime restarted while they ran.
+// It sweeps once immediately and then at most hourly until the connection is closed.
+func (c *Connection) periodicallyDropStaleTempTables() {
+	// The ticker is more frequent than the sweeps, so that a sweep that is due runs as soon as a database that can scale to zero is in use again.
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	var lastSweep time.Time
+	for {
+		// Skip while the database hasn't been used recently and may be scaled to zero, so that the sweep does not wake it up.
+		if time.Since(lastSweep) >= time.Hour && (!c.config.CanScaleToZero || time.Since(c.lastUsedOn()) < 2*time.Minute) {
+			lastSweep = time.Now()
+			err := c.dropStaleTempTables(c.ctx, tempTableTTL)
+			if err != nil && !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("clickhouse: failed to drop stale temp tables", zap.Error(err))
+			}
+		}
+
+		select {
+		case <-ticker.C:
+		case <-c.ctx.Done():
+			return
+		}
+	}
+}
+
+// accessibleTables returns the list of tables that are accessible to the current user.
+func (c *Connection) accessibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
+	rows, err := c.readDB.QueryxContext(ctx, `
+		SELECT
+			database,
+			name
+		FROM system.tables
+		WHERE is_temporary = 0
+		  AND lower(database) NOT IN ('information_schema', 'system')
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tables := make(map[tableKey]struct{})
+	for rows.Next() {
+		var db, table string
+		if err := rows.Scan(&db, &table); err != nil {
+			return nil, err
+		}
+
+		tables[tableKey{
+			database: db,
+			table:    table,
+		}] = struct{}{}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tables, nil
+}
+
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
-	var size int64
-	var query string
 	if c.config.Cluster == "" {
-		query = `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
-	} else {
-		query = fmt.Sprintf(`SELECT sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`, c.config.Cluster)
+		var size int64
+		query := `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
+		err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+		if err != nil {
+			return 0, err
+		}
+		return size, nil
 	}
-	err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+	// Workaround ClickHouse metadata leak through cluster(..., system.parts).
+	visibleTables, err := c.accessibleTables(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return size, nil
+	query := fmt.Sprintf(`SELECT database,table,sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var total int64
+	for rows.Next() {
+		var db, table string
+		var size int64
+		if err := rows.Scan(&db, &table, &size); err != nil {
+			return 0, err
+		}
+		if _, ok := visibleTables[tableKey{database: db, table: table}]; ok {
+			total += size
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
 
 // estimatePerTableSize returns the estimated average disk size per table in bytes.
 func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
-	var query string
+	var (
+		query         string
+		visibleTables map[tableKey]struct{}
+		err           error
+	)
+
 	if c.config.Cluster == "" {
 		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
 	} else {
+		visibleTables, err = c.accessibleTables(ctx)
+		if err != nil {
+			return nil, err
+		}
 		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
 	}
 	rows, err := c.readDB.QueryxContext(ctx, query)
@@ -727,6 +840,12 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 		var ts tableSize
 		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		// Only needed for cluster() workaround.
+		if visibleTables != nil {
+			if _, ok := visibleTables[tableKey{database: ts.database, table: ts.table}]; !ok {
+				continue
+			}
 		}
 		tableSizes = append(tableSizes, &ts)
 	}
@@ -779,14 +898,14 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 			return false, fmt.Errorf("failed to check if billing table exists: %w", err)
 		}
 	} else {
+		// Query through view so ClickHouse applies normal SELECT access checks on system.tables.
+		// Targeting system.tables directly requires SHOW COLUMNS on system.tables starting in ClickHouse 26.3.
 		err := c.readDB.QueryRowxContext(ctx, fmt.Sprintf(`
 				SELECT countIf(found) = count() AS exists_everywhere, countIf(found) > 0 AS exists_somewhere
-				FROM
-				(
-					SELECT hostName() AS host, max((database = 'billing') AND (name = 'events')) AS found
-					FROM clusterAllReplicas('%s', system.tables)
-					GROUP BY host
-				)`, cluster)).Scan(&existsEverywhere, &existsSomewhere)
+				FROM clusterAllReplicas(%s, view(
+					SELECT max((database = 'billing') AND (name = 'events')) AS found
+					FROM system.tables
+				))`, safeSQLString(cluster))).Scan(&existsEverywhere, &existsSomewhere)
 		if err != nil {
 			return false, fmt.Errorf("failed to check if billing table exists in cluster %q: %w", cluster, err)
 		}
@@ -798,7 +917,7 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 	return existsEverywhere, nil
 }
 
-func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Options, logger *zap.Logger) (*sqlx.DB, error) {
+func openHandle(ctx context.Context, instanceID string, conf *configProperties, opts *clickhouse.Options, logger *zap.Logger) (*sqlx.DB, error) {
 	// Apply certain options from conf that are not set in the DSN.
 	if conf.MaxIdleConns != 0 {
 		opts.MaxIdleConns = conf.MaxIdleConns
@@ -838,7 +957,8 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
 	if conf.Host != "" && conf.Port != 0 {
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
-		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
+		dialer := net.Dialer{Timeout: 10 * time.Second}
+		conn, err := dialer.DialContext(ctx, "tcp", target)
 		if err != nil {
 			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
 		}
@@ -850,7 +970,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-	err := db.Ping()
+	err := db.PingContext(ctx)
 	if err != nil {
 		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
 		if strings.Contains(err.Error(), "EOF") ||
@@ -868,7 +988,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		// may be the port is http, also try with http protocol if DSN is not provided
 		opts.Protocol = clickhouse.HTTP
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-		err := db.Ping()
+		err := db.PingContext(ctx)
 		if err != nil {
 			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
 			if strings.Contains(err.Error(), "EOF") ||
@@ -895,6 +1015,25 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	return db, nil
 }
 
+// isAccessDeniedErr reports whether err looks like a ClickHouse "Not enough privileges" (code 497) error.
+// It matches on the error text to catch cases where the error is not a typed *clickhouse.Exception,
+// e.g. when it is returned as an "[HTTP 500]" response body over the HTTP protocol.
+func isAccessDeniedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var chErr *clickhouse.Exception
+	if errors.As(err, &chErr) && chErr.Code == 497 {
+		return true
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Not enough privileges") || strings.Contains(msg, "ACCESS_DENIED")
+}
+
+type tableKey struct {
+	database string
+	table    string
+}
 type tableSize struct {
 	database string
 	table    string

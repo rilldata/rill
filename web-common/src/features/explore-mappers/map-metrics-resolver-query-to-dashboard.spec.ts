@@ -5,8 +5,9 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
+  AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
-  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -19,6 +20,7 @@ import {
 } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
@@ -35,11 +37,13 @@ import type {
   Schema as MetricsResolverQuery,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { describe, expect, it } from "vitest";
+import { getResolvedTimeRangesFromMessage } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 
 describe("mapMetricsResolverQueryToDashboard", () => {
   const TestCases: {
     title: string;
     query: MetricsResolverQuery;
+    resolvedTimeRanges?: ReturnType<typeof getResolvedTimeRangesFromMessage>;
     expectedPartialExplore: Partial<ExploreState>;
   }[] = [
     {
@@ -85,6 +89,47 @@ describe("mapMetricsResolverQueryToDashboard", () => {
     },
 
     {
+      title:
+        "rilltime expressions in time range and comparison time range are resolved from resolvedTimeRanges",
+      query: {
+        time_range: { expression: "rill-PDC" },
+        comparison_time_range: { expression: "rill-PPC" },
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+      },
+      resolvedTimeRanges: {
+        resolvedTimeRange: {
+          start: "2026-05-25T00:00:00.000Z",
+          end: "2026-05-26T00:00:00.000Z",
+        },
+        resolvedComparisonTimeRange: {
+          start: "2026-05-24T00:00:00.000Z",
+          end: "2026-05-25T00:00:00.000Z",
+        },
+      },
+      expectedPartialExplore: {
+        activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+        selectedTimeRange: {
+          name: TimeRangePreset.CUSTOM,
+          start: new Date("2026-05-25T00:00:00.000Z"),
+          end: new Date("2026-05-26T00:00:00.000Z"),
+        },
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.CUSTOM,
+          start: new Date("2026-05-24T00:00:00.000Z"),
+          end: new Date("2026-05-25T00:00:00.000Z"),
+        },
+        showTimeComparison: true,
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
+        selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+    },
+
+    {
       title: "single measure and dimensions with additional time dimension",
       query: {
         measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
@@ -123,6 +168,7 @@ describe("mapMetricsResolverQueryToDashboard", () => {
           chartType: TDDChart.DEFAULT,
           pinIndex: -1,
         },
+        adaptiveTimeGrain: false,
       },
     },
 
@@ -177,6 +223,83 @@ describe("mapMetricsResolverQueryToDashboard", () => {
           columnPage: 0,
           rowPage: 0,
           enableComparison: false,
+          showTotalsColumn: true,
+          showTotalsRow: true,
+          tableMode: "flat",
+          activeCell: null,
+        },
+      },
+    },
+    {
+      title: "single measure and 2 dimensions one time dimension",
+      query: {
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        dimensions: [
+          { name: AD_BIDS_PUBLISHER_DIMENSION },
+          { name: AD_BIDS_DOMAIN_DIMENSION },
+          {
+            name: AD_BIDS_TIMESTAMP_DIMENSION,
+            compute: {
+              time_floor: {
+                dimension: AD_BIDS_TIMESTAMP_DIMENSION,
+                grain: "day",
+              },
+            },
+          },
+        ],
+        sort: [
+          { desc: true, name: AD_BIDS_TIMESTAMP_DIMENSION },
+          { name: AD_BIDS_IMPRESSIONS_MEASURE },
+        ],
+      },
+      expectedPartialExplore: {
+        activePage: DashboardState_ActivePage.PIVOT,
+        selectedTimeRange: {
+          name: TimeRangePreset.ALL_TIME,
+        } as DashboardTimeControls,
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: false,
+
+        pivot: {
+          rows: [],
+          columns: [
+            {
+              id: "TIME_GRAIN_DAY",
+              title: "day",
+              type: PivotChipType.Time,
+            },
+            {
+              id: AD_BIDS_PUBLISHER_DIMENSION,
+              title: AD_BIDS_PUBLISHER_DIMENSION,
+              type: PivotChipType.Dimension,
+            },
+            {
+              id: AD_BIDS_DOMAIN_DIMENSION,
+              title: AD_BIDS_DOMAIN_DIMENSION,
+              type: PivotChipType.Dimension,
+            },
+            {
+              id: AD_BIDS_IMPRESSIONS_MEASURE,
+              title: AD_BIDS_IMPRESSIONS_MEASURE,
+              type: PivotChipType.Measure,
+            },
+          ],
+          sorting: [
+            { desc: true, id: "timestamp_rill_TIME_GRAIN_DAY" },
+            { desc: false, id: AD_BIDS_IMPRESSIONS_MEASURE },
+          ],
+          expanded: {},
+          columnPage: 0,
+          rowPage: 0,
+          enableComparison: false,
+          showTotalsColumn: true,
+          showTotalsRow: true,
           tableMode: "flat",
           activeCell: null,
         },
@@ -243,13 +366,99 @@ describe("mapMetricsResolverQueryToDashboard", () => {
     },
   ];
 
-  for (const { title, query, expectedPartialExplore } of TestCases) {
+  describe("unsupported sort fields", () => {
+    it.each(["gap", "missing", AD_BIDS_BID_PRICE_MEASURE])(
+      "drops %s sorting from the pivot while preserving valid sorts",
+      (name) => {
+        const state = mapMetricsResolverQueryToDashboard(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          {
+            ...AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+            measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+          },
+          {
+            query: {
+              measures: [
+                { name: AD_BIDS_IMPRESSIONS_MEASURE },
+                {
+                  name: "gap",
+                  compute: {
+                    expression: { expression: "impressions - bid_price" },
+                  },
+                },
+                { name: AD_BIDS_BID_PRICE_MEASURE },
+              ],
+              dimensions: [
+                { name: AD_BIDS_PUBLISHER_DIMENSION },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+              ],
+              sort: [
+                { name, desc: true },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+                { name: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+              ],
+            },
+          },
+        );
+
+        expect(state.pivot?.sorting).toEqual([
+          { id: AD_BIDS_DOMAIN_DIMENSION, desc: false },
+          { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+        ]);
+        expect(state.leaderboardSortByMeasureName).toBeUndefined();
+      },
+    );
+
+    it.each([1, 2])(
+      "omits a calculated sort field with %i dimensions",
+      (dimensionCount) => {
+        const state = mapMetricsResolverQueryToDashboard(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+          {
+            query: {
+              measures: [
+                { name: AD_BIDS_IMPRESSIONS_MEASURE },
+                {
+                  name: "gap",
+                  compute: {
+                    expression: { expression: "impressions - bid_price" },
+                  },
+                },
+              ],
+              dimensions: [
+                { name: AD_BIDS_PUBLISHER_DIMENSION },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+              ].slice(0, dimensionCount),
+              sort: [{ name: "gap", desc: true }],
+            },
+          },
+        );
+
+        expect(state.visibleMeasures).toEqual([AD_BIDS_IMPRESSIONS_MEASURE]);
+        expect(state.leaderboardSortByMeasureName).toBeUndefined();
+        if (dimensionCount === 2) {
+          expect(state.pivot?.sorting).toEqual([]);
+        }
+      },
+    );
+  });
+
+  for (const {
+    title,
+    query,
+    resolvedTimeRanges,
+    expectedPartialExplore,
+  } of TestCases) {
     it(title, () => {
       expect(
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-          query,
+          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+          {
+            query,
+            ...(resolvedTimeRanges ?? {}),
+          },
         ),
       ).toEqual(expectedPartialExplore);
     });
@@ -308,6 +517,25 @@ describe("mapResolverExpressionToV1Expression", () => {
       },
       expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
         "Facebook",
+      ]),
+    },
+    {
+      title: "falsy scalar values are kept",
+      expression: {
+        cond: {
+          op: "in",
+          exprs: [
+            { name: AD_BIDS_PUBLISHER_DIMENSION },
+            { val: 0 as any },
+            { val: false as any },
+            { val: "" as any },
+          ],
+        },
+      },
+      expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+        0,
+        false,
+        "",
       ]),
     },
   ];

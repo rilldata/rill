@@ -2,6 +2,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
+  import CanvasComponentPngDialog from "./export/CanvasComponentPngDialog.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
 </script>
@@ -9,16 +10,24 @@
 <script lang="ts">
   import { get } from "svelte/store";
 
-  let observer: IntersectionObserver;
+  // When false (the PDF export render), skip lazy-loading entirely: render
+  // immediately and never touch the shared `visible` latch. Data still fetches
+  // via the component's `dataEnabled` store (visible || exportMode), so the live
+  // dashboard's lazy-load state is left untouched during export.
+  export let lazy = true;
+
+  let observer: IntersectionObserver | undefined;
 
   let mounted = false;
 
   onMount(() => {
+    mounted = true;
+    if (!lazy) return;
     observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           component.visible.set(true);
-          observer.unobserve(container);
+          observer?.unobserve(container);
         }
       },
       {
@@ -27,14 +36,13 @@
         threshold: 0,
       },
     );
-    mounted = true;
     observer.observe(container);
   });
 
   export let component: BaseCanvasComponent;
 
   let prevComponent: BaseCanvasComponent | undefined;
-  $: if (mounted && component !== prevComponent) {
+  $: if (mounted && observer && component !== prevComponent) {
     const wasVisible = prevComponent ? get(prevComponent.visible) : false;
     prevComponent = component;
     if (wasVisible) {
@@ -45,6 +53,7 @@
     }
   }
   export let selected = false;
+  export let active = false;
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
@@ -52,9 +61,21 @@
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
 
   let open = false;
   let container: HTMLElement;
+
+  // Mounted only while open: the dialog renders the component a second time,
+  // which every card on the canvas must not pay for.
+  let pngDialogOpen = false;
+  let pngSize = { width: 0, height: 0 };
+
+  function openPngDialog() {
+    const { width, height } = container.getBoundingClientRect();
+    pngSize = { width, height };
+    pngDialogOpen = true;
+  }
 
   $: ({ id: componentName, type: renderer } = component);
 
@@ -66,6 +87,7 @@
   role="presentation"
   id={componentName}
   class:selected
+  class:active
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
@@ -77,6 +99,8 @@
     {component}
     {onDelete}
     {onDuplicate}
+    {onConvertToTabGroup}
+    onDownloadPng={openPngDialog}
     {editable}
     bind:dropdownOpen={open}
     {navigationEnabled}
@@ -97,6 +121,15 @@
   </div>
 </article>
 
+{#if pngDialogOpen}
+  <CanvasComponentPngDialog
+    bind:open={pngDialogOpen}
+    {component}
+    width={pngSize.width}
+    height={pngSize.height}
+  />
+{/if}
+
 <style lang="postcss">
   .component-card.editable:hover {
     @apply shadow-md outline;
@@ -107,6 +140,12 @@
   }
 
   .selected {
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+
+    outline-style: solid !important;
+  }
+
+  .active {
     @apply shadow-md outline-primary-400 outline-[1.5px];
 
     outline-style: solid !important;

@@ -23,37 +23,46 @@ import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import type { Transform } from "vega-lite/types_unstable/transform.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "../orientation";
 import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarNormalizedSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and transposed at the end when
+  // the measure sits on x.
+  const horizontal = isHorizontal(chartConfig);
+  const config = toVerticalSpec(chartConfig);
+
   const spec = createMultiLayerBaseSpec();
   const baseEncoding = createEncoding(config, data);
   const vegaConfig = createConfigWithLegend(config, config.color);
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
-  if (baseEncoding.y && config.y?.field) {
-    const yFieldRaw = config.y.field;
-
+  if (baseEncoding.y && yField) {
     baseEncoding.y = {
       ...baseEncoding.y,
       stack: "normalize",
       scale: {
         zero: false,
-        // Add padding at the top for hover space since normalized charts go to 100%
+        // Add padding at the end of the measure axis for hover space since normalized charts go to 100%
         domainMax: 1.1,
       },
       axis: {
-        ...(!config.y.showAxisTitle && { title: null }),
+        ...(!config.y?.showAxisTitle && { title: null }),
         format: ".0%",
       },
     };
@@ -61,7 +70,7 @@ export function generateVLStackedBarNormalizedSpec(
     // Add a transform to calculate the percentage
     // When in comparison mode, include the measure_key in groupby
     // so each period (current vs comparison) totals to 100% independently
-    const groupbyFields = config.x?.field ? [config.x.field] : [];
+    const groupbyFields = config.x?.field ? [sanitizedXField] : [];
     if (hasComparison) {
       groupbyFields.push(MeasureKeyField);
     }
@@ -71,14 +80,14 @@ export function generateVLStackedBarNormalizedSpec(
         joinaggregate: [
           {
             op: "sum",
-            field: yFieldRaw,
+            field: sanitizedYField,
             as: "total",
           },
         ],
         groupby: groupbyFields,
       },
       {
-        calculate: `datum['${yFieldRaw}'] / datum.total`,
+        calculate: `datum['${yField}'] / datum.total`,
         as: "percentage",
       },
     ];
@@ -108,7 +117,7 @@ export function generateVLStackedBarNormalizedSpec(
     );
     baseEncoding.tooltip = tooltipValues
       .map((t: TooltipValue) => {
-        if (t.field === yField) {
+        if (t.field === sanitizedYField) {
           return [
             {
               ...t,
@@ -132,12 +141,16 @@ export function generateVLStackedBarNormalizedSpec(
     data,
   );
 
+  // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+    x: {
+      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      bandPosition: 0,
+    },
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: config.x?.field,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: baseEncoding.tooltip as TooltipValue[],
@@ -146,8 +159,8 @@ export function generateVLStackedBarNormalizedSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     pivot: createVegaTransformPivotConfig(
-      xField,
-      yField,
+      sanitizedXField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,
@@ -179,8 +192,10 @@ export function generateVLStackedBarNormalizedSpec(
 
   spec.layer = layers;
 
-  return {
+  const result: VisualizationSpec = {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
   };
+
+  return horizontal ? transposeCartesianSpec(result) : result;
 }

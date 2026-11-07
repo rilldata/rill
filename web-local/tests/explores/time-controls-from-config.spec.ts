@@ -12,7 +12,6 @@ test.describe("time controls settings from explore preset", () => {
     test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -88,7 +87,6 @@ test.describe("time controls settings from explore preset", () => {
     test.setTimeout(45_000);
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -137,7 +135,6 @@ test.describe("time controls settings from explore preset", () => {
   test("preset time_ranges", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 

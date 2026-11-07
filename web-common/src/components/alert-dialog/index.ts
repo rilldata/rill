@@ -10,6 +10,7 @@ import Overlay from "web-common/src/components/alert-dialog/alert-dialog-overlay
 import Content from "web-common/src/components/alert-dialog/alert-dialog-content.svelte";
 import Description from "web-common/src/components/alert-dialog/alert-dialog-description.svelte";
 import Trigger from "web-common/src/components/alert-dialog/alert-dialog-trigger.svelte";
+import Confirmation from "web-common/src/components/alert-dialog/alert-dialog-confirmation.svelte";
 
 const Root = AlertDialogPrimitive.Root;
 
@@ -25,6 +26,7 @@ export {
   Overlay,
   Content,
   Description,
+  Confirmation,
   //
   Root as AlertDialog,
   Title as AlertDialogTitle,
@@ -37,4 +39,5 @@ export {
   Overlay as AlertDialogOverlay,
   Content as AlertDialogContent,
   Description as AlertDialogDescription,
+  Confirmation as AlertDialogConfirmation,
 };

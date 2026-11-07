@@ -192,6 +192,12 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	// Create unique host
 	host := p.getHost(provisionID)
 
+	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
+	storageBytes := 40 * int64(args.Slots) * int64(datasize.GB)
+	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
+		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
+	}
+
 	// Define template data
 	data := &TemplateData{
 		ImageTag:     version,
@@ -200,7 +206,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * args.Slots,
 		MemoryGB:     4 * args.Slots,
-		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
+		StorageBytes: storageBytes,
 		Slots:        args.Slots,
 		Names:        names,
 		Annotations:  opts.Annotations,
@@ -306,6 +312,56 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	}, nil
 }
 
+func (p *KubernetesProvisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Parse the existing state
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get Kubernetes resource names
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
+
+	// Common delete options
+	delPolicy := metav1.DeletePropagationForeground
+	delOptions := metav1.DeleteOptions{
+		PropagationPolicy: &delPolicy,
+	}
+
+	// Delete everything except the PVC.
+	err1 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.HTTPIngress, delOptions)
+	err2 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.GRPCIngress, delOptions)
+	err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Delete(ctx, names.Service, delOptions)
+	err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Delete(ctx, names.Deployment, delOptions)
+
+	// We ignore not-found errors for idempotency.
+	errs := []error{err1, err2, err3, err4}
+	for i := range errs {
+		if k8serrs.IsNotFound(errs[i]) {
+			errs[i] = nil
+		}
+	}
+	if err := multierr.Combine(errs...); err != nil {
+		return nil, err
+	}
+
+	// Wait for the resources to be removed, so a subsequent Provision doesn't patch them while they are terminating.
+	err = p.awaitDeleted(ctx, names, false)
+	if err != nil {
+		return nil, err
+	}
+
+	state.Hibernated = true
+
+	return &provisioner.Resource{
+		ID:     r.ID,
+		Type:   r.Type,
+		State:  state.AsMap(),
+		Config: r.Config,
+	}, nil
+}
+
 func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
 	provisionID := getProvisionID(r.ID)
@@ -340,8 +396,43 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.
 		}
 	}
 
-	// This returns 'nil' if all errors are 'nil'
-	return multierr.Combine(errs...)
+	if err := multierr.Combine(errs...); err != nil {
+		return err
+	}
+
+	// Wait for the resources to be removed, so resources with the same names can be re-created afterwards.
+	return p.awaitDeleted(ctx, names, true)
+}
+
+// awaitDeleted waits until the Kubernetes resources with the given names no longer exist.
+// The deletes in Hibernate and Deprovision only mark resources for deletion.
+// With foreground propagation, they are removed asynchronously once their dependents are gone (and, for the PVC, once no pod uses it).
+// Callers may re-create resources with the same names right afterwards (e.g. when restarting a deployment, or switching it to a provisioner in the same namespace).
+// Without waiting, that would patch the terminating resources instead of creating new ones, and the new runtime would never become ready.
+func (p *KubernetesProvisioner) awaitDeleted(ctx context.Context, names ResourceNames, includePVC bool) error {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Duration(p.Spec.TimeoutSeconds)*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err1 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Get(ctx, names.HTTPIngress, metav1.GetOptions{})
+		_, err2 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Get(ctx, names.GRPCIngress, metav1.GetOptions{})
+		_, err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Get(ctx, names.Service, metav1.GetOptions{})
+		_, err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
+		errs := []error{err1, err2, err3, err4}
+		if includePVC {
+			_, err5 := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Get(ctx, names.PVC, metav1.GetOptions{})
+			errs = append(errs, err5)
+		}
+
+		for _, err := range errs {
+			// Keep polling if the resource still exists or the lookup failed.
+			if !k8serrs.IsNotFound(err) {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed waiting for Kubernetes resources to be deleted: %w", err)
+	}
+	return nil
 }
 
 func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {
@@ -392,9 +483,15 @@ func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisione
 		return nil, err
 	}
 
-	// Get the Kubernetes deployment
 	provisionID := getProvisionID(r.ID)
 	names := p.getResourceNames(provisionID)
+
+	// When hibernated, we skip the check.
+	if state.Hibernated {
+		return r, nil
+	}
+
+	// Get the Kubernetes deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -444,8 +541,9 @@ func getProvisionID(resourceID string) string {
 
 // runtimeState describes the Kubernetes provisioner's state for a provisioned runtime resource.
 type runtimeState struct {
-	Slots   int    `mapstructure:"slots"`
-	Version string `mapstructure:"version"`
+	Slots      int    `mapstructure:"slots"`
+	Version    string `mapstructure:"version"`
+	Hibernated bool   `mapstructure:"hibernated,omitempty"`
 }
 
 func newRuntimeState(state map[string]any) (*runtimeState, error) {

@@ -1,8 +1,12 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
-  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
-  import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
+  import { initializeI18n } from "@rilldata/web-common/lib/i18n";
+  import {
+    handleAdminServerNetworkError,
+    handleAdminServerQuerySuccess,
+    registerAdminNetworkRecoveryListeners,
+  } from "@rilldata/web-admin/components/errors/admin-network-errors";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
@@ -14,6 +18,10 @@
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import {
+    navigateToNewBuild,
+    registerStaleBuildReload,
+  } from "@rilldata/web-admin/lib/reload-on-stale-build";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -33,6 +41,8 @@
   import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
+
+  initializeI18n();
 
   $: ({
     organizationPermissions,
@@ -63,13 +73,14 @@
     // Add TanStack Query errors to telemetry
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    // Handle network errors
-    // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
-    // https://github.com/sveltejs/kit/issues/10201
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (isAdminServerQuery(query) && errorMessage === "Network Error") {
-      errorStore.set(createUserFacingError(null, errorMessage));
-    }
+    handleAdminServerNetworkError(error, query, queryClient);
+  };
+
+  queryClient.getQueryCache().config.onSuccess = (
+    _data: unknown,
+    query: Query,
+  ) => {
+    handleAdminServerQuerySuccess(query);
   };
 
   // The admin server enables some dashboard features like scheduled reports and alerts
@@ -86,8 +97,18 @@
     .catch(console.error);
   initPylonWidget();
 
+  beforeNavigate(navigateToNewBuild);
+
   onMount(() => {
-    return () => removeJavascriptListeners?.();
+    const removeNetworkRecoveryListeners =
+      registerAdminNetworkRecoveryListeners(queryClient);
+    const removeStaleBuildReload = registerStaleBuildReload();
+
+    return () => {
+      removeJavascriptListeners?.();
+      removeNetworkRecoveryListeners();
+      removeStaleBuildReload();
+    };
   });
 
   $: isEmbed = isEmbedPage($page);

@@ -1,11 +1,11 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { get, type Unsubscriber, type Writable } from "svelte/store";
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
@@ -14,9 +14,12 @@
     MIN_WIDTH,
     mousePosition,
     normalizeSizeArray,
+    type AddableItem,
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import VisibilityBadge from "./VisibilityBadge.svelte";
+  import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
 
@@ -28,10 +31,14 @@
   export let columnWidth: number;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
+  // True while a whole tab group is being dragged. Top-level rows (zoneScope "canvas") then
+  // expose their row drop zones as landing slots for the group; rows inside a tab do not, and
+  // all rows suspend component interaction for the duration of the drag.
+  export let blockDragging = false;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
   ) => void;
   export let spreadEvenly: (index: number) => void;
   export let onComponentMouseDown: (params: {
@@ -40,13 +47,21 @@
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
   export let onDelete: (params: { component: BaseCanvasComponent }) => void;
+  // Optional: convert this row into a tab group (top-level rows only).
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
+  // Optional: insert a tab group at a given top-level index (top-level rows only).
+  export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
-  export let initializeRow: (row: number, type: CanvasComponentType) => void;
+  export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
   export let updateComponentWidths: (
     index: number,
     newWidths: number[],
   ) => void;
+  // Disambiguates row DOM ids across tab containers so height-resize querySelectors
+  // don't collide with same-index rows elsewhere on the canvas.
+  export let idPrefix: string = "";
+  export let zoneScope = "canvas";
 
   let rowHeight = get(row.height) ?? MIN_HEIGHT;
   let hasLocalChange = false;
@@ -62,11 +77,14 @@
 
   $: isSpreadEvenly = widths.every((w) => w === widths[0]);
   $: activelyDragging = !!dragComponent;
+  // Either kind of drag suspends component and divider interaction in this row.
+  $: interactionSuspended = activelyDragging || blockDragging;
+  $: allowBlockDrop = blockDragging && zoneScope === "canvas";
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
 
-  $: id = `canvas-row-${rowIndex}`;
+  $: id = `canvas-row-${idPrefix}${rowIndex}`;
 
   function onRowResizeStart() {
     initialMousePosition = $mousePosition;
@@ -146,8 +164,7 @@
     const width = widths[columnIndex];
 
     initialHeight =
-      document.querySelector(`#canvas-row-${rowIndex}`)?.getBoundingClientRect()
-        .height ??
+      document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
       rowHeight ??
       MIN_HEIGHT;
 
@@ -193,8 +210,9 @@
           {rowIndex}
           resizeIndex={-1}
           addIndex={columnIndex}
+          {zoneScope}
           rowLength={itemCount}
-          dragging={activelyDragging}
+          dragging={interactionSuspended}
           {isSpreadEvenly}
           {spreadEvenly}
           {addItems}
@@ -205,7 +223,8 @@
         {isSpreadEvenly}
         columnWidth={widths[columnIndex]}
         {rowIndex}
-        dragging={activelyDragging}
+        {zoneScope}
+        dragging={interactionSuspended}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
         rowLength={itemCount}
@@ -219,7 +238,11 @@
         row={rowIndex}
         maxColumns={itemCount}
         allowDrop={activelyDragging &&
-          (itemCount < 4 || dragComponent?.pathInYAML?.[1] === rowIndex)}
+          (itemCount < 4 ||
+            (dragComponent
+              ? rowColFromPath(dragComponent.pathInYAML).row === rowIndex
+              : false))}
+        {zoneScope}
         {onDrop}
       />
 
@@ -229,7 +252,7 @@
           editable
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
-          allowPointerEvents={!$activeDivider && !activelyDragging}
+          allowPointerEvents={!$activeDivider && !interactionSuspended}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,
@@ -242,31 +265,41 @@
           onDelete={() => {
             onDelete({ component });
           }}
+          onConvertToTabGroup={onConvertToTabGroup
+            ? () => onConvertToTabGroup?.()
+            : undefined}
         />
+        <VisibilityBadge {component} />
       {:else}
-        <ComponentError error="No valid component {id} in project" />
+        <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
     </ItemWrapper>
   {/each}
   <RowDropZone
-    allowDrop={activelyDragging}
+    allowDrop={activelyDragging || allowBlockDrop}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
+    {zoneScope}
     {onRowResizeStart}
     {onDrop}
     addItem={(type) => {
       initializeRow(rowIndex + 1, type);
     }}
+    onAddTabGroup={onAddTabGroup
+      ? () => onAddTabGroup?.(rowIndex + 1)
+      : undefined}
   />
 
   {#if rowIndex === 0}
     <RowDropZone
-      allowDrop={activelyDragging}
+      allowDrop={activelyDragging || allowBlockDrop}
       dropIndex={0}
+      {zoneScope}
       {onDrop}
       addItem={(type) => {
         initializeRow(rowIndex, type);
       }}
+      onAddTabGroup={onAddTabGroup ? () => onAddTabGroup?.(0) : undefined}
     />
   {/if}
 </RowWrapper>

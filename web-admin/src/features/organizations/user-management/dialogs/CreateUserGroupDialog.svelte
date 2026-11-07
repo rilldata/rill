@@ -1,14 +1,21 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
+    createAdminServiceListOrganizationInvites,
     createAdminServiceListOrganizationMemberUsersInfinite,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import {
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
+    pendingInviteesMatching,
+    type GroupMemberRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -35,7 +42,7 @@
   let searchInput = "";
   let debouncedSearchText = "";
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  let selectedUsers: V1OrganizationMemberUser[] = [];
+  let selectedUsers: GroupMemberRow[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
@@ -74,9 +81,30 @@
       },
     );
 
-  $: organizationUsers = $organizationUsersInfiniteQuery.data?.pages
-    ? $organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
-    : [];
+  // Pending invitees can be added to a group too, so they are searched alongside members.
+  // ListOrganizationInvites has no search parameter, so the (typically short) list is fetched once and filtered here.
+  $: organizationInvitesQuery = createAdminServiceListOrganizationInvites(
+    organization,
+    { pageSize: 1000 },
+    { query: { enabled: open } },
+  );
+
+  $: organizationUsers = [
+    ...($organizationUsersInfiniteQuery.data?.pages ?? [])
+      .flatMap((p) => p.members ?? [])
+      .map(
+        (u): GroupMemberRow => ({
+          userEmail: u.userEmail ?? "",
+          userName: u.userName,
+          userPhotoUrl: u.userPhotoUrl,
+          roleName: u.roleName,
+        }),
+      ),
+    ...pendingInviteesMatching(
+      $organizationInvitesQuery.data?.invites,
+      debouncedSearchText,
+    ),
+  ];
 
   $: hasMoreUsers =
     // Prefer built-in flag if available
@@ -113,14 +141,7 @@
       // Apply pending user changes after group creation
       await applyPendingChanges(newName);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       groupName = "";
       selectedUsers = [];
@@ -128,10 +149,12 @@
       pendingRemovals = [];
       open = false;
 
-      eventBus.emit("notification", { message: "User group created" });
+      eventBus.emit("notification", { message: m.groups_created() });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -149,10 +172,11 @@
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
+      // Pending invites carry their groups, so the users table needs a refresh too
+      await invalidateOrgInvites(queryClient, organization);
+      // The per-user group lists (users table cell and manage groups dialog) changed for every user added
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
@@ -162,11 +186,13 @@
       });
 
       eventBus.emit("notification", {
-        message: "User group changes saved successfully",
+        message: m.groups_changes_saved(),
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -229,13 +255,17 @@
 
   $: coercedUsersToOptions = organizationUsers.map((user) => ({
     value: user.userEmail,
-    label: user.userName,
+    label: user.userName || user.userEmail,
   }));
 
   function getMetadata(email: string) {
     const user = organizationUsers.find((user) => user.userEmail === email);
     return user
-      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      ? {
+          name: user.userName || user.userEmail,
+          photoUrl: user.userPhotoUrl,
+          pendingAcceptance: user.pendingAcceptance,
+        }
       : undefined;
   }
 
@@ -271,7 +301,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
-      <DialogTitle>Create a group</DialogTitle>
+      <DialogTitle>{m.groups_create_a_group()}</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
@@ -286,8 +316,8 @@
         <Input
           bind:value={$form.name}
           id="create-user-group-name"
-          label="Name"
-          placeholder="Untitled"
+          label={m.users_form_name()}
+          placeholder={m.users_form_untitled()}
           errors={$errors.name}
           alwaysShowError={true}
         />
@@ -297,12 +327,12 @@
             for="user-group-users"
             class="line-clamp-1 text-sm font-medium text-fg-primary"
           >
-            Users
+            {m.users_form_users()}
           </label>
           <Combobox
             bind:searchValue={searchInput}
             options={coercedUsersToOptions}
-            placeholder="Search to add/remove users"
+            placeholder={m.org_search_add_remove_users()}
             {getMetadata}
             enableClientFiltering={false}
             loadMore={loadMoreUsers}
@@ -341,7 +371,7 @@
       {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-fg-secondary">
-            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
+            {m.users_user_count({ count: selectedUsers.length })}
           </div>
         </div>
       {/if}
@@ -350,17 +380,18 @@
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
               <AvatarListItem
-                name={user.userName}
+                name={user.userName || user.userEmail}
                 email={user.userEmail}
                 photoUrl={user.userPhotoUrl}
                 isCurrentUser={user.userEmail === currentUserEmail}
+                pendingAcceptance={user.pendingAcceptance ?? false}
                 role={user.roleName}
               />
               <Button
                 type="destructive"
                 onClick={() => handleRemove(user.userEmail)}
               >
-                Remove
+                {m.users_remove()}
               </Button>
             </div>
           {/each}
@@ -369,14 +400,14 @@
     </div>
 
     <DialogFooter>
-      <Button type="tertiary" onClick={handleClose}>Cancel</Button>
+      <Button type="tertiary" onClick={handleClose}>{m.users_cancel()}</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.name.trim() === "" || !!$errors.name}
         form={formId}
         submitForm
       >
-        Create
+        {m.users_create()}
       </Button>
     </DialogFooter>
   </DialogContent>

@@ -51,10 +51,13 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			project_connectors,
 			variables,
 			project_variables,
+			system_variables,
 			feature_flags,
 			annotations,
 			public_paths,
+			embed_open_url,
 			ai_instructions,
+			ai_prompts,
 			frontend_url,
 			theme
 		FROM instances %s ORDER BY id
@@ -69,7 +72,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths []byte
+		var variables, projectVariables, systemVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths, aiPrompts []byte
 		i := &drivers.Instance{}
 		err := rows.Scan(
 			&i.ID,
@@ -88,10 +91,13 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&projectConnectors,
 			&variables,
 			&projectVariables,
+			&systemVariables,
 			&featureFlags,
 			&annotations,
 			&publicPaths,
+			&i.EmbedOpenURL,
 			&i.AIInstructions,
+			&aiPrompts,
 			&i.FrontendURL,
 			&i.Theme,
 		)
@@ -115,6 +121,11 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		}
 
 		i.ProjectVariables, err = mapFromJSON[string](projectVariables)
+		if err != nil {
+			return nil, err
+		}
+
+		i.SystemVariables, err = mapFromJSON[string](systemVariables)
 		if err != nil {
 			return nil, err
 		}
@@ -144,6 +155,11 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		}
 
 		i.PublicPaths, err = arrayFromJSON[string](publicPaths)
+		if err != nil {
+			return nil, err
+		}
+
+		i.AIPrompts, err = arrayFromJSON[*runtimev1.AIPrompt](aiPrompts)
 		if err != nil {
 			return nil, err
 		}
@@ -187,6 +203,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
+	systemVariables, err := mapToJSON(inst.SystemVariables)
+	if err != nil {
+		return err
+	}
+
 	featureFlags, err := mapToJSON(inst.FeatureFlags)
 	if err != nil {
 		return err
@@ -198,6 +219,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	}
 
 	publicPaths, err := arrayToJSON(inst.PublicPaths)
+	if err != nil {
+		return err
+	}
+
+	aiPrompts, err := arrayToJSON(inst.AIPrompts)
 	if err != nil {
 		return err
 	}
@@ -223,14 +249,17 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			project_connectors,
 			variables,
 			project_variables,
+			system_variables,
 			feature_flags,
 			annotations,
 			public_paths,
+			embed_open_url,
 			ai_instructions,
+			ai_prompts,
 			frontend_url,
 			theme
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -248,10 +277,13 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		projectConnectors,
 		variables,
 		projectVariables,
+		systemVariables,
 		featureFlags,
 		annotations,
 		publicPaths,
+		inst.EmbedOpenURL,
 		inst.AIInstructions,
+		aiPrompts,
 		inst.FrontendURL,
 		inst.Theme,
 	)
@@ -291,6 +323,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	systemVariables, err := mapToJSON(inst.SystemVariables)
+	if err != nil {
+		return err
+	}
+
 	featureFlags, err := mapToJSON(inst.FeatureFlags)
 	if err != nil {
 		return err
@@ -302,6 +339,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 	}
 
 	publicPaths, err := arrayToJSON(inst.PublicPaths)
+	if err != nil {
+		return err
+	}
+
+	aiPrompts, err := arrayToJSON(inst.AIPrompts)
 	if err != nil {
 		return err
 	}
@@ -325,12 +367,15 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			project_connectors = $13,
 			variables = $14,
 			project_variables = $15,
-			feature_flags = $16,
-			annotations = $17,
-			public_paths = $18,
-			ai_instructions = $19,
-			frontend_url = $20,
-			theme = $21
+			system_variables = $16,
+			feature_flags = $17,
+			annotations = $18,
+			public_paths = $19,
+			embed_open_url = $20,
+			ai_instructions = $21,
+			ai_prompts = $22,
+			frontend_url = $23,
+			theme = $24
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -348,10 +393,13 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		projectConnectors,
 		variables,
 		projectVariables,
+		systemVariables,
 		featureFlags,
 		annotations,
 		publicPaths,
+		inst.EmbedOpenURL,
 		inst.AIInstructions,
+		aiPrompts,
 		inst.FrontendURL,
 		inst.Theme,
 	)

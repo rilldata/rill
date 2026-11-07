@@ -1,6 +1,7 @@
 import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import { getMessageForCustomMessage } from "@rilldata/web-admin/features/billing/issues/getMessageForCustomMessage";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import {
@@ -17,9 +18,10 @@ export type BillingIssueMessage = {
   title: string;
   description: string;
   cta?: BillingIssueMessageCTA;
+  dismissible?: BannerMessage["dismissible"];
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "payment" | "contact" | "wake-projects";
+  type: "show-upgrade" | "payment" | "contact";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;
@@ -48,14 +50,13 @@ export function useBillingIssueMessage(organization: string) {
         };
       }
 
-      if (categorisedIssuesResp.data?.cancelled) {
+      // A support-set custom message takes precedence over billing-derived messages.
+      if (categorisedIssuesResp.data?.message) {
         return {
           isFetching: false,
           isLoading: false,
           error: undefined,
-          data: getMessageForCancelledIssue(
-            categorisedIssuesResp.data.cancelled,
-          ),
+          data: getMessageForCustomMessage(categorisedIssuesResp.data.message),
         };
       }
 
@@ -65,6 +66,17 @@ export function useBillingIssueMessage(organization: string) {
           isLoading: false,
           error: undefined,
           data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
+        };
+      }
+
+      if (categorisedIssuesResp.data?.cancelled) {
+        return {
+          isFetching: false,
+          isLoading: false,
+          error: undefined,
+          data: getMessageForCancelledIssue(
+            categorisedIssuesResp.data.cancelled,
+          ),
         };
       }
 

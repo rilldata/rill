@@ -57,7 +57,6 @@ type Config struct {
 	RiverDatabaseURL          string                 `split_words:"true"`
 	RedisURL                  string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON        string                 `split_words:"true"`
-	ProvisionerMaxConcurrency int                    `default:"30" split_words:"true"`
 	DefaultProvisioner        string                 `split_words:"true"`
 	Jobs                      []string               `split_words:"true"`
 	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
@@ -97,6 +96,7 @@ type Config struct {
 	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
 	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	ClaudePromptCaching               bool   `envconfig:"claude_prompt_caching"`
 	GeminiAPIKey                      string `envconfig:"gemini_api_key"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
@@ -104,12 +104,15 @@ type Config struct {
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
-	OrbAPIKey                         string `split_words:"true"`
-	OrbWebhookSecret                  string `split_words:"true"`
-	OrbIntegratedTaxProvider          string `default:"anrok" split_words:"true"`
-	StripeAPIKey                      string `split_words:"true"`
-	StripeWebhookSecret               string `split_words:"true"`
-	PylonIdentitySecret               string `split_words:"true"`
+	// StoppedDeploymentRetention is how long a stopped (hibernated) deployment is kept around before its persistent state is fully deleted.
+	StoppedDeploymentRetention time.Duration `default:"168h" split_words:"true"`
+	OrbAPIKey                  string        `split_words:"true"`
+	OrbWebhookSecret           string        `split_words:"true"`
+	OrbIntegratedTaxProvider   string        `default:"anrok" split_words:"true"`
+	StripeAPIKey               string        `split_words:"true"`
+	StripeWebhookSecret        string        `split_words:"true"`
+	PylonIdentitySecret        string        `split_words:"true"`
+	AllowMockBilling           bool          `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -254,6 +257,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
 				}
 				aiConfig["api_key"] = conf.ClaudeAPIKey
+				aiConfig["prompt_caching"] = conf.ClaudePromptCaching
 			case "gemini":
 				if conf.GeminiAPIKey == "" {
 					logger.Fatal("RILL_ADMIN_GEMINI_API_KEY is required when AI driver is 'gemini'")
@@ -270,7 +274,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			default:
 				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
-			aiHandle, err := drivers.Open(aiDriver, "", "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			aiHandle, err := drivers.Open(cmd.Context(), aiDriver, "", "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 			if err != nil {
 				logger.Fatal("error creating AI client", zap.Error(err))
 			}
@@ -283,7 +287,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init AssetsBucket handle
 			var clientOpts []option.ClientOption
 			if conf.AssetsBucketGoogleCredentialsJSON != "" {
-				clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
+				clientOpts = append(clientOpts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(conf.AssetsBucketGoogleCredentialsJSON)))
 			}
 			storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
 			if err != nil {
@@ -318,19 +322,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:            conf.DatabaseDriver,
-				DatabaseDSN:               conf.DatabaseURL,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
-				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:               conf.FrontendURL,
-				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
-				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
-				DefaultProvisioner:        conf.DefaultProvisioner,
-				Version:                   ch.Version,
-				MetricsProjectOrg:         metricsProjectOrg,
-				MetricsProjectName:        metricsProjectName,
-				AutoscalerCron:            conf.AutoscalerCron,
-				ScaleDownConstraint:       conf.ScaleDownConstraint,
+				DatabaseDriver:             conf.DatabaseDriver,
+				DatabaseDSN:                conf.DatabaseURL,
+				DatabaseEncryptionKeyring:  conf.DatabaseEncryptionKeyring,
+				ExternalURL:                conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:                conf.FrontendURL,
+				ProvisionerSetJSON:         conf.ProvisionerSetJSON,
+				DefaultProvisioner:         conf.DefaultProvisioner,
+				Version:                    ch.Version,
+				MetricsProjectOrg:          metricsProjectOrg,
+				MetricsProjectName:         metricsProjectName,
+				AutoscalerCron:             conf.AutoscalerCron,
+				ScaleDownConstraint:        conf.ScaleDownConstraint,
+				AllowMockBilling:           conf.AllowMockBilling,
+				StoppedDeploymentRetention: conf.StoppedDeploymentRetention,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Select as SelectPrimitive } from "bits-ui";
 
@@ -11,12 +12,15 @@
   /** When true, the dropdown width matches the trigger width via CSS variable. */
   export let sameWidth: boolean = false;
   export { className as class };
+
+  const themeBoundaryClass = getThemeBoundaryClass();
 </script>
 
 <SelectPrimitive.Portal>
   <SelectPrimitive.Content
     {sideOffset}
     class={cn(
+      themeBoundaryClass,
       "relative z-50 min-w-[8rem] overflow-hidden rounded-[2px] border bg-popover text-popover-foreground shadow-md focus:outline-none",
       sameWidth && "w-[var(--bits-select-anchor-width)]",
       className,

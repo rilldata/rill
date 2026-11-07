@@ -58,7 +58,8 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		)
 	}
 
-	// Rewrite to the regular SQL resolver
+	// Rewrite to the regular SQL resolver.
+	// The SQL comes from the caller's args, so templates in it cannot access project variables.
 	return newSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,

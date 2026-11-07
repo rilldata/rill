@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { createAdminServiceTriggerReport } from "@rilldata/web-admin/client";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { reportTriggerMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -16,7 +18,7 @@
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerReport = createAdminServiceTriggerReport();
+  const triggerReport = createMutationFromFactory(reportTriggerMutationFactory);
   const reportQuery = useReport(runtimeClient, report);
 
   async function handleRunNow() {
@@ -30,7 +32,7 @@
     });
 
     eventBus.emit("notification", {
-      message: "Triggered an ad-hoc run of this report.",
+      message: m.report_triggered_adhoc(),
       type: "success",
     });
 
@@ -59,10 +61,9 @@
     onClick={handleRunNow}
     disabled={$triggerReport.isPending}
   >
-    Run now
+    {m.report_run_now()}
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="300px">
-    Run this report immediately. A new report will be generated and emailed to
-    recipients.
+    {m.report_run_now_tooltip()}
   </TooltipContent>
 </Tooltip>

@@ -12,6 +12,8 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { InheritRangeOption } from "../../new-time-controls";
   type Option = {
     name: TimeComparisonOption;
     key: number;
@@ -37,6 +39,7 @@
   export let minTimeGrain: V1TimeGrain | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let inheritOption: InheritRangeOption | undefined = undefined;
 
   let open = false;
   let showSelector = false;
@@ -53,9 +56,14 @@
   $: firstOption = timeComparisonOptionsState[0];
   $: label =
     TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "Custom range";
+    m.time_custom_range();
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom range";
+  $: selectedLabel =
+    comparisonOption ?? firstOption?.name ?? m.time_custom_range();
+
+  // While the comparison is inherited none of the concrete options is the selection.
+  $: inherited = Boolean(inheritOption?.selected);
+  $: highlighted = inherited ? undefined : selectedLabel;
 
   function applyRange(range: Interval<true>) {
     onSelectComparisonRange(
@@ -104,12 +112,19 @@
         {...props}
         {disabled}
         aria-disabled={disabled}
-        aria-label="Select time comparison option"
+        aria-label={m.dashboard_select_time_comparison_aria()}
         type="button"
       >
         <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-          {#if !timeComparisonOptionsState.length && !showComparison}
-            <p>no comparison period</p>
+          {#if inherited && inheritOption}
+            <b class="line-clamp-1">{inheritOption.label}</b>
+            {#if inheritOption.description}
+              <span class="line-clamp-1 text-fg-secondary">
+                · {inheritOption.description}
+              </span>
+            {/if}
+          {:else if !timeComparisonOptionsState.length && !showComparison}
+            <p>{m.time_no_comparison_period()}</p>
           {:else}
             <b class="line-clamp-1">{label}</b>
             {#if interval?.isValid && showFullRange}
@@ -131,9 +146,20 @@
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
+        {#if inheritOption}
+          <DropdownMenu.Item
+            onclick={() => {
+              inheritOption?.onSelect();
+              open = false;
+            }}
+          >
+            <span class:font-bold={inherited}>{inheritOption.label}</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+        {/if}
         {#each timeComparisonOptionsState as option (option.name)}
           {@const preset = TIME_COMPARISON[option.name]}
-          {@const selected = selectedLabel === option.name}
+          {@const selected = highlighted === option.name}
           <DropdownMenu.Item
             class="flex gap-x-2"
             onclick={() => {
@@ -162,10 +188,10 @@
             }}
           >
             <span
-              class:font-bold={comparisonOption ===
-                TimeComparisonOption.CUSTOM && showComparison}
+              class:font-bold={highlighted === TimeComparisonOption.CUSTOM &&
+                showComparison}
             >
-              Custom
+              {m.time_custom()}
             </span>
           </DropdownMenu.Item>
         {/if}

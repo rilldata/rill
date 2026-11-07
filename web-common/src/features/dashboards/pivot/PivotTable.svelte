@@ -1,37 +1,48 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
     getNextRowLimit,
+    PIVOT_TOTALS_ROW_ID,
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
+    isShowMoreRow,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
+  import { derived } from "svelte/store";
   import {
     type ExpandedState,
+    type Row,
     type SortingState,
     type TableOptions,
+    createRow,
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
   } from "tanstack-table-8-svelte-5";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
-  import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
-  import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
+  import {
+    type CellFormatter,
+    computeMeasureDomains,
+    makeCellFormatter,
+  } from "./pivot-conditional-formatting";
   import type {
+    PivotColumnStyles,
     PivotDataRow,
     PivotDataStore,
     PivotDataStoreConfig,
@@ -40,16 +51,42 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const ROW_HEIGHT = 24;
-  const HEADER_HEIGHT = 30;
+  const BASE_ROW_HEIGHT = 24;
+  const BASE_HEADER_HEIGHT = 30;
+  // Wrapped rows and headers keep a uniform height: the text-xs line height
+  // per line plus the cell's vertical padding, so virtualization stays fixed-size.
+  const WRAP_LINE_HEIGHT = 16;
+  const CELL_VERTICAL_PADDING = 8;
+  const HEADER_VERTICAL_PADDING = 14;
 
   export let pivotDataStore: PivotDataStore;
+  export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
   export let rounded = true;
+  export let fillWidth = false;
+  // Per-column presentation overrides keyed by column id (see PivotColumnStyles).
+  export let columnStyles: PivotColumnStyles = {};
+  // Shrink the columns so the table fits the container instead of scrolling.
+  // Only applied with fillWidth, since otherwise the wrapper tracks the content
+  // width and a reactive fit would feed back on itself.
+  export let fitToWidth = false;
+  // Wrap dimension cells / header labels over `wrapLines` lines.
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let wrapLines = 2;
+  // Called when the user finishes resizing a column; null means the column was
+  // reset to its automatic width.
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -61,16 +98,29 @@
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
+  export let onCellClickToFilter:
+    | ((
+        rowId: string,
+        columnId: string,
+        isRowHeader: boolean,
+        rowData: PivotDataRow,
+      ) => void)
+    | undefined = undefined;
+  export let onColumnHeaderClick:
+    | ((dimensionPath: Record<string, string>) => void)
+    | undefined = undefined;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
     ([pivotData, state]) => {
-      let tableData = [...pivotData.data];
-      if (pivotData.totalsRowData) {
-        tableData = [pivotData.totalsRowData, ...pivotData.data];
-      }
       return {
-        data: tableData,
+        // Copy the array: expanded sub-rows are merged into the existing rows
+        // in place, and tanstack only rebuilds its row model when the data
+        // array identity changes.
+        data: [...pivotData.data],
         columns: pivotData.columnDef,
         state: {
           expanded: state.expanded,
@@ -98,7 +148,9 @@
   $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
-  let stickyRows = [0];
+  let containerWidth = 0;
+  let flatTable: FlatTable | undefined;
+  let nestedTable: NestedTable | undefined;
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -111,7 +163,7 @@
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
-  $: totalsRow = $pivotDataStore.totalsRowData;
+  $: totalsRowPosition = $pivotState.totalsRowPosition ?? "top";
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 
@@ -121,21 +173,53 @@
     $config,
   );
 
+  // Per-measure conditional formatting. Domains prefer leaf data cells so
+  // aggregate magnitudes don't dominate the gradient, falling back to nested
+  // parent rows when no leaves are present (e.g. collapsed nested rows). The
+  // row-totals column is always excluded, and the grand-totals row is not part
+  // of the row model. Recomputes when the row model or the formatting config
+  // changes.
+  $: cellFormatters = buildCellFormatters(
+    $table.getRowModel().flatRows,
+    $config.pivot.measureFormatting,
+    $config.allMeasures,
+  );
+
+  $: effectiveFitToWidth = fitToWidth && fillWidth;
+  $: wrapAnyCells =
+    wrapText || Object.values(columnStyles).some((style) => style?.wrap);
+  $: rowHeight = wrapAnyCells
+    ? WRAP_LINE_HEIGHT * wrapLines + CELL_VERTICAL_PADDING
+    : BASE_ROW_HEIGHT;
+  $: headerHeight = wrapHeaders
+    ? WRAP_LINE_HEIGHT * wrapLines + HEADER_VERTICAL_PADDING
+    : BASE_HEADER_HEIGHT;
+
   $: headerGroups = $table.getHeaderGroups();
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 
   $: rows = $table.getRowModel().rows;
+
+  // The grand-totals row is kept out of the row model so data row ids match
+  // their index in the pivot data. It is a standalone tanstack row (built
+  // against the same table so the column cell renderers work unchanged) that
+  // the table components pin to the top or the bottom of the body.
+  $: totalsRow = $pivotDataStore.totalsRowData
+    ? createRow(
+        $table,
+        PIVOT_TOTALS_ROW_ID,
+        $pivotDataStore.totalsRowData,
+        0,
+        0,
+      )
+    : undefined;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan,
     initialOffset: rowScrollOffset,
-    rangeExtractor: (range) => {
-      const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
-
-      return [...next].sort((a, b) => a - b);
-    },
   });
 
   $: virtualRows = $virtualizer.getVirtualItems();
@@ -147,16 +231,115 @@
   // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
     ? [
-        (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
+        virtualRows[0].start,
         totalRowSize - virtualRows[virtualRows.length - 1].end,
       ]
     : [0, 0];
 
-  let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
+  $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
+  function getCustomShortcuts(rowHeader: boolean) {
+    if (clickToFilterEnabled) {
+      return [
+        { description: m.dashboard_filter_by_value(), shortcut: "Click" },
+      ];
+    }
+    if (canShowDataViewer && !rowHeader) {
+      return [
+        {
+          description: m.dashboard_view_raw_aggregated_data(),
+          shortcut: "Click",
+        },
+      ];
+    }
+    return [];
+  }
+
+  function buildCellFormatters(
+    flatRows: Row<PivotDataRow>[],
+    measureFormatting: PivotState["measureFormatting"],
+    allMeasures: PivotDataStoreConfig["allMeasures"],
+  ): Map<string, CellFormatter> {
+    const formatters = new Map<string, CellFormatter>();
+    if (!measureFormatting || Object.keys(measureFormatting).length === 0) {
+      return formatters;
+    }
+
+    // Rules formatters don't depend on the value domain, so only scan the row
+    // model when a scale-mode (heatmap/data bar) measure needs one.
+    const needsDomains = Object.values(measureFormatting).some(
+      (fmt) => fmt.mode !== "rules",
+    );
+    // Collect values from leaf rows and, separately, from nested parent rows.
+    // Leaf values are preferred for the domain so aggregate magnitudes don't
+    // dominate the gradient. But nested parent rows also render formatted
+    // measure cells, and when they're collapsed the leaf rows aren't in the row
+    // model at all: without a parent fallback the domain would be empty and no
+    // heatmap/data-bar formatter would be built until the user expands a row.
+    const leafValues: { measureName: string; value: number }[] = [];
+    const parentValues: { measureName: string; value: number }[] = [];
+    if (needsDomains) {
+      for (const row of flatRows) {
+        const target = row.subRows.length > 0 ? parentValues : leafValues;
+        for (const cell of row.getAllCells()) {
+          const meta = cell.column.columnDef.meta;
+          if (
+            !meta?.conditionalFormat ||
+            meta.isRowTotal ||
+            !meta.measureName
+          ) {
+            continue;
+          }
+          const value = cell.getValue();
+          if (typeof value === "number") {
+            target.push({ measureName: meta.measureName, value });
+          }
+        }
+      }
+    }
+
+    const leafDomains = computeMeasureDomains(leafValues);
+    const parentDomains = computeMeasureDomains(parentValues);
+    for (const [measureName, fmt] of Object.entries(measureFormatting)) {
+      if (fmt.mode === "rules") {
+        formatters.set(measureName, makeCellFormatter(fmt));
+        continue;
+      }
+      const domain =
+        leafDomains.get(measureName) ?? parentDomains.get(measureName);
+      if (domain) {
+        // Heatmap gradients flip for lower-is-better measures so low values
+        // get the "good" end of the scheme.
+        const lowerIsBetter =
+          allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
+          false;
+        formatters.set(
+          measureName,
+          makeCellFormatter(fmt, domain, lowerIsBetter),
+        );
+      }
+    }
+    return formatters;
+  }
+
+  /**
+   * One-shot resize of every column so the table fits the space available to
+   * it. The wrapper is `w-fit`, so its own width tracks the content; the
+   * available width is measured from the parent's content box instead, minus
+   * the wrapper's own horizontal border.
+   */
+  export function fitColumnsToWidth() {
+    const parent = containerRefElement?.parentElement;
+    if (!parent) return;
+    const parentStyle = getComputedStyle(parent);
+    const wrapperStyle = getComputedStyle(containerRefElement);
+    const availableWidth =
+      parent.clientWidth -
+      parseFloat(parentStyle.paddingLeft) -
+      parseFloat(parentStyle.paddingRight) -
+      parseFloat(wrapperStyle.borderLeftWidth) -
+      parseFloat(wrapperStyle.borderRightWidth);
+    if (!(availableWidth > 0)) return;
+    (isFlat ? flatTable : nestedTable)?.fitColumnsToWidth(availableWidth);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -189,6 +372,7 @@
 
   type HoveringData = {
     value: string | number | null;
+    rowHeader: boolean;
   };
 
   function onCellClick(e: MouseEvent) {
@@ -201,15 +385,31 @@
     const rowId = td.dataset.rowid;
     const columnId = td.dataset.columnid;
     const rowHeader = td.dataset.rowheader === "true";
-    const value = td.dataset.value;
 
     if (rowId === undefined || columnId === undefined) return;
+
+    if (rowId === PIVOT_TOTALS_ROW_ID) {
+      // The totals row is not in the row model. It never filters, but the
+      // Explore data viewer can still show the rows behind a totals cell.
+      if (
+        !rowHeader &&
+        !onCellClickToFilter &&
+        setPivotActiveCell &&
+        canShowDataViewer
+      ) {
+        setPivotActiveCell(rowId, columnId);
+      }
+      return;
+    }
 
     const row = $table.getRow(rowId);
     if (!row) return;
 
-    // Handle "Show More" button clicks
-    if (value === SHOW_MORE_BUTTON && rowHeader) {
+    // "Show More" rows only respond to a row-header click, which increases the
+    // limit. All other cells in that row are inert (no filtering / active cell).
+    if (isShowMoreRow(row)) {
+      if (!rowHeader) return;
+
       const rowData = row.original;
       const currentLimit = rowData.__currentLimit as number;
       const nextLimit = getNextRowLimit(currentLimit);
@@ -236,10 +436,21 @@
       return;
     }
 
-    if (rowHeader) {
+    if (rowHeader && !onCellClickToFilter) {
+      // Legacy expand behavior: when no filter callback, row headers expand/collapse.
+      // When onCellClickToFilter is present, expand is handled by the chevron icon
+      // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else if (setPivotActiveCell && canShowDataViewer) {
-      setPivotActiveCell(rowId, columnId);
+    } else {
+      // Set active cell for Explore data viewer (if enabled)
+      if (setPivotActiveCell && canShowDataViewer) {
+        setPivotActiveCell(rowId, columnId);
+      }
+
+      // Apply click-to-filter (Canvas or future Explore)
+      if (onCellClickToFilter) {
+        onCellClickToFilter(rowId, columnId, rowHeader, row.original);
+      }
     }
   }
 
@@ -253,8 +464,11 @@
   function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
-    const value = e.target.dataset.value;
-    if (value === undefined) return;
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
+    if (value === undefined || value === SHOW_MORE_BUTTON) return;
 
     copyToClipboard(value);
   }
@@ -280,13 +494,17 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
 
-    if (value === undefined || rowHeader) return;
+    if (!td || value === undefined) return;
+
+    if (value === SHOW_MORE_BUTTON) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -294,8 +512,9 @@
 
     hovering = {
       value,
+      rowHeader: td.dataset.rowheader === "true",
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
   }
 </script>
 
@@ -303,54 +522,91 @@
   class:border
   class:rounded-sm={rounded}
   class="table-wrapper relative"
-  style:--row-height="{ROW_HEIGHT}px"
-  style:--header-height="{HEADER_HEIGHT}px"
+  style:--row-height="{rowHeight}px"
+  style:--header-height="{headerHeight}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
+  style:--wrap-lines={wrapLines}
   bind:this={containerRefElement}
+  bind:clientWidth={containerWidth}
+  class:w-full={fillWidth}
+  class:w-fit={!fillWidth}
   onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
     <FlatTable
+      bind:this={flatTable}
       {headerGroups}
       {rows}
       {virtualRows}
       {measures}
+      {cellFormatters}
       {totalsRow}
+      {totalsRowPosition}
       {dataRows}
       {before}
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {enableClickToFilter}
       {hasMeasureContextColumns}
+      {rowSelectionState}
+      {clickSelection}
+      config={$config}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {:else}
     <NestedTable
+      bind:this={nestedTable}
       {headerGroups}
       {rows}
       {virtualRows}
+      {widthScopeKey}
       {before}
       {after}
       {timeDimension}
       {totalsRow}
+      {totalsRowPosition}
       {totalRowSize}
       {rowDimensions}
       {hasColumnDimension}
       {dataRows}
       {measures}
+      {cellFormatters}
       {canShowDataViewer}
+      {enableClickToFilter}
+      {rowSelectionState}
+      {clickSelection}
+      {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {scrollLeft}
       {containerRefElement}
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {/if}
@@ -362,13 +618,13 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    {customShortcuts}
+    customShortcuts={getCustomShortcuts(hovering.rowHeader)}
   />
 {/if}
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
   }
 </style>

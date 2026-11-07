@@ -283,19 +283,19 @@ func TestGenerateDatabaseName(t *testing.T) {
 			name:        "with org and project",
 			id:          "77cf2b72_65ab_4bbe_a10e_627bcff4915e",
 			annotations: map[string]string{"organization_name": "rilldata", "project_name": "dev-project-1"},
-			expected:    "rill_rilldata_devproject1_77cf2b7265ab4bbea10e627bcff4915e",
+			expected:    "rill_77cf2b7265ab4bbea10e627bcff4915e_rilldata_devproject1",
 		},
 		{
 			name:        "with org only",
 			id:          "12345",
 			annotations: map[string]string{"organization_name": "acme-corp"},
-			expected:    "rill_acmecorp_12345",
+			expected:    "rill_12345_acmecorp",
 		},
 		{
 			name:        "with project only",
 			id:          "12345",
 			annotations: map[string]string{"project_name": "my-project"},
-			expected:    "rill_myproject_12345",
+			expected:    "rill_12345_myproject",
 		},
 		{
 			name:        "no annotations",
@@ -310,12 +310,18 @@ func TestGenerateDatabaseName(t *testing.T) {
 			expected:    "rill_12345",
 		},
 		{
-			name:        "long name truncated",
+			name:        "long name truncated preserves id",
 			id:          "very_long_resource_id_that_will_cause_truncation_12345678",
 			annotations: map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"},
-			expected:    "rill_verylongorganizationname_verylongprojectname_verylongresou",
+			expected:    "rill_verylongresourceidthatwillcausetruncation12345678_verylong",
 		},
 	}
+
+	// Distinct IDs sharing the same long org/project must not collide after truncation,
+	// since the ID is what makes the database name unique per resource.
+	a := generateDatabaseName("aaaaaaaa_65ab_4bbe_a10e_627bcff4915e", map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"})
+	b := generateDatabaseName("bbbbbbbb_65ab_4bbe_a10e_627bcff4915e", map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"})
+	require.NotEqual(t, a, b, "distinct resource IDs must produce distinct database names")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -341,11 +347,22 @@ func TestClickhouseCluster(t *testing.T) {
 	r, db := provisionClickHouse(t, p)
 	defer db.Close()
 
+	// Get the name of the provisioned database. ON CLUSTER statements run as distributed DDL,
+	// which does not carry the session's default database, so tables must be qualified explicitly.
+	dsnCfg, err := clickhouse.ParseDSN(r.Config["dsn"].(string))
+	require.NoError(t, err)
+	dbName := dsnCfg.Auth.Database
+
 	// Create a table with the connection
 	_, err = db.Exec(fmt.Sprintf("CREATE TABLE test ON CLUSTER %s (id UInt64) ENGINE = ReplicatedMergeTree ORDER BY id", cluster))
 	require.NoError(t, err)
 	_, err = db.Exec("INSERT INTO test VALUES (1)")
 	require.NoError(t, err)
+
+	// Check the user can sync replicas (requires the SYSTEM SYNC REPLICA privilege).
+	_, err = db.Exec(fmt.Sprintf("SYSTEM SYNC REPLICA ON CLUSTER %s %s.test", cluster, dbName))
+	require.NoError(t, err)
+
 	rows, err := db.Query("SELECT COUNT(*) FROM system.tables WHERE database <> 'system'")
 	require.NoError(t, err)
 	for rows.Next() {

@@ -127,6 +127,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for OutputJsonSchema
 
+	// no validation rules for IncludeReasoning
+
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
 	}
@@ -259,6 +261,12 @@ func (m *CompleteResponse) validate(all bool) error {
 	// no validation rules for InputTokens
 
 	// no validation rules for OutputTokens
+
+	// no validation rules for CachedInputTokens
+
+	// no validation rules for CacheWriteInputTokens
+
+	// no validation rules for Provider
 
 	if len(errors) > 0 {
 		return CompleteResponseMultiError(errors)

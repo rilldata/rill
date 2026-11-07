@@ -9,8 +9,10 @@
     getLocalServiceGetCurrentUserQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  const deployRouteGetter = getDeployOrGithubRouteGetter();
+  const runtimeClient = useRuntimeClient();
+  const deployRouteGetter = getDeployOrGithubRouteGetter(runtimeClient);
   $: ({ isLoading, getter: deployRouteGetterFunc } = $deployRouteGetter);
 
   const orgCreator = createLocalServiceCreateOrganization();

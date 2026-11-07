@@ -9,7 +9,6 @@ async function waitForDashboard(page: Page) {
   await expect(page.getByLabel("Select time range")).toBeVisible({
     timeout: 10000,
   });
-  await page.waitForTimeout(1000);
 }
 
 function getMetricsViewYaml(includeSecondTimeDimension = false) {
@@ -57,7 +56,6 @@ test.describe("time dimension selection", () => {
   test("time dimensions appear when configured", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -66,14 +64,12 @@ test.describe("time dimension selection", () => {
       "AdBids_metrics",
     );
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
     await waitForDashboard(page);
 
     await page.getByLabel("Select time range").click();
-    await page.waitForTimeout(500);
 
     const timeZoneButton = page.getByRole("button", { name: /Time zone/ });
     await expect(timeZoneButton).toBeVisible({ timeout: 5000 });
@@ -83,7 +79,6 @@ test.describe("time dimension selection", () => {
   });
 
   test("URL parameters are preserved for time range", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -92,8 +87,6 @@ test.describe("time dimension selection", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 7 days" }).click();
     });
-
-    await page.waitForTimeout(1000);
 
     await expect(page.getByText("Last 7 Days")).toBeVisible();
 
@@ -108,7 +101,6 @@ test.describe("time dimension selection", () => {
   test("dashboard displays correctly with time range selection", async ({
     page,
   }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -127,7 +119,6 @@ test.describe("time dimension selection", () => {
   });
 
   test("leaderboard data displays correctly", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -136,7 +127,6 @@ test.describe("time dimension selection", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
     });
-    await page.waitForTimeout(1000);
 
     await expect(page.getByText("Publisher")).toBeVisible();
     await expect(
@@ -152,7 +142,6 @@ test.describe("time dimension selection", () => {
   }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -161,7 +150,6 @@ test.describe("time dimension selection", () => {
       "AdBids_metrics",
     );
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
     await waitForDashboard(page);

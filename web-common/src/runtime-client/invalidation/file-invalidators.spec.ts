@@ -48,10 +48,12 @@ function fakeQueryClient() {
     invalidateQueries: vi.fn(),
     refetchQueries: vi.fn(),
     resetQueries: vi.fn(),
+    getQueryData: vi.fn(),
   } as unknown as QueryClient & {
     invalidateQueries: ReturnType<typeof vi.fn>;
     refetchQueries: ReturnType<typeof vi.fn>;
     resetQueries: ReturnType<typeof vi.fn>;
+    getQueryData: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -213,6 +215,44 @@ describe("handleFileEvent", () => {
     expect(removeFile).toHaveBeenCalledWith("/models/foo.sql");
   });
 
+  it("write on /.env emits env-file-updated", async () => {
+    const qc = fakeQueryClient();
+    const state = makeState();
+
+    await handleFileEvent(
+      {
+        path: "/.env",
+        event: V1FileEvent.FILE_EVENT_WRITE,
+        isDir: false,
+      },
+      qc,
+      fakeRuntimeClient,
+      state,
+    );
+
+    expect(eventBus.emit).toHaveBeenCalledWith("env-file-updated", "/.env");
+  });
+
+  it("delete on /.env emits env-file-updated so the env store clears stale keys", async () => {
+    const qc = fakeQueryClient();
+    const state = makeState();
+    state.seenFiles.add("/.env");
+
+    await handleFileEvent(
+      {
+        path: "/.env",
+        event: V1FileEvent.FILE_EVENT_DELETE,
+        isDir: false,
+      },
+      qc,
+      fakeRuntimeClient,
+      state,
+    );
+
+    expect(removeFile).toHaveBeenCalledWith("/.env");
+    expect(eventBus.emit).toHaveBeenCalledWith("env-file-updated", "/.env");
+  });
+
   it("invalidates git status on a non-dir file event", async () => {
     const qc = fakeQueryClient();
     const state = makeState();
@@ -229,10 +269,10 @@ describe("handleFileEvent", () => {
     );
 
     const gitStatusKey = getRuntimeServiceGitStatusQueryKey(INSTANCE_ID, {});
-    const gitHit = qc.invalidateQueries.mock.calls.some(
-      ([arg]) =>
-        Array.isArray(arg.queryKey) &&
-        JSON.stringify(arg.queryKey) === JSON.stringify(gitStatusKey),
+    const gitHit = qc.getQueryData.mock.calls.some(
+      ([queryKey]) =>
+        Array.isArray(queryKey) &&
+        JSON.stringify(queryKey) === JSON.stringify(gitStatusKey),
     );
     expect(gitHit).toBe(true);
   });

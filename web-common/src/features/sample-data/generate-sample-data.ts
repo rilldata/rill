@@ -5,7 +5,7 @@ import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { navigateToHome } from "@rilldata/web-common/layout/navigation/editor-routing";
@@ -49,13 +49,14 @@ export async function generateSampleData(
     const conversationManager = getConversationManager(client, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
+      surface: "developer",
     });
 
     // Continue with the current chat. We might want to revisit this based on feedback.
     const conversation = get(conversationManager.getCurrentConversation());
     conversation.cancelStream();
 
-    sidebarActions.startChat(userPrompt);
+    developerChatActions.startChat(userPrompt);
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(conversation.isStreaming));
 

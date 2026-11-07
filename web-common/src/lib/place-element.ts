@@ -58,7 +58,7 @@ export function placeElement({
   const parentWidth = parentPosition.width;
   const parentHeight = parentPosition.height;
 
-  // Task 1: check if we need to reflect agains the location axis.
+  // Task 1: check if we need to reflect against the location axis.
   if (location === "bottom") {
     if (
       overflowFlipY &&

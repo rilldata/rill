@@ -1,5 +1,6 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CanvasComponent from "./CanvasComponent.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
@@ -14,6 +15,10 @@
   export let components: Map<string, BaseCanvasComponent>;
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
+  export let activeComponentId: string | null = null;
+  // When false, components render eagerly without lazy-load (PDF export).
+  export let lazy: boolean = true;
+  export let idPrefix: string = "";
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -21,7 +26,7 @@
 
   $: itemIds = $_itemIds;
 
-  $: id = `canvas-row-${rowIndex}`;
+  $: id = `canvas-row-${idPrefix}${rowIndex}`;
 </script>
 
 <RowWrapper
@@ -36,9 +41,14 @@
     {@const component = components.get(id)}
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if component}
-        <CanvasComponent {component} {navigationEnabled} />
+        <CanvasComponent
+          {component}
+          {navigationEnabled}
+          {lazy}
+          active={activeComponentId === id}
+        />
       {:else}
-        <ComponentError error="No valid component {id} in project" />
+        <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
     </ItemWrapper>
   {/each}

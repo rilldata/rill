@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
@@ -96,11 +97,12 @@
       <span class="font-semibold !text-fg-inverse">{tooltipValue}</span>
       <div class="flex flex-row gap-x-6 items-baseline text-fg-disabled">
         <div>
-          <StackingWord key="shift">Copy</StackingWord>
-          this value to clipboard
+          <StackingWord key="shift">{m.chart_copy_to_clipboard()}</StackingWord>
+          {m.leaderboard_copy_value()}
         </div>
         <Shortcut>
-          <span style="font-family: var(--system);">⇧</span> + Click
+          <span style="font-family: var(--system);">⇧</span>
+          {m.leaderboard_shift_click()}
         </Shortcut>
       </div>
     </Tooltip.Content>

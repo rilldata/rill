@@ -20,6 +20,7 @@ import {
 } from "@rilldata/web-common/runtime-client/sse";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { waitForControllerRestart } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 
 const MAX_RETRIES = 3;
 
@@ -100,7 +101,12 @@ export class FileAndResourceWatcher {
         maxRetryAttempts: MAX_RETRIES,
         retryOnError: true,
         retryOnClose: true,
-        onBeforeReconnect: options.onBeforeReconnect,
+        onBeforeReconnect: async () => {
+          await options.onBeforeReconnect?.();
+          // .env and OLAP changes restart the controller. Opening the stream
+          // while it is closed consumes retries and can leave a fatal page.
+          await waitForControllerRestart(this.runtimeClient, this.queryClient);
+        },
       },
       decoders: {
         file: (data) => JSON.parse(data) as V1WatchFilesResponse,
@@ -150,9 +156,14 @@ export class FileAndResourceWatcher {
     // disconnected may have been dropped, so we force a full re-fetch of
     // runtime-scoped queries and refresh the file-artifacts index.
     this.stream.onConnection("reconnect", () => {
-      void this.invalidateAll().then(() =>
-        fileArtifacts.init(this.runtimeClient, this.queryClient),
-      );
+      void this.invalidateAll()
+        .then(() => fileArtifacts.init(this.runtimeClient, this.queryClient))
+        .catch((error: unknown) => {
+          console.warn(
+            "Failed to refresh runtime state after reconnect",
+            error,
+          );
+        });
     });
   }
 

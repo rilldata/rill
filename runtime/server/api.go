@@ -34,6 +34,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
+	// Tag as programmatic API access so the queries it triggers are attributed to the "api" source.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAPI)
+
 	// Check if user has access to query for API data
 	claims := auth.GetClaims(ctx, instanceID)
 	if !claims.Can(runtime.ReadAPI) {
@@ -57,20 +60,27 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Find the API resource
-	api, err := s.runtime.APIForName(ctx, instanceID, apiName)
+	api, err := s.runtime.APIForName(ctx, instanceID, apiName, claims)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return httputil.Errorf(http.StatusNotFound, "api with name %q not found", apiName)
 		}
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Errorf(http.StatusForbidden, "does not have access to api %q", apiName)
+		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// Rewrite the claims before passing them to the resolver
+	// Rewrite the claims before passing them to the resolver.
+	// Claims are not shared(except in tests) but copy just to be safe.
 	if api.Spec.SkipNestedSecurity {
-		claims.SkipChecks = true
+		nested := *claims
+		nested.SkipChecks = true
+		claims = &nested
 	}
 
-	// Resolve the API to JSON data
+	// Resolve the API to JSON data.
+	// API templates never access project variables (the parser rejects references to them), so ProjectDeclared is left unset.
 	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
@@ -79,6 +89,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		Claims:             claims,
 	})
 	if err != nil {
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Error(http.StatusForbidden, err)
+		}
 		return httputil.Error(http.StatusBadRequest, err)
 	}
 	defer res.Close()

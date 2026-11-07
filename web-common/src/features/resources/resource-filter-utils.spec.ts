@@ -11,13 +11,14 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 function makeResource(
   name: string,
   kind: string,
-  opts: { error?: string; status?: V1ReconcileStatus } = {},
+  opts: { error?: string; status?: V1ReconcileStatus; tags?: string[] } = {},
 ): V1Resource {
   return {
     meta: {
       name: { name, kind },
       reconcileError: opts.error,
       reconcileStatus: opts.status ?? V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+      tags: opts.tags,
     },
   } as V1Resource;
 }
@@ -151,5 +152,39 @@ describe("filterResources", () => {
       "error",
     ]);
     expect(result).toHaveLength(0);
+  });
+
+  describe("tag filtering", () => {
+    const tagged = [
+      makeResource("m1", ResourceKind.Model, { tags: ["finance"] }),
+      makeResource("m2", ResourceKind.Model, { tags: ["finance", "pii"] }),
+      makeResource("m3", ResourceKind.Model, { tags: ["marketing"] }),
+      makeResource("m4", ResourceKind.Model),
+    ];
+
+    it("returns all when no tag filter is applied", () => {
+      expect(filterResources(tagged, [], "", [], [])).toHaveLength(4);
+    });
+
+    it("matches resources that include any of the selected tags", () => {
+      const result = filterResources(tagged, [], "", [], ["finance"]);
+      expect(result.map((r) => r.meta?.name?.name)).toEqual(["m1", "m2"]);
+    });
+
+    it("ORs across selected tags", () => {
+      const result = filterResources(
+        tagged,
+        [],
+        "",
+        [],
+        ["marketing", "finance"],
+      );
+      expect(result.map((r) => r.meta?.name?.name)).toEqual(["m1", "m2", "m3"]);
+    });
+
+    it("excludes resources with no tags when a tag filter is active", () => {
+      const result = filterResources(tagged, [], "", [], ["finance"]);
+      expect(result.some((r) => r.meta?.name?.name === "m4")).toBe(false);
+    });
   });
 });

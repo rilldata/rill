@@ -1,6 +1,6 @@
 ---
-title: "Sharing Dashboards with a public URL"
-description: Sharing Dashboard with a few clicks using the public link
+title: "Sharing Dashboards with a Public URL"
+description: Share dashboards with a few clicks using a public link
 sidebar_label: "Public Shareable URLs"
 sidebar_position: 36
 ---
@@ -22,7 +22,7 @@ If you want to set an expiration, please select the toggle and set the expiratio
 
 ### What the recipient sees
 
-As expected, when opening the public URL, the user can view the dashboard. Like a logged-in user, they are able to navigate within the dashboard and drill or slice-and-dice as needed. Unlike a logged in user, they are not able to make any changes to the filter that you've set.
+As expected, when opening the public URL, the user can view the dashboard. Like a logged-in user, they are able to navigate within the dashboard and drill or slice-and-dice as needed. Unlike a logged-in user, they are not able to make any changes to the filters that you've set.
 
 :::info Did you know?
 
@@ -32,13 +32,13 @@ In fact, users who click on a public shareable URL cannot see the parent filters
 
 ## How to manage public URLs
 
-### via the UI
+### Via the UI
 You can now manage public URLs via the UI. You will find a new "settings" tab in the Rill Cloud UI as an administrator.
 
 ![Public URL Settings](/img/explore/publicurl/public-url-settings.png)
 
 
-### via the CLI
+### Via the CLI
 ```
 rill public-url
 Manage public URLs
@@ -63,11 +63,11 @@ Global Flags:
 Use "rill public-url [command] --help" for more information about a command.
 
 ```
-Using the Rill CLI, you can list, create or delete public URLs.
+Using the Rill CLI, you can list, create, or delete public URLs.
 
 #### Deleting a public URL
 
-To delete a public URL, you will need an `id` parameter. In order to retrieve the appropriate `id`, you will need to first list out the public URLs. You can do so using the below with any flags to help you. 
+To delete a public URL, you will need an `id` parameter. In order to retrieve the appropriate `id`, you will need to first list out the public URLs. You can do so using the command below with any flags that help you.
 
 ```
 rill public-url list 
@@ -80,6 +80,4 @@ rill public-url delete <id>
 ```
 
 If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.)
-
-
 

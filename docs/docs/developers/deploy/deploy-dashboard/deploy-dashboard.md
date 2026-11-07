@@ -1,5 +1,6 @@
 ---
 title: Deploy Dashboards 
+description: Deploy a Rill Developer project to Rill Cloud to share its dashboards
 sidebar_label: Deploy Dashboards 
 sidebar_position: 00
 ---
@@ -40,7 +41,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 
 ![Deploy UI](/img/deploy/existing-project/deploy-ui.gif)
 
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section. 
+Now that your project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section.
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
 
@@ -70,7 +71,7 @@ The required permissions are:
 
 At this point, you have the option to connect your Rill project to a GitHub Repository.
 
-Navigating to the Settings page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
+Navigating to the Settings page and selecting `Connect to GitHub` will prompt you to log in and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
 
 :::info Check with your GitHub organization admin
 
@@ -123,7 +124,7 @@ If you have not already [configured your connections' credentials](https://docs.
 
 **First deployment**
 
-If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
+If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign-up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
 
 ![Rill Cloud Sign In](/img/deploy/existing-project/rill-cloud-sign-in.png)
 
@@ -141,7 +142,7 @@ Once the project has been uploaded to Rill Cloud, you should be able to see the 
 
 
 ### Deploy Project with Repository
-Follow the instructions in the Terminal to login to GitHub (if not already done so), and select your repository.
+Follow the instructions in the Terminal to log in to GitHub (if not already done so), and select your repository.
 If you do not set any parameters, Rill will infer the project name based on the folder path and use this as both the repository and project name. If there are any overlaps, we will request for a new name.
 ```bash
 rill project connect-github
@@ -171,7 +172,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-Once completed, you will see the following in the settings page. Note that the GitHub repository is already setup!
+Once completed, you will see the following in the settings page. Note that the GitHub repository is already set up!
 
 ![Cli Upload](/img/deploy/existing-project/cli-upload.png)
 
@@ -179,7 +180,7 @@ Once completed, you will see the following in the settings page. Note that the G
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing some issues with the project after pushing changes to the CLI, please refer to the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using GitHub or by re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing issues with the project after pushing changes with the CLI, please refer to the project's status page for more information, or run the following command:
 
 ```
 rill project status
@@ -187,9 +188,9 @@ rill project status
 
 Likewise, if using the UI by selecting the `Update` button, Rill will detect the changes in files and update your deployed project accordingly. Along with the above CLI command, you can view the status of the objects in the Status page.
 
-:::tip Interested in using Gitlab?
+:::tip Interested in using GitLab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](/developers/deploy/deploy-dashboard/deploy-from-cli)!
+Check out our documentation on deploying a [Rill project using GitLab](/developers/deploy/deploy-dashboard/deploy-from-cli)!
 
 :::
 
@@ -208,7 +209,7 @@ rill connect-github --prod-branch [PROD-BRANCH]
 
 ## Deploy from a monorepo
 
-If your Rill project is in a sub-directory of a Git repository, use the `--subpath` option when creating your project:
+If your Rill project is in a subdirectory of a Git repository, use the `--subpath` option when creating your project:
 ```
 rill connect-github --subpath path/to/rill/project
 ```
@@ -231,7 +232,7 @@ rill deploy
 
 ### Enable Automatic deploys
 
-Like running `rill project connect-github`, you will be [prompted to create a github repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the settings page.
+Like running `rill project connect-github`, you will be [prompted to create a GitHub repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the settings page.
 
 
 ### Disable Automatic deploys

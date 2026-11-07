@@ -252,6 +252,8 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			if text := blockType.Text; text != "" {
 				responseText += text
 			}
+		case *aiv1.ContentBlock_Reasoning:
+			// Skip the model's reasoning; only its response is needed.
 		default:
 			// For metrics view generation, we only expect text responses
 			return nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
@@ -274,6 +276,10 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
+	if doc.DisplayName == "" {
+		doc.DisplayName = identifierToDisplayName(tbl.Name)
+	}
+	doc.Explore = &metricsViewExploreYAML{DisplayName: doc.DisplayName + " dashboard"}
 	for _, measure := range doc.Measures {
 		// Apply the default format preset to measures (the AI doesn't set the format preset).
 		measure.FormatPreset = "humanize"
@@ -425,6 +431,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isM
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl, dialect),
+		Explore:       &metricsViewExploreYAML{DisplayName: identifierToDisplayName(tbl.Name) + " dashboard"},
 	}
 
 	doc.Connector = connector
@@ -525,6 +532,13 @@ type metricsViewYAML struct {
 	TimeDimension  string                      `yaml:"timeseries,omitempty"`
 	Dimensions     []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
 	Measures       []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
+	Explore        *metricsViewExploreYAML     `yaml:"explore,omitempty"`
+}
+
+// metricsViewExploreYAML enables the inline explore dashboard for a generated metrics view.
+// It must always be marshaled with at least one key: a null `explore:` value does not enable the explore.
+type metricsViewExploreYAML struct {
+	DisplayName string `yaml:"display_name"`
 }
 
 type metricsViewDimensionYAML struct {
@@ -534,11 +548,12 @@ type metricsViewDimensionYAML struct {
 }
 
 type metricsViewMeasureYAML struct {
-	Name         string `yaml:"name"`
-	DisplayName  string `yaml:"display_name"`
-	Expression   string `yaml:"expression"`
-	Description  string `yaml:"description"`
-	FormatPreset string `yaml:"format_preset,omitempty"`
+	Name          string `yaml:"name"`
+	DisplayName   string `yaml:"display_name"`
+	Expression    string `yaml:"expression"`
+	Description   string `yaml:"description"`
+	FormatPreset  string `yaml:"format_preset,omitempty"`
+	LowerIsBetter bool   `yaml:"lower_is_better,omitempty"`
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {
@@ -583,7 +598,7 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 				keyNode := node.Content[i].Content[j]
 				valueNode := node.Content[i].Content[j+1]
 
-				if keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+				if keyNode.Value == "dimensions" || keyNode.Value == "measures" || keyNode.Value == "explore" {
 					keyNode.HeadComment = "\n"
 				}
 				if keyNode.Value == "type" {

@@ -5,6 +5,7 @@
   import { Search } from "@rilldata/web-common/components/search";
   import GlobalDimensionSearchResults from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResults.svelte";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let searchBarOpen = false;
   let searchText = "";
@@ -30,7 +31,7 @@
       <Search
         bind:value={searchText}
         {onSubmit}
-        placeholder="Search dimensions"
+        placeholder={m.dashboard_search_dimensions()}
         autofocus
         border={false}
         background={false}

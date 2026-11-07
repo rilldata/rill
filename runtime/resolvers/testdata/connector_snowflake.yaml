@@ -1,3 +1,4 @@
+skip: true # skipping due to inactive Snowflake account
 expensive: true
 connectors:
   - clickhouse

@@ -4,10 +4,14 @@ import {
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
+export const FileTooLargeError = new Error(
+  "File exceeds the maximum size. Please choose a smaller file to continue.",
+);
+
 export async function uploadFile(
   client: RuntimeClient,
   file: File,
-): Promise<string | undefined> {
+): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -22,10 +26,11 @@ export async function uploadFile(
     if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
     return filePath;
   } catch (err) {
-    console.error(err);
+    if (err.message.includes("413")) {
+      throw FileTooLargeError;
+    }
+    throw err;
   }
-
-  return undefined;
 }
 
 export function openFileUploadDialog(multiple = true) {

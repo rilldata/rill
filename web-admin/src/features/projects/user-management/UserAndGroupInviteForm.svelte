@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceAddProjectMemberUser,
     createAdminServiceAddProjectMemberUsergroup,
     getAdminServiceListOrganizationMemberUsersQueryOptions,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import { invalidateOrgMemberUsers } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -88,24 +89,29 @@
           project,
         ),
       }),
-      queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-        type: "all", // Clear regular and inactive queries
-      }),
+      invalidateOrgMemberUsers(queryClient, organization),
     ]);
 
     // Generate success notification message
     let successMessage = "";
-    if (succeededEmails.length > 0) {
-      successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
-    }
-    if (succeededGroups.length > 0) {
-      if (successMessage) successMessage += " and ";
-      successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+    if (succeededEmails.length > 0 && succeededGroups.length > 0) {
+      successMessage = m.users_invited_and_added_success({
+        emails: succeededEmails.length,
+        groups: succeededGroups.length,
+        role,
+      });
+    } else if (succeededEmails.length > 0) {
+      successMessage = m.users_invited_success({
+        count: succeededEmails.length,
+        role,
+      });
+    } else if (succeededGroups.length > 0) {
+      successMessage = m.users_added_groups_success({
+        count: succeededGroups.length,
+        role,
+      });
     }
     if (successMessage) {
-      successMessage += ` as ${role}`;
       eventBus.emit("notification", {
         type: "success",
         message: successMessage,
@@ -117,7 +123,10 @@
       const groupsText = failedGroups.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
+        message: m.users_failed_add_groups({
+          groups: groupsText,
+          count: failedGroups.length,
+        }),
       });
     }
 
@@ -125,7 +134,10 @@
       const emailsText = failedEmails.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
+        message: m.users_failed_invite_users({
+          emails: emailsText,
+          count: failedEmails.length,
+        }),
       });
     }
 
@@ -137,7 +149,7 @@
     return (
       RFC5322EmailRegex.test(value) ||
       /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/.test(value) ||
-      "Must be a valid email or group name"
+      m.project_share_invalid_email_or_group()
     );
   }
 
@@ -187,7 +199,7 @@
 <SearchAndInviteInput
   onSearch={handleSearch}
   onInvite={onInviteHandler}
-  placeholder="Email or group, separated by commas"
+  placeholder={m.users_email_or_group_placeholder()}
   validators={[emailOrGroupValidator]}
   roleSelect={true}
   initialRole={ProjectUserRoles.Viewer}

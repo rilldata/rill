@@ -9,6 +9,8 @@ import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
 import { createDarkVariation } from "./color-generation";
 
+type Shade = (typeof TailwindColorSpacing)[number];
+
 export class Theme {
   colors: { light: Colors; dark: Colors };
   spec: V1ThemeSpec;
@@ -43,6 +45,58 @@ export class Theme {
       light: resolveThemeObject(spec, false) ?? {},
     };
   }
+
+  /**
+   * Semantic tokens that app.css derives from Rill's own primary/secondary palettes.
+   *
+   * Those declarations live on :root, and a custom property's var() references are
+   * substituted at the element that declares it. So they always resolve against the
+   * default Rill palette, and a dashboard theme -- which is scoped to the
+   * .dashboard-theme-boundary element further down the tree -- can never influence them.
+   * The result is Rill's indigo leaking into hover, selection, focus rings, and dimension
+   * and measure chips on a rethemed dashboard.
+   *
+   * Re-declaring them on the boundary from the theme's own palettes fixes that. The shades
+   * below mirror app.css exactly, so only the hue source changes, not the design.
+   *
+   * `light` is the shade :root uses, `dark` the shade :root.dark uses. Both read from the
+   * un-darkened palette of the mode's own primary, because :root.dark also picks
+   * light-palette shades (--color-primary-light-*) -- they stay legible against dark
+   * surfaces. A token with no `dark` shade is not palette-derived in dark mode (dark
+   * surfaces are neutral grays) and is left to app.css.
+   */
+  private static PALETTE_DERIVED_TOKENS: {
+    token: keyof Colors;
+    source: "primary" | "secondary";
+    light: Shade;
+    dark?: Shade;
+  }[] = [
+    { token: "surface-hover", source: "primary", light: 50 },
+    { token: "surface-active", source: "primary", light: 100 },
+    { token: "fg-accent", source: "primary", light: 900, dark: 100 },
+    { token: "accent-primary", source: "primary", light: 500, dark: 600 },
+    {
+      token: "accent-primary-action",
+      source: "primary",
+      light: 500,
+      dark: 400,
+    },
+    { token: "accent-secondary", source: "primary", light: 500, dark: 700 },
+    {
+      token: "accent-secondary-action",
+      source: "secondary",
+      light: 500,
+      dark: 400,
+    },
+    { token: "icon-accent", source: "primary", light: 500, dark: 400 },
+    { token: "ring-focus", source: "primary", light: 300, dark: 500 },
+    { token: "dimension", source: "primary", light: 100, dark: 950 },
+    { token: "dimension-foreground", source: "primary", light: 800, dark: 100 },
+    { token: "dimension-border", source: "primary", light: 800, dark: 800 },
+    { token: "measure", source: "secondary", light: 100, dark: 950 },
+    { token: "measure-foreground", source: "secondary", light: 800, dark: 100 },
+    { token: "measure-border", source: "secondary", light: 800, dark: 800 },
+  ];
 
   // Opacity percentages for fg-* hierarchy when auto-generating from fg-primary
   private static FG_OPACITY_HIERARCHY: Record<string, number> = {
@@ -89,9 +143,15 @@ export class Theme {
     const lightColors = this.colors.light;
 
     for (const [k] of Object.entries(lightColors)) {
-      if (!(k in darkColors)) {
-        darkColors[k] = undefined;
-      }
+      if (k in darkColors) continue;
+
+      // A light-only token is reset to `unset` in dark mode, so the boundary inherits
+      // :root.dark instead of keeping the light value. The fg-* hierarchy is the exception:
+      // stringifyVars only fills a slot that isn't already a key, so an `unset` placeholder
+      // would suppress the value dark's own fg-primary should produce.
+      if (darkColors["fg-primary"] && k in Theme.FG_OPACITY_HIERARCHY) continue;
+
+      darkColors[k] = undefined;
     }
 
     const css = `
@@ -134,26 +194,35 @@ export class Theme {
     const finalColors: Colors = {};
     const { primary, secondary, variables } = colors;
 
+    let primaryPalette: Color[] | undefined;
+    let secondaryPalette: Color[] | undefined;
+
     if (primary) {
       const primaryReference = getChroma(primary);
-      const primaryPalette = generateColorPalette(primaryReference);
+      primaryPalette = generateColorPalette(primaryReference);
       const finalColorPalette = dark
         ? createDarkVariation(primaryPalette)
         : primaryPalette;
       for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-${TailwindColorSpacing[i]}`] = color;
+        // Alias Rill's own palette to the theme's inside the boundary, so the ~300
+        // `bg-primary-500`-style utilities scattered through dashboard components follow
+        // the theme too. Only shadowed within the boundary: the rest of the app -- nav,
+        // file explorer, admin chrome -- keeps Rill's brand colors.
+        finalColors[`color-primary-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.primary = primaryReference;
     }
 
     if (secondary) {
       const secondaryReference = getChroma(secondary);
-      const secondaryPalette = generateColorPalette(secondaryReference);
+      secondaryPalette = generateColorPalette(secondaryReference);
       const finalColorPalette = dark
         ? createDarkVariation(secondaryPalette)
         : secondaryPalette;
       for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-secondary-${TailwindColorSpacing[i]}`] = color;
+        finalColors[`color-secondary-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.secondary = secondaryReference;
     }
@@ -163,7 +232,49 @@ export class Theme {
       finalColors[k] = getChroma(v);
     }
 
+    this.applyPaletteDerivedTokens(
+      finalColors,
+      { primary: primaryPalette, secondary: secondaryPalette },
+      dark,
+    );
+
     return finalColors;
+  }
+
+  /**
+   * Fills in the semantic tokens listed in PALETTE_DERIVED_TOKENS from the theme's
+   * palettes. Tokens the theme sets explicitly are left untouched, as are tokens whose
+   * source palette the theme doesn't define: a theme with only a primary color keeps
+   * Rill's defaults for the secondary-derived tokens.
+   */
+  private applyPaletteDerivedTokens(
+    finalColors: Colors,
+    palettes: { primary?: Color[]; secondary?: Color[] },
+    dark: boolean,
+  ): void {
+    for (const {
+      token,
+      source,
+      light,
+      dark: darkShade,
+    } of Theme.PALETTE_DERIVED_TOKENS) {
+      if (token in finalColors) continue;
+
+      // fg-accent is part of the fg-* hierarchy generated from fg-primary in stringifyVars.
+      // A theme that sets its own fg-primary owns fg-accent too, so leave it alone.
+      if (token === "fg-accent" && "fg-primary" in finalColors) continue;
+
+      const shade = dark ? darkShade : light;
+      if (shade === undefined) continue;
+
+      const color = palettes[source]?.[TailwindColorSpacing.indexOf(shade)];
+      if (color) finalColors[token] = color;
+    }
+
+    // popover-accent follows surface-hover, mirroring app.css.
+    if (!("popover-accent" in finalColors) && finalColors["surface-hover"]) {
+      finalColors["popover-accent"] = finalColors["surface-hover"];
+    }
   }
 }
 

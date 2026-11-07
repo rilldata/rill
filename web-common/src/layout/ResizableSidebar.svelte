@@ -20,18 +20,24 @@
   export let defaultWidth: number;
   export let maxWidth: number;
   export let additionalClass = "";
+  export let side: "left" | "right" | "top" | "bottom" = "left";
 
   const store = getWidthStore(id, defaultWidth);
 </script>
 
-<div class="h-full relative {additionalClass}" style="width: {$store}px">
+<!-- `shrink-0` keeps flexbox from squeezing the sidebar below its resized width;
+     siblings that should absorb the remaining space need `min-w-0` to be shrinkable. -->
+<div
+  class="h-full relative shrink-0 {additionalClass}"
+  style="width: {$store}px"
+>
   <Resizer
     min={minWidth}
     max={maxWidth}
     basis={defaultWidth}
     dimension={$store}
     direction="EW"
-    side="left"
+    {side}
     onUpdate={(d) => store.set(d)}
   />
   <slot />

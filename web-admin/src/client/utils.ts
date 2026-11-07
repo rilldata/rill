@@ -4,7 +4,9 @@ import type { AxiosError } from "axios";
 import { derived, type Readable } from "svelte/store";
 
 export function isAdminServerQuery(query: Query): boolean {
-  const [apiPath] = query.queryKey as string[];
+  const [apiPath] = query.queryKey as unknown[];
+  if (typeof apiPath !== "string") return false;
+
   const adminApiEndpoints = [
     "/v1/deployments",
     "/v1/github",

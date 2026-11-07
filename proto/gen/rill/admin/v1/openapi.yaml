@@ -21,10 +21,24 @@ components:
             properties:
                 editUrl:
                     type: string
+                embedOwner:
+                    description: |-
+                        If true, the recipient is the embed user who created the report.
+                        Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+                    type: boolean
                 exportUrl:
                     type: string
                 openUrl:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    description: |-
+                        If true, the report's data must only be accessed through the resources listed in `resources`.
+                        Set for reports created from an embed that was limited to specific resources.
+                    type: boolean
                 unsubscribeUrl:
                     type: string
                 userAttrs:
@@ -118,6 +132,16 @@ components:
                     items:
                         type: string
                     type: array
+                exportAttach:
+                    description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+                    type: boolean
+                exportFormat:
+                    $ref: '#/components/schemas/v1ExportFormat'
+                exportIncludeHeader:
+                    type: boolean
+                exportLimit:
+                    format: uint64
+                    type: string
                 intervalDuration:
                     type: string
                 metricsViewName:
@@ -188,6 +212,8 @@ components:
             type: string
         v1BillingIssueMetadata:
             properties:
+                message:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataMessage'
                 neverSubscribed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
@@ -206,6 +232,11 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+            type: object
+        v1BillingIssueMetadataMessage:
+            properties:
+                message:
+                    type: string
             type: object
         v1BillingIssueMetadataNeverSubscribed:
             type: object
@@ -301,6 +332,7 @@ components:
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                 - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                 - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                - BILLING_ISSUE_TYPE_MESSAGE
             type: string
         v1BillingPlan:
             properties:
@@ -335,6 +367,8 @@ components:
                 - BILLING_PLAN_TYPE_ENTERPRISE
                 - BILLING_PLAN_TYPE_FREE
                 - BILLING_PLAN_TYPE_PRO
+                - BILLING_PLAN_TYPE_STARTER
+                - BILLING_PLAN_TYPE_GROWTH
             type: string
         v1Bookmark:
             properties:
@@ -372,6 +406,11 @@ components:
             type: object
         v1CompleteRequest:
             properties:
+                includeReasoning:
+                    description: |-
+                        Whether the response may include reasoning blocks.
+                        Older clients don't support them, so they are removed from the response unless this is set.
+                    type: boolean
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:
@@ -388,8 +427,16 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cacheWriteInputTokens:
+                    description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+                    format: int64
+                    type: integer
+                cachedInputTokens:
+                    description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+                    format: int64
+                    type: integer
                 inputTokens:
-                    description: Number of tokens in the input.
+                    description: Number of full-rate (non-cached) tokens in the input.
                     format: int64
                     type: integer
                 message:
@@ -398,6 +445,9 @@ components:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
+                provider:
+                    description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+                    type: string
             type: object
         v1CompletionMessage:
             properties:
@@ -425,6 +475,8 @@ components:
             type: object
         v1ContentBlock:
             properties:
+                reasoning:
+                    $ref: '#/components/schemas/v1Reasoning'
                 text:
                     type: string
                 toolCall:
@@ -511,6 +563,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -537,12 +594,25 @@ components:
             type: object
         v1DeleteAlertResponse:
             type: object
+        v1DeleteConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    type: string
+                connector:
+                    type: string
+                userId:
+                    type: string
+            type: object
+        v1DeleteConnectorOAuthTokenResponse:
+            type: object
         v1DeleteDeploymentResponse:
             properties:
                 deploymentId:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -611,6 +681,8 @@ components:
             type: string
         v1EditAlertResponse:
             type: object
+        v1EditPersonalFileResponse:
+            type: object
         v1EditReportResponse:
             type: object
         v1ExportFormat:
@@ -620,6 +692,7 @@ components:
                 - EXPORT_FORMAT_CSV
                 - EXPORT_FORMAT_XLSX
                 - EXPORT_FORMAT_PARQUET
+                - EXPORT_FORMAT_PDF
             type: string
         v1Expression:
             properties:
@@ -654,6 +727,12 @@ components:
             properties:
                 yaml:
                     type: string
+            type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
             type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
@@ -707,6 +786,32 @@ components:
                 gitUsername:
                     type: string
             type: object
+        v1GetConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    description: |-
+                        Hash of the connector's current OAuth configuration, as computed by the runtime.
+                        A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+                    type: string
+                connector:
+                    description: Name of the connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
+                    type: string
+            type: object
         v1GetCurrentMagicAuthTokenResponse:
             properties:
                 token:
@@ -735,6 +840,11 @@ components:
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                systemVariables:
+                    additionalProperties:
+                        type: string
+                    description: System variables set by the admin service that should not be overridden by user input.
+                    type: object
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -776,6 +886,12 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetEmbedUserResponse:
+            properties:
+                externalUserId:
+                    description: The external user ID passed to GetIFrame.
+                    type: string
             type: object
         v1GetGithubPullRequestResponse:
             properties:
@@ -849,6 +965,13 @@ components:
         v1GetPaymentsPortalURLResponse:
             properties:
                 url:
+                    type: string
+            type: object
+        v1GetPersonalFileResponse:
+            properties:
+                path:
+                    type: string
+                yaml:
                     type: string
             type: object
         v1GetProjectAccessRequestResponse:
@@ -1087,6 +1210,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1341,6 +1471,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -1368,12 +1500,19 @@ components:
             type: object
         v1OrganizationInvite:
             properties:
+                attributes:
+                    type: object
                 email:
                     type: string
                 invitedBy:
                     type: string
                 roleName:
                     type: string
+                usergroups:
+                    description: Names of the user groups the user will be added to when the invite is accepted.
+                    items:
+                        type: string
+                    type: array
             type: object
         v1OrganizationMemberService:
             properties:
@@ -1460,6 +1599,9 @@ components:
                 projects:
                     format: int32
                     type: integer
+                seats:
+                    format: int32
+                    type: integer
                 slotsPerDeployment:
                     format: int32
                     type: integer
@@ -1526,6 +1668,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -1737,17 +1882,38 @@ components:
             type: object
         v1Quotas:
             properties:
+                apiCallsPerSeat:
+                    type: string
                 deployments:
                     type: string
                 outstandingInvites:
                     type: string
                 projects:
                     type: string
+                seats:
+                    type: string
                 slotsPerDeployment:
                     type: string
                 slotsTotal:
                     type: string
                 storageLimitBytesPerDeployment:
+                    type: string
+                tokensPerSeat:
+                    type: string
+            type: object
+        v1Reasoning:
+            description: |-
+                The model's reasoning before its text or tool calls.
+                Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+            properties:
+                redactedData:
+                    description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+                    type: string
+                signature:
+                    description: Opaque provider signature that lets the provider verify the reasoning.
+                    type: string
+                text:
+                    description: Readable reasoning. Often empty, since providers may omit it or return a summary.
                     type: string
             type: object
         v1RecordEventsRequest:
@@ -1798,9 +1964,19 @@ components:
                     items:
                         type: string
                     type: array
+                embedOwnerEmail:
+                    description: |-
+                        Email of the embed user who creates the report; only used for reports created from an embed.
+                        Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+                        It's always added to `email_recipients`, and it can't unsubscribe from the report.
+                        If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+                    type: string
                 explore:
                     title: either canvas or explore should be set
                     type: string
+                exportAttach:
+                    description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+                    type: boolean
                 exportFormat:
                     $ref: '#/components/schemas/v1ExportFormat'
                 exportIncludeHeader:
@@ -1810,6 +1986,13 @@ components:
                     type: string
                 intervalDuration:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    description: |-
+                        Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+                        Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+                    type: object
                 queryArgsJson:
                     title: use resolver/resolver_properties instead
                     type: string
@@ -2003,6 +2186,22 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
+        v1SudoDeleteOrganizationBillingMessageResponse:
+            type: object
+        v1SudoExtendTrialRequest:
+            properties:
+                days:
+                    format: int32
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoExtendTrialResponse:
+            properties:
+                trialEnd:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -2045,6 +2244,39 @@ components:
                 token:
                     type: string
             type: object
+        v1SudoReportUsageRequest:
+            properties:
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+                projectName:
+                    description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+                    type: string
+                value:
+                    format: double
+                    type: number
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+                value:
+                    format: double
+                    type: number
+            type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
         v1SudoTriggerBillingRepairResponse:
@@ -2081,6 +2313,8 @@ components:
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
             type: object
+        v1SudoUpdateOrganizationBillingMessageResponse:
+            type: object
         v1SudoUpdateOrganizationCustomDomainRequest:
             properties:
                 customDomain:
@@ -2089,6 +2323,19 @@ components:
                     type: string
             type: object
         v1SudoUpdateOrganizationCustomDomainResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
             properties:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
@@ -2104,6 +2351,9 @@ components:
                     format: int32
                     type: integer
                 projects:
+                    format: int32
+                    type: integer
+                seats:
                     format: int32
                     type: integer
                 slotsPerDeployment:
@@ -2352,6 +2602,11 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                pendingAcceptance:
+                    description: |-
+                        True if the user has been invited to the group but has not signed up yet.
+                        For pending members, user_id, user_name and user_photo_url are empty.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -2458,6 +2713,60 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListPublicBillingPlans lists all public billing plans
+    /v1/deployments/-/connector-oauth-token:
+        post:
+            operationId: AdminService_GetConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1GetConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+                refreshing it first if it is about to expire.
+                It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+                It can only be called by deployments.
+    /v1/deployments/-/connector-oauth-token/delete:
+        post:
+            operationId: AdminService_DeleteConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+                It can only be called by deployments.
     /v1/deployments/{deploymentId}:
         delete:
             operationId: AdminService_DeleteDeployment
@@ -2688,6 +2997,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -2718,6 +3030,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3012,6 +3327,33 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits:
+        get:
+            operationId: AdminService_GetBillingCreditBalance
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetBillingCreditBalanceResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
     /v1/orgs/{org}/billing/issues:
         get:
             operationId: AdminService_ListOrganizationBillingIssues
@@ -3376,12 +3718,25 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the new membership.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                    type: object
                                 email:
                                     type: string
                                 role:
                                     type: string
                                 superuserForceAccess:
                                     type: boolean
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                        Groups are additive: on a re-invite they are merged with the groups already on the invite.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3631,6 +3986,7 @@ paths:
                                 project:
                                     type: string
                                 provisioner:
+                                    description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
                                     type: string
                                 public:
                                     type: boolean
@@ -3804,11 +4160,17 @@ paths:
                                 devSlots:
                                     format: int64
                                     type: string
+                                devTtlSeconds:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     type: string
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string
@@ -3821,6 +4183,9 @@ paths:
                                 prodVersion:
                                     type: string
                                 provisioner:
+                                    description: |-
+                                        Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                                        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
                                     type: string
                                 public:
                                     type: boolean
@@ -4237,6 +4602,10 @@ paths:
                   name: userId
                   schema:
                     type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:
@@ -4296,6 +4665,42 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/embed-users/{id}:
+        get:
+            operationId: AdminService_GetEmbedUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - description: ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbedUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+                It is used to show which external user owns a report created from an embed.
     /v1/orgs/{org}/projects/{project}/github/pr:
         post:
             operationId: AdminService_CreateGithubPullRequest
@@ -4439,12 +4844,24 @@ paths:
                                         Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
                                         Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
                                     type: string
+                                hideNavigationBar:
+                                    description: |-
+                                        HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+                                        It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+                                        In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+                                    type: boolean
                                 kind:
                                     description: 'Deprecated: Alias for `type`.'
                                     type: string
                                 navigation:
                                     description: Navigation denotes whether navigation between different resources should be enabled in the embed.
                                     type: boolean
+                                open:
+                                    description: |-
+                                        The `rill_open` query param of an open link from an email sent by a report created from an embed.
+                                        If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+                                        Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+                                    type: string
                                 query:
                                     additionalProperties:
                                         type: string
@@ -4598,6 +5015,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the user's org membership (attributes are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting attributes requires permission to manage org members.
+                                    type: object
                                 email:
                                     type: string
                                 resources:
@@ -4608,6 +5031,14 @@ paths:
                                     type: boolean
                                 role:
                                     type: string
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to (user groups are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting user groups requires permission to manage org members.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -4775,6 +5206,185 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+    /v1/orgs/{org}/projects/{project}/personal-files:
+        get:
+            operationId: AdminService_ListPersonalFiles
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListPersonalFilesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListPersonalFiles lists the calling user's personal files.
+        post:
+            operationId: AdminService_CreatePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    type: string
+                                kind:
+                                    type: string
+                                yaml:
+                                    description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreatePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}:
+        delete:
+            operationId: AdminService_DeletePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeletePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeletePersonalFile deletes a personal virtual file the caller owns.
+        get:
+            operationId: AdminService_GetPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+        post:
+            operationId: AdminService_EditPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                kind:
+                                    type: string
+                                yaml:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1EditPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject
@@ -7136,6 +7746,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/billing/report-usage:
+        post:
+            operationId: AdminService_SudoReportUsage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoReportUsageRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoReportUsageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoReportUsage reports a mock usage event for an organization.
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain
@@ -7163,6 +7797,56 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
+    /v1/superuser/organization/default-provisioner:
+        patch:
+            operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+                Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
+    /v1/superuser/organization/trial/extend:
+        post:
+            operationId: AdminService_SudoExtendTrial
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoExtendTrialRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoExtendTrialResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoExtendTrial extends the trial period for an organization
     /v1/superuser/organization/trial/grant-credits:
         post:
             operationId: AdminService_SudoGrantTrialCredits
@@ -7211,6 +7895,7 @@ paths:
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                         - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                         - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                        - BILLING_ISSUE_TYPE_MESSAGE
                     type: string
             responses:
                 "200":
@@ -7226,6 +7911,63 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+    /v1/superuser/organizations/{org}/billing/message:
+        delete:
+            operationId: AdminService_SudoDeleteOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoDeleteOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+        post:
+            operationId: AdminService_SudoUpdateOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                level:
+                                    $ref: '#/components/schemas/v1BillingIssueLevel'
+                                message:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
     /v1/superuser/projects/annotations:
         patch:
             operationId: AdminService_SudoUpdateAnnotations
@@ -7691,11 +8433,15 @@ paths:
                   name: projectId
                   schema:
                     type: string
-                - in: query
+                - description: |-
+                    Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+                    When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+                  in: query
                   name: resourceKind
                   schema:
                     type: string
-                - in: query
+                - description: Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+                  in: query
                   name: resourceName
                   schema:
                     type: string

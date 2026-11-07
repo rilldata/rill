@@ -16,7 +16,7 @@ import { connectorFormCache } from "@rilldata/web-common/features/add-data/manag
 const ClickhouseSchema = "clickhouse";
 const ClickhouseConnector = "clickhouse_conn";
 const ClickhouseDriver = getConnectorDriverForSchema(ClickhouseSchema)!;
-const ClickhouseImportConfig: ImportStepConfig = {
+const ClickhouseImportConfig = {
   importSteps: [
     ImportDataStep.CreateMetricsView,
     ImportDataStep.CreateDashboard,
@@ -29,8 +29,7 @@ const ClickhouseImportConfig: ImportStepConfig = {
     database: "public",
   },
   importTo: {},
-  envBlob: null,
-};
+} as ImportStepConfig;
 
 describe("AddDataStateManager", () => {
   const TestCases: {

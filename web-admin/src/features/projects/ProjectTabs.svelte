@@ -6,6 +6,7 @@
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
@@ -13,48 +14,55 @@
   export let project: string;
   export let pathname: string;
   export let branchPrefix: string = "";
+  // Bookmarks belong to users, so anonymous viewers of public projects have none to manage.
+  export let hasUser: boolean = false;
 
   const { chat, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
       route: `/${organization}/${project}${branchPrefix}`,
-      label: "Home",
+      label: m.nav_tab_home(),
       hasPermission: true,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/ai`,
-      label: "AI",
+      label: m.nav_tab_ai(),
       hasPermission: $chat,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
-      label: "Dashboards",
+      label: m.nav_tab_dashboards(),
       hasPermission: true,
     },
     {
+      route: `/${organization}/${project}${branchPrefix}/-/bookmarks`,
+      label: m.nav_tab_bookmarks(),
+      hasPermission: hasUser,
+    },
+    {
       route: `/${organization}/${project}${branchPrefix}/-/query`,
-      label: "Query",
+      label: m.nav_tab_query(),
       hasPermission: false,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/reports`,
-      label: "Reports",
+      label: m.nav_tab_reports(),
       hasPermission: $reports,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/alerts`,
-      label: "Alerts",
+      label: m.nav_tab_alerts(),
       hasPermission: $alerts,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/status`,
-      label: "Status",
+      label: m.nav_tab_status(),
       hasPermission: projectPermissions.manageProject,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
-      label: "Settings",
+      label: m.nav_tab_settings(),
       hasPermission: projectPermissions.manageProject,
     },
   ];

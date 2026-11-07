@@ -6,6 +6,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { LogOut } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -38,11 +39,11 @@
 <Tooltip distance={8}>
   <Button type="secondary" {href} onClick={handleClick}>
     <LogOut size="14" />
-    Exit
+    {m.edit_exit()}
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">
-      {hasProdDeployment ? "Return to project home" : "Return to organization"}
+      {hasProdDeployment ? m.edit_return_to_project() : m.edit_return_to_org()}
     </span>
   </TooltipContent>
 </Tooltip>

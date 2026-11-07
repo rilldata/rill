@@ -1,4 +1,5 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
@@ -42,23 +43,23 @@ export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
 export function getStatusLabel(status: V1DeploymentStatus): string {
   switch (status) {
     case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-      return "Ready";
+      return m.status_deploy_ready();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-      return "Pending";
+      return m.status_deploy_pending();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-      return "Updating";
+      return m.status_deploy_updating();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
-      return "Stopping";
+      return m.status_deploy_stopping();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
-      return "Deleting";
+      return m.status_deploy_deleting();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-      return "Error";
+      return m.status_deploy_error();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
-      return "Stopped";
+      return m.status_deploy_stopped();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED:
-      return "Deleted";
+      return m.status_deploy_deleted();
     default:
-      return "Not deployed";
+      return m.status_deploy_not_deployed();
   }
 }
 

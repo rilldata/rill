@@ -2,6 +2,7 @@
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
 
   export let organization: string;
@@ -14,15 +15,15 @@
   <CancelCircleInverse size="7em" className="text-gray-200" />
   <div class="flex flex-col items-center space-y-2">
     <h1 class="text-lg font-semibold">
-      Sorry, your dashboard isn't working right now!
+      {m.dashboard_errored_title()}
     </h1>
     <p class="text-fg-secondary text-base">
       <ProjectAccessControls {organization} {project}>
         <svelte:fragment slot="manage-project">
-          View project status for errors that may help you find a fix.
+          {m.dashboard_errored_view_status()}
         </svelte:fragment>
         <svelte:fragment slot="read-project">
-          Contact your project's admin for help.
+          {m.dashboard_errored_contact_admin()}
         </svelte:fragment>
       </ProjectAccessControls>
     </p>
@@ -32,20 +33,20 @@
       <CtaButton
         variant="secondary"
         href={`/${organization}/${project}/-/status`}
-        >View project status
+        >{m.dashboard_errored_view_status_button()}
       </CtaButton>
     </svelte:fragment>
     <svelte:fragment slot="read-project">
       <CtaButton variant="secondary" href={`/${organization}/${project}`}
-        >View project
+        >{m.dashboard_errored_view_project()}
       </CtaButton>
     </svelte:fragment>
   </ProjectAccessControls>
   {#if !isEmbedded}
     <p class="text-fg-secondary">
-      Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
-        >Discord</a
-      >
+      {@html m.dashboard_errored_need_help({
+        link: `<a href="https://discord.gg/2ubRfjC7Rh">Discord</a>`,
+      })}
     </p>
   {/if}
 </div>

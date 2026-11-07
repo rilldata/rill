@@ -10,8 +10,6 @@ test.describe("smoke tests for number formatting", () => {
   test("smoke tests for number formatting", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // This is a metrics spec with all available formatting options
@@ -85,7 +83,7 @@ dimensions:
       ["No Format", "301k", "300,576.84"],
       ["percentage", "30.1M%", "30.1M%"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "301k", "300,576.84"],
+      ["d3 fixed", "300576.840", "300576.840"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(

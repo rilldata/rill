@@ -83,6 +83,12 @@ export const CANVAS_CHART_CONFIG: Record<ChartType, CanvasChartConfig> =
       type,
       {
         ...config,
+        // Re-declare title as a lazy getter: spreading `config` above would
+        // otherwise flatten CHART_CONFIG's title getter into a string frozen to
+        // the locale active at module load. Delegating keeps it locale-reactive.
+        get title() {
+          return CHART_CONFIG[type as ChartType].title;
+        },
         component: getCanvasChartComponent(type as ChartType),
       },
     ]),

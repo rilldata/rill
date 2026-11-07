@@ -14,6 +14,7 @@
   export let type: "measure" | "dimension" | "time" | "special" | "amber" =
     "dimension";
   export let gray = false;
+  export let error = false;
   export let exclude = false;
   export let grab = false;
   export let compact = false;
@@ -50,6 +51,7 @@
     class:active
     class:grab
     class:gray
+    class:error
     class:exclude
     class:compact
     class:fullWidth
@@ -90,21 +92,42 @@
     {/if}
 
     {#if $$slots.body}
-      <button
-        {onclick}
-        {onmousedown}
-        aria-label={`Open ${label}`}
-        class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
-        type="button"
-      >
-        <slot name="body" />
+      {#if readOnly && !allowPointerEvents}
+        <!-- A read-only chip has nothing to activate, so it must stay out of the tab order. -->
+        <span
+          class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
+        >
+          <slot name="body" />
 
-        {#if caret}
-          <span class="transition-transform -mr-0.5" class:-rotate-180={active}>
-            <CaretDownIcon size="10px" />
-          </span>
-        {/if}
-      </button>
+          {#if caret}
+            <span
+              class="transition-transform -mr-0.5"
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon size="10px" />
+            </span>
+          {/if}
+        </span>
+      {:else}
+        <button
+          {onclick}
+          {onmousedown}
+          aria-label={`Open ${label}`}
+          class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
+          type="button"
+        >
+          <slot name="body" />
+
+          {#if caret}
+            <span
+              class="transition-transform -mr-0.5"
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon size="10px" />
+            </span>
+          {/if}
+        </button>
+      {/if}
     {/if}
   </div>
 </div>
@@ -238,6 +261,21 @@
   .gray.theme:active,
   .gray.theme.active {
     @apply bg-gray-200 border-gray-400;
+  }
+
+  .error,
+  .error.theme,
+  .error.gray {
+    @apply bg-red-50 border-red-400 text-red-700;
+  }
+
+  .error:hover,
+  .error:active,
+  .error.active,
+  .error.theme:hover,
+  .error.theme:active,
+  .error.theme.active {
+    @apply bg-red-100 border-red-500;
   }
 
   .compact {

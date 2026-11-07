@@ -1,6 +1,7 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let label: string;
   export let values: string[];
@@ -24,18 +25,20 @@
   </span>
 
   {#if search}
-    <span>Contains</span>
+    <span>{m.dashboard_contains()}</span>
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}
       <span class="italic">{search} ({matchedCount})</span>
     {/if}
   {:else if matchedCount !== undefined}
-    <span>In list</span>
+    <span>{m.dashboard_in_list()}</span>
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}
-      <span class="italic">({matchedCount} of {values.length})</span>
+      <span class="italic"
+        >({matchedCount} {m.dashboard_of()} {values.length})</span
+      >
     {/if}
   {:else}
     {#if !smallChip}
@@ -48,11 +51,11 @@
 
     {#if smallChip}
       <span class="italic">
-        {values.length} selected
+        {m.dashboard_selected({ count: values.length })}
       </span>
     {:else if values.length > 1}
       <span class="italic flex-none">
-        +{whatsLeft} other{#if whatsLeft !== 1}s{/if}
+        {m.dashboard_others({ count: whatsLeft })}
       </span>
     {/if}
   {/if}

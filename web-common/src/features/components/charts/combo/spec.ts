@@ -49,7 +49,6 @@ export function generateVLComboChartSpec(
 
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.color);
-  const xField = sanitizeValueForVega(config.x?.field);
 
   const y1MarkType = config.y1?.mark || "bar";
   const y2MarkType = config.y2?.mark || "line";
@@ -93,20 +92,20 @@ export function generateVLComboChartSpec(
   // Transform data to long format for legend
   spec.transform = [
     {
-      fold: measures,
+      fold: measures.map((measure) => sanitizeValueForVega(measure)),
       as: [measureField, valueField],
     },
   ];
 
   spec.height = "container";
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  spec.encoding = { x: createPositionEncoding(config.x, data, "x") };
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [];
 
   // Add hover rule layer
   layers.push(
     buildHoverRuleLayer({
-      xField,
+      xField: config.x?.field,
       domainValues: data.domainValues,
       isBarMark: y1MarkType === "bar" || y2MarkType === "bar",
       defaultTooltip: defaultTooltipChannel,
@@ -160,15 +159,15 @@ export function generateVLComboChartSpec(
         ...(y1MarkType === "line" &&
           config.x?.type === "temporal" && {
             x: {
-              ...createPositionEncoding(config.x, data),
+              ...createPositionEncoding(config.x, data, "x"),
               bandPosition: 0.5,
             },
           }),
         y: {
-          ...createPositionEncoding(config.y1, data),
+          ...createPositionEncoding(config.y1, data, "y"),
           field: valueField,
           axis: {
-            ...createPositionEncoding(config.y1, data).axis,
+            ...createPositionEncoding(config.y1, data, "y").axis,
             orient: "left",
           },
         },
@@ -199,15 +198,15 @@ export function generateVLComboChartSpec(
         ...(y2MarkType === "line" &&
           config.x?.type === "temporal" && {
             x: {
-              ...createPositionEncoding(config.x, data),
+              ...createPositionEncoding(config.x, data, "x"),
               bandPosition: 0.5,
             },
           }),
         y: {
-          ...createPositionEncoding(config.y2, data),
+          ...createPositionEncoding(config.y2, data, "y"),
           field: valueField,
           axis: {
-            ...createPositionEncoding(config.y2, data).axis,
+            ...createPositionEncoding(config.y2, data, "y").axis,
             orient: "right",
           },
         },

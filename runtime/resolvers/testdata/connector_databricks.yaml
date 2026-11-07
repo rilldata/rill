@@ -1,3 +1,4 @@
+skip: true # skipping due to inactive Databricks account
 expensive: true
 connectors:
   - databricks

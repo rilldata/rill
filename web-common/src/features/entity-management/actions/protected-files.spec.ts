@@ -1,6 +1,16 @@
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
+import type { Snippet } from "svelte";
 import { setRuntimeEditEnvironment } from "../edit-environment.ts";
-import { isPinned, isProtectedDirectory, isManaged } from "./protected-files";
+import {
+  isPinned,
+  isProtectedDirectory,
+  isManaged,
+  setCloudReadonlyNotice,
+} from "./protected-files";
+
+// A published project registers a readonly notice; the content is irrelevant to
+// these predicates, so a placeholder snippet stands in for it.
+const notice = (() => {}) as unknown as Snippet;
 
 describe("isPinned", () => {
   it("matches /rill.yaml exactly", () => {
@@ -35,10 +45,13 @@ describe("isReadonly on local", () => {
 describe("isReadonly on cloud", () => {
   beforeAll(() => {
     setRuntimeEditEnvironment("cloud");
+    // Simulate a published project, where env editing is managed from settings.
+    setCloudReadonlyNotice(notice);
   });
 
   afterAll(() => {
     setRuntimeEditEnvironment("local");
+    setCloudReadonlyNotice(undefined);
   });
 
   it("locks /.env at the project root", () => {
@@ -67,6 +80,25 @@ describe("isReadonly on cloud", () => {
 
   it("does not lock unrelated files", () => {
     expect(isManaged("/models/orders.sql")).toBe(false);
+  });
+});
+
+describe("isReadonly on cloud without a readonly notice", () => {
+  beforeAll(() => {
+    setRuntimeEditEnvironment("cloud");
+    // No notice registered: the project has no primary deployment (unpublished),
+    // or the deployment lookup has not yet resolved.
+    setCloudReadonlyNotice(undefined);
+  });
+
+  afterAll(() => {
+    setRuntimeEditEnvironment("local");
+  });
+
+  it("does not lock .env files", () => {
+    expect(isManaged("/.env")).toBe(false);
+    expect(isManaged("/foo/.env")).toBe(false);
+    expect(isManaged("/.dev.env")).toBe(false);
   });
 });
 

@@ -75,9 +75,12 @@ type globProps struct {
 	// End defines the upper bound (exclusive) for partition filtering.
 	// Only partitions with paths less than this value are considered.
 	End string `mapstructure:"end"`
-	// Last sets a lower bound based on the Nth partition from the end of the
-	// lexicographically sorted, successfully processed partitions. Only partitions
-	// after this point are included.
+	// Last limits the result to the last N partitions (the N highest paths in
+	// lexicographic order). It always applies as a hard limit, including on the
+	// first run when there is no existing data. Additionally, when previously
+	// processed partitions exist, it raises the lower bound to the Nth partition
+	// from the end of those successfully processed partitions, forming a rolling
+	// window that re-lists only recent partitions (to avoid repeated full listings, which are expensive).
 	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
@@ -115,10 +118,15 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	variables, err := opts.TemplateVariables(inst, opts.Properties)
+	if err != nil {
+		return nil, err
+	}
+
 	propsMap, err := parser.ResolveTemplateRecursively(opts.Properties, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
-		Variables:   inst.ResolveVariables(false),
+		Variables:   variables,
 		State:       args.State,
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
@@ -135,8 +143,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	props.Path = strings.TrimSpace(props.Path)
 
-	if props.TransformSQL != "" && (props.Start != "" || props.Last > 0 || props.End != "") {
-		return nil, fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
+	if props.TransformSQL != "" && props.Last > 0 {
+		return nil, fmt.Errorf("property `last` is not supported with `transform_sql`")
 	}
 
 	startURL, err := globutil.ParseBucketURLLenient(props.Start)
@@ -167,7 +175,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 			return nil, err
 		}
 
-		paths := make([]string, len(partitions))
+		paths := make([]string, 0, len(partitions))
 		for _, p := range partitions {
 			var data map[string]any
 
@@ -285,11 +293,22 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
 		rows = r.buildFilesResult(entries)
 	case globPartitionTypeDirectory:
-		rows = r.buildPartitionedResult(entries, false)
+		rows, err = r.buildPartitionedResult(entries, false)
 	case globPartitionTypeHive:
-		rows = r.buildPartitionedResult(entries, true)
+		rows, err = r.buildPartitionedResult(entries, true)
 	default:
 		return nil, fmt.Errorf("unknown glob partition type %q", r.props.Partition)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// If `last` is set, return only the last N rows (the N highest paths).
+	// Combined with the lookback window applied via partitionStart in newGlob,
+	// this ensures we always return at most N partitions, including on the first
+	// run when there is no existing processed data.
+	if r.props.Last > 0 && len(rows) > r.props.Last {
+		rows = rows[len(rows)-r.props.Last:]
 	}
 
 	if r.props.TransformSQL != "" {
@@ -342,11 +361,14 @@ var hivePartitionRegex = regexp.MustCompile(`/([^/\?]+)=([^/\n\?]*)`)
 // buildPartitioned builds a result consisting of one row per partition.
 // It groups the files by directory.
 // Each row is a map with the keys "uri", "path", "updated_on", "files" if RollupFiles is true, and the Hive partition columns if requested.
-func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) []map[string]any {
+// It errors if the glob matched only directories, since they would otherwise be silently dropped.
+func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) ([]map[string]any, error) {
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
+	var skippedDirs bool
 	for _, entry := range entries {
 		if entry.IsDir {
+			skippedDirs = true
 			continue
 		}
 
@@ -391,13 +413,17 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 		}
 	}
 
+	if skippedDirs && len(rows) == 0 {
+		return nil, fmt.Errorf("glob %q matched only directories, but partition %q groups files: remove `partition` to list the directories, or extend the glob to match files (e.g. %q)", r.props.Path, r.props.Partition, r.props.Path+"/*")
+	}
+
 	// Convert the map to a slice and sort ascending by path
 	result := maps.Values(rows)
 	slices.SortFunc(result, func(a, b map[string]any) int {
 		return strings.Compare(a["path"].(string), b["path"].(string))
 	})
 
-	return result
+	return result, nil
 }
 
 func (r *globResolver) makeResultSchema(rows []map[string]any) *runtimev1.StructType {

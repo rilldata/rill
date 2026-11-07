@@ -10,6 +10,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, type Readable, type Writable } from "svelte/store";
 import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
+import type { ChatSurface } from "./types";
 import { NEW_CONVERSATION_ID } from "./utils";
 
 // =============================================================================
@@ -120,21 +121,29 @@ export class BrowserStorageConversationSelector
   readonly isNewConversation: Readable<boolean>;
 
   /**
+   * @param surface The AI surface ("developer" or "dashboard"). Scopes the
+   * sessionStorage key so a developer-surface conversation ID does not get
+   * loaded against the dashboard surface (within the same instance, e.g. dev
+   * runtime serving both workspace and viz preview).
+   * @param instanceId The runtime instance ID. Scopes the sessionStorage key
+   * so a stored conversation ID does not get loaded against a different
+   * runtime than the one that created it (e.g. a publish-spawned prod tab
+   * inheriting sessionStorage from the dev tab, or a dev runtime cycling to
+   * a new instance after hibernation/redeploy).
    * @param scopeId Optional namespace for the sessionStorage key.
    * Pass when the same browser tab may serve multiple users (e.g. embed with `external_user_id`)
    * This prevents conversation sharing between contexts that are meant to be different.
    *
    * Note that this is not really a data leak issue since it will be on the same browser tab, most probably for the same end user.
    */
-  constructor(scopeId: string | null) {
-    // Create project-specific storage store based on current page params
-    const currentPage = get(page);
-    const organization = currentPage.params.organization || "";
-    const project = currentPage.params.project || "";
-
+  constructor(
+    surface: ChatSurface,
+    instanceId: string,
+    scopeId: string | null,
+  ) {
     const scopePart = scopeId ? "-" + scopeId : "";
     this.store = sessionStorageStore<string>(
-      `sidebar-conversation-id-${organization}-${project}${scopePart}`,
+      `sidebar-conversation-id-${surface}-${instanceId}${scopePart}`,
       NEW_CONVERSATION_ID,
     );
 

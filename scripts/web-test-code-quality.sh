@@ -14,15 +14,16 @@ else
 fi
 
 # This script mirrors the original GitHub Action, but can also be run locally with parity.
-# In CI, ADMIN/LOCAL/COMMON are passed from dorny/paths-filter.
+# In CI, ADMIN/LOCAL/COMMON/MCPAPP are passed from dorny/paths-filter.
 # Locally, if they are not set, we compute them from `git diff`.
 
 filter_defaults_if_unset() {
-  # If any of ADMIN/LOCAL/COMMON are set, assume caller is controlling behavior.
-  if [[ -n "${ADMIN:-}" || -n "${LOCAL:-}" || -n "${COMMON:-}" ]]; then
+  # If any of ADMIN/LOCAL/COMMON/MCPAPP are set, assume caller is controlling behavior.
+  if [[ -n "${ADMIN:-}" || -n "${LOCAL:-}" || -n "${COMMON:-}" || -n "${MCPAPP:-}" ]]; then
     ADMIN="${ADMIN:-false}"
     LOCAL="${LOCAL:-false}"
     COMMON="${COMMON:-false}"
+    MCPAPP="${MCPAPP:-false}"
     return
   fi
 
@@ -38,6 +39,7 @@ filter_defaults_if_unset() {
   match_admin="false"
   match_local="false"
   match_common="false"
+  match_mcpapp="false"
 
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
@@ -46,30 +48,44 @@ filter_defaults_if_unset() {
     # admin:  .github/workflows/web-test.yml OR web-admin/**
     # local:  .github/workflows/web-test.yml OR web-local/**
     # common: .github/workflows/web-test.yml OR web-common/**
+    # mcpapp: .github/workflows/web-test.yml OR web-common/** OR web-mcp-app/**
     if [[ "$f" == ".github/workflows/web-test.yml" ]]; then
       match_admin="true"
       match_local="true"
       match_common="true"
+      match_mcpapp="true"
       continue
     fi
     [[ "$f" == web-admin/*  ]] && match_admin="true"
     [[ "$f" == web-local/*  ]] && match_local="true"
-    [[ "$f" == web-common/* ]] && match_common="true"
+    [[ "$f" == web-common/* ]] && { match_common="true"; match_mcpapp="true"; }
+    [[ "$f" == web-mcp-app/* ]] && match_mcpapp="true"
   done <<< "$changed"
 
   ADMIN="$match_admin"
   LOCAL="$match_local"
   COMMON="$match_common"
+  MCPAPP="$match_mcpapp"
 }
 
 filter_defaults_if_unset
 
+# ESLint runs only error-level rules under --quiet, and none of them needs type information: every type-aware rule in
+# eslint.config.js is a warning. So the lint skips building the TypeScript program, which for an app spans the whole repo
+# (each app's tsconfig inherits the root include) and needs about 5 GB, more than Node's default heap on the CI runners.
+# A type-aware rule set to "error" fails with "requires type information" until project:false is dropped here.
+ESLINT_ARGS=(--quiet --parser-options project:false)
+
 echo "Web code quality checks"
-echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON"
+echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON mcpapp=$MCPAPP"
 
 echo ""
 echo "== NPM Install =="
 npm ci
+
+echo ""
+echo "== Build i18n files =="
+npm run build:i18n
 
 if [[ "$COMMON" == "true" ]]; then
   echo ""
@@ -77,9 +93,19 @@ if [[ "$COMMON" == "true" ]]; then
   cd web-common
   npx svelte-kit sync
   cd ..
-  npx eslint web-common --quiet || exit_code=$?
+  npx eslint web-common "${ESLINT_ARGS[@]}" || exit_code=$?
   npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
 fi
+
+echo ""
+echo "== i18n guard: catalog integrity + migrated areas =="
+# Scans the message catalogs, explicitly migrated Svelte areas, and source files
+# that import the generated message namespace. It runs unconditionally rather
+# than under an app filter: migrated files span apps and are independent of
+# which files a given PR touched. Catalog integrity errors are exact and fatal;
+# hardcoded-string findings are heuristic, but migrated areas are now clean and
+# enforced: --strict makes any new finding fatal.
+node ./scripts/i18n-guard.js --strict || exit_code=$?
 
 if [[ "$LOCAL" == "true" ]]; then
   echo ""
@@ -87,7 +113,7 @@ if [[ "$LOCAL" == "true" ]]; then
   cd web-local
   npx svelte-kit sync
   cd ..
-  npx eslint web-local --quiet || exit_code=$?
+  npx eslint web-local "${ESLINT_ARGS[@]}" || exit_code=$?
   npm run check -w web-local || exit_code=$?
 fi
 
@@ -97,8 +123,15 @@ if [[ "$ADMIN" == "true" ]]; then
   cd web-admin
   npx svelte-kit sync
   cd ..
-  npx eslint web-admin --quiet || exit_code=$?
+  npx eslint web-admin "${ESLINT_ARGS[@]}" || exit_code=$?
   npx svelte-check --workspace web-admin --no-tsconfig || exit_code=$?
+fi
+
+if [[ "$MCPAPP" == "true" ]]; then
+  echo ""
+  echo "== lint and type checks for the MCP App widget =="
+  npx eslint web-mcp-app "${ESLINT_ARGS[@]}" || exit_code=$?
+  npm run check -w web-mcp-app || exit_code=$?
 fi
 
 echo ""

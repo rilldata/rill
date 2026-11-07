@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let kind: ResourceKind | undefined;
   export let label: string | undefined;
@@ -15,6 +16,6 @@
     <svelte:component this={icon} size="{size}px" />
   </span>
   <span class="truncate">
-    {label ?? "Loading..."}
+    {label ?? m.common_loading()}
   </span>
 </span>

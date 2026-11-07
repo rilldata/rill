@@ -1,10 +1,12 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -27,9 +29,14 @@
     $form["metricsViewName"],
   );
 
-  $: measure = $metricsView.data?.measures?.find(
-    (m) => m.name === $form["measure"],
-  );
+  // Ephemeral measures have no spec entry; synthesize one so their display
+  // name and criteria options resolve like any other measure.
+  $: allMeasures = [
+    ...($metricsView.data?.measures ?? []),
+    ...($form["ephemeralMeasures"] ?? []).map(ephemeralMeasureToSpecMeasure),
+  ];
+
+  $: measure = allMeasures.find((m) => m.name === $form["measure"]);
   $: measureOptions = [
     {
       value: $form["measure"],
@@ -38,7 +45,7 @@
         : (measure?.expression ?? $form["measure"]),
     },
   ];
-  $: selectedMeasure = $metricsView.data?.measures?.find(
+  $: selectedMeasure = allMeasures.find(
     (m) => m.name === $form["criteria"][index].measure,
   );
 
@@ -68,32 +75,35 @@
   });
 </script>
 
-<div class="flex flex-row gap-2" aria-label="criteria-{index}">
+<div
+  class="flex flex-row gap-2"
+  aria-label={m.alert_form_criteria_item_aria({ index })}
+>
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
-    ariaLabel="Criteria measure"
+    ariaLabel={m.alert_form_criteria_measure_aria()}
     options={measureOptions}
-    placeholder="Measure"
+    placeholder={m.alert_form_criteria_measure_placeholder()}
     width={160}
   />
   <Select
     bind:value={$form["criteria"][index].type}
     id="type"
     label=""
-    ariaLabel="Criteria type"
+    ariaLabel={m.alert_form_criteria_type_aria()}
     options={typeOptions}
-    placeholder="type"
+    placeholder={m.alert_form_criteria_type_placeholder()}
     width={256}
   />
   <Select
     bind:value={$form["criteria"][index].operation}
     id="operation"
     label=""
-    ariaLabel="Criteria operator"
+    ariaLabel={m.alert_form_criteria_operator_aria()}
     options={CriteriaOperationOptions}
-    placeholder="Operator"
+    placeholder={m.alert_form_criteria_operator_placeholder()}
     width={70}
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
@@ -101,7 +111,7 @@
     alwaysShowError
     bind:value
     id="value"
-    title="Criteria value"
+    title={m.alert_form_criteria_value_title()}
     onInput={valueUpdater}
     placeholder={"0"}
     width="auto"

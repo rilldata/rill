@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ExternalLinkIcon } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     displayName,
@@ -20,6 +21,6 @@
 >
   <ExternalLinkIcon size={14} class="shrink-0" />
   <span class="truncate">
-    {displayName || dashboardTitle || "Untitled"}
+    {displayName || dashboardTitle || m.public_url_untitled()}
   </span>
 </a>

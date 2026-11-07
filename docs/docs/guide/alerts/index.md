@@ -34,7 +34,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Overview
 
-Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
+Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis when an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
 
 
 ![Alerts](/img/explore/alerts/alerts.gif)
@@ -53,7 +53,7 @@ When creating an alert, it is important to note that any existing filters will _
 1. Add a name for the alert **(required)**
 2. Set what measure to alert on **(required)**, including any dimension splits for the metric _(optional)_ and time grains for analysis _(optional)_
 
-Before selecting **Next**, you will have the optional to preview the data for which you alert will be created on.
+Before selecting **Next**, you will have the option to preview the data for which your alert will be created.
 
 :::tip Maximize Your Alert Filters
 To avoid getting over alerted, consider adding a metric filter to avoid long tail changes on small values. Some examples include:
@@ -75,7 +75,7 @@ On the final tab, you will choose how and where your alert is delivered. By defa
 1. To limit the number of alerts, you can set an optional **Snooze** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 
-Afterwards, click **Create** to finish creating the alert.
+Afterward, click **Create** to finish creating the alert.
 
 ## Available alert notification targets
 
@@ -96,6 +96,14 @@ If there is a potential alerting destination that you'd like to use with Rill bu
 Email is the default notification target for alerts and is automatically enabled. When creating an alert, simply specify the email addresses to include for a particular alert and an email will be sent with a link to the alert when the alert is triggered.
 
 ![Email Notifications](/img/explore/alerts/email-notifications.png)
+
+#### Attaching the matching rows
+
+Alert emails show the first row that matched the alert criteria. To send every matching row, select **Attach matching rows to emails** and choose a CSV, Excel, or Parquet file. You can also set a row limit and include metadata in the file.
+
+- Only emails include the attachment, and only when the alert triggers. Slack notifications and recovery emails do not.
+- Files larger than 10 MB are not attached. The email says so instead.
+- In alert YAML files, configure the attachment with the [`export`](/reference/project-files/alerts#export) property. Attachments are only supported for alerts that use the `query` property, which is what alerts created from a dashboard use.
 
 ### Configuring Slack targets
 
@@ -119,10 +127,10 @@ To view or make changes to existing alerts, navigate to the project home page an
 ## Common use cases
 
 ### Troubleshooting
-Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
+Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criterion is often whether the amount is greater than 0 or below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
 ### Pacing
-Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
+Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. These alerts tend to be more specific (setting up filters and criteria for specific values) and mark progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
 
 ### Monitoring & Comparison
 Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values.

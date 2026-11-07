@@ -6,7 +6,6 @@ ensure the same single-page app behavior in development.
 
 export const ssr = false;
 
-import { dev } from "$app/environment";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
@@ -22,14 +21,11 @@ import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/aut
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
-import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error, redirect, type Page } from "@sveltejs/kit";
+import { error, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
-import { Settings } from "luxon";
 import { maybeRedirectToWelcomePage } from "@rilldata/web-admin/features/welcome/utils.ts";
-
-Settings.defaultLocale = "en";
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");
@@ -46,21 +42,6 @@ export const load = async ({ params, url, route, depends }) => {
     searchParamToken = url.searchParams.get("token") ?? undefined;
   }
   const token = searchParamToken ?? routeToken;
-
-  // Initialize analytics
-  const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
-  if (shouldSendAnalytics) {
-    const rillVersion = import.meta.env.RILL_UI_VERSION;
-    const posthogSessionId = url.searchParams.get("ph_session_id") as
-      | string
-      | null;
-    initPosthog(rillVersion, posthogSessionId);
-    if (posthogSessionId) {
-      // Remove the PostHog sessionID from the url
-      url.searchParams.delete("ph_session_id");
-      throw redirect(307, url.toString());
-    }
-  }
 
   let user: V1User | undefined;
   try {
@@ -100,7 +81,7 @@ export const load = async ({ params, url, route, depends }) => {
     organizationResp = await getOrganizationPromise;
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {
-      throw error(500, "Error fetching organization");
+      throw error(500, m.route_error_fetching_organization());
     }
 
     const shouldRedirectToRequestAccess =
@@ -148,7 +129,7 @@ export const load = async ({ params, url, route, depends }) => {
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {
-      throw error(500, "Error fetching project");
+      throw error(500, m.route_error_fetching_project());
     }
 
     const shouldRedirectToRequestAccess =

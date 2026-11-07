@@ -1,7 +1,12 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { precisionStateFor } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -29,48 +34,86 @@
   import type { TDDComparison } from "./types";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
-  export let exploreName: string;
-  export let dimensionName: string;
-  export let isFetching = false;
-  export let comparing: TDDComparison | undefined;
-  export let areAllTableRowsSelected = false;
-  export let isRowsEmpty = false;
-  export let expandedMeasureName: string;
-  export let onToggleSearchItems: () => void;
-  export let hideStartPivotButton = false;
+  interface Props {
+    exploreName: string;
+    dimensionName: string;
+    isFetching?: boolean;
+    comparing: TDDComparison | undefined;
+    areAllTableRowsSelected?: boolean;
+    isRowsEmpty?: boolean;
+    expandedMeasureName: string;
+    onToggleSearchItems: () => void;
+    hideStartPivotButton?: boolean;
+  }
 
-  const { adminServer, exports } = featureFlags;
+  let {
+    exploreName,
+    dimensionName,
+    isFetching = false,
+    comparing,
+    areAllTableRowsSelected = false,
+    isRowsEmpty = false,
+    expandedMeasureName,
+    onToggleSearchItems,
+    hideStartPivotButton = false,
+  }: Props = $props();
+
+  const { exports } = featureFlags;
   const stateManagers = getStateManagers();
 
   const {
     selectors: {
       measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
-      dimensionsFilter: { toggleDimensionFilterMode },
+      exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
     validSpecStore,
+    expressionFilterManager,
   } = stateManagers;
 
-  $: selectableMeasures = $allMeasures
-    .filter((m) => m.name !== undefined || m.displayName !== undefined)
-    .map((m) =>
-      // Note: undefined values are filtered out above, so the
-      // empty string fallback is unreachable.
-      ({
-        name: m.name || "",
-        label: m.displayName || "",
+  const ephemeralDefsByName = $derived(
+    new Map(
+      ($dashboardStore?.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+    ),
+  );
+
+  // Precision of the expanded measure; null when it has no exact variant.
+  const expandedMeasurePrecision = $derived(
+    precisionStateFor(
+      expandedMeasureName,
+      $exactMeasureContext(exploreExactSurface.tdd),
+    ),
+  );
+
+  const selectableMeasures = $derived(
+    $allMeasures
+      .filter((m) => m.name !== undefined || m.displayName !== undefined)
+      .map((m) => {
+        const def = ephemeralDefsByName.get(m.name || "");
+        // Note: undefined values are filtered out above, so the
+        // empty string fallback is unreachable.
+        return {
+          name: m.name || "",
+          label: m.displayName || "",
+          ...(def ? { description: def.expression, ephemeral: true } : {}),
+        };
       }),
-    );
+  );
 
-  $: selectedMeasureLabel =
+  const selectedMeasureLabel = $derived(
     $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ||
-    expandedMeasureName;
+      expandedMeasureName,
+  );
 
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+  const excludeMode = $derived(
+    expressionFilterManager.sortedFilterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
 
   function closeSearchBar() {
     dimensionSearchText.set("");
@@ -84,14 +127,19 @@
   }
 
   function toggleFilterMode() {
-    toggleDimensionFilterMode(dimensionName);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleExclude(),
+    );
   }
 
   function switchMeasure(measureName: string) {
     metricsExplorerStore.setExpandedMeasureName(exploreName, measureName);
   }
 
-  let showReplacePivotModal = false;
+  let showReplacePivotModal = $state(false);
+  // The precision chip has its own tooltip; the measure chip's tooltip hides while it is hovered.
+  let precisionChipHovered = $state(false);
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
@@ -138,19 +186,32 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
-    $timeControlsStore);
+  const minTimeGrain = $derived($timeControlsStore.minTimeGrain);
+  const timeStart = $derived($timeControlsStore.timeStart);
+  const timeEnd = $derived($timeControlsStore.timeEnd);
+  const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
+  const activeTimeGrain = $derived(selectedTimeRange?.interval);
+  const adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
+  const baseTimeRange = $derived(
+    selectedTimeRange?.start &&
+      selectedTimeRange?.end && {
+        name: selectedTimeRange?.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      },
+  );
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    if (timeGrain === undefined) {
+      metricsExplorerStore.setAdaptiveTimeGrain(
+        exploreName,
+        $validSpecStore.data?.metricsView ?? {},
+      );
+      return;
+    }
+    metricsExplorerStore.setTimeGrain(exploreName, timeGrain);
     if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
@@ -183,7 +244,8 @@
   <div class="flex gap-x-6 items-center font-normal text-fg-secondary">
     <div class="flex items-center gap-x-4">
       <div class="flex items-center gap-x-1">
-        <Row size="16px" /> Rows
+        <Row size="16px" />
+        {m.dashboard_rows()}
       </div>
 
       <ComparisonSelector {exploreName} />
@@ -191,12 +253,15 @@
 
     <div class="flex items-center gap-x-4 pl-2">
       <div class="flex items-center gap-x-1">
-        <Column size="16px" /> Columns
+        <Column size="16px" />
+        {m.dashboard_columns()}
       </div>
       <div class="flex items-center gap-x-2">
         <TimeGrainSelector
           tdd
           {activeTimeGrain}
+          {adaptiveTimeGrain}
+          allowAdaptiveTimeGrain
           {onTimeGrainSelect}
           {timeStart}
           {timeEnd}
@@ -205,10 +270,36 @@
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
+          onEditItem={(name) => {
+            const def = ephemeralDefsByName.get(name);
+            if (def) ephemeralMeasureDialog.set({ def });
+          }}
           selectableItems={selectableMeasures}
           selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
-        />
+          suppressTooltip={precisionChipHovered}
+        >
+          <svelte:fragment slot="additional-label">
+            {#if ephemeralDefsByName.has(expandedMeasureName)}
+              <span class="flex-none text-[10px] font-semibold italic">ƒx</span>
+            {/if}
+            {#if expandedMeasurePrecision}
+              <span class="flex-none inline-flex">
+                <PrecisionChip
+                  state={expandedMeasurePrecision}
+                  measureLabel={selectedMeasureLabel}
+                  loading={expandedMeasurePrecision !== "approx" && isFetching}
+                  onToggle={() =>
+                    toggleExactMeasure(
+                      exploreExactSurface.tdd,
+                      expandedMeasureName,
+                    )}
+                  onHoverChange={(hovered) => (precisionChipHovered = hovered)}
+                />
+              </span>
+            {/if}
+          </svelte:fragment>
+        </SearchableFilterChip>
       </div>
     </div>
 
@@ -235,8 +326,8 @@
 
       {#if $exports}
         <ExportMenu
-          label="Export table data"
-          includeScheduledReport={$adminServer}
+          label={m.dashboard_export_table_data()}
+          includeScheduledReport
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}

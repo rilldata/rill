@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -13,6 +14,7 @@
   } from "@rilldata/web-common/features/explore-mappers/types";
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const runtimeClient = useRuntimeClient();
@@ -28,6 +30,8 @@
   let isNavigating = false;
   let navigationError: ExploreLinkError | null = null;
 
+  $: onEditPage = $page.route?.id?.includes("/edit/(viz)/canvas");
+
   async function gotoExplorePage() {
     if (!exploreName || !exploreState || disabled) return;
 
@@ -39,8 +43,8 @@
         runtimeClient,
         exploreState,
         exploreName,
-        organization,
-        project,
+        onEditPage ? undefined : organization,
+        onEditPage ? undefined : project,
       );
       await goto(exploreURL);
     } catch (error) {
@@ -61,8 +65,8 @@
 
   $: canNavigate = !isNavigating && !!exploreState && !disabled;
   $: tooltipText = displayName
-    ? `Go to ${displayName}`
-    : "Go to Explore Dashboard";
+    ? m.explore_go_to_named({ name: displayName })
+    : m.explore_go_to_dashboard();
 </script>
 
 {#if mode === "dropdown-item"}
@@ -72,7 +76,7 @@
     {:else}
       <ExploreIcon size="14px" />
     {/if}
-    Go to Explore
+    {m.explore_go_to_explore()}
   </DropdownMenu.Item>
 {:else if mode === "icon-button"}
   <IconButton
@@ -105,7 +109,7 @@
 
 {#if navigationError && mode === "inline"}
   <div class="flex flex-col gap-y-2 text-red-600 mt-2">
-    <h3 class="text-sm font-semibold">Unable to open Explore Dashboard</h3>
+    <h3 class="text-sm font-semibold">{m.explore_unable_to_open()}</h3>
     <p class="text-xs">{getErrorMessage(navigationError)}</p>
   </div>
 {:else if isNavigating && mode === "inline"}

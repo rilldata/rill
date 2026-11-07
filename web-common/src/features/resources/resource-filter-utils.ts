@@ -27,6 +27,19 @@ export const filterableTypes = [
   ResourceKind.Connector,
 ];
 
+// Resource kinds that support a manual refresh trigger from the resource listing.
+// Excludes Alert and Report: triggering those executes them and dispatches notifications to recipients.
+export const refreshableTypes = [
+  ResourceKind.Source,
+  ResourceKind.Model,
+  ResourceKind.MetricsView,
+  ResourceKind.Explore,
+  ResourceKind.Canvas,
+  ResourceKind.Theme,
+  ResourceKind.API,
+  ResourceKind.Connector,
+];
+
 export function getResourceStatus(r: V1Resource): ResourceStatus {
   if (r.meta?.reconcileError) return "error";
   const status = r.meta?.reconcileStatus;
@@ -63,19 +76,39 @@ export function filterResources(
   types: string[],
   search: string,
   statuses: string[],
+  tags: string[] = [],
 ): V1Resource[] {
   if (!resources) return [];
 
+  const lowerSearch = search.toLowerCase();
+
   return resources.filter((r) => {
     const kind = r.meta?.name?.kind;
-    const name = r.meta?.name?.name ?? "";
+    const resourceTags = r.meta?.tags ?? [];
 
     const matchesType = types.length === 0 || types.includes(kind ?? "");
-    const matchesSearch =
-      !search || name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !lowerSearch || matchSearch(r, lowerSearch);
     const matchesStatus =
       statuses.length === 0 || statuses.includes(getResourceStatus(r));
+    const matchesTags =
+      tags.length === 0 || tags.some((t) => resourceTags.includes(t));
 
-    return matchesType && matchesSearch && matchesStatus;
+    return matchesType && matchesSearch && matchesStatus && matchesTags;
   });
+}
+
+function matchSearch(resource: V1Resource, lowerSearch: string): boolean {
+  const name = resource.meta?.name?.name ?? "";
+  const nameMatches = name.toLowerCase().includes(lowerSearch);
+
+  const title =
+    resource.metricsView?.state?.validSpec?.displayName ??
+    resource.explore?.state?.validSpec?.displayName ??
+    resource.canvas?.state?.validSpec?.displayName;
+  const matchesTitle = Boolean(title?.toLowerCase().includes(lowerSearch));
+
+  const desc = resource.explore?.state?.validSpec?.description ?? "";
+  const matchesDesc = Boolean(desc?.toLowerCase().includes(lowerSearch));
+
+  return nameMatches || matchesTitle || matchesDesc;
 }

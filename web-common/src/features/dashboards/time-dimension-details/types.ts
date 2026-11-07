@@ -29,6 +29,8 @@ export interface TDDState {
 export interface HeaderData<T> {
   value: T | null | undefined;
   spark?: string;
+  // Resolved URL for URI dimensions, used to render the value as a link.
+  uri?: string | null;
 }
 
 export type TDDCellData = string | number | null | undefined;

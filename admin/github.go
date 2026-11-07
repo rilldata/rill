@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -26,6 +26,7 @@ import (
 var (
 	ErrUserIsNotCollaborator      = fmt.Errorf("user is not a collaborator for the repository")
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
+	ErrBranchNotFound             = fmt.Errorf("branch does not exist in the repository")
 )
 
 type GithubToken struct {
@@ -41,6 +42,8 @@ type Github interface {
 	// InstallationToken returns a token for the installation ID limited to the repoID.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 	InstallationTokenForOrg(ctx context.Context, org string) (token string, expiresAt time.Time, err error)
+
+	DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error)
 	// DeleteManagedRepo deletes the given repo from the managed org. For test cleanup only.
@@ -151,6 +154,23 @@ func (g *githubClient) InstallationTokenForOrg(ctx context.Context, org string) 
 	}
 	client := g.InstallationClient(*installation.ID, nil)
 	return g.token(ctx, client)
+}
+
+func (g *githubClient) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
+	client := g.InstallationClient(installationID, &repoID)
+	org, repo, ok := gitutil.SplitGithubRemote(remote)
+	if !ok {
+		return fmt.Errorf("invalid Github remote %q", remote)
+	}
+	_, err := client.Git.DeleteRef(ctx, org, repo, "heads/"+branch)
+	if err != nil {
+		var ghErr *github.ErrorResponse
+		if errors.As(err, &ghErr) && (ghErr.Response.StatusCode == http.StatusNotFound || ghErr.Response.StatusCode == http.StatusUnprocessableEntity) {
+			return ErrBranchNotFound
+		}
+		return fmt.Errorf("failed to delete branch %q: %w", branch, err)
+	}
+	return nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string, autoInit bool) (*github.Repository, error) {

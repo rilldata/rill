@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyMethod } from "./config";
+import { classifyMethod, usesProtoMessages } from "./config";
 
 describe("classifyMethod", () => {
   describe("QueryService overrides", () => {
@@ -7,7 +7,6 @@ describe("classifyMethod", () => {
       ["export", "mutation"],
       ["exportReport", "mutation"],
       ["query", "mutation"],
-      ["queryBatch", "skip"],
     ] as const)("classifies %s as %s", (method, expected) => {
       expect(classifyMethod("QueryService", method)).toBe(expected);
     });
@@ -32,6 +31,7 @@ describe("classifyMethod", () => {
       ["watchLogs", "skip"],
       ["watchResources", "skip"],
       ["completeStreaming", "skip"],
+      ["gitDiff", "query"],
       ["issueDevJWT", "query"],
       ["analyzeConnectors", "query"],
       ["analyzeVariables", "query"],
@@ -78,5 +78,23 @@ describe("classifyMethod", () => {
     it("classifies any method on an unknown service as query", () => {
       expect(classifyMethod("UnknownService", "doSomething")).toBe("query");
     });
+  });
+});
+
+describe("usesProtoMessages", () => {
+  it.each(["columnTopK", "columnTimeSeries", "columnCardinality"])(
+    "is true for the migrated method %s",
+    (method) => {
+      expect(usesProtoMessages("QueryService", method)).toBe(true);
+    },
+  );
+
+  it.each([
+    ["QueryService", "metricsViewAggregation"],
+    ["QueryService", "export"],
+    ["RuntimeService", "getResource"],
+    ["ConnectorService", "listTables"],
+  ] as const)("is false for %s.%s", (service, method) => {
+    expect(usesProtoMessages(service, method)).toBe(false);
   });
 });

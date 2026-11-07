@@ -3,6 +3,8 @@
   import {
     canManageOrgUser,
     invalidateAfterUserDelete,
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -10,8 +12,6 @@
   import {
     createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
@@ -19,7 +19,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import OrgUpgradeGuestConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/OrgUpgradeGuestConfirmDialog.svelte";
-  import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let email: string;
   export let role: string;
@@ -68,22 +68,17 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: "User role updated",
+        message: m.users_role_updated(),
       });
     } catch (error) {
       console.error("Error updating user role", error);
       eventBus.emit("notification", {
-        message: "Error updating user role",
+        message: m.users_error_updating_role(),
         type: "error",
       });
     }
@@ -99,22 +94,17 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: `Guest upgraded to ${role}`,
+        message: m.users_guest_upgraded_to({ role }),
       });
     } catch (error) {
       console.error("Error upgrading user role", error);
       eventBus.emit("notification", {
-        message: "Error upgrading user role",
+        message: m.users_error_upgrading_role(),
         type: "error",
       });
     }
@@ -130,12 +120,12 @@
       await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: "User removed from organization",
+        message: m.users_removed_from_org(),
       });
     } catch (error) {
       console.error("Error removing user from organization", error);
       eventBus.emit("notification", {
-        message: "Error removing user from organization",
+        message: m.users_error_removing(),
         type: "error",
       });
     }
@@ -165,9 +155,11 @@
             : ''}"
           onclick={() => handleSetRole(OrgUserRoles.Admin)}
         >
-          <span class="text-xs font-medium text-fg-primary">Admin</span>
+          <span class="text-xs font-medium text-fg-primary"
+            >{m.role_admin()}</span
+          >
           <span class="text-[11px] text-fg-secondary"
-            >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
+            >{m.role_org_admin_detail()}</span
           >
         </DropdownMenu.Item>
       {/if}
@@ -178,9 +170,11 @@
           : ''}"
         onclick={() => handleSetRole(OrgUserRoles.Editor)}
       >
-        <span class="text-xs font-medium text-fg-primary">Editor</span>
+        <span class="text-xs font-medium text-fg-primary"
+          >{m.role_editor()}</span
+        >
         <span class="text-[11px] text-fg-secondary"
-          >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
+          >{m.role_org_editor_detail()}</span
         >
       </DropdownMenu.Item>
       <DropdownMenu.Item
@@ -190,9 +184,11 @@
           : ''}"
         onclick={() => handleSetRole(OrgUserRoles.Viewer)}
       >
-        <span class="text-xs font-medium text-fg-primary">Viewer</span>
+        <span class="text-xs font-medium text-fg-primary"
+          >{m.role_viewer()}</span
+        >
         <span class="text-[11px] text-fg-secondary"
-          >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
+          >{m.role_org_viewer_detail()}</span
         >
       </DropdownMenu.Item>
       <DropdownMenu.Separator />
@@ -203,7 +199,7 @@
           else isRemoveConfirmOpen = true;
         }}
       >
-        <span class="text-red-600">Remove</span>
+        <span class="text-red-600">{m.users_remove()}</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

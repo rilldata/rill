@@ -13,21 +13,16 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
-  getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGetFile,
-  runtimeServicePutFile,
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
   getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
   type V1GetResourceResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import {
   derived,
   get,
@@ -42,16 +37,21 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { FileIO } from "./file-io";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import type { PartialMessage } from "@bufbuild/protobuf";
-import type { GetResourceRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb.ts";
+
+// Data files that can't be edited as text, but whose contents can be
+// previewed by querying them with DuckDB (see ParquetWorkspace).
+// NOTE: When adding an extension here, also map it to its preview query in
+// `invalidateDataFilePreview` (file-invalidators.ts) so edits on disk refresh
+// the preview.
+const PREVIEWABLE_DATA_EXTENSIONS = [".parquet"];
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
   ".db",
   ".db.wal",
-  ".parquet",
   ".xls",
   ".xlsx",
 
@@ -91,16 +91,19 @@ export class FileArtifact {
   );
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
+  // True for data files (e.g. .parquet) that have no editable text content and
+  // are instead rendered as a queryable data preview.
+  readonly isPreviewableDataFile: boolean;
   readonly folderName: string;
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
   // Path is locked: file can't be renamed or deleted, and other files can't
   // be renamed onto this path.
-  readonly pinned: boolean;
+  pinned: boolean;
   // Content is managed outside of editors.
   // Currently **/.*.env files are managed from project settings page on cloud editor
-  readonly managed: boolean;
+  managed: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -108,16 +111,18 @@ export class FileArtifact {
 
   private editorCallback: (content: string) => void = () => {};
   private client: RuntimeClient;
+  private io: FileIO;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(client: RuntimeClient, filePath: string) {
+  constructor(client: RuntimeClient, filePath: string, io: FileIO) {
     const [folderName, fileName] = splitFolderAndFileName(filePath);
 
     this.client = client;
+    this.io = io;
     this.path = filePath;
     this.folderName = folderName;
     this.fileName = fileName;
@@ -134,6 +139,9 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+    this.isPreviewableDataFile = PREVIEWABLE_DATA_EXTENSIONS.includes(
+      this.fileExtension,
+    );
 
     this.pinned = isPinned(filePath);
     this.managed = isManaged(filePath);
@@ -144,38 +152,15 @@ export class FileArtifact {
    * available after the artifact was created (e.g. during +page.ts load
    * before RuntimeProvider has mounted).
    */
-  updateClient(client: RuntimeClient) {
+  updateClient(client: RuntimeClient, io: FileIO) {
     this.client = client;
+    this.io = io;
   }
 
   fetchContent = async (invalidate = false) => {
     if (!this.client) return;
-    const instanceId = this.client.instanceId;
-    const queryParams = {
-      path: this.path,
-    };
-    const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
-    if (invalidate) await queryClient.invalidateQueries({ queryKey });
-
-    const queryFn: QueryFunction<
-      Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) =>
-      runtimeServiceGetFile(this.client, queryParams, { signal });
-
-    let fetchedContent: string | undefined = undefined;
-
-    try {
-      const response = await queryClient.fetchQuery({
-        queryKey,
-        queryFn,
-        staleTime: Infinity,
-      });
-
-      fetchedContent = response.blob;
-    } catch (e) {
-      console.log("FETCH ERROR", e);
-    }
+    const fetchedContent = await this.io.read(this.path, invalidate);
 
     const currentRemoteContent = get(this.remoteContent);
     const editorContent = get(this.editorContent);
@@ -255,28 +240,16 @@ export class FileArtifact {
 
   private saveContent = async (blob: string) => {
     if (!this.client) return;
-    const instanceId = this.client.instanceId;
-
-    // Optimistically update the query
-    queryClient.setQueryData(
-      getRuntimeServiceGetFileQueryKey(instanceId, {
-        path: this.path,
-      }),
-      {
-        blob,
-      },
-    );
 
     try {
+      const kind = get(this.resourceName)?.kind;
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(this.client, {
-        path: this.path,
-        blob,
-      });
+      await this.io.write(this.path, blob, kind);
 
       await fileSavePromise;
-    } catch {
+    } catch (e) {
+      console.error("Error saving file", e);
       this.saveState.reject(new Error("Unable to save file."));
     }
   };
@@ -345,27 +318,6 @@ export class FileArtifact {
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
-
-  async fetchResource(queryClient: QueryClient) {
-    const resourceName = get(this.resourceName);
-    if (!resourceName) return undefined;
-
-    const req: Omit<PartialMessage<GetResourceRequest>, "instanceId"> = {
-      name: {
-        kind: resourceName.kind,
-        name: resourceName.name,
-      },
-    };
-    const resp = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetResourceQueryKey(
-        this.client.instanceId,
-        req,
-      ),
-      queryFn: () => runtimeServiceGetResource(this.client, req),
-      staleTime: Infinity, // Always try to get from cache
-    });
-    return resp.resource;
-  }
 
   getParseError = (
     queryClient: QueryClient,
@@ -470,6 +422,11 @@ export class FileArtifact {
       this.getAllWarnings(queryClient),
       (warnings) => warnings.length > 0,
     );
+  }
+
+  recheckReadonlyStatus() {
+    this.pinned = isPinned(this.path);
+    this.managed = isManaged(this.path);
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {

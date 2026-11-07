@@ -1,6 +1,5 @@
 import type { ValidationAdapter } from "sveltekit-superforms/adapters";
 import { superForm, defaults, type SuperValidated } from "sveltekit-superforms";
-
 import { createSchemasafeValidator } from "./jsonSchemaValidator";
 import { getConnectorSchema } from "./connector-schemas";
 import type { AddDataFormType } from "./types";
@@ -78,9 +77,6 @@ export function createConnectorForm(args: {
     SPA: true,
     validators: adapter,
     onUpdate,
-    onError: ({ result }) => {
-      form.message.set((result.error as any).details || result.error.message);
-    },
     resetForm: false,
     validationMethod: "onsubmit",
   });

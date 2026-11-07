@@ -38,6 +38,7 @@ type ReportYAML struct {
 		Format           string         `yaml:"format"`
 		IncludeHeader    bool           `yaml:"include_header"`
 		Limit            uint           `yaml:"limit"`
+		Attach           bool           `yaml:"attach"`
 		OutputConnector  string         `yaml:"output_connector"`
 		OutputProperties map[string]any `yaml:"output_properties"`
 	} `yaml:"export"`
@@ -115,24 +116,24 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Determine if using new data resolver or legacy query
+	// Determine if using new data resolver or legacy query.
+	// If neither is set, the resolver stays empty, which is only allowed for dashboard-render reports (export format "pdf").
 	var resolver string
 	var resolverProps *structpb.Struct
-	isLegacyQuery := tmp.Data == nil
 
-	if !isLegacyQuery {
+	if tmp.Data != nil {
 		var refs []ResourceName
 		resolver, resolverProps, refs, err = p.parseDataYAML(node.Paths, tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-	} else {
-		// Query name
-		if tmp.Query.Name == "" {
-			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-		}
 
+		// Reports are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
+		if TemplateReferencesVariables(resolverProps.AsMap()) {
+			return errors.New(`templates in report properties can't access project variables (".env") or the full template data ("." or "$")`)
+		}
+	} else if tmp.Query.Name != "" {
 		// Query args
 		if tmp.Query.ArgsJSON != "" {
 			// Validate JSON
@@ -171,6 +172,30 @@ func (p *Parser) parseReport(node *Node) error {
 		return fmt.Errorf(`missing required property "export.format"`)
 	}
 
+	// Reports with export format "pdf" are rendered from a dashboard in the browser instead of executing a query;
+	// they must reference a canvas and must not have a query or data resolver.
+	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+		if resolver != "" {
+			return fmt.Errorf(`export format "pdf" does not support "data" or "query" properties`)
+		}
+		if tmp.Annotations["canvas"] == "" {
+			return fmt.Errorf(`export format "pdf" requires the "canvas" annotation`)
+		}
+	} else if resolver == "" {
+		return fmt.Errorf(`missing required property "data" or "query.name"`)
+	}
+
+	// Attaching the export to emails is only supported for reports run as the creator, since every recipient then gets the same data.
+	// Query-based reports always have a data export format (CSV, XLSX or Parquet).
+	if tmp.Export.Attach {
+		if resolver != "legacy_metrics" {
+			return errors.New(`"export.attach" requires the "query" property`)
+		}
+		if mode := tmp.Annotations["web_open_mode"]; mode != "" && mode != "creator" {
+			return fmt.Errorf(`"export.attach" is not supported for web_open_mode %q (must be "creator")`, mode)
+		}
+	}
+
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
@@ -206,7 +231,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 
 	// Track report
-	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -232,6 +257,7 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	r.ReportSpec.ExportAttach = tmp.Export.Attach
 
 	if isLegacySyntax {
 		// Backwards compatibility
@@ -290,6 +316,8 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 		return runtimev1.ExportFormat_EXPORT_FORMAT_XLSX, nil
 	case "parquet":
 		return runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET, nil
+	case "pdf":
+		return runtimev1.ExportFormat_EXPORT_FORMAT_PDF, nil
 	default:
 		if val, ok := runtimev1.ExportFormat_value[s]; ok {
 			return runtimev1.ExportFormat(val), nil

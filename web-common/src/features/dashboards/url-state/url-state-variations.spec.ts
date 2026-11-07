@@ -1,13 +1,15 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
+  AD_BIDS_EXPLORE,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-  AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_VIEW,
+  AD_BIDS_NAME,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -25,6 +27,7 @@ import {
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_FLAT_PIVOT_TABLE,
+  AD_BIDS_HIDE_PIVOT_TOTALS,
   AD_BIDS_LARGE_FILTER,
   AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
@@ -32,6 +35,7 @@ import {
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+  AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
   AD_BIDS_SET_ALL_TIME_RANGE_FILTER,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_SET_KATHMANDU_TIMEZONE,
@@ -76,6 +80,11 @@ import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashbo
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
+  applyURLToExploreState,
+  getCleanMetricsExploreForAssertion,
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
+import {
   type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
@@ -85,13 +94,17 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { convertURLSearchParamsToExploreState } from "./convertURLSearchParamsToExploreState";
 
 vi.stubEnv("TZ", "UTC");
+
+// Filters live in the ExpressionFilterManager rather than in explore state, so the tests need the
+// specs of the metrics view backing AD_BIDS_EXPLORE to build the filter chips.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_VIEW,
+});
 
 const TestCases: {
   title: string;
@@ -112,13 +125,13 @@ const TestCases: {
       AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
     ],
     expectedSearch:
-      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28%28bid_price+GT+10+AND+bid_price+LT+20%29%29",
+      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28bid_price+GT+10+AND+bid_price+LT+20%29",
   },
   {
     title: "Not-between measure filter",
     mutations: [AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER],
     expectedSearch:
-      "f=country+having+%28%28bid_price+LTE+10+OR+bid_price+GTE+20%29%29",
+      "f=country+having+%28bid_price+LTE+10+OR+bid_price+GTE+20%29",
   },
 
   {
@@ -127,7 +140,7 @@ const TestCases: {
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_KATHMANDU_TIMEZONE,
     ],
-    expectedSearch: "tr=P4W&tz=Asia%2FKathmandu&grain=week",
+    expectedSearch: "tr=P4W&tz=Asia%2FKathmandu",
   },
   {
     title: "Time range with preset and state matching preset",
@@ -137,7 +150,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -149,7 +162,7 @@ const TestCases: {
     mutations: [AD_BIDS_SET_P4W_TIME_RANGE_FILTER, AD_BIDS_SET_LA_TIMEZONE],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -161,14 +174,14 @@ const TestCases: {
     mutations: [AD_BIDS_SET_ALL_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=inf&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=inf&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range with preset and ALL_TIME selected",
     mutations: [AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
 
   {
@@ -177,7 +190,7 @@ const TestCases: {
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
     ],
-    expectedSearch: "tr=P4W&compare_tr=rill-PW&grain=week",
+    expectedSearch: "tr=P4W&compare_tr=rill-PW",
   },
   {
     title: "Time range comparison with preset and state matching preset",
@@ -187,7 +200,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range comparison with preset and state not matching preset",
@@ -197,7 +210,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range comparison enable and disable",
@@ -208,7 +221,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=Asia%2FKathmandu&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     legacyNotSupported: true,
   },
   {
@@ -218,7 +231,7 @@ const TestCases: {
       timeRange: "P9D",
       comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
     },
-    expectedSearch: "tr=P9D&grain=day",
+    expectedSearch: "tr=P9D",
     legacyNotSupported: true,
   },
 
@@ -256,60 +269,62 @@ const TestCases: {
     title:
       "Measures/dimensions visibility with no preset and partially visible measures/dimensions in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "measures=impressions&dims=publisher",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count&dims=publisher%2Ccountry",
   },
   {
     title:
       "Measures/dimensions visibility with no preset and all measures/dimensions visible in state",
     mutations: [
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // re-toggle to show
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
-    expectedSearch: "",
+    expectedSearch:
+      "measures=impressions%2Cpublisher_count%2Cbid_price&dims=publisher%2Ccountry%2Cdomain",
   },
   {
     title:
       "Measures/dimensions visibility with preset and partially visible measures/dimensions in state matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
       // hide them back.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title:
       "Measures/dimensions visibility with preset and all measures/dimensions visible in state not matching preset",
     mutations: [
       // initially hidden due to preset, show them now.
-      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions%2Cbid_price&dims=publisher%2Cdomain&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Show and hide measures/dimensions",
     mutations: [
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE),
     ],
     expectedSearch:
-      "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&sort_by=bid_price",
+      "measures=bid_price%2Cpublisher_count%2Cimpressions&dims=domain%2Ccountry%2Cpublisher&sort_by=bid_price",
   },
 
   {
@@ -331,7 +346,7 @@ const TestCases: {
     mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_IMPRESSIONS],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title:
@@ -342,7 +357,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
   },
   {
     title: "Leaderboard configs with multiple measures",
@@ -493,6 +508,23 @@ const TestCases: {
     legacyNotSupported: true,
   },
   {
+    title: "Pivot with totals hidden",
+    mutations: [AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT, AD_BIDS_HIDE_PIVOT_TOTALS],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&show_totals_column=false&show_totals_row=false",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Pivot with totals row at the bottom",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
+    ],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&totals_row_position=bottom",
+    legacyNotSupported: true,
+  },
+  {
     title: "Pivot with valid row limit in preset",
     mutations: [
       AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
@@ -556,39 +588,43 @@ describe("Human readable URL state variations", () => {
     for (const { title, mutations, preset, expectedSearch } of TestCases) {
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
           timeZones: ["UTC", "Asia/Kathmandu"],
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           explore,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_METRICS_VIEW,
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
@@ -603,6 +639,7 @@ describe("Human readable URL state variations", () => {
           defaultUrl,
           explore,
           defaultExplorePreset,
+          getFilterManager(),
         );
         expect(errors.length).toEqual(0);
         const currentState = getCleanMetricsExploreForAssertion();
@@ -623,25 +660,29 @@ describe("Human readable URL state variations", () => {
       if (legacyNotSupported) continue;
       it(title, async () => {
         const explore: V1ExploreSpec = {
-          ...AD_BIDS_EXPLORE_INIT,
+          ...AD_BIDS_EXPLORE,
           ...(preset ? { defaultPreset: preset } : {}),
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          AD_BIDS_METRICS_INIT,
+          AD_BIDS_METRICS_VIEW,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
         const initState = getCleanMetricsExploreForAssertion();
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
         const curState = getCleanMetricsExploreForAssertion() as ExploreState;
 
         const url = new URL("http://localhost");
@@ -654,24 +695,39 @@ describe("Human readable URL state variations", () => {
         const { partialExploreState: entityFromUrl } =
           convertURLSearchParamsToExploreState(
             url.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
-        expect(entityFromUrl).toEqual({
+        // The adaptive grain is derived from the range before use, as correctExploreState does on load.
+        applyAdaptiveTimeGrain(entityFromUrl, AD_BIDS_METRICS_VIEW);
+        const expectedEntity = {
           ...curState,
           ...(extraExploreState ?? {}),
-        });
+        };
+        // Adaptive grains are not part of the legacy state. They are re-derived from the range,
+        // which for all-time only happens once the range is resolved.
+        if (
+          curState.adaptiveTimeGrain &&
+          curState.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+        ) {
+          expectedEntity.selectedTimeRange = {
+            ...curState.selectedTimeRange,
+            interval: undefined,
+          };
+        }
+        expect(entityFromUrl).toEqual(expectedEntity);
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
           convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_METRICS_VIEW,
             explore,
             defaultExplorePreset,
           );
+        applyAdaptiveTimeGrain(entityFromDefaultUrl, AD_BIDS_METRICS_VIEW);
 
         // assert that the entity we got back matches the original
         expect(entityFromDefaultUrl).toEqual(initState);
@@ -683,38 +739,42 @@ describe("Human readable URL state variations", () => {
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY,
       ),
     );
     const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_VIEW,
+      AD_BIDS_EXPLORE,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
 
-    await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
-      AD_BIDS_APPLY_LARGE_FILTERS,
-      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
-      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
-      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-    ]);
+    await applyMutationsToDashboard(
+      AD_BIDS_EXPLORE_NAME,
+      [
+        AD_BIDS_APPLY_LARGE_FILTERS,
+        AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+        AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      ],
+      getFilterManager(),
+    );
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE,
+      AD_BIDS_METRICS_VIEW,
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_VIEW,
+        AD_BIDS_EXPLORE,
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
@@ -725,11 +785,17 @@ describe("Human readable URL state variations", () => {
     // reset the explore state
     applyURLToExploreState(
       new URL("http://localhost"),
-      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_EXPLORE,
       defaultExplorePreset,
+      getFilterManager(),
     );
     // reapply the compressed url
-    applyURLToExploreState(url, AD_BIDS_EXPLORE_INIT, defaultExplorePreset);
+    applyURLToExploreState(
+      url,
+      AD_BIDS_EXPLORE,
+      defaultExplorePreset,
+      getFilterManager(),
+    );
 
     const currentState = getCleanMetricsExploreForAssertion();
     expect(currentState.selectedTimeRange?.name).toEqual(
@@ -799,7 +865,12 @@ describe("Human readable URL state variations", () => {
       // Deserialize URL back to state (simulates page refresh)
       const url = new URL("http://localhost");
       url.search = urlParams.toString();
-      applyURLToExploreState(url, explore, defaultExplorePreset);
+      applyURLToExploreState(
+        url,
+        explore,
+        defaultExplorePreset,
+        getFilterManager(),
+      );
 
       const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
       expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
@@ -838,7 +909,12 @@ describe("Human readable URL state variations", () => {
       // Deserialize URL back to state (simulates page refresh)
       const url = new URL("http://localhost");
       url.search = urlParams.toString();
-      applyURLToExploreState(url, explore, defaultExplorePreset);
+      applyURLToExploreState(
+        url,
+        explore,
+        defaultExplorePreset,
+        getFilterManager(),
+      );
 
       const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
       expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
@@ -847,48 +923,3 @@ describe("Human readable URL state variations", () => {
     });
   });
 });
-
-export function applyURLToExploreState(
-  url: URL,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      url.searchParams,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-  metricsExplorerStore.mergePartialExplorerEntity(
-    AD_BIDS_EXPLORE_NAME,
-    partialExploreStateDefaultUrl,
-  );
-  return errors;
-}
-
-// cleans the metrics explore of any state that is not stored or restored from url state
-export function getCleanMetricsExploreForAssertion() {
-  // clone the existing state so that any mutations do affect the copy during assertion
-  const cleanedState = deepClone(
-    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-  ) as Partial<ExploreState>;
-
-  delete cleanedState.name;
-  delete cleanedState.proto;
-  delete cleanedState.dimensionFilterExcludeMode;
-  delete cleanedState.temporaryFilterName;
-  delete cleanedState.contextColumnWidths;
-  if (cleanedState.selectedTimeRange) {
-    cleanedState.selectedTimeRange = {
-      name: cleanedState.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS,
-      interval: cleanedState.selectedTimeRange?.interval,
-    } as DashboardTimeControls;
-  }
-  delete cleanedState.lastDefinedScrubRange;
-
-  // TODO
-  delete cleanedState.leaderboardContextColumn;
-
-  return cleanedState;
-}

@@ -11,6 +11,7 @@
   import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
     ExcludeIcon,
+    ExternalLinkIcon,
     MeasureArrow,
     PieChart,
     PinHoverUnsetIcon,
@@ -19,15 +20,23 @@
     PinUnsetIcon,
     SelectedCheckmark,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
+  import { makeHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import type { PrecisionChipProps } from "../exact-measures/exact-measures";
+  import {
+    PRECISION_CHIP_TOGGLE_ATTRIBUTE,
+    precisionChipHTML,
+  } from "../exact-measures/precision-chip-html";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
+  // Precision chip rendered after the measure label; undefined when the measure has no exact variant.
+  export let precision: PrecisionChipProps | undefined = undefined;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
@@ -148,6 +157,21 @@
     }
   };
 
+  // The row header is rendered as a raw HTML string, so any data-derived value
+  // inserted into an attribute or as text must be escaped.
+  const escapeHtml = (str: string) =>
+    str.replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c] as string,
+    );
+
   const getMarker = (value, y) => {
     if (y === 0) {
       return { icon: "", muted: false };
@@ -226,9 +250,23 @@
       }
 
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
-      return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
+      // y === 0 is the totals row, which has no dimension value to link to.
+      const href = y === 0 ? undefined : makeHref(value.uri, value.value);
+      // The link is the only interactive part of the header; the container stays
+      // `pointer-events-none` so clicks fall through to the row's selection
+      // handler. Hover reveal is driven by `th:hover` in the global styles below.
+      const link = href
+        ? `<a
+            href="${escapeHtml(href)}"
+            title="${escapeHtml(href)}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tdd-uri-link pointer-events-auto shrink-0 flex items-center justify-center text-primary-600 opacity-0 transition-opacity"
+          >${ExternalLinkIcon}</a>`
+        : "";
+      return `<div class="flex items-center pointer-events-none w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${value.value === null ? "italic text-fg-muted" : ""} ${fontWeight}">${total}</div></div>`;
+        <div class="truncate text-xs ${value.value === null ? "italic text-fg-muted" : ""} ${fontWeight}">${total}</div>${link}</div>`;
     } else if (x === 1)
       return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
@@ -259,6 +297,7 @@
     if (data.x === 1)
       return `<div class="text-right font-medium flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
+        ${precision ? precisionChipHTML(precision) : ""}
         ${
           comparing === "dimension" &&
           tableData?.fixedColCount === 2 &&
@@ -312,8 +351,18 @@
   };
 
   const handleMouseDown = (evt, table) => {
+    // Let URI links navigate without toggling the row's selection.
+    if (evt.target.closest("a[href]")) {
+      return;
+    }
     if (evt.shiftKey && evt.target.title) {
       copyToClipboard(evt.target.title);
+      return;
+    }
+    // The precision chip sits inside the sortable measure header; toggling it
+    // must not also change the sort.
+    if (evt.target.closest(`[${PRECISION_CHIP_TOGGLE_ATTRIBUTE}]`)) {
+      precision?.onToggle?.();
       return;
     }
     handleEvent(evt, table, "__row", toggleVisible);
@@ -433,5 +482,11 @@
   :global(.pin) {
     cursor: pointer;
     margin-top: 2px;
+  }
+
+  /* Reveal the URI link when hovering its row header. The link itself lives in
+     a `pointer-events-none` container, so `group-hover` cannot be used. */
+  :global(regular-table th:hover .tdd-uri-link) {
+    opacity: 0.7;
   }
 </style>

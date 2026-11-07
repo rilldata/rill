@@ -45,6 +45,15 @@ import {
   tooltipPercentOptions,
 } from "./strategies/per-range-tooltip-options";
 
+// D3's SI prefix for 10^9 is "G" (giga), which is correct in scientific/engineering
+// contexts but confusing in BI. Business users expect "B" for billions. Rill's own
+// humanizer already uses "B" — this aligns the D3 path with that convention.
+const SI_PREFIX_REMAP: Record<string, string> = { G: "B" };
+const SI_PREFIX_RE = /([yzafpnµmkMGTPEZY])$/;
+function remapSIPrefix(formatted: string): string {
+  return formatted.replace(SI_PREFIX_RE, (p) => SI_PREFIX_REMAP[p] ?? p);
+}
+
 /**
  * Coerce a value to a number for formatting.
  * INT256 and other large integer types from Snowflake arrive as strings;
@@ -192,6 +201,9 @@ const memoizedHumanizeDataTypeUnabridged = memoize(humanizeDataTypeUnabridged, {
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
  *
+ * When the measure has an explicit valid `formatD3`, it is honored in every
+ * context except "axis", where values are humanized so tick labels stay compact.
+ *
  * You may optionally add type paramaters to allow non-numeric null
  * undefined values to be passed through unmodified.
  * - `createMeasureValueFormatter<null | undefined>(measureSpec)` will pass through null and undefined values unchanged
@@ -209,7 +221,6 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   const useUnabridged = type === "unabridged";
   const isBigNumber = type === "big-number";
   const isAxis = type === "axis";
-  const isTooltip = type === "tooltip";
 
   // Extract locale configuration from d3_locale
   const localeConfig: LocaleConfig | undefined =
@@ -267,9 +278,12 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         const coerced = coerceToNumber(value);
         if (typeof coerced !== "number") return value as T;
 
-        // For the Big Number, Axis and Tooltips, override the d3formatter
-        // with humanized values that respect the locale configuration
-        if (isBigNumber || isTooltip || isAxis) {
+        // For the Axis, override the d3formatter with humanized values
+        // that respect the locale configuration:
+        // tick labels must stay compact regardless of the measure's format.
+        // All other contexts (including tooltips and the Big Number) honor
+        // the explicit d3 format, so the precision it specifies is never lost.
+        if (isAxis) {
           if (hasCurrencySymbol) {
             if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
               const currency = measureSpec.formatD3Locale.currency as [
@@ -287,7 +301,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
             return humanizer(coerced, FormatPreset.HUMANIZE);
           }
         }
-        return d3formatter(coerced);
+        return remapSIPrefix(d3formatter(coerced));
       };
     } catch (error) {
       console.warn("Invalid d3 format:", error);

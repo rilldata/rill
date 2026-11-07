@@ -36,6 +36,7 @@
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
   import { getTopLevelFolder } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+  import { generatingCanvasFilePath } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -71,6 +72,7 @@
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient);
   $: hasWarnings = fileArtifact.getHasWarnings(queryClient);
+  $: isGenerating = $generatingCanvasFilePath === filePath;
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
@@ -95,7 +97,7 @@
   aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-hover"
   class:bg-surface-active={isCurrentFile}
-  class:opacity-50={$hasUnsavedChanges || $saving}
+  class:opacity-50={$hasUnsavedChanges || $saving || isGenerating}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {protectedDirectory ||
@@ -104,13 +106,13 @@
       : 'text-fg-primary hover:text-fg-primary'}"
     href={getFileHref(filePath)}
     {id}
-    class:italic={$hasUnsavedChanges || $saving}
+    class:italic={$hasUnsavedChanges || $saving || isGenerating}
     onclick={fireTelemetry}
     onmousedown={handleMouseDown}
     style:padding-left="{padding}px"
   >
     <div class="flex-none">
-      {#if $saving}
+      {#if $saving || isGenerating}
         <LoadingSpinner size="14px" />
       {:else if $error}
         <Alert size="14px" color="red" />

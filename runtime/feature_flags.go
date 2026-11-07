@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -10,6 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"golang.org/x/exp/maps"
 )
+
+// CloudEditingDisabledAnnotation is an admin-managed project annotation that
+// disables the cloud editing UI regardless of the cloud_editing feature flag.
+const CloudEditingDisabledAnnotation = "cloud_editing_disabled"
 
 // FeatureFlags finds and resolves the feature flags for the given instance ID and claims.
 // It's designed for use in the backend. Use runtime.ResolveFeatureFlags for resolving flags that will be exposed to the UI.
@@ -43,9 +48,9 @@ var defaultFeatureFlags = map[string]string{
 	// TODO: more info
 	"export_header": "false",
 	// Controls visibility of alert creation functionality
-	"alerts": "true",
+	"alerts": "{{ not .user.embed }}",
 	// Controls visibility of report creation functionality
-	"reports": "true",
+	"reports": "{{ not .user.embed }}",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
@@ -54,16 +59,26 @@ var defaultFeatureFlags = map[string]string{
 	"developer_chat": "true",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
+	// Controls whether external MCP clients (such as Claude or ChatGPT) get charts; it only applies where chat_charts is on
+	"mcp_charts": "true",
+	// Controls whether the AI chat learns and uses per-user memories (preferences and clarifications remembered across conversations)
+	"chat_memory": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.
 	"sticky_dashboard_state": "false",
+	// Controls if the dashboard state is persisted when user revisits the same dashboard.
+	"disable_persistent_dashboard_state": "false",
 	// Controls visibility of the cloud editing feature (Edit button and edit routes)
 	"cloud_editing": "false",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
+	// Controls visibility of standalone custom viz components (creation, canvas references, extraction, examples gallery)
+	"custom_components": "false",
+	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
+	"personal_canvases": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.
@@ -112,15 +127,29 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 		featureFlags[k] = bv
 	}
 
+	// Admin-managed disables take precedence over project-configured feature
+	// flags. This is intentionally a UI-only control; backend permissions for
+	// editable deployments are enforced independently.
+	cloudEditingKey := "cloud_editing"
+	if camelCase {
+		cloudEditingKey = "cloudEditing"
+	}
+	if disabled, _ := strconv.ParseBool(inst.Annotations[CloudEditingDisabledAnnotation]); disabled {
+		featureFlags[cloudEditingKey] = false
+	}
+
 	// Apply feature flag dependencies:
-	// If chat is disabled, dashboard_chat should also be disabled
+	// If chat is disabled, dashboard_chat and chat_memory should also be disabled
 	chatKey := "chat"
 	dashboardChatKey := "dashboard_chat"
+	chatMemoryKey := "chat_memory"
 	if camelCase {
 		dashboardChatKey = "dashboardChat"
+		chatMemoryKey = "chatMemory"
 	}
 	if !featureFlags[chatKey] {
 		featureFlags[dashboardChatKey] = false
+		featureFlags[chatMemoryKey] = false
 	}
 
 	return featureFlags, nil

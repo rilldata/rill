@@ -1,23 +1,23 @@
 ---
-title: Environmental Variables and Credentials in Rill Cloud
+title: Environment Variables and Credentials in Rill Cloud
 sidebar_label: "Variables and Credentials"
 sidebar_position: 50
 ---
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/developers/deploy/deploy-credentials). 
+The credentials in deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/developers/deploy/deploy-credentials).
 
 ## Modifying Variables and Credentials via the Settings Page
-Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmental variables defined, please run `rill env push` from your local CLI and Rill will automatically push the credentials in your project's `.env` file to Rill Cloud. If you'd like to manually add the credentials, please see [our naming convention](#credentials-naming-schema) to get started. 
+Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environment variables defined, please run `rill env push` from your local CLI and Rill will automatically push the credentials in your project's `.env` file to Rill Cloud. If you'd like to manually add the credentials, please see [our naming convention](#credentials-naming-schema) to get started.
 
 ![Environment Variable UI](/img/tutorials/admin/env-var-ui.png)
 
 
-### Adding and Editing Environmental Variables / Importing a `.env` file
-Once your environmental variables are added to Rill Cloud, they can be modified as needed.
+### Adding and Editing Environment Variables / Importing a `.env` file
+Once your environment variables are added to Rill Cloud, they can be modified as needed.
 
 
-![Add Variableiable](/img/manage/var-and-creds/add-variable.png)
+![Add Variable](/img/manage/var-and-creds/add-variable.png)
 
 :::tip Can't find the .env file?
 By default, the hidden files will not be visible in the finder window. In order to view hidden files, you will need to enable "show hidden files".  
@@ -26,7 +26,7 @@ Keyboard shortcut: Command + Shift + .
 
 ## Pushing and pulling credentials to / from Rill Cloud via the CLI
 
-If you'd prefer to use the CLI to managed your credentials, this can be done by running the `rill env pull` to pull your deployed Rill Cloud project's variables locally, or `rill env push` to updated Rill Cloud project's variables.
+If you'd prefer to use the CLI to manage your credentials, this can be done by running `rill env pull` to pull your deployed Rill Cloud project's variables locally, or `rill env push` to update your Rill Cloud project's variables.
 
 :::tip Avoid committing sensitive information to Git
 
@@ -36,7 +36,7 @@ It's never a good idea to commit sensitive information to Git and goes against s
 
 ### `rill env push`
 
-As a project admin, you can run `rill env push` from your local CLI that will update your Rill project with the contexts of your *`<RILL_PROJECT_HOME>/.env`* file.
+As a project admin, you can run `rill env push` from your local CLI, which will update your Rill project with the contents of your *`<RILL_PROJECT_HOME>/.env`* file.
 - Rill Cloud will use the specified credentials and variables in this `.env` file for the deployed project.
 - Other users will also be able to use `rill env pull` to retrieve these defined credentials for local use (with Rill Developer).
 
@@ -63,43 +63,4 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema
 
-Connector credentials use a standardized naming convention. Generic credentials (shared across connectors like cloud providers) use standard names without a driver prefix, while driver-specific credentials use the `DRIVER_PROPERTY` format. Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
-
-:::note Legacy Naming Convention
-Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
-:::
-
-<div
-    style={{
-    width: '100%',
-    margin: 'auto',
-    padding: '20px',
-    textAlign: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-    }}
->
-| **Source Name** |             Property             | Environment Variable                |
-| :-------------: | :------------------------------: | :---------------------------------- |
-|     **GCS**     | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
-|                 |             `key_id`             | `GCP_ACCESS_KEY_ID`                 |
-|                 |             `secret`             | `GCP_SECRET_ACCESS_KEY`             |
-|   **AWS S3**    |       `aws_access_key_id`        | `AWS_ACCESS_KEY_ID`                 |
-|                 |     `aws_secret_access_key`      | `AWS_SECRET_ACCESS_KEY`             |
-|    **Azure**    |     `azure_storage_account`      | `AZURE_STORAGE_ACCOUNT`             |
-|                 |       `azure_storage_key`        | `AZURE_STORAGE_KEY`                 |
-|                 | `azure_storage_connection_string`| `AZURE_STORAGE_CONNECTION_STRING`   |
-|                 |     `azure_storage_sas_token`    | `AZURE_STORAGE_SAS_TOKEN`           |
-|  **Big Query**  | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
-|  **Snowflake**  |              `dsn`               | `SNOWFLAKE_DSN`                     |
-|                 |           `password`             | `SNOWFLAKE_PASSWORD`                |
-| **ClickHouse**  |              `host`              | `CLICKHOUSE_HOST`                   |
-|                 |              `port`              | `CLICKHOUSE_PORT`                   |
-|                 |            `username`            | `CLICKHOUSE_USERNAME`               |
-|                 |            `password`            | `CLICKHOUSE_PASSWORD`               |
-|                 |              `ssl`               | `CLICKHOUSE_SSL`                    |
-|                 |            `database`            | `CLICKHOUSE_DATABASE`               |
-|                 |              `dsn`               | `CLICKHOUSE_DSN`                    |
-
-</div>
+When you add a connector in Rill Developer, its credentials are saved to `.env` under standard names such as `AWS_ACCESS_KEY_ID` or `SNOWFLAKE_PASSWORD`. Use the same names when you add variables here by hand; the full list is in the [credentials naming schema](/developers/build/connectors/credentials#credentials-naming-schema).

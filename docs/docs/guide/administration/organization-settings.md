@@ -1,18 +1,18 @@
 ---
 title: "Managing Organizations in Rill Cloud"
-description: Basic managment from projects 
+description: Basic management for organizations
 sidebar_label: "Organization Settings"
 sidebar_position: 00
 ---
 
-Before a project can be deployed onto Rill Cloud, an organization must be created. If you are deploying via the UI Deploy, this will automatically be done for you. As an administrator, you can also create, edit, and delete organizations from the CLI. From the organization page, you will be able to view your projects, users, and overall settings. 
+Before a project can be deployed onto Rill Cloud, an organization must be created. If you are deploying via the UI, this will automatically be done for you. As an administrator, you can also create, edit, and delete organizations from the CLI. From the organization page, you will be able to view your projects, users, and overall settings.
 
 ## Organization
 
 ![Rill Org](/img/manage/project-management/rill-org.png)
 
 
-An Organization in Rill is the parent management object and encompasses how your team  interfaces with Rill Cloud. Organizations are designed to hold the different components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards, user management, and general settings.
+An organization in Rill is the parent management object and encompasses how your team interfaces with Rill Cloud. Organizations are designed to hold the different components of your Rill project. Organizations consist of projects that each have their own sources, models, metrics views, dashboards, user management, and general settings.
 
 ### Organization Hierarchy
 
@@ -37,12 +37,12 @@ Organization
 
 ### User Management
 
-From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](/guide/administration/users-and-access/user-management).
+From the Users page, you can view and manage users within your organization. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](/guide/administration/users-and-access/user-management).
 
 
 ### Org Settings via Rill Cloud
 
-In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/developers/other/plans).
+On the organization settings page, depending on your plan type, you can view the general information, billing, and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add or modify your current payment type. For more information, please review our [Billing Information documentation](/developers/other/plans).
 
 ![Rill Org Settings](/img/manage/project-management/rill-org-settings.png)
 
@@ -76,7 +76,6 @@ Global Flags:
 
 :::tip
 
-Access to Rill can be granted on the [organization level](/guide/administration/users-and-access/user-management#how-to-add-an-organization-user), [project level](/guide/administration/users-and-access/user-management#how-to-add-a-project-user), and [user group level](/guide/administration/users-and-access/user-management#how-to-add-a-user-to-a-usergroup).
+Access to Rill can be granted on the [organization level](/guide/administration/users-and-access/user-management#how-to-add-an-organization-user), [project level](/guide/administration/users-and-access/user-management#how-to-add-a-project-user), and [user group level](/guide/administration/users-and-access/user-management#how-to-add-a-user-to-a-user-group).
 
 :::
-

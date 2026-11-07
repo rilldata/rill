@@ -12,6 +12,14 @@ There are currently two supported provisioner implementations:
 ## Configuration
 
 The provisioners are configured using the environment variable `RILL_ADMIN_PROVISIONER_SET_JSON` with a named set of provisioners using a format like the following example. More provisioners of the same type can be configured, this is a useful for example to support deployments to different Kubernetes clusters. Furthermore the name of the default provisioner needs to be specified with `RILL_ADMIN_DEFAULT_PROVISIONER`, this provisioner will be used for all deployed projects where a provisioner is not explicitly chosen.
+
+### Choosing a provisioner for runtimes
+
+When provisioning a runtime, the provisioner is resolved in this order:
+1. The project's provisioner, if set (superuser-only, via `rill sudo project edit --provisioner`).
+2. The org's default provisioner, if set (superuser-only, via `rill sudo org set-default-provisioner`).
+3. The global default provisioner (`RILL_ADMIN_DEFAULT_PROVISIONER`).
+
 ```json
 {
   "static-example":
@@ -54,3 +62,17 @@ The provisioners are configured using the environment variable `RILL_ADMIN_PROVI
     }
 }
 ```
+
+### Changing the provisioner of existing deployments
+
+Running deployments keep their current provisioner. A change to the project-level or org-level provisioner is applied to a deployment the next time it goes from stopped to running (see `StartDeploymentInner` in `admin/deployments.go`). Use `rill sudo project restart` to stop and start a project's running deployments.
+
+The global default provisioner only applies to newly provisioned runtimes. Changing `RILL_ADMIN_DEFAULT_PROVISIONER` doesn't move existing deployments. Similarly, if neither a project-level nor an org-level provisioner is set (for example after unsetting one), existing deployments keep their current provisioner.
+
+When a deployment starts with a different provisioner than its runtime was provisioned with, the admin service:
+1. Deprovisions the runtime resource with the old provisioner (for example deleting its Kubernetes PVC, or releasing its static slots).
+2. Resets the resource for the new provisioner, keeping its ID. The runtime instance ID is derived from the resource ID, so it stays the same.
+3. Provisions the resource with the new provisioner and updates the deployment's runtime host.
+
+The old runtime's disk is not migrated. The new runtime starts with an empty disk and relies on the runtime's metastore backups in object storage to recover its state. That requires both runtimes to share the same data bucket and metastore ID.
+The admin service deliberately doesn't call `DeleteInstance` on the old runtime, since that would also delete the instance's data in object storage.

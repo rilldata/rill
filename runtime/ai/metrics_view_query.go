@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -25,10 +25,14 @@ var _ Tool[QueryMetricsViewArgs, *QueryMetricsViewResult] = (*QueryMetricsView)(
 type QueryMetricsViewArgs map[string]any
 
 type QueryMetricsViewResult struct {
-	Schema            []SchemaField `json:"schema"`
-	Data              [][]any       `json:"data"`
-	OpenURL           string        `json:"open_url,omitempty"`
-	TruncationWarning string        `json:"truncation_warning,omitempty"`
+	Schema []SchemaField `json:"schema"`
+	Data   [][]any       `json:"data"`
+	// ResolvedTimeRange & ResolvedComparisonTimeRange store the exact time ranges used for the query.
+	// This helps when opening the citation url and get the exact time range for relative time ranges.
+	ResolvedTimeRange           *metricsview.TimeRange `json:"resolved_time_range,omitempty"`
+	ResolvedComparisonTimeRange *metricsview.TimeRange `json:"resolved_comparison_time_range,omitempty"`
+	OpenURL                     string                 `json:"open_url,omitempty"`
+	TruncationWarning           string                 `json:"truncation_warning,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -42,6 +46,7 @@ Request:
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+- Measures that define an 'exact_expression' in the metrics view are approximate by default. Set 'exact: true' on such a measure only when the user explicitly asks for exact, precise or reconciled numbers; exact queries are much slower. Tell the user which precision was used.
 
 Response:
 - Returns aggregated data matching your query parameters
@@ -273,17 +278,25 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		return nil, err
 	}
 
+	// Resolve time ranges and store them in the result to record the exact resolved time ranges for this tool call
+	tr, ctr, err := resolveTimeRanges(res)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.ID(), session.ParentID)
+	openURL, err := aiMessageOpenURL(instance.FrontendURL, session.ID(), session.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
 
 	// Build the result
 	result := &QueryMetricsViewResult{
-		Schema:  schema,
-		Data:    data,
-		OpenURL: openURL,
+		Schema:                      schema,
+		Data:                        data,
+		OpenURL:                     openURL,
+		ResolvedTimeRange:           tr,
+		ResolvedComparisonTimeRange: ctr,
 	}
 	if isSystemLimit && int64(len(data)) >= limit { // Add a warning if we hit the system limit
 		msg := fmt.Sprintf("The system truncated the result to %d rows", limit)
@@ -295,29 +308,29 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	return result, nil
 }
 
-// generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sessionID, callID string) (string, error) {
-	// Get instance to access the configured frontend URL
-	instance, err := t.Runtime.Instance(ctx, instanceID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get instance: %w", err)
+func resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {
+	meta := res.Meta()
+	if meta == nil {
+		return nil, nil, nil
 	}
 
-	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
-	if instance.FrontendURL == "" {
-		return "", nil
+	var tr *metricsview.TimeRange
+	rawTr, ok := meta["time_range"]
+	if ok {
+		tr = &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawTr, tr); err != nil {
+			return nil, nil, err
+		}
 	}
 
-	// Build the complete URL for the query
-	openURL, err := url.Parse(instance.FrontendURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
+	var ctr *metricsview.TimeRange
+	rawCtr, ok := meta["comparison_time_range"]
+	if ok {
+		ctr = &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawCtr, ctr); err != nil {
+			return nil, nil, err
+		}
 	}
 
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "message", callID, "-", "open")
-	if err != nil {
-		return "", fmt.Errorf("failed to join path: %w", err)
-	}
-
-	return openURL.String(), nil
+	return tr, ctr, nil
 }

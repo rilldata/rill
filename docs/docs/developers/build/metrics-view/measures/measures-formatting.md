@@ -5,7 +5,7 @@ sidebar_label: "Measure Formatting"
 sidebar_position: 15
 ---
 
-When creating your measures in Rill, you have the option to pick from a preset of formats that we provide to you or use the [d3-format](https://d3js.org/d3-format) parameter to format your data in any way you like. While the big number in the explore dashboard won't apply all the decimals changes (it will add currency or percentage if that is the type), you will be able to see the changes in the dimension leaderboard and pivot tables. 
+When creating your measures in Rill, you have the option to pick from a preset of formats that we provide to you or use the [d3-format](https://d3js.org/d3-format) parameter to format your data in any way you like. An explicit `format_d3` is applied everywhere the measure is displayed — the big number, tooltips, the dimension leaderboard, TDD, and pivot tables — except chart axis labels, which stay abbreviated to keep them compact.
 
 ![Metrics Editor](/img/build/metrics-view/metrics-editor.png)
 
@@ -35,7 +35,7 @@ For further customization of your measures, you can switch to the YAML view and,
 
 ## Examples
 
-As explained in the introduction, you'll notice that in each of the screenshots the Big Number doesn't always follow the exact formatting, but will change based on percentage/currency formatting. This is as designed, as there is a fixed width that the number has to be displayed in. Instead, you'll see these values in the dimension leaderboard, TDD, and pivot tables.
+Measures with an explicit `format_d3` follow that format exactly in the big number, tooltips, the dimension leaderboard, TDD, and pivot tables. Chart axis labels are the one exception: they remain abbreviated so they fit in the available space. Measures using a `format_preset` continue to show an abbreviated (humanized) big number, since presets do not specify an exact precision.
 
 If you have any questions, please review our [reference documentation.](/reference/project-files/metrics-views)
 

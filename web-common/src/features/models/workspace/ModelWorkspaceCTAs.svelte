@@ -13,6 +13,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
@@ -51,7 +52,7 @@
 <ModelRefreshButton {resource} {hasUnsavedChanges} />
 
 <ExportMenu
-  label="Export model data"
+  label={m.dashboard_export_model_data()}
   disabled={!hasResultTable || !isModelIdle}
   workspace
   getQuery={() => {
@@ -87,7 +88,7 @@
             }}
           >
             <MetricsViewIcon size="16" />
-            {resource?.meta?.name?.name ?? "Loading..."}
+            {resource?.meta?.name?.name ?? m.common_loading()}
           </DropdownMenu.Item>
         {/each}
         <DropdownMenu.Separator />
@@ -99,7 +100,7 @@
           disabled={!hasResultTable}
         >
           <Add />
-          Create metrics view
+          {m.model_workspace_create_metrics_view()}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     {/if}

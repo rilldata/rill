@@ -101,7 +101,7 @@ Sorting, especially in DuckDB, _can also be computationally intensive_ and most 
 
 ### Use joins efficiently
 
-Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/developers/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set.
+Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/developers/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well-chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set.
 
 ### Apply filters early and use WHERE clauses wisely
 
@@ -122,7 +122,7 @@ If your time series column is quite granular, this may affect your dashboards as
 
 :::note Query-time vs Model processing
 
-There are benefits to pre-procesing the data in the model layer but for some quick processing this can be done in the metrics view.
+There are benefits to pre-processing the data in the model layer, but for some quick processing, this can be done in the metrics view.
 
 **Query-time processing** (in metrics views):
 - Flexible and dynamic

@@ -14,12 +14,12 @@ Connectors are usually lightweight resources. When reconciled, they validate the
 
 Each connector uses a **driver** that implements one or more capabilities:
 
-- **OLAP database**: Can power metrics views and dashboards (e.g., `duckdb`, `clickhouse`)
+- **OLAP database**: Can power metrics views and dashboards (e.g., `duckdb`, `clickhouse`, `druid`, `pinot`, `starrocks`, `snowflake`, `bigquery`, `databricks` as live connectors)
 - **SQL database**: Can run SQL queries as model inputs (e.g., `postgres`, `bigquery`, `snowflake`)
 - **Information schema**: Can list tables and their schemas (e.g., `duckdb`, `bigquery`)
 - **Object store**: Can list, read, and write flat files (e.g., `s3`, `gcs`)
 - **Notifier**: Can send notifications and alerts (e.g., `slack`)
-- **AI**: Can generate embeddings or responses (e.g., `openai`)
+- **AI**: Can generate embeddings or responses (e.g., `openai`, `claude`, `gemini`, `bedrock`)
 
 ## Core Concepts
 
@@ -181,10 +181,27 @@ Amazon Athena. Key properties:
 - `region`: AWS region
 - `output_location`: S3 path in format `s3://bucket/path` to store temporary query results in (Athena only)
 
+### StarRocks
+
+StarRocks live OLAP connector (query in place, no ingestion). Key properties:
+
+- `host`, `port`, `username`, `password`, `database`, `catalog`: Connection parameters
+- `ssl: true`: Enable a secure connection
+- `dsn`: Connection string in place of separate parameters
+
+### Databricks
+
+Databricks, as a live OLAP connector or a data source for ingestion. Key properties:
+
+- `host`, `http_path`, `token`: SQL warehouse hostname, HTTP path, and access token
+- `catalog`, `schema`: Unity Catalog name and schema (optional; default to workspace defaults)
+- `dsn`: Connection string in place of separate parameters
+
 ### Other drivers
 
 - **Slack**: Use `bot_token` for alert notifications
-- **OpenAI** or **Claude**: Use `api_key` for AI-powered features
+- **OpenAI**, **Claude**, or **Gemini**: Use `api_key` for AI-powered features; optionally set `model` to override the default
+- **Bedrock**: Amazon Bedrock models in the user's own AWS account. Requires `model` (a model ID, inference profile ID, or ARN) and usually `region`; authenticate with either `api_key` (a long-term Bedrock API key, which only works in the region it was generated in) or `aws_access_key_id` and `aws_secret_access_key` (optionally with `aws_role_arn`), but not both
 - **HTTPS**: Simple connector for public HTTP sources
 - **Pinot**: Use `broker_host`, `controller_host`, `username`, `password`
 
@@ -402,6 +419,43 @@ region: us-east-1
 database: "analytics"
 ```
 
+### StarRocks
+
+```yaml
+# connectors/starrocks.yaml
+type: connector
+driver: starrocks
+host: "{{ .env.starrocks_host }}"
+port: 9030
+username: "{{ .env.starrocks_user }}"
+password: "{{ .env.starrocks_password }}"
+database: "analytics"
+```
+
+### Databricks
+
+```yaml
+# connectors/databricks.yaml
+type: connector
+driver: databricks
+host: "dbc-xxxxxxxx-xxxx.cloud.databricks.com"
+http_path: "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx"
+token: "{{ .env.databricks_token }}"
+catalog: "main"
+schema: "default"
+```
+
+### DuckLake
+
+DuckLake lakehouse. Uses the DuckDB driver with an `attach:` clause pointing at the catalog and data path; queried live (no ingestion):
+
+```yaml
+# connectors/ducklake.yaml
+type: connector
+driver: duckdb
+attach: "'ducklake:metadata.ducklake' (DATA_PATH 's3://my-bucket/ducklake/')"
+```
+
 ### OpenAI
 
 ```yaml
@@ -418,6 +472,29 @@ api_key: "{{ .env.openai_api_key }}"
 type: connector
 driver: claude
 api_key: "{{ .env.claude_api_key }}"
+```
+
+### Gemini
+
+```yaml
+# connectors/gemini.yaml
+type: connector
+driver: gemini
+api_key: "{{ .env.gemini_api_key }}"
+```
+
+### Bedrock
+
+```yaml
+# connectors/bedrock.yaml
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+api_key: "{{ .env.bedrock_api_key }}"
+# Or use AWS access keys instead of an API key:
+# aws_access_key_id: "{{ .env.bedrock_aws_access_key_id }}"
+# aws_secret_access_key: "{{ .env.bedrock_aws_secret_access_key }}"
 ```
 
 ### Slack

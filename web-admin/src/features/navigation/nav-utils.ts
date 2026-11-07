@@ -52,6 +52,10 @@ export function isCanvasDashboardPage(page: Page): boolean {
   );
 }
 
+export function isPersonalFilePage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/personal/[name]";
+}
+
 /**
  * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
  */
@@ -80,7 +84,8 @@ export function isPublicURLPage(page: Page): boolean {
   return (
     page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
     isPublicReportPage(page) ||
-    isPublicAlertPage(page)
+    isPublicAlertPage(page) ||
+    isPublicAIPage(page)
   );
 }
 
@@ -99,8 +104,30 @@ export function isPublicAlertPage(page: Page): boolean {
   );
 }
 
+// AI reports in creator mode link recipients to the shared AI conversation with a magic token,
+// so the conversation page is a public URL page when a token is present.
+export function isPublicAIPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/ai/[conversationId]",
+    ) && page.url.searchParams.has("token")
+  );
+}
+
 export function isEditPage({ route }: Pick<Page, "route">): boolean {
   return !!route?.id?.startsWith("/[organization]/[project]/-/edit");
+}
+
+/**
+ * True when the page is the explore or canvas preview inside Cloud Rill
+ * Developer (`/-/edit/(viz)/{explore,canvas}/[name]`). `isMetricsExplorerPage`
+ * and `isCanvasDashboardPage` only match production routes, so this is the
+ * editor-side equivalent for surfaces that need to swap chat affordances.
+ */
+export function isEditDashboardPreviewPage({
+  route,
+}: Pick<Page, "route">): boolean {
+  return !!route?.id?.startsWith("/[organization]/[project]/-/edit/(viz)/");
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
@@ -143,22 +170,50 @@ export function isOnboardingPage(page: Page): boolean {
   );
 }
 
+// `isProjectPage` matches every `/{org}/{project}/-/*` route bar a few exceptions, so it subsumes
+// reports and alerts. It has to be tested last, or the specific screens below it are never reached.
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
       return MetricsEventScreenName.Organization;
-    case isProjectPage(page):
-      return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
     case isCanvasDashboardPage(page):
       return MetricsEventScreenName.Canvas;
+    case isReportExportPage(page):
+      return MetricsEventScreenName.ReportExport;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):
       return MetricsEventScreenName.Alert;
-    case isReportExportPage(page):
-      return MetricsEventScreenName.ReportExport;
+    case isProjectPage(page):
+      return MetricsEventScreenName.Project;
   }
   return MetricsEventScreenName.Unknown;
+}
+
+/**
+ * Identifies the resource a page is showing, for telemetry.
+ * Returns empty strings on pages that aren't showing a named resource, in which case consumers fall
+ * back to parsing the resource out of the page URL.
+ *
+ * The type values are also produced by that URL fallback, which lives in the `rill_ui_telemetry_model`
+ * model of the rill-cloud-metrics project. Keep the two vocabularies in step: they land in the same
+ * column, so a value only used by one of them reads as two different resource types over time.
+ */
+export function getResourceFromPage(page: Page): {
+  type: string;
+  name: string;
+} {
+  switch (true) {
+    case isMetricsExplorerPage(page):
+      return { type: "explore", name: page.params.dashboard ?? "" };
+    case isCanvasDashboardPage(page):
+      return { type: "canvas", name: page.params.dashboard ?? "" };
+    case isReportPage(page):
+      return { type: "report", name: page.params.report ?? "" };
+    case isAlertPage(page):
+      return { type: "alert", name: page.params.alert ?? "" };
+  }
+  return { type: "", name: "" };
 }

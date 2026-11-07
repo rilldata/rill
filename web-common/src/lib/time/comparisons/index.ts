@@ -1,6 +1,7 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   V1TimeGrain,
   type V1TimeRange,
@@ -13,7 +14,10 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
-import { isNewRillTimeFormat } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  isAbsoluteTimeRange,
+  isNewRillTimeFormat,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 
 export function getComparisonTransform(
   start: Date,
@@ -297,10 +301,10 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
   }
   switch (true) {
     case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
-      return "All time";
+      return m.time_all_time();
     case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset ||
       comparisonTimeRange.expression?.toLowerCase()?.endsWith("offset pp"):
-      return "Previous period";
+      return m.time_comparison_previous_period();
     case comparisonTimeRange.isoOffset &&
       comparisonTimeRange.isoOffset in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
@@ -308,7 +312,11 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
       comparisonTimeRange.expression in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.expression].label;
     default:
-      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "")}`;
+      return m.time_last_duration({
+        duration: humaniseISODuration(
+          comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "",
+        ),
+      });
   }
 }
 
@@ -317,7 +325,14 @@ export function getComparisonInterval(
   comparisonRange: string | undefined,
   activeTimeZone: string,
 ): Interval<true> | undefined {
-  if (!interval || !comparisonRange || isNewRillTimeFormat(comparisonRange))
+  // New format ranges are resolved by the backend, so there is nothing to compute here.
+  // Absolute ranges are the exception: they carry their own start and end, so they are parsed below.
+  if (
+    !interval ||
+    !comparisonRange ||
+    (isNewRillTimeFormat(comparisonRange) &&
+      !isAbsoluteTimeRange(comparisonRange))
+  )
     return undefined;
 
   let comparisonInterval: Interval | undefined = undefined;

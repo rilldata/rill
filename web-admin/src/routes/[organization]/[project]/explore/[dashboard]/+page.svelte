@@ -21,9 +21,13 @@
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: PageData;
   $: ({ project } = data);
+
+  const { disablePersistentDashboardState } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
   $: ({
@@ -45,7 +49,7 @@
   $: if (isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
-      header: "Dashboard not found",
+      header: m.error_dashboard_not_found(),
       body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
@@ -115,6 +119,8 @@
           {exploreName}
           storageNamespacePrefix={`${orgName}__${projectName}__`}
           bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
+          disableMostRecentDashboardState={$disablePersistentDashboardState}
+          disableInitSessionDashboardState={$disablePersistentDashboardState}
         >
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardStateManager>

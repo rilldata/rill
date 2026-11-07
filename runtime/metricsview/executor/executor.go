@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 )
 
 const (
@@ -169,12 +170,16 @@ func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 
 // Timestamps queries min, max and watermark for the metrics view.
 // For the primary time dimension it also resolves rollup table timestamps if rollups are present.
+// It intentionally does not apply security policy row filters:
+// unfiltered timestamps can be computed from database metadata and cached across users,
+// and they keep time expressions evaluating consistently for all users.
+// The trade-off is that users whose accessible rows don't span the full range may see "no data" for some time ranges.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
 	}
 
-	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+	if res, ok := e.timestamps[timeDim]; ok {
 		return res, nil
 	}
 
@@ -187,17 +192,35 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	}
 
 	mv := e.metricsView
-	res, err := e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
-	if err != nil {
-		return metricsview.TimestampsResult{}, err
+
+	var res metricsview.TimestampsResult
+	if timeDim == mv.TimeDimension && mv.DataTimeRange != "" {
+		// Use the declared base data_time_range and skip the OLAP probe.
+		res, err = e.resolveDeclaredTimestamps(mv.DataTimeRange)
+		if err != nil {
+			return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range": %w`, err)
+		}
+	} else {
+		res, err = e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
 	}
 
 	res.Now = time.Now()
 
-	// For the primary time dimension, also resolve rollup table timestamps
+	// For the primary time dimension, also resolve rollup table timestamps.
 	if timeDim == mv.TimeDimension && len(mv.Rollups) > 0 {
 		res.Rollups = make(map[string]metricsview.TimestampsResult, len(mv.Rollups))
 		for _, rollup := range mv.Rollups {
+			if rollup.DataTimeRange != "" {
+				rts, err := e.resolveDeclaredTimestamps(rollup.DataTimeRange)
+				if err != nil {
+					return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range" for rollup %q: %w`, rollup.Table, err)
+				}
+				res.Rollups[rollup.Table] = rts
+				continue
+			}
 			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "")
 			if err != nil {
 				return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve timestamps for rollup %q: %w", rollup.Table, err)
@@ -209,6 +232,30 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	e.timestamps[timeDim] = res
 
 	return res, nil
+}
+
+// resolveDeclaredTimestamps evaluates a rilltime expression against synthetic
+// anchors (now=time.Now(), earliest=zero, latest/watermark=time.Now()) so that
+// a declared data_time_range can supply table bounds without probing the OLAP.
+func (e *Executor) resolveDeclaredTimestamps(expr string) (metricsview.TimestampsResult, error) {
+	rt, err := rilltime.Parse(expr, rilltime.ParseOptions{})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	now := time.Now()
+	start, end, _ := rt.Eval(rilltime.EvalOptions{
+		Now:        now,
+		MinTime:    time.Time{},
+		MaxTime:    now,
+		Watermark:  now,
+		FirstDay:   int(e.metricsView.FirstDayOfWeek),
+		FirstMonth: int(e.metricsView.FirstMonthOfYear),
+	})
+	return metricsview.TimestampsResult{
+		Min:       start,
+		Max:       end,
+		Watermark: end,
+	}, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
@@ -228,6 +275,17 @@ func (e *Executor) BindQuery(qry *metricsview.Query, timestamps metricsview.Time
 
 // Schema returns a schema for the metrics view's dimensions and measures.
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
+	return e.schema(ctx, false)
+}
+
+// ExactSchema returns a schema for the metrics view's dimensions and measures, computing every measure that has an exact_expression with it.
+// It is used during validation to check the types of exact expressions.
+func (e *Executor) ExactSchema(ctx context.Context) (*runtimev1.StructType, error) {
+	return e.schema(ctx, true)
+}
+
+// schema returns a schema for the metrics view's dimensions and measures. If exact is true, measures with an exact_expression are computed with it.
+func (e *Executor) schema(ctx context.Context, exact bool) (*runtimev1.StructType, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
@@ -247,7 +305,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	for _, m := range e.metricsView.Measures {
 		if e.security.CanAccessField(m.Name) {
-			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name})
+			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name, Exact: exact && m.ExactExpression != ""})
 		}
 	}
 
@@ -299,6 +357,10 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
+		return nil, err
+	}
+
 	// preserve the original limit, required in 2 phase comparison
 	ogLimit := qry.Limit
 
@@ -324,9 +386,13 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
+	if err != nil {
 		return nil, err
 	}
+
+	// Move time bounds in the WHERE into the time range, so rollup selection (and the AST) treat them like any other time range
+	e.rewriteQueryWhereTimeRange(qry)
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
@@ -354,6 +420,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	e.rewriteDruidMVDFilteredGroupBy(ast, exactified)
+
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return nil, err
 	}
@@ -362,6 +430,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 	if err != nil {
 		return nil, err
 	}
+
+	e.rewriteLookupGroupByKey(ctx, ast)
 
 	var res *drivers.Result
 	if !pivoting {
@@ -449,6 +519,10 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
+		return "", err
+	}
+
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
 	if err != nil {
 		return "", err
@@ -466,9 +540,13 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
+	if err != nil {
 		return "", err
 	}
+
+	// Move time bounds in the WHERE into the time range, so rollup selection (and the AST) treat them like any other time range
+	e.rewriteQueryWhereTimeRange(qry)
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
@@ -491,6 +569,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	e.rewriteDruidMVDFilteredGroupBy(ast, exactified)
+
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return "", err
 	}
@@ -499,6 +579,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if err != nil {
 		return "", err
 	}
+
+	e.rewriteLookupGroupByKey(ctx, ast)
 
 	if pivoting {
 		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
@@ -562,9 +644,14 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
-			UnusedFields: nil,
+			ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
+			UnusedFields:  nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
+
+		if err := e.rewriteQueryExactMeasures(q); err != nil {
+			return nil, err
+		}
 
 		err := e.RewriteQueryTimeRanges(ctx, q, executionTime)
 		if err != nil {
@@ -585,11 +672,16 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 			return nil, err
 		}
 
+		e.rewriteDruidMVDFilteredGroupBy(ast, nil)
+
+		e.rewriteLookupGroupByKey(ctx, ast)
+
 		sql, args, err := ast.SQL()
 		if err != nil {
 			return nil, err
 		}
-		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		// The aliases must be escaped: "value" is a reserved keyword in Druid (Calcite) SQL.
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS %s, %s AS %s FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeAlias("dimension"), e.olap.Dialect().EscapeIdentifier(d), e.olap.Dialect().EscapeAlias("value"), sql))
 		finalArgs = append(finalArgs, args...)
 	}
 
@@ -708,10 +800,15 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},
-		UnusedFields: nil,
+		ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
+		UnusedFields:  nil,
 	} //exhaustruct:enforce
 
 	if err := e.RewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteQueryExactMeasures(q); err != nil {
 		return nil, err
 	}
 
@@ -889,14 +986,18 @@ END) as __rill_time_grain`)
 	b.WriteString(" FROM ")
 	b.WriteString(dialect.EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table))
 
+	// Select the annotations that overlap the time range.
+	// A point annotation overlaps when its time falls in the range.
+	// A range annotation overlaps when it ends after the range starts and starts before the range ends.
+	// A null time_end denotes a point annotation.
 	b.WriteString(" WHERE ")
-
-	b.WriteString("time >= ? AND time < ?")
-	args := []any{start, end}
-
+	var args []any
 	if annotation.HasTimeEnd {
-		b.WriteString(" AND time_end >= ? AND time_end < ?")
-		args = append(args, start, end)
+		b.WriteString("(time >= ? OR time_end > ?) AND time < ?")
+		args = []any{start, start, end}
+	} else {
+		b.WriteString("time >= ? AND time < ?")
+		args = []any{start, end}
 	}
 
 	if annotation.HasDuration && qry.TimeGrain != metricsview.TimeGrainUnspecified {

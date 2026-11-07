@@ -199,7 +199,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, nil, false)
+		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, invite.Attributes, false)
 		if err != nil {
 			return nil, err
 		}
@@ -340,12 +340,14 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		ThumbnailAssetID:                    nil,
 		CustomDomain:                        "",
 		DefaultProjectRoleID:                &viewerProjectRole.ID,
+		DefaultProvisioner:                  "", // Means the global default provisioner is used
 		QuotaProjects:                       deref(defaultQuotas.NumProjects, -1),
 		QuotaDeployments:                    deref(defaultQuotas.NumDeployments, -1),
 		QuotaSlotsTotal:                     deref(defaultQuotas.NumSlotsTotal, -1),
 		QuotaSlotsPerDeployment:             deref(defaultQuotas.NumSlotsPerDeployment, -1),
 		QuotaOutstandingInvites:             deref(defaultQuotas.NumOutstandingInvites, -1),
 		QuotaStorageLimitBytesPerDeployment: deref(defaultQuotas.StorageLimitBytesPerDeployment, -1),
+		QuotaSeats:                          deref(defaultQuotas.NumSeats, -1),
 		BillingEmail:                        email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
@@ -372,7 +374,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingIssueTypeNeverSubscribed,
-			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			Metadata:  &database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {

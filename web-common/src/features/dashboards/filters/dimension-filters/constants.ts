@@ -1,23 +1,40 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export enum DimensionFilterMode {
   Select = "Select",
   Contains = "Contains",
   InList = "InList",
 }
 
+// Labels/descriptions use lazy getters so they resolve in the active locale at
+// access time (render) rather than freezing to the locale active when this
+// module loaded.
 export const DimensionFilterModeOptions = [
   {
     value: DimensionFilterMode.Select,
-    label: "Select",
-    description: "Manually select values for this filter",
+    get label() {
+      return m.filter_mode_select();
+    },
+    get description() {
+      return m.filter_mode_select_description();
+    },
   },
   {
     value: DimensionFilterMode.Contains,
-    label: "Contains",
-    description: "Create a dynamic filter based on a search term",
+    get label() {
+      return m.filter_mode_contains();
+    },
+    get description() {
+      return m.filter_mode_contains_description();
+    },
   },
   {
     value: DimensionFilterMode.InList,
-    label: "In List",
-    description: "Create a filter based on a list of values",
+    get label() {
+      return m.filter_mode_in_list();
+    },
+    get description() {
+      return m.filter_mode_in_list_description();
+    },
   },
 ];

@@ -1,14 +1,17 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
     createAdminServiceSetOrganizationMemberUserRole,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1OrganizationMemberUser,
   } from "@rilldata/web-admin/client";
   import {
-    PROJECT_ROLES_DESCRIPTION_MAP,
-    PROJECT_ROLES_OPTIONS,
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import {
+    getProjectRolesDescriptionMap,
+    getProjectRolesOptions,
   } from "@rilldata/web-admin/features/projects/user-management/constants.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -30,6 +33,8 @@
   let role: string = OrgUserRoles.Viewer;
 
   $: userName = user?.userName ?? user?.userEmail ?? "";
+  $: projectRolesOptions = getProjectRolesOptions();
+  $: projectRolesDescriptions = getProjectRolesDescriptionMap();
 
   async function handleUpgrade() {
     if (!user?.userEmail) return;
@@ -42,22 +47,17 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: `Guest upgraded to member and assigned ${role} role`,
+        message: m.users_guest_upgraded({ role }),
       });
     } catch (error) {
       console.error("Error upgrading user role", error);
       eventBus.emit("notification", {
-        message: "Error upgrading user role",
+        message: m.users_error_upgrading_role(),
         type: "error",
       });
     }
@@ -79,29 +79,33 @@
     }}
   >
     <Dialog.Header>
-      <Dialog.Title>Convert to member</Dialog.Title>
-      <div class="text-sm">Convert {userName} to {role}</div>
+      <Dialog.Title>{m.users_convert_to_member()}</Dialog.Title>
+      <div class="text-sm">
+        {m.users_convert_user_to_role({ user: userName, role })}
+      </div>
     </Dialog.Header>
     <Dialog.Description class="flex flex-col gap-y-2">
       <div class="flex flex-row items-center gap-x-2">
         <Select
           id="org-user-role"
           bind:value={role}
-          options={PROJECT_ROLES_OPTIONS}
+          options={projectRolesOptions}
           full
         />
       </div>
-      <div>{PROJECT_ROLES_DESCRIPTION_MAP[role]}</div>
+      <div>{projectRolesDescriptions[role]}</div>
     </Dialog.Description>
     <Dialog.Footer>
-      <Button type="tertiary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="tertiary" onClick={() => (open = false)}
+        >{m.users_cancel()}</Button
+      >
       <Button
         type="primary"
         onClick={handleUpgrade}
         loading={isPending}
         disabled={isPending}
       >
-        Convert
+        {m.users_convert()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

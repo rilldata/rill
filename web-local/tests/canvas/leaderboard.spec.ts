@@ -5,7 +5,6 @@ test.describe("canvas leaderboards", () => {
   test.use({ project: "AdBids" });
 
   test("add leaderboard component", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
     await page
       .getByRole("button", { name: "Add widget" })

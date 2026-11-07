@@ -1,44 +1,93 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { Chip } from "@rilldata/web-common/components/chip";
-  import * as Popover from "@rilldata/web-common/components/popover/";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
-  import MeasureFilterForm from "./MeasureFilterForm.svelte";
-  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
-  import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
+  import MeasureFilterForm from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterForm.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
+  import type { MeasureFilterManager } from "./MeasureFilterManager.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
-  export let filterData: MeasureFilterItem;
-  export let openOnMount = false;
-  export let allDimensions: MetricsViewSpecDimension[];
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let toggleFilterPin:
-    | FilterManager["actions"]["toggleFilterPin"]
-    | undefined = undefined;
-  export let onRemove: () => void;
-  export let onApply: (params: {
-    dimension: string;
-    oldDimension: string;
-    filter: MeasureFilterEntry;
-  }) => void;
+  let {
+    measureManager,
+    yamlConfigProvider,
+    openOnMount = true,
+    allDimensions,
+    removable = true,
+    side = "bottom",
+  }: {
+    measureManager: MeasureFilterManager;
+    yamlConfigProvider: YAMLConfigProvider;
+    openOnMount?: boolean;
+    allDimensions: MetricsViewSpecDimension[];
+    removable?: boolean;
+    side?: "top" | "right" | "bottom" | "left";
+  } = $props();
 
-  let open = openOnMount && !filterData.filter;
-  let curPinned = filterData.pinned;
+  // svelte-ignore state_referenced_locally
+  let open = $state(openOnMount && !measureManager.expr);
 
-  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+  let pinned = $derived(
+    Boolean(yamlConfigProvider.pinnedFilters[measureManager.name]),
+  );
+  let required = $derived(
+    Boolean(yamlConfigProvider.requiredFilters[measureManager.name]),
+  );
+  let missingRequired = $derived(required && !measureManager.expr);
 
-  $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
+  // Pinned and required are edited locally and only persisted once the popover closes.
+  // svelte-ignore state_referenced_locally
+  let curPinned = $state(pinned);
+  // svelte-ignore state_referenced_locally
+  let curRequired = $state(required);
+
+  let dimensionDisplayName = $derived(
+    getDimensionDisplayName(
+      allDimensions.find((d) => d.name === measureManager.dimension),
+    ),
+  );
+
+  let filter = $derived(
+    measureManager.expr
+      ? <MeasureFilterEntry>{
+          measure: measureManager.name,
+          operation: measureManager.operation,
+          type: measureManager.type,
+          value1: measureManager.value1,
+          value2: measureManager.value2,
+        }
+      : undefined,
+  );
+
+  function onApply(dimension: string, filter: MeasureFilterEntry) {
+    persistPinnedAndRequired();
+    measureManager.setMeasureFilter(dimension, filter);
+  }
+
+  function persistPinnedAndRequired() {
+    if (pinned !== curPinned) {
+      yamlConfigProvider.togglePinnedFilter(measureManager.name);
+    }
+    if (required !== curRequired) {
+      yamlConfigProvider.toggleRequiredFilter(measureManager.name);
+    }
+  }
 </script>
 
 <Popover.Root
   bind:open
-  onOpenChange={() => {
-    if (open && pinned !== curPinned) {
-      toggleFilterPin?.(name, metricsViewNames);
+  onOpenChange={(open) => {
+    if (open) {
+      curPinned = pinned;
+      curRequired = required;
+    } else {
+      persistPinnedAndRequired();
     }
   }}
 >
@@ -55,31 +104,44 @@
           {...props}
           type="measure"
           active={open}
-          {label}
-          gray={!filter}
+          label={measureManager.label}
+          gray={!measureManager.expr}
+          error={!!missingRequired}
           theme
-          {onRemove}
-          removable={!curPinned}
-          removeTooltipText="Remove {label}"
+          onRemove={() => measureManager.clear()}
+          removable={removable && !pinned && !required}
+          removeTooltipText={m.dashboard_remove_label({
+            label: measureManager.label,
+          })}
         >
           <MeasureFilterBody
-            dimensionName={allDimensions.find((d) => {
-              return d.name === dimensionName;
-            })?.displayName ?? ""}
+            dimensionName={dimensionDisplayName}
             {filter}
-            {label}
+            label={measureManager.label}
             slot="body"
           />
         </Chip>
         <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
-              <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              <svelte:fragment slot="name"
+                >{measureManager.name}</svelte:fragment
+              >
+              <svelte:fragment slot="description"
+                >{required
+                  ? m.dashboard_required_measure()
+                  : measureManager.label || ""}</svelte:fragment
               >
             </TooltipTitle>
 
-            <slot name="body-tooltip-content">Click to edit the values</slot>
+            {#if missingRequired}
+              {m.dashboard_filter_required_set_value()}
+            {:else}
+              <!-- svelte-ignore slot_element_deprecated -->
+              <slot name="body-tooltip-content">
+                {m.dashboard_click_to_edit_values()}
+              </slot>
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>
@@ -89,19 +151,16 @@
   {#if open}
     <MeasureFilterForm
       bind:open
-      {name}
+      name={measureManager.name}
       {filter}
-      {label}
-      {dimensionName}
+      label={measureManager.label}
+      dimensionName={measureManager.dimension}
       {allDimensions}
-      onApply={(params) => {
-        if (pinned !== curPinned) {
-          toggleFilterPin?.(name, metricsViewNames);
-        }
-        onApply(params);
-      }}
+      onApply={({ dimension, filter }) => onApply(dimension, filter)}
       bind:pinned={curPinned}
-      showPinControl={!!toggleFilterPin}
+      bind:required={curRequired}
+      showPinControl={yamlConfigProvider.editable}
+      showRequiredControl={yamlConfigProvider.editable}
       {side}
     />
   {/if}

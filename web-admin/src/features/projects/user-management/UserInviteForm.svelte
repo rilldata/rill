@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceAddProjectMemberUser,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import { invalidateOrgMemberUsers } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
@@ -35,7 +36,7 @@
       emails: array(
         string().matches(RFC5322EmailRegex, {
           excludeEmptyString: true,
-          message: "Invalid email",
+          message: m.project_share_invalid_email(),
         }),
       ), // yup's email regex is too simple
       role: string().required(),
@@ -87,15 +88,14 @@
           ),
         });
 
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-          type: "all", // Clear regular and inactive queries
-        });
+        await invalidateOrgMemberUsers(queryClient, organization);
 
         eventBus.emit("notification", {
           type: "success",
-          message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
+          message: m.users_invited_success({
+            count: succeeded.length,
+            role: values.role,
+          }),
         });
         onInvite();
         if (errored) {
@@ -123,7 +123,7 @@
 >
   <MultiInput
     id="emails"
-    placeholder="Add emails, separated by commas"
+    placeholder={m.users_email_placeholder()}
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
@@ -143,7 +143,7 @@
         disabled={hasInvalidEmails || !hasSomeValue}
         forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
       >
-        Invite
+        {m.users_invite()}
       </Button>
     </svelte:fragment>
   </MultiInput>

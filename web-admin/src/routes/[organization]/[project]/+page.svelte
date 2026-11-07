@@ -7,13 +7,26 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import PersonalCanvasesList from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasesList.svelte";
+  import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
+  import TableToolbarSort from "@rilldata/web-common/components/table-toolbar/TableToolbarSort.svelte";
+  import { DashboardTableSortOptions } from "../../../features/dashboards/listing/dashboard-favourites.ts";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import BookmarksTable from "@rilldata/web-admin/features/bookmarks/listing/BookmarksTable.svelte";
+  import { BookmarkTableSortOptions } from "@rilldata/web-admin/features/bookmarks/listing/bookmark-listing-utils.ts";
 
-  const { chat } = featureFlags;
+  const { chat, personalCanvases } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { project },
+    params: { organization, project },
   } = $page);
 
   // Query the instance to get the project display name
@@ -22,10 +35,36 @@
     $instanceQuery.data?.instance?.projectDisplayName || project;
   $: isLoadingDisplayName = $instanceQuery.isLoading;
   $: isErrorDisplayName = $instanceQuery.isError;
+
+  $: personalCanvasesQuery = getPersonalFilteredResources(
+    runtimeClient,
+    organization,
+    project,
+    ResourceKind.Canvas,
+  );
+  $: hasNoPersonalCanvases =
+    !$personalCanvasesQuery.isPending &&
+    ($personalCanvasesQuery.data?.length ?? 0) === 0;
+
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
+  const sortStore = UrlParamsState.createStringParam(
+    "sort",
+    DashboardTableSortOptions[0].value,
+  );
+
+  // Bookmarks belong to users, so the section is hidden for anonymous viewers of public projects.
+  const user = createAdminServiceGetCurrentUser();
+  $: hasUser = !!$user.data?.user;
+  // Separate param from the dashboards sort above so the two sections sort independently.
+  const bookmarksSortStore = UrlParamsState.createStringParam(
+    "bookmarks_sort",
+    BookmarkTableSortOptions[0].value,
+  );
 </script>
 
 <svelte:head>
-  <title>{projectDisplayName} - Rill</title>
+  <title>{m.home_project_page_title({ projectName: projectDisplayName })}</title
+  >
 </svelte:head>
 
 <ContentContainer maxWidth={900}>
@@ -40,25 +79,27 @@
         {:else if isErrorDisplayName}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.home_project_title_label()}
           >
-            Welcome to <span class="text-accent-primary-action">{project}</span>
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(project)}</span>`,
+            })}
           </h1>
         {:else}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.home_project_title_label()}
           >
-            Welcome to <span class="text-accent-primary-action"
-              >{projectDisplayName}</span
-            >
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(projectDisplayName)}</span>`,
+            })}
           </h1>
         {/if}
         <p class="text-lg text-fg-muted">
           {#if $chat}
-            Ask questions about your data, or explore your dashboards below
+            {m.home_subtitle_with_chat()}
           {:else}
-            Explore your dashboards below
+            {m.home_subtitle_no_chat()}
           {/if}
         </p>
       </div>
@@ -72,9 +113,55 @@
     </div>
 
     <!-- Dashboards Section -->
+    {#if $personalCanvases}
+      <PersonalCanvasesList org={organization} {project} />
+    {/if}
+
     <div class="flex flex-col gap-y-4">
-      <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
-      <DashboardsTable isPreview />
+      <h2
+        class="flex flex-row gap-x-2 items-center text-xl font-semibold text-fg-secondary"
+      >
+        <div class="flex flex-row w-full gap-x-2 items-center grow">
+          <span>{m.home_dashboards_heading()}</span>
+          <TableToolbarSort
+            {sortStore}
+            sortOptions={DashboardTableSortOptions}
+            size="sm"
+            noOutline
+          />
+          <div class="grow"></div>
+          <DashboardsTagFilter align="end" {selectedTagsStore} />
+        </div>
+        {#if $personalCanvases && hasNoPersonalCanvases}
+          <CreatePersonalCanvasDialog org={organization} {project} />
+        {/if}
+      </h2>
+      <DashboardsTable isPreview previewLimit={5} />
     </div>
+
+    <!-- Bookmarks Section -->
+    {#if hasUser}
+      <div class="flex flex-col gap-y-4">
+        <h2
+          class="flex flex-row gap-x-2 items-center text-xl font-semibold text-fg-secondary"
+        >
+          <div class="flex flex-row w-full gap-x-2 items-center grow">
+            <span>{m.home_bookmarks_heading()}</span>
+            <TableToolbarSort
+              sortStore={bookmarksSortStore}
+              sortOptions={BookmarkTableSortOptions}
+              size="sm"
+              noOutline
+            />
+            <div class="grow"></div>
+          </div>
+        </h2>
+        <BookmarksTable
+          isPreview
+          previewLimit={5}
+          sortStore={bookmarksSortStore}
+        />
+      </div>
+    {/if}
   </div>
 </ContentContainer>

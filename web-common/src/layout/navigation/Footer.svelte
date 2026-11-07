@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
@@ -9,6 +10,7 @@
   import { fly } from "svelte/transition";
   import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import RuntimeTrafficLights from "@rilldata/web-common/features/entity-management/RuntimeTrafficLights.svelte";
+  import GithubStarButton from "@rilldata/web-common/features/github-star/GithubStarButton.svelte";
 
   const metadataQuery = createLocalServiceGetMetadata();
 
@@ -18,7 +20,7 @@
   const lineItems = [
     {
       icon: Github,
-      label: "Report an issue",
+      label: m.footer_report_issue(),
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-fg-secondary",
       shrinkIcon: true,
@@ -50,6 +52,7 @@
       </div></a
     >
   {/each}
+  <GithubStarButton />
   <div
     class="px-4 py-1 text-fg-secondary flex items-center flex-row w-full gap-x-2 truncate line-clamp-1"
     style:font-size="10px"
@@ -70,11 +73,13 @@
         >
           <TooltipContent>
             <TooltipTitle>
-              <svelte:fragment slot="name">Rill Developer</svelte:fragment>
+              <svelte:fragment slot="name"
+                >{m.footer_rill_developer()}</svelte:fragment
+              >
             </TooltipTitle>
             <TooltipShortcutContainer>
-              <div>View documentation</div>
-              <Shortcut>Click</Shortcut>
+              <div>{m.footer_view_documentation()}</div>
+              <Shortcut>{m.footer_shortcut_click()}</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </div>
@@ -82,7 +87,8 @@
     </span>
 
     <span class="truncate">
-      version {version || "unknown (built from source)"}{commitHash
+      {m.footer_version()}
+      {version || m.footer_unknown_version()}{commitHash
         ? ` – ${commitHash}`
         : ""}
     </span>

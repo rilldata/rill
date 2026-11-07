@@ -217,7 +217,22 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		runtimeProxyCORSMiddleware(s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject))),
 	)
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler)
-	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)        // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/branch/{branch}/runtime/{path...}", proxyHandler) // Branch-specific deployment
+
+	// Add MCP server.
+	// Note this is the admin service's MCP server, not a runtime MCP server (although this includes an ability to proxy certain tool calls to a project's runtime).
+	mcpHandler, err := s.mcpHandler()
+	if err != nil {
+		return nil, err
+	}
+	mcpHandler = observability.Middleware(
+		"mcp",
+		s.logger,
+		runtimeProxyCORSMiddleware(s.authenticator.HTTPMiddlewareLenient(s.mcpRequireAuth(mcpHandler))),
+	)
+	observability.MuxHandle(mux, "/v1/mcp", mcpHandler)
+	observability.MuxHandle(mux, "/v1/mcp/{$}", mcpHandler) // Avoids falling through to the gRPC transcoder on a trailing slash
 
 	// Add backwards compatibility alias for iframe endpoint
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -248,6 +263,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
+
+	// Add endpoints for authorizing connectors on behalf of users (regular endpoints on /connectors/oauth/*)
+	s.registerConnectorOAuthEndpoints(mux)
 
 	// Add project assets endpoint.
 	mux.Handle("/v1/assets/{asset_id}/download", observability.Middleware("assets", s.logger, s.authenticator.HTTPMiddleware(httputil.Handler(s.assetHandler))))
@@ -411,7 +429,8 @@ func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, 
 
 func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
-		return time.Minute * 2
+		// NOTE: The runtime usually sets a lower timeout through its AILLMTimeoutSeconds config, so this is more of a hard upper bound.
+		return time.Minute * 10
 	}
 	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
 		return time.Minute * 4

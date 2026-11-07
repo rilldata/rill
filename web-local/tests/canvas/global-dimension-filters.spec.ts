@@ -7,12 +7,9 @@ test.describe("canvas global dimension filters", () => {
 
   // TODO: Fix test with latest filter related changes
   test.skip("global dimension filters run through", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
-
-    await page.waitForTimeout(1000);
 
     await expect(page.getByText("Total records 1,122")).toBeVisible();
 

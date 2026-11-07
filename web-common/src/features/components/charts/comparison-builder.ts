@@ -12,12 +12,25 @@ export const ColorWithComparisonField = "color_with_comparison";
 export const SortOrderField = "sortOrder";
 
 /**
+ * Opacity for previous-period marks in comparison mode.
+ * Shared with the custom time series chart so both renderers
+ * fade comparison data the same way.
+ */
+export const ComparisonMarkOpacity = 0.4;
+
+/**
  * Creates Vega-Lite transforms for period-over-period comparison.
  * This function generates the fold and calculate transforms needed to
  * display current and comparison data side-by-side.
  *
  * The data structure has current and previous values as separate measure fields:
- * e.g., "total_bids" (current) and "total_bids_prev" (comparison)
+ * e.g., "total_bids" (current) and "total_bids_prev" (comparison).
+ *
+ * Field names arrive raw. The `fold` inputs are Vega field references, so
+ * they are escaped here. `fold.as` stores literal names, so it keeps the raw
+ * measure name, which is what an escaped reference such as `pivot.value`
+ * resolves to; Vega also emits the raw name as the `measure_key` value.
+ * Embedded Vega expression literals escape `\` and `'` via `escapeVegaString`.
  */
 export function createComparisonTransforms(
   xField: string | undefined,
@@ -26,38 +39,36 @@ export function createComparisonTransforms(
 ): Transform[] {
   if (!xField || !measureField) return [];
 
-  const sanitizedMeasure = sanitizeValueForVega(measureField);
-  const sanitizedComparisonMeasure = sanitizeValueForVega(
-    measureField + ComparisonDeltaPreviousSuffix,
-  );
+  const previousMeasureField = measureField + ComparisonDeltaPreviousSuffix;
+  const previousLiteral = escapeVegaString(previousMeasureField);
   const transforms: Transform[] = [];
 
-  // Fold the current and previous measure fields
-  // This creates two rows per original row: one for current, one for previous
+  // Fold the current and previous measure fields into the original measure
+  // column, with a `measure_key` flag indicating which period each row is.
   transforms.push({
-    fold: [sanitizedMeasure, sanitizedComparisonMeasure],
-    as: [MeasureKeyField, sanitizedMeasure],
+    fold: [
+      sanitizeValueForVega(measureField),
+      sanitizeValueForVega(previousMeasureField),
+    ],
+    as: [MeasureKeyField, measureField],
   });
 
-  // If there's a color field, create a synthetic nominal field for grouping
-  // This combines the color dimension with the comparison key for proper stacking
   if (colorField) {
-    const sanitizedColor = sanitizeValueForVega(colorField);
+    const colorLiteral = escapeVegaString(colorField);
+    // Synthetic nominal field for grouping current and previous together.
     transforms.push({
-      calculate: `datum['${sanitizedColor}'] + (datum['${MeasureKeyField}'] === '${sanitizedComparisonMeasure}' ? '${ComparisonDeltaPreviousSuffix}' : '')`,
+      calculate: `datum['${colorLiteral}'] + (datum['${MeasureKeyField}'] === '${previousLiteral}' ? '${ComparisonDeltaPreviousSuffix}' : '')`,
       as: ColorWithComparisonField,
     });
 
-    // Add a sort order field that groups by color first, then by period
-    // This ensures the order is: A_current, A_previous, B_current, B_previous
+    // Sort order groups by color first, then by period (current before previous).
     transforms.push({
-      calculate: `datum['${sanitizedColor}'] + '_' + (datum['${MeasureKeyField}']=== '${sanitizedComparisonMeasure}' ? '1' : '0')`,
+      calculate: `datum['${colorLiteral}'] + '_' + (datum['${MeasureKeyField}'] === '${previousLiteral}' ? '1' : '0')`,
       as: SortOrderField,
     });
   } else {
-    // Add a sort order field to ensure current appears before comparison
     transforms.push({
-      calculate: `datum['${MeasureKeyField}'] === '${sanitizedComparisonMeasure}' ? 1 : 0`,
+      calculate: `datum['${MeasureKeyField}'] === '${previousLiteral}' ? 1 : 0`,
       as: SortOrderField,
     });
   }
@@ -67,22 +78,34 @@ export function createComparisonTransforms(
 
 /**
  * Creates an opacity encoding for comparison mode.
+ *
+ * `measureField` must be the raw measure name; the comparison-period key
+ * compared against here is derived the same way as in
+ * `createComparisonTransforms` so the test stays in sync.
  */
 export function createComparisonOpacityEncoding(
-  measureField: string,
+  measureField: string | undefined,
 ): NumericMarkPropDef<Field> {
-  const sanitizedComparisonMeasure = sanitizeValueForVega(
+  if (!measureField) return { value: 1 };
+
+  const previousLiteral = escapeVegaString(
     measureField + ComparisonDeltaPreviousSuffix,
   );
   return {
     condition: [
       {
-        test: `datum['${MeasureKeyField}'] === '${sanitizedComparisonMeasure}'`,
-        value: 0.4,
+        test: `datum['${MeasureKeyField}'] === '${previousLiteral}'`,
+        value: ComparisonMarkOpacity,
       },
     ],
     value: 1,
   };
+}
+
+// Escape `\` and `'` for safe embedding inside a Vega expression
+// single-quoted string literal.
+function escapeVegaString(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 /**

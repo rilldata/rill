@@ -33,6 +33,13 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
+  /** If true, the recipient is the embed user who created the report.
+Only set for reports created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -124,6 +131,11 @@ export interface V1AlertOptions {
   queryName?: string;
   /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
@@ -170,6 +182,11 @@ export interface V1BillingIssueMetadata {
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
   onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
   trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
+  message?: V1BillingIssueMetadataMessage;
+}
+
+export interface V1BillingIssueMetadataMessage {
+  message?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -244,6 +261,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
   BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
     "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+  BILLING_ISSUE_TYPE_MESSAGE: "BILLING_ISSUE_TYPE_MESSAGE",
 } as const;
 
 export interface V1BillingPlan {
@@ -270,6 +288,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
   BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
   BILLING_PLAN_TYPE_PRO: "BILLING_PLAN_TYPE_PRO",
+  BILLING_PLAN_TYPE_STARTER: "BILLING_PLAN_TYPE_STARTER",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -297,14 +317,23 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Whether the response may include reasoning blocks.
+Older clients don't support them, so they are removed from the response unless this is set. */
+  includeReasoning?: boolean;
 }
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
-  /** Number of tokens in the input. */
+  /** Number of full-rate (non-cached) tokens in the input. */
   inputTokens?: number;
   /** Number of tokens in the output. */
   outputTokens?: number;
+  /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
+  cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
+  /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
+  provider?: string;
 }
 
 export interface V1CompletionMessage {
@@ -326,6 +355,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1CreateAlertResponse {
@@ -381,6 +411,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePersonalFileResponse {
+  name?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -409,11 +443,25 @@ export interface V1DeleteAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteConnectorOAuthTokenRequest {
+  connector?: string;
+  configHash?: string;
+  userId?: string;
+}
+
+export interface V1DeleteConnectorOAuthTokenResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DeleteDeploymentResponse {
   deploymentId?: string;
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -481,6 +529,10 @@ export interface V1EditAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1EditPersonalFileResponse {
+  [key: string]: unknown;
+}
+
 export interface V1EditReportResponse {
   [key: string]: unknown;
 }
@@ -494,6 +546,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1Expression {
@@ -528,6 +581,10 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -560,6 +617,24 @@ export interface V1GetCloneCredentialsResponse {
   archiveDownloadUrl?: string;
 }
 
+export interface V1GetConnectorOAuthTokenRequest {
+  /** Name of the connector in the deployment's project. */
+  connector?: string;
+  /** Hash of the connector's current OAuth configuration, as computed by the runtime.
+A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization. */
+  configHash?: string;
+  /** ID of the user whose token to return. */
+  userId?: string;
+  /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
+  forceRefresh?: boolean;
+}
+
+export interface V1GetConnectorOAuthTokenResponse {
+  accessToken?: string;
+  /** When the access token expires. Unset if the token does not expire. */
+  expiresOn?: string;
+}
+
 export interface V1GetCurrentMagicAuthTokenResponse {
   token?: V1MagicAuthToken;
 }
@@ -584,6 +659,13 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
   [key: string]: unknown;
 };
 
+/**
+ * System variables set by the admin service that should not be overridden by user input.
+ */
+export type V1GetDeploymentConfigResponseSystemVariables = {
+  [key: string]: string;
+};
+
 export interface V1GetDeploymentConfigResponse {
   /** Variables for the deployment. */
   variables?: V1ProjectVariable[];
@@ -599,6 +681,8 @@ export interface V1GetDeploymentConfigResponse {
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
   /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
   editable?: boolean;
+  /** System variables set by the admin service that should not be overridden by user input. */
+  systemVariables?: V1GetDeploymentConfigResponseSystemVariables;
 }
 
 export interface V1GetDeploymentCredentialsResponse {
@@ -613,6 +697,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetEmbedUserResponse {
+  /** The external user ID passed to GetIFrame. */
+  externalUserId?: string;
 }
 
 export interface V1GetGithubPullRequestResponse {
@@ -664,6 +753,11 @@ export interface V1GetOrganizationResponse {
 
 export interface V1GetPaymentsPortalURLResponse {
   url?: string;
+}
+
+export interface V1GetPersonalFileResponse {
+  path?: string;
+  yaml?: string;
 }
 
 export interface V1GetProjectAccessRequestResponse {
@@ -836,6 +930,10 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListPersonalFilesResponse {
+  files?: string[];
+}
+
 export interface V1ListProjectInvitesResponse {
   invites?: V1ProjectInvite[];
   nextPageToken?: string;
@@ -983,6 +1081,7 @@ export interface V1Organization {
   thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
+  defaultProvisioner?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -993,10 +1092,15 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1OrganizationInviteAttributes = { [key: string]: unknown };
+
 export interface V1OrganizationInvite {
   email?: string;
   roleName?: string;
   invitedBy?: string;
+  attributes?: V1OrganizationInviteAttributes;
+  /** Names of the user groups the user will be added to when the invite is accepted. */
+  usergroups?: string[];
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1049,6 +1153,7 @@ export interface V1OrganizationQuotas {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1OrganizationRole {
@@ -1087,6 +1192,7 @@ export interface V1Project {
   frontendUrl?: string;
   prodTtlSeconds?: string;
   devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1211,6 +1317,22 @@ export interface V1Quotas {
   slotsPerDeployment?: string;
   outstandingInvites?: string;
   storageLimitBytesPerDeployment?: string;
+  apiCallsPerSeat?: string;
+  seats?: string;
+  tokensPerSeat?: string;
+}
+
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
@@ -1274,6 +1396,12 @@ export interface V1RenewBillingSubscriptionResponse {
 
 export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
+/**
+ * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+ */
+export type V1ReportOptionsMetricsViewFilters = { [key: string]: V1Expression };
+
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
@@ -1286,7 +1414,14 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
+  exportAttach?: boolean;
   emailRecipients?: string[];
+  /** Email of the embed user who creates the report; only used for reports created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the report.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -1296,6 +1431,9 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
+  /** Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data. */
+  metricsViewFilters?: V1ReportOptionsMetricsViewFilters;
   webOpenMode?: string;
 }
 
@@ -1429,6 +1567,19 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
+export interface V1SudoDeleteOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SudoExtendTrialRequest {
+  org?: string;
+  days?: number;
+}
+
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -1456,6 +1607,24 @@ export interface V1SudoIssueRuntimeManagerTokenRequest {
 
 export interface V1SudoIssueRuntimeManagerTokenResponse {
   token?: string;
+}
+
+export interface V1SudoReportUsageRequest {
+  org?: string;
+  eventName?: string;
+  value?: number;
+  /** Optional end time of the reporting window. Defaults to the current server time. */
+  endTime?: string;
+  /** Optional project name attribution for the mock event. If not set, a placeholder is used. */
+  projectName?: string;
+}
+
+export interface V1SudoReportUsageResponse {
+  customerId?: string;
+  eventName?: string;
+  value?: number;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface V1SudoTriggerBillingRepairRequest {
@@ -1491,12 +1660,26 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   subscription?: V1Subscription;
 }
 
+export interface V1SudoUpdateOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SudoUpdateOrganizationCustomDomainRequest {
   name?: string;
   customDomain?: string;
 }
 
 export interface V1SudoUpdateOrganizationCustomDomainResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationDefaultProvisionerRequest {
+  org?: string;
+  /** Name of the provisioner to use by default. Empty unsets the org's default provisioner. */
+  defaultProvisioner?: string;
+}
+
+export interface V1SudoUpdateOrganizationDefaultProvisionerResponse {
   organization?: V1Organization;
 }
 
@@ -1508,6 +1691,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -1680,6 +1864,9 @@ export interface V1UsergroupMemberUser {
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
+  /** True if the user has been invited to the group but has not signed up yet.
+For pending members, user_id, user_name and user_photo_url are empty. */
+  pendingAcceptance?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1702,6 +1889,10 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 };
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
+
+export type AdminServiceStartDeploymentBodyBody = {
+  superuserForceAccess?: boolean;
+};
 
 export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
@@ -1798,6 +1989,10 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1857,9 +2052,24 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   searchPattern?: string;
 };
 
+/**
+ * Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+ */
+export type AdminServiceAddOrganizationMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
+  /** Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
+  attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+Groups are additive: on a re-invite they are merged with the groups already on the invite. */
+  usergroups?: string[];
   superuserForceAccess?: boolean;
 };
 
@@ -1888,6 +2098,7 @@ export type AdminServiceCreateProjectBody = {
   /** directory_name should be the most recently observed local directory name for the project.
 See ListProjectsForFingerprint for more context. */
   directoryName?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used. */
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
@@ -1936,12 +2147,16 @@ export type AdminServiceUpdateProjectBody = {
   subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs). */
   provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
   devSlots?: string;
+  devTtlSeconds?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {
@@ -1981,6 +2196,7 @@ export type AdminServiceListDeploymentsParams = {
   environment?: string;
   branch?: string;
   userId?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceCreateDeploymentBody = {
@@ -2037,12 +2253,20 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
+  /** The `rill_open` query param of an open link from an email sent by a report created from an embed.
+If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report. */
+  open?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
   themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
+  /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available. */
+  hideNavigationBar?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
   state?: string;
   /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
@@ -2066,11 +2290,40 @@ export type AdminServiceListProjectMemberUsersParams = {
   superuserForceAccess?: boolean;
 };
 
+/**
+ * Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members.
+ */
+export type AdminServiceAddProjectMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+  /** Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members. */
+  attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to (user groups are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting user groups requires permission to manage org members. */
+  usergroups?: string[];
+};
+
+export type AdminServiceCreatePersonalFileBody = {
+  displayName?: string;
+  kind?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceEditPersonalFileBody = {
+  kind?: string;
+  yaml?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {
@@ -2308,6 +2561,11 @@ export type AdminServiceGetReportMetaBody = {
   accessibleFields?: string[];
 };
 
+export type AdminServiceSudoUpdateOrganizationBillingMessageBody = {
+  level?: V1BillingIssueLevel;
+  message?: string;
+};
+
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
   /**
@@ -2383,7 +2641,14 @@ This is only allowed for superusers. */
 
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
+  /**
+ * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+ */
   resourceKind?: string;
+  /**
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   */
   resourceName?: string;
 };
 

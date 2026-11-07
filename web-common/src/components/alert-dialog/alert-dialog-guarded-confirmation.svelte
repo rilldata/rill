@@ -14,13 +14,15 @@
   } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   export let open = false;
 
   export let title: string;
   export let description: string;
   export let confirmText: string;
-  export let confirmButtonText: string = "Continue";
+  export let confirmButtonText: string = m.common_continue();
   export let confirmButtonType: ButtonType = "primary";
 
   export let loading: boolean;
@@ -59,12 +61,14 @@
       <AlertDialogDescription class="flex flex-col gap-y-1.5">
         <div>{description}</div>
         <div class="mt-1">
-          Type <b>{confirmText}</b> in the box below to confirm:
+          {@html m.common_type_to_confirm({
+            text: `<b>${escapeHtml(confirmText)}</b>`,
+          })}
         </div>
         <Input
           bind:value={confirmInput}
           id="confirmation"
-          label="confirmation"
+          label={m.common_confirmation_label()}
         />
         {#if error}
           <div class="text-red-500 text-sm py-px">
@@ -78,7 +82,7 @@
         type={confirmButtonType === "destructive" ? "tertiary" : "secondary"}
         onClick={close}
       >
-        Cancel
+        {m.common_cancel()}
       </Button>
       <Button
         type={confirmButtonType}

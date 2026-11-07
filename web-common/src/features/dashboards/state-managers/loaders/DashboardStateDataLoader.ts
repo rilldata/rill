@@ -5,7 +5,16 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import {
+  capEphemeralMeasureDefs,
+  loadEphemeralMeasureLibrary,
+  mergeEphemeralMeasureDefs,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import { ephemeralMeasureNamesInUse } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
+import { MAX_EPHEMERAL_MEASURES } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
 import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -66,6 +75,7 @@ export class DashboardStateDataLoader {
       | CompoundQueryResult<Partial<ExploreState> | null>
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
+    public readonly disableInitSessionDashboardState: boolean,
   ) {
     this.validSpecQuery = useExploreValidSpec(client, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
@@ -114,9 +124,9 @@ export class DashboardStateDataLoader {
         }
 
         return getExploreStateFromYAMLConfig(
+          metricsViewSpec,
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
-          metricsViewSpec.smallestTimeGrain,
         );
       },
     );
@@ -153,6 +163,7 @@ export class DashboardStateDataLoader {
           exploreStateFromYAMLConfig,
           rillDefaultExploreState,
           backButtonUsed: false,
+          skipSessionStorage: this.disableInitSessionDashboardState,
         });
       },
     );
@@ -191,6 +202,9 @@ export class DashboardStateDataLoader {
       exploreStateFromYAMLConfig,
       rillDefaultExploreState,
       backButtonUsed,
+      // This should not be disabled when disableInitSessionDashboardState is set.
+      // While going between views, we still need session storage to save the state.
+      skipSessionStorage: false,
     });
   }
 
@@ -297,6 +311,7 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig,
     rillDefaultExploreState,
     backButtonUsed,
+    skipSessionStorage,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
@@ -305,10 +320,11 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig: Partial<ExploreState>;
     rillDefaultExploreState: ExploreState;
     backButtonUsed: boolean;
+    skipSessionStorage: boolean;
   }) {
     urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
-    const skipSessionStorage = backButtonUsed;
+    skipSessionStorage ||= backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
       : getPartialExploreStateFromSessionStorage(
@@ -327,11 +343,19 @@ export class DashboardStateDataLoader {
         {},
       );
 
+    // Loaded up front: the most recent state's ad-hoc selections are validated
+    // against these definitions, and they are merged into the final state below.
+    const libraryEphemeralMeasures = this.loadEphemeralMeasureLibrary(
+      metricsViewSpec,
+      exploreSpec,
+    );
+
     const { mostRecentPartialExploreState } = getMostRecentPartialExploreState(
       this.exploreName,
       this.storageNamespacePrefix,
       metricsViewSpec,
       exploreSpec,
+      libraryEphemeralMeasures,
     );
 
     const shouldSkipOtherSources =
@@ -366,8 +390,46 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
+    // Restore ad-hoc measure definitions from the library. The URL only
+    // carries the definitions the page shows, so this is what brings back
+    // hidden definitions and ones created in another explore on the same
+    // metrics view. Definitions from the state win over stored copies, and the
+    // total is capped at what a URL can carry so a shared link never drops one;
+    // definitions the state uses are kept ahead of unused ones.
+    if (libraryEphemeralMeasures.length) {
+      finalExploreState.ephemeralMeasures = capEphemeralMeasureDefs(
+        mergeEphemeralMeasureDefs(
+          finalExploreState.ephemeralMeasures ?? [],
+          libraryEphemeralMeasures,
+        ),
+        ephemeralMeasureNamesInUse(finalExploreState),
+        MAX_EPHEMERAL_MEASURES,
+      );
+    }
     correctExploreState(metricsViewSpec, finalExploreState);
 
     return finalExploreState;
+  }
+
+  /**
+   * Loads the per-metrics-view ad-hoc measure library, validated against the
+   * current spec so definitions referencing measures this explore does not
+   * expose are dropped. Empty when persisted state is disabled.
+   */
+  private loadEphemeralMeasureLibrary(
+    metricsViewSpec: V1MetricsViewSpec,
+    exploreSpec: V1ExploreSpec,
+  ): EphemeralMeasureDef[] {
+    if (this.disableMostRecentDashboardState || !exploreSpec.metricsView) {
+      return [];
+    }
+    const library = loadEphemeralMeasureLibrary(
+      exploreSpec.metricsView,
+      this.storageNamespacePrefix,
+    );
+    if (!library.length) return [];
+    const libraryState: Partial<ExploreState> = { ephemeralMeasures: library };
+    validateAndCleanExploreState(metricsViewSpec, exploreSpec, libraryState);
+    return libraryState.ephemeralMeasures ?? [];
   }
 }

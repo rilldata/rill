@@ -1,5 +1,7 @@
 import {
   createAndExpression,
+  forEachExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
@@ -32,7 +34,6 @@ import {
   type QueryClient,
 } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 
 export function useMetricsView(
   client: RuntimeClient,
@@ -105,13 +106,20 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   client: RuntimeClient,
   metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
+  queryClient?: QueryClient,
 ) => {
-  return useResource<T>(client, metricsViewName, ResourceKind.MetricsView, {
-    select: (data) =>
-      selector
-        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
-        : (data.resource?.metricsView?.state?.validSpec as T),
-  });
+  return useResource<T>(
+    client,
+    metricsViewName,
+    ResourceKind.MetricsView,
+    {
+      select: (data) =>
+        selector
+          ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
+          : (data.resource?.metricsView?.state?.validSpec as T),
+    },
+    queryClient,
+  );
 };
 
 export function useMetricsViewTimeRange(
@@ -125,7 +133,7 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   const fullTimeRangeQueryOptionsStore = derived(
-    useMetricsViewValidSpec(client, metricsViewName),
+    useMetricsViewValidSpec(client, metricsViewName, undefined, queryClient),
     (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data ?? {};
 
@@ -205,33 +213,36 @@ export function hasValidMetricsViewTimeRange(
 }
 
 export function getFiltersForOtherDimensions(
-  whereFilter: V1Expression,
+  whereFilter: V1Expression | undefined,
   dimName: string,
 ) {
-  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimName),
+  if (!whereFilter) return undefined;
+
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimName) && !isSubqueryExpression(e),
   );
   if (exprIdx === undefined || exprIdx === -1) return whereFilter;
 
   return createAndExpression(
     whereFilter.cond?.exprs?.filter(
-      (e) => !matchExpressionByName(e, dimName),
+      (e) => !matchExpressionByName(e, dimName) || isSubqueryExpression(e),
     ) ?? [],
   );
 }
 
 export function additionalMeasures(
   activeMeasureName: string | null,
-  dimensionThresholdFilters: DimensionThresholdFilter[],
+  expr: V1Expression | undefined,
 ) {
   const measures = new Set<string>(
     activeMeasureName ? [activeMeasureName] : [],
   );
-  dimensionThresholdFilters.forEach(({ filters }) => {
-    filters.forEach((filter) => {
-      measures.add(filter.measure);
+  if (expr) {
+    forEachExpression(expr, (e) => {
+      if (!e.subquery?.measures) return;
+      e.subquery.measures.forEach((m) => measures.add(m));
     });
-  });
+  }
   return [...measures];
 }
 
@@ -256,5 +267,53 @@ export const useGetExploresForMetricsView = (
     client,
     ResourceKind.Explore,
     (res) => res.explore?.spec?.metricsView === metricsViewName,
+  );
+};
+
+// Canvases don't reference metrics views directly: each canvas has refs to its
+// component resources, whose refs in turn name the metrics view they query.
+// Walking the resource graph refs (canvas → component → metrics view) delegates
+// the knowledge of how components reference metrics views to the parser.
+// Note: components that only reference a metrics view through a `metrics_sql`
+// query get no metrics view ref from the parser and are missed here; full parity
+// with the backend's runtime.ResolveCanvas would require a reverse-lookup API.
+export const useGetCanvasesForMetricsView = (
+  client: RuntimeClient,
+  metricsViewName: string,
+) => {
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          const componentNames = new Set(
+            data.resources
+              ?.filter(
+                (res) =>
+                  res.meta?.name?.kind === ResourceKind.Component &&
+                  res.meta?.refs?.some(
+                    (ref) =>
+                      ref.kind === ResourceKind.MetricsView &&
+                      ref.name === metricsViewName,
+                  ),
+              )
+              .map((res) => res.meta?.name?.name),
+          );
+          return (
+            data.resources?.filter(
+              (res) =>
+                res.meta?.name?.kind === ResourceKind.Canvas &&
+                res.meta?.refs?.some(
+                  (ref) =>
+                    ref.kind === ResourceKind.Component &&
+                    componentNames.has(ref.name),
+                ),
+            ) ?? []
+          );
+        },
+      },
+    },
+    queryClient,
   );
 };

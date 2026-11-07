@@ -1,15 +1,23 @@
 <script lang="ts">
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
+  import {
+    getSkillAgent,
+    getSkillsPickerOptions,
+  } from "@rilldata/web-common/features/chat/core/context/picker/data/skills.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
+  import { readable } from "svelte/store";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowUp } from "lucide-svelte";
+  import { getAvailableUIActions } from "../ui-actions";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -17,8 +25,17 @@
   export let height: string | undefined = undefined;
   export let config: ChatConfig;
   export let inline = false;
+  // Awaited before a shared conversation is forked (see Conversation.sendMessage).
+  export let beforeFork: (() => Promise<void> | void) | undefined = undefined;
 
   let value = "";
+
+  // The project's skills for this chat's agent can be picked with "/".
+  const skillAgent = getSkillAgent(config.agent);
+  const skillsStore = skillAgent
+    ? getSkillsPickerOptions(useRuntimeClient(), skillAgent)
+    : readable([]);
+  $: hasSkills = $skillsStore.length > 0;
 
   $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
@@ -40,14 +57,29 @@
   let element: HTMLDivElement;
   let editor: Editor;
 
+  // The editor is destroyed with the component, which can happen while a message is in flight or a focus is pending:
+  // e.g. the user leaves the page while the response streams. Running a command on a destroyed editor throws.
+  function isEditorAlive() {
+    return !!editor && !editor.isDestroyed;
+  }
+
   async function sendMessage() {
     if (!canSend) return;
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage(additionalContext, {
-        onStreamStart: () => editor.commands.setContent(""),
-      });
+      await currentConversation.sendMessage(
+        {
+          ...additionalContext,
+          uiActions: getAvailableUIActions(),
+        },
+        {
+          onStreamStart: () => {
+            if (isEditorAlive()) editor.commands.setContent("");
+          },
+          beforeFork,
+        },
+      );
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -55,7 +87,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    editor.commands.focus();
+    if (isEditorAlive()) editor.commands.focus();
   }
 
   function cancelStream() {
@@ -66,13 +98,17 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        editor?.commands.focus();
+        if (isEditorAlive()) editor.commands.focus();
       }, 100);
     });
   }
 
   function startMention() {
     editor.commands.startMention();
+  }
+
+  function startSkill() {
+    editor.commands.startSkill();
   }
 
   function startChat(prompt: string) {
@@ -87,6 +123,9 @@
       extensions: getEditorPlugins({
         placeholder,
         onSubmit: () => void sendMessage(),
+        skillOptions: skillAgent
+          ? (client) => getSkillsPickerOptions(client, skillAgent)
+          : undefined,
       }),
       content: "",
       editorProps: {
@@ -134,11 +173,21 @@
     >
       @
     </button>
+    {#if hasSkills}
+      <button
+        class="text-base text-fg-muted"
+        type="button"
+        aria-label={m.chat_insert_skill()}
+        onclick={startSkill}
+      >
+        /
+      </button>
+    {/if}
     <div class="grow"></div>
     <div>
       {#if canCancel}
         <IconButton
-          ariaLabel="Cancel streaming"
+          ariaLabel={m.chat_cancel_streaming()}
           disableHover
           onclick={cancelStream}
         >
@@ -149,7 +198,7 @@
       {:else}
         <Button
           type="primary"
-          label="Send message"
+          label={m.chat_send_message()}
           disabled={!canSend}
           square
           onClick={sendMessage}
@@ -211,6 +260,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row;
+    @apply flex flex-row gap-x-2;
   }
 </style>

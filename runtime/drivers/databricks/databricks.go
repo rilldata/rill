@@ -87,13 +87,15 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	DSN        string `mapstructure:"dsn"`
-	Host       string `mapstructure:"host"`
-	HTTPPath   string `mapstructure:"http_path"`
-	Token      string `mapstructure:"token"`
-	Catalog    string `mapstructure:"catalog"`
-	Schema     string `mapstructure:"schema"`
-	LogQueries bool   `mapstructure:"log_queries"`
+	DSN      string `mapstructure:"dsn"`
+	Host     string `mapstructure:"host"`
+	HTTPPath string `mapstructure:"http_path"`
+	Token    string `mapstructure:"token"`
+	Catalog  string `mapstructure:"catalog"`
+	Schema   string `mapstructure:"schema"`
+	// CatalogWhitelist is a comma separated list of catalogs to list in information schema calls.
+	CatalogWhitelist string `mapstructure:"catalog_whitelist"`
+	LogQueries       bool   `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
@@ -145,7 +147,7 @@ func (c *configProperties) resolveDSN() string {
 	return u.String()
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("databricks driver can't be shared")
 	}
@@ -195,7 +197,10 @@ func (c *connection) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open databricks connection: %w", err)
 	}
-	return db.PingContext(ctx)
+	if err := db.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to open databricks connection: %w", err)
+	}
+	return nil
 }
 
 // Migrate implements drivers.Handle.
@@ -288,6 +293,11 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
 }
 
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -303,9 +313,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
+	// The driver falls back to SEA when a Lakehouse//RT warehouse rejects Thrift.
 	c.db, c.dbErr = sqlx.Open("databricks", c.config.resolveDSN())
-	if c.dbErr != nil {
-		return nil, c.dbErr
-	}
 	return c.db, c.dbErr
 }

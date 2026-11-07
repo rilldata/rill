@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -24,7 +25,13 @@
   export let dimTooltipEntries: DimTooltipEntry[] = [];
   export let deltaLabel: string | null;
   export let deltaPositive: boolean;
+  /** When true, an increase in value is rendered as the negative (red) color. */
+  export let lowerIsBetter: boolean = false;
   export let formatter: (value: number | null) => string;
+
+  // Arrow direction and sign track the actual value change. Color tracks
+  // whether the change is favorable, which `lowerIsBetter` flips.
+  $: deltaIsFavorable = lowerIsBetter ? !deltaPositive : deltaPositive;
 
   const GAP = 8;
 
@@ -63,7 +70,8 @@
       <div class="dimension-date">
         {formatGrainBucket(currentTs, timeGranularity, interval)}
       </div>
-      {#each dimTooltipEntries as entry (entry.label)}
+      <!-- Keyed by position: two series can share a label, such as null and the string "null". -->
+      {#each dimTooltipEntries as entry, i (i)}
         <div class="dimension-entry">
           <span class="dimension-dot" style:background-color={entry.color}
           ></span>
@@ -79,7 +87,7 @@
       <div class="period current">
         <span
           class="value primary-value"
-          aria-label="main value"
+          aria-label={m.chart_main_value_aria()}
           class:italic={currentValue === null}>{formatter(currentValue)}</span
         >
         <span class="date">
@@ -89,7 +97,7 @@
 
       <div class="divider">
         <div class="divider-line"></div>
-        <span class="vs-badge">vs</span>
+        <span class="vs-badge">{m.chart_vs()}</span>
       </div>
 
       <div class="period comparison">
@@ -111,8 +119,8 @@
     {#if absoluteDelta !== null && deltaLabel}
       <div
         class="delta-footer"
-        class:positive={deltaPositive}
-        class:negative={!deltaPositive}
+        class:positive={deltaIsFavorable}
+        class:negative={!deltaIsFavorable}
       >
         <span class="delta-arrow">{deltaPositive ? "▲" : "▼"}</span>
         <span class="delta-absolute"
@@ -125,7 +133,7 @@
     <div class="simple-tooltip">
       <span
         class="simple-value"
-        aria-label="main value"
+        aria-label={m.chart_main_value_aria()}
         class:italic={currentValue === null}>{formatter(currentValue)}</span
       >
       <span class="simple-date">

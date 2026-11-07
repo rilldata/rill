@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,7 +19,7 @@ import (
 func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	tempDir := t.TempDir()
 
-	dbPath := fmt.Sprintf("%s.db", tempDir)
+	dbPath := filepath.Join(tempDir, "source.db")
 	db, err := sql.Open("sqlite", dbPath)
 	require.NoError(t, err)
 
@@ -30,7 +31,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	db.Close()
 
-	to, err := drivers.Open("duckdb", "", "default", map[string]any{"dsn": ":memory:"}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open(t.Context(), "duckdb", "", "default", map[string]any{"dsn": ":memory:"}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
@@ -41,6 +42,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 		OutputConnector: "duckdb",
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: false,
+			RepoRoot:        tempDir,
 			StageChanges:    true,
 		},
 		PreliminaryInputProperties: map[string]any{

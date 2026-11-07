@@ -16,6 +16,8 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   export let open = false;
   export let name: string;
@@ -49,12 +51,12 @@
       });
 
       eventBus.emit("notification", {
-        message: "Environment variable deleted",
+        message: m.env_variable_deleted_notification(),
       });
     } catch (error) {
       console.error("Error deleting environment variable", error);
       eventBus.emit("notification", {
-        message: "Error deleting environment variable",
+        message: m.env_variable_delete_error_notification(),
         type: "error",
       });
     }
@@ -78,12 +80,12 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
+      <AlertDialogTitle>{m.env_delete_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The environment variable <span class="source-code text-sm font-medium"
-            >{name}</span
-          > will no longer be available for this project.
+          {@html m.env_delete_description({
+            name: `<span class="source-code text-sm font-medium">${escapeHtml(name)}</span>`,
+          })}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -94,15 +96,19 @@
           open = false;
         }}
       >
-        Cancel
+        {m.env_cancel_button()}
       </Button>
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button type="destructive" onClick={handleDelete}
+        >{m.env_yes_delete_button()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
 
 <style lang="postcss">
-  .source-code {
+  /* :global() because the span is injected via {@html}, so it doesn't get
+     Svelte's scoping class. Anchored to `div` to keep it component-local. */
+  div :global(.source-code) {
     font-family: "Source Code Variable", monospace;
   }
 </style>

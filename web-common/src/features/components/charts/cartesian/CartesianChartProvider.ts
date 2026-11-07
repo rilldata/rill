@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -25,6 +26,10 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import {
+  chartEphemeralMeasureNames,
+  withEphemeralMeasures,
+} from "../ephemeral-measures";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
@@ -36,15 +41,27 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
   isSortByDelta,
   vegaSortToAggregationSort,
 } from "../query-util";
+import { toVerticalSpec } from "./orientation";
 
 export type CartesianChartSpec = {
   metrics_view: string;
-  x?: FieldConfig<"nominal" | "time">;
-  y?: FieldConfig<"quantitative">;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
+  // `x` and `y` name the field drawn on that axis. Line and area charts and
+  // vertical bar charts put the dimension on `x` and the measure on `y`; a
+  // horizontal bar chart (bar_chart, stacked_bar, stacked_bar_normalized) puts
+  // the quantitative field on `x` and the dimension on `y`. Sort values such
+  // as "-y" refer to channels, so a horizontal chart sorts its categories by
+  // the measure with "-x". See `orientation.ts`.
+  x?: FieldConfig<"nominal" | "quantitative" | "time">;
+  y?: FieldConfig<"nominal" | "quantitative" | "time">;
   color?: FieldConfig<"nominal"> | string;
   isInteractive?: boolean;
 };
@@ -74,7 +91,9 @@ export class CartesianChartProvider {
     spec: Readable<CartesianChartSpec>,
     defaultOptions?: CartesianChartDefaultOptions,
   ) {
-    this.spec = spec;
+    // Queries, sorting and titles are written against the vertical layout
+    // (dimension on x, measure on y); a horizontal spec is normalized once here.
+    this.spec = derived(spec, toVerticalSpec);
     if (defaultOptions) {
       this.defaultNominalLimit =
         defaultOptions.nominalLimit || DEFAULT_NOMINAL_LIMIT;
@@ -177,6 +196,8 @@ export class CartesianChartProvider {
         measures = [{ name: config.y.field }];
       }
     }
+    measures = withEphemeralMeasures(config, measures);
+    const ephemeralNames = chartEphemeralMeasureNames(config);
 
     let limit: number | undefined;
     let hasColorDimension = false;
@@ -186,6 +207,7 @@ export class CartesianChartProvider {
     const dimensionName = config.x?.field;
     const rawSort = config.x?.sort;
     const sortIsDelta = isSortByDelta(rawSort);
+    const requiresTimeRange = config.x?.type === "temporal";
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
@@ -218,7 +240,7 @@ export class CartesianChartProvider {
         } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;
@@ -230,7 +252,7 @@ export class CartesianChartProvider {
           !!comparisonTimeRange?.start &&
           !!comparisonTimeRange?.end;
 
-        const xAxisSort = this.resolveXAxisSort(
+        let xAxisSort = this.resolveXAxisSort(
           config,
           isMultiMeasure,
           isComparisonActive,
@@ -245,7 +267,14 @@ export class CartesianChartProvider {
             ? config.y?.fields?.[0]
             : config.y?.field;
 
-          if (sortMeasureName) {
+          if (sortMeasureName && ephemeralNames.has(sortMeasureName)) {
+            // Comparison deltas cannot be computed for ephemeral measures;
+            // fall back to sorting by the measure itself.
+            xAxisSort = {
+              name: sortMeasureName,
+              desc: xAxisSort?.desc ?? true,
+            };
+          } else if (sortMeasureName) {
             const deltaFieldName =
               sortMeasureName + ComparisonDeltaAbsoluteSuffix;
             topNMeasures = [
@@ -292,7 +321,7 @@ export class CartesianChartProvider {
         const enabled =
           $visible &&
           !hasExplicitColorValues &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
@@ -342,7 +371,7 @@ export class CartesianChartProvider {
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension &&
@@ -418,7 +447,12 @@ export class CartesianChartProvider {
         const measuresWithComparison: V1MetricsViewAggregationMeasure[] =
           Array.from(measuresSet)
             .map((measureName) => {
-              if (showTimeComparison && comparisonTimeRange?.start) {
+              // Comparison values cannot be computed for ephemeral measures.
+              if (
+                showTimeComparison &&
+                comparisonTimeRange?.start &&
+                !ephemeralNames.has(measureName)
+              ) {
                 const result: V1MetricsViewAggregationMeasure[] = [
                   { name: measureName },
                   {
@@ -438,7 +472,7 @@ export class CartesianChartProvider {
           client,
           {
             metricsView: config.metrics_view,
-            measures: measuresWithComparison,
+            measures: withEphemeralMeasures(config, measuresWithComparison),
             dimensions,
             where: combinedWhere,
             timeRange,
@@ -448,7 +482,7 @@ export class CartesianChartProvider {
               comparisonTimeRange?.end
                 ? comparisonTimeRange
                 : undefined,
-            fillMissing: config.x?.type === "temporal",
+            fillMissing: requiresTimeRange,
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
           {
@@ -462,7 +496,11 @@ export class CartesianChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(
+      query,
+      [topNXQuery, topNColorQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(measures: MetricsViewSpecMeasure[]): ChartDomainValues {

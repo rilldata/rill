@@ -10,6 +10,8 @@
   } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { InheritRangeOption } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
   export let minDate: DateTime<true> | undefined;
   export let maxDate: DateTime<true> | undefined;
@@ -24,6 +26,7 @@
   export let allowCustomTimeRange: boolean = true;
   export let minTimeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
 
@@ -82,7 +85,7 @@
       onDisplayTimeComparison(!showTimeComparison);
     }}
     type="button"
-    aria-label="Toggle time comparison"
+    aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
@@ -93,15 +96,15 @@
       />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span class:opacity-50={disabled}>Comparing</span>
+        <span class:opacity-50={disabled}>{m.time_comparing()}</span>
       </Label>
     </div>
   </button>
   {#if activeTimeGrain && interval}
     <Comparison
       {minTimeGrain}
-      maxDate={minDate}
-      minDate={maxDate}
+      {minDate}
+      {maxDate}
       timeGrain={activeTimeGrain}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
@@ -112,6 +115,7 @@
       disabled={disabled ?? false}
       {allowCustomTimeRange}
       {side}
+      {inheritOption}
       {onSelectComparisonRange}
     />
   {/if}

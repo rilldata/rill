@@ -10,6 +10,7 @@ export type TextBlock = {
   id: string;
   message: V1Message;
   feedback?: FeedbackData;
+  isError: boolean;
 };
 
 /**
@@ -34,5 +35,6 @@ export function createTextBlock(
     id: message.id!,
     message,
     feedback,
+    isError: message.contentType === "error",
   };
 }

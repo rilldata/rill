@@ -13,29 +13,31 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
+import type { ChatSurface } from "./types";
 import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
 export type ConversationStateType = "url" | "browserStorage";
 
-export interface ConversationManagerOptions {
-  /**
-   * How conversation state should be managed and persisted
-   * - "url": Use URL parameters (for full-page chat with shareable URLs)
-   * - "browserStorage": Use session storage (for sidebar chat)
-   */
-  conversationState: ConversationStateType;
-  /**
-   * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
-   */
-  agent?: string;
-  /**
-   * Base path builder for URL-based conversation selectors.
-   * Only used when conversationState is "url".
-   * Defaults to `/${org}/${project}/-/ai` (web-admin pattern).
-   */
-  basePath?: () => string;
-}
+/**
+ * Discriminated by `conversationState`:
+ * - "url": full-page chat with shareable URLs. Optional `basePath` overrides
+ *   the default `/${org}/${project}/-/ai`.
+ * - "browserStorage": sidebar chat keyed in sessionStorage. `surface` is
+ *   required and scopes the storage key so developer-surface conversations
+ *   don't load against the dashboard surface.
+ */
+export type ConversationManagerOptions =
+  | {
+      conversationState: "url";
+      agent?: string;
+      basePath?: () => string;
+    }
+  | {
+      conversationState: "browserStorage";
+      agent?: string;
+      surface: ChatSurface;
+    };
 
 /**
  * Manages chat state and conversation lifecycle.
@@ -78,13 +80,20 @@ export class ConversationManager {
         break;
       case "browserStorage":
         this.conversationSelector = new BrowserStorageConversationSelector(
+          options.surface,
+          client.instanceId,
           EmbedStore.getInstance()?.externalUserId ?? null,
         );
         break;
-      default:
+      default: {
+        // Exhaustiveness check: if a new variant is added to
+        // ConversationManagerOptions without a case, this assignment fails to
+        // compile.
+        const exhaustive: never = options;
         throw new Error(
-          `Unknown conversation storage type: ${options.conversationState}`,
+          `Unknown conversation manager options: ${JSON.stringify(exhaustive)}`,
         );
+      }
     }
   }
 

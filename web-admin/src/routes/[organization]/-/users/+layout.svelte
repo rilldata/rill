@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
@@ -20,24 +21,24 @@
 
   $: navItems = [
     {
-      label: `Members (${membersCount})`,
+      label: m.users_tab_members({ count: membersCount }),
       route: "",
       hasPermission: hasManageOrgMembers,
     },
     {
-      label: `Guests (${guestsCount})`,
+      label: m.users_tab_guests({ count: guestsCount }),
       route: "/guests",
       hasPermission: hasManageOrgMembers,
     },
     {
-      label: `Groups (${groupsCount})`,
+      label: m.users_tab_groups({ count: groupsCount }),
       route: "/groups",
       hasPermission: hasManageOrgMembers,
     },
   ];
 </script>
 
-<ContentContainer title="Manage users" maxWidth={1100}>
+<ContentContainer title={m.users_page_title()} maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav {basePage} baseRoute="/[organization]/-/users" {navItems} />
     <slot />

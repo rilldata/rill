@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -23,14 +24,16 @@
   <InputLabel
     small
     capitalize={false}
-    label="Mark type"
+    label={m.canvas_mark_type()}
     id="mark-type-toggle"
   />
   <div class="radio relative">
     {#each markOptions as { mark, icon: Icon } (mark)}
       <Tooltip activeDelay={700} distance={8}>
         <button
-          aria-label="Switch to {mark === 'bar' ? 'bar' : 'line'} editor"
+          aria-label={m.canvas_switch_mark_type_aria({
+            mark: mark === "bar" ? "bar" : "line",
+          })}
           id="{mark}-toggle"
           class="size-[24px] z-10 hover:brightness-75"
           onclick={() => {

@@ -5,8 +5,10 @@
   import CheckCircleOutline from "../icons/CheckCircleOutline.svelte";
   import LoadingCircleOutline from "../icons/LoadingCircleOutline.svelte";
   import MoonCircleOutline from "../icons/MoonCircleOutline.svelte";
+  import { XIcon } from "lucide-svelte";
 
   export let banner: BannerMessage;
+  export let dismiss: () => void;
 
   const IconMap = {
     alert: AlertCircleIcon,
@@ -25,7 +27,7 @@
 </script>
 
 <header class="{banner.type} app-banner">
-  <div class="banner-content">
+  <div class="banner-content relative">
     {#if banner.iconType in IconMap}
       <svelte:component this={IconMap[banner.iconType]} size="14px" />
     {/if}
@@ -49,6 +51,11 @@
           {banner.cta.text}
         </button>
       {/if}
+    {/if}
+    {#if banner.dismissible}
+      <button class="absolute right-2" onclick={dismiss}>
+        <XIcon size={14} />
+      </button>
     {/if}
   </div>
 </header>

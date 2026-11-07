@@ -19,10 +19,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.25
+          go-version: 1.26.5
       - name: Go report card
         uses: creekorful/goreportcard-action@v1.0
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.6
+          version: v2.9.0

@@ -49,9 +49,24 @@ export async function fillTimeRange(
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
-  timeRangeSummary: V1TimeRangeSummary,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
   executionTime?: string,
 ) {
+  // Metrics views without a time dimension have no time range to fill;
+  // the runtime ignores a time range that does not name a time dimension.
+  if (!timeRangeSummary) {
+    // A range on another time dimension does filter the query,
+    // but the explore has no time controls to show it.
+    const timeDimension =
+      reqTimeRange?.timeDimension || reqComparisonTimeRange?.timeDimension;
+    if (timeDimension) {
+      throw new Error(
+        `The explore cannot show this query's time range on "${timeDimension}".`,
+      );
+    }
+    return;
+  }
+
   const endTime =
     executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
 
@@ -112,7 +127,10 @@ export async function fillTimeRange(
   }
 }
 
-const ExploreNameRegex = /\/explore\/((?:[\w-]|%[0-9A-Fa-f]{2})+)/;
+// Capture everything after "/explore/" up to the next path, query, or hash boundary.
+// This mirrors the backend's exploreNameFromAnnotations, which decodes the entire segment
+// rather than restricting to word characters (explore names can contain spaces, parentheses, etc.).
+const ExploreNameRegex = /\/explore\/([^/?#]+)/;
 
 export function getExploreName(webOpenPath: string) {
   const matches = ExploreNameRegex.exec(webOpenPath);
@@ -122,15 +140,67 @@ export function getExploreName(webOpenPath: string) {
   return decodeURIComponent(matches[1]);
 }
 
+/**
+ * Where a dashboard is opened: in Rill Cloud, through a magic token's share route, or in an embed.
+ * Embeds have their own routes, so they don't need the organization and project.
+ */
+export type DashboardPathContext = {
+  organization?: string;
+  project?: string;
+  token?: string | null;
+  embedded?: boolean;
+};
+
+/**
+ * Returns the path of an explore or canvas dashboard.
+ * The dashboard name is escaped, so names with characters like `#` or `?` don't break the URL when the path is concatenated with a query.
+ */
+export function getDashboardPath(
+  { organization, project, token, embedded }: DashboardPathContext,
+  kind: "explore" | "canvas",
+  name: string,
+) {
+  const escapedName = encodeURIComponent(name);
+  if (embedded) return `/-/embed/${kind}/${escapedName}`;
+  if (token) {
+    return `/${organization}/${project}/-/share/${token}/${kind}/${escapedName}`;
+  }
+  return `/${organization}/${project}/${kind}/${escapedName}`;
+}
+
+/**
+ * Returns the query of a report or alert, which is mapped to the dashboard state when opening it.
+ * The query is in the resolver properties, or in the legacy query fields of older resources.
+ * Empty strings are treated as unset, since they are the proto default.
+ */
+export function getSpecQuery(spec: {
+  resolverProperties?: { [key: string]: unknown };
+  queryName?: string;
+  queryArgsJson?: string;
+}): { queryName: string; queryArgsJson: string } {
+  return {
+    queryName:
+      (spec.resolverProperties?.query_name as string | undefined) ||
+      spec.queryName ||
+      "",
+    queryArgsJson:
+      (spec.resolverProperties?.query_args_json as string | undefined) ||
+      spec.queryArgsJson ||
+      "",
+  };
+}
+
 export async function convertQueryFilterToToplistQuery(
   client: RuntimeClient,
   metricsView: string,
   req: V1MetricsViewAggregationRequest,
   dimension: string,
 ) {
+  // `metricsView` is the request's field for the metrics view;
+  // the proto decoder rejects any other key for it, so the request never reaches the runtime.
   const params = {
-    metricsViewName: metricsView,
     ...req,
+    metricsView,
   };
   const toplist = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewAggregationQueryKey(

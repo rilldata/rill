@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -90,6 +91,60 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 		Messages:     messagePBs,
 		IsOwner:      session.CatalogSession().OwnerID == claims.UserID,
 	}, nil
+}
+
+func (s *Server) UpdateConversation(ctx context.Context, req *runtimev1.UpdateConversationRequest) (*runtimev1.UpdateConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	session, err := findOwnedAISession(ctx, catalog, claims, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Title != nil {
+		session.Title = *req.Title
+	}
+
+	err = catalog.UpdateAISession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.UpdateConversationResponse{}, nil
+}
+
+func (s *Server) DeleteConversation(ctx context.Context, req *runtimev1.DeleteConversationRequest) (*runtimev1.DeleteConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	_, err = findOwnedAISession(ctx, catalog, claims, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = catalog.DeleteAISession(ctx, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.DeleteConversationResponse{}, nil
 }
 
 func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConversationRequest) (*runtimev1.ShareConversationResponse, error) {
@@ -197,6 +252,7 @@ func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest)
 		}
 		pbs = append(pbs, pb)
 	}
+
 	return &runtimev1.ListToolsResponse{
 		Tools: pbs,
 	}, nil
@@ -209,6 +265,17 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
+
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(ctx, req.InstanceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -238,10 +305,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
@@ -321,6 +384,17 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(stream.Context(), req.InstanceId)
+	if err != nil {
+		return fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(stream.Context(), time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -334,7 +408,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	userAgent := fmt.Sprintf("rill/%s", version)
 
 	// Open the AI session
-	session, err := s.ai.Session(stream.Context(), &ai.SessionOptions{
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
 		InstanceID: req.InstanceId,
 		SessionID:  req.ConversationId,
 		Claims:     claims,
@@ -344,15 +418,11 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	defer func() {
-		err := session.Flush(stream.Context())
+		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
 
 	// Open subscription for session messages and stream them to the client in the background
 	subCh := session.Subscribe()
@@ -443,15 +513,51 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	return nil
 }
 
+// Limits for browser-supplied UI actions.
+// They keep the display metadata that is included in an LLM system message small and predictable.
+// The label limit counts characters (runes), not bytes, matching the label truncation in ui-actions.ts on the browser side.
+const (
+	maxUIActions          = 100
+	maxUIActionIDBytes    = 128
+	maxUIActionLabelRunes = 256
+)
+
+// uiContextFromPB converts the browser-supplied UI actions of a chat request to the transient context the agents read.
+// The UI context is optional, best-effort metadata, so it must never cause the chat request to fail:
+// oversized labels are truncated, malformed actions are dropped and the list is capped after validation.
+// Dropping an action only removes it from the set the agent may click, which click_ui validates against this same context.
+// Any dropped action is logged so a page that outgrows the cap is noticed instead of silently losing actions.
+func (s *Server) uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
+	if len(pbActions) == 0 {
+		return nil
+	}
+
+	actions := make([]ai.UIAction, 0, len(pbActions))
+	for _, action := range pbActions {
+		if action == nil || action.Id == "" || len(action.Id) > maxUIActionIDBytes {
+			continue
+		}
+		label := action.Label
+		if r := []rune(label); len(r) > maxUIActionLabelRunes {
+			label = string(r[:maxUIActionLabelRunes])
+		}
+		actions = append(actions, ai.UIAction{ID: action.Id, Label: label})
+	}
+	if len(actions) > maxUIActions {
+		actions = actions[:maxUIActions]
+	}
+	if len(actions) != len(pbActions) {
+		s.logger.Warn("chat: some ui_actions were dropped from the UI context", zap.Int("received", len(pbActions)), zap.Int("kept", len(actions)), zap.Int("limit", maxUIActions))
+	}
+
+	return &ai.UIContext{Actions: actions}
+}
+
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
-	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(req.Context(), time.Minute*5)
-	defer cancel()
-	req = req.WithContext(ctx) // Replace request context with the timed context
-
 	// Observability
+	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
@@ -462,6 +568,16 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
+
+	// Apply configured timeout for AI chat
+	cfg, err := s.runtime.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to load instance config: %v", err), http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 
 	// Build request. Note we try to support both GET and POST.
 	completeReq := &runtimev1.CompleteStreamingRequest{}
@@ -558,17 +674,41 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
 	}
 
+	var resPbMsg *runtimev1.Message
+	resMsg, ok := session.Message(ai.FilterByParent(req.MessageId), ai.FilterByType(ai.MessageTypeResult))
+	// Don't throw if there is no result message.
+	if ok {
+		resPbMsg, err = messageToPB(session, resMsg)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+		}
+	}
+
 	return &runtimev1.GetAIMessageResponse{
 		Message: pbMsg,
+		Result:  resPbMsg,
 	}, nil
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
+// findOwnedAISession loads an AI session and verifies the caller owns it.
+// Anonymous callers never own a session, except in Rill Developer where SkipChecks is true.
+func findOwnedAISession(ctx context.Context, catalog drivers.CatalogStore, claims *runtime.SecurityClaims, sessionID string) (*drivers.AISession, error) {
+	session, err := catalog.FindAISession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if !claims.SkipChecks && (claims.UserID == "" || session.OwnerID != claims.UserID) {
+		return nil, ErrForbidden
+	}
+	return session, nil
+}
+
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
 		Id:        s.ID,
 		OwnerId:   s.OwnerID,
-		Title:     s.Title,
+		Title:     strings.ToValidUTF8(s.Title, "\uFFFD"),
 		UserAgent: s.UserAgent,
 		CreatedOn: timestamppb.New(s.CreatedOn),
 		UpdatedOn: timestamppb.New(s.UpdatedOn),

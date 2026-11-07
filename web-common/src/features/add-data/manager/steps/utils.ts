@@ -12,6 +12,7 @@ import {
   ImportDataStep,
 } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
 export function getConnectorDriverForSchema(
   schemaName: string,
@@ -117,4 +118,10 @@ export function getImportStepsForConnector(
 
 export function getImportStepsForSource(config: AddDataConfig) {
   return config.importOnly ? [ImportDataStep.CreateModel] : FullListOfSteps;
+}
+
+export async function maybeGetEnvContent() {
+  if (!fileArtifacts.hasFileArtifact("/.env")) return "";
+  const envFile = fileArtifacts.getFileArtifact("/.env");
+  return (await envFile.fetchContent(false)) ?? "";
 }

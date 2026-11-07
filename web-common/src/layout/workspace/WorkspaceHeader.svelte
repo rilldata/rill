@@ -8,7 +8,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
+  import CodeToggle, {
+    type ViewOption,
+  } from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { navigationOpen } from "../navigation/Navigation.svelte";
@@ -27,6 +29,8 @@
     hasUnsavedChanges,
     filePath,
     codeToggle = false,
+    codeToggleViews = undefined,
+    showBreadcrumbs = true,
     onTitleChange,
     workspaceControls,
     cta,
@@ -40,6 +44,8 @@
     hasUnsavedChanges: boolean;
     filePath: string;
     codeToggle?: boolean;
+    codeToggleViews?: ViewOption[] | undefined;
+    showBreadcrumbs?: boolean;
     onTitleChange?: (title: string) => void;
     workspaceControls?: Snippet<[number]>;
     cta?: Snippet<[number]>;
@@ -49,7 +55,8 @@
   let editing = $state(false);
 
   let value = $derived(titleInput);
-  let workspaceLayout = $derived(workspaces.get(filePath));
+  // Typed as string since some workspaces extend the base view union (e.g. "explore").
+  let workspaceLayout = $derived(workspaces.get<string>(filePath));
   let inspectorVisible = $derived(workspaceLayout.inspector.visible);
   let tableVisible = $derived(workspaceLayout.table.visible);
   let view = $derived(workspaceLayout.view);
@@ -65,17 +72,23 @@
 </script>
 
 <header bind:clientWidth={width}>
-  <div
-    class="slide pl-3.5 h-7 flex items-center"
-    class:!pl-10={!$navigationOpen}
-  >
-    <WorkspaceBreadcrumbs {resource} {filePath} />
-  </div>
+  {#if showBreadcrumbs}
+    <div
+      class="slide pl-3.5 h-7 flex items-center"
+      class:!pl-10={!$navigationOpen}
+    >
+      <WorkspaceBreadcrumbs {resource} {filePath} />
+    </div>
+  {/if}
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
       {#if codeToggle && resourceKind}
-        <CodeToggle bind:selectedView={$view} {resourceKind} />
+        <CodeToggle
+          bind:selectedView={$view}
+          {resourceKind}
+          views={codeToggleViews}
+        />
       {:else}
         <span class="flex-none">
           <IconComponent size="19px" />

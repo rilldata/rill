@@ -22,8 +22,14 @@ export async function createResourceAndNavigate(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
-  const filePath = await createResourceFile(client, kind, baseResource);
+  const filePath = await createResourceFile(
+    client,
+    kind,
+    baseResource,
+    folderName,
+  );
   if (!filePath) return;
 
   const previousScreenName = getScreenNameFromPage();
@@ -40,12 +46,13 @@ export async function createResourceFile(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ): Promise<string> {
   if (!(kind in ResourceKindMap)) {
     throw new Error(`Unknown resource kind: ${kind}`);
   }
 
-  const newPath = getPathForNewResourceFile(kind, baseResource);
+  const newPath = getPathForNewResourceFile(kind, baseResource, folderName);
   await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
@@ -60,6 +67,7 @@ export async function createResourceFile(
 export function getPathForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
@@ -70,11 +78,11 @@ export function getPathForNewResourceFile(
         ]
       : fileArtifacts.getNamesForKind(newKind);
 
-  const { folderName, extension } = ResourceKindMap[newKind];
+  const { folderName: defaultFolderName, extension } = ResourceKindMap[newKind];
   const baseName = getBaseNameForNewResourceFile(newKind, baseResource);
   const newName = getName(baseName, allNames);
 
-  return `${folderName}/${newName}${extension}`;
+  return `${folderName ?? defaultFolderName}/${newName}${extension}`;
 }
 
 export const ResourceKindMap: Record<
@@ -142,6 +150,26 @@ export const ResourceKindMap: Record<
   },
 };
 
+// Skills are directories containing a SKILL.md file (following the Agent Skills format, https://agentskills.io),
+// so they are created outside the ResourceKind machinery above.
+export const skillFileTemplate = (name: string) => `---
+name: ${name}
+# The AI uses the required description to decide when to load this skill, so phrase it as "what it does + when to use it".
+description: Describe what this skill does and when to use it.
+# agents: [analyst]                 # Optional: analyst (questions about your data) and/or developer (editing project files); defaults to [developer]
+# metrics_views: [my_metrics_view]  # Optional: the metrics views this skill is relevant to
+# always_apply: true                # Optional: load the skill up front in every conversation instead of on demand
+---
+
+# My skill
+
+Write instructions for Rill's AI here, for example an analysis playbook or a business glossary.
+
+1. When asked about ..., always start by ...
+2. Break down changes by ...
+3. Account for known seasonality: ...
+`;
+
 export function getBaseNameForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,
@@ -178,10 +206,13 @@ version: 1
 type: metrics_view
 
 model: # Choose a model to underpin your metrics view
-timeseries: # Choose a timestamp column (if any) from your model 
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
 measures:
+
+explore:
+  display_name: # Optional: display name for this metrics view's explore dashboard
 `;
     case ResourceKind.Explore:
       if (baseResource) {
@@ -221,6 +252,46 @@ type: api
 
 metrics_sql: |
   select measure, dimension from metrics_view
+`;
+    case ResourceKind.Component:
+      return `# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/component
+# A custom viz: a reusable visualization with declared params.
+# Add it to canvas dashboards and bind values to the params there.
+
+type: component
+display_name: "My custom viz"
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: dimension
+    type: dimension
+    required: true
+  - name: order_by
+    type: string
+    required: true
+    description: "Field to sort the query by (defaults to the measure)"
+  - name: limit
+    type: number
+    default: 10
+    description: "Maximum number of rows to plot"
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.dimension }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.order_by }} DESC
+    LIMIT {{ .params.limit }}
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: { field: "{{ .params.dimension }}", sortBy: y, sortOrder: descending }
+      y: { field: "{{ .params.measure }}" }
 `;
     case ResourceKind.Canvas:
       return `# Explore YAML

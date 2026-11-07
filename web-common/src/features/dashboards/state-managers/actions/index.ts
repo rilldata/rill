@@ -6,6 +6,7 @@ import { contextColActions } from "./context-columns";
 import { dimensionFilterActions } from "./dimension-filters";
 import { dimensionTableActions } from "./dimension-table";
 import { dimensionActions } from "./dimensions";
+import { exactMeasureActions } from "./exact-measures";
 import { measureActions } from "./measures";
 import { sortActions } from "./sorting";
 import type {
@@ -58,6 +59,11 @@ export const createStateManagerActions = (
      * Actions related to measures.
      */
     measures: createDashboardUpdaters(actionArgs, measureActions),
+
+    /**
+     * Actions related to computing measures with their exact expression.
+     */
+    exactMeasures: createDashboardUpdaters(actionArgs, exactMeasureActions),
 
     /**
      * Common filter actions

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
@@ -24,6 +25,8 @@
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
+  // Called when the user navigates to the home bookmark, so usage can be tracked.
+  export let onOpen: (bookmark: BookmarkEntry) => void = () => {};
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
@@ -55,7 +58,7 @@
           compact
           square
           type="secondary"
-          label="Home bookmark dropdown"
+          label={m.bookmark_home_dropdown_label()}
           active={open || isHomeBookmarkActive}
         >
           <HomeBookmark size="16px" className="flex-none" />
@@ -67,6 +70,7 @@
         <BookmarksMenuItem
           bookmark={homeBookmark}
           {onDelete}
+          onClick={() => homeBookmark && onOpen(homeBookmark)}
           readOnly={!manageProject}
           showDeleteTooltip
         />
@@ -75,7 +79,7 @@
           <a
             href={fullHomeBookmarkUrl}
             class="flex flex-row gap-x-2 w-full min-h-7"
-            aria-label="Home Bookmark Entry"
+            aria-label={m.bookmark_home_entry_aria_label()}
             onclick={goToDashboardHome}
           >
             <HomeBookmark size="16px" />
@@ -83,7 +87,7 @@
               <div
                 class="text-xs font-medium text-fg-primary h-4 text-ellipsis overflow-hidden"
               >
-                Go to Home
+                {m.bookmark_go_to_home()}
               </div>
             </div>
           </a>
@@ -95,10 +99,10 @@
           <HomeBookmarkPlus size="16px" />
           <div>
             <div class="text-xs font-medium text-fg-primary h-4">
-              Bookmark current view as Home.
+              {m.bookmark_current_view_as_home()}
             </div>
             <div class="text-[11px] font-normal text-fg-secondary h-4">
-              This will be everyone’s main view for this dashboard.
+              {m.bookmark_home_description()}
             </div>
           </div>
         </div>
@@ -115,9 +119,12 @@
           compact
           preload={false}
           href={fullHomeBookmarkUrl}
-          onClick={goToDashboardHome}
+          onClick={() => {
+            if (homeBookmark) onOpen(homeBookmark);
+            goToDashboardHome();
+          }}
           class="border border-primary-300"
-          label="Go to home bookmark"
+          label={m.bookmark_go_to_home_label()}
           active={isHomeBookmarkActive}
         >
           <HomeBookmark
@@ -129,6 +136,8 @@
         </Button>
       {/snippet}
     </Tooltip.Trigger>
-    <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
+    <Tooltip.Content side="bottom"
+      >{m.bookmark_return_to_home()}</Tooltip.Content
+    >
   </Tooltip.Root>
 {/if}

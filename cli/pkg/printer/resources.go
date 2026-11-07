@@ -16,6 +16,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -134,21 +135,11 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 
 	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
-		memberAttrs := ""
-		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
-			attrMap := m.Attributes.AsMap()
-			var attrs []string
-			for key, value := range attrMap {
-				attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
-			}
-			memberAttrs = strings.Join(attrs, ", ")
-		}
-
 		allMembers = append(allMembers, &memberUserWithRole{
 			Email:      m.UserEmail,
 			Name:       m.UserName,
 			RoleName:   m.RoleName,
-			Attributes: memberAttrs,
+			Attributes: formatAttributesPB(m.Attributes),
 		})
 	}
 
@@ -230,9 +221,14 @@ func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUs
 
 	allMembers := make([]*memberUser, 0, len(members))
 	for _, m := range members {
+		status := "member"
+		if m.PendingAcceptance {
+			status = "pending"
+		}
 		allMembers = append(allMembers, &memberUser{
-			Email: m.UserEmail,
-			Name:  m.UserName,
+			Email:  m.UserEmail,
+			Name:   m.UserName,
+			Status: status,
 		})
 	}
 
@@ -240,8 +236,9 @@ func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUs
 }
 
 type memberUser struct {
-	Email string `header:"email" json:"email"`
-	Name  string `header:"name" json:"display_name"`
+	Email  string `header:"email" json:"email"`
+	Name   string `header:"name" json:"display_name"`
+	Status string `header:"status" json:"status"`
 }
 
 type memberUserWithRole struct {
@@ -280,18 +277,22 @@ func (p *Printer) PrintOrganizationInvites(invites []*adminv1.OrganizationInvite
 	rows := make([]*organizationInvite, 0, len(invites))
 	for _, i := range invites {
 		rows = append(rows, &organizationInvite{
-			Email:     i.Email,
-			RoleName:  i.RoleName,
-			InvitedBy: i.InvitedBy,
+			Email:      i.Email,
+			RoleName:   i.RoleName,
+			Usergroups: strings.Join(i.Usergroups, ", "),
+			Attributes: formatAttributesPB(i.Attributes),
+			InvitedBy:  i.InvitedBy,
 		})
 	}
 	p.PrintDataWithTitle(rows, "Invites pending acceptance")
 }
 
 type organizationInvite struct {
-	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role" json:"role_name"`
-	InvitedBy string `header:"invited_by" json:"invited_by"`
+	Email      string `header:"email" json:"email"`
+	RoleName   string `header:"role" json:"role_name"`
+	Usergroups string `header:"groups" json:"groups"`
+	Attributes string `header:"attributes" json:"attributes"`
+	InvitedBy  string `header:"invited_by" json:"invited_by"`
 }
 
 func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
@@ -617,6 +618,20 @@ type memberUsergroup struct {
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
 }
 
+// formatAttributesPB renders custom attributes as a comma-separated list of key=value pairs, sorted by key.
+func formatAttributesPB(attributes *structpb.Struct) string {
+	if attributes == nil || len(attributes.Fields) == 0 {
+		return ""
+	}
+	attrMap := attributes.AsMap()
+	attrs := make([]string, 0, len(attrMap))
+	for key, value := range attrMap {
+		attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
+	}
+	sort.Strings(attrs)
+	return strings.Join(attrs, ", ")
+}
+
 func formatResourceNamesPB(restrictResources bool, resources []*adminv1.ResourceName) string {
 	if !restrictResources {
 		return "all"
@@ -665,6 +680,7 @@ func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 		DataJSON:   string(data),
 		ExecutedOn: executedOn,
 		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
+		Skipped:    s.Skipped,
 		Error:      s.Error,
 	}
 }
@@ -674,6 +690,7 @@ type modelPartition struct {
 	DataJSON   string `header:"data" json:"data"`
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
+	Skipped    bool   `header:"skipped" json:"skipped"`
 	Error      string `header:"error" json:"error"`
 }
 
@@ -737,11 +754,10 @@ func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
 	if d.RuntimeHost != "" {
 		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
 	}
-	if d.Editable {
-		p.Printf("Editable: true\n")
-	}
+	p.Printf("Editable: %t\n", d.Editable)
 	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
 	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Last used: %s\n", d.UsedOn.AsTime().Local().Format(time.RFC1123))
 }
 
 func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
@@ -776,6 +792,8 @@ func toDeploymentRow(d *adminv1.Deployment) *deployment {
 		Branch:      d.Branch,
 		Environment: d.Environment,
 		Status:      status,
+		Editable:    d.Editable,
+		UsedOn:      d.UsedOn.AsTime().Local().Format(time.RFC1123),
 	}
 }
 
@@ -806,6 +824,8 @@ type deployment struct {
 	Branch      string `header:"branch" json:"branch"`
 	Environment string `header:"environment" json:"environment"`
 	Status      string `header:"status" json:"status"`
+	Editable    bool   `header:"editable" json:"editable"`
+	UsedOn      string `header:"last_used" json:"last_used"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)

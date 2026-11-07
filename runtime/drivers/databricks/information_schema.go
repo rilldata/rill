@@ -2,8 +2,12 @@ package databricks
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -11,15 +15,28 @@ import (
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
-	q := `
+	var placeholders []string
+	var args []any
+	for _, catalog := range strings.Split(c.config.CatalogWhitelist, ",") {
+		if catalog = strings.TrimSpace(catalog); catalog != "" {
+			placeholders = append(placeholders, "lower(?)")
+			args = append(args, catalog)
+		}
+	}
+	catPred := fmt.Sprintf("lower(catalog_name) IN (%s)", strings.Join(placeholders, ", "))
+	if len(placeholders) == 0 {
+		catPred = "(catalog_name NOT IN ('samples', 'system') OR catalog_name = ?)"
+		args = []any{c.config.Catalog}
+	}
+	q := fmt.Sprintf(`
 	SELECT
 		catalog_name,
 		schema_name
 	FROM system.information_schema.schemata
-	WHERE (catalog_name NOT IN ('samples', 'system') OR catalog_name = ?)
+	WHERE %s
 		AND (schema_name != 'information_schema' OR schema_name = ?)
-	`
-	args := []any{c.config.Catalog, c.config.Schema}
+	`, catPred)
+	args = append(args, c.config.Schema)
 	if pageToken != "" {
 		var afterCatalog, afterSchema string
 		if err := pagination.UnmarshalPageToken(pageToken, &afterCatalog, &afterSchema); err != nil {
@@ -72,14 +89,18 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
+	// Use system.information_schema filtered by table_catalog:
+	// Lakehouse//RT rejects the catalog-local <catalog>.information_schema with MALFORMED_UC_RESPONSE.
+	// Equivalent on DBSQL.
+	catPred, catArgs := catalogPredicate(database)
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS is_view
-	FROM %sinformation_schema.tables
-	WHERE table_schema = ?
-	`, catalogPrefix(database))
-	var args []any
+	FROM system.information_schema.tables
+	WHERE %s AND table_schema = ?
+	`, catPred)
+	args := append([]any{}, catArgs...)
 	args = append(args, databaseSchema)
 	if pageToken != "" {
 		var startAfter string
@@ -134,54 +155,101 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	prefix := catalogPrefix(database)
-	q := fmt.Sprintf(`
-	SELECT
-		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM %sinformation_schema.tables t
-	JOIN %sinformation_schema.columns c
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-	WHERE t.table_schema = ? AND t.table_name = ?
-	ORDER BY c.ordinal_position
-	`, prefix, prefix)
-
-	db, err := c.getDB(ctx)
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
+	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, q, databaseSchema, table)
+	// Use system.information_schema filtered by table_catalog (see ListTables), and query
+	// tables/columns separately rather than JOINing them: RT's Photon rejects the join's
+	// shuffle with PHOTON_INTERNAL_ERROR. Equivalent on DBSQL.
+	catPred, args := catalogPredicate(database)
+	args = append(args, databaseSchema, name)
+
+	var tableType string
+	err = conn.QueryRowContext(ctx,
+		fmt.Sprintf("SELECT table_type FROM system.information_schema.tables WHERE %s AND table_schema = ? AND table_name = ?", catPred),
+		args...,
+	).Scan(&tableType)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, drivers.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := conn.QueryContext(ctx,
+		fmt.Sprintf("SELECT column_name, data_type FROM system.information_schema.columns WHERE %s AND table_schema = ? AND table_name = ? ORDER BY ordinal_position", catPred),
+		args...,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
+	var fields []*runtimev1.StructType_Field
 	var colName, colType string
-	var isView bool
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&colName, &colType); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: databaseTypeToPB(colType),
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           tableType == "VIEW",
+		Schema:         &runtimev1.StructType{Fields: fields},
+	}, nil
 }
 
-// catalogPrefix returns "<catalog>." if catalog is non-empty, or "" otherwise.
-func catalogPrefix(catalog string) string {
-	if catalog == "" {
-		return ""
+// All implements drivers.OLAPInformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
 	}
-	return DatabricksEscapeIdentifier(catalog) + "."
+
+	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
+
+	objectType := "TABLE"
+	if table.View {
+		objectType = "VIEW"
+	}
+
+	var ddl string
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
+// catalogPredicate scopes an information_schema query to one catalog: the given one, or the
+// session's current_catalog() when empty (matching the old catalog-local scoping).
+func catalogPredicate(catalog string) (string, []any) {
+	if catalog == "" {
+		return "table_catalog = current_catalog()", nil
+	}
+	return "table_catalog = ?", []any{catalog}
 }

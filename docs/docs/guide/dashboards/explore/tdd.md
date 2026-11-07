@@ -36,11 +36,11 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Time Dimension Detail (TDD)
 
-Within the TTD screen, you can apply all of the same filters and comparisons as Explore. Any filters applied will be carried into the TDD or will be carried out to Explore if you return to the main page on the top left. 
+Within the TDD screen, you can apply all of the same filters and comparisons as Explore. Any filters applied will be carried into the TDD or will be carried out to Explore if you return to the main page on the top left.
 
 Underneath the expanded time series chart, you will see two sets of dropdowns - one for Rows to change the comparison (this defaults to Time but can be changed to any dimension) and one for Columns (which can be used to cycle through all of your metrics). On the top right, you can also export the TDD pivot view for quick time series reporting. 
 
-Similar to the filters, the Search and Exclude options from the expanded Leadersboards are available on the top right of the TDD table. Lastly, you can also take the TDD table directly to the Pivot view for multi-dimensional analysis - more details on [Pivot here](/guide/dashboards/explore/pivot).
+Similar to the filters, the Search and Exclude options from the expanded Leaderboards are available on the top right of the TDD table. Lastly, you can also take the TDD table directly to the Pivot view for multi-dimensional analysis - more details on [Pivot here](/guide/dashboards/explore/pivot).
 
     
 ![TDD](/img/explore/tdd/tdd.gif)

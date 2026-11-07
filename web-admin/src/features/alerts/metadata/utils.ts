@@ -1,13 +1,13 @@
-import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/delivery-tab/intervals";
+import { getAlertIntervalOptions } from "@rilldata/web-common/features/alerts/delivery-tab/intervals";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
+import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
 import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 
 export function humaniseAlertRunDuration(alert: V1AlertSpec | undefined) {
   if (!alert?.intervalsIsoDuration) return "None";
-  const preset = AlertIntervalOptions.find(
+  const preset = getAlertIntervalOptions().find(
     (o) => o.value === alert.intervalsIsoDuration,
   );
   if (preset) return preset.label;
@@ -21,8 +21,8 @@ export function humaniseAlertSnoozeOption(
   alert: V1AlertSpec | undefined,
 ): string {
   if (!alert?.renotify || !alert?.renotifyAfterSeconds)
-    return SnoozeOptions[0].label;
-  const preset = SnoozeOptions.find(
+    return getSnoozeOptions()[0].label;
+  const preset = getSnoozeOptions().find(
     (o) => o.value === alert.renotifyAfterSeconds + "",
   );
   if (preset) return preset.label;

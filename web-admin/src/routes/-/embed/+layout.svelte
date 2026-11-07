@@ -19,8 +19,10 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { getRuntimeClient } from "@rilldata/web-common/runtime-client/v2/context";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -28,15 +30,19 @@
     instanceId,
     missingRequireParams,
     navigationEnabled,
+    navigationBarEnabled,
     runtimeHost,
     accessToken,
+    embedAdminActions,
   } = data;
 
   const { dashboardChat } = featureFlags;
 
-  // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
-  // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
+  // Embedded dashboards communicate directly with the project runtime and have no user session with the admin server.
+  // One by-product of this is that they have no access to control plane features like bookmarks.
+  // When given an admin token, they can call a scoped set of admin APIs, like creating scheduled reports.
   featureFlags.set(false, "adminServer");
+  featureFlags.set(embedAdminActions, "embedAdminActions");
 
   // Extract active resource info from current route
   // Falls back to Canvas if route doesn't match a dashboard pattern (e.g., project page)
@@ -60,7 +66,7 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showTopBar = navigationEnabled || showDashboardChat;
+  $: showTopBar = navigationBarEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -109,23 +115,30 @@
     createIframeRPCHandler();
     void waitUntil(() => VegaLiteTooltipHandler.resetElement(), 5000, 100);
 
-    return initEmbedPublicAPI();
+    // Returns the same cached client that RuntimeProvider uses for this host+instanceId.
+    const client = getRuntimeClient({
+      host: runtimeHost,
+      instanceId,
+      jwt: accessToken,
+      authContext: "embed",
+    });
+    return initEmbedPublicAPI(client);
   });
 </script>
 
 <svelte:head>
   {#if activeResource}
-    <title>{activeResource.name} - Rill</title>
+    <title>{m.embed_page_title({ resourceName: activeResource.name })}</title>
   {:else}
-    <title>Rill</title>
+    <title>{m.embed_default_page_title()}</title>
   {/if}
 </svelte:head>
 
 {#if missingRequireParams.length}
   <ErrorPage
-    header={`Missing required param(s) ${missingRequireParams
-      .map((p) => '"' + p + '"')
-      .join(",")}`}
+    header={m.embed_missing_required_params({
+      params: missingRequireParams.map((p) => '"' + p + '"').join(", "),
+    })}
     fatal
   />
 {:else}
@@ -141,7 +154,7 @@
           class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
           class:border-b={!onProjectPage}
         >
-          <EmbedHeader {activeResource} {navigationEnabled} />
+          <EmbedHeader {activeResource} {navigationBarEnabled} />
         </div>
       </ThemeProvider>
     {/if}

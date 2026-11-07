@@ -13,6 +13,7 @@
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let resource: V1Resource | undefined;
   export let isReconciling: boolean = false;
@@ -31,14 +32,15 @@
   $: hasErroredPartitions = actions.includes("refreshErrored");
 
   $: refreshDisabled = isReconciling;
-  $: refreshTooltip = isReconciling
-    ? "Model is currently being reconciled"
-    : "";
+  $: refreshTooltip = isReconciling ? m.status_model_reconciling() : "";
 </script>
 
 {#if resource}
   <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-    <DropdownMenu.Trigger class="flex-none" aria-label="Open model actions">
+    <DropdownMenu.Trigger
+      class="flex-none"
+      aria-label={m.status_open_model_actions()}
+    >
       <IconButton rounded active={isDropdownOpen} size={20}>
         <ThreeDot size="16px" />
       </IconButton>
@@ -51,7 +53,7 @@
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
-          <span class="ml-2">Describe</span>
+          <span class="ml-2">{m.status_action_describe()}</span>
         </div>
       </DropdownMenu.Item>
 
@@ -63,7 +65,7 @@
         >
           <div class="flex items-center">
             <ScrollTextIcon size="12px" />
-            <span class="ml-2">View Logs</span>
+            <span class="ml-2">{m.status_action_view_logs()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}
@@ -76,7 +78,7 @@
         >
           <div class="flex items-center">
             <LayoutGridIcon size="12px" />
-            <span class="ml-2">View Partitions</span>
+            <span class="ml-2">{m.status_action_view_partitions()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}
@@ -93,7 +95,9 @@
           >
             <div class="flex items-center">
               <AlertCircleIcon size="12px" />
-              <span class="ml-2">Refresh Errored Partitions</span>
+              <span class="ml-2"
+                >{m.status_action_refresh_errored_partitions()}</span
+              >
             </div>
           </DropdownMenu.Item>
           <TooltipContent slot="tooltip-content"
@@ -111,7 +115,7 @@
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Full Refresh</span>
+            <span class="ml-2">{m.status_action_full_refresh()}</span>
           </div>
         </DropdownMenu.Item>
         <TooltipContent slot="tooltip-content">{refreshTooltip}</TooltipContent>
@@ -127,7 +131,7 @@
           >
             <div class="flex items-center">
               <RefreshCcwIcon size="12px" />
-              <span class="ml-2">Incremental Refresh</span>
+              <span class="ml-2">{m.status_action_incremental_refresh()}</span>
             </div>
           </DropdownMenu.Item>
           <TooltipContent slot="tooltip-content"

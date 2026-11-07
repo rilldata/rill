@@ -1,5 +1,6 @@
 <script lang="ts">
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 </script>
 
 <div
@@ -14,7 +15,7 @@
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
     <div class="text-fg-secondary font-semibold">
-      This alert has not run yet
+      {m.alert_has_not_run_yet()}
     </div>
   </div>
 </div>

@@ -2,11 +2,21 @@ import {
   type V1GetAIMessageResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type {
+  Schema as MetricsResolverQuery,
+  TimeRange,
+} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
+import {
+  type ChartFieldKind,
+  isFlintCreateChartArgs,
+  mapChartSpecToMetricsResolverQuery,
+  mapFlintChartArgsToMetricsResolverQuery,
+  type RillCreateChartArgs,
+} from "@rilldata/web-common/features/explore-mappers/map-chart-spec-to-metrics-resolver-query.ts";
 import { error } from "@sveltejs/kit";
 
 interface RuntimeInfo {
@@ -36,7 +46,10 @@ export async function fetchMessage(
     const toolCallResp = (await resp.json()) as V1GetAIMessageResponse;
 
     // 200 response should always have a message.
-    return toolCallResp.message!;
+    return {
+      message: toolCallResp.message!,
+      result: toolCallResp.result,
+    };
   } catch (e) {
     const apiError = e.response?.data?.message;
     // Rethrow api error. Top level message will just be InternalError
@@ -45,15 +58,25 @@ export async function fetchMessage(
   }
 }
 
-export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
-  if (
-    message.tool !== ToolName.QUERY_METRICS_VIEW ||
-    message.type !== MessageType.CALL
-  ) {
+/**
+ * Returns the metrics resolver query a tool call message stands for: the arguments of a
+ * `query_metrics_view` call as is, or the spec of a `create_chart` call mapped onto a query.
+ * Both open as an explore through `openQuery`. A Flint-shaped `create_chart` call only names
+ * its fields, so the call's result message tells which of them are measures and the time dimension.
+ */
+export function maybeGetMetricsResolverQueryFromMessage(
+  message: V1Message,
+  resultMessage?: V1Message,
+): MetricsResolverQuery {
+  const isOpenableCall =
+    message.type === MessageType.CALL &&
+    (message.tool === ToolName.QUERY_METRICS_VIEW ||
+      message.tool === ToolName.CREATE_CHART);
+  if (!isOpenableCall) {
     throw error(
       400,
       new Error(
-        "Failed to get metrics resolver query, is not a metrics view query tool call.",
+        "Failed to get metrics resolver query, is not a metrics view query or create chart tool call.",
       ),
     );
   }
@@ -68,7 +91,64 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
     );
   }
 
+  if (message.tool === ToolName.CREATE_CHART) {
+    if (isFlintCreateChartArgs(rawJson)) {
+      return mapFlintChartArgsToMetricsResolverQuery(
+        rawJson,
+        getFieldKindsFromMessage(resultMessage),
+      );
+    }
+    const spec = (rawJson as Partial<RillCreateChartArgs>).spec;
+    if (!spec || typeof spec !== "object") {
+      throw error(
+        400,
+        new Error(
+          "Failed to get metrics resolver query, create chart call has no spec.",
+        ),
+      );
+    }
+    return mapChartSpecToMetricsResolverQuery(spec);
+  }
+
   return rawJson as MetricsResolverQuery;
+}
+
+/** The kind of every field a `create_chart` result describes, keyed by name. */
+export function getFieldKindsFromMessage(
+  resultMessage: V1Message | undefined,
+): Record<string, ChartFieldKind> {
+  if (!resultMessage?.contentData) return {};
+  try {
+    const fields = JSON.parse(resultMessage.contentData)?.fields;
+    if (!fields || typeof fields !== "object") return {};
+    return Object.fromEntries(
+      Object.entries(fields as Record<string, { kind?: ChartFieldKind }>)
+        .filter(([, field]) => !!field?.kind)
+        .map(([name, field]) => [name, field.kind as ChartFieldKind]),
+    );
+  } catch (e) {
+    console.error("Failed to parse result message JSON", e);
+  }
+  return {};
+}
+
+export function getResolvedTimeRangesFromMessage(
+  resultMessage: V1Message | undefined,
+): {
+  resolvedTimeRange?: TimeRange;
+  resolvedComparisonTimeRange?: TimeRange;
+} {
+  if (!resultMessage?.contentData) return {};
+  try {
+    const resultData = JSON.parse(resultMessage.contentData);
+    return {
+      resolvedTimeRange: resultData.resolved_time_range,
+      resolvedComparisonTimeRange: resultData.resolved_comparison_time_range,
+    };
+  } catch (e) {
+    console.error("Failed to parse result message JSON", e);
+  }
+  return {};
 }
 
 const closingRoundBracketRegex = /\)$/;

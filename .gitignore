@@ -16,6 +16,8 @@ node_modules
 /cli/pkg/examples/embed/dist
 /cli/pkg/installscript/embed/install.sh
 /cli/pkg/web/embed/dist
+/runtime/ai/mcpapp/embed/widget.html
+/web-mcp-app/dist/
 /runtime/drivers/duckdb/extensions/embed/*/*
 !/runtime/drivers/duckdb/extensions/embed/**/.gitkeep
 /dev-project*
@@ -57,6 +59,7 @@ saved-state.json
 last-query-output.json
 staging-databases
 /rilldata
+/rill-examples/
 docs/dist/
 coverage
 # locally deployed test projects can generate this
@@ -98,9 +101,13 @@ latest.txt
 .claude/plans/
 .claude/worktrees/
 .claude/projects/
+.mcp.json
 
 # Vite temp files
 vite.config.ts.timestamp-*
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# inlang manages this file itself (^2.5); keep it untracked to avoid churn
+**/*.inlang/.gitignore

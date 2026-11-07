@@ -32,7 +32,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
@@ -131,70 +131,6 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return err
-	}
-
-	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
-	// This is a workaround until we return correct casing from All and Lookup.
-	fqn := c.Dialect().EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
-
-	objectType := "TABLE"
-	if table.View {
-		objectType = "VIEW"
-	}
-
-	var ddl string
-	err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT GET_DDL('%s', ?)", objectType), fqn).Scan(&ddl)
-	if err != nil {
-		return err
-	}
-	table.DDL = ddl
-	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
-		if err != nil {
-			return nil, err
-		}
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

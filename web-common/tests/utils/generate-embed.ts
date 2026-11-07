@@ -11,6 +11,7 @@ export async function generateEmbed({
   resourceType,
   serviceToken,
   initialState,
+  hideNavigationBar = false,
 }: {
   organization: string;
   project: string;
@@ -18,6 +19,7 @@ export async function generateEmbed({
   resourceType: string;
   serviceToken: string;
   initialState: string | null;
+  hideNavigationBar?: boolean;
 }): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
@@ -26,6 +28,7 @@ export async function generateEmbed({
         resource: resourceName,
         type: resourceType,
         navigation: true,
+        hide_navigation_bar: hideNavigationBar,
       },
       {
         headers: {

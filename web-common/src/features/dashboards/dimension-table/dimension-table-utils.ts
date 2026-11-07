@@ -1,5 +1,6 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -10,12 +11,16 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
-import { PERC_DIFF } from "../../../components/data-types/type-utils";
+import {
+  isPercDiff,
+  PERC_DIFF,
+} from "../../../components/data-types/type-utils";
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
@@ -25,6 +30,7 @@ import type {
 
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
+import { clamp } from "@rilldata/web-common/lib/clamp";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -32,6 +38,7 @@ import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/
 import type { SvelteComponent } from "svelte";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { SortType } from "../proto-state/derived-types";
+import { URI_DIMENSION_SUFFIX } from "../dashboard-utils";
 import { getFiltersForOtherDimensions } from "../selectors";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
@@ -59,8 +66,8 @@ export function updateFilterOnSearch(
   }
 
   filterForDimension = copyFilterExpression(filterForDimension);
-  const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimensionName),
+  const filterIdx = filterForDimension.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (filterIdx === undefined || filterIdx === -1) {
     filterForDimension.cond?.exprs?.push(cond);
@@ -70,8 +77,12 @@ export function updateFilterOnSearch(
   return filterForDimension;
 }
 
+/**
+ * Returns the filters for the other dimensions plus a `like` filter for the search text on the given dimension.
+ * `filters` is undefined when the dashboard has no active filters; the search must still apply in that case.
+ */
 export function getDimensionFilterWithSearch(
-  filters: V1Expression,
+  filters: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
 ) {
@@ -116,21 +127,21 @@ export function getComparisonProperties(
       component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percentage change over comparison period",
+      description: m.dashboard_percentage_change(),
     };
   } else if (measureName.includes("_delta")) {
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
-      description: "Change over comparison period",
+      description: m.dashboard_change_over_comparison(),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
       component: PercentOfTotal,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percent of total",
+      description: m.dashboard_percent_of_total(),
     };
   }
   throw new Error(
@@ -173,19 +184,26 @@ const HEADER_ICON_WIDTHS = 16;
 const HEADER_X_PAD = CHARACTER_X_PAD;
 const HEADER_FLEX_SPACING = 14;
 // const CHARACTER_LIMIT_FOR_WRAPPING = 9;
+/** A context column cell loses 18px to chrome: a 10px gutter on the cell and
+ * an 8px inset on the label. The rest is breathing room, so the value doesn't
+ * butt up against the previous column. */
+const COMPARISON_X_PAD = 24;
 
 export function estimateColumnSizes(
   columns: VirtualizedTableColumns[],
   columnWidths: {
     [key: string]: number;
   },
-  containerWidth: number,
+  rows: DimensionTableRow[],
   config: DimensionTableConfig,
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
-    if (column.name.includes("delta")) return config.comparisonColumnWidth;
-    if (column.name.includes("percent_of_total"))
-      return config.comparisonColumnWidth;
+    if (
+      column.name.includes("delta") ||
+      column.name.includes("percent_of_total")
+    ) {
+      return estimateComparisonColumnSize(column.name, rows, config);
+    }
     if (i != 0) return config.defaultColumnWidth;
 
     const largestStringLength =
@@ -223,6 +241,40 @@ export function estimateColumnSizes(
   });
 
   return estimatedColumnSizes;
+}
+
+/** Context columns (delta, delta percent and percent of total) hold formatted
+ * measure values, which can be far wider than the minimum comparison width,
+ * e.g. a currency delta like "-$1,234,567.89". Size them to their content,
+ * the same way the pivot table sizes its measure columns.
+ */
+function estimateComparisonColumnSize(
+  columnName: string,
+  rows: DimensionTableRow[],
+  config: DimensionTableConfig,
+): number {
+  const largestValueLength = rows.reduce((largest, row) => {
+    const value = row["__formatted_" + columnName] ?? row[columnName];
+    return Math.max(largest, renderedValueLength(value));
+  }, 0);
+
+  return clamp(
+    config.comparisonColumnWidth,
+    largestValueLength * CHARACTER_WIDTH + COMPARISON_X_PAD,
+    config.maxColumnWidth,
+  );
+}
+
+/** Formatted context column values are not always strings: percentages are
+ * NumberParts objects, and missing data is a PERC_DIFF token rendered as "-".
+ */
+function renderedValueLength(
+  value: DimensionTableRow[keyof DimensionTableRow],
+): number {
+  if (value === null || value === undefined) return 0;
+  if (isPercDiff(value)) return 1;
+  if (typeof value === "object") return numberPartsToString(value).length;
+  return `${value}`.length;
 }
 
 export function prepareVirtualizedDimTableColumns(
@@ -372,6 +424,7 @@ export function prepareVirtualizedDimTableColumns(
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
+          lowerIsBetter: selectedMeasure?.lowerIsBetter ?? false,
           tooltipFormatter,
           highlight,
           sorted,
@@ -479,6 +532,13 @@ export function prepareDimensionTableRows(
         ...formattedVals,
       ]);
 
+      // Carry through the resolved URI for clickable dimension values, if requested.
+      // This is not a spec measure, so it must be copied explicitly.
+      const uriKey = dimensionColumn + URI_DIMENSION_SUFFIX;
+      if (uriKey in row) {
+        rowOut[uriKey] = (row[uriKey] as string | null) ?? null;
+      }
+
       if (addDeltas) {
         // Process deltas for all measures that have comparison data
         allMeasuresForSpec.forEach((measure) => {
@@ -532,4 +592,13 @@ export function prepareDimensionTableRows(
       return rowOut;
     });
   return tableRows;
+}
+
+/**
+ * Key of a dimension table row for the row virtualizer and the keyed `{#each}` blocks that render the rows.
+ * JSON text keeps values apart that `String()` would merge: a null value and the string "null",
+ * a number and its text, or two nested values, which all stringify to "[object Object]".
+ */
+export function getDimensionTableRowKey(value: unknown): string {
+  return JSON.stringify(value ?? null);
 }

@@ -18,7 +18,10 @@
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
-  import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
+  import {
+    exportFormatToPrettyString,
+    formatRefreshSchedule,
+  } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -30,10 +33,12 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -63,7 +68,7 @@
   // Get human-readable frequency
   $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
     ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
-    : "Whenever your data refreshes";
+    : m.alert_whenever_data_refreshes();
 
   $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
@@ -138,7 +143,10 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
+        <h1
+          class="text-fg-primary text-lg font-bold"
+          aria-label={m.alert_metadata_name_aria()}
+        >
           {alertSpec.displayName}
         </h1>
         <div class="grow"></div>
@@ -146,13 +154,13 @@
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton ariaLabel="Alert context menu">
+              <IconButton ariaLabel={m.alert_context_menu_aria()}>
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item onclick={handleDeleteAlert}>
-                Delete Alert
+                {m.alert_delete()}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
@@ -163,9 +171,12 @@
     <!-- Five columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_dashboard_name_aria()}
+      >
         {#if dashboardTitle}
-          <MetadataLabel>Dashboard</MetadataLabel>
+          <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
           <MetadataValue>
             {#if dashboardDoesNotExist}
               <div class="flex items-center gap-x-1">
@@ -173,7 +184,7 @@
                 <Tooltip distance={8}>
                   <CancelCircle size="16px" className="text-red-500" />
                   <TooltipContent slot="tooltip-content">
-                    Dashboard does not exist
+                    {m.alert_dashboard_not_exist()}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -184,7 +195,7 @@
             {/if}
           </MetadataValue>
         {:else}
-          <MetadataLabel>Name</MetadataLabel>
+          <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
           <MetadataValue>
             {$alertQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
@@ -192,24 +203,45 @@
       </div>
 
       <!-- Split by dimension -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
-        <MetadataLabel>Split by dimension</MetadataLabel>
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_split_by_dimension_aria()}
+      >
+        <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}
+          {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
+            m.alert_none()}
         </MetadataValue>
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
-        <MetadataLabel>Schedule</MetadataLabel>
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_schedule_aria()}
+      >
+        <MetadataLabel>{m.alert_schedule()}</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
 
       <!-- Snooze -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Snooze</MetadataLabel>
+        <MetadataLabel>{m.alert_snooze()}</MetadataLabel>
         <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
+
+      <!-- Email attachment -->
+      {#if alertSpec.exportAttach}
+        <div class="flex flex-col gap-y-3">
+          <MetadataLabel>{m.alert_email_attachment()}</MetadataLabel>
+          <MetadataValue>
+            {exportFormatToPrettyString(
+              alertSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_CSV,
+            )} • {!alertSpec.exportLimit || alertSpec.exportLimit === "0"
+              ? m.report_no_row_limit()
+              : m.report_row_limit({ count: alertSpec.exportLimit })}
+          </MetadataValue>
+        </div>
+      {/if}
     </div>
 
     <!-- Filters -->
@@ -232,7 +264,7 @@
     {#if slackNotifier}
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
-        label="Slack notifications"
+        label={m.alert_slack_notifications()}
       />
     {/if}
 
@@ -240,7 +272,7 @@
     {#if emailNotifier}
       <MetadataList
         data={emailNotifier.recipients}
-        label="Email notifications"
+        label={m.alert_email_notifications()}
       />
     {/if}
   </div>

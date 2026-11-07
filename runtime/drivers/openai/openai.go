@@ -100,7 +100,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[strin
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -229,6 +229,11 @@ func (o *openaiHandle) AsModelManager(instanceID string) (drivers.ModelManager, 
 	return nil, drivers.ErrNotImplemented
 }
 
+// AsMCP implements drivers.Handle.
+func (o *openaiHandle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (o *openaiHandle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -355,10 +360,13 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert response message: %w", err)
 	}
+	// OpenAI's PromptTokens already includes cached tokens; CachedInputTokens is the cache-read subset.
 	result := &drivers.CompleteResult{
-		Message:      resMsgs,
-		InputTokens:  int(res.Usage.PromptTokens),
-		OutputTokens: int(res.Usage.CompletionTokens),
+		Message:           resMsgs,
+		Provider:          "openai",
+		InputTokens:       int(res.Usage.PromptTokens),
+		CachedInputTokens: int(res.Usage.PromptTokensDetails.CachedTokens),
+		OutputTokens:      int(res.Usage.CompletionTokens),
 	}
 	return result, nil
 }

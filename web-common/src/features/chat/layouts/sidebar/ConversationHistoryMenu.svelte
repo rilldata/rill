@@ -1,16 +1,20 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
+  import type { InlineContextMetadata } from "../../core/context/metadata";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
   import {
     GROUP_ORDER,
+    getGroupLabel,
     groupConversationsByDate,
   } from "./conversation-grouping";
 
   export let conversations: V1Conversation[] = [];
   export let currentConversationId: string | undefined = undefined;
+  export let contextMetadata: InlineContextMetadata;
   export let onSelect: (conversation: V1Conversation) => void;
 
   let currentConversationIdSnapshot: string | undefined = currentConversationId;
@@ -30,14 +34,14 @@
 <DropdownMenu.Root onOpenChange={handleOpenChange}>
   <DropdownMenu.Trigger>
     <IconButton
-      ariaLabel="Conversation history"
+      ariaLabel={m.chat_conversation_history()}
       bgGray
       active={isOpen}
       disableTooltip={isOpen}
     >
       <HistoryIcon size="16px" class="text-fg-muted" />
       <svelte:fragment slot="tooltip-content"
-        >Conversation history</svelte:fragment
+        >{m.chat_conversation_history()}</svelte:fragment
       >
     </IconButton>
   </DropdownMenu.Trigger>
@@ -48,18 +52,19 @@
   >
     {#if conversations.length === 0}
       <div class="px-3 py-4 text-center text-fg-secondary text-sm">
-        No conversations yet.
+        {m.chat_no_conversations()}
       </div>
     {:else}
       {#each GROUP_ORDER as groupKey}
         {#if groupedConversations[groupKey] && groupedConversations[groupKey].length > 0}
           <DropdownMenu.Group>
             <DropdownMenu.Label class="px-1 text-xs text-fg-secondary">
-              {groupKey}
+              {getGroupLabel(groupKey)}
             </DropdownMenu.Label>
             {#each groupedConversations[groupKey] as conv}
               <ConversationHistoryItem
                 conversation={conv}
+                {contextMetadata}
                 isCurrentChat={conv.id === currentConversationIdSnapshot}
                 showRelativeTime={groupKey === "Today"}
                 {onSelect}

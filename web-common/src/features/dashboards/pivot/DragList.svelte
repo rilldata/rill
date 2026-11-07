@@ -5,17 +5,21 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { PencilIcon, Trash2 } from "lucide-svelte";
   import { writable } from "svelte/store";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
+  import MeasureFormatChip from "./MeasureFormatChip.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
+  import { insertPivotChipAt } from "./pivot-chip-utils";
   import { swapListener } from "./swapListener";
   import TimeDropdownChip from "./TimeDropdownChip.svelte";
   import {
     type PivotChipData,
     PivotChipType,
+    type PivotMeasureFormatting,
     type PivotTableMode,
   } from "./types";
   import {
@@ -26,12 +30,28 @@
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
   import { timePillSelectors } from "./time-pill-store";
 
-  export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
+  export type Zone =
+    | "rows"
+    | "columns"
+    | "Time"
+    | "Measures"
+    | "Dimensions"
+    | "tags";
+
+  // When a tag chip is being dragged the drop receivers do a bulk-add instead
+  // of the per-chip splice path. The dimensions and measures arrays are
+  // precomputed at drag-start so each receiver does not have to re-split.
+  export type TagDragPayload = {
+    tagName: string;
+    dimensions: PivotChipData[];
+    measures: PivotChipData[];
+  };
 
   export type DragData = {
     source: Zone;
     width: number;
     chip: PivotChipData;
+    tagPayload?: TagDragPayload;
   };
 
   export const dragDataStore = writable<null | DragData>(null);
@@ -39,11 +59,29 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
+  // When provided, measure chips in drop zones expose per-measure conditional
+  // formatting controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
+  // ephemeral measures: marks their chips with an fx icon and
+  // exposes edit/delete actions in the chip popover.
+  export let ephemeralMeasureNames: Set<string> = new Set();
+  export let onEditEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
+  export let onDeleteEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -70,10 +108,14 @@
     (i) => i.type !== PivotChipType.Measure,
   );
 
+  $: isTagDrag = !!dragData?.tagPayload;
+
   $: isValidDropZone =
     isDropLocation &&
     dragData &&
-    (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
+    (isTagDrag ||
+      zone === "columns" ||
+      dragChip?.type !== PivotChipType.Measure);
 
   // Get available grains from the store
   const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
@@ -93,7 +135,11 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
-    if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
+    if (
+      target.closest(".grain-dropdown") ||
+      target.closest(".grain-label") ||
+      target.closest(".format-dropdown")
+    )
       return;
 
     if (e.button !== 0) return;
@@ -134,32 +180,55 @@
     window.removeEventListener("mousemove", detectDragStart);
   }
 
-  function handleDrop() {
+  function handleDrop(e: MouseEvent) {
     if (zoneStartedDrag)
       $controllerStore?.abort("Drag cancelled - item dropped");
 
+    // Holding CMD (mac) or Ctrl flips the tag drop from append to replace,
+    // matching the click-side affordance on the tag row.
+    const replace = e.metaKey || e.ctrlKey;
+
     if (isValidDropZone) {
-      if (dragChip && ghostIndex !== null) {
-        const temp = [...items];
+      if (dragData?.tagPayload) {
+        // Bulk-add path for tag drops. Skips ghost-index positioning since
+        // we are inserting multiple chips, not a single one. Cross-zone
+        // cleanup on replace happens in the auto-arrange zone or the click
+        // affordances on the tag row — DragList only manages its own zone.
+        const { dimensions, measures } = dragData.tagPayload;
+        const newItems =
+          zone === "rows" ? dimensions : [...dimensions, ...measures];
+        if (newItems.length === 0) {
+          // Pure-measure tag dropped on rows, for instance: nothing to do.
+        } else if (replace) {
+          onUpdate(newItems);
+        } else {
+          const existing = new Set(items.map((c) => c.id));
+          const additions = newItems.filter((c) => !existing.has(c.id));
+          if (additions.length > 0) onUpdate([...items, ...additions]);
+        }
+      } else if (dragChip && ghostIndex !== null) {
+        let chipToAdd: PivotChipData | undefined = dragChip;
 
-        let chipToAdd = dragChip;
-
-        if (isNewTimeChip(chipToAdd)) {
-          const timeChipsInZone = temp.filter(
+        if (isNewTimeChip(dragChip)) {
+          const timeChipsInZone = items.filter(
             (chip) => chip.type === PivotChipType.Time,
           );
 
           chipToAdd = handleTimeChipDrop(
-            dragChip,
             ghostIndex,
             timeChipsInZone,
             availableTimeGrains,
           );
         }
 
-        temp.splice(ghostIndex, 0, chipToAdd);
-        items = temp;
-        onUpdate(items);
+        // Nothing to add when no time grain is available for the time chip.
+        if (chipToAdd) {
+          // `items` may still hold the dragged chip: the parent resets it from
+          // the store whenever the explore state changes mid-drag. Move the
+          // chip to the drop position instead of splicing in a second copy.
+          items = insertPivotChipAt(items, chipToAdd, ghostIndex);
+          onUpdate(items);
+        }
       }
       swap = false;
     }
@@ -257,20 +326,14 @@
     swap = false;
   }
 
-  function handleRowClick(item: PivotChipData) {
-    let itemToAdd = item;
-    if (item.type === PivotChipType.Time) {
-      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
-    }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, true);
-  }
-
-  function handleColumnClick(item: PivotChipData) {
-    let itemToAdd = item;
-    if (item.type === PivotChipType.Time) {
-      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
-    }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, false);
+  function addField(item: PivotChipData, rows: boolean) {
+    const itemToAdd =
+      item.type === PivotChipType.Time
+        ? handleTimeChipClick(availableTimeGrains)
+        : item;
+    // Nothing to add when no time grain is available for the time chip.
+    if (!itemToAdd) return;
+    metricsExplorerStore.addPivotField($exploreName, itemToAdd, rows);
   }
 
   function handleTimeGrainSelect(item: PivotChipData, timeGrain: V1TimeGrain) {
@@ -297,7 +360,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
-  aria-label="Drag list {zone}"
+  aria-label={m.dashboard_drag_list_zone({ zone })}
 >
   {#each items as item, index (item.id)}
     <div
@@ -337,6 +400,30 @@
               onUpdate(items);
             }}
           />
+        {:else if isDropLocation && item.type === PivotChipType.Measure && setMeasureFormatting}
+          <MeasureFormatChip
+            {item}
+            grab
+            removable
+            fmt={measureFormatting?.[item.id]}
+            lowerIsBetter={lowerIsBetterMap[item.id] ?? false}
+            ephemeral={ephemeralMeasureNames.has(item.id)}
+            onEditEphemeral={ephemeralMeasureNames.has(item.id) &&
+            onEditEphemeralMeasure
+              ? () => onEditEphemeralMeasure?.(item.id)
+              : undefined}
+            onDeleteEphemeral={ephemeralMeasureNames.has(item.id) &&
+            onDeleteEphemeralMeasure
+              ? () => onDeleteEphemeralMeasure?.(item.id)
+              : undefined}
+            onFormatChange={(fmt: PivotMeasureFormatting | null) =>
+              setMeasureFormatting?.(item.id, fmt)}
+            onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
         {:else}
           <PivotChip
             {item}
@@ -347,23 +434,62 @@
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
             }}
-          />
+          >
+            <svelte:fragment slot="body">
+              {#if ephemeralMeasureNames.has(item.id)}
+                <span class="text-[10px] font-semibold italic">ƒx</span>
+              {/if}
+            </svelte:fragment>
+          </PivotChip>
         {/if}
       </div>
 
       {#if zone !== "rows" && zone !== "columns"}
         <div class="icons">
+          {#if zone === "Measures" && ephemeralMeasureNames.has(item.id)}
+            {#if onEditEphemeralMeasure}
+              <Tooltip distance={8} location="top" alignment="start">
+                <button
+                  class="icon-wrapper"
+                  onclick={() => onEditEphemeralMeasure?.(item.id)}
+                  aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                  type="button"
+                >
+                  <PencilIcon size="14px" />
+                </button>
+                <TooltipContent slot="tooltip-content">
+                  {m.dashboard_pivot_ephemeral_edit_title()}
+                </TooltipContent>
+              </Tooltip>
+            {/if}
+            {#if onDeleteEphemeralMeasure}
+              <Tooltip distance={8} location="top" alignment="start">
+                <button
+                  class="icon-wrapper"
+                  onclick={() => onDeleteEphemeralMeasure?.(item.id)}
+                  aria-label={m.common_delete()}
+                  type="button"
+                >
+                  <Trash2 size="14px" />
+                </button>
+                <TooltipContent slot="tooltip-content">
+                  {m.common_delete()}
+                </TooltipContent>
+              </Tooltip>
+            {/if}
+          {/if}
           {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
             <Tooltip distance={8} location="top" alignment="start">
               <button
                 class="icon-wrapper"
-                onclick={() => handleRowClick(item)}
-                aria-label="Add Row"
+                onclick={() => addField(item, true)}
+                aria-label={m.dashboard_add_row()}
                 type="button"
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              <TooltipContent slot="tooltip-content"
+                >{m.dashboard_add_to_rows()}</TooltipContent
               >
             </Tooltip>
           {/if}
@@ -371,14 +497,14 @@
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
-              onclick={() => handleColumnClick(item)}
-              aria-label="Add Column"
+              onclick={() => addField(item, false)}
+              aria-label={m.dashboard_add_column()}
               type="button"
             >
               <Column size="16px" />
             </button>
             <TooltipContent slot="tooltip-content">
-              Add to columns
+              {m.dashboard_add_to_columns()}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -404,7 +530,7 @@
           onUpdate([]);
         }}
       >
-        Clear
+        {m.dashboard_clear()}
       </Button>
     {/if}
   {/if}
@@ -437,6 +563,10 @@
     @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
+    /* Cap the drop zone at ~3 chip rows so a large number of chips scrolls
+       within the zone instead of pushing the pivot table out of view. */
+    @apply overflow-y-auto;
+    max-height: 88px;
   }
 
   .valid {

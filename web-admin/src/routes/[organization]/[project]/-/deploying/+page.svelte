@@ -5,9 +5,10 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: PageData;
-  const { organization, project, deployingDashboard } = data;
+  const { organization, project, targetDashboard, preCommitSha } = data;
 
   const runtimeClient = useRuntimeClient();
 
@@ -17,7 +18,8 @@
     runtimeClient,
     organization.name,
     project.name,
-    deployingDashboard,
+    targetDashboard,
+    preCommitSha,
   );
 
   $: ({ data: deployingDashboardsData } = $deployingDashboardResp ?? {
@@ -33,7 +35,7 @@
     if (dashboardsErrored) {
       eventBus.emit("notification", {
         type: "error",
-        message: "Failed to deploy dashboards",
+        message: m.error_deploy_dashboards(),
       });
     }
     redirected = true;

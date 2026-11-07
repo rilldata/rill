@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -25,19 +26,29 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  combineChartDataQuery,
+  getFilterWithNullHandling,
+} from "../query-util";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type FunnelMode = "width" | "order";
 export type FunnelColorMode = "stage" | "measure" | "name" | "value";
 export type FunnelBreakdownMode = "dimension" | "measures";
+export type FunnelPercentMode = "top" | "previous";
 
 export type FunnelChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   breakdownMode?: FunnelBreakdownMode;
   measure?: FieldConfig<"quantitative">;
   stage?: FieldConfig<"nominal">;
   mode?: FunnelMode;
   color?: FunnelColorMode;
+  percentMode?: FunnelPercentMode;
 };
 
 export type FunnelChartDefaultOptions = {
@@ -100,6 +111,7 @@ export class FunnelChartProvider {
         measures = [{ name: config.measure.field }];
       }
     }
+    measures = withEphemeralMeasures(config, measures);
 
     let stageSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
@@ -129,7 +141,7 @@ export class FunnelChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
           !Array.isArray(config.stage?.sort);
@@ -165,7 +177,7 @@ export class FunnelChartProvider {
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&
           (!isMultiMeasure &&
@@ -193,6 +205,11 @@ export class FunnelChartProvider {
 
           if (stageDimensionName) {
             this.customSortStageItems = includedStageValues;
+          }
+          // No stage values means the top-N query found none, so there is
+          // nothing to narrow to, and an `IN` with no values is rejected by the
+          // runtime. The base filter above already matches what that query matched.
+          if (stageDimensionName && includedStageValues.length > 0) {
             const filterForTopStageValues = createInExpression(
               stageDimensionName,
               includedStageValues,
@@ -231,7 +248,7 @@ export class FunnelChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [topNStageQuery], visibleStore);
   }
 
   getChartDomainValues() {

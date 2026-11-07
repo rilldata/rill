@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -117,7 +117,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context, primaryBranch stri
 	return gitRepo, nil
 }
 
-func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
+func (g *GitHelper) PushToManagedRepo(ctx context.Context, forcePush bool) error {
 	gitConfig, err := g.GitConfig(ctx)
 	if err != nil {
 		return err
@@ -126,6 +126,9 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {
 		return err
+	}
+	if forcePush {
+		return gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig, "", author)
 	}
 	err = g.h.CommitAndSafePush(ctx, g.localPath, gitConfig, "", author, "1")
 	if err != nil {

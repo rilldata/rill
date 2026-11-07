@@ -11,8 +11,3 @@ class ProjectWelcomeStatus {
 }
 
 export const projectWelcomeStatus = new ProjectWelcomeStatus();
-
-// Temporary localstorage based flag. Since our existing feature flag is at project level, we need separate flag.
-const ProjectWelcomeEnabledKey = "rill:welcome:enabled";
-export const projectWelcomeEnabled =
-  localStorage.getItem(ProjectWelcomeEnabledKey) === "true";

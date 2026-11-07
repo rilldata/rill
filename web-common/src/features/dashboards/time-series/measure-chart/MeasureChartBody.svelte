@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
+  import { snapToNearestNonNull } from "@rilldata/web-common/components/time-series-chart/sparse-data-utils";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
+  import { qualitativeColorsArray } from "@rilldata/web-common/features/themes/palette-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type {
@@ -52,6 +55,13 @@
   const chartId = Math.random().toString(36).slice(2, 11);
   const CLICK_THRESHOLD_PX = 4;
 
+  // Hover snaps to the nearest non-null point within this distance (in index
+  // units), so sparse points are easy to land on without snapping across wide
+  // gaps. A fraction of the data length keeps the snap radius a roughly
+  // constant pixel distance regardless of point count.
+  const SNAP_FRACTION = 0.05;
+  const MIN_SNAP_INDICES = 3;
+
   export let measure: MetricsViewSpecMeasure;
   export let measureName: string;
   export let data: TimeSeriesPoint[];
@@ -75,17 +85,23 @@
       }) => void)
     | undefined;
   export let onScrubClear: (() => void) | undefined;
-  export let scrubController: ScrubController;
+  export let scrubController: ScrubController | undefined = undefined;
   export let metricsViewName: string;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
   export let tddChartType: TDDChart = TDDChart.DEFAULT;
+  // Chart height when expanded in the Time Dimension Detail view. Driven by the
+  // resizable divider between the timeseries and the detail table.
+  export let tddChartHeight: number = 245;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
+  const explainEnabled = measureSelection.getEnabledStore();
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
+
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
 
   let clientWidth = 425;
   let mouseDownX: number | null = null;
@@ -100,7 +116,7 @@
     annotationPopover.destroy();
   });
 
-  $: height = showTimeDimensionDetail ? 245 : 145;
+  $: height = showTimeDimensionDetail ? tddChartHeight : 145;
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 
@@ -138,12 +154,12 @@
   $: xTickIndices = computeXTickIndices(mode, data.length);
 
   // Keep scrub controller in sync with data length
-  $: scrubController.setDataLength(data.length);
+  $: scrubController?.setDataLength(data.length);
 
   // Subscribe to scrub state from controller for rendering
-  $: scrubStateStore = scrubController.state;
+  $: scrubStateStore = scrubController?.state;
   $: currentScrubState = $scrubStateStore;
-  $: isScrubbing = currentScrubState.isScrubbing;
+  $: isScrubbing = Boolean(currentScrubState?.isScrubbing);
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = chartScrubInterval
@@ -152,16 +168,39 @@
   $: externalScrubEndIndex = chartScrubInterval
     ? dateToIndex(data, chartScrubInterval.end.toMillis())
     : null;
-  $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
-  $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
+  $: scrubStartIndex = currentScrubState?.startIndex ?? externalScrubStartIndex;
+  $: scrubEndIndex = currentScrubState?.endIndex ?? externalScrubEndIndex;
   $: hasScrubSelection = scrubStartIndex !== null && scrubEndIndex !== null;
 
   // Hover state
   $: hoverIndex.registerScale(xScale);
+  $: maxSnapDistance = Math.max(MIN_SNAP_INDICES, data.length * SNAP_FRACTION);
   $: isLocallyHovered =
     hoverState.isHovered && hoverState.index !== null && data.length > 0;
-  $: if (isLocallyHovered) {
-    hoverIndex.set(snapIndex(hoverState.index!, data.length), chartId);
+  // All series the cursor can snap to: the primary measure, any dimension
+  // comparison series, and their time comparisons.
+  $: snapSeries = [
+    data.map((d) => d.value),
+    ...(showComparison ? [data.map((d) => d.comparisonValue ?? null)] : []),
+    ...dimensionData.map((dim) => dim.data.map((d) => d.value)),
+    ...(showComparison
+      ? dimensionData.map((dim) =>
+          dim.data.map((d) => d.comparisonValue ?? null),
+        )
+      : []),
+  ];
+  // Snap to the nearest non-null point so sparse data is easy to hover; null
+  // when the cursor is in a gap wider than maxSnapDistance.
+  $: snappedHoverIndex = isLocallyHovered
+    ? snapToNearestNonNull(
+        hoverState.index!,
+        snapSeries,
+        (v) => v,
+        maxSnapDistance,
+      )
+    : null;
+  $: if (snappedHoverIndex !== null) {
+    hoverIndex.set(snappedHoverIndex, chartId);
   } else if (
     hasScrubSelection &&
     scrubStartIndex !== null &&
@@ -175,10 +214,13 @@
 
   $: hoveredIndex = $hoverIndex?.start ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
-  $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
+  $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
-  $: measureFormatter = createMeasureValueFormatter(measure);
+  // Hover readouts use the tooltip context: it honors an explicit d3 format
+  // and shows more precision than the table default, so small-but-meaningful
+  // values (e.g. sub-cent costs) don't round away to ~$0.00.
+  $: measureFormatter = createMeasureValueFormatter(measure, "tooltip");
   $: valueFormatter = (value: number | null): string => {
     if (value === null) return "no data";
     return measureFormatter(value);
@@ -205,10 +247,12 @@
   $: dimTooltipEntries =
     isComparingDimension && hoveredIndex >= 0
       ? dimensionData
-          .map((dim) => ({
+          .map((dim, i) => ({
             label: dim.dimensionValue ?? "null",
             value: dim.data[hoveredIndex]?.value ?? null,
-            color: dim.color,
+            color:
+              $qualitativeColorsArray[i % $qualitativeColorsArray.length] ||
+              dim.color,
           }))
           .filter((e) => e.value !== null)
           .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
@@ -257,9 +301,18 @@
     return Math.max(pb.left, Math.min(pb.left + pb.width, offsetX));
   }
 
+  function isInPlot(offsetX: number, offsetY: number) {
+    return (
+      offsetX >= pb.left &&
+      offsetX <= pb.left + pb.width &&
+      offsetY >= pb.top &&
+      offsetY <= pb.top + pb.height
+    );
+  }
+
   function handleReset() {
     onScrubClear?.();
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handleSvgMouseLeave() {
@@ -270,7 +323,7 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
+    if (!scrubController || e.button !== 0) return;
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
     const x = clampX(e.offsetX);
@@ -303,7 +356,7 @@
       const [start, end] = s < e ? [s, e] : [e, s];
       measureSelection.setRange(measureName, start, end);
     }
-    scrubController.reset();
+    scrubController?.reset();
   }
 
   function handlePointClick(offsetX: number) {
@@ -319,6 +372,8 @@
   }
 
   function handleMouseUp(e: MouseEvent) {
+    if (!scrubController) return;
+
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
@@ -378,7 +433,7 @@
 
     if (isOutside) {
       // Click outside selection clears it
-      scrubController.reset();
+      scrubController?.reset();
       onScrubClear?.();
       measureSelection.clear();
     } else if (measureName) {
@@ -401,27 +456,20 @@
 >
   <svg
     role="presentation"
-    aria-label="Measure Chart for {measureName}"
+    aria-label={m.dashboard_measure_chart_aria({ name: measureName })}
     class="size w-full overflow-visible"
     height="{height}px"
     onmousemove={(e) => {
       const x = clampX(e.offsetX);
-      const isScrubbingNow = get(scrubController.state).isScrubbing;
-
       // Keep scrub tracking even if the drag strays into the margins.
-      if (isScrubbingNow) {
+      if (scrubController && get(scrubController.state).isScrubbing) {
         scrubController.update(x, xScale);
       }
 
       // The SVG extends into the y-axis margin (and top/bottom margins),
       // so onmouseleave doesn't fire when the cursor moves onto axis labels.
       // Treat anything outside the plot bounds as a leave so the tooltip hides.
-      const isInPlot =
-        e.offsetX >= pb.left &&
-        e.offsetX <= pb.left + pb.width &&
-        e.offsetY >= pb.top &&
-        e.offsetY <= pb.top + pb.height;
-      if (!isInPlot) {
+      if (!isInPlot(e.offsetX, e.offsetY)) {
         handleSvgMouseLeave();
         return;
       }
@@ -508,7 +556,9 @@
       <g class="data-readout">
         <text
           class="fill-fg-muted text-outline text-[11px]"
-          aria-label="{measureName} primary time label"
+          aria-label={m.dashboard_measure_chart_primary_time_label_aria({
+            name: measureName,
+          })}
           x={pb.left + 6}
           y={pb.top + 10}
         >
@@ -526,6 +576,7 @@
             {tooltipComparisonValue}
             {tooltipDeltaLabel}
             {tooltipDeltaPositive}
+            {lowerIsBetter}
             {showDelta}
             {valueFormatter}
           />
@@ -591,6 +642,7 @@
       {dimTooltipEntries}
       deltaLabel={tooltipDeltaLabel}
       deltaPositive={tooltipDeltaPositive}
+      {lowerIsBetter}
       formatter={valueFormatter}
     />
   {/if}
@@ -603,7 +655,7 @@
   {/if}
 
   <!-- Explain CTA -->
-  {#if !isScrubbing && explainX !== null}
+  {#if $explainEnabled && !isScrubbing && explainX !== null}
     <ExplainButton
       x={explainX}
       plotBounds={pb}

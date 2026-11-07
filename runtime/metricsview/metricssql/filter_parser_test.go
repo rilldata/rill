@@ -1,6 +1,7 @@
 package metricssql_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -63,6 +64,42 @@ func TestParseFilter(t *testing.T) {
 						},
 						{
 							Value: []any{"helllo", "world"},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"greater than decimal expression",
+			"measure > 10.5",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorGt,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "measure",
+						},
+						{
+							Value: 10.5,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"in decimal expression",
+			"measure IN (1.5, 2.5)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "measure",
+						},
+						{
+							Value: []any{1.5, 2.5},
 						},
 					},
 				},
@@ -191,6 +228,234 @@ func TestParseFilter(t *testing.T) {
 			false,
 		},
 		{
+			"between expression",
+			"x BETWEEN 1 AND 10",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorGte,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 1,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorLte,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 10,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"not between expression",
+			"x NOT BETWEEN 1 AND 10",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorLt,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 1,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorGt,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 10,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"subquery expression with distinct",
+			"dim IN (SELECT DISTINCT dim FROM mv)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"subquery expression with matching group by",
+			"dim IN (SELECT dim FROM mv GROUP BY dim)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is true expression",
+			"dim IS TRUE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Value: true,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is false expression",
+			"dim IS FALSE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Value: false,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is not true expression",
+			"dim IS NOT TRUE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorNeq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: true,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorEq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is not false expression",
+			"dim IS NOT FALSE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorNeq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: false,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorEq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
 			"date_add expression",
 			"time >= '2021-01-01' + INTERVAL 1 DAY",
 			&metricsview.Expression{
@@ -220,4 +485,13 @@ func TestParseFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseFilterNowIsUTC(t *testing.T) {
+	// Some OLAP engines ignore the offset in timestamp strings, so now() must produce a UTC timestamp regardless of the server's time zone
+	expr, err := metricssql.ParseFilter("timestamp < now()")
+	require.NoError(t, err)
+	val, ok := expr.Condition.Expressions[1].Value.(string)
+	require.True(t, ok)
+	require.True(t, strings.HasSuffix(val, "Z"), "got %q", val)
 }

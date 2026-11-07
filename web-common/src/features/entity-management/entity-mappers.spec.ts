@@ -19,6 +19,24 @@ describe("entity-mappers", () => {
       expect(getNameFromFile("/path/to/data/adbids.csv.tgz")).toBe("adbids");
     });
 
+    it("keeps dots in YAML resource names", () => {
+      expect(getNameFromFile("/dashboards/dashboard.canvas.yaml")).toBe(
+        "dashboard.canvas",
+      );
+    });
+
+    it("keeps dots in YML resource names", () => {
+      expect(getNameFromFile("/dashboards/dashboard.canvas.yml")).toBe(
+        "dashboard.canvas",
+      );
+    });
+
+    it("keeps dots in SQL resource names", () => {
+      expect(getNameFromFile("/models/orders.latest.sql")).toBe(
+        "orders.latest",
+      );
+    });
+
     it("no folder", () => {
       expect(getNameFromFile("adbids.csv")).toBe("adbids");
     });

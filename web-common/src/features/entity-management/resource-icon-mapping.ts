@@ -12,6 +12,9 @@ import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
 import File from "@rilldata/web-common/components/icons/File.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
+import { isEnvFile } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { GraduationCap, Sheet } from "lucide-svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -25,6 +28,7 @@ export const resourceIconMapping = {
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertIcon,
+  [ResourceKind.Skill]: GraduationCap,
 };
 
 export const resourceLabelMapping = {
@@ -39,6 +43,7 @@ export const resourceLabelMapping = {
   [ResourceKind.Theme]: "Theme",
   [ResourceKind.Report]: "Report",
   [ResourceKind.Alert]: "Alert",
+  [ResourceKind.Skill]: "AI Skill",
 };
 
 export const resourceShorthandMapping = {
@@ -53,15 +58,30 @@ export const resourceShorthandMapping = {
   [ResourceKind.Theme]: "theme",
   [ResourceKind.Report]: "report",
   [ResourceKind.Alert]: "alert",
+  [ResourceKind.Skill]: "skill",
 };
 
 export function getIconComponent(
   kind: ResourceKind | undefined,
   filePath: string,
 ) {
-  return kind
-    ? resourceIconMapping[kind]
-    : filePath === "/.env" || filePath === "/rill.yaml"
-      ? SettingsIcon
-      : File;
+  if (kind) {
+    return resourceIconMapping[kind];
+  }
+  if (isEnvFile(filePath) || filePath === "/rill.yaml") {
+    return SettingsIcon;
+  }
+  if (extractFileExtension(filePath) === ".parquet") {
+    return Sheet;
+  }
+  if (isSkillFile(filePath)) {
+    return GraduationCap;
+  }
+  return File;
+}
+
+// Skill files are SKILL.md files at `skills/<name>/SKILL.md` or `.agents/skills/<name>/SKILL.md`.
+// The path check is a fallback for files that haven't been parsed into a Skill resource yet.
+export function isSkillFile(filePath: string) {
+  return /^\/(\.agents\/)?skills\/[^/]+\/SKILL\.md$/.test(filePath);
 }

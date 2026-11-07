@@ -7,9 +7,10 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
+    type InheritRangeOption,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
@@ -27,13 +28,18 @@
   export let availableTimeZones: string[];
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let activeTimeGrain: V1TimeGrain | undefined;
+  /** Whether the grain follows the time range; see TimeGrainSelector. */
+  export let adaptiveTimeGrain = false;
+  export let allowAdaptiveTimeGrain = false;
   export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
   export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let showFullRange = true;
   export let complete: boolean;
   export let context = "dashboard";
@@ -44,10 +50,14 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let primaryTimeDimension: string | undefined = undefined;
   export let selectedTimeDimension: string | undefined = undefined;
-  export let timeDimensions: { value: string; label: string }[] = [];
+  export let timeDimensions: {
+    value: string;
+    label: string;
+    description?: string;
+  }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
-  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
+  export let onTimeGrainSelect: (timeGrain: V1TimeGrain | undefined) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
   // Time dimension selection disabled when this function is not provided
@@ -56,7 +66,12 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
+  $: rangeBuckets = bucketYamlRanges(
+    timeRanges,
+    minTimeGrain,
+    $newPicker,
+    maxQueryTimeRange,
+  );
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -81,11 +96,13 @@
       {maxDate}
       {watermark}
       {showDefaultItem}
+      {inheritOption}
       {defaultTimeRange}
       {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
       {allowCustomTimeRange}
+      {maxQueryTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
@@ -104,6 +121,7 @@
       {maxDate}
       ranges={rangeBuckets}
       {showDefaultItem}
+      {inheritOption}
       {showFullRange}
       {defaultTimeRange}
       {allowCustomTimeRange}
@@ -138,6 +156,8 @@
   {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
+      {adaptiveTimeGrain}
+      {allowAdaptiveTimeGrain}
       {minTimeGrain}
       {timeStart}
       {timeEnd}

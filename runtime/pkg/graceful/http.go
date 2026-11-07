@@ -11,7 +11,6 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 const httpShutdownTimeout = 5 * time.Second
@@ -53,14 +52,16 @@ func ServeHTTP(ctx context.Context, handler http.Handler, opts ServeOptions) err
 			Handler: handler,
 		}
 		servers[opts.GRPCPort] = &http.Server{
-			Addr:    fmt.Sprintf(":%d", opts.GRPCPort),
-			Handler: h2c.NewHandler(handler, &http2.Server{}),
+			Addr:      fmt.Sprintf(":%d", opts.GRPCPort),
+			Handler:   handler,
+			Protocols: h2cProtocols(),
 		}
 	} else {
 		// Use h2c on the main HTTP port.
 		servers[opts.Port] = &http.Server{
-			Addr:    fmt.Sprintf(":%d", opts.Port),
-			Handler: h2c.NewHandler(handler, &http2.Server{}),
+			Addr:      fmt.Sprintf(":%d", opts.Port),
+			Handler:   handler,
+			Protocols: h2cProtocols(),
 		}
 	}
 
@@ -114,4 +115,13 @@ func ServeHTTP(ctx context.Context, handler http.Handler, opts ServeOptions) err
 		}
 		return nil
 	}
+}
+
+// h2cProtocols enables HTTP/1.1 and unencrypted HTTP/2 (h2c) on a single port.
+// It replaces the deprecated golang.org/x/net/http2/h2c handler.
+func h2cProtocols() *http.Protocols {
+	p := new(http.Protocols)
+	p.SetHTTP1(true)
+	p.SetUnencryptedHTTP2(true)
+	return p
 }
