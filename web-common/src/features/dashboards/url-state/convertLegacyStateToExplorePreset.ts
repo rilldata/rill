@@ -1,3 +1,8 @@
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import {
+  injectEphemeralMeasuresIntoMap,
+  validateEphemeralDefsAgainstSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
@@ -11,6 +16,7 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   getMultiFieldError,
@@ -71,6 +77,24 @@ export function convertLegacyStateToExplorePreset(
     (d) => d.name!,
   );
 
+  if (legacyState.ephemeralMeasures?.length) {
+    const { valid, invalidEntries } = validateEphemeralDefsAgainstSpec(
+      legacyState.ephemeralMeasures.map((def) => ({
+        name: def.name,
+        displayName: def.displayName,
+        expression: def.expression,
+        ...(def.formatPreset ? { formatPreset: def.formatPreset } : {}),
+      })),
+      measures,
+      metricsView,
+    );
+    preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
+    injectEphemeralMeasuresIntoMap(measures, valid);
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("adhoc measure", invalidEntries));
+    }
+  }
+
   if (legacyState.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
     preset.view = FromActivePageMap[legacyState.activePage];
   }
@@ -95,6 +119,16 @@ export function convertLegacyStateToExplorePreset(
         createSubQueryExpression(h.name, getAllIdentifiers(expr), expr),
       );
     });
+  }
+  if (preset.where) {
+    // The legacy filter and measure filters can name fields the metrics view no longer defines.
+    const { expr, errors: filterErrors } = dropUnknownFieldsFromFilter(
+      preset.where,
+      measures,
+      dimensions,
+    );
+    preset.where = expr;
+    errors.push(...filterErrors);
   }
 
   const { preset: trPreset, errors: trErrors } = fromLegacyTimeRangeFields(

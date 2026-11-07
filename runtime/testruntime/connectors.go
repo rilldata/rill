@@ -283,7 +283,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 				Image:        "apachepinot/pinot:latest",
 				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
 				Cmd:          []string{"QuickStart", "-type", "batch"},
-				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(4 * time.Minute),
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(5 * time.Minute),
 			},
 			Started: true,
 		})
@@ -343,6 +343,25 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		apiKey := os.Getenv("RILL_RUNTIME_GEMINI_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
+	},
+	"bedrock": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		model := os.Getenv("RILL_RUNTIME_BEDROCK_TEST_MODEL")
+		require.NotEmpty(t, model)
+		cfg := map[string]string{
+			"model":  model,
+			"region": os.Getenv("RILL_RUNTIME_BEDROCK_TEST_REGION"),
+		}
+		// Authenticate with a Bedrock API key if provided, else with AWS access keys.
+		if apiKey := os.Getenv("RILL_RUNTIME_BEDROCK_TEST_API_KEY"); apiKey != "" {
+			cfg["api_key"] = apiKey
+			return cfg
+		}
+		cfg["aws_access_key_id"] = os.Getenv("RILL_RUNTIME_BEDROCK_TEST_AWS_ACCESS_KEY_ID")
+		cfg["aws_secret_access_key"] = os.Getenv("RILL_RUNTIME_BEDROCK_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, cfg["aws_access_key_id"])
+		require.NotEmpty(t, cfg["aws_secret_access_key"])
+		return cfg
 	},
 }
 

@@ -5,8 +5,11 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -33,13 +36,20 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 
 	delivery := make(map[string]drivers.ReportDelivery, len(res.DeliveryMeta))
 	for k, v := range res.DeliveryMeta {
+		resources := make([]*runtimev1.ResourceName, len(v.Resources))
+		for i, r := range v.Resources {
+			resources[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
+		}
 		delivery[k] = drivers.ReportDelivery{
-			OpenURL:        v.OpenUrl,
-			ExportURL:      v.ExportUrl,
-			EditURL:        v.EditUrl,
-			UnsubscribeURL: v.UnsubscribeUrl,
-			UserID:         v.UserId,
-			UserAttrs:      v.UserAttrs.AsMap(),
+			OpenURL:           v.OpenUrl,
+			ExportURL:         v.ExportUrl,
+			EditURL:           v.EditUrl,
+			UnsubscribeURL:    v.UnsubscribeUrl,
+			UserID:            v.UserId,
+			UserAttrs:         v.UserAttrs.AsMap(),
+			RestrictResources: v.RestrictResources,
+			Resources:         resources,
+			EmbedOwner:        v.EmbedOwner,
 		}
 	}
 
@@ -183,4 +193,38 @@ func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[st
 		vars[v.Name] = v.Value
 	}
 	return perEnv
+}
+
+// GetConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	res, err := h.admin.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{
+		Connector:    connector,
+		ConfigHash:   configHash,
+		UserId:       userID,
+		ForceRefresh: forceRefresh,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	tok := &drivers.MCPOAuthToken{AccessToken: res.AccessToken}
+	if res.ExpiresOn != nil {
+		tok.ExpiresOn = res.ExpiresOn.AsTime()
+	}
+	return tok, nil
+}
+
+// DeleteConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
+	_, err := h.admin.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{
+		Connector:  connector,
+		ConfigHash: configHash,
+		UserId:     userID,
+	})
+	if err != nil && status.Code(err) != codes.NotFound {
+		return err
+	}
+	return nil
 }

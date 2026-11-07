@@ -9,6 +9,7 @@
   import { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { RecentlyUsedDashboards } from "./dashboard-favourites.ts";
+  import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   export let name: string;
   export let title: string;
@@ -36,17 +37,17 @@
     ? ResourceKind.Explore
     : ResourceKind.Canvas;
 
+  $: favouriteKey = resourceKey(resourceKind, name);
   $: favourites = dashboardFavourites?.value ?? [];
-  $: isFavourite = favourites.includes(name?.toLowerCase());
+  $: isFavourite = favourites.includes(favouriteKey);
 
-  $: lastUsed =
-    recentlyUsedDashboards?.recentlyUsed?.value?.[name.toLowerCase()];
+  $: lastUsed = recentlyUsedDashboards?.recentlyUsed?.value?.[favouriteKey];
   $: lastUsedDate = lastUsed ? new Date(lastUsed) : null;
 
   let hovered = false;
 
   function toggleFavourite() {
-    dashboardFavourites?.toggle(name?.toLowerCase());
+    dashboardFavourites?.toggle(favouriteKey);
   }
 
   function onDashboardFavouriteToggle(e: MouseEvent) {

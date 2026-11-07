@@ -1,4 +1,6 @@
 import type { FieldType } from "@rilldata/web-common/features/canvas/inspector/types.ts";
+import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping.ts";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
 import {
   getMeasureDisplayName,
   getDimensionDisplayName,
@@ -14,18 +16,23 @@ import { derived } from "svelte/store";
 export function getFieldsForExplore(
   client: RuntimeClient,
   exploreName: string,
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
 ) {
   return derived(useExploreValidSpec(client, exploreName), ($validSpecResp) => {
     const metricsViewSpec = $validSpecResp.data?.metricsView ?? {};
     const minTimeGrain = metricsViewSpec.smallestTimeGrain;
     const exploreSpec = $validSpecResp.data?.explore ?? {};
 
-    const measures =
-      metricsViewSpec.measures?.filter((measureSpec) =>
+    // Ephemeral measures have no spec entry; synthesize one so the report form
+    // shows their display name and lets them be re-added as columns.
+    const measures = [
+      ...(metricsViewSpec.measures?.filter((measureSpec) =>
         exploreSpec.measures?.some(
           (exploreMeasure) => exploreMeasure === measureSpec.name,
         ),
-      ) ?? [];
+      ) ?? []),
+      ...(ephemeralMeasures ?? []).map(ephemeralMeasureToSpecMeasure),
+    ];
     const dimensions =
       metricsViewSpec.dimensions?.filter((dimensionSpec) =>
         exploreSpec.dimensions?.some(

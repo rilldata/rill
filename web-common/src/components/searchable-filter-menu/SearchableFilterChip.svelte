@@ -10,8 +10,13 @@
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: string[];
   export let tooltipText: string;
+  // Hide the tooltip, for example while a child in the `additional-label` slot shows its own.
+  export let suppressTooltip = false;
   export let label: string;
   export let onSelect: (name: string) => void;
+  // When set, ephemeral items in the menu get an edit button that closes the
+  // menu and invokes this with the item name.
+  export let onEditItem: ((name: string) => void) | undefined = undefined;
 
   let open = false;
   let searchText = "";
@@ -32,11 +37,12 @@
         alignment="start"
         distance={8}
         location="bottom"
-        suppress={open}
+        suppress={open || suppressTooltip}
       >
         <Chip {...props} theme type="measure" active={open} {label}>
-          <div slot="body" class="font-bold truncate">
-            {label}
+          <div slot="body" class="flex items-center gap-x-1 font-bold">
+            <span class="truncate">{label}</span>
+            <slot name="additional-label" />
           </div>
         </Chip>
         <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
@@ -54,5 +60,11 @@
     {onSelect}
     selectedItems={[selectedItems]}
     selectableGroups={[{ name: "", items: selectableItems }]}
+    onEditItem={onEditItem
+      ? (name) => {
+          open = false;
+          onEditItem?.(name);
+        }
+      : undefined}
   />
 </DropdownMenu.Root>

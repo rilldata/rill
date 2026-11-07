@@ -1,4 +1,9 @@
 import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import {
   createAndExpression,
   createInExpression,
   filterExpressions,
@@ -33,6 +38,7 @@ export function createDimensionAggregationQuery(
   client: RuntimeClient,
   metricsViewName: string,
   measureName: string,
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
   dimensionName: string,
   dimensionValues: (string | null)[],
   where: V1Expression | undefined,
@@ -42,6 +48,8 @@ export function createDimensionAggregationQuery(
   timeGranularity: V1TimeGrain,
   timeZone: string,
   enabled: boolean,
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  exact = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   const baseFilter = where
     ? (filterExpressions(where, () => true) ?? createAndExpression([]))
@@ -55,7 +63,13 @@ export function createDimensionAggregationQuery(
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: applyExactMeasures(
+        mapEphemeralMeasuresForRequest(
+          [{ name: measureName }],
+          ephemeralMeasures,
+        ),
+        exact ? new Set([measureName]) : undefined,
+      ),
       dimensions: [
         { name: dimensionName },
         { name: timeDimension, timeGrain: timeGranularity as any, timeZone },

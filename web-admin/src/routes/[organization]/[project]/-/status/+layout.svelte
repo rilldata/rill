@@ -4,11 +4,9 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
-  const { cloudEditing } = featureFlags;
 
   $: navItems = [
     {
@@ -16,15 +14,11 @@
       route: "",
       hasPermission: true,
     },
-    ...($cloudEditing
-      ? [
-          {
-            label: m.status_nav_branches(),
-            route: "/branches",
-            hasPermission: true,
-          },
-        ]
-      : []),
+    {
+      label: m.status_nav_branches(),
+      route: "/branches",
+      hasPermission: true,
+    },
     {
       label: m.status_nav_resources(),
       route: "/resources",

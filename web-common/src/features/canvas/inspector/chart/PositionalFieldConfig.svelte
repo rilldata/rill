@@ -4,7 +4,9 @@
   import ColorRangeSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorRangeSelector.svelte";
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
+  import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { shouldShowPopover } from "@rilldata/web-common/features/canvas/inspector/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FieldConfig } from "@rilldata/web-common/features/components/charts/types";
@@ -18,6 +20,10 @@
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Component owning the spec; enables creating/editing ephemeral measures
+  // from measure selectors.
+  export let component: BaseCanvasComponent | undefined = undefined;
 
   export let onChange: (updatedConfig: FieldConfig | undefined) => void;
 
@@ -132,7 +138,12 @@
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
-    <InputLabel small label={config.label ?? key} id={key} />
+    <div class="flex items-center gap-x-1.5">
+      <InputLabel small label={config.label ?? key} id={key} />
+      {#if config.meta?.axisLabel}
+        <span class="axis-label">{config.meta.axisLabel}</span>
+      {/if}
+    </div>
     {#key popoverKey}
       {#if hasPopoverContent}
         <FieldConfigPopover
@@ -154,7 +165,10 @@
         type={isDimension ? "dimension" : "measure"}
         includeTime={!chartFieldInput?.hideTimeDimension}
         excludedValues={chartFieldInput?.excludedValues}
+        geoOnly={chartFieldInput?.geoOnly ?? false}
         selectedItem={fieldConfig?.field}
+        {ephemeralMeasures}
+        {component}
         {isRemovable}
         onRemove={() => onChange(undefined)}
         onSelect={async (field) => {
@@ -191,6 +205,8 @@
         types={isDimension ? ["dimension"] : ["measure"]}
         excludedValues={chartFieldInput?.excludedValues}
         chipItems={fieldConfig.fields}
+        {ephemeralMeasures}
+        {component}
         onMultiSelect={handleMultiFieldUpdate}
       />
     {/if}
@@ -205,3 +221,10 @@
     />
   {/if}
 </div>
+
+<style lang="postcss">
+  .axis-label {
+    @apply text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5;
+    @apply leading-none select-none;
+  }
+</style>

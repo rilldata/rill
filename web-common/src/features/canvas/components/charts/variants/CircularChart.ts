@@ -92,7 +92,7 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new CircularChartProvider(this.specStore, {
+    this.provider = new CircularChartProvider(this.querySpecStore, {
       colorLimit: DEFAULT_COLOR_LIMIT,
       colorSort: DEFAULT_SORT,
     });

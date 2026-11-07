@@ -510,3 +510,48 @@ defaults:
 		},
 	})
 }
+
+func TestExploreAIPrompts(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+ai_prompts:
+  - What is the total x?
+  - label: Foo breakdown
+    prompt: Break down x by foo.
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.NotNil(t, e1.State.ValidSpec)
+	require.Len(t, e1.State.ValidSpec.AiPrompts, 2)
+	require.Equal(t, "What is the total x", e1.State.ValidSpec.AiPrompts[0].Label)
+	require.Equal(t, "What is the total x?", e1.State.ValidSpec.AiPrompts[0].Prompt)
+	require.Equal(t, "Foo breakdown", e1.State.ValidSpec.AiPrompts[1].Label)
+	require.Equal(t, "Break down x by foo.", e1.State.ValidSpec.AiPrompts[1].Prompt)
+
+	// An invalid prompt list is a parse error and the explore is not created.
+	testruntime.PutFiles(t, rt, id, map[string]string{"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+ai_prompts:
+  - label: Missing prompt
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/explores/e1.yaml": "non-empty prompt"})
+}

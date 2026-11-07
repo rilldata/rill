@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -27,8 +28,10 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type FunnelMode = "width" | "order";
 export type FunnelColorMode = "stage" | "measure" | "name" | "value";
@@ -37,6 +40,9 @@ export type FunnelPercentMode = "top" | "previous";
 
 export type FunnelChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   breakdownMode?: FunnelBreakdownMode;
   measure?: FieldConfig<"quantitative">;
   stage?: FieldConfig<"nominal">;
@@ -105,6 +111,7 @@ export class FunnelChartProvider {
         measures = [{ name: config.measure.field }];
       }
     }
+    measures = withEphemeralMeasures(config, measures);
 
     let stageSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
@@ -198,6 +205,11 @@ export class FunnelChartProvider {
 
           if (stageDimensionName) {
             this.customSortStageItems = includedStageValues;
+          }
+          // No stage values means the top-N query found none, so there is
+          // nothing to narrow to, and an `IN` with no values is rejected by the
+          // runtime. The base filter above already matches what that query matched.
+          if (stageDimensionName && includedStageValues.length > 0) {
             const filterForTopStageValues = createInExpression(
               stageDimensionName,
               includedStageValues,
@@ -236,7 +248,7 @@ export class FunnelChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [topNStageQuery], visibleStore);
   }
 
   getChartDomainValues() {

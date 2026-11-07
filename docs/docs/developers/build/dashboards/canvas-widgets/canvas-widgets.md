@@ -112,6 +112,32 @@ Rill Canvas dashboards are built using a variety of widgets that can display dat
     />
 </div>
 
+## Map
+
+### Point and Region Maps
+
+<div className="component-icon-grid">
+    <ComponentTile
+        header="Map"
+        link="/developers/build/dashboards/canvas-widgets/map"
+        multiple_measures="True"
+        image={<img src="/img/build/dashboard/canvas/components/map-points.png" alt="Map" />}
+    />
+</div>
+
+## Custom Viz
+
+### Reusable Charts
+
+<div className="component-icon-grid">
+    <ComponentTile
+        header="Custom Viz"
+        link="/developers/build/dashboards/canvas-widgets/custom-viz"
+        multiple_measures="True"
+        image={<img src="/img/build/dashboard/canvas/custom-viz/chart-scatter-plot.png" alt="Custom Viz" />}
+    />
+</div>
+
 ## Miscellaneous 
 
 ### Markdown Text

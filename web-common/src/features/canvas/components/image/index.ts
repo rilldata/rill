@@ -21,6 +21,8 @@ export const defaultImageAlignment: ComponentAlignment = {
 
 export interface ImageSpec extends ComponentCommonProperties {
   url: string;
+  // Optional image shown instead of `url` when the dashboard is in dark mode.
+  dark_url?: string;
   alignment?: ComponentAlignment;
 }
 
@@ -46,6 +48,11 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
     return {
       options: {
         url: { type: "text", label: m.canvas_url_label() },
+        dark_url: {
+          type: "text",
+          label: m.canvas_dark_url_label(),
+          meta: { placeholder: m.canvas_dark_url_placeholder() },
+        },
         alignment: {
           type: "alignment",
           label: m.canvas_alignment_label(),

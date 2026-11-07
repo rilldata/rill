@@ -82,6 +82,7 @@ export type ComparisonTimeRangeState = {
 export interface TimeAndFilterStore {
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
+  dimensionOnlyWhere?: V1Expression | undefined;
   where: V1Expression | undefined;
   timeGrain: V1TimeGrain | undefined;
   showTimeComparison: boolean;
@@ -193,6 +194,7 @@ export function getTimeControlState(
 
   const {
     selectedTimeRange,
+    adaptiveTimeGrain,
     selectedComparisonTimeRange,
     selectedTimezone,
     lastDefinedScrubRange,
@@ -206,6 +208,7 @@ export function getTimeControlState(
     selectedTimezone,
     defaultTimeRange,
     minTimeGrain,
+    !!adaptiveTimeGrain,
   );
   if (!timeRangeState) {
     return undefined;
@@ -312,6 +315,7 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
 /**
  * Calculates time range and grain from all time range and selected time range name.
  * Also adds start, end and their adjusted counterparts as strings ready to use in requests.
+ * In adaptive mode the stored grain is ignored and the grain is derived from the resolved range.
  */
 export function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
@@ -320,6 +324,7 @@ export function calculateTimeRangePartial(
   selectedTimezone: string | undefined,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
+  adaptiveTimeGrain = false,
 ): TimeRangeState | undefined {
   if (!currentSelectedTimeRange) return undefined;
 
@@ -360,7 +365,7 @@ export function calculateTimeRangePartial(
   const validatedGrain = getValidatedTimeGrain(
     interval,
     minTimeGrain,
-    currentSelectedTimeRange?.interval,
+    adaptiveTimeGrain ? undefined : currentSelectedTimeRange?.interval,
     parsed,
   );
   if (selectedTimeRange && validatedGrain) {

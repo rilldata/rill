@@ -96,11 +96,12 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualPath,
-		OwnerID:     &userID,
-		Data:        yaml,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualPath,
+		OwnerID:      &userID,
+		EmbedOwnerID: nil,
+		Data:         yaml,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create personal file: %w", err)
@@ -198,11 +199,12 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualPath,
-		OwnerID:     &userID,
-		Data:        yaml,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualPath,
+		OwnerID:      &userID,
+		EmbedOwnerID: nil,
+		Data:         yaml,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create personal file: %w", err)

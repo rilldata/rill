@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -300,4 +301,64 @@ func createTableAsSelect(t *testing.T, rt *runtime.Runtime, instanceID, connecto
 		OutputProperties:     opts.PreliminaryOutputProperties,
 	})
 	require.NoError(t, err)
+}
+
+func TestListResourcesWithDenyAllSecurity(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+
+security:
+  access: "'{{ .user.domain }}' = 'rilldata.com'"
+`,
+			"e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// A user who is allowed to see the resources.
+	ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "domain": "rilldata.com"},
+		Permissions:    []runtime.Permission{runtime.ReadObjects},
+	})
+	res, err := server.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Resources)
+	require.False(t, res.Initializing)
+
+	// A user whose security policies deny every resource.
+	// The response is empty, but initializing must still report that the instance is done building.
+	ctx = auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "domain": "notrilldata.com"},
+		Permissions:    []runtime.Permission{runtime.ReadObjects},
+	})
+	res, err = server.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.Empty(t, res.Resources)
+	require.False(t, res.Initializing)
+
+	// The flag is also set when the request filters by kind, which excludes the project parser.
+	res, err = server.ListResources(ctx, &runtimev1.ListResourcesRequest{
+		InstanceId: instanceID,
+		Kind:       runtime.ResourceKindExplore,
+	})
+	require.NoError(t, err)
+	require.Empty(t, res.Resources)
+	require.False(t, res.Initializing)
 }

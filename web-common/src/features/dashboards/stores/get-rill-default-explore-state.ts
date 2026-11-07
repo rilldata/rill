@@ -2,6 +2,7 @@ import {
   contextColWidthDefaults,
   LeaderboardContextColumn,
 } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { getExploreFieldNames } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -56,7 +57,7 @@ export function getRillDefaultExploreState(
       timeRangeSummary,
     ),
 
-    ...getRillDefaultExploreViewState(exploreSpec),
+    ...getRillDefaultExploreViewState(metricsViewSpec, exploreSpec),
 
     selectedComparisonDimension: "",
 
@@ -77,6 +78,7 @@ function getRillDefaultExploreTimeState(
     return {
       // for consistency with fromUrl
       showTimeComparison: false,
+      adaptiveTimeGrain: true,
     };
   }
 
@@ -104,6 +106,7 @@ function getRillDefaultExploreTimeState(
       name: timeRangeName,
       interval,
     } as DashboardTimeControls,
+    adaptiveTimeGrain: true,
     selectedTimezone: timeZone,
     showTimeComparison: false,
     selectedComparisonTimeRange: undefined,
@@ -113,15 +116,21 @@ function getRillDefaultExploreTimeState(
 }
 
 function getRillDefaultExploreViewState(
+  metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ): Partial<ExploreState> {
-  const defaultMeasure = exploreSpec.measures?.[0];
+  // Only fields the metrics view still defines can be queried. See getExploreFieldNames.
+  const { measures, dimensions } = getExploreFieldNames(
+    metricsViewSpec,
+    exploreSpec,
+  );
+  const defaultMeasure = measures[0];
 
   return {
-    visibleMeasures: exploreSpec.measures ?? [],
+    visibleMeasures: measures,
     allMeasuresVisible: true,
 
-    visibleDimensions: exploreSpec.dimensions ?? [],
+    visibleDimensions: dimensions,
     allDimensionsVisible: true,
 
     leaderboardSortByMeasureName: defaultMeasure,
@@ -292,6 +301,7 @@ function getRillDefaultPivotViewState() {
       activeCell: null,
       showTotalsColumn: true,
       showTotalsRow: true,
+      totalsRowPosition: "top",
       tableMode: "nest",
     },
   };

@@ -80,6 +80,15 @@ For more information on Metrics SQL syntax and capabilities, see the [Metrics SQ
 
 Image widgets let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
 
+To show a different image when the dashboard is viewed in dark mode, set `dark_url`. When `dark_url` is not set, `url` is used in both modes.
+
+```yaml
+- image:
+    url: public/logo-light.png
+    dark_url: public/logo-dark.png
+  width: 6
+```
+
 <ImageCodeToggle
   image="/img/build/dashboard/canvas/components/image.png"
   imageAlt="Image component showing embedded logo"
@@ -99,3 +108,15 @@ Reference a reusable component created outside of the canvas dashboard.
   code={`- component: my_component`}
   codeLanguage="yaml"
 />
+
+To reuse one chart with different metrics views and fields, define it as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz): a component that declares params, which each canvas item binds.
+
+```yaml
+- component: bullet_chart
+  params:
+    metrics_view: bids_metrics
+    y_axis: device_type
+    x_axis: avg_bid_price
+    goal: avg_bid_floor
+  width: 6
+```

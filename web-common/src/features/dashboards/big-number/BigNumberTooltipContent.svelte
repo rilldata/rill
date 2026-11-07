@@ -18,7 +18,7 @@
 </script>
 
 <TooltipContent maxWidth="280px">
-  <TooltipTitle>
+  <TooltipTitle wrap>
     <svelte:fragment slot="name">
       {name}
     </svelte:fragment>

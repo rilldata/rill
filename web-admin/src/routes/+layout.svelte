@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { initializeI18n } from "@rilldata/web-common/lib/i18n";
   import {
@@ -17,6 +18,10 @@
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import {
+    navigateToNewBuild,
+    registerStaleBuildReload,
+  } from "@rilldata/web-admin/lib/reload-on-stale-build";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -92,13 +97,17 @@
     .catch(console.error);
   initPylonWidget();
 
+  beforeNavigate(navigateToNewBuild);
+
   onMount(() => {
     const removeNetworkRecoveryListeners =
       registerAdminNetworkRecoveryListeners(queryClient);
+    const removeStaleBuildReload = registerStaleBuildReload();
 
     return () => {
       removeJavascriptListeners?.();
       removeNetworkRecoveryListeners();
+      removeStaleBuildReload();
     };
   });
 

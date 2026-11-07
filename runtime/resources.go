@@ -26,6 +26,7 @@ const (
 	ResourceKindCanvas         string = "rill.runtime.v1.Canvas"
 	ResourceKindAPI            string = "rill.runtime.v1.API"
 	ResourceKindConnector      string = "rill.runtime.v1.Connector"
+	ResourceKindSkill          string = "rill.runtime.v1.Skill"
 )
 
 // ResourceKindFromPretty converts a user-friendly resource kind to a runtime resource kind.
@@ -60,6 +61,8 @@ func ResourceKindFromShorthand(kind string) string {
 		return ResourceKindAPI
 	case "connector":
 		return ResourceKindConnector
+	case "skill":
+		return ResourceKindSkill
 	default:
 		return kind
 	}
@@ -80,7 +83,8 @@ func IsKnownResourceKind(kind string) bool {
 		ResourceKindComponent,
 		ResourceKindCanvas,
 		ResourceKindAPI,
-		ResourceKindConnector:
+		ResourceKindConnector,
+		ResourceKindSkill:
 		return true
 	default:
 		return false
@@ -114,6 +118,8 @@ func ResourceKindFromParser(kind parser.ResourceKind) string {
 		return ResourceKindAPI
 	case parser.ResourceKindConnector:
 		return ResourceKindConnector
+	case parser.ResourceKindSkill:
+		return ResourceKindSkill
 	default:
 		panic(fmt.Errorf("unknown parser resource type %q", kind))
 	}
@@ -146,6 +152,8 @@ func ResourceKindToParser(kind string) parser.ResourceKind {
 		return parser.ResourceKindAPI
 	case ResourceKindConnector:
 		return parser.ResourceKindConnector
+	case ResourceKindSkill:
+		return parser.ResourceKindSkill
 	case ResourceKindProjectParser, ResourceKindRefreshTrigger:
 		panic(fmt.Errorf("unsupported resource type %q", kind))
 	default:
@@ -210,6 +218,12 @@ func (r *Runtime) ApplySecurityPolicy(ctx context.Context, instID string, claims
 	case *runtimev1.Resource_Explore:
 		// For explores, we need to remove fields excluded by the field access rules.
 		return r.applyExploreSecurity(res, security), true, nil
+	case *runtimev1.Resource_Canvas:
+		// For canvases, we need to remove the content hidden by `if` conditions.
+		return r.applyCanvasSecurity(res, security), true, nil
+	case *runtimev1.Resource_Component:
+		// For inline canvas components, we need to remove the `if` conditions they inherit from their item.
+		return stripComponentCondition(res), true, nil
 	default:
 		// The resource can be returned as is.
 		return res, true, nil

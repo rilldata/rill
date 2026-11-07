@@ -29,12 +29,16 @@ type configProperties struct {
 	// DSN is the connection string for the SQLite database.
 	DSN string `mapstructure:"dsn"`
 	// ID is an optional globally unique ID for the SQLite database.
-	// If provided, we'll run periodic backups of the SQLite file to object storage.
-	// See connection.startBackups() for details.
+	// It identifies the directory in object storage where backups of the database are stored.
 	ID string `mapstructure:"id"`
+	// BackupsEnable enables periodic backups of the SQLite file to object storage,
+	// and restoring from the latest such backup if the database is empty on startup.
+	// It additionally requires ID to be set and a bucket to be configured on the storage client.
+	// See connection.startBackups() and restoreBackupIfEmpty() for details.
+	BackupsEnable bool `mapstructure:"backups_enable"`
 }
 
-func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	// Parse config
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
@@ -54,6 +58,16 @@ func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac 
 		}
 	}
 
+	// Restore the database from the latest backup if backups are configured and the database is empty.
+	// This must run before the handle is opened below because it replaces the database file,
+	// which an already-open SQLite connection would not observe.
+	if conf.ID != "" && conf.BackupsEnable {
+		err := restoreBackupIfEmpty(ctx, st, conf.ID, conf.DSN, logger)
+		if err != nil {
+			return nil, fmt.Errorf("sqlite: failed to restore backup %q: %w", conf.ID, err)
+		}
+	}
+
 	// Open DB handle
 	db, err := otelsql.Open("sqlite", conf.DSN)
 	if err != nil {
@@ -62,16 +76,18 @@ func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac 
 	dbx := sqlx.NewDb(db, "sqlite")
 	db.SetMaxOpenConns(1)
 
-	// Create the handle
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create the handle.
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	h := &connection{
-		db:       dbx,
-		logger:   logger,
-		config:   config,
-		ctx:      ctx,
-		cancel:   cancel,
-		storage:  st,
-		backupID: conf.ID,
+		db:            dbx,
+		logger:        logger,
+		config:        config,
+		ctx:           bgctx,
+		cancel:        cancel,
+		storage:       st,
+		backupID:      conf.ID,
+		backupsEnable: conf.BackupsEnable,
 	}
 
 	// Start backups in the background (no-op if backups are not configured)
@@ -132,10 +148,11 @@ type connection struct {
 
 	// Backup management.
 	// See c.startBackups() for details.
-	ctx      context.Context
-	cancel   context.CancelFunc
-	storage  *storage.Client
-	backupID string
+	ctx           context.Context
+	cancel        context.CancelFunc
+	storage       *storage.Client
+	backupID      string
+	backupsEnable bool
 }
 
 var _ drivers.Handle = &connection{}
@@ -218,6 +235,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
 	return nil, false
 }
 

@@ -3,13 +3,19 @@
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1ListResourcesResponse,
+    V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
 
   type ProjectPageKindParam = "report" | "dashboard" | "alert";
 
   export let kind: ProjectPageKindParam;
-  export let query: CreateQueryResult<V1ListResourcesResponse, Error>;
+  export let query: CreateQueryResult<
+    V1ListResourcesResponse | V1Resource[],
+    Error
+  >;
 
   $: ({ isLoading, isError, isSuccess, error } = $query);
 

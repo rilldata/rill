@@ -10,6 +10,7 @@ export enum InlineContextType {
   DimensionValues = "dimensionValues",
   Model = "model",
   Column = "column",
+  Skill = "skill",
 }
 
 export type InlineContext = {
@@ -30,6 +31,7 @@ export type InlineContext = {
   model?: string;
   column?: string;
   columnType?: string; // TODO: is this needed here?
+  skill?: string;
 };
 
 export function getIdForContext(ctx: InlineContext) {
@@ -90,7 +92,11 @@ export function normalizeInlineContext(ctx: InlineContext) {
       break;
 
     case InlineContextType.DimensionValues:
-      normalisedContext.value = normalisedContext.values!.join(",");
+      normalisedContext.value = (normalisedContext.values ?? []).join(",");
+      break;
+
+    case InlineContextType.Skill:
+      normalisedContext.value = normalisedContext.skill!;
       break;
   }
 
@@ -119,6 +125,7 @@ export function convertContextToInlinePrompt(ctx: InlineContext) {
 }
 
 const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
+const INLINE_CONTEXT_TYPES = new Set<string>(Object.values(InlineContextType));
 
 export function convertPromptValueToContext(
   contextValue: string,
@@ -128,10 +135,12 @@ export function convertPromptValueToContext(
   const ctx = <InlineContext>{};
 
   for (const [, key, value] of parts) {
+    // `values` is never serialized by convertContextToInlinePrompt, so a string here is invalid.
+    if (key === "values") continue;
     ctx[key] = value;
   }
 
-  if (!ctx.type) return null;
+  if (!INLINE_CONTEXT_TYPES.has(ctx.type)) return null;
 
   return normalizeInlineContext(ctx);
 }

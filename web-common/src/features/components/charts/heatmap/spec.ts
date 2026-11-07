@@ -53,8 +53,8 @@ export function generateVLHeatmapSpec(
 
   spec.height = "container";
 
-  const xEncoding = createPositionEncoding(config.x, data);
-  const yEncoding = createPositionEncoding(config.y, data);
+  const xEncoding = createPositionEncoding(config.x, data, "x");
+  const yEncoding = createPositionEncoding(config.y, data, "y");
 
   const xSort = createHeatmapSortEncoding("x", config, data);
   if (xSort !== undefined) {
@@ -116,7 +116,9 @@ export function generateVLHeatmapSpec(
         },
 
         text: {
-          field: config.color?.field ? config.color.field : undefined,
+          field: config.color?.field
+            ? sanitizeValueForVega(config.color.field)
+            : undefined,
           type:
             config.color?.type === "value"
               ? "nominal"

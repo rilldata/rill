@@ -1,5 +1,7 @@
 import {
   createAndExpression,
+  forEachExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
@@ -32,7 +34,6 @@ import {
   type QueryClient,
 } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 
 export function useMetricsView(
   client: RuntimeClient,
@@ -105,13 +106,20 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   client: RuntimeClient,
   metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
+  queryClient?: QueryClient,
 ) => {
-  return useResource<T>(client, metricsViewName, ResourceKind.MetricsView, {
-    select: (data) =>
-      selector
-        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
-        : (data.resource?.metricsView?.state?.validSpec as T),
-  });
+  return useResource<T>(
+    client,
+    metricsViewName,
+    ResourceKind.MetricsView,
+    {
+      select: (data) =>
+        selector
+          ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
+          : (data.resource?.metricsView?.state?.validSpec as T),
+    },
+    queryClient,
+  );
 };
 
 export function useMetricsViewTimeRange(
@@ -125,7 +133,7 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   const fullTimeRangeQueryOptionsStore = derived(
-    useMetricsViewValidSpec(client, metricsViewName),
+    useMetricsViewValidSpec(client, metricsViewName, undefined, queryClient),
     (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data ?? {};
 
@@ -205,33 +213,36 @@ export function hasValidMetricsViewTimeRange(
 }
 
 export function getFiltersForOtherDimensions(
-  whereFilter: V1Expression,
+  whereFilter: V1Expression | undefined,
   dimName: string,
 ) {
-  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimName),
+  if (!whereFilter) return undefined;
+
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimName) && !isSubqueryExpression(e),
   );
   if (exprIdx === undefined || exprIdx === -1) return whereFilter;
 
   return createAndExpression(
     whereFilter.cond?.exprs?.filter(
-      (e) => !matchExpressionByName(e, dimName),
+      (e) => !matchExpressionByName(e, dimName) || isSubqueryExpression(e),
     ) ?? [],
   );
 }
 
 export function additionalMeasures(
   activeMeasureName: string | null,
-  dimensionThresholdFilters: DimensionThresholdFilter[],
+  expr: V1Expression | undefined,
 ) {
   const measures = new Set<string>(
     activeMeasureName ? [activeMeasureName] : [],
   );
-  dimensionThresholdFilters.forEach(({ filters }) => {
-    filters.forEach((filter) => {
-      measures.add(filter.measure);
+  if (expr) {
+    forEachExpression(expr, (e) => {
+      if (!e.subquery?.measures) return;
+      e.subquery.measures.forEach((m) => measures.add(m));
     });
-  });
+  }
   return [...measures];
 }
 

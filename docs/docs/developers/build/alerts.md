@@ -1,5 +1,5 @@
 ---
-title: Alerts
+title: Alerts as Code
 description: Define alerts as code for automated monitoring and notifications
 sidebar_label: Alerts
 sidebar_position: 45
@@ -24,7 +24,7 @@ An alert YAML file has the following core components:
 ```yaml
 type: alert
 display_name: My Alert Name
-description: A brief description of what this alert monitors
+# A brief description of what this alert monitors
 
 # When to check the alert
 refresh:
@@ -124,6 +124,25 @@ data:
 
 This triggers when any resource in your project has a reconciliation error.
 
+To watch specific resources, filter by `where_resource` using `kind/name` patterns:
+
+```yaml
+refresh:
+  cron: "*/10 * * * *"
+
+data:
+  resource_status:
+    where_error: true
+    where_resource:
+      - model/orders       # the model named orders
+      - metrics_view/*     # all metrics views
+      - "*/customers"      # any resource named customers
+```
+
+:::note
+Use a `refresh.cron` schedule for these alerts. Don't add the watched resources to `refs`: an error in a referenced resource makes the alert itself error instead of firing.
+:::
+
 ## Notification Configuration
 
 Configure where and how you receive notifications when alerts trigger. You can send notifications via email, Slack, or both. Notifications are sent when the alert condition is met (when the data query returns rows), and optionally when the alert recovers or encounters evaluation errors.
@@ -200,7 +219,7 @@ This example demonstrates a data freshness check that queries the maximum timest
 # alerts/data_freshness.yaml
 type: alert
 display_name: Data Freshness Check
-description: Alert when event data is stale
+# Alert when event data is stale
 
 refresh:
   cron: "0 * * * *"  # Check every hour
@@ -235,7 +254,7 @@ This example monitors the overall health of your Rill project by checking for an
 # alerts/project_health.yaml
 type: alert
 display_name: Project Health Monitor
-description: Alert when any resource has a reconciliation error
+# Alert when any resource has a reconciliation error
 
 refresh:
   cron: "*/10 * * * *"  # Every 10 minutes
@@ -263,7 +282,7 @@ This example shows how to use interval-based monitoring to validate metrics acro
 # alerts/hourly_metrics.yaml
 type: alert
 display_name: Hourly Metrics Check
-description: Validate metrics for each hour
+# Validate metrics for each hour
 
 refresh:
   cron: "5 * * * *"  # 5 minutes past each hour

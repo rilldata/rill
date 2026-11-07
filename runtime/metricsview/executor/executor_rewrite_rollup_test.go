@@ -357,6 +357,61 @@ func TestRollupEligible_ComparisonDeltaMissingReferencedMeasure(t *testing.T) {
 	require.Equal(t, rejectMeasureMissing, reason)
 }
 
+func TestRollupEligible_ExpressionMeasure(t *testing.T) {
+	// An expression measure is a pure SQL wrapper over its referenced measures,
+	// so it is eligible as long as every referenced measure is in the rollup.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions", "total_clicks"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{
+				Name: "ctr",
+				Compute: &metricsview.MeasureCompute{
+					Expression: &metricsview.MeasureComputeExpression{Expression: "total_clicks / total_impressions"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.True(t, eligible)
+	require.Empty(t, reason)
+}
+
+func TestRollupEligible_ExpressionMeasureMissingReferencedMeasure(t *testing.T) {
+	// An expression measure referencing a measure that's not in the rollup must be rejected.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"}, // missing total_clicks
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{
+				Name: "ctr",
+				Compute: &metricsview.MeasureCompute{
+					Expression: &metricsview.MeasureComputeExpression{Expression: "total_clicks / total_impressions"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectMeasureMissing, reason)
+}
+
 func TestRollupEligible_CountStillRejected(t *testing.T) {
 	// Non-comparison computed measures (count, count_distinct, percent_of_total) remain rejected.
 	rollup := &runtimev1.MetricsViewSpec_Rollup{
@@ -567,4 +622,45 @@ func TestNormalizeTimezone(t *testing.T) {
 	assertTZ("America/New_York", "America/New_York")
 	_, err := normalizeTimezone("Not/A_Timezone")
 	require.Error(t, err)
+}
+
+func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
+	// Exact aggregates cannot be computed from pre-aggregated rows, so a query whose exact set is non-empty skips rollups.
+	e := &Executor{
+		metricsView: &runtimev1.MetricsViewSpec{
+			Table:         "base_table",
+			TimeDimension: "timestamp",
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: []*runtimev1.MetricsViewSpec_Measure{
+				{Name: "users", Expression: `approx_count_distinct("user_id")`, ExactExpression: `count(DISTINCT "user_id")`},
+				{Name: "users_per_publisher", Expression: "users / 2", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"users"}},
+			},
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
+				{
+					Table:      "daily_rollup",
+					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
+					Dimensions: []string{"publisher"},
+					Measures:   []string{"users", "users_per_publisher"},
+				},
+			},
+		},
+	}
+
+	for _, measures := range [][]metricsview.Measure{
+		{{Name: "users", Exact: true}},
+		{{Name: "users_prev", Compute: &metricsview.MeasureCompute{ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "users"}}, Exact: true}},
+	} {
+		qry := &metricsview.Query{
+			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+			Measures:   measures,
+		}
+		// Resolved by rewriteQueryExactMeasures before this rewrite runs.
+		qry.ExactMeasures = metricsview.ExactMeasureSet(e.metricsView, qry)
+		result, err := e.rewriteQueryForRollup(context.Background(), qry)
+		require.NoError(t, err)
+		require.Nil(t, result)
+		require.Equal(t, "base_table", e.LatestQueryTable())
+	}
 }

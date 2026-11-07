@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rilldata/rill/runtime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -65,6 +66,53 @@ func TestTokens(t *testing.T) {
 
 		_, err = aud.ParseAndValidate(token)
 		require.Error(t, err)
+	})
+}
+
+func TestCustomClaims(t *testing.T) {
+	iss, aud, close := newTestIssuerAndAudience(t)
+	defer close()
+
+	newClaims := func(audience string, ttl time.Duration) *jwt.RegisteredClaims {
+		return &jwt.RegisteredClaims{
+			Subject:   "alice",
+			Audience:  jwt.ClaimStrings{audience},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+		}
+	}
+
+	t.Run("Simple", func(t *testing.T) {
+		token, err := iss.SignClaims(newClaims("custom", time.Hour))
+		require.NoError(t, err)
+
+		claims := &jwt.RegisteredClaims{}
+		require.NoError(t, iss.ParseClaims(token, claims))
+		require.Equal(t, "alice", claims.Subject)
+		require.True(t, claims.VerifyAudience("custom", true))
+
+		// The runtime doesn't accept tokens for other audiences
+		_, err = aud.ParseAndValidate(token)
+		require.Error(t, err)
+	})
+
+	t.Run("Expired", func(t *testing.T) {
+		token, err := iss.SignClaims(newClaims("custom", -time.Minute))
+		require.NoError(t, err)
+		require.Error(t, iss.ParseClaims(token, &jwt.RegisteredClaims{}))
+	})
+
+	t.Run("Other issuer", func(t *testing.T) {
+		other, err := NewEphemeralIssuer("")
+		require.NoError(t, err)
+		token, err := other.SignClaims(newClaims("custom", time.Hour))
+		require.NoError(t, err)
+		require.Error(t, iss.ParseClaims(token, &jwt.RegisteredClaims{}))
+	})
+
+	t.Run("Unsigned", func(t *testing.T) {
+		token, err := NewDevToken(nil, nil)
+		require.NoError(t, err)
+		require.Error(t, iss.ParseClaims(token, &jwt.RegisteredClaims{}))
 	})
 }
 

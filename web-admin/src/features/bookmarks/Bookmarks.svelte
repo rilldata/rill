@@ -5,12 +5,14 @@
     createAdminServiceCreateBookmark,
     createAdminServiceRemoveBookmark,
     createAdminServiceUpdateBookmark,
-    getAdminServiceListBookmarksQueryKey,
     type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import BookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
-  import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+  import {
+    invalidateBookmarkQueries,
+    isHomeBookmark,
+  } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
     type Bookmarks,
@@ -18,6 +20,7 @@
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
+  import { RecentlyUsedBookmarks } from "@rilldata/web-admin/features/bookmarks/recently-used-bookmarks.ts";
   import {
     getProjectIdQueryOptions,
     getProjectPermissions,
@@ -35,14 +38,13 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery } from "@tanstack/svelte-query";
   import { BookmarkIcon, BookmarkPlusIcon } from "lucide-svelte";
   import { writable } from "svelte/store";
 
   export let organization: string;
   export let project: string;
   export let resource: { name: string; kind: ResourceKind };
-  export let metricsViewNames: string[];
   export let bookmarkData: {
     bookmarks: V1Bookmark[];
     categorizedBookmarks: Bookmarks;
@@ -63,6 +65,11 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
+  $: recentlyUsedBookmarks = new RecentlyUsedBookmarks(organization, project);
+  function recordUsage(bookmark: BookmarkEntry) {
+    recentlyUsedBookmarks.update(bookmark.resource.id);
+  }
+
   const orgAndProjectNameStore = writable({ organization: "", project: "" });
   $: orgAndProjectNameStore.set({ organization, project });
 
@@ -76,7 +83,6 @@
 
   $: curUrlParams = $page.url.searchParams;
 
-  const queryClient = useQueryClient();
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
@@ -117,13 +123,7 @@
     eventBus.emit("notification", {
       message: m.bookmark_home_created(),
     });
-    return queryClient.refetchQueries({
-      queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId,
-        resourceKind,
-        resourceName,
-      }),
-    });
+    return invalidateBookmarkQueries();
   }
 
   function onEdit(editingBookmark: BookmarkEntry) {
@@ -141,13 +141,7 @@
         name: bookmark.resource.displayName ?? "",
       }),
     });
-    return queryClient.refetchQueries({
-      queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId,
-        resourceKind,
-        resourceName,
-      }),
-    });
+    return invalidateBookmarkQueries();
   }
 
   let open = false;
@@ -165,6 +159,7 @@
   {defaultHomeBookmarkUrl}
   onCreate={createHomeBookmark}
   onDelete={deleteBookmark}
+  onOpen={recordUsage}
   {manageProject}
 />
 
@@ -183,87 +178,105 @@
       </Button>
     {/snippet}
   </DropdownMenuTrigger>
-  <DropdownMenuContent class="w-[450px]">
-    <DropdownMenuItem onclick={() => (showDialog = true)}>
-      <div class="flex flex-row gap-x-2 items-center">
-        <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
-        <div class="text-xs">{m.bookmark_current_view()}</div>
+  <!--
+    The content is bounded to the space available below the trigger (capped at 600px)
+    so long bookmark lists scroll instead of running off the viewport.
+    The "bookmark current view" action and search stay pinned; only the lists scroll.
+  -->
+  <DropdownMenuContent
+    class="flex flex-col w-[450px] max-h-[min(600px,var(--bits-floating-available-height))] overflow-hidden p-0"
+  >
+    <div class="flex-none p-1.5">
+      <DropdownMenuItem onclick={() => (showDialog = true)}>
+        <div class="flex flex-row gap-x-2 items-center">
+          <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
+          <div class="text-xs">{m.bookmark_current_view()}</div>
+        </div>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <div class="p-2">
+        <Search
+          autofocus={false}
+          bind:value={searchText}
+          showBorderOnFocus={false}
+        />
       </div>
-    </DropdownMenuItem>
-    <DropdownMenuSeparator />
-    <div class="p-2">
-      <Search
-        autofocus={false}
-        bind:value={searchText}
-        showBorderOnFocus={false}
-      />
     </div>
     {#if filteredBookmarks}
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-fg-secondary text-[10px] h-6 uppercase">
-          {m.bookmark_your_bookmarks()}
-        </DropdownMenuLabel>
-        {#if filteredBookmarks.personal?.length}
-          {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
-            {#key bookmark.resource.id}
-              <BookmarksMenuItem
-                {bookmark}
-                {onEdit}
-                onDelete={deleteBookmark}
-              />
-            {/key}
-          {/each}
-        {:else}
-          <div class="my-2 text-fg-muted text-center">
-            {m.bookmark_no_bookmarks()}
-          </div>
-        {/if}
-      </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-fg-secondary">
-          <div class="text-[10px] h-4 uppercase">
-            {m.bookmark_managed_bookmarks()}
-          </div>
-          <div class="text-[11px] font-normal">
-            {m.bookmark_created_by_admin()}
-          </div>
-        </DropdownMenuLabel>
-        {#if filteredBookmarks.shared?.length}
-          {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
-            {#key bookmark.resource.id}
-              <BookmarksMenuItem
-                {bookmark}
-                {onEdit}
-                onDelete={deleteBookmark}
-                readOnly={!manageProject}
-              />
-            {/key}
-          {/each}
-        {:else}
-          <div class="my-2 text-fg-muted text-center">
-            {m.bookmark_no_shared()}
-          </div>
-        {/if}
-      </DropdownMenuGroup>
+      <div class="flex-1 min-h-0 overflow-y-auto p-1.5 pt-0">
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel
+            class="sticky top-0 z-10 bg-popover text-fg-secondary text-[10px] h-6 uppercase"
+          >
+            {m.bookmark_your_bookmarks()}
+          </DropdownMenuLabel>
+          {#if filteredBookmarks.personal?.length}
+            {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
+              {#key bookmark.resource.id}
+                <BookmarksMenuItem
+                  {bookmark}
+                  {onEdit}
+                  onDelete={deleteBookmark}
+                  onClick={() => recordUsage(bookmark)}
+                />
+              {/key}
+            {/each}
+          {:else}
+            <div class="my-2 text-fg-muted text-center">
+              {m.bookmark_no_bookmarks()}
+            </div>
+          {/if}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel
+            class="sticky top-0 z-10 bg-popover text-fg-secondary"
+          >
+            <div class="text-[10px] h-4 uppercase">
+              {m.bookmark_managed_bookmarks()}
+            </div>
+            <div class="text-[11px] font-normal">
+              {m.bookmark_created_by_admin()}
+            </div>
+          </DropdownMenuLabel>
+          {#if filteredBookmarks.shared?.length}
+            {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
+              {#key bookmark.resource.id}
+                <BookmarksMenuItem
+                  {bookmark}
+                  {onEdit}
+                  onDelete={deleteBookmark}
+                  onClick={() => recordUsage(bookmark)}
+                  readOnly={!manageProject}
+                />
+              {/key}
+            {/each}
+          {:else}
+            <div class="my-2 text-fg-muted text-center">
+              {m.bookmark_no_shared()}
+            </div>
+          {/if}
+        </DropdownMenuGroup>
+      </div>
     {/if}
   </DropdownMenuContent>
 </DropdownMenu>
 
-{#if showDialog}
-  <BookmarksFormDialog
-    {organization}
-    {project}
-    {projectId}
-    {bookmark}
-    {resource}
-    {defaultUrlParams}
-    {showFiltersOnly}
-    {metricsViewNames}
-    onClose={() => {
-      showDialog = false;
-      bookmark = null;
-    }}
-  />
+{#if showDialog && resource}
+  {#key `${resource.kind}:${resource.name}`}
+    <BookmarksFormDialog
+      {organization}
+      {project}
+      {projectId}
+      {bookmark}
+      {resource}
+      {defaultUrlParams}
+      {showFiltersOnly}
+      onClose={() => {
+        showDialog = false;
+        bookmark = null;
+      }}
+    />
+  {/key}
 {/if}

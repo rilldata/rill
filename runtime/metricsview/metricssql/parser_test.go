@@ -251,6 +251,10 @@ func TestCompile(t *testing.T) {
 			"select pub from ad_bids_metrics, ad_bids_metrics_advanced",
 			"metrics sql: join is not supported",
 		},
+		{
+			"select 1",
+			"metrics sql: need `FROM metrics_view` clause",
+		},
 	}
 
 	clm, err := rt.ResolveSecurity(t.Context(), instanceID, claims, mv)

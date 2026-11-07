@@ -52,15 +52,26 @@ const (
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
+	RuntimeService_GetConnectorOAuthConfig_FullMethodName = "/rill.runtime.v1.RuntimeService/GetConnectorOAuthConfig"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
+	RuntimeService_UpdateConversation_FullMethodName      = "/rill.runtime.v1.RuntimeService/UpdateConversation"
+	RuntimeService_DeleteConversation_FullMethodName      = "/rill.runtime.v1.RuntimeService/DeleteConversation"
 	RuntimeService_ShareConversation_FullMethodName       = "/rill.runtime.v1.RuntimeService/ShareConversation"
 	RuntimeService_ForkConversation_FullMethodName        = "/rill.runtime.v1.RuntimeService/ForkConversation"
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
+	RuntimeService_ListAIMemories_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListAIMemories"
+	RuntimeService_CreateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateAIMemory"
+	RuntimeService_UpdateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/UpdateAIMemory"
+	RuntimeService_DeleteAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteAIMemory"
+	RuntimeService_GetAIMemorySettings_FullMethodName     = "/rill.runtime.v1.RuntimeService/GetAIMemorySettings"
+	RuntimeService_UpdateAIMemorySettings_FullMethodName  = "/rill.runtime.v1.RuntimeService/UpdateAIMemorySettings"
+	RuntimeService_ListMCPServers_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListMCPServers"
+	RuntimeService_DisconnectMCPServer_FullMethodName     = "/rill.runtime.v1.RuntimeService/DisconnectMCPServer"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
@@ -155,6 +166,11 @@ type RuntimeServiceClient interface {
 	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
@@ -162,6 +178,10 @@ type RuntimeServiceClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*GetConversationResponse, error)
+	// UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+	UpdateConversation(ctx context.Context, in *UpdateConversationRequest, opts ...grpc.CallOption) (*UpdateConversationResponse, error)
+	// DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+	DeleteConversation(ctx context.Context, in *DeleteConversationRequest, opts ...grpc.CallOption) (*DeleteConversationResponse, error)
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
@@ -176,6 +196,24 @@ type RuntimeServiceClient interface {
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
+	// ListAIMemories lists the current user's AI memories for an instance.
+	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+	ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error)
+	// CreateAIMemory creates an AI memory for the current user.
+	CreateAIMemory(ctx context.Context, in *CreateAIMemoryRequest, opts ...grpc.CallOption) (*CreateAIMemoryResponse, error)
+	// UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+	UpdateAIMemory(ctx context.Context, in *UpdateAIMemoryRequest, opts ...grpc.CallOption) (*UpdateAIMemoryResponse, error)
+	// DeleteAIMemory permanently deletes one of the current user's AI memories.
+	DeleteAIMemory(ctx context.Context, in *DeleteAIMemoryRequest, opts ...grpc.CallOption) (*DeleteAIMemoryResponse, error)
+	// GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+	GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error)
+	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+	UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -575,6 +613,16 @@ func (c *runtimeServiceClient) AnalyzeConnectors(ctx context.Context, in *Analyz
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorOAuthConfigResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetConnectorOAuthConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNotifierConnectorsResponse)
@@ -599,6 +647,26 @@ func (c *runtimeServiceClient) GetConversation(ctx context.Context, in *GetConve
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetConversationResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GetConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateConversation(ctx context.Context, in *UpdateConversationRequest, opts ...grpc.CallOption) (*UpdateConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteConversation(ctx context.Context, in *DeleteConversationRequest, opts ...grpc.CallOption) (*DeleteConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DeleteConversation_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -668,6 +736,86 @@ func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessag
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAIMessageResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GetAIMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAIMemoriesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListAIMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) CreateAIMemory(ctx context.Context, in *CreateAIMemoryRequest, opts ...grpc.CallOption) (*CreateAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CreateAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateAIMemory(ctx context.Context, in *UpdateAIMemoryRequest, opts ...grpc.CallOption) (*UpdateAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteAIMemory(ctx context.Context, in *DeleteAIMemoryRequest, opts ...grpc.CallOption) (*DeleteAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DeleteAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAIMemorySettingsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetAIMemorySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAIMemorySettingsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIMemorySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMCPServersResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListMCPServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisconnectMCPServerResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DisconnectMCPServer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -892,6 +1040,11 @@ type RuntimeServiceServer interface {
 	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
@@ -899,6 +1052,10 @@ type RuntimeServiceServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error)
+	// UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+	UpdateConversation(context.Context, *UpdateConversationRequest) (*UpdateConversationResponse, error)
+	// DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+	DeleteConversation(context.Context, *DeleteConversationRequest) (*DeleteConversationResponse, error)
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
@@ -913,6 +1070,24 @@ type RuntimeServiceServer interface {
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
+	// ListAIMemories lists the current user's AI memories for an instance.
+	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+	ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error)
+	// CreateAIMemory creates an AI memory for the current user.
+	CreateAIMemory(context.Context, *CreateAIMemoryRequest) (*CreateAIMemoryResponse, error)
+	// UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+	UpdateAIMemory(context.Context, *UpdateAIMemoryRequest) (*UpdateAIMemoryResponse, error)
+	// DeleteAIMemory permanently deletes one of the current user's AI memories.
+	DeleteAIMemory(context.Context, *DeleteAIMemoryRequest) (*DeleteAIMemoryResponse, error)
+	// GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+	GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error)
+	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+	UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -1054,6 +1229,9 @@ func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *
 func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeConnectors not implemented")
 }
+func (UnimplementedRuntimeServiceServer) GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorOAuthConfig not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNotifierConnectors not implemented")
 }
@@ -1062,6 +1240,12 @@ func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *Lis
 }
 func (UnimplementedRuntimeServiceServer) GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateConversation(context.Context, *UpdateConversationRequest) (*UpdateConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteConversation(context.Context, *DeleteConversationRequest) (*DeleteConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConversation not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShareConversation not implemented")
@@ -1080,6 +1264,30 @@ func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingReq
 }
 func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAIMemories not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CreateAIMemory(context.Context, *CreateAIMemoryRequest) (*CreateAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateAIMemory(context.Context, *UpdateAIMemoryRequest) (*UpdateAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteAIMemory(context.Context, *DeleteAIMemoryRequest) (*DeleteAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAIMemorySettings not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemorySettings not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMCPServers not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisconnectMCPServer not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1717,6 +1925,24 @@ func _RuntimeService_AnalyzeConnectors_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetConnectorOAuthConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorOAuthConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetConnectorOAuthConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, req.(*GetConnectorOAuthConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListNotifierConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListNotifierConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -1767,6 +1993,42 @@ func _RuntimeService_GetConversation_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GetConversation(ctx, req.(*GetConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateConversation(ctx, req.(*UpdateConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DeleteConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteConversation(ctx, req.(*DeleteConversationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1868,6 +2130,150 @@ func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GetAIMessage(ctx, req.(*GetAIMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListAIMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAIMemoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListAIMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListAIMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListAIMemories(ctx, req.(*ListAIMemoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_CreateAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CreateAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_CreateAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CreateAIMemory(ctx, req.(*CreateAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateAIMemory(ctx, req.(*UpdateAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DeleteAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteAIMemory(ctx, req.(*DeleteAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetAIMemorySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAIMemorySettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetAIMemorySettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetAIMemorySettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetAIMemorySettings(ctx, req.(*GetAIMemorySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateAIMemorySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAIMemorySettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateAIMemorySettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateAIMemorySettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateAIMemorySettings(ctx, req.(*UpdateAIMemorySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListMCPServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMCPServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListMCPServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, req.(*ListMCPServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DisconnectMCPServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectMCPServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DisconnectMCPServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, req.(*DisconnectMCPServerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2252,6 +2658,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_AnalyzeConnectors_Handler,
 		},
 		{
+			MethodName: "GetConnectorOAuthConfig",
+			Handler:    _RuntimeService_GetConnectorOAuthConfig_Handler,
+		},
+		{
 			MethodName: "ListNotifierConnectors",
 			Handler:    _RuntimeService_ListNotifierConnectors_Handler,
 		},
@@ -2262,6 +2672,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConversation",
 			Handler:    _RuntimeService_GetConversation_Handler,
+		},
+		{
+			MethodName: "UpdateConversation",
+			Handler:    _RuntimeService_UpdateConversation_Handler,
+		},
+		{
+			MethodName: "DeleteConversation",
+			Handler:    _RuntimeService_DeleteConversation_Handler,
 		},
 		{
 			MethodName: "ShareConversation",
@@ -2282,6 +2700,38 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAIMessage",
 			Handler:    _RuntimeService_GetAIMessage_Handler,
+		},
+		{
+			MethodName: "ListAIMemories",
+			Handler:    _RuntimeService_ListAIMemories_Handler,
+		},
+		{
+			MethodName: "CreateAIMemory",
+			Handler:    _RuntimeService_CreateAIMemory_Handler,
+		},
+		{
+			MethodName: "UpdateAIMemory",
+			Handler:    _RuntimeService_UpdateAIMemory_Handler,
+		},
+		{
+			MethodName: "DeleteAIMemory",
+			Handler:    _RuntimeService_DeleteAIMemory_Handler,
+		},
+		{
+			MethodName: "GetAIMemorySettings",
+			Handler:    _RuntimeService_GetAIMemorySettings_Handler,
+		},
+		{
+			MethodName: "UpdateAIMemorySettings",
+			Handler:    _RuntimeService_UpdateAIMemorySettings_Handler,
+		},
+		{
+			MethodName: "ListMCPServers",
+			Handler:    _RuntimeService_ListMCPServers_Handler,
+		},
+		{
+			MethodName: "DisconnectMCPServer",
+			Handler:    _RuntimeService_DisconnectMCPServer_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",

@@ -25,11 +25,18 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import type { PrecisionChipProps } from "../exact-measures/exact-measures";
+  import {
+    PRECISION_CHIP_TOGGLE_ATTRIBUTE,
+    precisionChipHTML,
+  } from "../exact-measures/precision-chip-html";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
+  // Precision chip rendered after the measure label; undefined when the measure has no exact variant.
+  export let precision: PrecisionChipProps | undefined = undefined;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
@@ -290,6 +297,7 @@
     if (data.x === 1)
       return `<div class="text-right font-medium flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
+        ${precision ? precisionChipHTML(precision) : ""}
         ${
           comparing === "dimension" &&
           tableData?.fixedColCount === 2 &&
@@ -349,6 +357,12 @@
     }
     if (evt.shiftKey && evt.target.title) {
       copyToClipboard(evt.target.title);
+      return;
+    }
+    // The precision chip sits inside the sortable measure header; toggling it
+    // must not also change the sort.
+    if (evt.target.closest(`[${PRECISION_CHIP_TOGGLE_ATTRIBUTE}]`)) {
+      precision?.onToggle?.();
       return;
     }
     handleEvent(evt, table, "__row", toggleVisible);

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
@@ -21,6 +23,7 @@ type RillYAML struct {
 	DisplayName    string
 	Description    string
 	AIInstructions string
+	AIPrompts      []*runtimev1.AIPrompt
 	OLAPConnector  string
 	AIConnector    string
 	Theme          string
@@ -29,6 +32,7 @@ type RillYAML struct {
 	Defaults       map[ResourceKind]yaml.Node
 	FeatureFlags   map[string]string
 	PublicPaths    []string
+	EmbedOpenURL   string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -60,6 +64,8 @@ type rillYAML struct {
 	Description string `yaml:"description"`
 	// User-provided context for LLM/AI features
 	AIInstructions string `yaml:"ai_instructions"`
+	// Suggested prompts shown as starters in the project-wide AI chat
+	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
 	// Connector to use for the AI service
 	AIConnector string `yaml:"ai_connector"`
 	// Theme resource name to use for AI-generated charts
@@ -104,6 +110,11 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
+	// Configuration for embedded dashboards
+	Embeds struct {
+		// Base URL for open links in emails from reports created from an embed
+		OpenURL string `yaml:"open_url"`
+	} `yaml:"embeds"`
 	// Paths to ignore when watching for changes.
 	// This is ignored in this parser because it's consumed directly by the repo driver.
 	IgnorePaths []string `yaml:"ignore_paths"`
@@ -288,6 +299,12 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		tmp.PublicPaths = []string{"public"}
 	}
 
+	if tmp.Embeds.OpenURL != "" {
+		if err := embedopen.ValidateOpenURL(tmp.Embeds.OpenURL); err != nil {
+			return fmt.Errorf(`invalid property "embeds.open_url": %w`, err)
+		}
+	}
+
 	defaults := map[ResourceKind]yaml.Node{
 		ResourceKindSource:      tmp.Sources,
 		ResourceKindModel:       tmp.Models,
@@ -301,10 +318,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
 	}
 
+	aiPrompts, err := parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	res := &RillYAML{
 		DisplayName:    tmp.DisplayName,
 		Description:    tmp.Description,
 		AIInstructions: tmp.AIInstructions,
+		AIPrompts:      aiPrompts,
 		AIConnector:    tmp.AIConnector,
 		Theme:          tmp.Theme,
 		OLAPConnector:  tmp.OLAPConnector,
@@ -313,6 +336,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Defaults:       defaults,
 		FeatureFlags:   snakeCaseFeatureFlags,
 		PublicPaths:    tmp.PublicPaths,
+		EmbedOpenURL:   tmp.Embeds.OpenURL,
 	}
 
 	for i, c := range tmp.Connectors {

@@ -257,6 +257,17 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 				"treat_nulls_as":         meas.TreatNullsAs,
 				"lower_is_better":        meas.LowerIsBetter,
 			})
+		} else if m.Compute != nil && m.Compute.Expression != nil {
+			// Ephemeral measure computed from an expression; it has no spec entry, so synthesize its metadata.
+			displayName := m.Compute.Expression.DisplayName
+			if displayName == "" {
+				displayName = m.Name
+			}
+			meta = append(meta, map[string]any{
+				"type":         "measure",
+				"name":         m.Name,
+				"display_name": displayName,
+			})
 		}
 	}
 

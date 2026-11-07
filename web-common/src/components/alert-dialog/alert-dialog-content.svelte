@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { AlertDialog as AlertDialogPrimitive } from "bits-ui";
   import { X } from "lucide-svelte";
@@ -11,12 +12,15 @@
   let className: $$Props["class"] = undefined;
   export let noCancel = false;
   export { className as class };
+
+  const themeBoundaryClass = getThemeBoundaryClass();
 </script>
 
 <AlertDialog.Portal>
   <AlertDialog.Overlay />
   <AlertDialogPrimitive.Content
     class={cn(
+      themeBoundaryClass,
       "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-gray-300 bg-surface-subtle p-6 shadow-lg sm:rounded-lg md:w-full",
       className,
     )}

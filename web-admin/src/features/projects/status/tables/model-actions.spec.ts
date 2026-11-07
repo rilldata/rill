@@ -70,7 +70,7 @@ describe("getAvailableModelActions", () => {
     expect(actions).not.toContain("refreshErrored");
   });
 
-  it("includes refreshErrored for partitioned model with errored partitions", () => {
+  it("omits refreshErrored for non-incremental model with errored partitions", () => {
     const resource = makeModel({
       partitionsResolver: "sql",
       partitionsModelId: "abc-123",
@@ -79,7 +79,7 @@ describe("getAvailableModelActions", () => {
     const actions = getAvailableModelActions(resource);
 
     expect(actions).toContain("viewPartitions");
-    expect(actions).toContain("refreshErrored");
+    expect(actions).not.toContain("refreshErrored");
     expect(actions).toContain("fullRefresh");
   });
 
@@ -103,6 +103,7 @@ describe("getAvailableModelActions", () => {
 
   it("does not show refreshErrored when partitionsHaveErrors is true but no partitionsModelId", () => {
     const resource = makeModel({
+      incremental: true,
       partitionsResolver: "sql",
       partitionsHaveErrors: true,
       // no partitionsModelId
