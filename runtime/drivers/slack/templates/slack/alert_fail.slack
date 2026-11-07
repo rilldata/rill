@@ -1,7 +1,13 @@
 *{{ .DisplayName }}*
 
 Your alert triggered for {{ .ExecutionTimeString }}.
+{{ if .Reason }}
+The AI analysis found that the condition holds:
 
+{{ .Reason }}
+
+<{{ .OpenLink }}|View full analysis>
+{{ else }}
 The first row that matched your alert criteria is:
 
 {{ range $key, $value := .FailRow }}
@@ -9,5 +15,5 @@ The first row that matched your alert criteria is:
 {{ end }}
 
 <{{ .OpenLink }}|Open in browser>
-
+{{ end }}
 To edit or unsubscribe from this alert, <{{ .EditLink }}|click here>.

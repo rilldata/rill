@@ -8,6 +8,7 @@
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+  import { isAIAlertSpec } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import AlertForm, {
@@ -23,27 +24,33 @@
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
 
-  $: exploreName =
+  // The dialog opens for one alert or dashboard, so these are read once.
+  const exploreName =
     props.mode === "create"
       ? props.exploreName
       : getAlertDashboardName(props.alertSpec);
-
-  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
+  const validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
 
   const exploreStateStore =
     props.mode === "create"
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
+  // An AI alert created through the API has no captured dashboard state, and editing it does not need one.
+  const needsExploreState =
+    props.mode === "create" || !isAIAlertSpec(props.alertSpec);
+
+  // The form captures its initial values once, so they wait for everything they are built from, the explore's metrics view included:
+  // without it the alert would be saved with an empty metrics view, which its managed YAML refs.
   const initialValuesStore = derived(
-    [exploreStateStore, user],
-    ([exploreState, userResp]) => {
+    [exploreStateStore, user, validExploreSpec],
+    ([exploreState, userResp, exploreResp]) => {
+      const metricsViewName = exploreResp.data?.explore?.metricsView ?? "";
       if (
         userResp.isPending ||
-        !exploreState ||
-        Object.keys(exploreState).length === 0
+        !metricsViewName ||
+        (needsExploreState &&
+          (!exploreState || Object.keys(exploreState).length === 0))
       )
         return {
           isLoading: true,
@@ -55,8 +62,8 @@
           ? getNewAlertInitialFormValues(
               metricsViewName,
               exploreName,
-              exploreState,
-              $user.data?.user,
+              exploreState ?? {}, // Defined: creating needs the explore state (see needsExploreState)
+              userResp.data?.user,
             )
           : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
 

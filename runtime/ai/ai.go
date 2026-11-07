@@ -1337,6 +1337,9 @@ type CompleteOptions struct {
 	// In some cases, it's desirable to capture these intermediate messages in the parent call's context, in other cases it's better to isolate them and only expose the final result to the parent context.
 	// When UnwrapCall is true, we run the completion loop within the current call, otherwise we wrap the complete loop in a new call to isolate internal messages.
 	UnwrapCall bool
+	// FailOnIterationLimit makes the loop return an error when the model is still calling tools after MaxIterations-1 turns,
+	// instead of taking a final turn without tools that forces it to answer with what it has.
+	FailOnIterationLimit bool
 }
 
 // Complete runs LLM completions.
@@ -1503,6 +1506,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		for i := range opts.MaxIterations {
 			// Disable tool calls in the last iteration
 			final := i+1 == opts.MaxIterations
+			if final && i != 0 && opts.FailOnIterationLimit {
+				return nil, fmt.Errorf("reached the limit of %d iterations without a final response", opts.MaxIterations)
+			}
 			if final {
 				tools = nil
 				if i != 0 {

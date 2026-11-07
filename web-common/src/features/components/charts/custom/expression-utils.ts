@@ -1,5 +1,7 @@
 import type {
   V1Expression,
+  V1Operation,
+  V1Subquery,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
@@ -57,6 +59,43 @@ export function convertV1ExpressionToMapstructure(
 
   if (expr.subquery) {
     result.subquery = expr.subquery;
+  }
+
+  return result;
+}
+
+const ReverseOperatorMap: Record<string, string> = Object.fromEntries(
+  Object.entries(OperatorMap).map(([proto, short]) => [short, proto]),
+);
+
+/**
+ * The inverse of convertV1ExpressionToMapstructure: reads an expression stored in resolverProperties back as a V1Expression.
+ */
+export function convertMapstructureToV1Expression(
+  expr: Record<string, unknown>,
+): V1Expression {
+  const result: V1Expression = {};
+
+  if (expr.name !== undefined) {
+    result.ident = expr.name as string;
+  }
+
+  if (expr.val !== undefined) {
+    result.val = expr.val;
+  }
+
+  const cond = expr.cond as
+    | { op?: string; exprs?: Record<string, unknown>[] }
+    | undefined;
+  if (cond) {
+    result.cond = {
+      op: (ReverseOperatorMap[cond.op ?? ""] ?? cond.op) as V1Operation,
+      exprs: cond.exprs?.map(convertMapstructureToV1Expression) ?? [],
+    };
+  }
+
+  if (expr.subquery) {
+    result.subquery = expr.subquery as V1Subquery;
   }
 
   return result;
