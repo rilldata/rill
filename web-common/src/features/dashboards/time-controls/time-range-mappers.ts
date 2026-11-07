@@ -2,6 +2,7 @@ import {
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { getComparisonOptionFromExpression } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -242,14 +243,4 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
-}
-
-// The comparison option of a comparison saved as a rill time expression,
-// from the offset mapSelectedComparisonTimeRangeToV1TimeRange appends to the time range.
-function getComparisonOptionFromExpression(expression: string) {
-  const offset = / offset (\S+)$/.exec(expression)?.[1];
-  if (!offset) return undefined;
-  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
-    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
-  );
 }
