@@ -2822,6 +2822,8 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for PartitionsHaveErrors
 
+	// no validation rules for PartitionsConcurrency
+
 	// no validation rules for TotalExecutionDurationMs
 
 	// no validation rules for LatestExecutionDurationMs
