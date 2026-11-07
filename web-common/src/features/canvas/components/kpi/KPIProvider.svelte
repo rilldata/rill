@@ -1,14 +1,20 @@
 <script lang="ts">
   import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import {
+    applyExactMeasures,
     ephemeralMeasureToSpecMeasure,
+    exactTimeSeriesMeasureNames,
     mapEphemeralMeasuresForRequest,
     splitTimeSeriesMeasures,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import {
+    canvasExactMeasureContext,
+    canvasPrecisionChip,
+  } from "../exact-measures";
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createQueryServiceMetricsViewAggregation,
@@ -25,6 +31,8 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
   export let visible: boolean;
+  // The exact-selection surface of the KPI (its component); see `canvasExactSurface`.
+  export let surface: string;
   // Measure to compare against over the primary time range (e.g. a target),
   // instead of the time comparison. Set by the KPI grid from its
   // `measure_comparisons`; it is not part of the `kpi` component spec.
@@ -114,17 +122,42 @@
         ]?.label as string | undefined
       )?.toLowerCase();
 
-  $: queryMeasures = mapEphemeralMeasuresForRequest(
-    [{ name: measureName }],
-    ephemeralMeasures,
+  // Exact measures: the selection of this KPI's surface.
+  $: exactContextStore = canvasExactMeasureContext(
+    ctx.canvasEntity,
+    surface,
+    metricsViewName,
+  );
+  $: exact = requestExactNames([measureName], $exactContextStore).has(
+    measureName,
+  );
+  $: exactNames = exact ? new Set([measureName]) : undefined;
+
+  $: queryMeasures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest([{ name: measureName }], ephemeralMeasures),
+    exactNames,
   );
   $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
     splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+  $: tsExactMeasureNames = exactTimeSeriesMeasureNames(
+    tsMeasureNames,
+    exactNames,
+  );
+  $: tsRequestEphemeralMeasures =
+    tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
 
+  // The comparison measure is exact when the surface's selection holds it,
+  // so it has the same value as on its own card in the grid.
+  $: comparisonExactNames = measureComparison
+    ? requestExactNames([comparisonMeasureKey], $exactContextStore)
+    : exactNames;
   $: comparisonQueryMeasures = measureComparison
-    ? mapEphemeralMeasuresForRequest(
-        [{ name: comparisonMeasureKey }],
-        ephemeralMeasures,
+    ? applyExactMeasures(
+        mapEphemeralMeasuresForRequest(
+          [{ name: comparisonMeasureKey }],
+          ephemeralMeasures,
+        ),
+        comparisonExactNames,
       )
     : queryMeasures;
   $: ({
@@ -133,6 +166,13 @@
   } = measureComparison
     ? splitTimeSeriesMeasures([comparisonMeasureKey], ephemeralMeasures)
     : { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures });
+  $: comparisonTsExactMeasureNames = exactTimeSeriesMeasureNames(
+    comparisonTsMeasureNames,
+    comparisonExactNames,
+  );
+  $: comparisonTsRequestEphemeralMeasures =
+    comparisonTsEphemeralMeasures &&
+    applyExactMeasures(comparisonTsEphemeralMeasures, comparisonExactNames);
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -171,13 +211,16 @@
     },
     {
       query: {
+        // Without a comparison interval the time comparison would cover all
+        // time; a measure comparison uses the primary range instead.
         enabled: measureComparison
           ? showComparison &&
             isValid &&
             supportsTotal &&
             visible &&
             (!hasTimeSeries || (!!start && !!end))
-          : comparisonTimeRange &&
+          : !!comparisonTimeRange?.start &&
+            !!comparisonTimeRange?.end &&
             showComparison &&
             isValid &&
             supportsTotal &&
@@ -211,17 +254,26 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       timeStart: start,
       timeEnd: end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
-        enabled: !!start && !!end && isValid && showSparkline && visible,
+        // The sparkline renders only once the grain is known, so wait for it
+        // instead of querying at a fallback grain.
+        enabled:
+          !!start &&
+          !!end &&
+          !!timeGrain &&
+          isValid &&
+          showSparkline &&
+          visible,
       },
     },
   );
@@ -231,24 +283,29 @@
     {
       metricsViewName,
       measureNames: comparisonTsMeasureNames,
-      ephemeralMeasures: comparisonTsEphemeralMeasures,
+      ephemeralMeasures: comparisonTsRequestEphemeralMeasures,
+      exactMeasureNames: comparisonTsExactMeasureNames,
       timeStart: measureComparison ? start : comparisonTimeRange?.start,
       timeEnd: measureComparison ? end : comparisonTimeRange?.end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
+        // Wait for the comparison interval and the grain, as the primary sparkline does.
         enabled: measureComparison
-          ? isValid &&
+          ? !!start &&
+            !!end &&
+            !!timeGrain &&
+            isValid &&
             showSparkline &&
             showComparison &&
-            visible &&
-            !!start &&
-            !!end
-          : comparisonTimeRange &&
+            visible
+          : !!comparisonTimeRange?.start &&
+            !!comparisonTimeRange?.end &&
+            !!timeGrain &&
             isValid &&
             showSparkline &&
             showComparison &&
@@ -281,10 +338,23 @@
     DateTime.fromISO(start ?? "").setZone(timeZone),
     DateTime.fromISO(end ?? "").setZone(timeZone),
   );
+
+  // Declared after the queries: `$:` blocks run in source order for store
+  // reads, so reading `$totalQuery` above its declaration throws.
+  $: precision = canvasPrecisionChip(
+    measureName,
+    measure?.displayName || measureName,
+    $exactContextStore,
+    !!$totalQuery?.isFetching ||
+      (showComparison && !!$comparisonTotalQuery?.isFetching),
+    $totalQuery?.error?.message ?? undefined,
+    () => ctx.canvasEntity.toggleExactMeasure(surface, measureName),
+  );
 </script>
 
 <KPI
   {measure}
+  {precision}
   {timeGrain}
   {timeZone}
   showTimeComparison={comparisonEnabled}

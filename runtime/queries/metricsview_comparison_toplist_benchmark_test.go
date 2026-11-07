@@ -91,7 +91,6 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -131,7 +130,6 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -174,7 +172,6 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -223,7 +220,6 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -291,7 +287,6 @@ func BenchmarkMetricsViewsComparison_delta_compare_with_having(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -334,7 +329,6 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -374,7 +368,6 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -417,7 +410,6 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -457,7 +449,6 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -497,7 +488,6 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 			},
 		},
 		Limit:          250,
-		Exact:          false,
 		SecurityClaims: testClaims(),
 	}
 
@@ -540,7 +530,6 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -580,7 +569,6 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 
@@ -620,7 +608,6 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 			},
 		},
 		Limit:          250,
-		Exact:          false,
 		SecurityClaims: testClaims(),
 	}
 
@@ -660,7 +647,6 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 			},
 		},
 		Limit:          250 * 2,
-		Exact:          false,
 		SecurityClaims: testClaims(),
 	}
 
@@ -699,7 +685,6 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 			},
 		},
 		Limit:          250 * 5,
-		Exact:          false,
 		SecurityClaims: testClaims(),
 	}
 
@@ -742,7 +727,6 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 			},
 		},
 		Limit:          250,
-		Exact:          true,
 		SecurityClaims: testClaims(),
 	}
 

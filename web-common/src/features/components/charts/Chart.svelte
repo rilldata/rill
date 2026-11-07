@@ -9,6 +9,8 @@
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -88,8 +90,25 @@
       ? (spec.usermeta as { brushTemporalField?: string })?.brushTemporalField
       : undefined;
 
+  // Memoize with deep equality: chartSpec re-emits frequently with the same
+  // content, and a new adhoc_measures reference would rebuild
+  // expressionFunctions, which makes VegaLiteRenderer re-embed the view.
+  // TODO: fix this upstream and avoid chartSpec being rebuild
+  let adhocMeasures: CanvasChartSpec["adhoc_measures"];
+  $: if (
+    JSON.stringify(chartSpec.adhoc_measures) !== JSON.stringify(adhocMeasures)
+  ) {
+    adhocMeasures = chartSpec.adhoc_measures;
+  }
+
+  // Include the chart's ephemeral measures so their values get formatted too
+  $: measuresWithEphemeral = appendEphemeralSpecMeasures(
+    measures,
+    ephemeralSpecsToDefs(adhocMeasures),
+  );
+
   // TODO: Move this to a central cached store
-  $: measureFormatters = measures.reduce(
+  $: measureFormatters = measuresWithEphemeral.reduce(
     (acc, measure) => ({
       ...acc,
       [sanitizeFieldName(measure.name || "measure")]:
@@ -103,7 +122,7 @@
       fn: (val: number) =>
         humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
     },
-    ...measures.reduce((acc, measure) => {
+    ...measuresWithEphemeral.reduce((acc, measure) => {
       const fieldName = sanitizeFieldName(measure.name || "measure");
       const formatter = measureFormatters[fieldName];
       return {

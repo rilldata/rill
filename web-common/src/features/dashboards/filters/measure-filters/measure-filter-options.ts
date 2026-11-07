@@ -1,4 +1,4 @@
-import { V1Operation } from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 

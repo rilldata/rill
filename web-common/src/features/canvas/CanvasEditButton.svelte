@@ -13,6 +13,10 @@
   let canvasFilePath = $derived($canvasQuery.data?.filePath ?? "");
 </script>
 
-<Button type="secondary" href={getFileHref(canvasFilePath)}
-  >{m.canvas_edit()}</Button
+<Button
+  type="secondary"
+  href={getFileHref(canvasFilePath)}
+  dataAttributes={{ "data-ai-action": "canvas.edit" }}
 >
+  {m.canvas_edit()}
+</Button>

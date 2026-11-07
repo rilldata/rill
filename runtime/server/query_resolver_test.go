@@ -6,9 +6,11 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -160,4 +162,73 @@ driver: duckdb
 			}
 		})
 	}
+}
+
+// TestQueryResolver_ProjectVariables verifies that the request's resolver properties cannot read project variables,
+// which commonly hold secrets such as connector credentials, whoever the caller is.
+func TestQueryResolver_ProjectVariables(t *testing.T) {
+	t.Parallel()
+
+	const secret = "s3cret-value"
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"model.sql": `
+SELECT 'US' AS country, 100 AS revenue
+UNION ALL
+SELECT 'UK' AS country, 200 AS revenue
+`,
+			"mv.yaml": `
+type: metrics_view
+version: 1
+model: model
+dimensions:
+- column: country
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+`,
+		},
+		Variables: map[string]string{"secret": secret, "country": "US"},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	metricsSQL := func(sql string) *runtimev1.QueryResolverRequest {
+		return &runtimev1.QueryResolverRequest{
+			InstanceId: instanceID,
+			Resolver:   "metrics_sql",
+			ResolverProperties: &structpb.Struct{
+				Fields: map[string]*structpb.Value{"sql": structpb.NewStringValue(sql)},
+			},
+		}
+	}
+
+	// A viewer has the permissions of an embed token: it can query metrics, but not read sensitive instance info.
+	viewerCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		Permissions: []runtime.Permission{runtime.ReadMetrics},
+	})
+
+	// Templates that reference variables are rejected with an explicit error instead of resolving to empty values,
+	// so neither the result nor the error can be used to learn a variable's value.
+	for _, sql := range []string{
+		`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`,
+		`SELECT {{ .env.secret }} FROM mv`,
+	} {
+		_, err = srv.QueryResolver(viewerCtx, metricsSQL(sql))
+		require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
+		require.NotContains(t, err.Error(), secret)
+	}
+
+	// Templates that do not reference variables still resolve for a viewer.
+	res, err := srv.QueryResolver(viewerCtx, metricsSQL(`SELECT total_revenue FROM mv WHERE country = 'US'`))
+	require.NoError(t, err)
+	require.Len(t, res.Data, 1)
+	require.Equal(t, float64(100), res.Data[0].Fields["total_revenue"].GetNumberValue())
+
+	// Not even a caller that could read the variables through GetInstance: the properties are not declared in the project.
+	_, err = srv.QueryResolver(testCtx(), metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
+	require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 }

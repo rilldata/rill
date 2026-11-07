@@ -1,8 +1,9 @@
 import { browser } from "$app/environment";
+import { isHiddenPath } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { type Writable, writable } from "svelte/store";
 
-interface DirectoryState {
+export interface DirectoryState {
   [directoryPath: string]: boolean;
 }
 
@@ -16,14 +17,22 @@ interface CustomWritable<T> extends Writable<T> {
   reset: () => void;
 }
 
-// Directories are expanded by default. Only paths the user has explicitly
-// collapsed (or expanded) are recorded, so a freshly initialized project starts
-// with every folder open and the user's changes are remembered from there.
+// Directories are expanded by default, except hidden (dot-prefixed) directories
+// and everything inside them, which start collapsed. Only paths the user has
+// explicitly collapsed (or expanded) are recorded, so a freshly initialized
+// project starts from these defaults and the user's changes are remembered from
+// there.
 const DEFAULT_STATE: DirectoryState = { "/": true };
 const STORAGE_PREFIX = "file-explorer-directory-state";
 
-// A directory is expanded unless it has been explicitly collapsed.
-const isExpanded = (state: DirectoryState, path: string) => state[path] ?? true;
+// Returns whether a directory is expanded, falling back to its default when the
+// user has not explicitly expanded or collapsed it.
+export function isDirectoryExpanded(
+  state: DirectoryState,
+  path: string,
+): boolean {
+  return state[path] ?? !isHiddenPath(path);
+}
 
 const createDirectoryStore = (): CustomWritable<DirectoryState> => {
   const { subscribe, set, update } = writable<DirectoryState>({
@@ -108,7 +117,7 @@ const createDirectoryStore = (): CustomWritable<DirectoryState> => {
     toggle: (directoryPath: string) => {
       update((state) => ({
         ...state,
-        [directoryPath]: !isExpanded(state, directoryPath),
+        [directoryPath]: !isDirectoryExpanded(state, directoryPath),
       }));
     },
     reset: () => {

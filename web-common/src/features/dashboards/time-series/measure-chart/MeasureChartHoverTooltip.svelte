@@ -70,7 +70,8 @@
       <div class="dimension-date">
         {formatGrainBucket(currentTs, timeGranularity, interval)}
       </div>
-      {#each dimTooltipEntries as entry (entry.label)}
+      <!-- Keyed by position: two series can share a label, such as null and the string "null". -->
+      {#each dimTooltipEntries as entry, i (i)}
         <div class="dimension-entry">
           <span class="dimension-dot" style:background-color={entry.color}
           ></span>

@@ -63,7 +63,17 @@ export function transformFileList(files: V1DirEntry[]): Directory {
     }
   }
 
+  sortHiddenDirectoriesLast(rootDirectory);
   return rootDirectory;
+}
+
+// Moves dot-prefixed directories after their visible siblings at every level.
+// The sort is stable, so the caller's ordering within each group is preserved.
+function sortHiddenDirectoriesLast(dir: Directory) {
+  dir.directories.sort(
+    (a, b) => Number(a.name.startsWith(".")) - Number(b.name.startsWith(".")),
+  );
+  dir.directories.forEach(sortHiddenDirectoriesLast);
 }
 
 // Collects the paths of every directory in the tree, excluding the root.

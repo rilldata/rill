@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -14,15 +15,28 @@ import (
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
-	q := `
+	var placeholders []string
+	var args []any
+	for _, catalog := range strings.Split(c.config.CatalogWhitelist, ",") {
+		if catalog = strings.TrimSpace(catalog); catalog != "" {
+			placeholders = append(placeholders, "lower(?)")
+			args = append(args, catalog)
+		}
+	}
+	catPred := fmt.Sprintf("lower(catalog_name) IN (%s)", strings.Join(placeholders, ", "))
+	if len(placeholders) == 0 {
+		catPred = "(catalog_name NOT IN ('samples', 'system') OR catalog_name = ?)"
+		args = []any{c.config.Catalog}
+	}
+	q := fmt.Sprintf(`
 	SELECT
 		catalog_name,
 		schema_name
 	FROM system.information_schema.schemata
-	WHERE (catalog_name NOT IN ('samples', 'system') OR catalog_name = ?)
+	WHERE %s
 		AND (schema_name != 'information_schema' OR schema_name = ?)
-	`
-	args := []any{c.config.Catalog, c.config.Schema}
+	`, catPred)
+	args = append(args, c.config.Schema)
 	if pageToken != "" {
 		var afterCatalog, afterSchema string
 		if err := pagination.UnmarshalPageToken(pageToken, &afterCatalog, &afterSchema); err != nil {

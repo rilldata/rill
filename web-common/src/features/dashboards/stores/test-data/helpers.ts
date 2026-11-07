@@ -12,6 +12,7 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
@@ -71,6 +72,7 @@ export function getInitExploreStateForTest(
     exploreSpec,
     defaultExplorePreset,
   );
+  applyAdaptiveTimeGrain(partialExploreState, metricsViewSpec);
   return partialExploreState as ExploreState;
 }
 

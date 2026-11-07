@@ -12,6 +12,7 @@ import {
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
   createTimeControlStoreFromName,
@@ -196,6 +197,8 @@ export class DashboardStateSync {
         undefined,
         initExploreState.selectedTimeDimension,
       );
+      // The grain can only be derived from the actual interval once start and end are known.
+      applyAdaptiveTimeGrain(initExploreState, metricsViewSpec);
     }
 
     // Init the store with state we got from dataLoader
@@ -306,6 +309,7 @@ export class DashboardStateSync {
           undefined,
           partialExplore.selectedTimeDimension,
         );
+        applyAdaptiveTimeGrain(partialExplore, metricsViewSpec);
       }
 
       // Merge the partial state from url into the store

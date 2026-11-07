@@ -107,7 +107,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new HeatmapChartProvider(this.specStore, {
+    this.provider = new HeatmapChartProvider(this.querySpecStore, {
       nominalLimit: DEFAULT_NOMINAL_LIMIT,
       sort: DEFAULT_SORT,
     });

@@ -17,8 +17,8 @@ import (
 // TestOLAP_LakehouseRT runs the Rill Databricks OLAP and information_schema paths against
 // a live Lakehouse//RT warehouse. RT speaks only SEA, reached via the SEA-via-kernel
 // backend, so this file is tagged databricks_kernel (out of the default build and
-// `go test -short` CI). Config passes only the DSN (no use_kernel): a passing query proves
-// Thrift->SEA autodetect.
+// `go test -short` CI). Config passes only a plain DSN (no useKernel): a passing query proves the driver's
+// Thrift->SEA fallback.
 // Run: CGO_ENABLED=1 RILL_RUNTIME_TEST_MODE=expensive RILL_RUNTIME_DATABRICKS_RT_TEST_DSN=...
 // go test -tags databricks_kernel -run TestOLAP_LakehouseRT ./runtime/drivers/databricks/...
 func TestOLAP_LakehouseRT(t *testing.T) {
@@ -122,6 +122,22 @@ func TestOLAP_LakehouseRT(t *testing.T) {
 		implicit, _, err := is.ListTables(t.Context(), "", curSchema, 100, "")
 		require.NoError(t, err)
 		require.Equal(t, len(explicit), len(implicit), "empty-database ListTables must match current_catalog() scoping")
+	})
+
+	// QueryAsFiles opens its own pool, so it needs the driver's SEA fallback separately from getDB.
+	t.Run("query_as_files", func(t *testing.T) {
+		w, ok := conn.AsWarehouse()
+		require.True(t, ok)
+		it, err := w.QueryAsFiles(t.Context(), map[string]any{"sql": "SELECT 1 AS x"})
+		require.NoError(t, err)
+		defer it.Close()
+
+		files, err := it.Next(t.Context())
+		require.NoError(t, err)
+		require.NotEmpty(t, files)
+		st, err := os.Stat(files[0])
+		require.NoError(t, err)
+		require.Positive(t, st.Size())
 	})
 }
 

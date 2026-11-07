@@ -229,6 +229,11 @@ func (o *openaiHandle) AsModelManager(instanceID string) (drivers.ModelManager, 
 	return nil, drivers.ErrNotImplemented
 }
 
+// AsMCP implements drivers.Handle.
+func (o *openaiHandle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (o *openaiHandle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
