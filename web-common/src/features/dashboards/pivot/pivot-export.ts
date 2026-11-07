@@ -179,11 +179,20 @@ export function getPivotAggregationRequest({
   let sort: V1MetricsViewAggregationSort[] = [];
 
   if (isFlat) {
-    if (pivotState.sorting.length > 0) {
+    // A flat table's sort id is a measure name or a dimension's request
+    // alias or name. A sort on a field the request does not carry (its
+    // chip was removed, or its comparison column is off) falls back to the
+    // default sort, since the runtime rejects names it cannot resolve.
+    const requestFields = new Set([
+      ...measures.map((m) => m.name),
+      ...allDimensions.map((d) => d.alias ?? d.name),
+    ]);
+    const sortConfig = pivotState.sorting[0];
+    if (sortConfig && requestFields.has(sortConfig.id)) {
       sort = [
         {
-          name: pivotState.sorting[0].id,
-          desc: pivotState.sorting[0].desc,
+          name: sortConfig.id,
+          desc: sortConfig.desc,
         },
       ];
     } else {
