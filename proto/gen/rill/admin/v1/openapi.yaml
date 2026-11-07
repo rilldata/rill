@@ -124,6 +124,16 @@ components:
             type: object
         v1AddUsergroupMemberUserResponse:
             type: object
+        v1AlertForUser:
+            properties:
+                name:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/v1AlertOptions'
+                version:
+                    description: Version of the alert, to pass to SaveAlertForUser when editing it.
+                    type: string
+            type: object
         v1AlertOptions:
             properties:
                 displayName:
@@ -1131,6 +1141,13 @@ components:
             type: object
         v1LeaveOrganizationResponse:
             type: object
+        v1ListAlertsForUserResponse:
+            properties:
+                alerts:
+                    items:
+                        $ref: '#/components/schemas/v1AlertForUser'
+                    type: array
+            type: object
         v1ListBookmarksResponse:
             properties:
                 bookmarks:
@@ -1305,6 +1322,13 @@ components:
                 plans:
                     items:
                         $ref: '#/components/schemas/v1BillingPlan'
+                    type: array
+            type: object
+        v1ListReportsForUserResponse:
+            properties:
+                reports:
+                    items:
+                        $ref: '#/components/schemas/v1ReportForUser'
                     type: array
             type: object
         v1ListRolesResponse:
@@ -1954,6 +1978,16 @@ components:
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
             type: object
+        v1ReportForUser:
+            properties:
+                name:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/v1ReportOptions'
+                version:
+                    description: Version of the report, to pass to SaveReportForUser when editing it.
+                    type: string
+            type: object
         v1ReportOptions:
             properties:
                 canvas:
@@ -2059,12 +2093,34 @@ components:
             type: object
         v1RevokeUserAuthTokenResponse:
             type: object
+        v1SaveAlertForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the alert.
+                    type: string
+                version:
+                    description: Version of the saved alert, to edit it again.
+                    type: string
+            type: object
         v1SavePersonalFileForUserResponse:
             properties:
                 name:
                     type: string
                 url:
                     description: URL where the user can open the personal file.
+                    type: string
+            type: object
+        v1SaveReportForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the report.
+                    type: string
+                version:
+                    description: Version of the saved report, to edit it again.
                     type: string
             type: object
         v1SearchProjectNamesResponse:
@@ -7345,6 +7401,85 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetProject returns information about a specific project
+    /v1/projects/{projectId}/alerts/for-user:
+        get:
+            operationId: AdminService_ListAlertsForUser
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: userId
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListAlertsForUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+                It can only be called by the project's primary deployment.
+                It's currently only called by AI tools in the runtime.
+        post:
+            operationId: AdminService_SaveAlertForUser
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                name:
+                                    description: |-
+                                        Name of an alert owned by the user to edit.
+                                        If empty, a new alert is created.
+                                    type: string
+                                options:
+                                    $ref: '#/components/schemas/v1AlertOptions'
+                                userId:
+                                    description: User who owns the alert.
+                                    type: string
+                                version:
+                                    description: |-
+                                        Version of the alert to edit, as returned by ListAlertsForUser.
+                                        Required when name is set.
+                                        The edit fails if the alert changed since, so a concurrent change isn't overwritten.
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SaveAlertForUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+                It can only be called by the project's primary deployment, and only edits alerts the user owns.
+                It's currently only called by AI tools in the runtime.
     /v1/projects/{projectId}/alerts/meta:
         post:
             operationId: AdminService_GetAlertMeta
@@ -7594,6 +7729,86 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+    /v1/projects/{projectId}/reports/for-user:
+        get:
+            operationId: AdminService_ListReportsForUser
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: userId
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListReportsForUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+                It can only be called by the project's primary deployment.
+                It's currently only called by AI tools in the runtime.
+        post:
+            operationId: AdminService_SaveReportForUser
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                name:
+                                    description: |-
+                                        Name of a report owned by the user to edit.
+                                        If empty, a new report is created.
+                                    type: string
+                                options:
+                                    $ref: '#/components/schemas/v1ReportOptions'
+                                userId:
+                                    description: User who owns the report.
+                                    type: string
+                                version:
+                                    description: |-
+                                        Version of the report to edit, as returned by ListReportsForUser.
+                                        Required when name is set.
+                                        The edit fails if the report changed since, so a concurrent change isn't overwritten.
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SaveReportForUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+                It can only be called by the project's primary deployment, and only edits reports the user owns.
+                It's currently only called by AI tools in the runtime.
+                Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
     /v1/projects/{projectId}/reports/meta:
         post:
             operationId: AdminService_GetReportMeta

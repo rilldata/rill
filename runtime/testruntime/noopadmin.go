@@ -65,6 +65,22 @@ func (n *noopAdminService) DeleteConnectorOAuthToken(ctx context.Context, connec
 	return nil
 }
 
+func (n *noopAdminService) ListAlerts(ctx context.Context, userID string) ([]*drivers.ManagedAlert, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) SaveAlert(ctx context.Context, userID, name, version string, opts *drivers.AlertOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) ListReports(ctx context.Context, userID string) ([]*drivers.ManagedReport, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) SaveReport(ctx context.Context, userID, name, version string, opts *drivers.ReportOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil

@@ -27,6 +27,17 @@ type AdminService interface {
 	// DeleteConnectorOAuthToken removes a user's OAuth authorizations for a connector, including those granted for its earlier OAuth configurations.
 	// configHash identifies the current configuration.
 	DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error
+	// ListAlerts returns the alerts the given user owns, with the options they were saved with.
+	ListAlerts(ctx context.Context, userID string) ([]*ManagedAlert, error)
+	// SaveAlert creates an alert owned by the given user, or edits one of theirs if name is not empty, as the alert dialog saves it.
+	// An edit must pass the version of the alert it's based on, as returned by ListAlerts, and fails if the alert changed since.
+	SaveAlert(ctx context.Context, userID, name, version string, opts *AlertOptions) (*SavedResource, error)
+	// ListReports returns the reports the given user owns, with the options they were saved with.
+	ListReports(ctx context.Context, userID string) ([]*ManagedReport, error)
+	// SaveReport creates a report owned by the given user, or edits one of theirs if name is not empty, as the report dialog saves it.
+	// An edit must pass the version of the report it's based on, as returned by ListReports, and fails if the report changed since.
+	// Unless the report opens with the creator's permissions, it fails for recipients and options that need them, explaining why.
+	SaveReport(ctx context.Context, userID, name, version string, opts *ReportOptions) (*SavedResource, error)
 }
 
 // PersonalCanvas identifies a saved personal canvas.
@@ -40,6 +51,84 @@ type MCPOAuthToken struct {
 	AccessToken string
 	// ExpiresOn is zero if the token does not expire.
 	ExpiresOn time.Time
+}
+
+// AlertOptions are the options of an alert saved with AdminService.SaveAlert.
+// They mirror the admin service's alert options, which the alert dialog sends.
+type AlertOptions struct {
+	DisplayName          string
+	RefreshCron          string
+	RefreshTimeZone      string
+	IntervalDuration     string
+	MetricsViewName      string
+	QueryName            string
+	QueryArgsJSON        string
+	Resolver             string
+	ResolverProperties   map[string]any
+	ExportAttach         bool
+	ExportFormat         runtimev1.ExportFormat
+	ExportIncludeHeader  bool
+	ExportLimit          uint64
+	Renotify             bool
+	RenotifyAfterSeconds uint32
+	EmailRecipients      []string
+	SlackUsers           []string
+	SlackChannels        []string
+	SlackWebhooks        []string
+	WebOpenPath          string
+	WebOpenState         string
+}
+
+// ReportOptions are the options of a report saved with AdminService.SaveReport.
+// They mirror the admin service's report options, which the report dialog sends.
+type ReportOptions struct {
+	DisplayName         string
+	RefreshCron         string
+	RefreshTimeZone     string
+	IntervalDuration    string
+	QueryName           string
+	QueryArgsJSON       string
+	Resolver            string
+	ResolverProperties  map[string]any
+	ExportFormat        runtimev1.ExportFormat
+	ExportLimit         uint64
+	ExportIncludeHeader bool
+	ExportAttach        bool
+	EmailRecipients     []string
+	SlackUsers          []string
+	SlackChannels       []string
+	SlackWebhooks       []string
+	WebOpenPath         string
+	WebOpenState        string
+	// WebOpenMode is "recipient" (open with each recipient's own permissions), "creator" (open with the creator's, without login) or "none".
+	WebOpenMode        string
+	Explore            string
+	Canvas             string
+	MetricsViewFilters map[string]*runtimev1.Expression
+}
+
+// SavedResource identifies an alert or report saved through the admin service.
+type SavedResource struct {
+	Name string
+	URL  string
+	// Version of the saved alert or report, to edit it again.
+	Version string
+}
+
+// ManagedAlert is an alert a user owns, as listed by AdminService.ListAlerts.
+type ManagedAlert struct {
+	Name string
+	// Version of the alert, to pass to AdminService.SaveAlert when editing it.
+	Version string
+	Options *AlertOptions
+}
+
+// ManagedReport is a report a user owns, as listed by AdminService.ListReports.
+type ManagedReport struct {
+	Name string
+	// Version of the report, to pass to AdminService.SaveReport when editing it.
+	Version string
+	Options *ReportOptions
 }
 
 type ReportMetadata struct {

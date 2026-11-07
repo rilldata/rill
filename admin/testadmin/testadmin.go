@@ -65,6 +65,8 @@ type Fixture struct {
 	Server     *server.Server
 	ServerOpts *server.Options
 	Audience   *runtimeauth.Audience
+	// DatabaseURL is the DSN of the admin service's Postgres database, e.g. for tests that inspect its sessions.
+	DatabaseURL string
 
 	Runtime           *runtime.Runtime
 	RuntimeServer     *runtimeserver.Server
@@ -207,10 +209,11 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 
 	if !startRt {
 		return &Fixture{
-			Admin:      adm,
-			Server:     srv,
-			ServerOpts: srvOpts,
-			Audience:   aud,
+			Admin:       adm,
+			Server:      srv,
+			ServerOpts:  srvOpts,
+			Audience:    aud,
+			DatabaseURL: pg.DatabaseURL,
 		}
 	}
 
@@ -222,6 +225,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		Server:            srv,
 		ServerOpts:        srvOpts,
 		Audience:          aud,
+		DatabaseURL:       pg.DatabaseURL,
 		Runtime:           rtFixture.Runtime,
 		RuntimeServer:     rtFixture.RuntimeServer,
 		RuntimeServerOpts: rtFixture.RuntimeServerOpts,

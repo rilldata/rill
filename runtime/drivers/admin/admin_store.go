@@ -183,6 +183,218 @@ func (h *Handle) SavePersonalCanvas(ctx context.Context, userID, name, displayNa
 	}, nil
 }
 
+func (h *Handle) ListAlerts(ctx context.Context, userID string) ([]*drivers.ManagedAlert, error) {
+	res, err := h.admin.ListAlertsForUser(ctx, &adminv1.ListAlertsForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	alerts := make([]*drivers.ManagedAlert, 0, len(res.Alerts))
+	for _, a := range res.Alerts {
+		alerts = append(alerts, &drivers.ManagedAlert{
+			Name:    a.Name,
+			Version: a.Version,
+			Options: alertOptionsFromPB(a.Options),
+		})
+	}
+	return alerts, nil
+}
+
+func (h *Handle) SaveAlert(ctx context.Context, userID, name, version string, opts *drivers.AlertOptions) (*drivers.SavedResource, error) {
+	pb, err := alertOptionsToPB(opts)
+	if err != nil {
+		return nil, err
+	}
+	res, err := h.admin.SaveAlertForUser(ctx, &adminv1.SaveAlertForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Name:      name,
+		Version:   version,
+		Options:   pb,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.SavedResource{
+		Name:    res.Name,
+		URL:     res.Url,
+		Version: res.Version,
+	}, nil
+}
+
+func (h *Handle) ListReports(ctx context.Context, userID string) ([]*drivers.ManagedReport, error) {
+	res, err := h.admin.ListReportsForUser(ctx, &adminv1.ListReportsForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	reports := make([]*drivers.ManagedReport, 0, len(res.Reports))
+	for _, r := range res.Reports {
+		reports = append(reports, &drivers.ManagedReport{
+			Name:    r.Name,
+			Version: r.Version,
+			Options: reportOptionsFromPB(r.Options),
+		})
+	}
+	return reports, nil
+}
+
+func (h *Handle) SaveReport(ctx context.Context, userID, name, version string, opts *drivers.ReportOptions) (*drivers.SavedResource, error) {
+	pb, err := reportOptionsToPB(opts)
+	if err != nil {
+		return nil, err
+	}
+	res, err := h.admin.SaveReportForUser(ctx, &adminv1.SaveReportForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Name:      name,
+		Version:   version,
+		Options:   pb,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.SavedResource{
+		Name:    res.Name,
+		URL:     res.Url,
+		Version: res.Version,
+	}, nil
+}
+
+func alertOptionsToPB(opts *drivers.AlertOptions) (*adminv1.AlertOptions, error) {
+	props, err := resolverPropertiesPB(opts.ResolverProperties)
+	if err != nil {
+		return nil, err
+	}
+	return &adminv1.AlertOptions{
+		DisplayName:          opts.DisplayName,
+		RefreshCron:          opts.RefreshCron,
+		RefreshTimeZone:      opts.RefreshTimeZone,
+		IntervalDuration:     opts.IntervalDuration,
+		MetricsViewName:      opts.MetricsViewName,
+		QueryName:            opts.QueryName,
+		QueryArgsJson:        opts.QueryArgsJSON,
+		Resolver:             opts.Resolver,
+		ResolverProperties:   props,
+		ExportAttach:         opts.ExportAttach,
+		ExportFormat:         opts.ExportFormat,
+		ExportIncludeHeader:  opts.ExportIncludeHeader,
+		ExportLimit:          opts.ExportLimit,
+		Renotify:             opts.Renotify,
+		RenotifyAfterSeconds: opts.RenotifyAfterSeconds,
+		EmailRecipients:      opts.EmailRecipients,
+		SlackUsers:           opts.SlackUsers,
+		SlackChannels:        opts.SlackChannels,
+		SlackWebhooks:        opts.SlackWebhooks,
+		WebOpenPath:          opts.WebOpenPath,
+		WebOpenState:         opts.WebOpenState,
+	}, nil
+}
+
+func alertOptionsFromPB(opts *adminv1.AlertOptions) *drivers.AlertOptions {
+	return &drivers.AlertOptions{
+		DisplayName:          opts.DisplayName,
+		RefreshCron:          opts.RefreshCron,
+		RefreshTimeZone:      opts.RefreshTimeZone,
+		IntervalDuration:     opts.IntervalDuration,
+		MetricsViewName:      opts.MetricsViewName,
+		QueryName:            opts.QueryName,
+		QueryArgsJSON:        opts.QueryArgsJson,
+		Resolver:             opts.Resolver,
+		ResolverProperties:   resolverPropertiesMap(opts.ResolverProperties),
+		ExportAttach:         opts.ExportAttach,
+		ExportFormat:         opts.ExportFormat,
+		ExportIncludeHeader:  opts.ExportIncludeHeader,
+		ExportLimit:          opts.ExportLimit,
+		Renotify:             opts.Renotify,
+		RenotifyAfterSeconds: opts.RenotifyAfterSeconds,
+		EmailRecipients:      opts.EmailRecipients,
+		SlackUsers:           opts.SlackUsers,
+		SlackChannels:        opts.SlackChannels,
+		SlackWebhooks:        opts.SlackWebhooks,
+		WebOpenPath:          opts.WebOpenPath,
+		WebOpenState:         opts.WebOpenState,
+	}
+}
+
+func reportOptionsToPB(opts *drivers.ReportOptions) (*adminv1.ReportOptions, error) {
+	props, err := resolverPropertiesPB(opts.ResolverProperties)
+	if err != nil {
+		return nil, err
+	}
+	return &adminv1.ReportOptions{
+		DisplayName:         opts.DisplayName,
+		RefreshCron:         opts.RefreshCron,
+		RefreshTimeZone:     opts.RefreshTimeZone,
+		IntervalDuration:    opts.IntervalDuration,
+		QueryName:           opts.QueryName,     // nolint:staticcheck // the report dialog still saves explore reports as queries
+		QueryArgsJson:       opts.QueryArgsJSON, // nolint:staticcheck // the report dialog still saves explore reports as queries
+		Resolver:            opts.Resolver,
+		ResolverProperties:  props,
+		ExportFormat:        opts.ExportFormat,
+		ExportLimit:         opts.ExportLimit,
+		ExportIncludeHeader: opts.ExportIncludeHeader,
+		ExportAttach:        opts.ExportAttach,
+		EmailRecipients:     opts.EmailRecipients,
+		SlackUsers:          opts.SlackUsers,
+		SlackChannels:       opts.SlackChannels,
+		SlackWebhooks:       opts.SlackWebhooks,
+		WebOpenPath:         opts.WebOpenPath,
+		WebOpenState:        opts.WebOpenState,
+		WebOpenMode:         opts.WebOpenMode,
+		Explore:             opts.Explore,
+		Canvas:              opts.Canvas,
+		MetricsViewFilters:  opts.MetricsViewFilters,
+	}, nil
+}
+
+func reportOptionsFromPB(opts *adminv1.ReportOptions) *drivers.ReportOptions {
+	return &drivers.ReportOptions{
+		DisplayName:         opts.DisplayName,
+		RefreshCron:         opts.RefreshCron,
+		RefreshTimeZone:     opts.RefreshTimeZone,
+		IntervalDuration:    opts.IntervalDuration,
+		QueryName:           opts.QueryName,     // nolint:staticcheck // the report dialog still saves explore reports as queries
+		QueryArgsJSON:       opts.QueryArgsJson, // nolint:staticcheck // the report dialog still saves explore reports as queries
+		Resolver:            opts.Resolver,
+		ResolverProperties:  resolverPropertiesMap(opts.ResolverProperties),
+		ExportFormat:        opts.ExportFormat,
+		ExportLimit:         opts.ExportLimit,
+		ExportIncludeHeader: opts.ExportIncludeHeader,
+		ExportAttach:        opts.ExportAttach,
+		EmailRecipients:     opts.EmailRecipients,
+		SlackUsers:          opts.SlackUsers,
+		SlackChannels:       opts.SlackChannels,
+		SlackWebhooks:       opts.SlackWebhooks,
+		WebOpenPath:         opts.WebOpenPath,
+		WebOpenState:        opts.WebOpenState,
+		WebOpenMode:         opts.WebOpenMode,
+		Explore:             opts.Explore,
+		Canvas:              opts.Canvas,
+		MetricsViewFilters:  opts.MetricsViewFilters,
+	}
+}
+
+// resolverPropertiesPB converts resolver properties to a protobuf struct, keeping nil as nil.
+func resolverPropertiesPB(props map[string]any) (*structpb.Struct, error) {
+	if props == nil {
+		return nil, nil
+	}
+	return structpb.NewStruct(props)
+}
+
+// resolverPropertiesMap converts resolver properties from a protobuf struct, keeping nil as nil.
+func resolverPropertiesMap(props *structpb.Struct) map[string]any {
+	if props == nil {
+		return nil
+	}
+	return props.AsMap()
+}
+
 func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
 	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
 		Id: h.config.ProjectID,

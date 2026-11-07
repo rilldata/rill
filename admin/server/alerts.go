@@ -17,6 +17,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -260,6 +261,118 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 
 	return &adminv1.EditAlertResponse{}, nil
+}
+
+func (s *Server) SaveAlertForUser(ctx context.Context, req *adminv1.SaveAlertForUserRequest) (*adminv1.SaveAlertForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.name", req.Name),
+	)
+
+	if req.Name != "" && !personalFileNameRegexp.MatchString(req.Name) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid alert name %q", req.Name)
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId, "alerts")
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.CreateAlerts {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to create alerts")
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	name := req.Name
+	var prev *database.VirtualFile
+	if name == "" {
+		name, err = s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+			_, err := s.admin.LookupAlert(ctx, depl, name)
+			return err
+		})
+	} else {
+		prev, err = s.managedFileForEdit(ctx, proj.ID, virtualFilePathForManagedAlert(name), "alert", name, user.ID, req.Version)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := s.yamlForManagedAlert(req.Options, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
+	}
+
+	version, err := s.writeManagedFile(ctx, proj.ID, virtualFilePathForManagedAlert(name), data, "alert", name, prev)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be saved")
+		}
+		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SaveAlertForUserResponse{
+		Name:    name,
+		Url:     s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, name),
+		Version: version,
+	}, nil
+}
+
+func (s *Server) ListAlertsForUser(ctx context.Context, req *adminv1.ListAlertsForUserRequest) (*adminv1.ListAlertsForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId, "alerts")
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.ReadProject {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to read project")
+	}
+
+	files, err := s.managedFilesForUser(ctx, proj.ID, "alerts", user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &adminv1.ListAlertsForUserResponse{}
+	for _, vf := range files {
+		opts, err := alertOptionsFromYAML(vf.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read alert %q: %w", vf.Path, err)
+		}
+		res.Alerts = append(res.Alerts, &adminv1.AlertForUser{
+			Name:    fileutil.Stem(vf.Path),
+			Version: managedFileVersion(vf.UpdatedOn),
+			Options: opts,
+		})
+	}
+	return res, nil
 }
 
 func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeAlertRequest) (*adminv1.UnsubscribeAlertResponse, error) {
@@ -560,6 +673,48 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
+}
+
+// alertOptionsFromYAML returns the options a managed alert was saved with, as yamlForManagedAlert wrote them.
+func alertOptionsFromYAML(data []byte) (*adminv1.AlertOptions, error) {
+	var a alertYAML
+	if err := yaml.Unmarshal(data, &a); err != nil {
+		return nil, err
+	}
+	resolver, props, err := resolverFromYAML(a.Data)
+	if err != nil {
+		return nil, err
+	}
+	format, err := exportFormatFromYAML(a.Export.Format)
+	if err != nil {
+		return nil, err
+	}
+	opts := &adminv1.AlertOptions{
+		DisplayName:          a.DisplayName,
+		RefreshCron:          a.Refresh.Cron,
+		RefreshTimeZone:      a.Refresh.TimeZone,
+		IntervalDuration:     a.Intervals.Duration,
+		Resolver:             resolver,
+		ResolverProperties:   props,
+		QueryName:            a.Query.Name,
+		QueryArgsJson:        a.Query.ArgsJSON,
+		ExportAttach:         a.Export.Attach,
+		ExportFormat:         format,
+		ExportIncludeHeader:  a.Export.IncludeHeader,
+		ExportLimit:          a.Export.Limit,
+		Renotify:             a.Renotify,
+		RenotifyAfterSeconds: a.RenotifyAfter,
+		EmailRecipients:      a.Notify.Email.Recipients,
+		SlackUsers:           a.Notify.Slack.Users,
+		SlackChannels:        a.Notify.Slack.Channels,
+		SlackWebhooks:        a.Notify.Slack.Webhooks,
+		WebOpenPath:          a.Annotations.WebOpenPath,
+		WebOpenState:         a.Annotations.WebOpenState,
+	}
+	if len(a.Refs) > 0 {
+		opts.MetricsViewName = strings.TrimPrefix(a.Refs[0], "MetricsView/")
+	}
+	return opts, nil
 }
 
 func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, error) {

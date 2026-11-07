@@ -63,6 +63,7 @@ import type {
   AdminServiceHibernateProjectParams,
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceIssueUserAuthTokenBody,
+  AdminServiceListAlertsForUserParams,
   AdminServiceListBookmarksParams,
   AdminServiceListDeploymentsParams,
   AdminServiceListMagicAuthTokensParams,
@@ -78,6 +79,7 @@ import type {
   AdminServiceListProjectsForOrganizationAndUserParams,
   AdminServiceListProjectsForOrganizationParams,
   AdminServiceListProjectsForUserByNameParams,
+  AdminServiceListReportsForUserParams,
   AdminServiceListUserAuthTokensParams,
   AdminServiceListUsergroupMemberUsersParams,
   AdminServiceListUsergroupsForOrganizationAndUserParams,
@@ -87,7 +89,9 @@ import type {
   AdminServiceRequestProjectAccessBodyBody,
   AdminServiceRevokeAllUserAuthTokensParams,
   AdminServiceRevokeUserAuthTokenParams,
+  AdminServiceSaveAlertForUserBody,
   AdminServiceSavePersonalFileForUserBody,
+  AdminServiceSaveReportForUserBody,
   AdminServiceSearchProjectNamesParams,
   AdminServiceSearchProjectUsersParams,
   AdminServiceSearchUsersParams,
@@ -194,6 +198,7 @@ import type {
   V1IssueServiceAuthTokenResponse,
   V1IssueUserAuthTokenResponse,
   V1LeaveOrganizationResponse,
+  V1ListAlertsForUserResponse,
   V1ListBookmarksResponse,
   V1ListDeploymentsResponse,
   V1ListGithubUserReposResponse,
@@ -214,6 +219,7 @@ import type {
   V1ListProjectsForOrganizationResponse,
   V1ListProjectsForUserByNameResponse,
   V1ListPublicBillingPlansResponse,
+  V1ListReportsForUserResponse,
   V1ListRolesResponse,
   V1ListServiceAuthTokensResponse,
   V1ListServicesResponse,
@@ -247,7 +253,9 @@ import type {
   V1RevokeRepresentativeAuthTokensResponse,
   V1RevokeServiceAuthTokenResponse,
   V1RevokeUserAuthTokenResponse,
+  V1SaveAlertForUserResponse,
   V1SavePersonalFileForUserResponse,
+  V1SaveReportForUserResponse,
   V1SearchProjectNamesResponse,
   V1SearchProjectUsersResponse,
   V1SearchUsersResponse,
@@ -13575,6 +13583,210 @@ export function createAdminServiceGetProjectByID<
 }
 
 /**
+ * @summary ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+It can only be called by the project's primary deployment.
+It's currently only called by AI tools in the runtime.
+ */
+export const adminServiceListAlertsForUser = (
+  projectId: string,
+  params?: AdminServiceListAlertsForUserParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListAlertsForUserResponse>({
+    url: `/v1/projects/${projectId}/alerts/for-user`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListAlertsForUserQueryKey = (
+  projectId?: string,
+  params?: AdminServiceListAlertsForUserParams,
+) => {
+  return [
+    `/v1/projects/${projectId}/alerts/for-user`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceListAlertsForUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListAlertsForUser>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceListAlertsForUserParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListAlertsForUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListAlertsForUserQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListAlertsForUser>>
+  > = ({ signal }) => adminServiceListAlertsForUser(projectId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListAlertsForUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListAlertsForUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListAlertsForUser>>
+>;
+export type AdminServiceListAlertsForUserQueryError = RpcStatus;
+
+/**
+ * @summary ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+It can only be called by the project's primary deployment.
+It's currently only called by AI tools in the runtime.
+ */
+
+export function createAdminServiceListAlertsForUser<
+  TData = Awaited<ReturnType<typeof adminServiceListAlertsForUser>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceListAlertsForUserParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListAlertsForUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListAlertsForUserQueryOptions(
+    projectId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+It can only be called by the project's primary deployment, and only edits alerts the user owns.
+It's currently only called by AI tools in the runtime.
+ */
+export const adminServiceSaveAlertForUser = (
+  projectId: string,
+  adminServiceSaveAlertForUserBody: AdminServiceSaveAlertForUserBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SaveAlertForUserResponse>({
+    url: `/v1/projects/${projectId}/alerts/for-user`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSaveAlertForUserBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSaveAlertForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>,
+    TError,
+    { projectId: string; data: AdminServiceSaveAlertForUserBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSaveAlertForUserBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSaveAlertForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>,
+    { projectId: string; data: AdminServiceSaveAlertForUserBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return adminServiceSaveAlertForUser(projectId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSaveAlertForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>
+>;
+export type AdminServiceSaveAlertForUserMutationBody =
+  AdminServiceSaveAlertForUserBody;
+export type AdminServiceSaveAlertForUserMutationError = RpcStatus;
+
+/**
+ * @summary SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+It can only be called by the project's primary deployment, and only edits alerts the user owns.
+It's currently only called by AI tools in the runtime.
+ */
+export const createAdminServiceSaveAlertForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>,
+      TError,
+      { projectId: string; data: AdminServiceSaveAlertForUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSaveAlertForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSaveAlertForUserBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSaveAlertForUserMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
  */
 export const adminServiceGetAlertMeta = (
@@ -14145,6 +14357,212 @@ export const createAdminServiceDeleteVirtualFile = <
 > => {
   const mutationOptions =
     getAdminServiceDeleteVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+It can only be called by the project's primary deployment.
+It's currently only called by AI tools in the runtime.
+ */
+export const adminServiceListReportsForUser = (
+  projectId: string,
+  params?: AdminServiceListReportsForUserParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListReportsForUserResponse>({
+    url: `/v1/projects/${projectId}/reports/for-user`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListReportsForUserQueryKey = (
+  projectId?: string,
+  params?: AdminServiceListReportsForUserParams,
+) => {
+  return [
+    `/v1/projects/${projectId}/reports/for-user`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceListReportsForUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListReportsForUser>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceListReportsForUserParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListReportsForUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListReportsForUserQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListReportsForUser>>
+  > = ({ signal }) => adminServiceListReportsForUser(projectId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListReportsForUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListReportsForUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListReportsForUser>>
+>;
+export type AdminServiceListReportsForUserQueryError = RpcStatus;
+
+/**
+ * @summary ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+It can only be called by the project's primary deployment.
+It's currently only called by AI tools in the runtime.
+ */
+
+export function createAdminServiceListReportsForUser<
+  TData = Awaited<ReturnType<typeof adminServiceListReportsForUser>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceListReportsForUserParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListReportsForUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListReportsForUserQueryOptions(
+    projectId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+It can only be called by the project's primary deployment, and only edits reports the user owns.
+It's currently only called by AI tools in the runtime.
+Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+ */
+export const adminServiceSaveReportForUser = (
+  projectId: string,
+  adminServiceSaveReportForUserBody: AdminServiceSaveReportForUserBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SaveReportForUserResponse>({
+    url: `/v1/projects/${projectId}/reports/for-user`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSaveReportForUserBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSaveReportForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSaveReportForUser>>,
+    TError,
+    { projectId: string; data: AdminServiceSaveReportForUserBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSaveReportForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSaveReportForUserBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSaveReportForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSaveReportForUser>>,
+    { projectId: string; data: AdminServiceSaveReportForUserBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return adminServiceSaveReportForUser(projectId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSaveReportForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSaveReportForUser>>
+>;
+export type AdminServiceSaveReportForUserMutationBody =
+  AdminServiceSaveReportForUserBody;
+export type AdminServiceSaveReportForUserMutationError = RpcStatus;
+
+/**
+ * @summary SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+It can only be called by the project's primary deployment, and only edits reports the user owns.
+It's currently only called by AI tools in the runtime.
+Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+ */
+export const createAdminServiceSaveReportForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSaveReportForUser>>,
+      TError,
+      { projectId: string; data: AdminServiceSaveReportForUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSaveReportForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSaveReportForUserBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSaveReportForUserMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

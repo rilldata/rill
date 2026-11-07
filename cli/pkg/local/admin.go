@@ -139,6 +139,30 @@ func (l *localAdminService) SavePersonalCanvas(ctx context.Context, userID, name
 	return nil, drivers.ErrNotImplemented
 }
 
+// ListAlerts implements drivers.AdminService.
+// Alerts are only saved on behalf of users in Rill Cloud.
+func (l *localAdminService) ListAlerts(ctx context.Context, userID string) ([]*drivers.ManagedAlert, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// SaveAlert implements drivers.AdminService.
+// Alerts are only saved on behalf of users in Rill Cloud.
+func (l *localAdminService) SaveAlert(ctx context.Context, userID, name, version string, opts *drivers.AlertOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// ListReports implements drivers.AdminService.
+// Reports are only saved on behalf of users in Rill Cloud.
+func (l *localAdminService) ListReports(ctx context.Context, userID string) ([]*drivers.ManagedReport, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// SaveReport implements drivers.AdminService.
+// Reports are only saved on behalf of users in Rill Cloud.
+func (l *localAdminService) SaveReport(ctx context.Context, userID, name, version string, opts *drivers.ReportOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 // UpdateProjectVariables implements drivers.AdminService.
 func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
 	if l.ch.AdminToken() == "" {
