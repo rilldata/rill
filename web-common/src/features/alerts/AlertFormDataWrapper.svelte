@@ -8,7 +8,6 @@
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import { isAIAlertSpec } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import AlertForm, {
@@ -36,9 +35,9 @@
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  // An AI alert created through the API has no captured dashboard state, and editing it does not need one.
-  const needsExploreState =
-    props.mode === "create" || !isAIAlertSpec(props.alertSpec);
+  // Only creating starts from the dashboard state. Editing builds its values from the alert's spec,
+  // and an alert created through the API has no captured dashboard state to wait for.
+  const needsExploreState = props.mode === "create";
 
   // The form captures its initial values once, so they wait for everything they are built from, the explore's metrics view included:
   // without it the alert would be saved with an empty metrics view, which its managed YAML refs.

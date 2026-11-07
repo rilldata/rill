@@ -334,6 +334,31 @@ describe("the alert dialog", () => {
     expect(queryArgs.measures?.[0]?.name).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
   });
 
+  it("edits a formula alert created through the API, which has no captured dashboard state", async () => {
+    const alertSpec = getFormulaAlertSpec();
+    delete alertSpec.annotations?.web_open_state;
+    await openEditDialog(alertSpec);
+
+    await clickButton("Next");
+    await clickButton("Next");
+    await clickButton("Update");
+
+    const options = await getSavedOptions();
+    expect(options.resolver).toBeUndefined();
+    const queryArgs = JSON.parse(
+      options.queryArgsJson ?? "{}",
+    ) as V1MetricsViewAggregationRequest;
+    expect(queryArgs.measures?.[0]?.name).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
+    expect(queryArgs.having?.cond?.exprs).toEqual([
+      {
+        cond: {
+          op: V1Operation.OPERATION_GT,
+          exprs: [{ ident: AD_BIDS_IMPRESSIONS_MEASURE }, { val: 10 }],
+        },
+      },
+    ]);
+  });
+
   it("waits for the explore before editing an AI alert created through the API", async () => {
     // Such an alert has no captured dashboard state. Hold the explore response until after the current user's,
     // which is when the dialog would otherwise start without knowing the alert's metrics view.
