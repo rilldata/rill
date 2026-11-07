@@ -1,7 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { tryUseRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
     type EmbedOptions,
@@ -17,7 +17,8 @@
   import { pickViewDatasets } from "./view-datasets";
   import "./vega.css";
 
-  const runtimeClient = useRuntimeClient();
+  // Null outside a RuntimeProvider (e.g. the MCP chart widget); the view then has no loader.
+  const runtimeClient = tryUseRuntimeClient();
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -34,7 +35,8 @@
   export let hasComparison: boolean = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let colorMapping: ColorMapping = [];
-  export let viewVL: View;
+  /** The live Vega view, set once embedded; callers bind it to drive brushes and hovers. */
+  export let viewVL: View | undefined = undefined;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
@@ -114,9 +116,9 @@
     return { ...base, width, height };
   }
 
-  $: if (viewVL && measured) applySize(width, height);
+  $: if (viewVL && measured) applySize(viewVL, width, height);
 
-  function applySize(w: number, h: number) {
+  function applySize(view: View, w: number, h: number) {
     // svelte-vega still re-embeds from `options` whenever the spec changes, so its size fields
     // have to stay current or the chart re-embeds at the size it had when `options` was last
     // rebuilt. The mutation goes through a local alias on purpose: assigning to `options.width`
@@ -127,9 +129,9 @@
 
     // Resize the existing view in place. vega-embed applies `options.width`/`height` the same
     // way, so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
-    viewVL.width(w);
-    viewVL.height(h);
-    void viewVL.runAsync();
+    view.width(w);
+    view.height(h);
+    void view.runAsync();
   }
 
   // Create a more efficient key for component remounting
