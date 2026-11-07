@@ -68,3 +68,16 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     referenceLink="slack"
   />
 </div>
+
+### Webhook
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<p className="https-icon">https:// </p>}
+    header="Webhook"
+    content="Send alert and report notifications as JSON payloads to any HTTP endpoint."
+    link="/developers/build/connectors/services/webhook"
+    linkLabel="Learn more"
+    referenceLink="webhook"
+  />
+</div>

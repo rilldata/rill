@@ -41,6 +41,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
 - [**Slack**](#slack) - Slack data
+- [**Webhook**](#webhook) - Deliver alert and report notifications to HTTP endpoints
 
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
@@ -1585,4 +1586,38 @@ type: connector
 driver: snowflake
 dsn: "{{ .env.SNOWFLAKE_DSN }}" # define SNOWFLAKE_DSN in .env file
 parallel_fetch_limit: 2
+```
+
+## Webhook
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `webhook` _(required)_
+
+### `signing_secret`
+
+_[string]_ - Secret used to sign deliveries following the [Standard Webhooks](https://www.standardwebhooks.com/) specification.
+Secrets prefixed with `whsec_` are base64-decoded; other values are used as raw key bytes.
+
+
+### `headers`
+
+_[object]_ - Static HTTP headers added to every delivery, such as an `Authorization` header. Requires `allowed_url_prefixes`.
+
+### `allowed_url_prefixes`
+
+_[string, array]_ - URL prefixes that deliveries are restricted to. The scheme and host (including the port) must match an entry,
+and the path must be the entry's path or lie below it. Without this list, deliveries to loopback, private,
+link-local and shared addresses are blocked.
+
+
+```yaml
+# Example: Webhook connector configuration
+type: connector # Must be `connector` (required)
+driver: webhook # Must be `webhook` _(required)_
+signing_secret: "{{ .env.WEBHOOK_SIGNING_SECRET }}" # Sign deliveries following Standard Webhooks
+headers:
+    Authorization: "Bearer {{ .env.WEBHOOK_TOKEN }}" # Sent only to the allowed URLs
+allowed_url_prefixes:
+    - https://hooks.example.com/rill/
 ```

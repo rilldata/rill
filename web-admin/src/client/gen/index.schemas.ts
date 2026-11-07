@@ -143,6 +143,7 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webhookUrls?: string[];
   /** Annotation for the subpath of <UI host>/org/project to open for the report. */
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
@@ -1425,6 +1426,7 @@ If set, it's replaced by the `user_email` of the embed's iframe, if the iframe w
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webhookUrls?: string[];
   /** Annotation for the subpath of <UI host>/org/project to open for the report. */
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */

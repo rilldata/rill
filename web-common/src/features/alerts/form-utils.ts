@@ -38,6 +38,8 @@ export type AlertFormValues = {
   enableSlackNotification: boolean;
   slackChannels: string[];
   slackUsers: string[];
+  enableWebhookNotification: boolean;
+  webhookUrls: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
   // Options for attaching the rows that triggered the alert to emails
@@ -165,6 +167,7 @@ export const alertFormValidationSchema = yup(
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
+    webhookUrls: array(string().url("Invalid URL")),
     emailRecipients: array(string().email("Invalid email")),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {

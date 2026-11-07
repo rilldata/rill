@@ -78,6 +78,7 @@ definitions:
       - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
       - [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
       - [**Slack**](#slack) - Slack data
+      - [**Webhook**](#webhook) - Deliver alert and report notifications to HTTP endpoints
 
       ### _Other_
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
@@ -1478,6 +1479,43 @@ definitions:
           required:
           - type
           - driver
+        - type: object
+          title: Webhook
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `webhook`
+              const: webhook
+            signing_secret:
+              type: string
+              description: |
+                Secret used to sign deliveries following the [Standard Webhooks](https://www.standardwebhooks.com/) specification.
+                Secrets prefixed with `whsec_` are base64-decoded; other values are used as raw key bytes.
+            headers:
+              type: object
+              description: Static HTTP headers added to every delivery, such as an `Authorization` header. Requires `allowed_url_prefixes`.
+              additionalProperties:
+                type: string
+            allowed_url_prefixes:
+              type: [string, array]
+              description: |
+                URL prefixes that deliveries are restricted to. The scheme and host (including the port) must match an entry,
+                and the path must be the entry's path or lie below it. Without this list, deliveries to loopback, private,
+                link-local and shared addresses are blocked.
+              items:
+                type: string
+          examples:
+            - # Example: Webhook connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: webhook                                  # Must be `webhook` _(required)_
+
+              signing_secret: "{{ .env.WEBHOOK_SIGNING_SECRET }}"  # Sign deliveries following Standard Webhooks
+              headers:
+                Authorization: "Bearer {{ .env.WEBHOOK_TOKEN }}"   # Sent only to the allowed URLs
+              allowed_url_prefixes:
+                - https://hooks.example.com/rill/
+          required:
+            - driver
 
 
   # Source YAML
@@ -3137,7 +3175,7 @@ definitions:
     id: reports
     type: object
     description: |
-      Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email or Slack.
+      Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email, Slack or webhooks.
     examples:
       - # Example: query-based report with CSV export
         type: report
@@ -3271,7 +3309,7 @@ definitions:
                 description: If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
           notify:
             $ref: '#/definitions/notify_properties'
-            description: Notification configuration for email and Slack delivery
+            description: Notification configuration for email, Slack and webhook delivery
           annotations:
             type: object
             description: Key-value pairs for report metadata (e.g., admin_owner_user_id for AI reports)
@@ -4624,11 +4662,28 @@ definitions:
               - users
           - required:
               - webhooks
+      webhook:
+        type: object
+        description: Send notifications as JSON payloads to HTTP endpoints.
+        properties:
+          urls:
+            type: array
+            description: An array of absolute http or https URLs to send notifications to.
+            items:
+              type: string
+            minItems: 1
+          connector:
+            type: string
+            description: Name of the webhook connector to use. Defaults to `webhook`.
+        required:
+          - urls
     anyOf:
         - required:
           - slack
         - required:
           - email
+        - required:
+          - webhook
   schedule_properties:
     type: object
     properties:
