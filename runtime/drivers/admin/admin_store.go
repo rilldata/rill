@@ -49,6 +49,7 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 			UserAttrs:         v.UserAttrs.AsMap(),
 			RestrictResources: v.RestrictResources,
 			Resources:         resources,
+			EmbedOwner:        v.EmbedOwner,
 		}
 	}
 

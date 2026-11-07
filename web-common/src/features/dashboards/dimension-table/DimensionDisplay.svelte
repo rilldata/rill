@@ -122,11 +122,21 @@
     ),
     exactNames,
   );
+  // The table groups by the dimension, so it can query measures that require only that dimension.
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     $dashboardStore,
     metricsViewSpec,
     measures,
-    false,
+    { dimensions: [dimensionName] },
+  );
+  // The totals query has no dimensions, so it cannot query measures with required dimensions.
+  $: totalsMeasures = filterOutSomeAdvancedAggregationMeasures(
+    $dashboardStore,
+    metricsViewSpec,
+    measures,
+    {},
+  ).filter(
+    (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
   );
 
   // Request the URI measure so the dimension values can be rendered as links.
@@ -140,9 +150,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: filteredMeasures.filter(
-        (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
-      ),
+      measures: totalsMeasures,
       where: sanitiseExpression(
         getFiltersForOtherDimensions(whereFilter, dimensionName),
       ),

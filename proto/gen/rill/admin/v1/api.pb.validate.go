@@ -6615,6 +6615,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Resource
 
+	// no validation rules for Open
+
 	// no validation rules for Theme
 
 	if m.GetThemeMode() != "" {
@@ -49776,6 +49778,8 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for ExportAttach
 
+	// no validation rules for EmbedOwnerEmail
+
 	// no validation rules for WebOpenPath
 
 	// no validation rules for WebOpenState
@@ -53090,6 +53094,8 @@ func (m *GetReportMetaResponse_DeliveryMeta) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for EmbedOwner
 
 	if len(errors) > 0 {
 		return GetReportMetaResponse_DeliveryMetaMultiError(errors)

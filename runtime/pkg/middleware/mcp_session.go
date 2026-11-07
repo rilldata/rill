@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -23,12 +24,14 @@ const maxMCPSessionIDLength = 256
 // and every response carries the session ID the request was served with.
 // A request with a malformed session ID is rejected: the spec restricts session IDs to visible ASCII,
 // and the length bound protects the catalog, which stores the ID as the AI session's ID.
+// The wrapped handler can tell an issued ID from one the client sent with MCPSessionIDIssued.
 func MCPSessionIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionID := r.Header.Get(MCPSessionIDHeader)
 		if sessionID == "" {
 			sessionID = uuid.NewString()
 			r.Header.Set(MCPSessionIDHeader, sessionID)
+			r = r.WithContext(context.WithValue(r.Context(), mcpSessionIDIssuedKey{}, true))
 		} else if len(sessionID) > maxMCPSessionIDLength || strings.ContainsFunc(sessionID, func(c rune) bool { return c < 0x21 || c > 0x7E }) {
 			http.Error(w, "Bad Request: invalid Mcp-Session-Id header", http.StatusBadRequest)
 			return
@@ -36,4 +39,14 @@ func MCPSessionIDMiddleware(next http.Handler) http.Handler {
 		w.Header().Set(MCPSessionIDHeader, sessionID)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// mcpSessionIDIssuedKey marks the context of a request whose session ID was issued by MCPSessionIDMiddleware.
+type mcpSessionIDIssuedKey struct{}
+
+// MCPSessionIDIssued reports whether the request's session ID was issued by MCPSessionIDMiddleware rather than sent by the client.
+// A client that sends no session ID is either starting a connection or not part of one at all (a sessionless probe such as resources/list).
+func MCPSessionIDIssued(ctx context.Context) bool {
+	issued, _ := ctx.Value(mcpSessionIDIssuedKey{}).(bool)
+	return issued
 }

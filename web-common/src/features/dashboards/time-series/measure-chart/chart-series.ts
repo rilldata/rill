@@ -26,8 +26,10 @@ export function buildChartSeries(
   showComparison: boolean,
 ): ChartSeries[] {
   if (dimData.length > 0) {
+    // Keyed by position rather than by value: the selection can hold a value twice or two values
+    // that stringify alike (null and the index, 9304 and "9304"), and the renderers key on the id.
     const currentSeries: ChartSeries[] = dimData.map((dim, i) => ({
-      id: `dim-${dim.dimensionValue ?? i}`,
+      id: `dim-${i}`,
       values: dim.data.map((pt) => pt.value),
       color: dim.color || COMPARISON_COLORS[i % COMPARISON_COLORS.length],
       opacity: dim.isFetching ? 0.5 : 1,
@@ -39,7 +41,7 @@ export function buildChartSeries(
     // Previous-period lines: same hue as the current-period series,
     // faded to the same opacity as comparison marks in the Vega charts.
     const comparisonSeries: ChartSeries[] = dimData.map((dim, i) => ({
-      id: `dim-${dim.dimensionValue ?? i}-comparison`,
+      id: `dim-${i}-comparison`,
       values: dim.data.map((pt) => pt.comparisonValue ?? null),
       color: dim.color || COMPARISON_COLORS[i % COMPARISON_COLORS.length],
       opacity: dim.isFetching ? 0.2 : ComparisonMarkOpacity,
