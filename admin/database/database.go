@@ -320,6 +320,11 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
+	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
+	// It doesn't write anything otherwise, since it's called on every embed load.
+	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error
+
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
@@ -352,6 +357,26 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	// FindConnectorOAuthClient returns the client for a connector's OAuth configuration, identified by its hash.
+	FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*ConnectorOAuthClient, error)
+	FindConnectorOAuthClientByID(ctx context.Context, id string) (*ConnectorOAuthClient, error)
+	// FindConnectorOAuthClients returns the clients for all OAuth configurations a connector has had, such as before a scope change or on other branches.
+	FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*ConnectorOAuthClient, error)
+	// FindOrInsertConnectorOAuthClient inserts a client, unless a client for the same connector and configuration hash already exists
+	// (for example, because another request inserted one concurrently), in which case it returns the existing client instead.
+	FindOrInsertConnectorOAuthClient(ctx context.Context, opts *InsertConnectorOAuthClientOptions) (*ConnectorOAuthClient, error)
+	// DeleteConnectorOAuthClient deletes a client and the tokens obtained through it.
+	DeleteConnectorOAuthClient(ctx context.Context, id string) error
+	// DeleteConnectorOAuthClientsWithoutTokens deletes a connector's clients that hold no tokens, except the client for keepConfigHash.
+	DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error
+	// AcquireConnectorOAuthTokenLock takes an exclusive lock on a user's token for a client until the current transaction ends.
+	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
+	// take it first, so they are serialized across all admin processes.
+	AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error
+	FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*ConnectorOAuthToken, error)
+	UpsertConnectorOAuthToken(ctx context.Context, opts *UpsertConnectorOAuthTokenOptions) (*ConnectorOAuthToken, error)
+	DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error
 
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
@@ -1277,22 +1302,49 @@ type UpdateBookmarkOptions struct {
 	Shared      bool   `json:"shared"`
 }
 
+// EmbedUser is a user of embedded dashboards, identified by the external user ID passed to GetIFrame.
+// Its ID is the hash of the external user ID and project ID (see subjectForExternalUser in admin/server),
+// which is also the subject of the embed's runtime JWT.
+// The hash is unsalted, so anyone who knows the project ID can recover guessable external user IDs from it.
+// It stores the identity the user had in their latest iframe, which resources owned by the user (such as reports) run as.
+type EmbedUser struct {
+	ID             string         `db:"id"`
+	ProjectID      string         `db:"project_id"`
+	ExternalUserID string         `db:"external_user_id"`
+	Email          *string        `db:"email"`      // Nil if the iframe didn't set an email
+	Attributes     map[string]any `db:"attributes"` // Nil if the iframe didn't set attributes
+	LastSeenOn     time.Time      `db:"last_seen_on"`
+	CreatedOn      time.Time      `db:"created_on"`
+	UpdatedOn      time.Time      `db:"updated_on"`
+}
+
+// UpsertEmbedUserOptions defines options for upserting an EmbedUser.
+type UpsertEmbedUserOptions struct {
+	ID             string `validate:"required"`
+	ProjectID      string `validate:"required"`
+	ExternalUserID string `validate:"required"`
+	Email          *string
+	Attributes     map[string]any // An empty map is stored as NULL
+}
+
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)
 type VirtualFile struct {
-	Path      string    `db:"path"`
-	Data      []byte    `db:"data"`
-	OwnerID   *string   `db:"owner_id"`
-	Deleted   bool      `db:"deleted"`
-	UpdatedOn time.Time `db:"updated_on"`
+	Path         string    `db:"path"`
+	Data         []byte    `db:"data"`
+	OwnerID      *string   `db:"owner_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
+	Deleted      bool      `db:"deleted"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID   string
-	Environment string
-	Path        string  `validate:"required"`
-	OwnerID     *string `db:"owner_id"`
-	Data        []byte  `validate:"max=131072"` // 128kb
+	ProjectID    string
+	Environment  string
+	Path         string  `validate:"required"`
+	OwnerID      *string `db:"owner_id"`
+	EmbedOwnerID *string `db:"embed_owner_id"`
+	Data         []byte  `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.
@@ -1304,6 +1356,48 @@ type Asset struct {
 	OwnerID        string    `db:"owner_id"`
 	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// ConnectorOAuthClient is an OAuth client Rill uses with a connector's authorization server, shared by the users of a project's connector.
+// ConfigHash identifies the connector's OAuth configuration it was created for; a configuration change leads to a new client.
+// Clients are never modified, because tokens and pending authorizations are bound to them.
+// Client is the JSON encoding of runtime/pkg/oauthclient.Client; it is decrypted when read.
+type ConnectorOAuthClient struct {
+	ID                    string    `db:"id"`
+	ProjectID             string    `db:"project_id"`
+	Connector             string    `db:"connector"`
+	ConfigHash            string    `db:"config_hash"`
+	Client                []byte    `db:"client"`
+	ClientEncryptionKeyID string    `db:"client_encryption_key_id"`
+	CreatedOn             time.Time `db:"created_on"`
+}
+
+// InsertConnectorOAuthClientOptions defines options for creating a ConnectorOAuthClient.
+type InsertConnectorOAuthClientOptions struct {
+	ProjectID  string `validate:"required"`
+	Connector  string `validate:"required"`
+	ConfigHash string `validate:"required"`
+	Client     []byte `validate:"required"`
+}
+
+// ConnectorOAuthToken is a user's OAuth token obtained through a ConnectorOAuthClient. Tokens are never shared between users.
+// The token is only used and refreshed through the client that obtained it.
+// Token is the JSON encoding of golang.org/x/oauth2.Token; it is decrypted when read.
+type ConnectorOAuthToken struct {
+	ID                   string    `db:"id"`
+	OAuthClientID        string    `db:"oauth_client_id"`
+	UserID               string    `db:"user_id"`
+	Token                []byte    `db:"token"`
+	TokenEncryptionKeyID string    `db:"token_encryption_key_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+// UpsertConnectorOAuthTokenOptions defines options for creating or replacing a ConnectorOAuthToken.
+type UpsertConnectorOAuthTokenOptions struct {
+	OAuthClientID string `validate:"required"`
+	UserID        string `validate:"required"`
+	Token         []byte `validate:"required"`
 }
 
 // ProjectVariable represents a key-value variable for a project, possible for a specific environment (e.g. production or development).
@@ -1519,6 +1613,7 @@ type InsertProvisionerResourceOptions struct {
 type UpdateProvisionerResourceOptions struct {
 	Status        ProvisionerResourceStatus
 	StatusMessage string
+	Provisioner   string
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any

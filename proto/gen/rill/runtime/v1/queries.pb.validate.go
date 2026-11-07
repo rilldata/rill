@@ -3341,6 +3341,8 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Exact
+
 	switch v := m.Compute.(type) {
 	case *MetricsViewAggregationMeasure_Count:
 		if v == nil {
@@ -10984,6 +10986,8 @@ func (m *ResolveCanvasRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Unsafe
+
+	// no validation rules for IncludeHidden
 
 	if len(errors) > 0 {
 		return ResolveCanvasRequestMultiError(errors)

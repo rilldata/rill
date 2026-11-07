@@ -1786,6 +1786,14 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+   * Only for ClickHouse dictionaries with few keys; see the metrics view docs.
+   *
+   * @generated from field: optional bool lookup_group_by_key = 15;
+   */
+  lookupGroupByKey?: boolean;
+
+  /**
    * The smallest time grain for the dimension. Only populated for time dimensions.
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
@@ -1820,6 +1828,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "lookup_group_by_key", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
@@ -2048,6 +2057,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   lowerIsBetter = false;
 
+  /**
+   * Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
+   *
+   * @generated from field: string exact_expression = 18;
+   */
+  exactExpression = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2073,6 +2089,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "exact_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -3771,6 +3788,13 @@ export class ReportSpec extends Message<ReportSpec> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 19;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -3821,6 +3845,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4103,6 +4128,30 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
+   * Format of the attached export.
+   *
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 25;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 26;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 27;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: bool notify_on_recover = 15;
    */
   notifyOnRecover = false;
@@ -4160,6 +4209,10 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 25, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 26, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 27, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -5048,6 +5101,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   definedInCanvas = false;
 
+  /**
+   * For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+   * Only viewers for whom it evaluates to true can access the component.
+   *
+   * @generated from field: string condition_expression = 11;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5064,6 +5125,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -5583,6 +5645,14 @@ export class CanvasRow extends Message<CanvasRow> {
    */
   tabGroup?: CanvasTabGroup;
 
+  /**
+   * Templated boolean expression from the row's `if` property.
+   * The row (or tab group) is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 5;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasRow>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5595,6 +5665,7 @@ export class CanvasRow extends Message<CanvasRow> {
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 4, name: "tab_group", kind: "message", T: CanvasTabGroup },
+    { no: 5, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasRow {
@@ -5688,6 +5759,14 @@ export class CanvasTab extends Message<CanvasTab> {
    */
   rows: CanvasRow[] = [];
 
+  /**
+   * Templated boolean expression from the tab's `if` property.
+   * The tab is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 4;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasTab>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5699,6 +5778,7 @@ export class CanvasTab extends Message<CanvasTab> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+    { no: 4, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTab {
@@ -5758,6 +5838,14 @@ export class CanvasItem extends Message<CanvasItem> {
    */
   widthUnit = "";
 
+  /**
+   * Templated boolean expression from the item's `if` property.
+   * The item is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 12;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5771,6 +5859,7 @@ export class CanvasItem extends Message<CanvasItem> {
     { no: 11, name: "params", kind: "message", T: Struct },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {
@@ -6410,6 +6499,21 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    */
   provisionArgs?: Struct;
 
+  /**
+   * Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+   * Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+   *
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 8;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+   *
+   * @generated from field: repeated string agents = 9;
+   */
+  agents: string[] = [];
+
   constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6423,6 +6527,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
+    { no: 8, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 9, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {
@@ -6476,6 +6582,51 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
+  }
+}
+
+/**
+ * MCPTool describes a tool exposed by an external MCP server.
+ *
+ * @generated from message rill.runtime.v1.MCPTool
+ */
+export class MCPTool extends Message<MCPTool> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<MCPTool>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MCPTool";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MCPTool {
+    return new MCPTool().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MCPTool | PlainMessage<MCPTool> | undefined, b: MCPTool | PlainMessage<MCPTool> | undefined): boolean {
+    return proto3.util.equals(MCPTool, a, b);
   }
 }
 

@@ -110,6 +110,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
 
+  - **`lookup_group_by_key`** - _[boolean]_ - If true, queries that group by this dimension group by the lookup key first, resolve the lookup value once per key, and then regroup by value. Enable it for dictionaries with few keys (up to the low hundreds of thousands); it uses more memory and loses its advantage for very high-cardinality keys. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model
@@ -127,6 +129,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations
+
+  - **`exact_expression`** - _[string]_ - An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
 

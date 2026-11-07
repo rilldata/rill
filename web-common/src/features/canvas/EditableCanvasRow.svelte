@@ -18,6 +18,7 @@
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import VisibilityBadge from "./VisibilityBadge.svelte";
   import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
@@ -268,6 +269,7 @@
             ? () => onConvertToTabGroup?.()
             : undefined}
         />
+        <VisibilityBadge {component} />
       {:else}
         <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}

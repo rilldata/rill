@@ -593,3 +593,12 @@ export function prepareDimensionTableRows(
     });
   return tableRows;
 }
+
+/**
+ * Key of a dimension table row for the row virtualizer and the keyed `{#each}` blocks that render the rows.
+ * JSON text keeps values apart that `String()` would merge: a null value and the string "null",
+ * a number and its text, or two nested values, which all stringify to "[object Object]".
+ */
+export function getDimensionTableRowKey(value: unknown): string {
+  return JSON.stringify(value ?? null);
+}

@@ -11,6 +11,8 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
+import { requestExactNames } from "../exact-measures/exact-measures";
+import { exploreExactSurface } from "../exact-measures/explore-surfaces";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasuresForRequest } from "./pivot-utils";
@@ -58,6 +60,20 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 
   if (!timeRange) return undefined;
 
+  // A one-shot export downloads what is on screen, so it carries the viewer's
+  // exact selection. A scheduled report must not: exact values are only
+  // fetched after an explicit click, never on a schedule.
+  const exactMeasures = isScheduled
+    ? undefined
+    : [
+        ...requestExactNames(
+          columns.measure.map((m) => m.id),
+          get(ctx.selectors.exactMeasures.exactMeasureContext)(
+            exploreExactSurface.pivot,
+          ),
+        ),
+      ];
+
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest({
       instanceId: ctx.runtimeClient.instanceId,
@@ -74,6 +90,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       comparisonTime,
       isFlat,
       pivotState,
+      exactMeasures,
     }),
   };
 
@@ -92,6 +109,7 @@ export function getPivotAggregationRequest({
   comparisonTime,
   isFlat,
   pivotState,
+  exactMeasures,
 }: {
   instanceId: string;
   metricsViewName: string;
@@ -104,6 +122,8 @@ export function getPivotAggregationRequest({
   comparisonTime: TimeRangeString | undefined;
   isFlat: boolean;
   pivotState: PivotState;
+  // Measures to request with `exact: true`; see `requestExactNames`.
+  exactMeasures?: string[];
 }): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
@@ -192,6 +212,7 @@ export function getPivotAggregationRequest({
     measures: prepareMeasuresForRequest(
       measures,
       exploreState.ephemeralMeasures,
+      exactMeasures,
     ),
     dimensions: allDimensions,
     where: sanitiseExpression(exploreState.whereFilter, undefined),

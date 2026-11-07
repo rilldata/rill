@@ -189,3 +189,77 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+// TestSQLTemplateVariables verifies that only templates declared in the project's source files may access project variables,
+// whoever the caller is.
+func TestSQLTemplateVariables(t *testing.T) {
+	const secret = "s3cret-value"
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     map[string]string{"rill.yaml": ""},
+		Variables: map[string]string{"secret": secret},
+	})
+
+	cases := []struct {
+		name            string
+		sql             string
+		projectDeclared bool
+		claims          *runtime.SecurityClaims
+		want            string
+		wantErr         string
+	}{
+		{
+			name:            "project-declared properties see variables",
+			sql:             "SELECT '{{ .env.secret }}' AS v",
+			projectDeclared: true,
+			claims:          &runtime.SecurityClaims{},
+			want:            secret,
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables even with ReadInstance",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables even when checks are skipped",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  &runtime.SecurityClaims{SkipChecks: true},
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
+		},
+		{
+			name:   "caller-supplied properties without variables resolve",
+			sql:    "SELECT '{{ .args.x }}' AS v",
+			claims: &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
+			want:   "<no value>",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+				InstanceID:         instanceID,
+				Resolver:           "sql",
+				ResolverProperties: map[string]any{"sql": tc.sql},
+				ProjectDeclared:    tc.projectDeclared,
+				Claims:             tc.claims,
+			})
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				require.NotContains(t, err.Error(), secret)
+				return
+			}
+			require.NoError(t, err)
+			defer res.Close()
+
+			row, err := res.Next()
+			require.NoError(t, err)
+			require.Equal(t, tc.want, row["v"])
+		})
+	}
+}

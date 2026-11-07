@@ -55,7 +55,7 @@ func (d *dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsVie
 		} else {
 			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
 		}
-		return lookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
 	}
 	if dimension.Expression != "" {
 		return dimension.Expression, nil
@@ -137,6 +137,15 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = d.EscapeIdentifier(dim.Column)
 	}
 
+	// ClickHouse rejects date_trunc at sub-day grains on Date and Date32 values, so cast those to DateTime64 first.
+	// The type is unknown when type detection failed or the dimension was synthesized (e.g. the comparison offset expression),
+	// so cast in that case too; only known DateTime columns skip the cast.
+	// The time zone path below already casts its input.
+	isDateOrUnknown := dim.DataType == nil || dim.DataType.Code == runtimev1.Type_CODE_DATE
+	if tz == "" && isDateOrUnknown && grain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && grain < runtimev1.TimeGrain_TIME_GRAIN_DAY {
+		expr = fmt.Sprintf("%s::DateTime64", expr)
+	}
+
 	var shift string
 	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 		offset := 8 - firstDayOfWeek
@@ -188,7 +197,7 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 
 func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []any, error) {
 	for _, f := range result.Schema.Fields {
-		if !drivers.CheckTypeCompatibility(f) {
+		if !inlineTypeSupported(f) {
 			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, drivers.ErrOptimizationFailure)
 		}
 	}
@@ -231,7 +240,7 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 					prefix += ", "
 				}
 			}
-			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type.Code)
+			argExpr, argVal, err := getArgExpr(v, result.Schema.Fields[i].Type)
 			if err != nil {
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
@@ -252,6 +261,13 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 
 func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
 	return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
+}
+
+func (d *dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
+	if lookupDefaultExpression != "" {
+		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+	}
+	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 }
 
 func (d *dialect) SanitizeQueryForLogging(sql string) string {
@@ -293,23 +309,40 @@ func (d *dialect) ColumnNumericHistogramBucket(db, dbSchema, table, column strin
 		d.EscapeTable(db, dbSchema, table)), nil
 }
 
-func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+// inlineTypeSupported reports whether values of the field's type can be inlined by SelectInlineResults.
+// Besides the types that the driver binds natively, it allows UUID and Decimal values, which getArgExpr casts back to their ClickHouse type.
+func inlineTypeSupported(f *runtimev1.StructType_Field) bool {
+	if drivers.CheckTypeCompatibility(f) {
+		return true
+	}
+	switch f.Type.Code {
+	case runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_DECIMAL:
+		// The cast needs the exact ClickHouse type name, which is only known for the results of a ClickHouse query.
+		return f.Type.RawType != ""
+	default:
+		return false
+	}
+}
+
+// getArgExpr returns the SQL expression and the positional argument for inlining val in a VALUES clause.
+func getArgExpr(val any, typ *runtimev1.Type) (string, any, error) {
 	if val == nil {
 		return "NULL", nil, nil
 	}
-	if typ == runtimev1.Type_CODE_DATE {
+	switch typ.Code {
+	case runtimev1.Type_CODE_DATE:
+		// Dates are formatted explicitly, otherwise time.Time args are bound as DateTime values.
 		t, ok := val.(time.Time)
 		if !ok {
 			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
 		}
 		return "toDate(?)", t.Format(time.DateOnly), nil
+	case runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_DECIMAL:
+		// The driver binds UUID and Decimal values as quoted strings, so VALUES would infer a String column.
+		// A String column can neither be joined with nor compared to the original UUID or Decimal column,
+		// so the value is cast back to its exact ClickHouse type, e.g. "Nullable(UUID)" or "Decimal(38, 4)".
+		return fmt.Sprintf("CAST(? AS %s)", typ.RawType), fmt.Sprint(val), nil
+	default:
+		return "?", val, nil
 	}
-	return "?", val, nil
-}
-
-func lookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
-	if lookupDefaultExpression != "" {
-		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
-	}
-	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 }

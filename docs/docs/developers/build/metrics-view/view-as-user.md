@@ -195,6 +195,8 @@ mock_users:
 
 Selecting `embed@rilldata.com` in the **View as** menu renders the dashboard exactly as your embedded frontend would render it for that tenant.
 
+If the canvas uses [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) that depend on the embed, add `embed: true` to the mock user too, because every embedded dashboard carries that attribute.
+
 ### Tenant mapping through a source
 
 For [multi-tenant mapping through a lookup source](/developers/build/metrics-view/security#advanced-example-mapping-dimensions-and-attributes), add one mock user per email that appears in the mapping file. Their `tenant_id` is resolved by the sub-query, not by attributes on the mock user itself, so you only need to set `email`.

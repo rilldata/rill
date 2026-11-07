@@ -9,6 +9,7 @@ on:
       - "web-admin/**"
       - "web-common/**"
       - "web-local/**"
+      - "web-mcp-app/**"
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -30,6 +31,10 @@ jobs:
             common:
               - ".github/workflows/web-test.yml"
               - "web-common/**"
+            mcpapp:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
+              - "web-mcp-app/**"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -43,3 +48,4 @@ jobs:
           ADMIN: ${{ steps.filter.outputs.admin }}
           LOCAL: ${{ steps.filter.outputs.local }}
           COMMON: ${{ steps.filter.outputs.common }}
+          MCPAPP: ${{ steps.filter.outputs.mcpapp }}

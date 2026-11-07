@@ -202,8 +202,9 @@
     }
   }
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    // Reports always run with a fixed grain, so the adaptive option is not offered here.
+    if (timeGrain && baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,

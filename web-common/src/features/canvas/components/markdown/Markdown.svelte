@@ -74,14 +74,17 @@
       "body" in queryData
     ) {
       const body = (queryData as { body?: string }).body;
-      if (body) {
+      // An empty body is a valid result: the template rendered nothing.
+      if (typeof body === "string") {
         const newResolvedContent = applyFormattingIfNeeded(body);
         lastResolvedContent = newResolvedContent;
         return newResolvedContent;
       }
     }
 
-    return lastResolvedContent ?? content;
+    // Until the template resolves there is nothing to show:
+    // the raw template source is not meant to be read.
+    return lastResolvedContent ?? "";
   })();
   $: renderPromise = marked(resolvedContent || "");
 

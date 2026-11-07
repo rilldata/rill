@@ -33,6 +33,13 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
+  /** If true, the recipient is the embed user who created the report.
+Only set for reports created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -124,6 +131,11 @@ export interface V1AlertOptions {
   queryName?: string;
   /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
@@ -305,6 +317,9 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Whether the response may include reasoning blocks.
+Older clients don't support them, so they are removed from the response unless this is set. */
+  includeReasoning?: boolean;
 }
 
 export interface V1CompleteResponse {
@@ -315,6 +330,8 @@ export interface V1CompleteResponse {
   outputTokens?: number;
   /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
   /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
   provider?: string;
 }
@@ -338,6 +355,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1CreateAlertResponse {
@@ -422,6 +440,16 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1DeleteAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteConnectorOAuthTokenRequest {
+  connector?: string;
+  configHash?: string;
+  userId?: string;
+}
+
+export interface V1DeleteConnectorOAuthTokenResponse {
   [key: string]: unknown;
 }
 
@@ -589,6 +617,24 @@ export interface V1GetCloneCredentialsResponse {
   archiveDownloadUrl?: string;
 }
 
+export interface V1GetConnectorOAuthTokenRequest {
+  /** Name of the connector in the deployment's project. */
+  connector?: string;
+  /** Hash of the connector's current OAuth configuration, as computed by the runtime.
+A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization. */
+  configHash?: string;
+  /** ID of the user whose token to return. */
+  userId?: string;
+  /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
+  forceRefresh?: boolean;
+}
+
+export interface V1GetConnectorOAuthTokenResponse {
+  accessToken?: string;
+  /** When the access token expires. Unset if the token does not expire. */
+  expiresOn?: string;
+}
+
 export interface V1GetCurrentMagicAuthTokenResponse {
   token?: V1MagicAuthToken;
   /** True when the bearer is a password-protected token that has not been unlocked.
@@ -654,6 +700,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetEmbedUserResponse {
+  /** The external user ID passed to GetIFrame. */
+  externalUserId?: string;
 }
 
 export interface V1GetGithubPullRequestResponse {
@@ -1276,6 +1327,19 @@ export interface V1Quotas {
   tokensPerSeat?: string;
 }
 
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
+
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
 
 export interface V1RecordEventsRequest {
@@ -1355,7 +1419,14 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
+  exportAttach?: boolean;
   emailRecipients?: string[];
+  /** Email of the embed user who creates the report; only used for reports created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the report.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -1838,6 +1909,10 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
+export type AdminServiceStartDeploymentBodyBody = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
@@ -2101,7 +2176,7 @@ export type AdminServiceUpdateProjectBody = {
   archiveAssetId?: string;
   prodSlots?: string;
   /** Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner. */
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs). */
   provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;
@@ -2149,6 +2224,7 @@ export type AdminServiceListDeploymentsParams = {
   environment?: string;
   branch?: string;
   userId?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceCreateDeploymentBody = {
@@ -2205,6 +2281,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
+  /** The `rill_open` query param of an open link from an email sent by a report created from an embed.
+If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report. */
+  open?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */

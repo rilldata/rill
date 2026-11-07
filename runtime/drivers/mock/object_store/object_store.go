@@ -163,6 +163,11 @@ func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (h *handle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Connection.
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier

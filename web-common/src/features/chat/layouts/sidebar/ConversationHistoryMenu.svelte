@@ -4,6 +4,7 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
+  import type { InlineContextMetadata } from "../../core/context/metadata";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
   import {
     GROUP_ORDER,
@@ -13,6 +14,7 @@
 
   export let conversations: V1Conversation[] = [];
   export let currentConversationId: string | undefined = undefined;
+  export let contextMetadata: InlineContextMetadata;
   export let onSelect: (conversation: V1Conversation) => void;
 
   let currentConversationIdSnapshot: string | undefined = currentConversationId;
@@ -62,6 +64,7 @@
             {#each groupedConversations[groupKey] as conv}
               <ConversationHistoryItem
                 conversation={conv}
+                {contextMetadata}
                 isCurrentChat={conv.id === currentConversationIdSnapshot}
                 showRelativeTime={groupKey === "Today"}
                 {onSelect}

@@ -92,6 +92,7 @@ import type {
   AdminServiceSearchUsersParams,
   AdminServiceSetOrganizationMemberUserRoleBody,
   AdminServiceSetProjectMemberUserRoleBodyBody,
+  AdminServiceStartDeploymentBodyBody,
   AdminServiceSudoGetResourceParams,
   AdminServiceSudoUpdateOrganizationBillingMessageBody,
   AdminServiceTriggerReconcileBodyBody,
@@ -133,6 +134,8 @@ import type {
   V1CreateUsergroupResponse,
   V1CreateWhitelistedDomainResponse,
   V1DeleteAlertResponse,
+  V1DeleteConnectorOAuthTokenRequest,
+  V1DeleteConnectorOAuthTokenResponse,
   V1DeleteDeploymentResponse,
   V1DeleteOrganizationResponse,
   V1DeletePersonalFileResponse,
@@ -156,11 +159,14 @@ import type {
   V1GetBillingSubscriptionResponse,
   V1GetBookmarkResponse,
   V1GetCloneCredentialsResponse,
+  V1GetConnectorOAuthTokenRequest,
+  V1GetConnectorOAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
   V1GetCurrentUserResponse,
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbedUserResponse,
   V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
@@ -578,6 +584,188 @@ export function createAdminServiceListPublicBillingPlans<
   return query;
 }
 
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const adminServiceGetConnectorOAuthToken = (
+  v1GetConnectorOAuthTokenRequest: V1GetConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceGetConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    TError,
+    { data: V1GetConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    { data: V1GetConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceGetConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>
+>;
+export type AdminServiceGetConnectorOAuthTokenMutationBody =
+  V1GetConnectorOAuthTokenRequest;
+export type AdminServiceGetConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const createAdminServiceGetConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+      TError,
+      { data: V1GetConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceGetConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const adminServiceDeleteConnectorOAuthToken = (
+  v1DeleteConnectorOAuthTokenRequest: V1DeleteConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1DeleteConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token/delete`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1DeleteConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceDeleteConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    TError,
+    { data: V1DeleteConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    { data: V1DeleteConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceDeleteConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>
+>;
+export type AdminServiceDeleteConnectorOAuthTokenMutationBody =
+  V1DeleteConnectorOAuthTokenRequest;
+export type AdminServiceDeleteConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const createAdminServiceDeleteConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+      TError,
+      { data: V1DeleteConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary DeleteDeployment deletes a deployment.
  */
@@ -1119,14 +1307,14 @@ export const createAdminServiceTriggerRefreshSources = <
  */
 export const adminServiceStartDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StartDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/start`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1138,13 +1326,13 @@ export const getAdminServiceStartDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStartDeployment"];
@@ -1158,7 +1346,7 @@ export const getAdminServiceStartDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1172,7 +1360,7 @@ export type AdminServiceStartDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>
 >;
 export type AdminServiceStartDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStartDeploymentMutationError = RpcStatus;
 
 /**
@@ -1186,7 +1374,7 @@ export const createAdminServiceStartDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStartDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1194,7 +1382,7 @@ export const createAdminServiceStartDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions =
@@ -1207,14 +1395,14 @@ export const createAdminServiceStartDeployment = <
  */
 export const adminServiceStopDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StopDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/stop`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1226,13 +1414,13 @@ export const getAdminServiceStopDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStopDeployment"];
@@ -1246,7 +1434,7 @@ export const getAdminServiceStopDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1260,7 +1448,7 @@ export type AdminServiceStopDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>
 >;
 export type AdminServiceStopDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStopDeploymentMutationError = RpcStatus;
 
 /**
@@ -1274,7 +1462,7 @@ export const createAdminServiceStopDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStopDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1282,7 +1470,7 @@ export const createAdminServiceStopDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions = getAdminServiceStopDeploymentMutationOptions(options);
@@ -6078,6 +6266,117 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+export const adminServiceGetEmbedUser = (
+  org: string,
+  project: string,
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbedUserResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/embed-users/${id}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbedUserQueryKey = (
+  org?: string,
+  project?: string,
+  id?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/embed-users/${id}`] as const;
+};
+
+export const getAdminServiceGetEmbedUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetEmbedUserQueryKey(org, project, id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+  > = ({ signal }) => adminServiceGetEmbedUser(org, project, id, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && id),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbedUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+>;
+export type AdminServiceGetEmbedUserQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+
+export function createAdminServiceGetEmbedUser<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbedUserQueryOptions(
+    org,
+    project,
+    id,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */
@@ -14804,7 +15103,7 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 };
 /**
  * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
  */
 export const adminServiceSudoUpdateOrganizationDefaultProvisioner = (
   v1SudoUpdateOrganizationDefaultProvisionerRequest: V1SudoUpdateOrganizationDefaultProvisionerRequest,
@@ -14873,7 +15172,7 @@ export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationError =
 
 /**
  * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
  */
 export const createAdminServiceSudoUpdateOrganizationDefaultProvisioner = <
   TError = RpcStatus,

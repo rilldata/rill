@@ -45,7 +45,8 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		props["limit"] = req.Limit
 	}
 
-	// Initialize the resolver
+	// Initialize the resolver.
+	// The properties come from the request, so templates in them cannot access project variables.
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
 		Runtime:    s.runtime,
 		InstanceID: req.InstanceId,

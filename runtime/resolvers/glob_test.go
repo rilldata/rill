@@ -174,6 +174,88 @@ func TestGlobDirectoryPartitioned(t *testing.T) {
 	}, rows)
 }
 
+func TestGlobDirectoryLevelGlob(t *testing.T) {
+	resolve := func(props map[string]any) ([]map[string]any, error) {
+		// The mock object store closes its bucket after each listing, so each call needs a new instance.
+		rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+			"dir/date=2024-01-01/file1.csv": ``,
+			"dir/date=2024-01-02/file2.csv": ``,
+			"dir/date=2024-01-02/file3.csv": ``,
+		})
+
+		props["connector"] = "mock"
+		props["path"] = "mock://bucket/dir/date=*"
+		res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+			InstanceID:         instanceID,
+			Resolver:           "glob",
+			ResolverProperties: props,
+			Claims:             &runtime.SecurityClaims{},
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer res.Close()
+
+		var rows []map[string]any
+		require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+		for _, row := range rows {
+			delete(row, "updated_on")
+		}
+		return rows, nil
+	}
+
+	// The default file mode returns one row per matched directory.
+	rows, err := resolve(map[string]any{})
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{
+		{"uri": "mock://bucket/dir/date=2024-01-01", "path": "dir/date=2024-01-01"},
+		{"uri": "mock://bucket/dir/date=2024-01-02", "path": "dir/date=2024-01-02"},
+	}, rows)
+
+	rows, err = resolve(map[string]any{"last": 1})
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{
+		{"uri": "mock://bucket/dir/date=2024-01-02", "path": "dir/date=2024-01-02"},
+	}, rows)
+
+	// The directory and hive modes group files, so a glob that matches only directories errors.
+	for _, partition := range []string{"directory", "hive"} {
+		_, err = resolve(map[string]any{"partition": partition})
+		require.ErrorContains(t, err, "matched only directories")
+	}
+}
+
+func TestGlobDirectoryPartitionedMixedEntries(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"dir/file1.csv":        ``,
+		"dir/subdir/file2.csv": ``,
+	})
+
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector": "mock",
+			"path":      "mock://bucket/dir/*",
+			"partition": "directory",
+		},
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]any
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+	for _, row := range rows {
+		delete(row, "updated_on")
+	}
+
+	// Directories matched alongside files are skipped.
+	require.Equal(t, []map[string]any{
+		{"uri": "mock://bucket/dir", "path": "dir"},
+	}, rows)
+}
+
 func TestGlobHivePartitioned(t *testing.T) {
 	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
 		"dir/year=2024/month=02/file1.csv": ``,

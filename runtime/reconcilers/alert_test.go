@@ -3,6 +3,7 @@ package reconcilers_test
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -664,4 +665,214 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func TestAlertExportAttach(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Sweden')
+) AS t(__time, country)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			// Fails for every country with at least two rows
+			"alerts/a1.yaml": `
+type: alert
+display_name: CSV alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    sort:
+    - name: country
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: total
+        - val: 2
+export:
+  attach: true
+  format: csv
+  include_header: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+    - user_2@example.com
+annotations:
+  web_open_path: /explore/e1
+`,
+			"alerts/a2.yaml": `
+type: alert
+display_name: Excel alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+export:
+  attach: true
+  format: xlsx
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Passes, so there is nothing to attach
+			"alerts/a3.yaml": `
+type: alert
+display_name: Passing alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: total
+        - val: 100
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 7, 0, 0)
+
+	for _, name := range []string{"a1", "a2", "a3"} {
+		a := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, name).GetAlert()
+		require.Len(t, a.State.ExecutionHistory, 1, name)
+		require.Empty(t, a.State.ExecutionHistory[0].Result.ErrorMessage, name)
+		require.Empty(t, a.State.ExecutionHistory[0].Result.Warnings, name)
+	}
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 3)
+	var recipients []string
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "CSV alert"):
+			recipients = append(recipients, e.ToEmail)
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are attached.")
+			require.Len(t, e.Attachments, 1)
+			require.Regexp(t, `^mv1_filtered_\d{14}\.csv$`, e.Attachments[0].Filename)
+			require.Equal(t, "text/csv", e.Attachments[0].ContentType)
+			// The attachment has all failing rows, not just the first one shown in the email
+			require.Contains(t, string(e.Attachments[0].Data), "Country,Total\nDenmark,2\nNorway,2\n")
+		case strings.HasPrefix(e.Subject, "Excel alert"):
+			require.Equal(t, "user_1@example.com", e.ToEmail)
+			require.Len(t, e.Attachments, 1)
+			require.Regexp(t, `\.xlsx$`, e.Attachments[0].Filename)
+			require.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", e.Attachments[0].ContentType)
+			require.NotEmpty(t, e.Attachments[0].Data)
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+	require.ElementsMatch(t, []string{"user_1@example.com", "user_2@example.com"}, recipients)
+}
+
+func TestAlertExportAttachTooLarge(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// Exports to a CSV file of more than 10 MB (with fewer rows than the alert check's row cap)
+			"models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, range AS id, repeat('x', 1200) AS padding FROM range(9000)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: id
+- column: padding
+measures:
+- name: total
+  expression: count(*)
+`,
+			"alerts/a1.yaml": `
+type: alert
+display_name: Large alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: id
+    - name: padding
+    measures:
+    - name: total
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// The alert is still sent, but without the attachment
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	require.Equal(t, runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, a1.State.ExecutionHistory[0].Result.Status, a1.State.ExecutionHistory[0].Result.ErrorMessage)
+	require.Equal(t, []string{"The rows that triggered the alert were not attached to emails because they are larger than 10 MB"}, a1.State.ExecutionHistory[0].Result.Warnings)
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.Contains(t, emails[0].Body, "too large to attach to this email")
+	require.Empty(t, emails[0].Attachments)
 }

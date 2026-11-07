@@ -7,11 +7,12 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
-import { YAMLMap, YAMLSeq } from "yaml";
+import { YAMLMap, YAMLSeq, type Document } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import { buildDefaultArgs, getDeclaredParams } from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
+import { combineConditions } from "./stores/tab-edit";
 
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
@@ -72,6 +73,8 @@ export type YAMLRow = {
   // These are passed through row transactions untouched so their content is preserved.
   tabs?: unknown;
   name?: string;
+  // Condition that decides who sees the row (or tab group). Row transactions must keep it.
+  if?: unknown;
 };
 
 export type DragItem = {
@@ -99,7 +102,9 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
         return jsonObject;
       }
 
+      // Keep the row's other properties, such as its `if` condition.
       return {
+        ...jsonObject,
         items: jsonObject?.items ?? [],
         height: jsonObject?.height ?? MIN_HEIGHT + "px",
       };
@@ -112,6 +117,22 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
   });
 }
 
+/**
+ * Returns the properties of the canvas item at itemPath other than its component definition under rendererKey,
+ * such as `width` and `if`. Code that replaces an item's component spreads them into the new item to keep them.
+ */
+export function getItemPropertiesExcept(
+  doc: Document,
+  itemPath: (string | number)[],
+  rendererKey: string | number | undefined,
+): Record<string, unknown> {
+  const item = doc.getIn(itemPath);
+  if (!(item instanceof YAMLMap)) return {};
+  const properties = item.toJSON() as Record<string, unknown>;
+  if (rendererKey !== undefined) delete properties[String(rendererKey)];
+  return properties;
+}
+
 interface Position {
   row: number;
   col: number;
@@ -122,6 +143,20 @@ interface Position {
 export type EditTarget = { blockIndex: number; tabIndex: number };
 
 /** YAML path to a tab's rows sequence. */
+/**
+ * Whether the canvas element at the YAML path is hidden from the current user,
+ * because it or one of its ancestors (a row, tab group or tab) is in hiddenPaths.
+ */
+export function isHiddenPath(
+  hiddenPaths: Set<string>,
+  path: (string | number)[],
+): boolean {
+  for (let i = 1; i <= path.length; i++) {
+    if (hiddenPaths.has(path.slice(0, i).join("."))) return true;
+  }
+  return false;
+}
+
 export function tabRowsPath(blockIndex: number, tabIndex: number) {
   return ["rows", blockIndex, "tabs", tabIndex, "rows"];
 }
@@ -201,6 +236,8 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
       operationIndex: number,
     ) => I,
     rowUpdater: (row: R, index: number, touched: boolean) => R,
+    // Called when an item is moved or copied to another row, to keep what it inherited from its source row.
+    itemCarrier?: (item: I, source: R, destination: R) => I,
   ) => {
     const newArray = structuredClone(array);
     const touchedRows: Array<boolean | null> = Array.from(
@@ -251,7 +288,13 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
               ? destination.col - 1
               : destination.col;
 
-          destinationRow.items?.splice(insertIndex, 0, item);
+          destinationRow.items?.splice(
+            insertIndex,
+            0,
+            sourceRow === destinationRow || !itemCarrier
+              ? item
+              : itemCarrier(item, sourceRow, destinationRow),
+          );
 
           touchedRows[source.row] = true;
           touchedRows[rowIndex] = true;
@@ -280,7 +323,10 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           const item = sourceRow.items?.[source.col];
           if (item === undefined) break;
 
-          const copy = structuredClone(item);
+          let copy: I = structuredClone(item);
+          if (sourceRow !== destinationRow && itemCarrier) {
+            copy = itemCarrier(copy, sourceRow, destinationRow);
+          }
           destinationRow?.items?.splice(destination.col, 0, copy);
           touchedRows[rowIndex] = true;
           break;
@@ -473,6 +519,13 @@ export function generateNewAssets(params: {
         ...row,
         items: updatedItems,
       };
+    },
+    // An item moved out of a row with an `if` condition keeps that condition,
+    // so content hidden from some viewers doesn't become visible to them.
+    (item, source, destination) => {
+      if (source.if === undefined || source.if === destination.if) return item;
+      const condition = combineConditions(source.if, item.if);
+      return condition === undefined ? item : { ...item, if: condition };
     },
   );
 
