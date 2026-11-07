@@ -442,8 +442,13 @@ func (s *Server) editPersonalFileForUser(ctx context.Context, proj *database.Pro
 	return nil
 }
 
-// yamlForPersonalFileOnBehalf drops the annotations of a personal file written on behalf of a user,
-// so the caller can neither set the owner nor share the file. It sets admin_shared to the file's current sharing state.
+// personalFileOnBehalfDroppedKeys are the keys dropped from a personal file written on behalf of a user.
+// Besides the annotations, they include the environment overrides, which the parser applies over the annotations,
+// and the name and namespace, which would register the canvas under another name than its file's.
+var personalFileOnBehalfDroppedKeys = []string{"annotations", "environment_overrides", "env", "dev", "prod", "name", "namespace"}
+
+// yamlForPersonalFileOnBehalf drops the keys in personalFileOnBehalfDroppedKeys from a personal file written on behalf of a user,
+// so the caller can neither set the owner nor share the file, nor rename it. It sets admin_shared to the file's current sharing state.
 func yamlForPersonalFileOnBehalf(data string, shared bool) ([]byte, error) {
 	var doc map[string]any
 	if err := yaml.Unmarshal([]byte(data), &doc); err != nil {
@@ -453,7 +458,9 @@ func yamlForPersonalFileOnBehalf(data string, shared bool) ([]byte, error) {
 		return nil, status.Error(codes.InvalidArgument, "yaml is empty")
 	}
 
-	delete(doc, "annotations")
+	for _, k := range personalFileOnBehalfDroppedKeys {
+		delete(doc, k)
+	}
 	if shared {
 		doc["annotations"] = map[string]any{"admin_shared": "true"}
 	}
