@@ -49,6 +49,42 @@ npx playwright test --project=teardown
 # Or use the shorthand: npm run test:teardown
 ```
 
+### Embed host
+
+`tests/embed-host` is a small app that embeds the AdBids project the way a customer's app would.
+`embedded-reports.spec.ts` uses it, through the `embedHost` fixture, to create reports from an embed and open the links in their emails.
+
+- Its backend (`handler.ts`) requests iframe URLs from the admin service with the service token, as one of the users in `users.ts`.
+  Their emails are suffixed variants of the e2e admin's email, for example `e2e-admin+embed-a@rilldata.com`, so Mailpit catches them.
+- It runs on `http://localhost:4300`, which `embeds.open_url` in the AdBids project's `rill.yaml` points to.
+- Tests serve it with Playwright route interception, so nothing needs to listen on the port.
+
+To debug manually in a normal browser, start it on the same port after `npm run test:setup`:
+
+```bash
+npm run test:embed-host
+```
+
+Then open `http://localhost:4300/?user=alice`.
+Open links in report emails caught by Mailpit (`http://localhost:8025`) also work.
+
+To point the dev server elsewhere, add a gitignored `tests/embed-host/.env.test`.
+Only the dev server reads it; tests always use the defaults in `tests/embed-host/constants.ts`.
+
+| Variable                      | Default                                            |
+| ----------------------------- | -------------------------------------------------- |
+| `EMBED_HOST_PORT`             | `4300`                                             |
+| `EMBED_ADMIN_URL`             | `http://localhost:8080`                            |
+| `EMBED_ORG_NAME`              | `e2e`                                              |
+| `EMBED_PROJECT_NAME`          | `AdBids`                                           |
+| `EMBED_DEFAULT_RESOURCE`      | `AdBids_metrics_explore`                           |
+| `EMBED_DEFAULT_RESOURCE_TYPE` | `rill.runtime.v1.Explore`                          |
+| `EMBED_SERVICE_TOKEN`         | Read from `playwright/rill-service-token.txt`      |
+| `EMBED_EMAIL`                 | `RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL` from `.env` |
+
+`EMBED_EMAIL` is the base the users' emails are derived from, for example `you+embed-a@example.com`.
+Open links only reach the dev server if the deployed project's `embeds.open_url` matches its port.
+
 ### Development Workflow
 
 When developing and debugging tests, follow this workflow to avoid repeatedly running setup and teardown:

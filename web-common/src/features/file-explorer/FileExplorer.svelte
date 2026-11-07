@@ -24,10 +24,10 @@
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
-  import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { ChevronsDownUp, ChevronsUpDown } from "lucide-svelte";
   import NavDirectory from "./NavDirectory.svelte";
   import { directoryState, isDirectoryExpanded } from "./directory-store";
+  import { useProjectScopeId } from "./project-scope";
   import {
     collectDirectoryPaths,
     findDirectory,
@@ -83,18 +83,9 @@
   $: projectTitleQuery = useProjectTitle(runtimeClient);
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 
-  // Scope the persisted expand/collapse state per project. In the cloud the
-  // instanceId is unique per project; in Rill Developer it is always "default",
-  // so fall back to the on-disk project path there (GetMetadata is a local-only
-  // endpoint that simply errors in the cloud).
-  $: ({ instanceId } = runtimeClient);
-  $: projectMetadataQuery = createLocalServiceGetMetadata({
-    query: { retry: false },
-  });
-  $: projectScopeId = $projectMetadataQuery.isLoading
-    ? undefined
-    : ($projectMetadataQuery.data?.projectPath ?? instanceId);
-  $: if (projectScopeId) directoryState.setProjectScope(projectScopeId);
+  // Scope the persisted expand/collapse state per project.
+  const projectScopeId = useProjectScopeId(runtimeClient.instanceId);
+  $: if ($projectScopeId) directoryState.setProjectScope($projectScopeId);
 
   $: directoryPaths = fileTree ? collectDirectoryPaths(fileTree) : [];
   $: allDirectoriesCollapsed =

@@ -1,5 +1,10 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
@@ -33,11 +38,13 @@ import {
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
+  type V1ExploreSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -205,6 +212,45 @@ describe("DashboardStateManager", () => {
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
+    it("Should drop pivot fields repeated in the 'other source' of dashboard state", async () => {
+      // A legacy home bookmark loads through proto state, not the url parser,
+      // so the final correction has to dedupe what the merge hands it.
+      const publisher: PivotChipData = {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      };
+      const domain: PivotChipData = {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      };
+      const impressions: PivotChipData = {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      };
+      renderDashboardStateManager(
+        readable({
+          data: {
+            activePage: DashboardState_ActivePage.PIVOT,
+            pivot: {
+              rows: [publisher, publisher],
+              columns: [publisher, domain, impressions, impressions],
+            } as PivotState,
+          },
+          error: null,
+          isFetching: false,
+          isLoading: false,
+        }),
+      );
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      const { pivot } = getCleanMetricsExploreForAssertion();
+      expect(pivot?.rows).toEqual([publisher]);
+      expect(pivot?.columns).toEqual([domain, impressions]);
+    });
+
     it("Should load most recent dashboard state", async () => {
       setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
@@ -322,6 +368,93 @@ describe("DashboardStateManager", () => {
         ...ExploreStateSubsetForRillDefaultState,
         ...ExploreStateSubsetForYAMLState,
       });
+    });
+  });
+
+  describe("Dashboards with an explore spec naming fields the metrics view dropped", () => {
+    // With staged changes the runtime keeps serving the explore's last valid spec
+    // after the metrics view dropped a field, so the explore lists fields that cannot be queried.
+    const StaleExploreSpec: V1ExploreSpec = {
+      ...AD_BIDS_EXPLORE_INIT,
+      measures: [
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        "stale_measure",
+        AD_BIDS_BID_PRICE_MEASURE,
+      ],
+      dimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        "stale_dimension",
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+    };
+    const ExploreStateSubsetForRillDefaultState: Partial<ExploreState> = {
+      selectedTimeRange: {
+        name: "rill-QTD",
+        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+      } as DashboardTimeControls,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
+
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: true,
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+      allDimensionsVisible: true,
+
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+      dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    };
+
+    it("Should drop the stale fields from the rill default state", async () => {
+      mocks.mockMetricsExplore(
+        AD_BIDS_EXPLORE_NAME,
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        StaleExploreSpec,
+      );
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
+      pageMock.assertSearchParams("");
+    });
+
+    it("Should drop the stale fields from the yaml defaults", async () => {
+      mocks.mockMetricsExplore(
+        AD_BIDS_EXPLORE_NAME,
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        {
+          ...StaleExploreSpec,
+          defaultPreset: {
+            measures: ["stale_measure", AD_BIDS_BID_PRICE_MEASURE],
+            dimensions: ["stale_dimension", AD_BIDS_DOMAIN_DIMENSION],
+            exploreSortBy: "stale_measure",
+            exploreLeaderboardMeasures: ["stale_measure"],
+            comparisonMode:
+              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
+          },
+        },
+      );
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+      });
+      pageMock.assertSearchParams(
+        "measures=bid_price&dims=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+      );
     });
   });
 

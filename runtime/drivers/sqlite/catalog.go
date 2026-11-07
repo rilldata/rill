@@ -510,15 +510,51 @@ func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession
 
 func (c *catalogStore) UpdateAISession(ctx context.Context, s *drivers.AISession) error {
 	now := time.Now()
-	_, err := c.db.ExecContext(ctx, `
+	res, err := c.db.ExecContext(ctx, `
 		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, shared_until_message_id = ?, updated_on = ?
 		WHERE id = ?
 	`, s.OwnerID, s.Title, s.UserAgent, s.SharedUntilMessageID, now, s.ID)
 	if err != nil {
 		return err
 	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return drivers.ErrNotFound
+	}
 	s.UpdatedOn = now
 	return nil
+}
+
+func (c *catalogStore) DeleteAISession(ctx context.Context, sessionID string) error {
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Delete the session first so messages are only deleted if the session belongs to this instance.
+	res, err := tx.ExecContext(ctx, `DELETE FROM ai_sessions WHERE instance_id = ? AND id = ?`, c.instanceID, sessionID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return drivers.ErrNotFound
+	}
+
+	// Explicitly delete messages since the ON DELETE CASCADE only applies when foreign keys are enabled on the connection.
+	_, err = tx.ExecContext(ctx, `DELETE FROM ai_messages WHERE session_id = ?`, sessionID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]*drivers.AIMessage, error) {
@@ -549,12 +585,21 @@ func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]
 }
 
 func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage) error {
-	_, err := c.db.ExecContext(ctx, `
+	// Only insert the message if its session exists; this prevents orphaned messages for sessions deleted while in use.
+	res, err := c.db.ExecContext(ctx, `
 		INSERT INTO ai_messages (id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, m.ID, m.ParentID, m.SessionID, m.CreatedOn, m.UpdatedOn, m.Index, m.Role, m.Type, m.Tool, m.ContentType, m.Content)
+		SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+		WHERE EXISTS (SELECT 1 FROM ai_sessions WHERE id = ?)
+	`, m.ID, m.ParentID, m.SessionID, m.CreatedOn, m.UpdatedOn, m.Index, m.Role, m.Type, m.Tool, m.ContentType, m.Content, m.SessionID)
 	if err != nil {
 		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return drivers.ErrNotFound
 	}
 	return nil
 }

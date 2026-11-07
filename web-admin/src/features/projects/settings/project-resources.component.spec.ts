@@ -61,7 +61,12 @@ beforeEach(() => {
     },
   });
 });
-afterEach(cleanup);
+afterEach(async () => {
+  cleanup();
+  // Unmounting a bits-ui dialog restores the body style on a 24ms timer.
+  // Let it run while jsdom is still up; it throws `document is not defined` after teardown.
+  await new Promise((resolve) => setTimeout(resolve, 50));
+});
 
 const props = { organization: "test-org", project: "test-project" };
 

@@ -18,6 +18,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai/mcpapp"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -66,8 +67,10 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &CreateChart{Runtime: rt})
 	RegisterTool(r, &DevelopPersonalCanvas{Runtime: rt})
 	RegisterTool(r, &WritePersonalCanvas{Runtime: rt})
+	RegisterTool(r, &ChartData{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
+	RegisterTool(r, &SearchExternalTools{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -94,8 +97,12 @@ type SessionOptions struct {
 	// CreateIfNotExists creates the session if it does not exist.
 	// If SessionID is set, the session is created with that ID.
 	CreateIfNotExists bool
-	Claims            *runtime.SecurityClaims
-	UserAgent         string
+	// Transient makes a new session in-memory only: it is not inserted in the catalog and Flush is a no-op.
+	// It serves MCP requests that are not part of a conversation (such as resources/list or ping from a client
+	// that has not sent a session ID), which would otherwise leave orphan sessions behind.
+	Transient bool
+	Claims    *runtime.SecurityClaims
+	UserAgent string
 }
 
 // Session creates or loads an AI session.
@@ -132,15 +139,17 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 			CreatedOn:  time.Now(),
 			UpdatedOn:  time.Now(),
 		}
-		err = catalog.InsertAISession(ctx, session)
-		if err != nil {
-			// Concurrent requests addressing the same new session ID race to create it,
-			// e.g. parallel tool calls forwarded by the unified MCP server for a project it has not called before.
-			// If another request won the race, continue with the session it created.
-			var retryErr error
-			session, messages, retryErr = findSession(ctx, catalog, opts)
-			if retryErr != nil || session == nil {
-				return nil, fmt.Errorf("failed to create session: %w", errors.Join(err, retryErr))
+		if !opts.Transient {
+			err = catalog.InsertAISession(ctx, session)
+			if err != nil {
+				// Concurrent requests addressing the same new session ID race to create it,
+				// e.g. parallel tool calls forwarded by the unified MCP server for a project it has not called before.
+				// If another request won the race, continue with the session it created.
+				var retryErr error
+				session, messages, retryErr = findSession(ctx, catalog, opts)
+				if retryErr != nil || session == nil {
+					return nil, fmt.Errorf("failed to create session: %w", errors.Join(err, retryErr))
+				}
 			}
 		}
 	}
@@ -187,6 +196,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		memoryEnabled:       memEnabled,
 		userMemories:        memories,
 		managedAI:           instance.ResolveAIConnector() == instance.AdminConnector,
+		transient:           opts.Transient,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
 		},
@@ -331,15 +341,52 @@ type Tool[In, Out any] interface {
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
+// MCPResultDecorator is an optional interface for tools that customize the MCP representation of their result.
+// The MCP SDK fills structuredContent from the result as usual; the decorator can set the content blocks
+// (for example a markdown rendering for clients that cannot show the structured result) and the result's _meta.
+// It only affects the MCP server: the result persisted in the session and sent to the in-app LLM is unchanged.
+type MCPResultDecorator[Out any] interface {
+	DecorateMCPResult(ctx context.Context, out Out, res *mcp.CallToolResult)
+}
+
+// MCPSpecProvider is an optional interface for tools whose definition on the MCP server differs from their in-app definition.
+// The MCP server (and the admin service's unified MCP server, see MCPToolSpecs) advertises and validates against the spec it returns,
+// while Spec stays what the in-app LLM sees (see AsProto). The returned spec inherits the in-app input and output schemas where it sets none.
+type MCPSpecProvider interface {
+	MCPSpec() *mcp.Tool
+}
+
+// MCPAppTool is an optional interface for tools that take part in the MCP Apps widget (see package mcpapp).
+// The returned UI drives the _meta.ui the tool is registered with on the MCP server.
+// App-only tools (see mcpapp.ToolUI.AppOnly) are called by the widget rather than the model, so their calls are plumbing:
+// they are not added to the session's messages. They still count in the tool_call metric, since they run real queries (see CallToolWithOptions).
+type MCPAppTool interface {
+	MCPAppUI() *mcpapp.ToolUI
+}
+
 // CompiledTool is the internal representation of a registered tool.
 type CompiledTool struct {
-	Name                  string
-	Spec                  *mcp.Tool
-	CheckAccess           func(context.Context) (bool, error)
-	UnmarshalArgs         func(content string) (any, error)
-	UnmarshalResult       func(content string) (any, error)
-	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
-	RegisterWithMCPServer func(srv *mcp.Server)
+	Name            string
+	Spec            *mcp.Tool
+	CheckAccess     func(context.Context) (bool, error)
+	UnmarshalArgs   func(content string) (any, error)
+	UnmarshalResult func(content string) (any, error)
+	JSONHandler     func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
+	// RegisterWithMCPServer registers the tool on an MCP server.
+	// A non-nil meta is merged into the _meta of a shallow copy of the spec, so Spec itself (and AsProto) never carries it.
+	RegisterWithMCPServer func(srv *mcp.Server, meta map[string]any)
+	// MCPSpec is set for tools that implement MCPSpecProvider; see mcpSpec.
+	MCPSpec *mcp.Tool
+	// AppUI is set for tools that implement MCPAppTool.
+	AppUI *mcpapp.ToolUI
+}
+
+// mcpSpec returns the definition the tool is registered with on MCP servers: its MCP spec when it has one, else its in-app spec.
+func (t *CompiledTool) mcpSpec() *mcp.Tool {
+	if t.MCPSpec != nil {
+		return t.MCPSpec
+	}
+	return t.Spec
 }
 
 // AsProto converts the CompiledTool to a protocol buffer representation.
@@ -410,10 +457,34 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 		}
 	}
 
+	var appUI *mcpapp.ToolUI
+	if at, ok := any(t).(MCPAppTool); ok {
+		appUI = at.MCPAppUI()
+	}
+	decorator, _ := any(t).(MCPResultDecorator[Out])
+
+	// The definition advertised on MCP servers; the same as the in-app one unless the tool provides its own.
+	var mcpSpec *mcp.Tool
+	if p, ok := any(t).(MCPSpecProvider); ok {
+		mcpSpec = p.MCPSpec()
+		if mcpSpec.InputSchema == nil {
+			mcpSpec.InputSchema = spec.InputSchema
+		}
+		if mcpSpec.OutputSchema == nil {
+			mcpSpec.OutputSchema = spec.OutputSchema
+		}
+	}
+	registered := spec
+	if mcpSpec != nil {
+		registered = mcpSpec
+	}
+
 	s.Tools[spec.Name] = &CompiledTool{
 		Name:        spec.Name,
 		Spec:        spec,
+		MCPSpec:     mcpSpec,
 		CheckAccess: t.CheckAccess,
+		AppUI:       appUI,
 		UnmarshalArgs: func(content string) (any, error) {
 			var args In
 			if err := json.Unmarshal([]byte(content), &args); err != nil {
@@ -443,17 +514,24 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			}
 			return data, nil
 		},
-		RegisterWithMCPServer: func(srv *mcp.Server) {
-			mcp.AddTool(srv, spec, func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
+		RegisterWithMCPServer: func(srv *mcp.Server, meta map[string]any) {
+			mcp.AddTool(srv, mcpapp.ToolWithMeta(registered, meta), func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
 				s := GetSession(ctx)
-				var res Out
+				var out Out
 				_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
-					Role: RoleAssistant,
-					Tool: spec.Name,
-					Out:  &res,
-					Args: args,
+					Role:   RoleAssistant,
+					Tool:   spec.Name,
+					Unwrap: appUI.AppOnly(), // Widget plumbing is not part of the conversation (see MCPAppTool)
+					Out:    &out,
+					Args:   args,
 				})
-				return nil, res, err
+				if err != nil || decorator == nil {
+					return nil, out, err
+				}
+				// The SDK keeps the content set here and still fills structuredContent from out.
+				res := &mcp.CallToolResult{}
+				decorator.DecorateMCPResult(ctx, out, res)
+				return res, out, nil
 			})
 		},
 	}
@@ -570,6 +648,7 @@ type BaseSession struct {
 	memoryEnabled       bool                // true if memory applies to this session: it is available to the owner (see memoryEnabled) and the owner has it turned on
 	userMemories        []*drivers.AIMemory // the owner's memories, loaded at session creation and refreshed on writes
 	managedAI           bool                // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
+	transient           bool                // true if the session is never persisted (see SessionOptions.Transient)
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
@@ -586,6 +665,9 @@ type BaseSession struct {
 	skillsMu     ctxsync.RWMutex
 	skillsLoaded bool
 	skills       []*Skill
+
+	featureFlagsMu sync.Mutex
+	featureFlags   map[string]bool
 }
 
 func (s *BaseSession) Flush(ctx context.Context) error {
@@ -593,8 +675,8 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	ctx, cancel := graceful.WithMinimumDuration(ctx, 5*time.Second)
 	defer cancel()
 
-	// Exit early if nothing to flush
-	if !s.dtoDirty && !s.messagesDirty {
+	// Exit early if nothing to flush. Transient sessions are never persisted.
+	if s.transient || (!s.dtoDirty && !s.messagesDirty) {
 		return nil
 	}
 
@@ -609,6 +691,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	if s.dtoDirty {
 		err = catalog.UpdateAISession(ctx, s.dto)
 		if err != nil {
+			if errors.Is(err, drivers.ErrNotFound) {
+				s.discardDeleted()
+				return nil
+			}
 			return err
 		}
 		s.dtoDirty = false
@@ -634,8 +720,13 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				Content:     msg.Content,
 			})
 			if err != nil {
+				if errors.Is(err, drivers.ErrNotFound) {
+					s.discardDeleted()
+					return nil
+				}
 				return err
 			}
+			msg.dirty = false
 			content := "<redacted>"
 			if msg.ContentType == MessageContentTypeError {
 				content = msg.Content
@@ -657,6 +748,17 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	return nil
 }
 
+// discardDeleted drops pending changes for a session that was deleted from the catalog while in use.
+// This can happen if the owner deletes a conversation during an ongoing completion.
+func (s *BaseSession) discardDeleted() {
+	s.logger.Info("ai: discarding changes for deleted session")
+	for _, msg := range s.messages {
+		msg.dirty = false
+	}
+	s.dtoDirty = false
+	s.messagesDirty = false
+}
+
 func (s *BaseSession) ID() string {
 	return s.id
 }
@@ -671,6 +773,22 @@ func (s *BaseSession) CatalogSession() *drivers.AISession {
 
 func (s *BaseSession) Claims() *runtime.SecurityClaims {
 	return s.claims
+}
+
+// FeatureFlags returns the feature flags resolved for the session's instance and claims.
+// They are resolved on the first call and cached for the lifetime of the session (an MCP session lives for one request),
+// since the MCP server and the access checks of several tools consult them. The returned map must not be modified.
+func (s *BaseSession) FeatureFlags(ctx context.Context) (map[string]bool, error) {
+	s.featureFlagsMu.Lock()
+	defer s.featureFlagsMu.Unlock()
+	if s.featureFlags == nil {
+		ff, err := s.runner.Runtime.FeatureFlags(ctx, s.instanceID, s.claims)
+		if err != nil {
+			return nil, err
+		}
+		s.featureFlags = ff
+	}
+	return s.featureFlags, nil
 }
 
 func (s *BaseSession) Title() string {
@@ -1168,7 +1286,8 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 	// Emit a billable tool_call metric. This is the shared point for all agent tool calls (chat, AI reports,
 	// and the MCP server), so counting here covers them uniformly. Tool calls are tracked separately from api_calls
 	// since they are agent actions rather than external API requests. High-level orchestration tools (the agents)
-	// are excluded since they don't do real work themselves.
+	// are excluded since they don't do real work themselves. App-only tools (see MCPAppTool) count like any other tool:
+	// they run real queries on behalf of the widget, even though their calls are not persisted in the session.
 	if !nonBillableToolCalls[opts.Tool] {
 		s.activity.RecordMetric(ctx, "tool_call", 1, attribute.String("tool", opts.Tool))
 	}
@@ -1251,7 +1370,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	// (such as an external server's tools that are scoped to another agent).
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
 	offered := make(map[string]bool, len(opts.Tools))
-	for _, toolName := range opts.Tools {
+	offer := func(ctx context.Context, toolName string) error {
 		tool, ok := s.Tool(toolName)
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
@@ -1261,7 +1380,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
 		}
 		if !ok {
-			continue
+			return nil
 		}
 		toolPB, err := tool.AsProto()
 		if err != nil {
@@ -1269,6 +1388,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		}
 		tools = append(tools, toolPB)
 		offered[toolName] = true
+		return nil
+	}
+	for _, toolName := range opts.Tools {
+		if err := offer(ctx, toolName); err != nil {
+			return err
+		}
 	}
 	if len(tools) > maxTools {
 		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
@@ -1315,7 +1440,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// TODO: For durable execution, add messages from current scope.
 
 		// Telemetry
-		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens int
+		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens int
 		var provider string
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
@@ -1350,13 +1475,15 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
 				attribute.Int("cached_input_tokens", cachedInputTokens),
+				attribute.Int("cache_write_input_tokens", cacheWriteInputTokens),
 				attribute.String("provider", provider),
 			)
 
 			// Emit billable token metrics. Tagged with the request source, the LLM provider, and whether the completion used
 			// the Rill-managed AI connector, so the billable scope is decided downstream in SQL (emitted for every completion,
 			// unlike tool_call). Values are reported as the provider returns them; cached_input_tokens is emitted separately
-			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific).
+			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific),
+			// and cache_write_input_tokens so billing can price cache writes at their premium rate.
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
 			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			providerAttr := attribute.String("provider", provider)
@@ -1368,6 +1495,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			if cachedInputTokens > 0 {
 				s.activity.RecordMetric(ctx, "cached_input_tokens", float64(cachedInputTokens), source, managedAI, providerAttr)
+			}
+			if cacheWriteInputTokens > 0 {
+				s.activity.RecordMetric(ctx, "cache_write_input_tokens", float64(cacheWriteInputTokens), source, managedAI, providerAttr)
 			}
 		}()
 
@@ -1411,6 +1541,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
 				cachedInputTokens += res.CachedInputTokens
+				cacheWriteInputTokens += res.CacheWriteInputTokens
 				if res.Provider != "" {
 					provider = res.Provider
 				}
@@ -1447,8 +1578,18 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// Add returned blocks as messages.
 			// Run the requested tool calls.
 			// TODO: How to do durable execution here?
+			// Tools loaded with search_external_tools are offered after the response is processed:
+			// later calls in the same response were made without their schemas.
+			var loaded []string
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
+				case *aiv1.ContentBlock_Reasoning:
+					// Some providers require the reasoning to be passed back within the tool call loop, so keep it for the next iterations.
+					// It isn't added to the session, since it's only needed until the loop completes.
+					messages = append(messages, &aiv1.CompletionMessage{
+						Role:    string(RoleAssistant),
+						Content: []*aiv1.ContentBlock{{BlockType: block}},
+					})
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
@@ -1491,6 +1632,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
 						}
 						// Fall through since it's a structured error that we can capture in the messages.
+					} else if block.ToolCall.Name == SearchExternalToolsName {
+						var found SearchExternalToolsResult
+						if err := json.Unmarshal([]byte(toolResult.Result.Content), &found); err != nil {
+							return nil, fmt.Errorf("failed to parse loaded external tools: %w", err)
+						}
+						for _, info := range found.Tools {
+							loaded = append(loaded, info.Name)
+						}
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {
@@ -1503,6 +1652,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 					messages = append(messages, callMessage, resultMsg)
 				default:
 					return nil, fmt.Errorf("unexpected progress block type: %T", block)
+				}
+			}
+			for _, name := range loaded {
+				if offered[name] {
+					continue
+				}
+				if err := offer(ctx, name); err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -1520,6 +1677,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
+			case *aiv1.ContentBlock_Reasoning:
+				// Not needed after the loop completes.
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}
@@ -1767,6 +1926,14 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 			}
 		}
 		return false
+	})
+
+	// Remove reasoning blocks, since providers that require them (e.g. Claude) reject them after the history they were produced from has changed.
+	// Removing all of them is allowed; removing only some of them is not.
+	result = slices.DeleteFunc(result, func(msg *aiv1.CompletionMessage) bool {
+		return slices.ContainsFunc(msg.Content, func(block *aiv1.ContentBlock) bool {
+			return block.GetReasoning() != nil
+		})
 	})
 
 	return result

@@ -7543,6 +7543,14 @@ func (m *AlertSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ExportAttach
+
+	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
+
+	// no validation rules for ExportLimit
+
 	// no validation rules for NotifyOnRecover
 
 	// no validation rules for NotifyOnFail

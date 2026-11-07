@@ -174,13 +174,13 @@ export function createTimeSeriesDataStore(
         dashboardStore,
         metricsView ?? {},
         measures,
-        true,
+        { time: true },
       );
       const measuresForTotals = filterOutSomeAdvancedMeasures(
         dashboardStore,
         metricsView ?? {},
         measures,
-        false,
+        {},
       );
 
       const primaryTimeSeries =

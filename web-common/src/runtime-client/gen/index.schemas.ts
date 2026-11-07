@@ -5,11 +5,12 @@
  * you may hand-edit this file (e.g., to add a new field to an existing type).
  *
  * Migration path:
- * - For new endpoints, prefer proto-native types from protobuf-es (PartialMessage<T>).
- *   The code generator uses them automatically when no V1* equivalent exists here.
+ * - Whether a method's hooks use these V1* types or proto-native types from
+ *   protobuf-es is decided per method by `protoMessageMethods` in
+ *   src/runtime-client/v2/codegen/config.ts, not by what this file happens to export.
  * - When a V1* type causes friction (missing fields, no discriminated unions for
- *   oneof), switch consumers to the proto-native type from the corresponding *_pb.ts
- *   file instead.
+ *   oneof), switch its consumers to the proto-native type from the corresponding
+ *   *_pb.ts file and add the method to `protoMessageMethods`.
  * - Once all consumers of a V1* type have migrated, delete the type from this file.
  */
 export interface ColumnTimeSeriesRequestBasicMeasure {
@@ -295,6 +296,11 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   notifyOnRecover?: boolean;
   notifyOnFail?: boolean;
   notifyOnError?: boolean;
@@ -530,11 +536,6 @@ This may be empty if the data refresh time is not known, e.g. if the metrics vie
   dataRefreshedOn?: string;
 }
 
-export interface V1CategoricalSummary {
-  topK?: V1TopK;
-  cardinality?: number;
-}
-
 export interface V1CharLocation {
   line?: number;
 }
@@ -556,10 +557,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
   connector?: string;
@@ -570,10 +567,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnDescriptiveStatisticsResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
   connector?: string;
@@ -582,10 +575,6 @@ export interface V1ColumnNullCountRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnNullCountResponse {
-  count?: number;
 }
 
 export interface V1ColumnNumericHistogramRequest {
@@ -599,10 +588,6 @@ export interface V1ColumnNumericHistogramRequest {
   priority?: number;
 }
 
-export interface V1ColumnNumericHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
   connector?: string;
@@ -611,12 +596,6 @@ export interface V1ColumnRollupIntervalRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnRollupIntervalResponse {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
 }
 
 export interface V1ColumnRugHistogramRequest {
@@ -629,10 +608,6 @@ export interface V1ColumnRugHistogramRequest {
   priority?: number;
 }
 
-export interface V1ColumnRugHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
   connector?: string;
@@ -643,10 +618,6 @@ export interface V1ColumnTimeGrainRequest {
   priority?: number;
 }
 
-export interface V1ColumnTimeGrainResponse {
-  timeGrain?: V1TimeGrain;
-}
-
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
   connector?: string;
@@ -655,10 +626,6 @@ export interface V1ColumnTimeRangeRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnTimeRangeResponse {
-  timeRangeSummary?: V1TimeRangeSummary;
 }
 
 export interface V1ColumnTimeSeriesRequest {
@@ -676,10 +643,6 @@ export interface V1ColumnTimeSeriesRequest {
   timeZone?: string;
 }
 
-export interface V1ColumnTimeSeriesResponse {
-  rollup?: V1TimeSeriesResponse;
-}
-
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   connector?: string;
@@ -690,10 +653,6 @@ export interface V1ColumnTopKRequest {
   agg?: string;
   k?: number;
   priority?: number;
-}
-
-export interface V1ColumnTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CompleteResponse {
@@ -838,6 +797,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1Conversation {
@@ -1412,6 +1372,7 @@ export interface V1Instance {
   aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
+  embedOpenUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -2177,14 +2138,6 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
-export interface V1NumericHistogramBins {
-  bins?: NumericHistogramBinsBin[];
-}
-
-export interface V1NumericOutliers {
-  outliers?: NumericOutliersOutlier[];
-}
-
 export interface V1NumericStatistics {
   min?: number;
   max?: number;
@@ -2193,12 +2146,6 @@ export interface V1NumericStatistics {
   q50?: number;
   q75?: number;
   sd?: number;
-}
-
-export interface V1NumericSummary {
-  numericHistogramBins?: V1NumericHistogramBins;
-  numericStatistics?: V1NumericStatistics;
-  numericOutliers?: V1NumericOutliers;
 }
 
 export type V1OLAPGetTableResponseUnsupportedColumns = {
@@ -2344,6 +2291,19 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
+
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
 
 export interface V1RefreshModelTrigger {
   /** The model to refresh. */
@@ -2819,12 +2779,6 @@ export interface V1TimeRangeSummary {
   watermark?: string;
 }
 
-export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesValue[];
-  spark?: V1TimeSeriesValue[];
-  sampleSize?: number;
-}
-
 export interface V1TimeSeriesTimeRange {
   start?: string;
   end?: string;
@@ -2862,10 +2816,6 @@ export interface V1ToolResult {
   id?: string;
   content?: string;
   isError?: boolean;
-}
-
-export interface V1TopK {
-  entries?: TopKEntry[];
 }
 
 /**
@@ -3228,17 +3178,6 @@ export type QueryServiceResolveCanvasBody = {
   args?: QueryServiceResolveCanvasBodyArgs;
 };
 
-export type QueryServiceColumnCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableColumnsParams = {
   connector?: string;
   database?: string;
@@ -3250,17 +3189,6 @@ export type QueryServiceResolveComponentBodyArgs = { [key: string]: unknown };
 
 export type QueryServiceResolveComponentBody = {
   args?: QueryServiceResolveComponentBodyArgs;
-};
-
-export type QueryServiceColumnDescriptiveStatisticsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
 };
 
 export type QueryServiceExportBody = {
@@ -3501,14 +3429,6 @@ export type QueryServiceResolveTemplatedStringBody = {
   additionalTimeRange?: V1TimeRange;
 };
 
-export type QueryServiceColumnRollupIntervalBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableRowsParams = {
   connector?: string;
   database?: string;
@@ -3517,60 +3437,10 @@ export type QueryServiceTableRowsParams = {
   priority?: number;
 };
 
-export type QueryServiceColumnRugHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeGrainParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeRangeParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeSeriesBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-};
-
-export type QueryServiceColumnTopKBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  agg?: string;
-  k?: number;
   priority?: number;
 };
 

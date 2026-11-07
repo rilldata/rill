@@ -2819,6 +2819,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   resource = "";
 
   /**
+   * The `rill_open` query param of an open link from an email sent by a report created from an embed.
+   * If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
+
+  /**
    * Theme to use for the embedded resource.
    *
    * @generated from field: string theme = 12;
@@ -2888,6 +2897,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -2972,6 +2982,96 @@ export class GetIFrameResponse extends Message<GetIFrameResponse> {
 
   static equals(a: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined, b: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined): boolean {
     return proto3.util.equals(GetIFrameResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbedUserRequest
+ */
+export class GetEmbedUserRequest extends Message<GetEmbedUserRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+   *
+   * @generated from field: string id = 3;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined, b: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbedUserResponse
+ */
+export class GetEmbedUserResponse extends Message<GetEmbedUserResponse> {
+  /**
+   * The external user ID passed to GetIFrame.
+   *
+   * @generated from field: string external_user_id = 1;
+   */
+  externalUserId = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined, b: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserResponse, a, b);
   }
 }
 
@@ -13723,6 +13823,27 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
    */
   userAttrs?: Struct;
 
+  /**
+   * If true, the report's data must only be accessed through the resources listed in `resources`.
+   * Set for reports created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 7;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 8;
+   */
+  resources: ResourceName[] = [];
+
+  /**
+   * If true, the recipient is the embed user who created the report.
+   * Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 9;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_DeliveryMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13737,6 +13858,9 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
     { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_attrs", kind: "message", T: Struct },
+    { no: 7, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 9, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_DeliveryMeta {
@@ -19017,6 +19141,16 @@ export class ReportOptions extends Message<ReportOptions> {
   emailRecipients: string[] = [];
 
   /**
+   * Email of the embed user who creates the report; only used for reports created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the report.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 25;
+   */
+  embedOwnerEmail = "";
+
+  /**
    * @generated from field: repeated string slack_users = 10;
    */
   slackUsers: string[] = [];
@@ -19096,6 +19230,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -19173,6 +19308,28 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 18;
+   */
+  exportAttach = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 19;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 20;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 21;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -19237,6 +19394,10 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
