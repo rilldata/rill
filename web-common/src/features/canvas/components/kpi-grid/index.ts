@@ -34,6 +34,14 @@ export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "percent_change",
 ];
 
+// Per-measure comparison target persisted in the canvas YAML. A list (not a
+// map) mirrors how per-measure config is expressed elsewhere in canvas. A
+// measure listed here ignores the time comparison toggle.
+export interface KPIMeasureComparisonSpec {
+  measure: string;
+  compare_to: string;
+}
+
 export interface KPIGridSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -47,12 +55,13 @@ export interface KPIGridSpec
   hide_time_range?: boolean;
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
+  measure_comparisons?: KPIMeasureComparisonSpec[];
 }
 
 export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
-  resetParams = ["measures", "adhoc_measures"];
+  resetParams = ["measures", "adhoc_measures", "measure_comparisons"];
   type: CanvasComponentType = "kpi_grid";
   component = KPIGrid;
 
