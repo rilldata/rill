@@ -35,6 +35,7 @@ const (
 	QueryService_MetricsViewTimeRanges_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
 	QueryService_MetricsViewAnnotations_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
 	QueryService_ConvertExpressionToMetricsSQL_FullMethodName = "/rill.runtime.v1.QueryService/ConvertExpressionToMetricsSQL"
+	QueryService_ConvertMetricsSQLToQuery_FullMethodName      = "/rill.runtime.v1.QueryService/ConvertMetricsSQLToQuery"
 	QueryService_ResolveCanvas_FullMethodName                 = "/rill.runtime.v1.QueryService/ResolveCanvas"
 	QueryService_ResolveComponent_FullMethodName              = "/rill.runtime.v1.QueryService/ResolveComponent"
 	QueryService_ResolveTemplatedString_FullMethodName        = "/rill.runtime.v1.QueryService/ResolveTemplatedString"
@@ -123,6 +124,10 @@ type QueryServiceClient interface {
 	MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error)
 	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
 	ConvertExpressionToMetricsSQL(ctx context.Context, in *ConvertExpressionToMetricsSQLRequest, opts ...grpc.CallOption) (*ConvertExpressionToMetricsSQLResponse, error)
+	// ConvertMetricsSQLToQuery compiles metrics SQL into the metrics view query it runs as,
+	// in the format of the "metrics" resolver.
+	// It is used to open a dashboard that shows what an alert or report written in metrics SQL saw.
+	ConvertMetricsSQLToQuery(ctx context.Context, in *ConvertMetricsSQLToQueryRequest, opts ...grpc.CallOption) (*ConvertMetricsSQLToQueryResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
@@ -320,6 +325,16 @@ func (c *queryServiceClient) ConvertExpressionToMetricsSQL(ctx context.Context, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConvertExpressionToMetricsSQLResponse)
 	err := c.cc.Invoke(ctx, QueryService_ConvertExpressionToMetricsSQL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) ConvertMetricsSQLToQuery(ctx context.Context, in *ConvertMetricsSQLToQueryRequest, opts ...grpc.CallOption) (*ConvertMetricsSQLToQueryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConvertMetricsSQLToQueryResponse)
+	err := c.cc.Invoke(ctx, QueryService_ConvertMetricsSQLToQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -556,6 +571,10 @@ type QueryServiceServer interface {
 	MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error)
 	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
 	ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error)
+	// ConvertMetricsSQLToQuery compiles metrics SQL into the metrics view query it runs as,
+	// in the format of the "metrics" resolver.
+	// It is used to open a dashboard that shows what an alert or report written in metrics SQL saw.
+	ConvertMetricsSQLToQuery(context.Context, *ConvertMetricsSQLToQueryRequest) (*ConvertMetricsSQLToQueryResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
@@ -646,6 +665,9 @@ func (UnimplementedQueryServiceServer) MetricsViewAnnotations(context.Context, *
 }
 func (UnimplementedQueryServiceServer) ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConvertExpressionToMetricsSQL not implemented")
+}
+func (UnimplementedQueryServiceServer) ConvertMetricsSQLToQuery(context.Context, *ConvertMetricsSQLToQueryRequest) (*ConvertMetricsSQLToQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertMetricsSQLToQuery not implemented")
 }
 func (UnimplementedQueryServiceServer) ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveCanvas not implemented")
@@ -1000,6 +1022,24 @@ func _QueryService_ConvertExpressionToMetricsSQL_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).ConvertExpressionToMetricsSQL(ctx, req.(*ConvertExpressionToMetricsSQLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_ConvertMetricsSQLToQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConvertMetricsSQLToQueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ConvertMetricsSQLToQuery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ConvertMetricsSQLToQuery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ConvertMetricsSQLToQuery(ctx, req.(*ConvertMetricsSQLToQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1362,6 +1402,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConvertExpressionToMetricsSQL",
 			Handler:    _QueryService_ConvertExpressionToMetricsSQL_Handler,
+		},
+		{
+			MethodName: "ConvertMetricsSQLToQuery",
+			Handler:    _QueryService_ConvertMetricsSQLToQuery_Handler,
 		},
 		{
 			MethodName: "ResolveCanvas",

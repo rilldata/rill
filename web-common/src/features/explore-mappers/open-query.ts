@@ -118,7 +118,10 @@ async function findExploreForMetricsView(
   );
 }
 
-async function getExploreSpecs(client: RuntimeClient, exploreName: string) {
+export async function getExploreSpecs(
+  client: RuntimeClient,
+  exploreName: string,
+) {
   const request = { name: exploreName };
   const getExploreResponse = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetExploreQueryKey(client.instanceId, request),
@@ -145,7 +148,7 @@ async function getExploreSpecs(client: RuntimeClient, exploreName: string) {
 /**
  * Generates the explore page URL with proper search parameters
  */
-async function generateExploreLink(
+export async function generateExploreLink(
   client: RuntimeClient,
   exploreState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
