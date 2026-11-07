@@ -25,7 +25,7 @@ Wait for the `ready` notification (see [Notifications](#notifications)) before s
 Embed the iframe in your page:
 
 ```html
-<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400"></iframe>
+<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400" allow="clipboard-write"></iframe>
 ```
 
 Set up message handling and send requests from the parent window:
