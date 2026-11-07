@@ -167,7 +167,7 @@ describe("buildImportPrompt", () => {
 
   it("hands the agent the query verbatim instead of describing the ordering", () => {
     for (const entry of charts) {
-      const prompt = buildImportPrompt("/viz_library/chart.yaml", entry);
+      const prompt = buildImportPrompt("/viz/chart.yaml", entry);
       expect(prompt, entry.name).toContain(buildMetricsSQL(entry));
       expect(prompt, entry.name).not.toContain("Order a time series");
       expect(prompt, entry.name).toContain(`default: ${entry.defaultLimit}`);

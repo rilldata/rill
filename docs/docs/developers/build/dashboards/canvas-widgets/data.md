@@ -171,6 +171,10 @@ Adhoc measures belong to a single widget: to use the same calculation in two wid
 
 For a calculation that many widgets or dashboards share, add a measure to the [metrics view](/developers/build/metrics-view) instead.
 
+## Exact values
+
+Measures that define an [`exact_expression`](/developers/build/metrics-view/measures/exact-measures) are approximate by default and show a `≈` chip next to their name in KPIs, tables, pivots and leaderboards. A chart shows one chip next to its title that covers every measure of the chart. Viewers click a chip to compute that measure, or that chart, exactly in that widget (in a leaderboard widget, in that one leaderboard) until they change the time range, comparison, grain, timezone, filters or tab. Other widgets keep their approximate values until their own chip is clicked. The selection is not part of the URL, so links and scheduled reports of the canvas open approximate. See [Exact values](/guide/dashboards/explore/exact-measures) in the guide for the chip states.
+
 ## Navigation
 
 All Data widgets also provide a button to "Go to explore" that can navigate to the Explore dashboard if available.

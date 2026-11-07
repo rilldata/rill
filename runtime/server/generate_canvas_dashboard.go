@@ -186,6 +186,8 @@ func (s *Server) generateCanvasDashboardYAMLWithAI(ctx context.Context, instance
 			if text := blockType.Text; text != "" {
 				responseText += text
 			}
+		case *aiv1.ContentBlock_Reasoning:
+			// Skip the model's reasoning; only its response is needed.
 		default:
 			return "", fmt.Errorf("unexpected content block type in AI response: %T", blockType)
 		}

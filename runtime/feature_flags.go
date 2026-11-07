@@ -48,9 +48,9 @@ var defaultFeatureFlags = map[string]string{
 	// TODO: more info
 	"export_header": "false",
 	// Controls visibility of alert creation functionality
-	"alerts": "true",
+	"alerts": "{{ not .user.embed }}",
 	// Controls visibility of report creation functionality
-	"reports": "true",
+	"reports": "{{ not .user.embed }}",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
@@ -59,6 +59,8 @@ var defaultFeatureFlags = map[string]string{
 	"developer_chat": "true",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
+	// Controls whether external MCP clients (such as Claude or ChatGPT) get charts; it only applies where chat_charts is on
+	"mcp_charts": "true",
 	// Controls whether the AI chat learns and uses per-user memories (preferences and clarifications remembered across conversations)
 	"chat_memory": "true",
 	// Controls whether to show/hide deploy related actions.

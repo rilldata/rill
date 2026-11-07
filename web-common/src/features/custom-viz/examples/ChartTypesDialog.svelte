@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -17,6 +18,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { CUSTOM_VIZ_FOLDER } from "@rilldata/web-common/features/custom-viz/params";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ExampleCard from "./ExampleCard.svelte";
   import {
@@ -48,6 +50,15 @@
       .then((gallery) => (examples = gallery.examples))
       .finally(() => (loading = false));
   }
+
+  $: currentFile = $page.params.file;
+  $: currentDirectory = currentFile
+    ? currentFile.split("/").slice(0, -1).join("/")
+    : "";
+  $: componentFolder =
+    currentDirectory !== ""
+      ? removeLeadingSlash(currentDirectory)
+      : CUSTOM_VIZ_FOLDER;
 
   $: componentsQuery = useFilteredResources(client, ResourceKind.Component);
   $: existingNames = ($componentsQuery?.data ?? [])
@@ -111,7 +122,7 @@
       client,
       ResourceKind.Component,
       undefined,
-      CUSTOM_VIZ_FOLDER,
+      componentFolder,
     );
   }
 

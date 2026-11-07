@@ -1,10 +1,10 @@
+import {
+  getCanvasReportOpenUrl,
+  getOpenExploreName,
+} from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
 import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
 import { getExploreUrlForMetricsSQL } from "@rilldata/web-common/features/explore-mappers/open-metrics-sql";
-import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
-import {
-  isAIReportSpec,
-  stripInternalReportParams,
-} from "@rilldata/web-common/features/scheduled-reports/utils";
+import { isAIReportSpec } from "@rilldata/web-common/features/scheduled-reports/utils";
 import { redirect } from "@sveltejs/kit";
 
 export async function load({ parent, url, params }) {
@@ -14,26 +14,23 @@ export async function load({ parent, url, params }) {
   const reportId = params.report;
   const executionTime = url.searchParams.get("execution_time");
   const token = url.searchParams.get("token");
+  const reportSpec = report?.report?.spec ?? {};
 
   // Canvas reports open the canvas dashboard directly, with the canvas state
   // (URL search params) captured at scheduling time applied.
-  const canvasName = report.report.spec.annotations["canvas"];
-  if (canvasName) {
-    const path = token
-      ? `/${organization}/${project}/-/share/${token}/canvas/${canvasName}`
-      : `/${organization}/${project}/canvas/${canvasName}`;
-    const stateParams = stripInternalReportParams(
-      new URLSearchParams(report.report.spec.annotations?.web_open_state ?? ""),
-    );
-    const search = stateParams.toString();
-    redirect(307, search ? `${path}?${search}` : path);
+  const canvasUrl = getCanvasReportOpenUrl(reportSpec, {
+    organization,
+    project,
+    token,
+  });
+  if (canvasUrl) {
+    redirect(307, canvasUrl);
   }
 
   // AI reports open the AI conversation created by the report run.
   // The runtime adds the session ID to the open link. In creator mode the link also carries a magic token,
   // which grants read access to the shared conversation and must be forwarded so the conversation page can authenticate with it.
-  const reportSpec = report?.report?.spec;
-  if (reportSpec && isAIReportSpec(reportSpec)) {
+  if (isAIReportSpec(reportSpec)) {
     const sessionId = url.searchParams.get("session_id");
     const path = sessionId
       ? `/${organization}/${project}/-/ai/${sessionId}`
@@ -42,13 +39,11 @@ export async function load({ parent, url, params }) {
     redirect(307, search ? `${path}?${search}` : path);
   }
 
-  const exploreName =
-    report.report.spec.annotations["explore"] ??
-    getExploreName(report.report.spec.annotations?.web_open_path); // backwards compatibility
+  const exploreName = getOpenExploreName(reportSpec);
 
   // A report written in metrics SQL opens the explore its compiled query maps to.
   // When it can't be shown faithfully, the report page is the honest fallback.
-  if (reportSpec?.resolver === "metrics_sql") {
+  if (reportSpec.resolver === "metrics_sql") {
     let exploreURL: string;
     try {
       exploreURL = await getExploreUrlForMetricsSQL({
@@ -71,7 +66,7 @@ export async function load({ parent, url, params }) {
     organization,
     project,
     reportId,
-    report,
+    reportSpec,
     executionTime,
     token,
     exploreName,

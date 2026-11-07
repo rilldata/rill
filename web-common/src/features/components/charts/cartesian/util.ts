@@ -1,3 +1,4 @@
+import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import {
   ColorWithComparisonField,
   MeasureKeyField,
@@ -6,6 +7,12 @@ import {
 /**
  * Determines the pivot configuration for the bar chart based on the presence of
  * x/y fields, color fields, and comparison mode.
+ *
+ * `xField` and `yField` are already escaped Vega field references. `colorField`
+ * is the raw dimension name and is escaped here: Vega resolves the pivot field
+ * as a field path, so a name with dots such as `query.context.metaData.type`
+ * would otherwise be read as a nested lookup and throw inside the dataflow,
+ * leaving the whole chart blank.
  */
 export function createVegaTransformPivotConfig(
   xField: string | undefined,
@@ -22,7 +29,9 @@ export function createVegaTransformPivotConfig(
   if (colorField) {
     return {
       // Use color_with_comparison field when in comparison mode to include both current and previous values
-      field: hasComparison ? ColorWithComparisonField : colorField,
+      field: hasComparison
+        ? ColorWithComparisonField
+        : sanitizeValueForVega(colorField),
       value: yField,
       groupby: [xField],
     };

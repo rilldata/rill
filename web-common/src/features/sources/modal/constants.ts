@@ -109,6 +109,6 @@ export const OLAP_ENGINES = [
   "starrocks",
 ];
 
-export const AI_CONNECTORS = ["claude", "openai", "gemini"];
+export const AI_CONNECTORS = ["claude", "openai", "gemini", "bedrock"];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES, ...AI_CONNECTORS];

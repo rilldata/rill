@@ -61,6 +61,91 @@ project_files:
         expression: count(*)
       - name: sum
         expression: sum(val)
+  clickhouse_data_grouped.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country_code, 1 as val union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country_code, 2 as val union all
+      select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'US' as country_code, 3 as val union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country_code, 4 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country_code, 5 as val union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'UK' as country_code, 10 as val union all
+      select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'GB' as country_code, 20 as val union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'XX' as country_code, 7 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'GB' as country_code, 10 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'GB' as country_code, 30 as val
+    output:
+      connector: clickhouse
+  clickhouse_country_dict_grouped.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select 'DK' as code, 'Denmark' as name, 'Europe' as region union all
+      select 'US' as code, 'United States' as name, 'Americas' as region union all
+      select 'UK' as code, 'United Kingdom' as name, 'Europe' as region union all
+      select 'GB' as code, 'United Kingdom' as name, 'Europe' as region
+    output:
+      connector: clickhouse
+      type: DICTIONARY
+      primary_key: code
+      dictionary_source_user: default
+      dictionary_source_password: default
+  # Groups by the dictionary key first and resolves the names once per key.
+  # The dictionary is not injective: UK and GB share a name, and both have rows with val 10, so distinct counts must merge rather than add up.
+  clickhouse_metrics_grouped.yaml:
+    type: metrics_view
+    model: clickhouse_data_grouped
+    timeseries: time
+    dimensions:
+      - name: country
+        column: country_code
+        lookup_table: clickhouse_country_dict_grouped
+        lookup_key_column: code
+        lookup_value_column: name
+        lookup_group_by_key: true
+      - name: region
+        column: country_code
+        lookup_table: clickhouse_country_dict_grouped
+        lookup_key_column: code
+        lookup_value_column: region
+        lookup_group_by_key: true
+      - name: country_or_unknown
+        column: country_code
+        lookup_table: clickhouse_country_dict_grouped
+        lookup_key_column: code
+        lookup_value_column: name
+        lookup_default_expression: concat('unknown-', country_code)
+        lookup_group_by_key: true
+      - name: country_code
+        column: country_code
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+      - name: avg
+        expression: avg(val)
+      - name: distinct_vals
+        expression: count(distinct val)
+      - name: ratio
+        expression: sum(val)/count(*)
+      - name: uniq_vals
+        expression: uniq(val)
+      - name: uniq_combined
+        expression: uniqCombined(val)
+      - name: uniq_combined64
+        expression: uniqCombined64(val)
+      - name: uniq_hll
+        expression: uniqHLL12(val)
+      - name: uniq_theta
+        expression: uniqTheta(val)
+      - name: uniq_upto
+        expression: uniqUpTo(2)(val)
+      - name: uniq_exact
+        expression: uniqExact(val)
+      - name: uniq_if
+        expression: uniqIf(val, val > 5)
 tests:
   - name: lookup_dimension_clickhouse
     resolver: metrics
@@ -275,3 +360,324 @@ tests:
         country_or_unknown: United States
       - sum: 7
         country_or_unknown: Unknown
+  - name: grouped_lookup_merges_keys_that_share_a_name
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+        - name: count
+      sort:
+        - name: sum
+          desc: true
+    result:
+      - country: United Kingdom
+        sum: 70
+        count: 4
+      - country: United States
+        sum: 9
+        count: 3
+      - country: ""
+        sum: 7
+        count: 1
+      - country: Denmark
+        sum: 6
+        count: 2
+  - name: grouped_lookup_region
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: region
+      measures:
+        - name: sum
+        - name: count
+      sort:
+        - name: sum
+          desc: true
+    result:
+      - region: Europe
+        sum: 76
+        count: 6
+      - region: Americas
+        sum: 9
+        count: 3
+      - region: ""
+        sum: 7
+        count: 1
+  - name: grouped_lookup_default_expression_references_the_key
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country_or_unknown
+      measures:
+        - name: sum
+      sort:
+        - name: sum
+          desc: true
+    result:
+      - country_or_unknown: United Kingdom
+        sum: 70
+      - country_or_unknown: United States
+        sum: 9
+      - country_or_unknown: unknown-XX
+        sum: 7
+      - country_or_unknown: Denmark
+        sum: 6
+  - name: grouped_lookup_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country
+            - val: 'United Kingdom'
+    result:
+      - country: United Kingdom
+        sum: 70
+  - name: grouped_lookup_limit
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: sum
+          desc: true
+      limit: 2
+    result:
+      - country: United Kingdom
+        sum: 70
+      - country: United States
+        sum: 9
+  - name: grouped_lookup_having
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      having:
+        cond:
+          op: gt
+          exprs:
+            - name: sum
+            - val: 8
+      sort:
+        - name: sum
+          desc: true
+    result:
+      - country: United Kingdom
+        sum: 70
+      - country: United States
+        sum: 9
+  - name: grouped_lookup_time_grain
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+        - name: country
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-01-02T00:00:00Z
+        end: 2024-01-04T00:00:00Z
+      sort:
+        - name: time__day
+        - name: country
+    result:
+      - time__day: "2024-01-02T00:00:00Z"
+        country: United Kingdom
+        sum: 10
+      - time__day: "2024-01-02T00:00:00Z"
+        country: United States
+        sum: 2
+      - time__day: "2024-01-03T00:00:00Z"
+        country: United Kingdom
+        sum: 20
+      - time__day: "2024-01-03T00:00:00Z"
+        country: United States
+        sum: 3
+  - name: grouped_lookup_comparison
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+        - name: sum_delta
+          compute:
+            comparison_delta:
+              measure: sum
+      time_range:
+        start: 2024-01-03T00:00:00Z
+        end: 2024-01-06T00:00:00Z
+      comparison_time_range:
+        start: 2024-01-01T00:00:00Z
+        end: 2024-01-03T00:00:00Z
+      sort:
+        - name: sum
+          desc: true
+        - name: country
+    result:
+      - country: United Kingdom
+        sum: 60
+        sum_prev: 10
+        sum_delta: 50
+      - country: ""
+        sum: 7
+        sum_prev: null
+        sum_delta: null
+      - country: United States
+        sum: 7
+        sum_prev: 2
+        sum_delta: 5
+      - country: Denmark
+        sum: 5
+        sum_prev: 1
+        sum_delta: 4
+  - name: grouped_lookup_distinct_avg_ratio
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: distinct_vals
+        - name: avg
+        - name: ratio
+      sort:
+        - name: country
+    result:
+      - country: ""
+        distinct_vals: 1
+        avg: 7
+        ratio: 7
+      - country: Denmark
+        distinct_vals: 2
+        avg: 3
+        ratio: 3
+      - country: United Kingdom
+        distinct_vals: 3
+        avg: 17.5
+        ratio: 17.5
+      - country: United States
+        distinct_vals: 3
+        avg: 3
+        ratio: 3
+  - name: grouped_lookup_dimension_only
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      sort:
+        - name: country
+    result:
+      - country: ""
+      - country: Denmark
+      - country: United Kingdom
+      - country: United States
+  - name: grouped_lookup_with_raw_key_dimension
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country_code
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: country_code
+    result:
+      - country_code: DK
+        country: Denmark
+        sum: 6
+      - country_code: GB
+        country: United Kingdom
+        sum: 60
+      - country_code: UK
+        country: United Kingdom
+        sum: 10
+      - country_code: US
+        country: United States
+        sum: 9
+      - country_code: XX
+        country: ""
+        sum: 7
+  - name: grouped_lookup_uniq_variants
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_grouped
+      dimensions:
+        - name: country
+      measures:
+        - name: uniq_vals
+        - name: uniq_combined
+        - name: uniq_combined64
+        - name: uniq_hll
+        - name: uniq_theta
+        - name: uniq_upto
+        - name: uniq_exact
+        - name: uniq_if
+      sort:
+        - name: country
+    result:
+      - country: ""
+        uniq_vals: 1
+        uniq_combined: 1
+        uniq_combined64: 1
+        uniq_hll: 1
+        uniq_theta: 1
+        uniq_upto: 1
+        uniq_exact: 1
+        uniq_if: 1
+      - country: Denmark
+        uniq_vals: 2
+        uniq_combined: 2
+        uniq_combined64: 2
+        uniq_hll: 2
+        uniq_theta: 2
+        uniq_upto: 2
+        uniq_exact: 2
+        uniq_if: 0
+      - country: United Kingdom
+        uniq_vals: 3
+        uniq_combined: 3
+        uniq_combined64: 3
+        uniq_hll: 3
+        uniq_theta: 3
+        uniq_upto: 3
+        uniq_exact: 3
+        uniq_if: 3
+      - country: United States
+        uniq_vals: 3
+        uniq_combined: 3
+        uniq_combined64: 3
+        uniq_hll: 3
+        uniq_theta: 3
+        uniq_upto: 3
+        uniq_exact: 3
+        uniq_if: 0

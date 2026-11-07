@@ -15,7 +15,6 @@ func TestClickUI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	s := newSession(t, rt, instanceID)
 	ctx := ai.WithUIContext(t.Context(), &ai.UIContext{
-		PagePath: "/explore/orders",
 		Actions: []ai.UIAction{
 			{ID: "dashboard.start-pivot", Label: "Start pivot"},
 		},
@@ -56,8 +55,7 @@ func TestClickUICheckAccess(t *testing.T) {
 	}
 
 	ui := &ai.UIContext{
-		PagePath: "/explore/orders",
-		Actions:  []ai.UIAction{{ID: "dashboard.start-pivot", Label: "Start pivot"}},
+		Actions: []ai.UIAction{{ID: "dashboard.start-pivot", Label: "Start pivot"}},
 	}
 	tests := []struct {
 		name        string
@@ -68,7 +66,7 @@ func TestClickUICheckAccess(t *testing.T) {
 	}{
 		{name: "first-party client with UI actions", userAgent: "rill-web", permissions: []runtime.Permission{runtime.UseAI}, ui: ui, want: true},
 		{name: "first-party client without UI context", userAgent: "rill-web", permissions: []runtime.Permission{runtime.UseAI}, want: false},
-		{name: "first-party client with empty UI actions", userAgent: "rill-web", permissions: []runtime.Permission{runtime.UseAI}, ui: &ai.UIContext{PagePath: "/explore/orders"}, want: false},
+		{name: "first-party client with empty UI actions", userAgent: "rill-web", permissions: []runtime.Permission{runtime.UseAI}, ui: &ai.UIContext{}, want: false},
 		{name: "external client", userAgent: "mcp-client", permissions: []runtime.Permission{runtime.UseAI}, ui: ui, want: false},
 		{name: "missing AI permission", userAgent: "rill-web", ui: ui, want: false},
 	}

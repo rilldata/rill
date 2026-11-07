@@ -5,6 +5,7 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
+  AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
@@ -364,6 +365,84 @@ describe("mapMetricsResolverQueryToDashboard", () => {
       },
     },
   ];
+
+  describe("unsupported sort fields", () => {
+    it.each(["gap", "missing", AD_BIDS_BID_PRICE_MEASURE])(
+      "drops %s sorting from the pivot while preserving valid sorts",
+      (name) => {
+        const state = mapMetricsResolverQueryToDashboard(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          {
+            ...AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+            measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+          },
+          {
+            query: {
+              measures: [
+                { name: AD_BIDS_IMPRESSIONS_MEASURE },
+                {
+                  name: "gap",
+                  compute: {
+                    expression: { expression: "impressions - bid_price" },
+                  },
+                },
+                { name: AD_BIDS_BID_PRICE_MEASURE },
+              ],
+              dimensions: [
+                { name: AD_BIDS_PUBLISHER_DIMENSION },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+              ],
+              sort: [
+                { name, desc: true },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+                { name: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+              ],
+            },
+          },
+        );
+
+        expect(state.pivot?.sorting).toEqual([
+          { id: AD_BIDS_DOMAIN_DIMENSION, desc: false },
+          { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+        ]);
+        expect(state.leaderboardSortByMeasureName).toBeUndefined();
+      },
+    );
+
+    it.each([1, 2])(
+      "omits a calculated sort field with %i dimensions",
+      (dimensionCount) => {
+        const state = mapMetricsResolverQueryToDashboard(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+          {
+            query: {
+              measures: [
+                { name: AD_BIDS_IMPRESSIONS_MEASURE },
+                {
+                  name: "gap",
+                  compute: {
+                    expression: { expression: "impressions - bid_price" },
+                  },
+                },
+              ],
+              dimensions: [
+                { name: AD_BIDS_PUBLISHER_DIMENSION },
+                { name: AD_BIDS_DOMAIN_DIMENSION },
+              ].slice(0, dimensionCount),
+              sort: [{ name: "gap", desc: true }],
+            },
+          },
+        );
+
+        expect(state.visibleMeasures).toEqual([AD_BIDS_IMPRESSIONS_MEASURE]);
+        expect(state.leaderboardSortByMeasureName).toBeUndefined();
+        if (dimensionCount === 2) {
+          expect(state.pivot?.sorting).toEqual([]);
+        }
+      },
+    );
+  });
 
   for (const {
     title,

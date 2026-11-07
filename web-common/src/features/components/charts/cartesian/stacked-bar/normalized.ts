@@ -70,7 +70,7 @@ export function generateVLStackedBarNormalizedSpec(
     // Add a transform to calculate the percentage
     // When in comparison mode, include the measure_key in groupby
     // so each period (current vs comparison) totals to 100% independently
-    const groupbyFields = config.x?.field ? [config.x.field] : [];
+    const groupbyFields = config.x?.field ? [sanitizedXField] : [];
     if (hasComparison) {
       groupbyFields.push(MeasureKeyField);
     }
@@ -80,7 +80,7 @@ export function generateVLStackedBarNormalizedSpec(
         joinaggregate: [
           {
             op: "sum",
-            field: yField,
+            field: sanitizedYField,
             as: "total",
           },
         ],
@@ -150,7 +150,7 @@ export function generateVLStackedBarNormalizedSpec(
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField: sanitizedXField,
+    xField: config.x?.field,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: baseEncoding.tooltip as TooltipValue[],

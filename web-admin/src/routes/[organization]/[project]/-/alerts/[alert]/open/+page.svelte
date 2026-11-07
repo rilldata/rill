@@ -7,7 +7,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
-  import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
+  import {
+    getExplorePageUrlSearchParams,
+    getSpecQuery,
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
@@ -28,14 +31,7 @@
   $: alertSpec = alertResource.alert.spec;
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
-  $: queryName =
-    (alertSpec?.resolverProperties?.query_name as string | undefined) ??
-    alertSpec?.queryName ??
-    "";
-  $: queryArgsJson =
-    (alertSpec?.resolverProperties?.query_args_json as string | undefined) ??
-    alertSpec?.queryArgsJson ??
-    "";
+  $: ({ queryName, queryArgsJson } = getSpecQuery(alertSpec ?? {}));
   $: dashboardStateForAlert = mapQueryToDashboard(
     runtimeClient,
     {

@@ -9,6 +9,7 @@ on:
       - "web-admin/**"
       - "web-common/**"
       - "web-local/**"
+      - "web-mcp-app/**"
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -34,6 +35,13 @@ jobs:
               - "package.json"
               - "package-lock.json"
               - "web-common/**"
+            mcpapp:
+              - ".github/workflows/web-test-unit-tests.yml"
+              - ".nvmrc"
+              - "package.json"
+              - "package-lock.json"
+              - "web-common/**"
+              - "web-mcp-app/**"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -57,3 +65,19 @@ jobs:
       - name: Run web-admin unit tests
         if: steps.filter.outputs.admin == 'true'
         run: npm run test:unit -w web-admin
+
+      - name: Build the MCP App widget
+        if: steps.filter.outputs.mcpapp == 'true'
+        run: npm run build -w web-mcp-app
+
+      - name: Run MCP App widget unit tests
+        if: steps.filter.outputs.mcpapp == 'true'
+        run: npm run test -w web-mcp-app
+
+      - name: Install Playwright browsers for the MCP App widget
+        if: steps.filter.outputs.mcpapp == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run MCP App widget browser tests
+        if: steps.filter.outputs.mcpapp == 'true'
+        run: npm run test:e2e -w web-mcp-app

@@ -15,7 +15,7 @@ import {
  */
 
 /** Project folder where custom viz component files are created by convention. */
-export const CUSTOM_VIZ_FOLDER = "viz_library";
+export const CUSTOM_VIZ_FOLDER = "viz";
 
 export type ComponentParamType =
   | "string"

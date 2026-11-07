@@ -19,7 +19,7 @@ export {
 } from "./example-spec";
 
 /**
- * Imports the chart type as viz_library/<name>.yaml (deduped against existing names)
+ * Imports the chart type as viz/<name>.yaml (deduped against existing names)
  * and returns the new file path.
  */
 export async function importGalleryChart(

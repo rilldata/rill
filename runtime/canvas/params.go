@@ -168,6 +168,49 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 	return nil
 }
 
+// EscapeJSONStrings returns a copy of the value with every string in it JSON-escaped (without the enclosing quotes),
+// recursing into maps and slices. It prepares template data for resolving a Vega-Lite spec,
+// which is a JSON document held in a string: a display name or string param containing a quote or backslash
+// would otherwise be spliced into the JSON unescaped and make it unparseable.
+// Numbers and booleans are returned as they are.
+func EscapeJSONStrings[T any](val T) T {
+	return escapeJSONStrings(val).(T)
+}
+
+func escapeJSONStrings(val any) any {
+	switch val := val.(type) {
+	case string:
+		var b strings.Builder
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false)
+		if err := enc.Encode(val); err != nil {
+			return val
+		}
+		// Strip the enclosing quotes and the trailing newline the encoder adds.
+		return strings.TrimSuffix(strings.TrimPrefix(strings.TrimSuffix(b.String(), "\n"), `"`), `"`)
+	case map[string]any:
+		res := make(map[string]any, len(val))
+		for k, v := range val {
+			res[k] = escapeJSONStrings(v)
+		}
+		return res
+	case map[string]string:
+		res := make(map[string]string, len(val))
+		for k, v := range val {
+			res[k] = escapeJSONStrings(v).(string)
+		}
+		return res
+	case []any:
+		res := make([]any, len(val))
+		for i, v := range val {
+			res[i] = escapeJSONStrings(v)
+		}
+		return res
+	default:
+		return val
+	}
+}
+
 // InjectVegaParams injects the values of a component's scalar params as native Vega-Lite params
 // into a Vega-Lite spec (a JSON object), making them usable in Vega expressions, predicates and extents.
 // If the spec already declares a top-level param with the same name, only its "value" is overridden

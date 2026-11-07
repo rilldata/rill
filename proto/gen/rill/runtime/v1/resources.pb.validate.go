@@ -6780,6 +6780,8 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for ExportIncludeHeader
 
+	// no validation rules for ExportAttach
+
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
 
@@ -7540,6 +7542,14 @@ func (m *AlertSpec) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for ExportAttach
+
+	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
+
+	// no validation rules for ExportLimit
 
 	// no validation rules for NotifyOnRecover
 
@@ -10251,6 +10261,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
+	// no validation rules for ConditionExpression
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}
@@ -11540,6 +11552,8 @@ func (m *CanvasRow) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ConditionExpression
+
 	if m.Height != nil {
 		// no validation rules for Height
 	}
@@ -11817,6 +11831,8 @@ func (m *CanvasTab) validate(all bool) error {
 
 	}
 
+	// no validation rules for ConditionExpression
+
 	if len(errors) > 0 {
 		return CanvasTabMultiError(errors)
 	}
@@ -11950,6 +11966,8 @@ func (m *CanvasItem) validate(all bool) error {
 	}
 
 	// no validation rules for WidthUnit
+
+	// no validation rules for ConditionExpression
 
 	if m.Width != nil {
 		// no validation rules for Width
@@ -13643,6 +13661,40 @@ func (m *ConnectorSpec) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetSecurityRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConnectorSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConnectorSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConnectorSpecValidationError{
+					field:  fmt.Sprintf("SecurityRules[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ConnectorSpecMultiError(errors)
 	}
@@ -13823,6 +13875,108 @@ var _ interface {
 	ErrorName() string
 } = ConnectorStateValidationError{}
 
+// Validate checks the field values on MCPTool with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MCPTool) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MCPTool with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in MCPToolMultiError, or nil if none found.
+func (m *MCPTool) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MCPTool) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return MCPToolMultiError(errors)
+	}
+
+	return nil
+}
+
+// MCPToolMultiError is an error wrapping multiple validation errors returned
+// by MCPTool.ValidateAll() if the designated constraints aren't met.
+type MCPToolMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MCPToolMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MCPToolMultiError) AllErrors() []error { return m }
+
+// MCPToolValidationError is the validation error returned by MCPTool.Validate
+// if the designated constraints aren't met.
+type MCPToolValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MCPToolValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MCPToolValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MCPToolValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MCPToolValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MCPToolValidationError) ErrorName() string { return "MCPToolValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MCPToolValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMCPTool.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MCPToolValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MCPToolValidationError{}
+
 // Validate checks the field values on MetricsViewSpec_Dimension with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -13898,6 +14052,10 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	if m.LookupGroupByKey != nil {
+		// no validation rules for LookupGroupByKey
 	}
 
 	if len(errors) > 0 {
@@ -14428,6 +14586,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	}
 
 	// no validation rules for LowerIsBetter
+
+	// no validation rules for ExactExpression
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)
