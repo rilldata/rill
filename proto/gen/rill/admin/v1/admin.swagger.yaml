@@ -3855,6 +3855,73 @@ paths:
           in: path
           required: true
           type: string
+  /v1/projects/{projectId}/alerts/for-user:
+    get:
+      summary: |-
+        ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+        It can only be called by the project's primary deployment.
+        It's currently only called by AI tools in the runtime.
+      operationId: AdminService_ListAlertsForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListAlertsForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+    post:
+      summary: |-
+        SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+        It can only be called by the project's primary deployment, and only edits alerts the user owns.
+        It's currently only called by AI tools in the runtime.
+      operationId: AdminService_SaveAlertForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SaveAlertForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the alert.
+              name:
+                type: string
+                description: |-
+                  Name of an alert owned by the user to edit.
+                  If empty, a new alert is created.
+              options:
+                $ref: '#/definitions/v1AlertOptions'
+              version:
+                type: string
+                description: |-
+                  Version of the alert to edit, as returned by ListAlertsForUser.
+                  Required when name is set.
+                  The edit fails if the alert changed since, so a concurrent change isn't overwritten.
   /v1/projects/{projectId}/alerts/meta:
     post:
       summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -3897,6 +3964,47 @@ paths:
                   type: string
               anonRecipients:
                 type: boolean
+  /v1/projects/{projectId}/personal-files/for-user:
+    post:
+      summary: |-
+        SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+        It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+        It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+      operationId: AdminService_SavePersonalFileForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SavePersonalFileForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the personal file.
+              kind:
+                type: string
+              name:
+                type: string
+                description: Name of an existing personal file to edit. If empty, a new personal file is created.
+              displayName:
+                type: string
+                description: Display name for a new personal file. Required when name is empty.
+              yaml:
+                type: string
+                description: YAML body of the personal file. Annotations in it are ignored.
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -4029,6 +4137,74 @@ paths:
           in: query
           required: false
           type: boolean
+  /v1/projects/{projectId}/reports/for-user:
+    get:
+      summary: |-
+        ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+        It can only be called by the project's primary deployment.
+        It's currently only called by AI tools in the runtime.
+      operationId: AdminService_ListReportsForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListReportsForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+    post:
+      summary: |-
+        SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+        It can only be called by the project's primary deployment, and only edits reports the user owns.
+        It's currently only called by AI tools in the runtime.
+        Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+      operationId: AdminService_SaveReportForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SaveReportForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the report.
+              name:
+                type: string
+                description: |-
+                  Name of a report owned by the user to edit.
+                  If empty, a new report is created.
+              options:
+                $ref: '#/definitions/v1ReportOptions'
+              version:
+                type: string
+                description: |-
+                  Version of the report to edit, as returned by ListReportsForUser.
+                  Required when name is set.
+                  The edit fails if the report changed since, so a concurrent change isn't overwritten.
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -5048,6 +5224,17 @@ definitions:
     type: object
   v1AddUsergroupMemberUserResponse:
     type: object
+  v1AlertForUser:
+    type: object
+    properties:
+      name:
+        type: string
+      version:
+        type: string
+        description: Version of the alert, to pass to SaveAlertForUser when editing it.
+      options:
+        $ref: '#/definitions/v1AlertOptions'
+        description: Options the alert was saved with.
   v1AlertOptions:
     type: object
     properties:
@@ -6065,6 +6252,14 @@ definitions:
         description: Newly issued auth token.
   v1LeaveOrganizationResponse:
     type: object
+  v1ListAlertsForUserResponse:
+    type: object
+    properties:
+      alerts:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AlertForUser'
   v1ListBookmarksResponse:
     type: object
     properties:
@@ -6260,6 +6455,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1BillingPlan'
+  v1ListReportsForUserResponse:
+    type: object
+    properties:
+      reports:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReportForUser'
   v1ListRolesResponse:
     type: object
     properties:
@@ -6922,6 +7125,17 @@ definitions:
         $ref: '#/definitions/v1Organization'
       subscription:
         $ref: '#/definitions/v1Subscription'
+  v1ReportForUser:
+    type: object
+    properties:
+      name:
+        type: string
+      version:
+        type: string
+        description: Version of the report, to pass to SaveReportForUser when editing it.
+      options:
+        $ref: '#/definitions/v1ReportOptions'
+        description: Options the report was saved with.
   v1ReportOptions:
     type: object
     properties:
@@ -7027,6 +7241,36 @@ definitions:
     type: object
   v1RevokeUserAuthTokenResponse:
     type: object
+  v1SaveAlertForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL where the user can open the alert.
+      version:
+        type: string
+        description: Version of the saved alert, to edit it again.
+  v1SavePersonalFileForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL where the user can open the personal file.
+  v1SaveReportForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL where the user can open the report.
+      version:
+        type: string
+        description: Version of the saved report, to edit it again.
   v1SearchProjectNamesResponse:
     type: object
     properties:

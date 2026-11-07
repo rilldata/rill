@@ -60,11 +60,18 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
+	RegisterTool(r, &ListCanvases{Runtime: rt})
 	RegisterTool(r, &GetCanvas{Runtime: rt})
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
+	RegisterTool(r, &DevelopPersonalCanvas{Runtime: rt})
+	RegisterTool(r, &WritePersonalCanvas{Runtime: rt})
 	RegisterTool(r, &ChartData{Runtime: rt})
+	RegisterTool(r, &SaveAlert{Runtime: rt})
+	RegisterTool(r, &ListAlerts{Runtime: rt})
+	RegisterTool(r, &SaveReport{Runtime: rt})
+	RegisterTool(r, &ListReports{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
 	RegisterTool(r, &SearchExternalTools{Runtime: rt})
@@ -1337,6 +1344,9 @@ type CompleteOptions struct {
 	// In some cases, it's desirable to capture these intermediate messages in the parent call's context, in other cases it's better to isolate them and only expose the final result to the parent context.
 	// When UnwrapCall is true, we run the completion loop within the current call, otherwise we wrap the complete loop in a new call to isolate internal messages.
 	UnwrapCall bool
+	// FailOnIterationLimit makes the loop return an error when the model is still calling tools after MaxIterations-1 turns,
+	// instead of taking a final turn without tools that forces it to answer with what it has.
+	FailOnIterationLimit bool
 }
 
 // Complete runs LLM completions.
@@ -1503,6 +1513,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		for i := range opts.MaxIterations {
 			// Disable tool calls in the last iteration
 			final := i+1 == opts.MaxIterations
+			if final && i != 0 && opts.FailOnIterationLimit {
+				return nil, fmt.Errorf("reached the limit of %d iterations without a final response", opts.MaxIterations)
+			}
 			if final {
 				tools = nil
 				if i != 0 {
@@ -1943,19 +1956,28 @@ func completionMessageID(id string) string {
 
 // agentName returns the name of the agent whose call the current call is nested in, or an empty string if there is none.
 func (s *Session) agentName() string {
+	msg := s.ancestorCall(AnalystAgentName, DeveloperAgentName)
+	if msg == nil {
+		return ""
+	}
+	return msg.Tool
+}
+
+// ancestorCall returns the closest call to one of the given tools that the current call is nested in, or nil if there is none.
+func (s *Session) ancestorCall(toolNames ...string) *Message {
 	id := s.ParentID
 	for range 100 { // Fail-safe, not expected to reach the limit
 		if id == "" {
-			return ""
+			return nil
 		}
 		msg, ok := s.Message(FilterByID(id))
 		if !ok {
-			return ""
+			return nil
 		}
-		if msg.Type == MessageTypeCall && (msg.Tool == AnalystAgentName || msg.Tool == DeveloperAgentName) {
-			return msg.Tool
+		if msg.Type == MessageTypeCall && slices.Contains(toolNames, msg.Tool) {
+			return msg
 		}
 		id = msg.ParentID
 	}
-	return ""
+	return nil
 }

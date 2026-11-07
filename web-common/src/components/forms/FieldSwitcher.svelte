@@ -8,7 +8,9 @@
 
 <div class:small class:expand class="option-wrapper">
   {#each fields as field, i (field)}
+    <!-- type="button": inside a form, a switch must not submit it -->
     <button
+      type="button"
       onclick={() => onClick(i, field)}
       class="-ml-[1px] first-of-type:-ml-0 px-2 border first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
       class:selected={selected === i}

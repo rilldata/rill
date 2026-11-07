@@ -14059,6 +14059,518 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
 }
 
 /**
+ * @generated from message rill.admin.v1.SaveAlertForUserRequest
+ */
+export class SaveAlertForUserRequest extends Message<SaveAlertForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the alert.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * Name of an alert owned by the user to edit.
+   * If empty, a new alert is created.
+   *
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * @generated from field: rill.admin.v1.AlertOptions options = 4;
+   */
+  options?: AlertOptions;
+
+  /**
+   * Version of the alert to edit, as returned by ListAlertsForUser.
+   * Required when name is set.
+   * The edit fails if the alert changed since, so a concurrent change isn't overwritten.
+   *
+   * @generated from field: string version = 5;
+   */
+  version = "";
+
+  constructor(data?: PartialMessage<SaveAlertForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SaveAlertForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "options", kind: "message", T: AlertOptions },
+    { no: 5, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SaveAlertForUserRequest {
+    return new SaveAlertForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SaveAlertForUserRequest {
+    return new SaveAlertForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SaveAlertForUserRequest {
+    return new SaveAlertForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SaveAlertForUserRequest | PlainMessage<SaveAlertForUserRequest> | undefined, b: SaveAlertForUserRequest | PlainMessage<SaveAlertForUserRequest> | undefined): boolean {
+    return proto3.util.equals(SaveAlertForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SaveAlertForUserResponse
+ */
+export class SaveAlertForUserResponse extends Message<SaveAlertForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL where the user can open the alert.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  /**
+   * Version of the saved alert, to edit it again.
+   *
+   * @generated from field: string version = 3;
+   */
+  version = "";
+
+  constructor(data?: PartialMessage<SaveAlertForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SaveAlertForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SaveAlertForUserResponse {
+    return new SaveAlertForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SaveAlertForUserResponse {
+    return new SaveAlertForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SaveAlertForUserResponse {
+    return new SaveAlertForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SaveAlertForUserResponse | PlainMessage<SaveAlertForUserResponse> | undefined, b: SaveAlertForUserResponse | PlainMessage<SaveAlertForUserResponse> | undefined): boolean {
+    return proto3.util.equals(SaveAlertForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListAlertsForUserRequest
+ */
+export class ListAlertsForUserRequest extends Message<ListAlertsForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<ListAlertsForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListAlertsForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAlertsForUserRequest {
+    return new ListAlertsForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAlertsForUserRequest {
+    return new ListAlertsForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAlertsForUserRequest {
+    return new ListAlertsForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAlertsForUserRequest | PlainMessage<ListAlertsForUserRequest> | undefined, b: ListAlertsForUserRequest | PlainMessage<ListAlertsForUserRequest> | undefined): boolean {
+    return proto3.util.equals(ListAlertsForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListAlertsForUserResponse
+ */
+export class ListAlertsForUserResponse extends Message<ListAlertsForUserResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.AlertForUser alerts = 1;
+   */
+  alerts: AlertForUser[] = [];
+
+  constructor(data?: PartialMessage<ListAlertsForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListAlertsForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "alerts", kind: "message", T: AlertForUser, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAlertsForUserResponse {
+    return new ListAlertsForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAlertsForUserResponse {
+    return new ListAlertsForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAlertsForUserResponse {
+    return new ListAlertsForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAlertsForUserResponse | PlainMessage<ListAlertsForUserResponse> | undefined, b: ListAlertsForUserResponse | PlainMessage<ListAlertsForUserResponse> | undefined): boolean {
+    return proto3.util.equals(ListAlertsForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.AlertForUser
+ */
+export class AlertForUser extends Message<AlertForUser> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Version of the alert, to pass to SaveAlertForUser when editing it.
+   *
+   * @generated from field: string version = 2;
+   */
+  version = "";
+
+  /**
+   * Options the alert was saved with.
+   *
+   * @generated from field: rill.admin.v1.AlertOptions options = 3;
+   */
+  options?: AlertOptions;
+
+  constructor(data?: PartialMessage<AlertForUser>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AlertForUser";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "options", kind: "message", T: AlertOptions },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertForUser {
+    return new AlertForUser().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AlertForUser {
+    return new AlertForUser().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AlertForUser {
+    return new AlertForUser().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AlertForUser | PlainMessage<AlertForUser> | undefined, b: AlertForUser | PlainMessage<AlertForUser> | undefined): boolean {
+    return proto3.util.equals(AlertForUser, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SaveReportForUserRequest
+ */
+export class SaveReportForUserRequest extends Message<SaveReportForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the report.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * Name of a report owned by the user to edit.
+   * If empty, a new report is created.
+   *
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * @generated from field: rill.admin.v1.ReportOptions options = 4;
+   */
+  options?: ReportOptions;
+
+  /**
+   * Version of the report to edit, as returned by ListReportsForUser.
+   * Required when name is set.
+   * The edit fails if the report changed since, so a concurrent change isn't overwritten.
+   *
+   * @generated from field: string version = 5;
+   */
+  version = "";
+
+  constructor(data?: PartialMessage<SaveReportForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SaveReportForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "options", kind: "message", T: ReportOptions },
+    { no: 5, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SaveReportForUserRequest {
+    return new SaveReportForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SaveReportForUserRequest {
+    return new SaveReportForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SaveReportForUserRequest {
+    return new SaveReportForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SaveReportForUserRequest | PlainMessage<SaveReportForUserRequest> | undefined, b: SaveReportForUserRequest | PlainMessage<SaveReportForUserRequest> | undefined): boolean {
+    return proto3.util.equals(SaveReportForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SaveReportForUserResponse
+ */
+export class SaveReportForUserResponse extends Message<SaveReportForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL where the user can open the report.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  /**
+   * Version of the saved report, to edit it again.
+   *
+   * @generated from field: string version = 3;
+   */
+  version = "";
+
+  constructor(data?: PartialMessage<SaveReportForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SaveReportForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SaveReportForUserResponse {
+    return new SaveReportForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SaveReportForUserResponse {
+    return new SaveReportForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SaveReportForUserResponse {
+    return new SaveReportForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SaveReportForUserResponse | PlainMessage<SaveReportForUserResponse> | undefined, b: SaveReportForUserResponse | PlainMessage<SaveReportForUserResponse> | undefined): boolean {
+    return proto3.util.equals(SaveReportForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListReportsForUserRequest
+ */
+export class ListReportsForUserRequest extends Message<ListReportsForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<ListReportsForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListReportsForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListReportsForUserRequest {
+    return new ListReportsForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListReportsForUserRequest {
+    return new ListReportsForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListReportsForUserRequest {
+    return new ListReportsForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListReportsForUserRequest | PlainMessage<ListReportsForUserRequest> | undefined, b: ListReportsForUserRequest | PlainMessage<ListReportsForUserRequest> | undefined): boolean {
+    return proto3.util.equals(ListReportsForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListReportsForUserResponse
+ */
+export class ListReportsForUserResponse extends Message<ListReportsForUserResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.ReportForUser reports = 1;
+   */
+  reports: ReportForUser[] = [];
+
+  constructor(data?: PartialMessage<ListReportsForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListReportsForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "reports", kind: "message", T: ReportForUser, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListReportsForUserResponse {
+    return new ListReportsForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListReportsForUserResponse {
+    return new ListReportsForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListReportsForUserResponse {
+    return new ListReportsForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListReportsForUserResponse | PlainMessage<ListReportsForUserResponse> | undefined, b: ListReportsForUserResponse | PlainMessage<ListReportsForUserResponse> | undefined): boolean {
+    return proto3.util.equals(ListReportsForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ReportForUser
+ */
+export class ReportForUser extends Message<ReportForUser> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Version of the report, to pass to SaveReportForUser when editing it.
+   *
+   * @generated from field: string version = 2;
+   */
+  version = "";
+
+  /**
+   * Options the report was saved with.
+   *
+   * @generated from field: rill.admin.v1.ReportOptions options = 3;
+   */
+  options?: ReportOptions;
+
+  constructor(data?: PartialMessage<ReportForUser>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ReportForUser";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "options", kind: "message", T: ReportOptions },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportForUser {
+    return new ReportForUser().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportForUser {
+    return new ReportForUser().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportForUser {
+    return new ReportForUser().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportForUser | PlainMessage<ReportForUser> | undefined, b: ReportForUser | PlainMessage<ReportForUser> | undefined): boolean {
+    return proto3.util.equals(ReportForUser, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateReportRequest
  */
 export class CreateReportRequest extends Message<CreateReportRequest> {
@@ -15525,6 +16037,126 @@ export class DeletePersonalFileResponse extends Message<DeletePersonalFileRespon
 
   static equals(a: DeletePersonalFileResponse | PlainMessage<DeletePersonalFileResponse> | undefined, b: DeletePersonalFileResponse | PlainMessage<DeletePersonalFileResponse> | undefined): boolean {
     return proto3.util.equals(DeletePersonalFileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SavePersonalFileForUserRequest
+ */
+export class SavePersonalFileForUserRequest extends Message<SavePersonalFileForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the personal file.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string kind = 3;
+   */
+  kind = "";
+
+  /**
+   * Name of an existing personal file to edit. If empty, a new personal file is created.
+   *
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  /**
+   * Display name for a new personal file. Required when name is empty.
+   *
+   * @generated from field: string display_name = 5;
+   */
+  displayName = "";
+
+  /**
+   * YAML body of the personal file. Annotations in it are ignored.
+   *
+   * @generated from field: string yaml = 6;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<SavePersonalFileForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SavePersonalFileForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SavePersonalFileForUserRequest | PlainMessage<SavePersonalFileForUserRequest> | undefined, b: SavePersonalFileForUserRequest | PlainMessage<SavePersonalFileForUserRequest> | undefined): boolean {
+    return proto3.util.equals(SavePersonalFileForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SavePersonalFileForUserResponse
+ */
+export class SavePersonalFileForUserResponse extends Message<SavePersonalFileForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL where the user can open the personal file.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<SavePersonalFileForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SavePersonalFileForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SavePersonalFileForUserResponse | PlainMessage<SavePersonalFileForUserResponse> | undefined, b: SavePersonalFileForUserResponse | PlainMessage<SavePersonalFileForUserResponse> | undefined): boolean {
+    return proto3.util.equals(SavePersonalFileForUserResponse, a, b);
   }
 }
 

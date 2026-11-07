@@ -52,6 +52,10 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
+func (n *noopAdminService) SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*drivers.PersonalCanvas, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 // GetConnectorOAuthToken behaves like Rill Cloud for a user who has not authorized the connector.
 func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotFound
@@ -59,6 +63,22 @@ func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector
 
 func (n *noopAdminService) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
 	return nil
+}
+
+func (n *noopAdminService) ListAlerts(ctx context.Context, userID string) ([]*drivers.ManagedAlert, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) SaveAlert(ctx context.Context, userID, name, version string, opts *drivers.AlertOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) ListReports(ctx context.Context, userID string) ([]*drivers.ManagedReport, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) SaveReport(ctx context.Context, userID, name, version string, opts *drivers.ReportOptions) (*drivers.SavedResource, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // HasAnonymousSourceAccess implements [drivers.Driver].

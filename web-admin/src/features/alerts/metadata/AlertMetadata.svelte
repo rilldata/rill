@@ -23,6 +23,10 @@
     formatRefreshSchedule,
   } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
+  import {
+    getAggregationRequestFromAIAlertProperties,
+    isAIAlertSpec,
+  } from "@rilldata/web-common/features/alerts/ai-alert-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -77,9 +81,14 @@
   $: queryName =
     alertSpec?.queryName ||
     (alertSpec?.resolverProperties?.query_name as string);
-  $: metricsViewAggregationRequest = JSON.parse(
-    queryArgsJson,
-  ) as V1MetricsViewAggregationRequest;
+  // An AI alert keeps its data context in the ai resolver's properties, and its Condition replaces the criteria.
+  $: isAIAlert = isAIAlertSpec(alertSpec);
+  $: metricsViewAggregationRequest = isAIAlert
+    ? getAggregationRequestFromAIAlertProperties(
+        alertSpec?.resolverProperties ?? {},
+        metricsViewName ?? "",
+      )
+    : (JSON.parse(queryArgsJson) as V1MetricsViewAggregationRequest);
 
   $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
 
@@ -254,11 +263,20 @@
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
-    <!-- Criteria -->
-    <AlertFilterCriteria
-      filters={metricsViewAggregationRequest?.having}
-      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
-    />
+    <!-- Criteria, or an AI alert's Condition -->
+    {#if isAIAlert}
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>{m.alert_condition()}</MetadataLabel>
+        <MetadataValue>
+          {alertSpec.resolverProperties?.prompt ?? ""}
+        </MetadataValue>
+      </div>
+    {:else}
+      <AlertFilterCriteria
+        filters={metricsViewAggregationRequest?.having}
+        comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
+      />
+    {/if}
 
     <!-- Slack notification -->
     {#if slackNotifier}
