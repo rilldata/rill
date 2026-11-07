@@ -359,6 +359,63 @@ describe("the alert dialog", () => {
     ]);
   });
 
+  it("keeps a comparison with the previous month saved as a rill time expression", async () => {
+    const queryArgs: V1MetricsViewAggregationRequest = {
+      metricsView: AD_BIDS_METRICS_NAME,
+      measures: [
+        { name: AD_BIDS_IMPRESSIONS_MEASURE },
+        {
+          name: AD_BIDS_IMPRESSIONS_MEASURE + "_delta",
+          comparisonDelta: { measure: AD_BIDS_IMPRESSIONS_MEASURE },
+        },
+        {
+          name: AD_BIDS_IMPRESSIONS_MEASURE + "_delta_perc",
+          comparisonRatio: { measure: AD_BIDS_IMPRESSIONS_MEASURE },
+        },
+      ],
+      dimensions: [],
+      timeRange: { expression: "MTD as of latest/D", timeZone: "UTC" },
+      comparisonTimeRange: { expression: "MTD as of latest/D offset -1M" },
+      having: {
+        cond: {
+          op: V1Operation.OPERATION_AND,
+          exprs: [
+            {
+              cond: {
+                op: V1Operation.OPERATION_LT,
+                exprs: [
+                  { ident: AD_BIDS_IMPRESSIONS_MEASURE + "_delta_perc" },
+                  { val: -0.1 },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    };
+    const alertSpec = getFormulaAlertSpec();
+    alertSpec.resolverProperties = {
+      ...alertSpec.resolverProperties,
+      query_args_json: JSON.stringify(queryArgs),
+    };
+    await openEditDialog(alertSpec);
+
+    await clickButton("Next");
+    await waitFor(() =>
+      expect(screen.getByText(/previous month/i)).toBeInTheDocument(),
+    );
+    await clickButton("Next");
+    await clickButton("Update");
+
+    const options = await getSavedOptions();
+    const saved = JSON.parse(
+      options.queryArgsJson ?? "{}",
+    ) as V1MetricsViewAggregationRequest;
+    expect(saved.comparisonTimeRange?.expression).toBe(
+      "MTD as of latest/D offset -1M",
+    );
+  });
+
   it("waits for the explore before editing an AI alert created through the API", async () => {
     // Such an alert has no captured dashboard state. Hold the explore response until after the current user's,
     // which is when the dialog would otherwise start without knowing the alert's metrics view.

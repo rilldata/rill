@@ -200,6 +200,9 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
 ) {
   let selectedTimeRange: DashboardTimeControls;
   let duration = timeRange.isoOffset;
+  const expressionOption = timeRange.expression
+    ? getComparisonOptionFromExpression(timeRange.expression)
+    : undefined;
 
   const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
   if (fullRangeKey in PreviousCompleteRangeReverseMap) {
@@ -212,6 +215,10 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
+  } else if (expressionOption) {
+    selectedTimeRange = {
+      name: expressionOption,
+    } as DashboardTimeControls;
   } else if (timeRange.isoOffset === timeRange.isoDuration) {
     // Previous period is when offset = duration
     selectedTimeRange = {
@@ -235,4 +242,14 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
+}
+
+// The comparison option of a comparison saved as a rill time expression,
+// from the offset mapSelectedComparisonTimeRangeToV1TimeRange appends to the time range.
+function getComparisonOptionFromExpression(expression: string) {
+  const offset = / offset (\S+)$/.exec(expression)?.[1];
+  if (!offset) return undefined;
+  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
+    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
+  );
 }
