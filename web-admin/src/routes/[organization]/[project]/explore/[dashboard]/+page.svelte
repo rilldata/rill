@@ -122,7 +122,7 @@
           disableMostRecentDashboardState={$disablePersistentDashboardState}
           disableInitSessionDashboardState={$disablePersistentDashboardState}
         >
-          <Dashboard {metricsViewName} {exploreName} />
+          <Dashboard {metricsViewName} {exploreName} phoneLayout />
         </DashboardStateManager>
       </StateManagersProvider>
     {/key}

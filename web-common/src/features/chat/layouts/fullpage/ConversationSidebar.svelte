@@ -103,7 +103,11 @@
       </div>
     </div>
 
-    <div class="conversation-list" data-testid="conversation-list">
+    <div
+      class="conversation-list"
+      data-testid="conversation-list"
+      data-horizontal-scroll
+    >
       {#if isLoading}
         <div class="loading-conversations">
           <DelayedContent visible={isLoading} delay={300}>
@@ -200,9 +204,30 @@
   }
 
   @media (max-width: 640px) {
+    /* The layout stacks vertically, so the sidebar divides with a bottom
+       border instead of a right one. */
+    .conversation-sidebar {
+      @apply border-r-0 border-b;
+    }
+
     .conversation-sidebar:not(.collapsed) {
       width: 100%;
       height: 200px;
+    }
+
+    /* Collapsed: a compact horizontal action bar instead of a vertical
+       icon rail, which would otherwise push the chat far down the page. */
+    .conversation-sidebar.collapsed {
+      @apply flex-row items-center;
+      width: 100%;
+    }
+
+    .collapsed-actions {
+      @apply flex-row;
+    }
+
+    .collapsed-footer {
+      @apply flex-row mt-0 ml-auto;
     }
 
     .conversation-list {

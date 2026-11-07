@@ -66,6 +66,7 @@
 <div
   class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
   class:scrollable-chips={chipLayout === "scroll"}
+  data-horizontal-scroll={chipLayout === "scroll" ? "" : undefined}
   class:flex-wrap={chipLayout === "wrap"}
   class:flex-col={chipLayout === "col"}
   aria-label={ariaLabel}
