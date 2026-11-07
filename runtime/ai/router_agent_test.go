@@ -58,6 +58,10 @@ func TestRouterAgent(t *testing.T) {
 			agent:  ai.AnalystAgentName,
 		},
 		{
+			prompt: "Send me the revenue by country every Monday morning.",
+			agent:  ai.AnalystAgentName,
+		},
+		{
 			prompt: "Add an alert file to the project that emails the team when revenue drops below 30k.",
 			agent:  ai.DeveloperAgentName,
 		},

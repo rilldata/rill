@@ -218,7 +218,7 @@ Routing guidelines:
 - If the user's question relates to developing or permanently changing the data model, metrics, or dashboards, you should route to the developer.
 - If the user's question relates to exploring dashboards or retrieving specific business metrics, you should route to the analyst.
 - If the user asks a general question, you should route to the analyst.
-- If the user asks to create, change or list their own alerts (for example "alert me if revenue drops below 30k"), you should route to the analyst, which saves them for the user. Only route to the developer if the user explicitly asks to put the alert in the project's code or files.
+- If the user asks to create, change or list their own alerts or scheduled reports (for example "alert me if revenue drops below 30k" or "send me the sales every Monday"), you should route to the analyst, which saves them for the user. Only route to the developer if the user explicitly asks to put the alert or report in the project's code or files.
 - If the user specifically requests an agent by name, you must route to that agent if it's available.
 You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
 {{- range .candidates }}

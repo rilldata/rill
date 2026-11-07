@@ -128,7 +128,7 @@ If you work across multiple Rill projects in your organization, you can connect 
 ```
 https://api.rilldata.com/v1/mcp
 ```
-The unified MCP server works with both OAuth (Claude Desktop, Claude Code, and ChatGPT) and bearer tokens (`rill token issue` or a service token). It exposes a `list_projects` tool that returns the `<org>/<project>` slugs you have access to, and adds a required `project` argument to the metrics view, skill and alert tools (`list_metrics_views`, `get_metrics_view`, `query_metrics_view_summary`, `query_metrics_view`, `list_skills`, `load_skill`, `list_alerts`, and `save_alert`) to route each call to that project's production deployment.
+The unified MCP server works with both OAuth (Claude Desktop, Claude Code, and ChatGPT) and bearer tokens (`rill token issue` or a service token). It exposes a `list_projects` tool that returns the `<org>/<project>` slugs you have access to, and adds a required `project` argument to the metrics view, skill, alert and report tools (`list_metrics_views`, `get_metrics_view`, `query_metrics_view_summary`, `query_metrics_view`, `list_skills`, `load_skill`, `list_alerts`, `save_alert`, `list_reports`, and `save_report`) to route each call to that project's production deployment.
 
 Use the per-project endpoint (`/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp`) when you want the connection scoped to a single project, need to target a specific branch deployment, or use developer file-editing tools (`list_files`, `read_file`, `search_files`, `write_file`).
 
@@ -278,12 +278,13 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*List dashboards*__ – Use `list_canvases` to discover the canvas dashboards you can see in the project. Your own personal dashboards are included and marked with `personal: true`; pass one's `name` to `develop_personal_canvas` to change it.
 - __*Create a personal dashboard*__ – Use `develop_personal_canvas` to create a canvas dashboard for yourself, or change one of your own. It is saved as a personal dashboard that only you can see until you share it from Rill Cloud.
 - __*Create an alert*__ – Use `save_alert` to create an alert on the data of an explore dashboard, or change one of your own: with criteria on a measure, or with a condition in your own words that AI judges on every check (each check of an AI alert runs the AI analyst once, like an AI report). Use `list_alerts` to find your alerts.
+- __*Schedule a report*__ – Use `save_report` to schedule a report: an export of an explore dashboard's data, an AI report, or a canvas dashboard as a PDF. Use `list_reports` to find your reports.
 
 The skill tools are available to every user who can use AI features in the project, whether or not the project defines skills. `list_skills` returns every skill in the project with its `description`, `metrics_views`, `agents` and `always_apply` fields, so the client can pick the ones that fit its task. If `load_skill` is called with a name that doesn't exist, the error lists the skills that do.
 
 `develop_personal_canvas` is only available in Rill Cloud, in projects that enable personal canvases with the `personal_canvases` [feature flag](/developers/build/project-configuration#feature-flags), and only to users (not service tokens). It can't share or delete dashboards: do that from the dashboard in Rill Cloud. If a project doesn't enable it, calling the tool returns an error that says so.
 
-The alert tools are only available in Rill Cloud, and only to users (not service tokens). The alerts they create are yours, as if you had created them from the alert dialog, and you can keep editing them there. An edit only changes what it passes, keeping every other setting, and it fails if the alert changed since it was listed. The tools can't delete alerts: do that from Rill Cloud.
+The alert and report tools are only available in Rill Cloud, and only to users (not service tokens). What they create is yours, as if you had created it from the alert or report dialog, and you can keep editing it there. Reports open with each recipient's own permissions unless you choose to open them with yours; sending a report to people outside the project or to Slack, or attaching its export, needs your permissions. An edit only changes what it passes, keeping every other setting, and it fails if the alert or report changed since it was listed. The tools can't delete alerts or reports: do that from Rill Cloud.
 
 The `/` skill picker is part of Rill's [AI Chat](/guide/ai/ai-chat#using-project-skills). In an external client, ask for a skill by name instead, for example: "Use the `revenue-rca` skill to explain last week's revenue drop."
 
