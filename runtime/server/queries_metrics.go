@@ -72,7 +72,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
 		SecurityClaims:      claims,
-		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
@@ -203,7 +202,6 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		WhereSQL:            req.WhereSql,
 		Having:              req.Having,
 		HavingSQL:           req.HavingSql,
-		Exact:               req.Exact,
 		Filter:              req.Filter,
 		SecurityClaims:      claims,
 	}
@@ -247,6 +245,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		MetricsViewName:   req.MetricsViewName,
 		MeasureNames:      req.MeasureNames,
 		EphemeralMeasures: req.EphemeralMeasures,
+		ExactMeasureNames: req.ExactMeasureNames,
 		TimeStart:         req.TimeStart,
 		TimeEnd:           req.TimeEnd,
 		TimeGranularity:   req.TimeGranularity,
@@ -343,35 +342,28 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
 	limit := int64(req.Limit)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:    req.MetricsViewName,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
-		TimeGranularity:    req.TimeGranularity,
-		Where:              req.Where,
-		Sort:               req.Sort,
-		Limit:              &limit,
-		Offset:             req.Offset,
-		TimeZone:           req.TimeZone,
-		MetricsView:        mv.ValidSpec,
-		ResolvedMVSecurity: security,
-		Streaming:          mv.Streaming,
-		Filter:             req.Filter,
-		TimeDimension:      req.TimeDimension,
+		MetricsViewName: req.MetricsViewName,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		TimeGranularity: req.TimeGranularity,
+		Where:           req.Where,
+		Sort:            req.Sort,
+		Limit:           &limit,
+		Offset:          req.Offset,
+		TimeZone:        req.TimeZone,
+		SecurityClaims:  claims,
+		Filter:          req.Filter,
+		TimeDimension:   req.TimeDimension,
 	}
 	var collector *observability.RequestScopedCollector
 	if req.Trace && canTrace(claims) {
 		collector = &observability.RequestScopedCollector{}
 		ctx = observability.WithRequestScopedCollector(ctx, collector)
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, withTrace(err, collector)
 	}
@@ -630,7 +622,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 
 	var offset *int64
 	if req.Offset != 0 {
-		limit = &req.Offset
+		offset = &req.Offset
 	}
 
 	qry := metricsview.AnnotationsQuery{
@@ -759,24 +751,6 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	if err != nil {
 		return nil, nil, err
 	}
-	if !resolvedSecurity.CanAccess() {
-		return nil, nil, ErrForbidden
-	}
-
-	return mv, resolvedSecurity, nil
-}
-
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
-	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, claims, res)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
 	}

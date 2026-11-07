@@ -291,11 +291,11 @@ explore:
 			args: ai.QueryMetricsViewArgs{
 				"dimensions": []map[string]any{{"name": "country"}},
 				"measures":   []map[string]any{{"name": "total_revenue"}},
-				"where": map[string]any{"cond": map[string]any{"op": "in", "exprs": []any{
+				"where": map[string]any{"cond": map[string]any{"op": "eq", "exprs": []any{
 					map[string]any{"name": "country"},
 				}}},
 			},
-			wantErr: `"in" condition has 1`,
+			wantErr: `"eq" condition has 1`,
 		},
 	}
 

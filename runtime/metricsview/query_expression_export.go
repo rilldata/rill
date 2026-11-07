@@ -138,6 +138,10 @@ func (b exprExportBuilder) writeJoinedExpressions(exprs []*Expression, joiner st
 func (b exprExportBuilder) writeBinaryCondition(exprs []*Expression, op Operator, joiner string) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 1 {
+			// A flattened list with no values is just the left hand side; treat it as an empty list.
+			exprs = []*Expression{exprs[0], {Value: []any{}}}
+		}
 		if len(exprs) == 2 {
 			rhs := exprs[1]
 			typ := reflect.TypeOf(rhs.Value)

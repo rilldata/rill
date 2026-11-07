@@ -106,13 +106,20 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   client: RuntimeClient,
   metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
+  queryClient?: QueryClient,
 ) => {
-  return useResource<T>(client, metricsViewName, ResourceKind.MetricsView, {
-    select: (data) =>
-      selector
-        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
-        : (data.resource?.metricsView?.state?.validSpec as T),
-  });
+  return useResource<T>(
+    client,
+    metricsViewName,
+    ResourceKind.MetricsView,
+    {
+      select: (data) =>
+        selector
+          ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
+          : (data.resource?.metricsView?.state?.validSpec as T),
+    },
+    queryClient,
+  );
 };
 
 export function useMetricsViewTimeRange(
@@ -126,7 +133,7 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   const fullTimeRangeQueryOptionsStore = derived(
-    useMetricsViewValidSpec(client, metricsViewName),
+    useMetricsViewValidSpec(client, metricsViewName, undefined, queryClient),
     (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data ?? {};
 

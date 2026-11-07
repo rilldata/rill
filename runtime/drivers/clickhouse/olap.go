@@ -134,42 +134,37 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.supportSettings {
-		// Default settings
-		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"insert_distributed_sync":   1,
-			"prefer_global_in_and_join": 1,
-			"session_timezone":          "UTC",
-			"join_use_nulls":            1,
-		} // ideally add cast_string_to_date_time_mode='best_effort' but it is not supported in versions older than 25.6 so add it min supported version changes to 25.6
-
-		// Settings string to append to the query
-		var sqlSettings string
-		if c.config.QuerySettingsOverride != "" {
-			sqlSettings = c.config.QuerySettingsOverride
-			settings = map[string]any{} // Clear default settings if override is set
-		} else {
-			sqlSettings = c.config.QuerySettings
-		}
-
-		// Add query attributes as settings
-		for k, v := range stmt.QueryAttributes {
-			// NOTE: Ideally, we could just handle custom attributes with `settings[k] = v`
-			// However, Clickhouse currently doesn't accept custom settings this way, so we fall back to appending to the query.
-			if sqlSettings != "" {
-				sqlSettings += ", "
-			}
-			sqlSettings += fmt.Sprintf("%s = %s", k, sqlstring.ToLiteral(v))
-		}
-
-		// Add settings to query and context (depending on type)
-		if sqlSettings != "" {
-			stmt.Query += "\n SETTINGS " + sqlSettings
-		}
-		if len(settings) > 0 {
+	// Settings string to append to the query.
+	// User-configured settings and query attributes are not gated on supportSettings: failing in readonly mode means silently dropping them.
+	var sqlSettings string
+	if c.config.QuerySettingsOverride != "" {
+		sqlSettings = c.config.QuerySettingsOverride
+	} else {
+		sqlSettings = c.config.QuerySettings
+		if c.supportSettings {
+			// Default settings
+			settings := map[string]any{
+				"cast_keep_nullable":        1,
+				"insert_distributed_sync":   1,
+				"prefer_global_in_and_join": 1,
+				"session_timezone":          "UTC",
+				"join_use_nulls":            1,
+			} // ideally add cast_string_to_date_time_mode='best_effort' but it is not supported in versions older than 25.6 so add it min supported version changes to 25.6
 			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		}
+	}
+
+	// Add query attributes as settings
+	for k, v := range stmt.QueryAttributes {
+		// NOTE: Ideally, we could just handle custom attributes with `settings[k] = v`
+		// However, Clickhouse currently doesn't accept custom settings this way, so we fall back to appending to the query.
+		if sqlSettings != "" {
+			sqlSettings += ", "
+		}
+		sqlSettings += fmt.Sprintf("%s = %s", k, sqlstring.ToLiteral(v))
+	}
+	if sqlSettings != "" {
+		stmt.Query += "\n SETTINGS " + sqlSettings
 	}
 
 	// Start a span covering connection acquisition + SQL execution to capture total latency and queue latency.

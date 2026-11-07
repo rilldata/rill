@@ -127,7 +127,7 @@ export function getResolveTemplatedStringQueryOptions(
   return derived(
     [component.parent.expressionFilterManager.exprByMetricsViewStore],
     ([exprByMetricsView], set) => {
-      derived(
+      return derived(
         [
           component.specStore,
           component.timeAndFilterStore,

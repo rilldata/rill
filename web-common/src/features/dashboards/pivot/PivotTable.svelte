@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
@@ -41,6 +42,7 @@
     makeCellFormatter,
   } from "./pivot-conditional-formatting";
   import type {
+    PivotColumnStyles,
     PivotDataRow,
     PivotDataStore,
     PivotDataStoreConfig,
@@ -49,18 +51,42 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const ROW_HEIGHT = 24;
-  const HEADER_HEIGHT = 30;
+  const BASE_ROW_HEIGHT = 24;
+  const BASE_HEADER_HEIGHT = 30;
+  // Wrapped rows and headers keep a uniform height: the text-xs line height
+  // per line plus the cell's vertical padding, so virtualization stays fixed-size.
+  const WRAP_LINE_HEIGHT = 16;
+  const CELL_VERTICAL_PADDING = 8;
+  const HEADER_VERTICAL_PADDING = 14;
 
   export let pivotDataStore: PivotDataStore;
   export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
   export let rounded = true;
   export let fillWidth = false;
+  // Per-column presentation overrides keyed by column id (see PivotColumnStyles).
+  export let columnStyles: PivotColumnStyles = {};
+  // Shrink the columns so the table fits the container instead of scrolling.
+  // Only applied with fillWidth, since otherwise the wrapper tracks the content
+  // width and a reactive fit would feed back on itself.
+  export let fitToWidth = false;
+  // Wrap dimension cells / header labels over `wrapLines` lines.
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let wrapLines = 2;
+  // Called when the user finishes resizing a column; null means the column was
+  // reset to its automatic width.
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -159,8 +185,18 @@
     $config.allMeasures,
   );
 
+  $: effectiveFitToWidth = fitToWidth && fillWidth;
+  $: wrapAnyCells =
+    wrapText || Object.values(columnStyles).some((style) => style?.wrap);
+  $: rowHeight = wrapAnyCells
+    ? WRAP_LINE_HEIGHT * wrapLines + CELL_VERTICAL_PADDING
+    : BASE_ROW_HEIGHT;
+  $: headerHeight = wrapHeaders
+    ? WRAP_LINE_HEIGHT * wrapLines + HEADER_VERTICAL_PADDING
+    : BASE_HEADER_HEIGHT;
+
   $: headerGroups = $table.getHeaderGroups();
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 
   $: rows = $table.getRowModel().rows;
 
@@ -181,7 +217,7 @@
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan,
     initialOffset: rowScrollOffset,
   });
@@ -486,9 +522,10 @@
   class:border
   class:rounded-sm={rounded}
   class="table-wrapper relative"
-  style:--row-height="{ROW_HEIGHT}px"
-  style:--header-height="{HEADER_HEIGHT}px"
+  style:--row-height="{rowHeight}px"
+  style:--header-height="{headerHeight}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
+  style:--wrap-lines={wrapLines}
   bind:this={containerRefElement}
   bind:clientWidth={containerWidth}
   class:w-full={fillWidth}
@@ -516,12 +553,19 @@
       {clickSelection}
       config={$config}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {:else}
@@ -548,6 +592,7 @@
       {clickSelection}
       {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {scrollLeft}
       {containerRefElement}
@@ -556,6 +601,12 @@
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {/if}

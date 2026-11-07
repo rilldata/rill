@@ -1,4 +1,10 @@
 import { type V1Expression } from "@rilldata/web-common/runtime-client";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type YAMLConfigProviderEvents = {
+  /** Fired after `update` has applied the config from a spec. */
+  update: void;
+};
 
 /**
  * A provider for YAML only configuration. These are only mutable during yaml editing.
@@ -12,6 +18,11 @@ export class YAMLConfigProvider {
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
+
+  private events = new EventEmitter<YAMLConfigProviderEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
 
   public update(
     defaultFilters: Record<string, V1Expression | undefined>,
@@ -31,6 +42,8 @@ export class YAMLConfigProvider {
     );
     this.requiredFilters = { ...requiredFiltersRec };
     this.specRequiredFilters = { ...requiredFiltersRec };
+
+    this.events.emit("update");
   }
 
   public setEditable(newEditable: boolean) {

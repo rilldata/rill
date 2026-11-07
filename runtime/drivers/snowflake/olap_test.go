@@ -1,12 +1,17 @@
 package snowflake_test
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -183,6 +188,149 @@ func TestDryRun(t *testing.T) {
 	})
 	require.NoError(t, err)
 }
+
+// TestUnnestDimension creates a table in the DSN's current database and schema, so the DSN must point at a writable schema.
+func TestUnnestDimension(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
+	testmode.Expensive(t)
+	_, olap := acquireTestSnowflake(t)
+
+	// Rows with overlapping, empty, NULL-element and NULL arrays, so joins that duplicate source rows and NULL handling are detectable.
+	// The driver returns NUMBER columns as strings.
+	name := "test_unnest_" + uuid.New().String()[:8]
+	t.Cleanup(func() {
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS " + name})
+		require.NoError(t, err)
+	})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE " + name + " AS SELECT 1 AS id, ARRAY_CONSTRUCT('a', 'b') AS tags UNION ALL SELECT 2, ARRAY_CONSTRUCT('b') UNION ALL SELECT 3, ARRAY_CONSTRUCT('c') UNION ALL SELECT 4, ARRAY_CONSTRUCT() UNION ALL SELECT 5, ARRAY_CONSTRUCT('c', NULL) UNION ALL SELECT 6, NULL::ARRAY"})
+	require.NoError(t, err)
+
+	mv := &runtimev1.MetricsViewSpec{
+		Table: name,
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+			{Name: "id", Column: "id"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+
+	// Same query shape as the executor's dimension validation.
+	dialect := olap.Dialect()
+	escapeTable := dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
+	sel, unnestClause, err := dialect.DimensionSelect(escapeTable, mv.Dimensions[0])
+	require.NoError(t, err)
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", sel, escapeTable, unnestClause), DryRun: true})
+	require.NoError(t, err)
+
+	tagsFilter := func(op metricsview.Operator, val any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{
+			Operator:    op,
+			Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: val}},
+		}}
+	}
+	count := func(where *metricsview.Expression) *metricsview.Query {
+		return &metricsview.Query{Measures: []metricsview.Measure{{Name: "count"}}, Where: where}
+	}
+
+	tests := []struct {
+		name string
+		qry  *metricsview.Query
+		want []map[string]any
+	}{
+		{
+			name: "group by unnest dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "tags"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+				Sort:       []metricsview.Sort{{Name: "tags"}},
+			},
+			want: []map[string]any{
+				{"tags": "a", "count": "1"},
+				{"tags": "b", "count": "2"},
+				// FLATTEN does not emit a row for a NULL element.
+				{"tags": "c", "count": "2"},
+			},
+		},
+		{
+			// Row 1 matches both values but must be counted once.
+			name: "in filter counts each source row once",
+			qry:  count(tagsFilter(metricsview.OperatorIn, []any{"a", "b"})),
+			want: []map[string]any{{"count": "2"}},
+		},
+		{
+			// Excludes rows containing 'a' even if they also contain other values; keeps the empty, NULL-element and NULL arrays.
+			name: "nin filter excludes rows containing any listed value",
+			qry:  count(tagsFilter(metricsview.OperatorNin, []any{"a"})),
+			want: []map[string]any{{"count": "5"}},
+		},
+		{
+			name: "eq filter",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "b")),
+			want: []map[string]any{{"count": "2"}},
+		},
+		{
+			// Keeps the NULL-element and NULL arrays: a NULL comparison must not be treated as a match.
+			name: "neq filter excludes rows containing the value",
+			qry:  count(tagsFilter(metricsview.OperatorNeq, "b")),
+			want: []map[string]any{{"count": "4"}},
+		},
+		{
+			name: "ilike filter",
+			qry:  count(tagsFilter(metricsview.OperatorIlike, "%B%")),
+			want: []map[string]any{{"count": "2"}},
+		},
+		{
+			name: "eq filter with no match",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "missing")),
+			want: []map[string]any{{"count": "0"}},
+		},
+		{
+			name: "filter combined with group by on another dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "id"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+				Where:      tagsFilter(metricsview.OperatorIn, []any{"a", "b"}),
+				Sort:       []metricsview.Sort{{Name: "id"}},
+			},
+			want: []map[string]any{
+				{"id": "1", "count": "1"},
+				{"id": "2", "count": "1"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.qry.MetricsView = name
+			ast, err := metricsview.NewAST(mv, allowAllSecurity{}, tt.qry, dialect)
+			require.NoError(t, err)
+			sql, args, err := ast.SQL()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, queryRows(t, olap, sql, args))
+		})
+	}
+}
+
+func queryRows(t *testing.T, olap drivers.OLAPStore, query string, args []any) []map[string]any {
+	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: query, Args: args})
+	require.NoError(t, err)
+	defer rows.Close()
+	var res []map[string]any
+	for rows.Next() {
+		row := make(map[string]any)
+		require.NoError(t, rows.MapScan(row))
+		res = append(res, row)
+	}
+	require.NoError(t, rows.Err())
+	return res
+}
+
+type allowAllSecurity struct{}
+
+func (allowAllSecurity) CanAccessField(string) bool         { return true }
+func (allowAllSecurity) RowFilter() string                  { return "" }
+func (allowAllSecurity) QueryFilter() *runtimev1.Expression { return nil }
 
 func acquireTestSnowflake(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "snowflake")

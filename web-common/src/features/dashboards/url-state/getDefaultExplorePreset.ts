@@ -4,7 +4,6 @@ import {
   getDefaultTimeZone,
 } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
-import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { ToURLParamTDDChartMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
@@ -21,7 +20,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
@@ -43,6 +41,7 @@ export function getDefaultExplorePreset(
       explore.defaultPreset?.timeRange ||
       getDefaultTimeRange(metricsViewSpec.smallestTimeGrain, timeRangeSummary),
     timezone: getDefaultTimeZone(explore),
+    // No grain: the default is adaptive, so the grain follows the time range.
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
@@ -71,13 +70,6 @@ export function getDefaultExplorePreset(
     ...(explore.defaultPreset ?? {}),
   };
 
-  if (!defaultExplorePreset.timeGrain) {
-    defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
-      defaultExplorePreset,
-      timeRangeSummary,
-    );
-  }
-
   if (defaultExplorePreset.comparisonMode) {
     Object.assign(
       defaultExplorePreset,
@@ -90,33 +82,6 @@ export function getDefaultExplorePreset(
   }
 
   return defaultExplorePreset;
-}
-
-function getDefaultPresetTimeGrain(
-  defaultExplorePreset: V1ExplorePreset,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
-  if (
-    !defaultExplorePreset.timeRange ||
-    !timeRangeSummary?.min ||
-    !timeRangeSummary?.max
-  )
-    return "";
-
-  const fullTimeStart = new Date(timeRangeSummary.min);
-  const fullTimeEnd = new Date(timeRangeSummary.max);
-  const timeRange = isoDurationToFullTimeRange(
-    defaultExplorePreset.timeRange,
-    fullTimeStart,
-    fullTimeEnd,
-    defaultExplorePreset.timezone,
-  );
-
-  return (
-    V1TimeGrainToDateTimeUnit[
-      getDefaultTimeGrain(timeRange.start, timeRange.end)
-    ] ?? ""
-  );
 }
 
 function getDefaultComparisonFields(

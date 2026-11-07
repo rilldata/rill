@@ -58,3 +58,11 @@ export function splitFolderFileNameAndExtension(
 export function getTopLevelFolder(filePath: string): string {
   return "/" + (filePath.split(FILE_PATH_SPLIT_REGEX)[1] ?? "");
 }
+
+// Returns true if the path, or any of its parent directories, is dot-prefixed
+// (e.g. `/.claude` or `/.claude/skills`).
+export function isHiddenPath(filePath: string): boolean {
+  return filePath
+    .split(FILE_PATH_SPLIT_REGEX)
+    .some((segment) => segment.startsWith("."));
+}

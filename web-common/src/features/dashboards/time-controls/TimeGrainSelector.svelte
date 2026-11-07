@@ -12,11 +12,17 @@
   import type { V1TimeGrain } from "../../../runtime-client";
 
   export let tdd = false;
+  /** The grain in effect. In adaptive mode this is the grain derived from the time range. */
   export let activeTimeGrain: V1TimeGrain | undefined;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
-  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
+  /** Called with `undefined` when the user picks adaptive mode. */
+  export let onTimeGrainSelect: (timeGrain: V1TimeGrain | undefined) => void;
+  /** Whether the grain currently follows the time range. */
+  export let adaptiveTimeGrain = false;
+  /** Shows the adaptive option in the menu. Off for contexts that need a fixed grain. */
+  export let allowAdaptiveTimeGrain = false;
   export let complete: boolean = false;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
@@ -71,6 +77,11 @@
               {#if complete}
                 <i class="ml-0.5">{m.time_grain_complete()}</i>
               {/if}
+              {#if allowAdaptiveTimeGrain && adaptiveTimeGrain}
+                <i class="ml-0.5 text-fg-muted"
+                  >{m.time_grain_adaptive_hint()}</i
+                >
+              {/if}
             </span>
             <span
               class="flex-none transition-transform"
@@ -83,11 +94,31 @@
       {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start" {side}>
+      {#if allowAdaptiveTimeGrain}
+        <DropdownMenu.CheckboxItem
+          checkRight
+          closeOnSelect
+          checked={adaptiveTimeGrain}
+          class="text-xs cursor-pointer"
+          onSelect={() => {
+            onTimeGrainSelect(undefined);
+            open = false;
+          }}
+        >
+          <div class="flex flex-col">
+            <span>{m.time_grain_adaptive()}</span>
+            <span class="text-fg-muted">
+              {m.time_grain_adaptive_description()}
+            </span>
+          </div>
+        </DropdownMenu.CheckboxItem>
+        <DropdownMenu.Separator />
+      {/if}
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight
           closeOnSelect
-          checked={option.key === activeTimeGrain}
+          checked={!adaptiveTimeGrain && option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
           onSelect={() => {
             onTimeGrainSelect(option.key);

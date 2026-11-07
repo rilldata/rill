@@ -30,6 +30,9 @@
   export let showDefaultItem: boolean;
   export let inheritOption: InheritRangeOption | undefined = undefined;
   export let activeTimeGrain: V1TimeGrain | undefined;
+  /** Whether the grain follows the time range; see TimeGrainSelector. */
+  export let adaptiveTimeGrain = false;
+  export let allowAdaptiveTimeGrain = false;
   export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
@@ -54,7 +57,7 @@
   }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
-  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
+  export let onTimeGrainSelect: (timeGrain: V1TimeGrain | undefined) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
   // Time dimension selection disabled when this function is not provided
@@ -153,6 +156,8 @@
   {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
+      {adaptiveTimeGrain}
+      {allowAdaptiveTimeGrain}
       {minTimeGrain}
       {timeStart}
       {timeEnd}

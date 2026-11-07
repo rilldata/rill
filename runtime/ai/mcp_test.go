@@ -3,6 +3,7 @@ package ai_test
 import (
 	"testing"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
@@ -22,6 +23,55 @@ func TestMCPToolSpecs(t *testing.T) {
 		require.NotNil(t, spec.InputSchema, "tool %q", name)
 	}
 	require.Contains(t, specs, ai.QueryMetricsViewName)
+
+	// The specs are copies: extending one does not leak into the next call.
+	schema := specs[ai.QueryMetricsViewName].InputSchema.(*jsonschema.Schema)
+	schema.Properties["project"] = &jsonschema.Schema{Type: "string"}
+	schema.Required = append(schema.Required, "project")
+	specs[ai.QueryMetricsViewName].Meta["ui"] = map[string]any{"resourceUri": "ui://x"}
+	again := ai.MCPToolSpecs()[ai.QueryMetricsViewName]
+	require.NotContains(t, again.InputSchema.(*jsonschema.Schema).Properties, "project")
+	require.NotContains(t, again.InputSchema.(*jsonschema.Schema).Required, "project")
+	require.NotContains(t, again.Meta, "ui")
+	require.Contains(t, again.Meta, "openai/toolInvocation/invoking", "the tool's own meta is kept")
+
+	// Tools may advertise a different definition on MCP servers than in-app (see ai.MCPSpecProvider):
+	// create_chart takes the Flint shape externally and keeps Rill's own chart spec for the in-app chat.
+	external := specs[ai.CreateChartName].InputSchema.(*jsonschema.Schema)
+	require.Contains(t, external.Properties, "chart_spec")
+	require.Contains(t, external.Properties, "data")
+	require.NotContains(t, external.Properties, "chart_type", "external clients use the Flint shape only")
+	require.Equal(t, []string{"chart_spec", "data"}, external.Required)
+	require.Contains(t, external.Defs, "Expression", "the data block reuses the filter expression schema")
+	require.Contains(t, specs[ai.CreateChartName].Description, "Waterfall Chart")
+	require.NotNil(t, specs[ai.CreateChartName].OutputSchema, "the MCP spec inherits the inferred output schema")
+	require.Contains(t, specs[ai.ChartDataName].InputSchema.(*jsonschema.Schema).Properties, "chart_spec")
+	inApp, err := ai.NewRunner(nil, nil).Tools[ai.CreateChartName].AsProto()
+	require.NoError(t, err)
+	require.Contains(t, inApp.InputSchema, `"chart_type"`)
+	require.NotContains(t, inApp.InputSchema, `"chart_spec"`)
+	require.NotContains(t, inApp.Description, "Waterfall Chart")
+
+	// The tools that take part in the MCP Apps widget are known without a runtime too.
+	require.False(t, ai.IsMCPAppOnlyTool(ai.CreateChartName), "create_chart is called by the model")
+	require.True(t, ai.IsMCPAppOnlyTool(ai.ChartDataName))
+	require.False(t, ai.IsMCPAppOnlyTool(ai.QueryMetricsViewName))
+	require.False(t, ai.IsMCPAppOnlyTool("unknown"))
+	require.Nil(t, ai.MCPAppToolMeta(ai.QueryMetricsViewName, nil))
+	require.Nil(t, ai.MCPAppToolMeta(ai.CreateChartName, nil), "create_chart links to the widget, which requires the asset")
+	require.Equal(t, []any{"app"}, ai.MCPAppToolMeta(ai.ChartDataName, nil)["ui"].(map[string]any)["visibility"], "app-only visibility does not need the asset")
+}
+
+// TestMCPUserAgent asserts that no MCP client is recorded with a user agent that passes for one of Rill's own clients,
+// and that a recorded user agent is kept as is, which the MCP server relies on to tell MCP sessions from in-app ones.
+func TestMCPUserAgent(t *testing.T) {
+	require.Equal(t, "mcp/unknown", ai.MCPUserAgent(""))
+	require.Equal(t, "claude-ai/1.0", ai.MCPUserAgent("claude-ai/1.0"))
+	require.Equal(t, "mcp/rill/1.0.0", ai.MCPUserAgent("rill/1.0.0"), "Rill's own MCP connector")
+	require.Equal(t, "mcp/Rill Desktop/2", ai.MCPUserAgent("Rill Desktop/2"), "in-app conversations are listed by a case-insensitive match")
+	for _, userAgent := range []string{"mcp/unknown", "claude-ai/1.0", "mcp/rill/1.0.0"} {
+		require.Equal(t, userAgent, ai.MCPUserAgent(userAgent))
+	}
 }
 
 // TestSessionCreateIfNotExists asserts that a caller can address a session by an ID of its own choosing,

@@ -5,11 +5,12 @@
  * you may hand-edit this file (e.g., to add a new field to an existing type).
  *
  * Migration path:
- * - For new endpoints, prefer proto-native types from protobuf-es (PartialMessage<T>).
- *   The code generator uses them automatically when no V1* equivalent exists here.
+ * - Whether a method's hooks use these V1* types or proto-native types from
+ *   protobuf-es is decided per method by `protoMessageMethods` in
+ *   src/runtime-client/v2/codegen/config.ts, not by what this file happens to export.
  * - When a V1* type causes friction (missing fields, no discriminated unions for
- *   oneof), switch consumers to the proto-native type from the corresponding *_pb.ts
- *   file instead.
+ *   oneof), switch its consumers to the proto-native type from the corresponding
+ *   *_pb.ts file and add the method to `protoMessageMethods`.
  * - Once all consumers of a V1* type have migrated, delete the type from this file.
  */
 export interface ColumnTimeSeriesRequestBasicMeasure {
@@ -70,6 +71,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  lookupGroupByKey?: boolean;
   smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
@@ -111,6 +113,8 @@ export interface MetricsViewSpecMeasure {
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
   lowerIsBetter?: boolean;
+  /** Optional exact variant of `expression`. When set, `expression` is the approximate default. */
+  exactExpression?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -292,6 +296,11 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   notifyOnRecover?: boolean;
   notifyOnFail?: boolean;
   notifyOnError?: boolean;
@@ -414,15 +423,23 @@ export interface V1Canvas {
   state?: V1CanvasState;
 }
 
+export type V1CanvasItemParams = { [key: string]: unknown };
+
 export interface V1CanvasItem {
   /** Name of the component to render. */
   component?: string;
   /** Indicates if the component was defined inline as part of the canvas YAML. */
   definedInCanvas?: boolean;
+  /** Values bound to the referenced component's declared params.
+Only set for items that reference an externally defined component. */
+  params?: V1CanvasItemParams;
   /** Width of the item. The unit is given in width_unit. */
   width?: number;
   /** Unit of the width. Current possible values: empty string. */
   widthUnit?: string;
+  /** Templated boolean expression from the item's `if` property.
+The item is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export type V1CanvasPresetFilterExpr = {
@@ -448,6 +465,9 @@ export interface V1CanvasTab {
   /** Rows to render when the tab is active. These are always plain rows;
 a tab's rows never contain a nested tab_group. */
   rows?: V1CanvasRow[];
+  /** Templated boolean expression from the tab's `if` property.
+The tab is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasTabGroup {
@@ -466,6 +486,9 @@ export interface V1CanvasRow {
   /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  /** Templated boolean expression from the row's `if` property.
+The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasSpec {
@@ -513,11 +536,6 @@ This may be empty if the data refresh time is not known, e.g. if the metrics vie
   dataRefreshedOn?: string;
 }
 
-export interface V1CategoricalSummary {
-  topK?: V1TopK;
-  cardinality?: number;
-}
-
 export interface V1CharLocation {
   line?: number;
 }
@@ -539,10 +557,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
   connector?: string;
@@ -553,10 +567,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnDescriptiveStatisticsResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
   connector?: string;
@@ -565,10 +575,6 @@ export interface V1ColumnNullCountRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnNullCountResponse {
-  count?: number;
 }
 
 export interface V1ColumnNumericHistogramRequest {
@@ -582,10 +588,6 @@ export interface V1ColumnNumericHistogramRequest {
   priority?: number;
 }
 
-export interface V1ColumnNumericHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
   connector?: string;
@@ -594,12 +596,6 @@ export interface V1ColumnRollupIntervalRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnRollupIntervalResponse {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
 }
 
 export interface V1ColumnRugHistogramRequest {
@@ -612,10 +608,6 @@ export interface V1ColumnRugHistogramRequest {
   priority?: number;
 }
 
-export interface V1ColumnRugHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
   connector?: string;
@@ -626,10 +618,6 @@ export interface V1ColumnTimeGrainRequest {
   priority?: number;
 }
 
-export interface V1ColumnTimeGrainResponse {
-  timeGrain?: V1TimeGrain;
-}
-
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
   connector?: string;
@@ -638,10 +626,6 @@ export interface V1ColumnTimeRangeRequest {
   tableName?: string;
   columnName?: string;
   priority?: number;
-}
-
-export interface V1ColumnTimeRangeResponse {
-  timeRangeSummary?: V1TimeRangeSummary;
 }
 
 export interface V1ColumnTimeSeriesRequest {
@@ -659,10 +643,6 @@ export interface V1ColumnTimeSeriesRequest {
   timeZone?: string;
 }
 
-export interface V1ColumnTimeSeriesResponse {
-  rollup?: V1TimeSeriesResponse;
-}
-
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   connector?: string;
@@ -673,10 +653,6 @@ export interface V1ColumnTopKRequest {
   agg?: string;
   k?: number;
   priority?: number;
-}
-
-export interface V1ColumnTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CompleteResponse {
@@ -701,9 +677,32 @@ export interface V1ComponentSpec {
   description?: string;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
+  /** Declared parameters that canvases can bind values to when referencing this component. */
+  params?: V1ComponentParam[];
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
   definedInCanvas?: boolean;
+  /** For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+Only viewers for whom it evaluates to true can access the component. */
+  conditionExpression?: string;
+}
+
+/** ComponentParam declares a typed, validated parameter of a component. */
+export interface V1ComponentParam {
+  /** Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}. */
+  name?: string;
+  /** Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension". */
+  type?: string;
+  /** Human-facing description of the param. */
+  description?: string;
+  /** If true, a canvas item referencing this component must bind a value. */
+  required?: boolean;
+  /** Default value used when the param is not bound. Mutually exclusive with required=true. */
+  default?: unknown;
+  /** For field-typed params: the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to. */
+  metricsViewParam?: string;
+  /** For scalar params: allowed values. Renders as a select input in visual editors. */
+  options?: unknown[];
 }
 
 export interface V1ComponentState {
@@ -771,10 +770,22 @@ export interface V1ConnectorSpec {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** Security rules that control which users may use the connector and, for MCP connectors, which of its tools. */
+  securityRules?: V1SecurityRule[];
+  /** AI agents that may use the connector's tools (MCP connectors only). Empty means all agents. */
+  agents?: string[];
 }
 
 export interface V1ConnectorState {
   specHash?: string;
+  /** Tools discovered on an external MCP server (MCP connectors only). */
+  mcpTools?: V1MCPTool[];
+}
+
+/** MCPTool describes a tool exposed by an external MCP server. */
+export interface V1MCPTool {
+  name?: string;
+  description?: string;
 }
 
 export interface V1ConnectorV2 {
@@ -786,6 +797,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1Conversation {
@@ -864,6 +876,14 @@ This should only be used when the project directory contains an empty project (e
   /** Optional path to the file that the user is currently viewing/editing.
 This helps the agent understand which file the user is referring to in their request. */
   currentFilePath?: string;
+}
+
+/** A non-destructive UI action explicitly exposed to the AI by the browser. */
+export interface V1UIAction {
+  /** Stable identifier from the element's data-ai-action attribute. */
+  id?: string;
+  /** Human-readable accessible label for the action. */
+  label?: string;
 }
 
 export interface V1DirEntry {
@@ -1146,6 +1166,60 @@ export interface V1GetAIMessageResponse {
   result?: V1Message;
 }
 
+/** AIMemory is a short preference or fact the AI has learned about the current user in an instance. */
+export interface V1AIMemory {
+  id?: string;
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves. */
+  agent?: string;
+  /** The conversation the memory was learned from. Empty for memories the user added themselves. */
+  sourceConversationId?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1ListAIMemoriesResponse {
+  memories?: V1AIMemory[];
+}
+
+export type RuntimeServiceCreateAIMemoryBody = {
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
+};
+
+export interface V1CreateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export type RuntimeServiceUpdateAIMemoryBody = {
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
+};
+
+export interface V1UpdateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export interface V1DeleteAIMemoryResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GetAIMemorySettingsResponse {
+  /** False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed. */
+  enabled?: boolean;
+}
+
+export type RuntimeServiceUpdateAIMemorySettingsBody = {
+  enabled?: boolean;
+};
+
+export interface V1UpdateAIMemorySettingsResponse {
+  [key: string]: unknown;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
@@ -1298,6 +1372,7 @@ export interface V1Instance {
   aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
+  embedOpenUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1470,6 +1545,8 @@ export interface V1MetricsViewAggregationMeasure {
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
   expression?: V1MetricsViewAggregationMeasureComputeExpression;
+  /** Optional. Compute the measure with its `exact_expression`. No-op for measures without one. */
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
@@ -1831,6 +1908,8 @@ export interface V1MetricsViewTimeSeriesRequest {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -2059,14 +2138,6 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
-export interface V1NumericHistogramBins {
-  bins?: NumericHistogramBinsBin[];
-}
-
-export interface V1NumericOutliers {
-  outliers?: NumericOutliersOutlier[];
-}
-
 export interface V1NumericStatistics {
   min?: number;
   max?: number;
@@ -2075,12 +2146,6 @@ export interface V1NumericStatistics {
   q50?: number;
   q75?: number;
   sd?: number;
-}
-
-export interface V1NumericSummary {
-  numericHistogramBins?: V1NumericHistogramBins;
-  numericStatistics?: V1NumericStatistics;
-  numericOutliers?: V1NumericOutliers;
 }
 
 export type V1OLAPGetTableResponseUnsupportedColumns = {
@@ -2227,6 +2292,19 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
+
 export interface V1RefreshModelTrigger {
   /** The model to refresh. */
   model?: string;
@@ -2295,6 +2373,8 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for query-based reports run as the creator). */
+  exportAttach?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2335,14 +2415,23 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
   /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
+  /** Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+The paths follow the canvas YAML. Only set when include_hidden is true. */
+  hiddenPaths?: string[];
 }
 
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: unknown;
 };
 
+export type V1ResolveComponentResponseResolvedArgs = {
+  [key: string]: unknown;
+};
+
 export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+  /** The effective args used for resolution: the component's declared param defaults merged with the provided args. */
+  resolvedArgs?: V1ResolveComponentResponseResolvedArgs;
 }
 
 export interface V1ResolveTemplatedStringResponse {
@@ -2690,12 +2779,6 @@ export interface V1TimeRangeSummary {
   watermark?: string;
 }
 
-export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesValue[];
-  spark?: V1TimeSeriesValue[];
-  sampleSize?: number;
-}
-
 export interface V1TimeSeriesTimeRange {
   start?: string;
   end?: string;
@@ -2733,10 +2816,6 @@ export interface V1ToolResult {
   id?: string;
   content?: string;
   isError?: boolean;
-}
-
-export interface V1TopK {
-  entries?: TopKEntry[];
 }
 
 /**
@@ -2837,6 +2916,13 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2850,6 +2936,13 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
@@ -3085,17 +3178,6 @@ export type QueryServiceResolveCanvasBody = {
   args?: QueryServiceResolveCanvasBodyArgs;
 };
 
-export type QueryServiceColumnCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableColumnsParams = {
   connector?: string;
   database?: string;
@@ -3107,17 +3189,6 @@ export type QueryServiceResolveComponentBodyArgs = { [key: string]: unknown };
 
 export type QueryServiceResolveComponentBody = {
   args?: QueryServiceResolveComponentBodyArgs;
-};
-
-export type QueryServiceColumnDescriptiveStatisticsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
 };
 
 export type QueryServiceExportBody = {
@@ -3266,6 +3337,8 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -3356,14 +3429,6 @@ export type QueryServiceResolveTemplatedStringBody = {
   additionalTimeRange?: V1TimeRange;
 };
 
-export type QueryServiceColumnRollupIntervalBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableRowsParams = {
   connector?: string;
   database?: string;
@@ -3372,60 +3437,10 @@ export type QueryServiceTableRowsParams = {
   priority?: number;
 };
 
-export type QueryServiceColumnRugHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeGrainParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeRangeParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeSeriesBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-};
-
-export type QueryServiceColumnTopKBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  agg?: string;
-  k?: number;
   priority?: number;
 };
 

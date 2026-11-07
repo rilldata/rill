@@ -26,6 +26,7 @@ import (
 type Issuer struct {
 	issuerURL  string
 	signingKey jose.JSONWebKey
+	publicKeys jose.JSONWebKeySet
 	publicJWKS []byte
 }
 
@@ -68,6 +69,7 @@ func NewIssuer(issuerURL, signingKeyID string, jwksJSON []byte) (*Issuer, error)
 	return &Issuer{
 		issuerURL:  issuerURL,
 		signingKey: signingKey,
+		publicKeys: publicJWKS,
 		publicJWKS: publicJSON,
 	}, nil
 }
@@ -150,15 +152,34 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		Security:  sec,
 	}
 
-	// Create token
+	return i.SignClaims(claims)
+}
+
+// SignClaims issues a new JWT with custom claims, signed with the Issuer's signing key.
+// It can be used for tokens that are not meant for a runtime, such as tokens the admin server issues for itself.
+// Such tokens must use an audience that no runtime accepts, so they can't be used against a runtime and vice versa.
+func (i *Issuer) SignClaims(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
 	token.Header["kid"] = i.signingKey.KeyID
-	res, err := token.SignedString(i.signingKey.Key)
-	if err != nil {
-		return "", err
-	}
+	return token.SignedString(i.signingKey.Key)
+}
 
-	return res, nil
+// ParseClaims parses a JWT issued with SignClaims into claims.
+// It validates the token's signature against the Issuer's keys and the claims' expiry,
+// but the caller is responsible for validating the token's audience.
+func (i *Issuer) ParseClaims(tokenStr string, claims jwt.Claims) error {
+	_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+		kid, _ := t.Header["kid"].(string)
+		keys := i.publicKeys.Key(kid)
+		if len(keys) == 0 {
+			return nil, fmt.Errorf("unknown signing key %q", kid)
+		}
+		if t.Method.Alg() != keys[0].Algorithm {
+			return nil, fmt.Errorf("unexpected signing method %q", t.Method.Alg())
+		}
+		return keys[0].Key, nil
+	})
+	return err
 }
 
 // WellKnownHandler serves the public keys of the Issuer's JWKS.

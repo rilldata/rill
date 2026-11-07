@@ -311,6 +311,22 @@ export async function clearFilters() {
   await waitForEmptyFilters();
 }
 
+/** Waits for the advanced filter pill, which shows the filter param no chip can represent. */
+export async function waitForAdvancedFilter(filter: string) {
+  await waitFor(() =>
+    expect(screen.getByText("Advanced (BETA)")).toBeVisible(),
+  );
+  // The pill writes a nested expression with its parentheses, so match on the text within them.
+  expect(screen.getByText("Advanced (BETA)").parentElement).toHaveTextContent(
+    filter,
+  );
+}
+
+/** Removes the advanced filter pill, which clears the whole filter. */
+export async function removeAdvancedFilter() {
+  await act(() => screen.getByRole("button", { name: "Remove" }).click());
+}
+
 /**
  * Whether the measure filter form is open.
  *

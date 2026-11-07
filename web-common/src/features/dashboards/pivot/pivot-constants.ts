@@ -7,6 +7,13 @@ export const PIVOT_TOTALS_ROW_ID = "__rill_totals_row";
 export const MAX_ROW_EXPANSION_LIMIT = 100;
 
 /**
+ * Time comparison is switched off in the pivot once more measures than this
+ * are in its columns. Every compared measure fans out into three request
+ * measures (value, delta and delta percent), so the query cost grows quickly.
+ */
+export const MAX_PIVOT_COMPARISON_MEASURES = 20;
+
+/**
  * Allowed row limit values for the pivot table.
  * These values are used both in the UI dropdown and for URL validation.
  * undefined represents unlimited rows (displayed as "All" in the UI)

@@ -52,6 +52,8 @@ const (
 	AdminService_TriggerRedeploy_FullMethodName                          = "/rill.admin.v1.AdminService/TriggerRedeploy"
 	AdminService_Provision_FullMethodName                                = "/rill.admin.v1.AdminService/Provision"
 	AdminService_GetDeploymentConfig_FullMethodName                      = "/rill.admin.v1.AdminService/GetDeploymentConfig"
+	AdminService_GetConnectorOAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/GetConnectorOAuthToken"
+	AdminService_DeleteConnectorOAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/DeleteConnectorOAuthToken"
 	AdminService_ListRoles_FullMethodName                                = "/rill.admin.v1.AdminService/ListRoles"
 	AdminService_ListOrganizationMemberUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName                  = "/rill.admin.v1.AdminService/ListOrganizationInvites"
@@ -110,6 +112,7 @@ const (
 	AdminService_ListSuperusers_FullMethodName                           = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_GetDeploymentCredentials_FullMethodName                 = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
 	AdminService_GetIFrame_FullMethodName                                = "/rill.admin.v1.AdminService/GetIFrame"
+	AdminService_GetEmbedUser_FullMethodName                             = "/rill.admin.v1.AdminService/GetEmbedUser"
 	AdminService_SetSuperuser_FullMethodName                             = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName                          = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName                     = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
@@ -271,6 +274,14 @@ type AdminServiceClient interface {
 	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
 	// This is called by the runtime to pull its Variables and Annotations from the admin service.
 	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+	// refreshing it first if it is about to expire.
+	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+	// It can only be called by deployments.
+	GetConnectorOAuthToken(ctx context.Context, in *GetConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*GetConnectorOAuthTokenResponse, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// It can only be called by deployments.
+	DeleteConnectorOAuthToken(ctx context.Context, in *DeleteConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -397,6 +408,9 @@ type AdminServiceClient interface {
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -418,7 +432,7 @@ type AdminServiceClient interface {
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-	// It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+	// Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
 	SudoUpdateOrganizationDefaultProvisioner(ctx context.Context, in *SudoUpdateOrganizationDefaultProvisionerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationDefaultProvisionerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
@@ -886,6 +900,26 @@ func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDep
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDeploymentConfigResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetConnectorOAuthToken(ctx context.Context, in *GetConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*GetConnectorOAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorOAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetConnectorOAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteConnectorOAuthToken(ctx context.Context, in *DeleteConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteConnectorOAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteConnectorOAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteConnectorOAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1466,6 +1500,16 @@ func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetIFrameResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetIFrame_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmbedUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetEmbedUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2333,6 +2377,14 @@ type AdminServiceServer interface {
 	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
 	// This is called by the runtime to pull its Variables and Annotations from the admin service.
 	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+	// refreshing it first if it is about to expire.
+	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+	// It can only be called by deployments.
+	GetConnectorOAuthToken(context.Context, *GetConnectorOAuthTokenRequest) (*GetConnectorOAuthTokenResponse, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// It can only be called by deployments.
+	DeleteConnectorOAuthToken(context.Context, *DeleteConnectorOAuthTokenRequest) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -2459,6 +2511,9 @@ type AdminServiceServer interface {
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -2480,7 +2535,7 @@ type AdminServiceServer interface {
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-	// It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+	// Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
 	SudoUpdateOrganizationDefaultProvisioner(context.Context, *SudoUpdateOrganizationDefaultProvisionerRequest) (*SudoUpdateOrganizationDefaultProvisionerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
@@ -2723,6 +2778,12 @@ func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequ
 func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
 }
+func (UnimplementedAdminServiceServer) GetConnectorOAuthToken(context.Context, *GetConnectorOAuthTokenRequest) (*GetConnectorOAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorOAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteConnectorOAuthToken(context.Context, *DeleteConnectorOAuthTokenRequest) (*DeleteConnectorOAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnectorOAuthToken not implemented")
+}
 func (UnimplementedAdminServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
 }
@@ -2896,6 +2957,9 @@ func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context,
 }
 func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
+}
+func (UnimplementedAdminServiceServer) GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEmbedUser not implemented")
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
@@ -3742,6 +3806,42 @@ func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetConnectorOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorOAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetConnectorOAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetConnectorOAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetConnectorOAuthToken(ctx, req.(*GetConnectorOAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteConnectorOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConnectorOAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteConnectorOAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteConnectorOAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteConnectorOAuthToken(ctx, req.(*DeleteConnectorOAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4786,6 +4886,24 @@ func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetIFrame(ctx, req.(*GetIFrameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetEmbedUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmbedUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetEmbedUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, req.(*GetEmbedUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6334,6 +6452,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetDeploymentConfig_Handler,
 		},
 		{
+			MethodName: "GetConnectorOAuthToken",
+			Handler:    _AdminService_GetConnectorOAuthToken_Handler,
+		},
+		{
+			MethodName: "DeleteConnectorOAuthToken",
+			Handler:    _AdminService_DeleteConnectorOAuthToken_Handler,
+		},
+		{
 			MethodName: "ListRoles",
 			Handler:    _AdminService_ListRoles_Handler,
 		},
@@ -6564,6 +6690,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIFrame",
 			Handler:    _AdminService_GetIFrame_Handler,
+		},
+		{
+			MethodName: "GetEmbedUser",
+			Handler:    _AdminService_GetEmbedUser_Handler,
 		},
 		{
 			MethodName: "SetSuperuser",
