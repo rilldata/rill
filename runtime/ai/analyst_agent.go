@@ -94,7 +94,7 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) (bool, error) {
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+	if !isRillUserAgent(s) {
 		return false, nil
 	}
 
@@ -227,6 +227,16 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	// 4. Seeded tool calls for the current iteration
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
+
+	// Expose the dashboard's filters to the tools in the completion loop, so that create_chart can reject charts that silently drop them.
+	dashboardFilters := make(map[string]*metricsview.Expression, len(args.WherePerMetricsView)+1)
+	for mv, expr := range args.WherePerMetricsView {
+		dashboardFilters[mv] = expr
+	}
+	if args.Explore != "" && args.Where != nil {
+		dashboardFilters[metricsViewNames[0]] = args.Where
+	}
+	ctx = WithDashboardFilters(ctx, dashboardFilters)
 
 	// Run an LLM tool call loop
 	var response string
@@ -508,4 +518,32 @@ func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvas
 	}
 
 	return resolvedCanvas.Canvas, metricsViews, nil
+}
+
+// dashboardFiltersKey is the context key for the filters applied to the dashboard being analyzed.
+type dashboardFiltersKey struct{}
+
+// WithDashboardFilters records the filters applied to the dashboard the user is viewing, keyed by metrics view name.
+// The analyst agent sets it for its completion loop so that tools can check their arguments against the dashboard's filters.
+// Empty filters are dropped, so a metrics view is present only if a filter actually applies to it.
+// Resource names are case-insensitive, so the keys are lower-cased.
+func WithDashboardFilters(ctx context.Context, filters map[string]*metricsview.Expression) context.Context {
+	res := make(map[string]*metricsview.Expression, len(filters))
+	for mv, expr := range filters {
+		if expr == nil || (expr.Condition != nil && len(expr.Condition.Expressions) == 0) {
+			continue
+		}
+		res[strings.ToLower(mv)] = expr
+	}
+	if len(res) == 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, dashboardFiltersKey{}, res)
+}
+
+// DashboardFiltersFromContext returns the filters applied to the dashboard being analyzed, keyed by lower-cased metrics view name.
+// It returns nil when the user is not viewing a filtered dashboard.
+func DashboardFiltersFromContext(ctx context.Context) map[string]*metricsview.Expression {
+	filters, _ := ctx.Value(dashboardFiltersKey{}).(map[string]*metricsview.Expression)
+	return filters
 }

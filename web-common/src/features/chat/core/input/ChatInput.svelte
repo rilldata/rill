@@ -57,6 +57,12 @@
   let element: HTMLDivElement;
   let editor: Editor;
 
+  // The editor is destroyed with the component, which can happen while a message is in flight or a focus is pending:
+  // e.g. the user leaves the page while the response streams. Running a command on a destroyed editor throws.
+  function isEditorAlive() {
+    return !!editor && !editor.isDestroyed;
+  }
+
   async function sendMessage() {
     if (!canSend) return;
 
@@ -68,7 +74,9 @@
           uiActions: getAvailableUIActions(),
         },
         {
-          onStreamStart: () => editor.commands.setContent(""),
+          onStreamStart: () => {
+            if (isEditorAlive()) editor.commands.setContent("");
+          },
           beforeFork,
         },
       );
@@ -79,7 +87,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    editor.commands.focus();
+    if (isEditorAlive()) editor.commands.focus();
   }
 
   function cancelStream() {
@@ -90,7 +98,7 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        editor?.commands.focus();
+        if (isEditorAlive()) editor.commands.focus();
       }, 100);
     });
   }

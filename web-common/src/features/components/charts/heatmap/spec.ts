@@ -116,7 +116,9 @@ export function generateVLHeatmapSpec(
         },
 
         text: {
-          field: config.color?.field ? config.color.field : undefined,
+          field: config.color?.field
+            ? sanitizeValueForVega(config.color.field)
+            : undefined,
           type:
             config.color?.type === "value"
               ? "nominal"
