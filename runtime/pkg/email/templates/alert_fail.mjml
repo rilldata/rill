@@ -21,13 +21,13 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .Reason }}The AI analysis found that the condition holds:{{ else }}The first row that matched your alert criteria is:{{ end }}
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          {{ range $key, $value := .FailRow }}
+          {{ if .Reason }}{{ .Reason }}{{ else }}{{ range $key, $value := .FailRow }}
           • <b>{{ $key }}</b>: {{ $value }}<br />
-          {{ end }}
+          {{ end }}{{ end }}
         </mj-text>
 
         <mj-raw>{{ if .Attached }}</mj-raw>
@@ -43,7 +43,7 @@
         <mj-spacer height="20px" />
 
         <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
-          Open in browser
+          {{ if .Reason }}View full analysis{{ else }}Open in browser{{ end }}
         </mj-button>
         
         <mj-spacer height="20px" />

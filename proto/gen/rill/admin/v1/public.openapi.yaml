@@ -124,6 +124,16 @@ components:
             type: object
         v1AddUsergroupMemberUserResponse:
             type: object
+        v1AlertForUser:
+            properties:
+                name:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/v1AlertOptions'
+                version:
+                    description: Version of the alert, to pass to SaveAlertForUser when editing it.
+                    type: string
+            type: object
         v1AlertOptions:
             properties:
                 displayName:
@@ -1131,6 +1141,13 @@ components:
             type: object
         v1LeaveOrganizationResponse:
             type: object
+        v1ListAlertsForUserResponse:
+            properties:
+                alerts:
+                    items:
+                        $ref: '#/components/schemas/v1AlertForUser'
+                    type: array
+            type: object
         v1ListBookmarksResponse:
             properties:
                 bookmarks:
@@ -1305,6 +1322,13 @@ components:
                 plans:
                     items:
                         $ref: '#/components/schemas/v1BillingPlan'
+                    type: array
+            type: object
+        v1ListReportsForUserResponse:
+            properties:
+                reports:
+                    items:
+                        $ref: '#/components/schemas/v1ReportForUser'
                     type: array
             type: object
         v1ListRolesResponse:
@@ -1954,6 +1978,16 @@ components:
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
             type: object
+        v1ReportForUser:
+            properties:
+                name:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/v1ReportOptions'
+                version:
+                    description: Version of the report, to pass to SaveReportForUser when editing it.
+                    type: string
+            type: object
         v1ReportOptions:
             properties:
                 canvas:
@@ -2058,6 +2092,36 @@ components:
         v1RevokeServiceAuthTokenResponse:
             type: object
         v1RevokeUserAuthTokenResponse:
+            type: object
+        v1SaveAlertForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the alert.
+                    type: string
+                version:
+                    description: Version of the saved alert, to edit it again.
+                    type: string
+            type: object
+        v1SavePersonalFileForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the personal file.
+                    type: string
+            type: object
+        v1SaveReportForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the report.
+                    type: string
+                version:
+                    description: Version of the saved report, to edit it again.
+                    type: string
             type: object
         v1SearchProjectNamesResponse:
             properties:
@@ -4072,10 +4136,13 @@ paths:
     /v1/projects-for-fingerprint: {}
     /v1/projects/-/redeploy: {}
     /v1/projects/{id}: {}
+    /v1/projects/{projectId}/alerts/for-user: {}
     /v1/projects/{projectId}/alerts/meta: {}
+    /v1/projects/{projectId}/personal-files/for-user: {}
     /v1/projects/{projectId}/repo/meta: {}
     /v1/projects/{projectId}/repo/virtual: {}
     /v1/projects/{projectId}/repo/virtual/file: {}
+    /v1/projects/{projectId}/reports/for-user: {}
     /v1/projects/{projectId}/reports/meta: {}
     /v1/roles: {}
     /v1/services/tokens/{tokenId}: {}

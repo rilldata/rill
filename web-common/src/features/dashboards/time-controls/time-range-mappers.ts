@@ -2,6 +2,7 @@ import {
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { getComparisonOptionFromExpression } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -200,6 +201,9 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
 ) {
   let selectedTimeRange: DashboardTimeControls;
   let duration = timeRange.isoOffset;
+  const expressionOption = timeRange.expression
+    ? getComparisonOptionFromExpression(timeRange.expression)
+    : undefined;
 
   const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
   if (fullRangeKey in PreviousCompleteRangeReverseMap) {
@@ -212,6 +216,10 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
+  } else if (expressionOption) {
+    selectedTimeRange = {
+      name: expressionOption,
+    } as DashboardTimeControls;
   } else if (timeRange.isoOffset === timeRange.isoDuration) {
     // Previous period is when offset = duration
     selectedTimeRange = {

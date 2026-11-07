@@ -13,11 +13,13 @@ type Notifier interface {
 }
 
 type AlertStatus struct {
-	DisplayName     string
-	ExecutionTime   time.Time
-	Status          runtimev1.AssertionStatus
-	IsRecover       bool
-	FailRow         map[string]any
+	DisplayName   string
+	ExecutionTime time.Time
+	Status        runtimev1.AssertionStatus
+	IsRecover     bool
+	FailRow       map[string]any
+	// Reason is the AI analysis's reason when an AI alert fires; it is shown instead of the fail row.
+	Reason          string
 	ExecutionError  string
 	OpenLink        string
 	EditLink        string

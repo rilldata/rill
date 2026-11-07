@@ -102,6 +102,7 @@ type AlertStatus struct {
 	Status             runtimev1.AssertionStatus
 	IsRecover          bool
 	FailRow            map[string]any
+	Reason             string // The AI analysis's reason when an AI alert fires, shown instead of the fail row
 	ExecutionError     string
 	OpenLink           string
 	EditLink           string
@@ -127,6 +128,7 @@ func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			FailRow:             opts.FailRow,
+			Reason:              opts.Reason,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
@@ -152,6 +154,7 @@ type alertFailData struct {
 	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
+	Reason              string
 	OpenLink            template.URL
 	EditLink            template.URL
 	UnsubscribeLink     template.URL

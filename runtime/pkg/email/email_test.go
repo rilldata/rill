@@ -130,6 +130,30 @@ func TestAlertFail(t *testing.T) {
 	require.Empty(t, mock.attachments)
 }
 
+func TestAIAlertFail(t *testing.T) {
+	mock := &mockSender{}
+	client := New(mock)
+
+	opts := &AlertStatus{
+		ToEmail:       uuid.New().String(),
+		DisplayName:   "Foobar",
+		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
+		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		FailRow:       map[string]any{"reason": "Revenue fell 40% against the previous four weeks.", "ai_session_id": "s1"},
+		Reason:        "Revenue fell 40% against the previous four weeks.",
+		OpenLink:      "https://example.com",
+		EditLink:      "https://example.com",
+	}
+	err := client.SendAlertStatus(opts)
+	require.NoError(t, err)
+
+	// The email shows the reason instead of the fail row's fields
+	require.Contains(t, mock.body, opts.Reason)
+	require.Contains(t, mock.body, "View full analysis")
+	require.NotContains(t, mock.body, "ai_session_id")
+	require.NotContains(t, mock.body, "The first row")
+}
+
 func TestAlertRecover(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)

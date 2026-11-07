@@ -7,6 +7,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { AIConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
@@ -130,29 +131,32 @@
       plural="emails"
       preventFocus={true}
     />
-    <Checkbox
-      bind:checked={$form["exportAttach"]}
-      id="exportAttach"
-      onCheckedChange={(checked) => {
-        $form["exportAttach"] = Boolean(checked);
-      }}
-      inverse
-      label={m.alert_form_attach_rows()}
-      hint={m.alert_form_attach_rows_hint()}
-    />
-    {#if $form["exportAttach"]}
-      <div
-        class="flex items-start gap-x-2 rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-300"
-      >
-        <AlertTriangle size="14px" className="mt-px flex-none" />
-        <span>{m.alert_form_attach_rows_warning()}</span>
-      </div>
-      <ExportFileOptions
-        bind:format={$form["exportFormat"]}
-        bind:limit={$form["exportLimit"]}
-        bind:includeHeader={$form["exportIncludeHeader"]}
-        limitErrors={$errors["exportLimit"]}
+    <!-- An AI alert has no rows to attach -->
+    {#if $form.conditionType !== AIConditionType}
+      <Checkbox
+        bind:checked={$form["exportAttach"]}
+        id="exportAttach"
+        onCheckedChange={(checked) => {
+          $form["exportAttach"] = Boolean(checked);
+        }}
+        inverse
+        label={m.alert_form_attach_rows()}
+        hint={m.alert_form_attach_rows_hint()}
       />
+      {#if $form["exportAttach"]}
+        <div
+          class="flex items-start gap-x-2 rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-300"
+        >
+          <AlertTriangle size="14px" className="mt-px flex-none" />
+          <span>{m.alert_form_attach_rows_warning()}</span>
+        </div>
+        <ExportFileOptions
+          bind:format={$form["exportFormat"]}
+          bind:limit={$form["exportLimit"]}
+          bind:includeHeader={$form["exportIncludeHeader"]}
+          limitErrors={$errors["exportLimit"]}
+        />
+      {/if}
     {/if}
   </FormSection>
 </div>

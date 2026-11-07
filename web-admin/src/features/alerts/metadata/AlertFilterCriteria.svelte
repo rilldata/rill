@@ -3,7 +3,9 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import { mapExprToMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
+  import { getComparisonOption } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import type {
     V1Expression,
     V1TimeRange,
@@ -19,9 +21,10 @@
 
   $: measureFilters = filters?.cond?.exprs?.map(mapExprToMeasureFilter) ?? [];
 
-  $: comparisonLabel =
-    TIME_COMPARISON[comparisonTimeRange?.isoOffset]?.label?.toLowerCase() ??
-    "previous period";
+  $: comparisonOption =
+    (comparisonTimeRange && getComparisonOption(comparisonTimeRange)) ??
+    TimeComparisonOption.CONTIGUOUS;
+  $: comparisonLabel = TIME_COMPARISON[comparisonOption].label.toLowerCase();
 </script>
 
 <div

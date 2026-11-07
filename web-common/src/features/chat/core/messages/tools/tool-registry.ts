@@ -32,6 +32,9 @@ import {
 } from "@rilldata/web-common/features/chat/memory/memory-update-block";
 import { invalidateAIMemories } from "@rilldata/web-common/features/chat/memory/memory-store";
 import { clickUIAction } from "../../ui-actions";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
 // =============================================================================
 // RENDER MODES
@@ -137,6 +140,12 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     onResult: handleMemoryToolResult,
   },
 
+  // Personal dashboard: refresh the lists that show it once it is saved
+  [ToolName.DEVELOP_PERSONAL_CANVAS]: {
+    renderMode: "inline",
+    onResult: handlePersonalCanvasToolResult,
+  },
+
   // All other tools default to "inline" (shown in thinking blocks)
 };
 
@@ -230,4 +239,23 @@ function handleMemoryToolResult(
   instanceId: string,
 ) {
   void invalidateAIMemories(instanceId);
+}
+
+/**
+ * Refetch the lists that show a personal dashboard once the AI saves one. They are refetched even
+ * with nobody watching them: queries don't refetch on mount, so a list opened later would otherwise
+ * show its stale copy. The admin keeps which dashboards are personal, so web-admin refreshes that
+ * list on the bus event.
+ */
+function handlePersonalCanvasToolResult(
+  _callMessage: V1Message | undefined,
+  resultMessage: V1Message,
+  instanceId: string,
+) {
+  if (resultMessage.contentType === MessageContentType.ERROR) return;
+  void queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    refetchType: "all",
+  });
+  eventBus.emit("personal-files-changed");
 }

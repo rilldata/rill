@@ -1,4 +1,5 @@
 import type { V1User } from "@rilldata/web-admin/client";
+import { CriteriaConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
 import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
@@ -39,6 +40,8 @@ export function getNewAlertInitialFormValues(
 
   return {
     name: "",
+    conditionType: CriteriaConditionType,
+    aiCondition: "",
     measure,
     splitByDimension: dimension,
     evaluationInterval: "",

@@ -126,13 +126,13 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:</div>
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .Reason }}The AI analysis found that the condition holds:{{ else }}The first row that matched your alert criteria is:{{ end }}</div>
                       </td>
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">{{ range $key, $value := .FailRow }} • <b>{{ $key }}</b>: {{ $value }}<br />
-                          {{ end }}
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">{{ if .Reason }}{{ .Reason }}{{ else }}{{ range $key, $value := .FailRow }} • <b>{{ $key }}</b>: {{ $value }}<br />
+                          {{ end }}{{ end }}
                         </div>
                       </td>
                     </tr>
@@ -160,7 +160,9 @@
                           <tbody>
                             <tr>
                               <td align="center" bgcolor="#ECF0FF" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#ECF0FF;" valign="middle">
-                                <a href="{{ .OpenLink }}" style="display:inline-block;background:#ECF0FF;color:#3524C7;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank"> Open in browser </a>
+                                <a href="{{ .OpenLink }}" style="display:inline-block;background:#ECF0FF;color:#3524C7;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank">
+                                  {{ if .Reason }}View full analysis{{ else }}Open in browser{{ end }}
+                                </a>
                               </td>
                             </tr>
                           </tbody>

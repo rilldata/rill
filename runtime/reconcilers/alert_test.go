@@ -1,6 +1,7 @@
 package reconcilers_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -875,4 +878,102 @@ notify:
 	require.Len(t, emails, 1)
 	require.Contains(t, emails[0].Body, "too large to attach to this email")
 	require.Empty(t, emails[0].Attachments)
+}
+
+func TestAIAlert(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": `ai_connector: mock`,
+			// The mock AI echoes the prompt, which is never a valid verdict.
+			"connectors/mock.yaml": `
+type: connector
+driver: mock_ai
+`,
+			"models/orders.sql": `
+SELECT '2026-10-01T00:00:00Z'::TIMESTAMP AS __time, 'VisibleLand' AS country, 100 AS revenue
+UNION ALL
+SELECT '2026-10-02T00:00:00Z'::TIMESTAMP AS __time, 'HiddenLand' AS country, 900 AS revenue
+`,
+			"metrics/orders_mv.yaml": `
+version: 1
+type: metrics_view
+model: orders
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: revenue
+  expression: SUM(revenue)
+security:
+  access: true
+  row_filter: country = '{{ .user.country }}'
+`,
+			"explores/orders.yaml": `
+type: explore
+metrics_view: orders_mv
+`,
+			"alerts/a1.yaml": `
+type: alert
+display_name: Orders from HiddenLand
+watermark: inherit
+data:
+  ai:
+    prompt: There are orders from HiddenLand
+    explore: orders
+for:
+  user_id: owner-1
+on_error: true
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+		},
+		AdminService: &aiAlertAdmin{queryForAttributes: map[string]any{"country": "VisibleLand"}},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+
+	// The check runs at the watermark of the explore's metrics view.
+	// It ends in an error instead of a pass or fail, and the error is notified.
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	require.Equal(t, time.Date(2026, 10, 2, 0, 0, 1, 0, time.UTC), a1.State.ExecutionHistory[0].ExecutionTime.AsTime())
+	res := a1.State.ExecutionHistory[0].Result
+	require.Equal(t, runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR, res.Status)
+	require.Contains(t, res.ErrorMessage, "verdict")
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.Contains(t, emails[0].Body, "verdict")
+
+	// The analyst ran in a session owned by the alert's "for" user, and only saw that user's rows
+	catalog, release, err := rt.Catalog(t.Context(), id)
+	require.NoError(t, err)
+	defer release()
+	sessions, err := catalog.FindAISessions(t.Context(), "owner-1", "")
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	messages, err := catalog.FindAIMessages(t.Context(), sessions[0].ID)
+	require.NoError(t, err)
+	var summary string
+	for _, m := range messages {
+		if m.Tool == ai.QueryMetricsViewSummaryName && m.Type == string(ai.MessageTypeResult) {
+			summary = m.Content
+		}
+	}
+	require.Contains(t, summary, "VisibleLand")
+	require.NotContains(t, summary, "HiddenLand")
+}
+
+// aiAlertAdmin is an admin service that resolves an alert's "for" user to fixed attributes.
+type aiAlertAdmin struct {
+	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
+	queryForAttributes   map[string]any
+}
+
+func (a *aiAlertAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	return &drivers.Config{}, nil
+}
+
+func (a *aiAlertAdmin) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+	return &drivers.AlertMetadata{QueryForAttributes: a.queryForAttributes}, nil
 }

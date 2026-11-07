@@ -10,10 +10,19 @@ export function getPersonalFilteredResources(
   project: string,
   kind: ResourceKind,
 ) {
+  // Refetched on mount: a personal file can be saved away from this page (by
+  // the AI from the chat, or over MCP), and queries don't refetch on mount by
+  // default, so coming back would show the cached list.
   return derived(
     [
-      createAdminServiceListPersonalFiles(org, project),
-      createRuntimeServiceListResources(client, {}),
+      createAdminServiceListPersonalFiles(org, project, {
+        query: { refetchOnMount: true },
+      }),
+      createRuntimeServiceListResources(
+        client,
+        {},
+        { query: { refetchOnMount: true } },
+      ),
     ],
     ([personalFilesResp, resourcesResp]) => {
       const isPending = personalFilesResp.isPending || resourcesResp.isPending;
