@@ -1,0 +1,20 @@
+# Canvas YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
+display_name: "Adbids grains canvas"
+defaults:
+  time_range: PT24H
+rows:
+  - items:
+      - line_chart:
+          metrics_view: AdBids_grains_metrics
+          x:
+            type: temporal
+            field: timestamp
+          y:
+            type: quantitative
+            field: total_records
+            zeroBasedOrigin: true
+        width: 12
+    height: 320px

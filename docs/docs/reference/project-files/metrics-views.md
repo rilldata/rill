@@ -68,6 +68,10 @@ _[string]_ - Optional [time range syntax](/reference/time-syntax) expression des
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
 
+### `time_grains`
+
+_[array of string]_ - Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.
+
 ### `first_day_of_week`
 
 _[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7

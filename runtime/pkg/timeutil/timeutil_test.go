@@ -152,3 +152,134 @@ func parseTestTime(tst *testing.T, t string) time.Time {
 	require.NoError(tst, err)
 	return ts
 }
+
+func TestTruncateTimeMultiples(t *testing.T) {
+	// UTC: minute multiples floor within the hour, hour multiples within the day.
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:20:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:27:33Z"), TimeGrain10Minute, time.UTC, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:15:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:27:33Z"), TimeGrain15Minute, time.UTC, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:00:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:27:33Z"), TimeGrain30Minute, time.UTC, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T00:00:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:27:33Z"), TimeGrain6Hour, time.UTC, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T12:00:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T17:59:59Z"), TimeGrain12Hour, time.UTC, 1, 1))
+
+	// Asia/Kolkata (+05:30): hour multiples align to local midnight (18:30Z), not to the UTC epoch.
+	kolkata, err := time.LoadLocation("Asia/Kolkata")
+	require.NoError(t, err)
+	require.Equal(t, parseTestTime(t, "2024-03-09T18:30:00Z"), TruncateTime(parseTestTime(t, "2024-03-09T23:00:00Z"), TimeGrain6Hour, kolkata, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T00:30:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T05:00:00Z"), TimeGrain6Hour, kolkata, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:50:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:57:00Z"), TimeGrain10Minute, kolkata, 1, 1))
+
+	// Asia/Kathmandu (+05:45): minute multiples floor on the local wall clock, so 10:07 local becomes 10:00 local (04:15Z).
+	kathmandu, err := time.LoadLocation("Asia/Kathmandu")
+	require.NoError(t, err)
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:15:00Z"), TruncateTime(parseTestTime(t, "2024-03-10T04:22:00Z"), TimeGrain10Minute, kathmandu, 1, 1))
+
+	// America/New_York across the fall-back change (2024-11-03): 6h buckets stay aligned to local midnight (04:00Z EDT) and the
+	// second bucket starts at 06:00 EST (11:00Z), seven real hours later.
+	newYork, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	require.Equal(t, parseTestTime(t, "2024-11-03T04:00:00Z"), TruncateTime(parseTestTime(t, "2024-11-03T10:30:00Z"), TimeGrain6Hour, newYork, 1, 1))
+	require.Equal(t, parseTestTime(t, "2024-11-03T11:00:00Z"), TruncateTime(parseTestTime(t, "2024-11-03T11:30:00Z"), TimeGrain6Hour, newYork, 1, 1))
+}
+
+func TestOffsetTimeMultiples(t *testing.T) {
+	require.Equal(t, parseTestTime(t, "2024-03-10T04:30:00Z"), OffsetTime(parseTestTime(t, "2024-03-10T04:00:00Z"), TimeGrain10Minute, 3, time.UTC))
+	require.Equal(t, parseTestTime(t, "2024-03-10T12:00:00Z"), OffsetTime(parseTestTime(t, "2024-03-10T00:00:00Z"), TimeGrain6Hour, 2, time.UTC))
+
+	// Stepping 6h bins through the New York fall-back change keeps them on local midnight boundaries.
+	newYork, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	require.Equal(t, parseTestTime(t, "2024-11-03T11:00:00Z"), OffsetTime(parseTestTime(t, "2024-11-03T04:00:00Z"), TimeGrain6Hour, 1, newYork))
+	require.Equal(t, parseTestTime(t, "2024-11-04T05:00:00Z"), OffsetTime(parseTestTime(t, "2024-11-03T04:00:00Z"), TimeGrain6Hour, 4, newYork))
+}
+
+func TestHourMultiplesAcrossDSTChanges(t *testing.T) {
+	// A bucket that starts in a DST gap starts at the first instant after the gap, as in DuckDB, ClickHouse, Druid and luxon,
+	// a bucket whose start a fall-back change repeats starts at its first occurrence, as in ClickHouse and Druid,
+	// and the following buckets stay on the local grid.
+	cases := []struct {
+		name       string
+		zone       string
+		grain      TimeGrain
+		start, end string
+		bins       []string
+		// event is in the bucket that starts at the DST change, whose first instant is floor and whose wall-clock start is wall.
+		event, floor, wall string
+	}{
+		{
+			// 02:00 local does not exist, so that bucket starts at 03:00 EDT.
+			name: "2h in New York", zone: "America/New_York", grain: TimeGrain2Hour,
+			start: "2024-03-10T05:00:00Z", end: "2024-03-10T13:00:00Z",
+			bins:  []string{"2024-03-10T05:00:00Z", "2024-03-10T07:00:00Z", "2024-03-10T08:00:00Z", "2024-03-10T10:00:00Z", "2024-03-10T12:00:00Z"},
+			event: "2024-03-10T07:30:00Z", floor: "2024-03-10T07:00:00Z", wall: "2024-03-10T02:00:00Z",
+		},
+		{
+			// Local midnight does not exist, so the first bucket of the day starts at 01:00 CDT.
+			name: "6h in Havana", zone: "America/Havana", grain: TimeGrain6Hour,
+			start: "2024-03-09T23:00:00Z", end: "2024-03-11T04:00:00Z",
+			bins:  []string{"2024-03-09T23:00:00Z", "2024-03-10T05:00:00Z", "2024-03-10T10:00:00Z", "2024-03-10T16:00:00Z", "2024-03-10T22:00:00Z"},
+			event: "2024-03-10T05:30:00Z", floor: "2024-03-10T05:00:00Z", wall: "2024-03-10T00:00:00Z",
+		},
+		{
+			// The gap is 30 minutes long, so the 02:00 bucket starts at 02:30 and the next one at 04:00.
+			name: "2h in Lord Howe", zone: "Australia/Lord_Howe", grain: TimeGrain2Hour,
+			start: "2024-10-05T13:30:00Z", end: "2024-10-05T20:00:00Z",
+			bins:  []string{"2024-10-05T13:30:00Z", "2024-10-05T15:30:00Z", "2024-10-05T17:00:00Z", "2024-10-05T19:00:00Z"},
+			event: "2024-10-05T15:45:00Z", floor: "2024-10-05T15:30:00Z", wall: "2024-10-06T02:00:00Z",
+		},
+		{
+			// 02:00 local happens twice, so that bucket starts at 02:00 CEST and lasts three hours, until 04:00 CET.
+			name: "2h in Berlin", zone: "Europe/Berlin", grain: TimeGrain2Hour,
+			start: "2024-10-26T22:00:00Z", end: "2024-10-27T07:00:00Z",
+			bins:  []string{"2024-10-26T22:00:00Z", "2024-10-27T00:00:00Z", "2024-10-27T03:00:00Z", "2024-10-27T05:00:00Z"},
+			event: "2024-10-27T01:30:00Z", floor: "2024-10-27T00:00:00Z", wall: "2024-10-27T02:00:00Z",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tz, err := time.LoadLocation(c.zone)
+			require.NoError(t, err)
+
+			end := parseTestTime(t, c.end)
+			var bins []string
+			for ts := TruncateTime(parseTestTime(t, c.start), c.grain, tz, 1, 1); ts.Before(end); ts = OffsetTime(ts, c.grain, 1, tz) {
+				bins = append(bins, ts.Format(time.RFC3339))
+			}
+			require.Equal(t, c.bins, bins)
+
+			event := parseTestTime(t, c.event)
+			require.Equal(t, parseTestTime(t, c.floor), TruncateTime(event, c.grain, tz, 1, 1))
+			_, n := c.grain.Base()
+			require.Equal(t, parseTestTime(t, c.wall), WallClockBucketStart(event, n, tz))
+			require.Equal(t, parseTestTime(t, c.wall), WallClockBucketStart(TruncateTime(event, c.grain, tz, 1, 1), n, tz))
+		})
+	}
+
+	// Offsetting returns bucket starts, in both directions, also from a time inside a bucket.
+	newYork, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	require.Equal(t, parseTestTime(t, "2024-03-10T08:00:00Z"), OffsetTime(parseTestTime(t, "2024-03-10T07:30:00Z"), TimeGrain2Hour, 1, newYork))
+	require.Equal(t, parseTestTime(t, "2024-03-10T07:00:00Z"), OffsetTime(parseTestTime(t, "2024-03-10T08:30:00Z"), TimeGrain2Hour, -1, newYork))
+	require.Equal(t, parseTestTime(t, "2024-03-10T05:00:00Z"), OffsetTime(parseTestTime(t, "2024-03-10T08:00:00Z"), TimeGrain2Hour, -2, newYork))
+}
+
+func TestGrainBaseAndCompare(t *testing.T) {
+	unit, n := TimeGrain10Minute.Base()
+	require.Equal(t, TimeGrainMinute, unit)
+	require.Equal(t, 10, n)
+	unit, n = TimeGrainDay.Base()
+	require.Equal(t, TimeGrainDay, unit)
+	require.Equal(t, 1, n)
+
+	require.Negative(t, TimeGrainMinute.Compare(TimeGrain5Minute))
+	require.Negative(t, TimeGrain30Minute.Compare(TimeGrainHour))
+	require.Positive(t, TimeGrain12Hour.Compare(TimeGrainHour))
+	require.Negative(t, TimeGrain12Hour.Compare(TimeGrainDay))
+	require.Zero(t, TimeGrain6Hour.Compare(TimeGrain6Hour))
+
+	require.Equal(t, 6, ApproximateBins(parseTestTime(t, "2024-03-10T00:00:00Z"), parseTestTime(t, "2024-03-10T01:00:00Z"), TimeGrain10Minute))
+	require.Equal(t, 4, ApproximateBins(parseTestTime(t, "2024-03-10T00:00:00Z"), parseTestTime(t, "2024-03-11T00:00:00Z"), TimeGrain6Hour))
+
+	for api, tg := range apiToGrain {
+		require.Equal(t, api, TimeGrainToAPI(tg))
+	}
+}
