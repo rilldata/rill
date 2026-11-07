@@ -779,7 +779,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	res.Query.Name = opts.QueryName         // nolint:staticcheck // backwards compatibility
@@ -889,7 +889,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
