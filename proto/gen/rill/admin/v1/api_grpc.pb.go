@@ -161,6 +161,10 @@ const (
 	AdminService_DeleteVirtualFile_FullMethodName                        = "/rill.admin.v1.AdminService/DeleteVirtualFile"
 	AdminService_GetReportMeta_FullMethodName                            = "/rill.admin.v1.AdminService/GetReportMeta"
 	AdminService_GetAlertMeta_FullMethodName                             = "/rill.admin.v1.AdminService/GetAlertMeta"
+	AdminService_SaveAlertForUser_FullMethodName                         = "/rill.admin.v1.AdminService/SaveAlertForUser"
+	AdminService_ListAlertsForUser_FullMethodName                        = "/rill.admin.v1.AdminService/ListAlertsForUser"
+	AdminService_SaveReportForUser_FullMethodName                        = "/rill.admin.v1.AdminService/SaveReportForUser"
+	AdminService_ListReportsForUser_FullMethodName                       = "/rill.admin.v1.AdminService/ListReportsForUser"
 	AdminService_CreateReport_FullMethodName                             = "/rill.admin.v1.AdminService/CreateReport"
 	AdminService_EditReport_FullMethodName                               = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName                        = "/rill.admin.v1.AdminService/UnsubscribeReport"
@@ -178,6 +182,7 @@ const (
 	AdminService_GetPersonalFile_FullMethodName                          = "/rill.admin.v1.AdminService/GetPersonalFile"
 	AdminService_EditPersonalFile_FullMethodName                         = "/rill.admin.v1.AdminService/EditPersonalFile"
 	AdminService_DeletePersonalFile_FullMethodName                       = "/rill.admin.v1.AdminService/DeletePersonalFile"
+	AdminService_SavePersonalFileForUser_FullMethodName                  = "/rill.admin.v1.AdminService/SavePersonalFileForUser"
 	AdminService_GetBillingSubscription_FullMethodName                   = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_CancelBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/CancelBillingSubscription"
@@ -510,6 +515,23 @@ type AdminServiceClient interface {
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
 	GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error)
+	// SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+	// It can only be called by the project's primary deployment, and only edits alerts the user owns.
+	// It's currently only called by AI tools in the runtime.
+	SaveAlertForUser(ctx context.Context, in *SaveAlertForUserRequest, opts ...grpc.CallOption) (*SaveAlertForUserResponse, error)
+	// ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+	// It can only be called by the project's primary deployment.
+	// It's currently only called by AI tools in the runtime.
+	ListAlertsForUser(ctx context.Context, in *ListAlertsForUserRequest, opts ...grpc.CallOption) (*ListAlertsForUserResponse, error)
+	// SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+	// It can only be called by the project's primary deployment, and only edits reports the user owns.
+	// It's currently only called by AI tools in the runtime.
+	// Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+	SaveReportForUser(ctx context.Context, in *SaveReportForUserRequest, opts ...grpc.CallOption) (*SaveReportForUserResponse, error)
+	// ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+	// It can only be called by the project's primary deployment.
+	// It's currently only called by AI tools in the runtime.
+	ListReportsForUser(ctx context.Context, in *ListReportsForUserRequest, opts ...grpc.CallOption) (*ListReportsForUserResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -544,6 +566,10 @@ type AdminServiceClient interface {
 	EditPersonalFile(ctx context.Context, in *EditPersonalFileRequest, opts ...grpc.CallOption) (*EditPersonalFileResponse, error)
 	// DeletePersonalFile deletes a personal virtual file the caller owns.
 	DeletePersonalFile(ctx context.Context, in *DeletePersonalFileRequest, opts ...grpc.CallOption) (*DeletePersonalFileResponse, error)
+	// SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+	// It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+	// It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+	SavePersonalFileForUser(ctx context.Context, in *SavePersonalFileForUserRequest, opts ...grpc.CallOption) (*SavePersonalFileForUserResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -1996,6 +2022,46 @@ func (c *adminServiceClient) GetAlertMeta(ctx context.Context, in *GetAlertMetaR
 	return out, nil
 }
 
+func (c *adminServiceClient) SaveAlertForUser(ctx context.Context, in *SaveAlertForUserRequest, opts ...grpc.CallOption) (*SaveAlertForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveAlertForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_SaveAlertForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListAlertsForUser(ctx context.Context, in *ListAlertsForUserRequest, opts ...grpc.CallOption) (*ListAlertsForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAlertsForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListAlertsForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SaveReportForUser(ctx context.Context, in *SaveReportForUserRequest, opts ...grpc.CallOption) (*SaveReportForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveReportForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_SaveReportForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListReportsForUser(ctx context.Context, in *ListReportsForUserRequest, opts ...grpc.CallOption) (*ListReportsForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListReportsForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListReportsForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateReportResponse)
@@ -2160,6 +2226,16 @@ func (c *adminServiceClient) DeletePersonalFile(ctx context.Context, in *DeleteP
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeletePersonalFileResponse)
 	err := c.cc.Invoke(ctx, AdminService_DeletePersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SavePersonalFileForUser(ctx context.Context, in *SavePersonalFileForUserRequest, opts ...grpc.CallOption) (*SavePersonalFileForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SavePersonalFileForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_SavePersonalFileForUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2613,6 +2689,23 @@ type AdminServiceServer interface {
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
 	GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error)
+	// SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+	// It can only be called by the project's primary deployment, and only edits alerts the user owns.
+	// It's currently only called by AI tools in the runtime.
+	SaveAlertForUser(context.Context, *SaveAlertForUserRequest) (*SaveAlertForUserResponse, error)
+	// ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+	// It can only be called by the project's primary deployment.
+	// It's currently only called by AI tools in the runtime.
+	ListAlertsForUser(context.Context, *ListAlertsForUserRequest) (*ListAlertsForUserResponse, error)
+	// SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+	// It can only be called by the project's primary deployment, and only edits reports the user owns.
+	// It's currently only called by AI tools in the runtime.
+	// Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+	SaveReportForUser(context.Context, *SaveReportForUserRequest) (*SaveReportForUserResponse, error)
+	// ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+	// It can only be called by the project's primary deployment.
+	// It's currently only called by AI tools in the runtime.
+	ListReportsForUser(context.Context, *ListReportsForUserRequest) (*ListReportsForUserResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -2647,6 +2740,10 @@ type AdminServiceServer interface {
 	EditPersonalFile(context.Context, *EditPersonalFileRequest) (*EditPersonalFileResponse, error)
 	// DeletePersonalFile deletes a personal virtual file the caller owns.
 	DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error)
+	// SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+	// It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+	// It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+	SavePersonalFileForUser(context.Context, *SavePersonalFileForUserRequest) (*SavePersonalFileForUserResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -3105,6 +3202,18 @@ func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReport
 func (UnimplementedAdminServiceServer) GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertMeta not implemented")
 }
+func (UnimplementedAdminServiceServer) SaveAlertForUser(context.Context, *SaveAlertForUserRequest) (*SaveAlertForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveAlertForUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListAlertsForUser(context.Context, *ListAlertsForUserRequest) (*ListAlertsForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAlertsForUser not implemented")
+}
+func (UnimplementedAdminServiceServer) SaveReportForUser(context.Context, *SaveReportForUserRequest) (*SaveReportForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveReportForUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListReportsForUser(context.Context, *ListReportsForUserRequest) (*ListReportsForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListReportsForUser not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
 }
@@ -3155,6 +3264,9 @@ func (UnimplementedAdminServiceServer) EditPersonalFile(context.Context, *EditPe
 }
 func (UnimplementedAdminServiceServer) DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) SavePersonalFileForUser(context.Context, *SavePersonalFileForUserRequest) (*SavePersonalFileForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SavePersonalFileForUser not implemented")
 }
 func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
@@ -5772,6 +5884,78 @@ func _AdminService_GetAlertMeta_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SaveAlertForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveAlertForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SaveAlertForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SaveAlertForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SaveAlertForUser(ctx, req.(*SaveAlertForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListAlertsForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAlertsForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListAlertsForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListAlertsForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListAlertsForUser(ctx, req.(*ListAlertsForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SaveReportForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveReportForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SaveReportForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SaveReportForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SaveReportForUser(ctx, req.(*SaveReportForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListReportsForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReportsForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListReportsForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListReportsForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListReportsForUser(ctx, req.(*ListReportsForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateReportRequest)
 	if err := dec(in); err != nil {
@@ -6074,6 +6258,24 @@ func _AdminService_DeletePersonalFile_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).DeletePersonalFile(ctx, req.(*DeletePersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SavePersonalFileForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SavePersonalFileForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SavePersonalFileForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SavePersonalFileForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SavePersonalFileForUser(ctx, req.(*SavePersonalFileForUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6888,6 +7090,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetAlertMeta_Handler,
 		},
 		{
+			MethodName: "SaveAlertForUser",
+			Handler:    _AdminService_SaveAlertForUser_Handler,
+		},
+		{
+			MethodName: "ListAlertsForUser",
+			Handler:    _AdminService_ListAlertsForUser_Handler,
+		},
+		{
+			MethodName: "SaveReportForUser",
+			Handler:    _AdminService_SaveReportForUser_Handler,
+		},
+		{
+			MethodName: "ListReportsForUser",
+			Handler:    _AdminService_ListReportsForUser_Handler,
+		},
+		{
 			MethodName: "CreateReport",
 			Handler:    _AdminService_CreateReport_Handler,
 		},
@@ -6954,6 +7172,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePersonalFile",
 			Handler:    _AdminService_DeletePersonalFile_Handler,
+		},
+		{
+			MethodName: "SavePersonalFileForUser",
+			Handler:    _AdminService_SavePersonalFileForUser_Handler,
 		},
 		{
 			MethodName: "GetBillingSubscription",

@@ -286,7 +286,36 @@ export function getTimeComparisonParametersForComponent(
   };
 }
 
+// The comparison option of a comparison saved as a rill time expression,
+// from the offset mapSelectedComparisonTimeRangeToV1TimeRange appends to the time range.
+export function getComparisonOptionFromExpression(expression: string) {
+  const offset = / offset (\S+)$/.exec(expression)?.[1];
+  if (!offset) return undefined;
+  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
+    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
+  );
+}
+
+// The comparison option a comparison time range was saved with, if it was saved for one.
+export function getComparisonOption(
+  comparisonTimeRange: V1TimeRange,
+): TimeComparisonOption | undefined {
+  const { expression, isoDuration, isoOffset } = comparisonTimeRange;
+  if (expression) return getComparisonOptionFromExpression(expression);
+  if (isoOffset && isoOffset === isoDuration) {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+  if (isoOffset && isoOffset in TIME_COMPARISON) {
+    return isoOffset as TimeComparisonOption;
+  }
+  return undefined;
+}
+
 export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
+  const expressionOption = comparisonTimeRange.expression
+    ? getComparisonOptionFromExpression(comparisonTimeRange.expression)
+    : undefined;
+  if (expressionOption) return TIME_COMPARISON[expressionOption].label;
   if (
     (!comparisonTimeRange.isoOffset && !comparisonTimeRange.expression) ||
     comparisonTimeRange.isoOffset === TimeRangePreset.CUSTOM

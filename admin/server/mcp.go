@@ -49,6 +49,9 @@ const (
 // mcpForwardedTools are the runtime tools exposed on the MCP server.
 // The runtime exposes more tools than these, but the rest require runtime.EditRepo,
 // which is only granted for editable deployments, and a project's primary deployment is never editable.
+// develop_personal_canvas is the exception: personal canvases are owned by the user, not stored in the repo.
+// It is listed for every project, and the runtime rejects calls for projects without the personal_canvases feature flag.
+// The alert tools are another exception: the alerts they save are owned by the user, not stored in the repo.
 // create_chart is always exposed: clients that do not get the MCP Apps widget receive its markdown fallback.
 // chart_data may only be called by the widget, so it is only exposed when this server serves the widget (see mcpForwardedToolSpecs).
 var mcpForwardedTools = []string{
@@ -60,6 +63,10 @@ var mcpForwardedTools = []string{
 	ai.ChartDataName,
 	ai.ListSkillsName,
 	ai.LoadSkillName,
+	ai.ListCanvasesName,
+	ai.DevelopPersonalCanvasName,
+	ai.ListAlertsName,
+	ai.SaveAlertName,
 }
 
 // mcpSessionNamespace is a UUIDv5 namespace for the per-project session IDs derived in callRuntimeTool.
@@ -331,6 +338,10 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 			// The runtime rejects calls with invalid arguments, and calls to a tool it does not serve (e.g. because the caller lacks a permission), as invalid params.
 			// The caller can act on both, so they are returned as tool errors; any other error is unexpected and stays a protocol error.
 			if rpc.Error.Code == jsonrpc.CodeInvalidParams {
+				// The go-sdk reports a call to a tool the server doesn't serve as `unknown tool "<name>"`; TestCallRuntimeToolErrors pins that wording.
+				if strings.HasPrefix(rpc.Error.Message, "unknown tool") {
+					return mcpToolErrorf("%s", mcpUnavailableToolMessage(params.Name)), nil
+				}
 				return mcpToolErrorf("%s", rpc.Error.Message), nil
 			}
 			return nil, errors.New(rpc.Error.Message)
@@ -463,6 +474,15 @@ func takeMCPProjectArg(args json.RawMessage) (org, project string, rest json.Raw
 		return "", "", nil, err
 	}
 	return org, project, rest, nil
+}
+
+// mcpUnavailableToolMessage explains why a project's runtime does not serve a forwarded tool.
+// The tools are listed for every project, so the client only learns that a project lacks one when it calls it.
+func mcpUnavailableToolMessage(name string) string {
+	if name == ai.DevelopPersonalCanvasName {
+		return "Personal dashboards can't be created for you in this project: the project doesn't enable personal canvases (the personal_canvases feature flag), or your access doesn't include AI features or personal dashboards (service tokens never do)."
+	}
+	return fmt.Sprintf("Tool %q is not available in this project: the project doesn't enable it, or you lack the permission it needs.", name)
 }
 
 // mcpToolErrorf returns a tool call result representing an error.

@@ -1224,6 +1224,41 @@ service AdminService {
     };
   }
 
+  // SaveAlertForUser creates or edits an alert on behalf of a user, like CreateAlert and EditAlert do for the calling user.
+  // It can only be called by the project's primary deployment, and only edits alerts the user owns.
+  // It's currently only called by AI tools in the runtime.
+  rpc SaveAlertForUser(SaveAlertForUserRequest) returns (SaveAlertForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/alerts/for-user",
+      body: "*"
+    };
+  }
+
+  // ListAlertsForUser lists the alerts a user owns, with the options they were saved with and their version.
+  // It can only be called by the project's primary deployment.
+  // It's currently only called by AI tools in the runtime.
+  rpc ListAlertsForUser(ListAlertsForUserRequest) returns (ListAlertsForUserResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/alerts/for-user"};
+  }
+
+  // SaveReportForUser creates or edits a report on behalf of a user, like CreateReport and EditReport do for the calling user.
+  // It can only be called by the project's primary deployment, and only edits reports the user owns.
+  // It's currently only called by AI tools in the runtime.
+  // Unless the report opens with the creator's permissions, it rejects recipients and options that need them.
+  rpc SaveReportForUser(SaveReportForUserRequest) returns (SaveReportForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/reports/for-user",
+      body: "*"
+    };
+  }
+
+  // ListReportsForUser lists the reports a user owns, with the options they were saved with and their version.
+  // It can only be called by the project's primary deployment.
+  // It's currently only called by AI tools in the runtime.
+  rpc ListReportsForUser(ListReportsForUserRequest) returns (ListReportsForUserResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/reports/for-user"};
+  }
+
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
   rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
     option (google.api.http) = {
@@ -1344,6 +1379,16 @@ service AdminService {
   // DeletePersonalFile deletes a personal virtual file the caller owns.
   rpc DeletePersonalFile(DeletePersonalFileRequest) returns (DeletePersonalFileResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"};
+  }
+
+  // SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+  // It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+  // It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+  rpc SavePersonalFileForUser(SavePersonalFileForUserRequest) returns (SavePersonalFileForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/personal-files/for-user",
+      body: "*"
+    };
   }
 
   // GetBillingSubscription lists the subscription for the organization
@@ -3212,6 +3257,84 @@ message GetAlertMetaResponse {
   reserved 1;
 }
 
+message SaveAlertForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the alert.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  // Name of an alert owned by the user to edit.
+  // If empty, a new alert is created.
+  string name = 3;
+  AlertOptions options = 4 [(validate.rules).message.required = true];
+  // Version of the alert to edit, as returned by ListAlertsForUser.
+  // Required when name is set.
+  // The edit fails if the alert changed since, so a concurrent change isn't overwritten.
+  string version = 5;
+}
+
+message SaveAlertForUserResponse {
+  string name = 1;
+  // URL where the user can open the alert.
+  string url = 2;
+  // Version of the saved alert, to edit it again.
+  string version = 3;
+}
+
+message ListAlertsForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListAlertsForUserResponse {
+  repeated AlertForUser alerts = 1;
+}
+
+message AlertForUser {
+  string name = 1;
+  // Version of the alert, to pass to SaveAlertForUser when editing it.
+  string version = 2;
+  // Options the alert was saved with.
+  AlertOptions options = 3;
+}
+
+message SaveReportForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the report.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  // Name of a report owned by the user to edit.
+  // If empty, a new report is created.
+  string name = 3;
+  ReportOptions options = 4 [(validate.rules).message.required = true];
+  // Version of the report to edit, as returned by ListReportsForUser.
+  // Required when name is set.
+  // The edit fails if the report changed since, so a concurrent change isn't overwritten.
+  string version = 5;
+}
+
+message SaveReportForUserResponse {
+  string name = 1;
+  // URL where the user can open the report.
+  string url = 2;
+  // Version of the saved report, to edit it again.
+  string version = 3;
+}
+
+message ListReportsForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListReportsForUserResponse {
+  repeated ReportForUser reports = 1;
+}
+
+message ReportForUser {
+  string name = 1;
+  // Version of the report, to pass to SaveReportForUser when editing it.
+  string version = 2;
+  // Options the report was saved with.
+  ReportOptions options = 3;
+}
+
 message CreateReportRequest {
   string org = 1;
   string project = 2;
@@ -3379,6 +3502,25 @@ message DeletePersonalFileRequest {
 }
 
 message DeletePersonalFileResponse {
+}
+
+message SavePersonalFileForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the personal file.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string kind = 3;
+  // Name of an existing personal file to edit. If empty, a new personal file is created.
+  string name = 4;
+  // Display name for a new personal file. Required when name is empty.
+  string display_name = 5;
+  // YAML body of the personal file. Annotations in it are ignored.
+  string yaml = 6 [(validate.rules).string.min_len = 1];
+}
+
+message SavePersonalFileForUserResponse {
+  string name = 1;
+  // URL where the user can open the personal file.
+  string url = 2;
 }
 
 message GetBillingSubscriptionRequest {

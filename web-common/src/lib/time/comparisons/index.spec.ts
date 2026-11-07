@@ -4,7 +4,11 @@ import {
 } from ".";
 import { TimeComparisonOption } from "../types";
 import { describe, it, expect } from "vitest";
-import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import {
+  getComparisonInterval,
+  getComparisonLabel,
+  getComparisonOption,
+} from "@rilldata/web-common/lib/time/comparisons";
 import { DateTime, Interval } from "luxon";
 
 const contiguousAndCustomComparisonRanges = [
@@ -320,5 +324,42 @@ describe("getAvailableComparisonsForTimeRange", () => {
       );
       expect(actual).toEqual(test.output);
     });
+  });
+});
+
+describe("getComparisonOption and getComparisonLabel", () => {
+  const cases = [
+    {
+      comparison: { expression: "MTD as of latest/D offset -1M" },
+      option: TimeComparisonOption.MONTH,
+      label: "Previous month",
+    },
+    {
+      comparison: { expression: "7D as of latest/D offset -1P" },
+      option: TimeComparisonOption.CONTIGUOUS,
+      label: "Previous period",
+    },
+    {
+      comparison: { isoDuration: "P7D", isoOffset: "P7D" },
+      option: TimeComparisonOption.CONTIGUOUS,
+      label: "Previous period",
+    },
+    {
+      comparison: { isoDuration: "P7D", isoOffset: TimeComparisonOption.WEEK },
+      option: TimeComparisonOption.WEEK,
+      label: "Previous week",
+    },
+  ];
+  cases.forEach(({ comparison, option, label }) => {
+    it(`reads ${JSON.stringify(comparison)} as ${option}`, () => {
+      expect(getComparisonOption(comparison)).toBe(option);
+      expect(getComparisonLabel(comparison)).toBe(label);
+    });
+  });
+
+  it("has no option for an expression with another offset", () => {
+    expect(
+      getComparisonOption({ expression: "7D as of latest/D offset -7D" }),
+    ).toBeUndefined();
   });
 });

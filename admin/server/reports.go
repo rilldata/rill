@@ -16,6 +16,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
@@ -482,6 +483,160 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	return &adminv1.EditReportResponse{}, nil
 }
 
+func (s *Server) SaveReportForUser(ctx context.Context, req *adminv1.SaveReportForUserRequest) (*adminv1.SaveReportForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.name", req.Name),
+	)
+
+	if req.Name != "" && !personalFileNameRegexp.MatchString(req.Name) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid report name %q", req.Name)
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId, "reports")
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.CreateReports {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to create reports")
+	}
+
+	err = s.checkReportNeedsCreator(ctx, proj, req.Options)
+	if err != nil {
+		return nil, err
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	name := req.Name
+	var prev *database.VirtualFile
+	if name == "" {
+		name, err = s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+			_, err := s.admin.LookupReport(ctx, depl, name)
+			return err
+		})
+	} else {
+		prev, err = s.managedFileForEdit(ctx, proj.ID, virtualFilePathForManagedReport(name), "report", name, user.ID, req.Version)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := s.yamlForManagedReport(req.Options, user.ID, "", "", nil)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
+	}
+
+	version, err := s.writeManagedFile(ctx, proj.ID, virtualFilePathForManagedReport(name), data, "report", name, prev)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconcile report: %w", err)
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SaveReportForUserResponse{
+		Name:    name,
+		Url:     s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, name),
+		Version: version,
+	}, nil
+}
+
+func (s *Server) ListReportsForUser(ctx context.Context, req *adminv1.ListReportsForUserRequest) (*adminv1.ListReportsForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId, "reports")
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.ReadProject {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to read project")
+	}
+
+	files, err := s.managedFilesForUser(ctx, proj.ID, "reports", user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &adminv1.ListReportsForUserResponse{}
+	for _, vf := range files {
+		opts, err := reportOptionsFromYAML(vf.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read report %q: %w", vf.Path, err)
+		}
+		res.Reports = append(res.Reports, &adminv1.ReportForUser{
+			Name:    fileutil.Stem(vf.Path),
+			Version: managedFileVersion(vf.UpdatedOn),
+			Options: opts,
+		})
+	}
+	return res, nil
+}
+
+// checkReportNeedsCreator rejects a report that doesn't open with the creator's permissions, but whose recipients or options need them.
+// Without the creator's permissions, a report opens with each recipient's own, so only project members can open it,
+// and Slack recipients (who aren't identified as users) and export attachments (which can't be run per recipient) don't work.
+// The report dialog checks the same for email recipients; here, the error explains the alternative so the user can decide.
+func (s *Server) checkReportNeedsCreator(ctx context.Context, proj *database.Project, opts *adminv1.ReportOptions) error {
+	if WebOpenMode(opts.WebOpenMode) == WebOpenModeCreator {
+		return nil
+	}
+
+	var reasons []string
+	var outsiders []string
+	for _, email := range opts.EmailRecipients {
+		_, userID, err := s.getAttributesForProjectMember(ctx, email, proj.OrganizationID, proj.ID)
+		if err != nil {
+			return err
+		}
+		if userID == "" {
+			outsiders = append(outsiders, email)
+		}
+	}
+	if len(outsiders) == 1 {
+		reasons = append(reasons, fmt.Sprintf("%s is not a member of the project", outsiders[0]))
+	} else if len(outsiders) > 1 {
+		reasons = append(reasons, fmt.Sprintf("%s are not members of the project", strings.Join(outsiders, ", ")))
+	}
+	if len(opts.SlackUsers) > 0 || len(opts.SlackChannels) > 0 || len(opts.SlackWebhooks) > 0 {
+		reasons = append(reasons, "it is sent to Slack")
+	}
+	if opts.ExportAttach {
+		reasons = append(reasons, "it attaches the export to the email")
+	}
+	if len(reasons) == 0 {
+		return nil
+	}
+
+	return status.Errorf(codes.InvalidArgument, "the report can't open with each recipient's own permissions because %s. "+
+		"It can only be saved to open with the creator's permissions (web_open_mode %q): then every recipient sees the data the creator can see, without logging in. "+
+		"Otherwise, send it only by email to project members, without attaching the export", strings.Join(reasons, ", and "), WebOpenModeCreator)
+}
+
 func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.UnsubscribeReportRequest) (*adminv1.UnsubscribeReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
@@ -779,7 +934,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	res.Query.Name = opts.QueryName         // nolint:staticcheck // backwards compatibility
@@ -870,6 +1025,60 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 	return yaml.Marshal(res)
 }
 
+// reportOptionsFromYAML returns the options a managed report was saved with, as yamlForManagedReport wrote them.
+func reportOptionsFromYAML(data []byte) (*adminv1.ReportOptions, error) {
+	var r reportYAML
+	if err := yaml.Unmarshal(data, &r); err != nil {
+		return nil, err
+	}
+	resolver, props, err := resolverFromYAML(r.Data)
+	if err != nil {
+		return nil, err
+	}
+	format, err := exportFormatFromYAML(r.Export.Format)
+	if err != nil {
+		return nil, err
+	}
+	opts := &adminv1.ReportOptions{
+		DisplayName:         r.DisplayName,
+		RefreshCron:         r.Refresh.Cron,
+		RefreshTimeZone:     r.Refresh.TimeZone,
+		IntervalDuration:    r.Intervals.Duration,
+		Resolver:            resolver,
+		ResolverProperties:  props,
+		QueryName:           r.Query.Name,     // nolint:staticcheck // backwards compatibility
+		QueryArgsJson:       r.Query.ArgsJSON, // nolint:staticcheck // backwards compatibility
+		ExportFormat:        format,
+		ExportLimit:         uint64(r.Export.Limit),
+		ExportIncludeHeader: r.Export.IncludeHeader,
+		ExportAttach:        r.Export.Attach,
+		EmailRecipients:     r.Notify.Email.Recipients,
+		SlackUsers:          r.Notify.Slack.Users,
+		SlackChannels:       r.Notify.Slack.Channels,
+		SlackWebhooks:       r.Notify.Slack.Webhooks,
+		WebOpenPath:         r.Annotations.WebOpenPath,
+		WebOpenState:        r.Annotations.WebOpenState,
+		WebOpenMode:         string(r.Annotations.WebOpenMode),
+		Explore:             r.Annotations.Explore,
+		Canvas:              r.Annotations.Canvas,
+	}
+	if r.Annotations.MetricsViewFilters != "" {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(r.Annotations.MetricsViewFilters), &raw); err != nil {
+			return nil, fmt.Errorf("invalid metrics view filters: %w", err)
+		}
+		opts.MetricsViewFilters = make(map[string]*runtimev1.Expression, len(raw))
+		for mv, data := range raw {
+			expr := &runtimev1.Expression{}
+			if err := protojson.Unmarshal(data, expr); err != nil {
+				return nil, fmt.Errorf("invalid filter for metrics view %q: %w", mv, err)
+			}
+			opts.MetricsViewFilters[mv] = expr
+		}
+	}
+	return opts, nil
+}
+
 func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
 	// Format args as pretty YAML
 	var args map[string]interface{}
@@ -889,7 +1098,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
@@ -1392,6 +1601,19 @@ func exportFormatYAML(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
+}
+
+// exportFormatFromYAML parses an export format written by exportFormatYAML.
+func exportFormatFromYAML(s string) (runtimev1.ExportFormat, error) {
+	if s == "" {
+		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, nil
+	}
+	for _, v := range runtimev1.ExportFormat_value {
+		if f := runtimev1.ExportFormat(v); exportFormatYAML(f) == s {
+			return f, nil
+		}
+	}
+	return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 }
 
 func virtualFilePathForManagedReport(name string) string {

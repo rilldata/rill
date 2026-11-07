@@ -284,7 +284,7 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:         r.C.Runtime,
 			InstanceID:      r.C.InstanceID,
-			Properties:      spec.ResolverProperties.AsMap(),
+			Properties:      alertResolverProperties(spec),
 			ProjectDeclared: false, // Alert templates never access project variables (the parser rejects references to them).
 			Claims:          claims,
 			ForExport:       false,
@@ -700,18 +700,24 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
 
+	args := map[string]any{
+		"priority":       alertQueryPriority,
+		"execution_time": executionTime,
+		"format":         true,
+		"limit":          1,
+	}
+	if a.Spec.Resolver == "ai" {
+		// Share the analyst's conversation so every recipient's link can open it, like an AI report in creator mode.
+		args["create_shared_session"] = true
+	}
+
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
-		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		ResolverProperties: alertResolverProperties(a.Spec),
 		ProjectDeclared:    false, // Alert templates never access project variables (the parser rejects references to them).
-		Args: map[string]any{
-			"priority":       alertQueryPriority,
-			"execution_time": executionTime,
-			"format":         true,
-			"limit":          1,
-		},
-		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
+		Args:               args,
+		Claims:             alertResolverClaims(a.Spec, alertQueryForAttributes(a, adminMeta)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
@@ -822,6 +828,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 
 	// Generate the notification message to send (if any)
 	var msg *drivers.AlertStatus
+	var aiSessionID string
 	if notify {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
@@ -854,6 +861,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				FailRow:       current.Result.FailRow.AsMap(),
+			}
+			if a.Spec.Resolver == "ai" {
+				// An AI alert's fail row is the AI's verdict: show its reason and link to the conversation behind it.
+				msg.Reason, _ = msg.FailRow["reason"].(string)
+				aiSessionID, _ = msg.FailRow["ai_session_id"].(string)
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {
@@ -909,6 +921,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						Status:             msg.Status,
 						IsRecover:          msg.IsRecover,
 						FailRow:            msg.FailRow,
+						Reason:             msg.Reason,
 						ExecutionError:     msg.ExecutionError,
 						Attachment:         attachment,
 						AttachmentTooLarge: attachmentTooLarge,
@@ -919,7 +932,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
 							// Use recipient-specific URLs (with magic token)
-							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+							openLink, err := alertOpenLink(recipientURLs.OpenURL, executionTime, aiSessionID)
 							if err != nil {
 								return fmt.Errorf("failed to build recipient open url: %w", err)
 							}
@@ -955,7 +968,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						if !ok {
 							return fmt.Errorf("failed to get recipient URLs for anon user")
 						}
-						openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+						openLink, err := alertOpenLink(urls.OpenURL, executionTime, aiSessionID)
 						if err != nil {
 							return fmt.Errorf("failed to build recipient open url: %w", err)
 						}
@@ -1054,6 +1067,20 @@ func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.
 func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI alerts) inherit the watermark of their metrics view, as in the report reconciler.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,
@@ -1165,6 +1192,40 @@ func alertQueryForAttributes(a *runtimev1.Alert, adminMeta *drivers.AlertMetadat
 		return adminMeta.QueryForAttributes
 	}
 	return nil
+}
+
+// alertResolverProperties returns the alert's resolver properties as they should be passed to the resolver.
+// For AI alerts, it marks the properties as belonging to an alert, which makes the ai resolver judge the prompt as the alert's condition.
+func alertResolverProperties(spec *runtimev1.AlertSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_alert"] = true
+	}
+	return props
+}
+
+// alertResolverClaims returns the claims the alert's resolver runs with: the attributes of the user the alert queries for.
+// An AI alert's analyst also gets a user to own its conversation (the "for" user, or else the alert's owner)
+// and the permissions its tools check, which an AI report gets too. It never skips security checks.
+func alertResolverClaims(spec *runtimev1.AlertSpec, queryForAttrs map[string]any) *runtime.SecurityClaims {
+	claims := &runtime.SecurityClaims{UserAttributes: queryForAttrs}
+	if spec.Resolver == "ai" {
+		claims.UserID = spec.GetQueryForUserId()
+		if claims.UserID == "" {
+			claims.UserID = spec.Annotations["admin_owner_user_id"]
+		}
+		claims.Permissions = []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}
+	}
+	return claims
+}
+
+// alertOpenLink builds a notification's open link. An AI alert's link also names the analyst's conversation, which the open page redirects to.
+func alertOpenLink(openURL string, executionTime time.Time, aiSessionID string) (string, error) {
+	link, err := addExecutionTime(openURL, executionTime)
+	if err != nil || aiSessionID == "" {
+		return link, err
+	}
+	return buildAISessionURL(link, aiSessionID)
 }
 
 func addExecutionTime(openURL string, executionTime time.Time) (string, error) {

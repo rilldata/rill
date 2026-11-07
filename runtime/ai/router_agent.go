@@ -38,6 +38,8 @@ type RouterAgentArgs struct {
 type RouterAgentResult struct {
 	Response string `json:"response"`
 	Agent    string `json:"agent"`
+	// Verdict is the analyst's verdict when it judged an AI alert's condition.
+	Verdict *AlertVerdict `json:"verdict,omitempty"`
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
@@ -169,7 +171,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if err != nil {
 			return nil, mapAgentErr(err)
 		}
-		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
+		return &RouterAgentResult{Response: res.Response, Agent: args.Agent, Verdict: res.Verdict}, nil
 
 	case DeveloperAgentName:
 		developerAgentArgs := args.DeveloperAgentArgs
@@ -216,6 +218,7 @@ Routing guidelines:
 - If the user's question relates to developing or permanently changing the data model, metrics, or dashboards, you should route to the developer.
 - If the user's question relates to exploring dashboards or retrieving specific business metrics, you should route to the analyst.
 - If the user asks a general question, you should route to the analyst.
+- If the user asks to create, change or list their own alerts (for example "alert me if revenue drops below 30k"), you should route to the analyst, which saves them for the user. Only route to the developer if the user explicitly asks to put the alert in the project's code or files.
 - If the user specifically requests an agent by name, you must route to that agent if it's available.
 You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
 {{- range .candidates }}

@@ -323,6 +323,9 @@ type DB interface {
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
+	// UpdateVirtualFileDataIfUnchanged updates the data of a virtual file that is not deleted and was last updated at updatedOn.
+	// It returns ErrNotFound if the file doesn't exist, was deleted, or changed since, so callers don't overwrite a concurrent update.
+	UpdateVirtualFileDataIfUnchanged(ctx context.Context, opts *UpdateVirtualFileDataOptions) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
@@ -1310,6 +1313,15 @@ type InsertVirtualFileOptions struct {
 	OwnerID      *string `db:"owner_id"`
 	EmbedOwnerID *string `db:"embed_owner_id"`
 	Data         []byte  `validate:"max=131072"` // 128kb
+}
+
+// UpdateVirtualFileDataOptions defines options for updating the data of a VirtualFile that was last updated at UpdatedOn.
+type UpdateVirtualFileDataOptions struct {
+	ProjectID   string
+	Environment string
+	Path        string `validate:"required"`
+	Data        []byte `validate:"max=131072"` // 128kb, as for InsertVirtualFileOptions
+	UpdatedOn   time.Time
 }
 
 // Asset represents a user-uploaded file asset.

@@ -118,6 +118,13 @@ export interface V1AddUsergroupMemberUserResponse {
   [key: string]: unknown;
 }
 
+export interface V1AlertForUser {
+  name?: string;
+  /** Version of the alert, to pass to SaveAlertForUser when editing it. */
+  version?: string;
+  options?: V1AlertOptions;
+}
+
 export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1AlertOptions {
@@ -887,6 +894,10 @@ export interface V1LeaveOrganizationResponse {
   [key: string]: unknown;
 }
 
+export interface V1ListAlertsForUserResponse {
+  alerts?: V1AlertForUser[];
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -988,6 +999,10 @@ export interface V1ListProjectsForUserByNameResponse {
 
 export interface V1ListPublicBillingPlansResponse {
   plans?: V1BillingPlan[];
+}
+
+export interface V1ListReportsForUserResponse {
+  reports?: V1ReportForUser[];
 }
 
 export interface V1ListRolesResponse {
@@ -1394,6 +1409,13 @@ export interface V1RenewBillingSubscriptionResponse {
   subscription?: V1Subscription;
 }
 
+export interface V1ReportForUser {
+  name?: string;
+  /** Version of the report, to pass to SaveReportForUser when editing it. */
+  version?: string;
+  options?: V1ReportOptions;
+}
+
 export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
 /**
@@ -1469,6 +1491,28 @@ export interface V1RevokeServiceAuthTokenResponse {
 
 export interface V1RevokeUserAuthTokenResponse {
   [key: string]: unknown;
+}
+
+export interface V1SaveAlertForUserResponse {
+  name?: string;
+  /** URL where the user can open the alert. */
+  url?: string;
+  /** Version of the saved alert, to edit it again. */
+  version?: string;
+}
+
+export interface V1SavePersonalFileForUserResponse {
+  name?: string;
+  /** URL where the user can open the personal file. */
+  url?: string;
+}
+
+export interface V1SaveReportForUserResponse {
+  name?: string;
+  /** URL where the user can open the report. */
+  url?: string;
+  /** Version of the saved report, to edit it again. */
+  version?: string;
 }
 
 export interface V1SearchProjectNamesResponse {
@@ -2485,6 +2529,23 @@ export type AdminServiceListProjectsForFingerprintParams = {
   rillMgdGitRemote?: string;
 };
 
+export type AdminServiceListAlertsForUserParams = {
+  userId?: string;
+};
+
+export type AdminServiceSaveAlertForUserBody = {
+  /** User who owns the alert. */
+  userId?: string;
+  /** Name of an alert owned by the user to edit.
+If empty, a new alert is created. */
+  name?: string;
+  options?: V1AlertOptions;
+  /** Version of the alert to edit, as returned by ListAlertsForUser.
+Required when name is set.
+The edit fails if the alert changed since, so a concurrent change isn't overwritten. */
+  version?: string;
+};
+
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
@@ -2495,6 +2556,18 @@ export type AdminServiceGetAlertMetaBody = {
   ownerId?: string;
   emailRecipients?: string[];
   anonRecipients?: boolean;
+};
+
+export type AdminServiceSavePersonalFileForUserBody = {
+  /** User who owns the personal file. */
+  userId?: string;
+  kind?: string;
+  /** Name of an existing personal file to edit. If empty, a new personal file is created. */
+  name?: string;
+  /** Display name for a new personal file. Required when name is empty. */
+  displayName?: string;
+  /** YAML body of the personal file. Annotations in it are ignored. */
+  yaml?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -2547,6 +2620,23 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * If set and the caller is a superuser, force access regardless of project permissions.
    */
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListReportsForUserParams = {
+  userId?: string;
+};
+
+export type AdminServiceSaveReportForUserBody = {
+  /** User who owns the report. */
+  userId?: string;
+  /** Name of a report owned by the user to edit.
+If empty, a new report is created. */
+  name?: string;
+  options?: V1ReportOptions;
+  /** Version of the report to edit, as returned by ListReportsForUser.
+Required when name is set.
+The edit fails if the report changed since, so a concurrent change isn't overwritten. */
+  version?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {
