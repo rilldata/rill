@@ -1,3 +1,4 @@
+import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils";
 import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   createAndExpression,
@@ -6,7 +7,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
+  V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationResponseDataItem,
+  V1TimeGrain,
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -125,6 +128,32 @@ export function getFilterForComparedDimension(
     updatedFilter = createAndExpression([]);
   }
   return updatedFilter;
+}
+
+/**
+ * Builds the time dimension of a comparison time series request, and names
+ * the field it comes back as. When the comparison dimension is the time
+ * dimension itself, a response could not hold its raw value and its time
+ * floor under one name, so the floor is requested under the pivot's
+ * `<time dimension>_rill_<grain>` alias and the comparison dimension keeps
+ * the raw value, which the compared values are matched against.
+ */
+export function getTimeDimensionForComparison(
+  comparisonDimension: string,
+  timeDimension: string,
+  timeGrain: V1TimeGrain | undefined,
+  timeZone: string | undefined,
+): { dimension: V1MetricsViewAggregationDimension; field: string } {
+  const dimension: V1MetricsViewAggregationDimension = {
+    name: timeDimension,
+    timeGrain,
+    timeZone,
+  };
+  if (comparisonDimension !== timeDimension || !timeGrain) {
+    return { dimension, field: timeDimension };
+  }
+  const alias = getDimensionNameFromAggregationDimension(dimension);
+  return { dimension: { ...dimension, alias }, field: alias };
 }
 
 /**
