@@ -3,6 +3,7 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { RillAllTimeInterval } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
+import { getComparisonOptionFromExpression } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { DateTime } from "luxon";
 import {
@@ -243,7 +244,7 @@ export function convertV1TimeRangeToComparisonTimeOption(
   if (timeRange.expression) {
     // A comparison sent as the base expression with an offset, such as "P1D offset -1W".
     return (
-      convertExpressionToComparisonOption(timeRange.expression) ??
+      getComparisonOptionFromExpression(timeRange.expression) ??
       timeRange.expression
     );
   }
@@ -285,15 +286,4 @@ export function convertAbsoluteTimeRangeToUrlParam(
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()))
     return `${String(start)},${String(end)}`;
   return `${startDate.toISOString()},${endDate.toISOString()}`;
-}
-
-// Returns the comparison option whose rill time offset ends the expression, such as "-1W" in "P7D offset -1W".
-function convertExpressionToComparisonOption(
-  expression: string,
-): TimeComparisonOption | undefined {
-  const offset = / offset (\S+)$/.exec(expression)?.[1];
-  if (!offset) return undefined;
-  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
-    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
-  );
 }
