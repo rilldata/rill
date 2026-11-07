@@ -177,12 +177,17 @@
   $: maxSnapDistance = Math.max(MIN_SNAP_INDICES, data.length * SNAP_FRACTION);
   $: isLocallyHovered =
     hoverState.isHovered && hoverState.index !== null && data.length > 0;
-  // All series the cursor can snap to: the primary measure, its time
-  // comparison, and any dimension comparison series.
+  // All series the cursor can snap to: the primary measure, any dimension
+  // comparison series, and their time comparisons.
   $: snapSeries = [
     data.map((d) => d.value),
     ...(showComparison ? [data.map((d) => d.comparisonValue ?? null)] : []),
     ...dimensionData.map((dim) => dim.data.map((d) => d.value)),
+    ...(showComparison
+      ? dimensionData.map((dim) =>
+          dim.data.map((d) => d.comparisonValue ?? null),
+        )
+      : []),
   ];
   // Snap to the nearest non-null point so sparse data is easy to hover; null
   // when the cursor is in a gap wider than maxSnapDistance.
@@ -212,7 +217,10 @@
   $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
-  $: measureFormatter = createMeasureValueFormatter(measure);
+  // Hover readouts use the tooltip context: it honors an explicit d3 format
+  // and shows more precision than the table default, so small-but-meaningful
+  // values (e.g. sub-cent costs) don't round away to ~$0.00.
+  $: measureFormatter = createMeasureValueFormatter(measure, "tooltip");
   $: valueFormatter = (value: number | null): string => {
     if (value === null) return "no data";
     return measureFormatter(value);
@@ -532,7 +540,9 @@
       <g class="data-readout">
         <text
           class="fill-fg-muted text-outline text-[11px]"
-          aria-label="{measureName} primary time label"
+          aria-label={m.dashboard_measure_chart_primary_time_label_aria({
+            name: measureName,
+          })}
           x={pb.left + 6}
           y={pb.top + 10}
         >

@@ -58,7 +58,7 @@
     estimateColumnSize = estimateColumnSizes(
       columns,
       columnWidths,
-      containerWidth,
+      rows,
       config,
     );
   }

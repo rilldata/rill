@@ -452,8 +452,8 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 	if len(dotenv) > 0 {
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Org:       r.Msg.Org,
-			Project:   r.Msg.ProjectName,
+			Org:       projResp.Project.OrgName,
+			Project:   projResp.Project.Name,
 			Variables: dotenv,
 		})
 		if err != nil {

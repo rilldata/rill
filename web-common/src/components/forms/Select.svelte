@@ -161,7 +161,7 @@
               onChange("");
               selectKey++;
             }}
-            aria-label="Clear selection"
+            aria-label={m.common_clear_selection()}
           >
             <X size="10px" strokeWidth={2.5} />
           </button>

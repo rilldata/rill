@@ -4,12 +4,12 @@
     createAdminServiceAddProjectMemberUser,
     createAdminServiceAddProjectMemberUsergroup,
     getAdminServiceListOrganizationMemberUsersQueryOptions,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import { invalidateOrgMemberUsers } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -89,11 +89,7 @@
           project,
         ),
       }),
-      queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-        type: "all", // Clear regular and inactive queries
-      }),
+      invalidateOrgMemberUsers(queryClient, organization),
     ]);
 
     // Generate success notification message

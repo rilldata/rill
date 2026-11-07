@@ -1,7 +1,6 @@
 import { goto } from "$app/navigation";
 import {
   navigateToCanvas,
-  navigateToExplore,
   navigateToFile,
   withEditorPrefix,
 } from "@rilldata/web-common/layout/navigation/editor-routing";
@@ -13,12 +12,10 @@ import {
   ResourceKind,
   resourceIsLoading,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
@@ -41,7 +38,7 @@ import {
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
-import { createAndPreviewExplore } from "../create-and-preview-explore";
+import { previewInlineExplore } from "../inline-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -162,22 +159,9 @@ export function useCreateMetricsViewFromTableUIAction(
         return;
       }
 
-      // If we are creating an Explore...
-
-      // Get the Metrics View to use as a base for the Explore
-      const metricsViewResource = fileArtifacts
-        .getFileArtifact(newMetricsViewFilePath)
-        .getResource(queryClient);
-
-      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
-
-      const resource = get(metricsViewResource).data;
-      if (!resource) {
-        throw new Error("Failed to create a Metrics View resource");
-      }
-
-      // Create the Explore file, and navigate to it
-      await createAndPreviewExplore(client, queryClient, instanceId, resource);
+      // Open the generated dashboard; previewInlineExplore inspects the generated
+      // YAML and falls back to the metrics view if no inline explore was emitted.
+      await previewInlineExplore(queryClient, newMetricsViewFilePath);
     } catch (err) {
       eventBus.emit("notification", {
         message:
@@ -462,26 +446,8 @@ export async function createModelAndMetricsAndExplore(
       return;
     }
 
-    // If we are creating an Explore...
-
-    // Update overlay for explore dashboard creation
-    overlay.set({
-      title: `Creating explore dashboard...`,
-      detail: {
-        component: OptionToCancelAIGeneration,
-        props: {
-          onCancel: () => {
-            abortController.abort(
-              "Explore dashboard creation cancelled by user",
-            );
-            isAICancelled = true;
-          },
-        },
-      },
-    });
-
-    // Step 5: Create explore dashboard
-    await createAndPreviewExplore(client, queryClient, instanceId, resource);
+    // Step 5: Open the explore dashboard defined inline in the metrics view
+    await previewInlineExplore(queryClient, metricsViewFilePath);
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
@@ -579,37 +545,6 @@ async function createMetricsViewFromTable(
   await waitForMetricsViewReconciliation(newMetricsViewFilePath);
 
   return resource;
-}
-
-/**
- * Creates an Explore dashboard file without navigation.
- * Returns the file path of the created explore.
- */
-export async function createExploreWithoutNavigation(
-  client: RuntimeClient,
-  queryClient: QueryClient,
-  instanceId: string,
-  metricsViewResource: V1Resource,
-): Promise<string> {
-  // Create the Explore file
-  const filePath = await createResourceFile(
-    client,
-    ResourceKind.Explore,
-    metricsViewResource,
-  );
-
-  // Wait until the Explore resource is ready
-  const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  const resource = fileArtifact.getResource(queryClient);
-
-  await waitUntil(() => {
-    return get(resource).data !== undefined;
-  }, 10000);
-
-  const name = get(resource).data?.meta?.name?.name;
-  if (!name) throw new Error("Failed to create an Explore resource");
-
-  return filePath;
 }
 
 /**
@@ -760,12 +695,12 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       },
     });
 
-    let exploreFilePath: string | null = null;
     let canvasFilePath: string | null = null;
     let metricsViewName: string | undefined;
+    let metricsViewFilePath: string | undefined;
 
     try {
-      // Step 1: Create metrics view
+      // Step 1: Create metrics view (which defines its explore dashboard inline)
       const resource = await createMetricsViewFromTable(
         client,
         connector,
@@ -776,7 +711,8 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       );
 
       metricsViewName = resource.meta?.name?.name;
-      if (!metricsViewName) {
+      metricsViewFilePath = resource.meta?.filePaths?.[0];
+      if (!metricsViewName || !metricsViewFilePath) {
         throw new Error("Failed to get metrics view name");
       }
 
@@ -796,27 +732,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Step 3: Create Explore dashboard (without navigation)
-      overlay.set({
-        title: `Creating Explore dashboard...`,
-        detail: {
-          component: OptionToCancelAIGeneration,
-          props: {
-            onCancel: () => {
-              abortController.abort("Dashboard creation cancelled by user");
-            },
-          },
-        },
-      });
-
-      exploreFilePath = await createExploreWithoutNavigation(
-        client,
-        queryClient,
-        client.instanceId,
-        resource,
-      );
-
-      // Step 4: Try to create Canvas dashboard
+      // Step 3: Try to create Canvas dashboard
       overlay.set({
         title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
         detail: {
@@ -834,7 +750,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         metricsViewName,
       );
 
-      // Step 5: Navigate to Canvas if successful, otherwise Explore
+      // Step 4: Navigate to Canvas if successful, otherwise the inline Explore
       const isPreview = get(previewModeStore);
       if (canvasFilePath) {
         const canvasName = canvasFilePath
@@ -850,13 +766,8 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
           MetricsEventScreenName.Source,
           MetricsEventScreenName.Canvas,
         );
-      } else if (exploreFilePath) {
-        const exploreName = exploreFilePath
-          .replace("/dashboards/", "")
-          .replace(".yaml", "");
-        await (isPreview
-          ? navigateToExplore(exploreName)
-          : navigateToFile(exploreFilePath));
+      } else {
+        await previewInlineExplore(queryClient, metricsViewFilePath);
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,
@@ -874,15 +785,9 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         detail: extractErrorMessage(err),
       });
 
-      // If we have an explore path but canvas failed, navigate to explore
-      if (exploreFilePath && metricsViewName) {
-        const isPreview = get(previewModeStore);
-        const exploreName = exploreFilePath
-          .replace("/dashboards/", "")
-          .replace(".yaml", "");
-        await (isPreview
-          ? navigateToExplore(exploreName)
-          : navigateToFile(exploreFilePath));
+      // If the metrics view was created but canvas failed, open its inline explore
+      if (metricsViewFilePath && metricsViewName) {
+        await previewInlineExplore(queryClient, metricsViewFilePath);
         void behaviourEvent?.fireNavigationEvent(
           metricsViewName,
           behaviourEventMedium,

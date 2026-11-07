@@ -138,6 +138,15 @@ Available template variables:
 
 By default, `glob:` matches files only, but you can pass `partition: directory` to have it emit leaf directory names instead. When you use `partition: directory`, the partition's URI will not include an asterisk, so you have to append that in the SQL query, e.g. `{{ .partition.uri }}/*.parquet`.
 
+Narrow which partitions are matched with `start`/`end` (inclusive/exclusive path bounds) or `last` (keep only the N highest paths; not allowed with `transform_sql`):
+
+```yaml
+partitions:
+  glob:
+    path: s3://bucket/year=*/month=*/day=*
+    last: 180   # Most recent 180 partitions
+```
+
 ### SQL-based partitions
 
 Generate partitions using a SQL query:
@@ -459,6 +468,22 @@ type: model
 
 connector: https
 uri: https://example.com/public/dataset.parquet
+```
+
+### Iceberg / Delta Lake table via DuckDB
+
+Read Iceberg or Delta tables with DuckDB's `iceberg_scan()` / `delta_scan()`. `create_secrets_from_connectors` reuses an object store connector's credentials (GCS requires `key_id`/`secret` HMAC keys):
+
+```yaml
+# models/iceberg_data.yaml
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+materialize: true
+
+sql: |
+  SELECT * FROM iceberg_scan('s3://my-bucket/path/to/iceberg_table')
+  -- or: FROM delta_scan('s3://my-bucket/path/to/delta_table')
 ```
 
 ### Partition-based incremental S3 to DuckDB

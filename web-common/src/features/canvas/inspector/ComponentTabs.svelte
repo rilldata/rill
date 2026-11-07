@@ -12,21 +12,21 @@
   const tabs = [
     {
       tab: "options",
-      label: "Options",
+      label: m.canvas_options(),
     },
   ];
 
   $: if (hasFilters) {
     tabs.push({
       tab: "filters",
-      label: m.canvas_filters(),
+      label: m.canvas_time_and_filters_tab(),
     });
   }
 
   $: if (isChartComponentType(componentType)) {
     tabs.push({
       tab: "config",
-      label: "Config",
+      label: m.canvas_config(),
     });
   }
 

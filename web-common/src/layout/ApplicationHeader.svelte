@@ -13,6 +13,7 @@
     developerChatOpen,
   } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+  import DisabledViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/DisabledViewAsButton.svelte";
   import {
     useValidCanvases,
     useValidExplores,
@@ -25,11 +26,14 @@
   import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { get } from "svelte/store";
+  import { get, readable } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import Tag from "../components/tag/Tag.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
@@ -37,7 +41,7 @@
   export let mode: string;
 
   $: ({
-    params: { name: dashboardName },
+    params: { name: dashboardName, file },
     route,
   } = $page);
 
@@ -48,6 +52,13 @@
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
+
+  $: fileArtifact = file
+    ? fileArtifacts.getFileArtifact(addLeadingSlash(file))
+    : undefined;
+  $: kindStore = fileArtifact?.inferredResourceKind ?? readable(undefined);
+  $: editingDashboard =
+    $kindStore === ResourceKind.Canvas || $kindStore === ResourceKind.Explore;
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
@@ -64,6 +75,14 @@
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
+    currentId: dashboardName
+      ? resourceKey(
+          route.id?.includes("canvas")
+            ? ResourceKind.Canvas
+            : ResourceKind.Explore,
+          dashboardName,
+        )
+      : undefined,
     carryOverSearchParams: $stickyDashboardState,
   } satisfies PathOptions;
 
@@ -130,8 +149,13 @@
       <ExplorePreviewCTAs exploreName={dashboardName} />
     {:else if route.id?.includes("canvas")}
       <CanvasPreviewCTAs canvasName={dashboardName} />
-    {:else if showDeveloperChat}
-      <ChatToggle open={developerChatOpen} actions={developerChatActions} />
+    {:else}
+      {#if editingDashboard}
+        <DisabledViewAsButton />
+      {/if}
+      {#if showDeveloperChat}
+        <ChatToggle open={developerChatOpen} actions={developerChatActions} />
+      {/if}
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

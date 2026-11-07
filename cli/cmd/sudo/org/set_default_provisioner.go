@@ -1,0 +1,47 @@
+package org
+
+import (
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/spf13/cobra"
+)
+
+func SetDefaultProvisionerCmd(ch *cmdutil.Helper) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-default-provisioner <org> [<provisioner>]",
+		Args:  cobra.RangeArgs(1, 2),
+		Short: "Set the default provisioner for an org's deployments (omit the provisioner to unset)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
+
+			var provisioner string
+			if len(args) > 1 {
+				provisioner = args[1]
+			}
+
+			_, err = client.SudoUpdateOrganizationDefaultProvisioner(cmd.Context(), &adminv1.SudoUpdateOrganizationDefaultProvisionerRequest{
+				Org:                args[0],
+				DefaultProvisioner: provisioner,
+			})
+			if err != nil {
+				return err
+			}
+
+			if provisioner == "" {
+				ch.PrintfSuccess("Unset the default provisioner for org %q. New deployments will use the global default provisioner.\n", args[0])
+				ch.PrintfWarn("Note: existing deployments keep their current provisioner.\n")
+			} else {
+				ch.PrintfSuccess("Set default provisioner %q for org %q.\n", provisioner, args[0])
+				ch.PrintfWarn("Note: running deployments keep their current provisioner. The change applies to deployments of projects without a project-level provisioner the next time they start.\n")
+				ch.PrintfWarn("To apply it to a project's running deployments now, run `rill sudo project restart %s <project>`.\n", args[0])
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}

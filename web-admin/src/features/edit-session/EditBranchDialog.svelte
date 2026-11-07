@@ -117,7 +117,7 @@
 
     // Front-run the obvious failure: same name as an existing branch.
     if (ownDeployments.some((d) => d.branch === requestedBranch)) {
-      createError = `A branch named "${requestedBranch}" already exists.`;
+      createError = m.edit_branch_already_exists({ branch: requestedBranch });
       return;
     }
 
@@ -156,15 +156,12 @@
   </Dialog.Trigger>
   <Dialog.Content class="max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Start editing</Dialog.Title>
+      <Dialog.Title>{m.edit_start_title()}</Dialog.Title>
       <Dialog.Description>
         {#if hasOwnSessions}
-          Edit an existing branch or create a new one from
-          <code class="font-mono text-fg-primary">{sourceBranch}</code>.
+          {m.edit_start_existing_description({ sourceBranch })}
         {:else}
-          We'll create a branch from
-          <code class="font-mono text-fg-primary">{sourceBranch}</code>
-          for your edits.
+          {m.edit_start_new_description({ sourceBranch })}
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -173,7 +170,7 @@
       <div
         class="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800"
       >
-        This branch is read-only. Pick another branch or create a new one.
+        {m.edit_branch_read_only()}
       </div>
     {/if}
 
@@ -187,19 +184,21 @@
             class="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-sm transition-all data-[state=active]:bg-surface-overlay data-[state=active]:font-semibold data-[state=active]:shadow-sm"
           >
             <GitBranchIcon size="14" />
-            Existing branch
+            {m.edit_existing_branch()}
           </TabsTrigger>
           <TabsTrigger
             value="new"
             class="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-sm transition-all data-[state=active]:bg-surface-overlay data-[state=active]:font-semibold data-[state=active]:shadow-sm"
           >
             <GitBranchPlusIcon size="14" />
-            New branch
+            {m.edit_new_branch()}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="existing" class="mt-4 space-y-1.5">
-          <span class="text-sm font-medium text-fg-primary">Branch</span>
+          <span class="text-sm font-medium text-fg-primary"
+            >{m.branch_branch()}</span
+          >
           <SelectPrimitive.Root
             type="single"
             value={selectedBranchId}
@@ -220,7 +219,7 @@
                     <span
                       class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
                     >
-                      latest
+                      {m.edit_latest()}
                     </span>
                   {/if}
                 </div>
@@ -239,7 +238,7 @@
                         <span
                           class="shrink-0 text-[10.5px] font-medium uppercase tracking-wider text-fg-muted"
                         >
-                          latest
+                          {m.edit_latest()}
                         </span>
                       {/if}
                     </div>
@@ -296,7 +295,7 @@
           disabled={!selectedBranchId || isStarting}
           onClick={handleResume}
         >
-          Continue editing
+          {m.edit_continue_editing()}
         </Button>
       {:else}
         <Button
@@ -306,7 +305,7 @@
           loadingCopy={m.edit_starting()}
           onClick={handleCreate}
         >
-          Create &amp; edit
+          {m.edit_create_and_edit()}
         </Button>
       {/if}
     </Dialog.Footer>

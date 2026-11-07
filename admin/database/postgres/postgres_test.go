@@ -43,8 +43,12 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
+	t.Run("TestConnectorOAuth", func(t *testing.T) { testConnectorOAuth(t, db) })
+	t.Run("TestEmbedUsers", func(t *testing.T) { testEmbedUsers(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
+	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
+	t.Run("TestOrganizationInviteUsergroups", func(t *testing.T) { testOrganizationInviteUsergroups(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
@@ -120,12 +124,14 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Nil(t, org)
 
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:        "foo",
-		Description: "hello world",
+		Name:               "foo",
+		Description:        "hello world",
+		DefaultProvisioner: "provisioner-a",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 	require.Less(t, time.Since(org.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(org.UpdatedOn), 10*time.Second)
 
@@ -135,6 +141,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	orgs, err := db.FindOrganizations(ctx, "", 1000)
 	require.NoError(t, err)
@@ -145,14 +152,24 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 
 	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:        org.Name,
-		Description: "",
+		Name:               org.Name,
+		Description:        "",
+		DefaultProvisioner: "provisioner-b",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "", org.Description)
+	require.Equal(t, "provisioner-b", org.DefaultProvisioner)
+
+	// Check the default provisioner can be cleared
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
@@ -510,6 +527,200 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
 }
 
+func testConnectorOAuth(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	_, projectID, userID := seed(t, db)
+
+	// Clients are unique per connector and configuration hash; a duplicate insert returns the existing client
+	c1, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash1",
+		Client:     []byte(`{"client_id":"a"}`),
+	})
+	require.NoError(t, err)
+	require.Equal(t, `{"client_id":"a"}`, string(c1.Client))
+	dup, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash1",
+		Client:     []byte(`{"client_id":"b"}`),
+	})
+	require.NoError(t, err)
+	require.Equal(t, c1.ID, dup.ID)
+	require.Equal(t, `{"client_id":"a"}`, string(dup.Client))
+	c2, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash2",
+		Client:     []byte(`{"client_id":"c"}`),
+	})
+	require.NoError(t, err)
+
+	found, err := db.FindConnectorOAuthClient(ctx, projectID, "notion", "hash1")
+	require.NoError(t, err)
+	require.Equal(t, c1.ID, found.ID)
+	require.Equal(t, `{"client_id":"a"}`, string(found.Client))
+	_, err = db.FindConnectorOAuthClient(ctx, projectID, "linear", "hash1")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Tokens are unique per client and user, and are replaced on upsert
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c1.ID, UserID: userID, Token: []byte(`{"access_token":"t1"}`)})
+	require.NoError(t, err)
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c1.ID, UserID: userID, Token: []byte(`{"access_token":"t2"}`)})
+	require.NoError(t, err)
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c2.ID, UserID: userID, Token: []byte(`{"access_token":"t3"}`)})
+	require.NoError(t, err)
+	tok, err := db.FindConnectorOAuthToken(ctx, c1.ID, userID)
+	require.NoError(t, err)
+	require.Equal(t, `{"access_token":"t2"}`, string(tok.Token))
+
+	require.NoError(t, db.DeleteConnectorOAuthToken(ctx, c1.ID, userID))
+	_, err = db.FindConnectorOAuthToken(ctx, c1.ID, userID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+	require.ErrorIs(t, db.DeleteConnectorOAuthToken(ctx, c1.ID, userID), database.ErrNotFound)
+
+	// A connector has a client per configuration; clients without tokens are deleted, except the current one
+	clients, err := db.FindConnectorOAuthClients(ctx, projectID, "notion")
+	require.NoError(t, err)
+	require.Len(t, clients, 2)
+	require.NoError(t, db.DeleteConnectorOAuthClientsWithoutTokens(ctx, projectID, "notion", "hash1"))
+	clients, err = db.FindConnectorOAuthClients(ctx, projectID, "notion")
+	require.NoError(t, err)
+	require.Len(t, clients, 2, "c1 is current and c2 holds a token")
+	require.NoError(t, db.DeleteConnectorOAuthClientsWithoutTokens(ctx, projectID, "notion", "hash2"))
+	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+	_, err = db.FindConnectorOAuthClientByID(ctx, c2.ID)
+	require.NoError(t, err)
+
+	// Deleting a client deletes its tokens
+	require.NoError(t, db.DeleteConnectorOAuthClient(ctx, c2.ID))
+	_, err = db.FindConnectorOAuthToken(ctx, c2.ID, userID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+}
+
+func testEmbedUsers(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	conn := db.(*connection)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "embed-users"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteOrganization(ctx, org.Name)) }()
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "embed-users"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteProject(ctx, proj.ID)) }()
+	projectID := proj.ID
+
+	_, err = db.FindEmbedUser(ctx, "ext_1")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Insert with attributes
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t1"},
+	})
+	require.NoError(t, err)
+	u, err := db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, projectID, u.ProjectID)
+	require.Equal(t, "tenant1:user1", u.ExternalUserID)
+	require.Nil(t, u.Email)
+	require.Equal(t, map[string]any{"tenant": "t1"}, u.Attributes)
+
+	// An unchanged identity within a day doesn't write
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t1"},
+	})
+	require.NoError(t, err)
+	u2, err := db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, u.UpdatedOn, u2.UpdatedOn)
+
+	// Changed attributes are written
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t2"},
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{"tenant": "t2"}, u2.Attributes)
+	require.True(t, u2.UpdatedOn.After(u.UpdatedOn))
+
+	// Switching to an email clears the attributes
+	email := "user1@example.com"
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+	})
+	require.NoError(t, err)
+	u, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, email, *u.Email)
+	require.Nil(t, u.Attributes)
+
+	// Empty attributes are stored as NULL, so they don't count as a change
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+		Attributes:     map[string]any{},
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, u.UpdatedOn, u2.UpdatedOn)
+
+	// An unchanged identity bumps last_seen_on when it is more than a day old
+	_, err = conn.db.ExecContext(ctx, "UPDATE embed_users SET last_seen_on = now() - INTERVAL '2 days' WHERE id = 'ext_1'")
+	require.NoError(t, err)
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.WithinDuration(t, time.Now(), u2.LastSeenOn, time.Minute)
+
+	// Virtual files reference their embed owner, which blocks deleting the embed user until the files are soft-deleted
+	ownerID := "ext_1"
+	err = db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:    projectID,
+		Environment:  "prod",
+		Path:         "reports/r1.yaml",
+		Data:         []byte("type: report"),
+		EmbedOwnerID: &ownerID,
+	})
+	require.NoError(t, err)
+	vf, err := db.FindVirtualFile(ctx, projectID, "prod", "reports/r1.yaml")
+	require.NoError(t, err)
+	require.Equal(t, ownerID, *vf.EmbedOwnerID)
+	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
+	require.Error(t, err)
+	err = db.UpdateVirtualFileDeleted(ctx, projectID, "prod", "reports/r1.yaml")
+	require.NoError(t, err)
+	vf, err = db.FindVirtualFile(ctx, projectID, "prod", "reports/r1.yaml")
+	require.NoError(t, err)
+	require.True(t, vf.Deleted)
+	require.Nil(t, vf.EmbedOwnerID)
+	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
+	require.NoError(t, err)
+}
+
 func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	_, projectID, userID := seed(t, db)
 
@@ -744,6 +955,185 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	// Cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+func testOrganizationInviteAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-invite-attrs-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	email := "invitee-attrs@rilldata.com"
+	attributes := map[string]any{"attr1": "value1", "attr2": "value2"}
+
+	t.Run("InsertOrganizationInvite with attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      email,
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: attributes,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, attributes, invite.Attributes)
+
+		invites, err := db.FindOrganizationInvitesByEmail(ctx, email)
+		require.NoError(t, err)
+		require.Len(t, invites, 1)
+		require.Equal(t, attributes, invites[0].Attributes)
+
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 1)
+		require.Equal(t, attributes, invitesWithRole[0].Attributes)
+	})
+
+	t.Run("UpdateOrganizationInviteAttributes", func(t *testing.T) {
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+
+		updated := map[string]any{"attr1": "new-value1"}
+		require.NoError(t, db.UpdateOrganizationInviteAttributes(ctx, invite.ID, updated))
+
+		invite, err = db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, updated, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite without attributes normalizes to empty map", func(t *testing.T) {
+		email2 := "invitee-no-attrs@rilldata.com"
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:  email2,
+			OrgID:  org.ID,
+			RoleID: role.ID,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email2)
+		require.NoError(t, err)
+		require.NotNil(t, invite.Attributes)
+		require.Empty(t, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite rejects invalid attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      "invitee-invalid-attrs@rilldata.com",
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: map[string]any{"invalid-key": "value"},
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid attribute key")
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+}
+
+func testOrganizationInviteUsergroups(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-invite-groups-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	g1, err := db.InsertUsergroup(ctx, &database.InsertUsergroupOptions{OrgID: org.ID, Name: "g1"})
+	require.NoError(t, err)
+	g2, err := db.InsertUsergroup(ctx, &database.InsertUsergroupOptions{OrgID: org.ID, Name: "g2"})
+	require.NoError(t, err)
+
+	email := "invitee-groups@rilldata.com"
+
+	t.Run("InsertOrganizationInvite with usergroups", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:        email,
+			OrgID:        org.ID,
+			RoleID:       role.ID,
+			UsergroupIDs: []string{g2.ID, g1.ID},
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, []string{g2.ID, g1.ID}, invite.UsergroupIDs)
+
+		// The display-friendly listing resolves names, sorted by name
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 1)
+		require.Equal(t, []string{"g1", "g2"}, invitesWithRole[0].Usergroups)
+	})
+
+	t.Run("InsertOrganizationInvite without usergroups normalizes to empty slice", func(t *testing.T) {
+		email2 := "invitee-no-groups@rilldata.com"
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:  email2,
+			OrgID:  org.ID,
+			RoleID: role.ID,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email2)
+		require.NoError(t, err)
+		require.Empty(t, invite.UsergroupIDs)
+
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 2)
+		for _, inv := range invitesWithRole {
+			if inv.Email == email2 {
+				require.Empty(t, inv.Usergroups)
+			}
+		}
+		require.NoError(t, db.DeleteOrganizationInvite(ctx, invite.ID))
+	})
+
+	t.Run("FindUsergroupMemberUsers includes pending invitees", func(t *testing.T) {
+		user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "member-groups@rilldata.com"})
+		require.NoError(t, err)
+		_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
+		require.NoError(t, err)
+
+		// Batch insert is idempotent
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, []string{g1.ID, g2.ID}))
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, []string{g1.ID}))
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, nil))
+
+		members, err := db.FindUsergroupMemberUsers(ctx, g1.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, members, 2)
+		// Ordered by email: invitee-groups@ sorts before member-groups@
+		require.Equal(t, email, members[0].Email)
+		require.True(t, members[0].PendingAcceptance)
+		require.Empty(t, members[0].ID)
+		require.Equal(t, user.Email, members[1].Email)
+		require.False(t, members[1].PendingAcceptance)
+		require.Equal(t, user.ID, members[1].ID)
+
+		// Pagination by email spans both real and pending members
+		page, err := db.FindUsergroupMemberUsers(ctx, g1.ID, email, 10)
+		require.NoError(t, err)
+		require.Len(t, page, 1)
+		require.Equal(t, user.Email, page[0].Email)
+	})
+
+	t.Run("DeleteUsergroup scrubs pending invites", func(t *testing.T) {
+		require.NoError(t, db.DeleteUsergroup(ctx, g2.ID))
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, []string{g1.ID}, invite.UsergroupIDs)
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 }
 
 func testAttributeValidation(t *testing.T, db database.DB) {

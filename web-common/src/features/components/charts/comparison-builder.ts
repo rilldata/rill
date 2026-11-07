@@ -1,3 +1,4 @@
+import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type {
   Field,
@@ -11,6 +12,13 @@ export const ColorWithComparisonField = "color_with_comparison";
 export const SortOrderField = "sortOrder";
 
 /**
+ * Opacity for previous-period marks in comparison mode.
+ * Shared with the custom time series chart so both renderers
+ * fade comparison data the same way.
+ */
+export const ComparisonMarkOpacity = 0.4;
+
+/**
  * Creates Vega-Lite transforms for period-over-period comparison.
  * This function generates the fold and calculate transforms needed to
  * display current and comparison data side-by-side.
@@ -18,10 +26,10 @@ export const SortOrderField = "sortOrder";
  * The data structure has current and previous values as separate measure fields:
  * e.g., "total_bids" (current) and "total_bids_prev" (comparison).
  *
- * Field names are passed raw (not pre-escaped) on purpose. `fold.as` stores
- * its second element as a literal field name, while downstream consumers
- * such as `pivot.value` resolve field-path escapes — pre-escaping here makes
- * those two views of the same field disagree (e.g. `"x \\| y"` vs `"x | y"`).
+ * Field names arrive raw. The `fold` inputs are Vega field references, so
+ * they are escaped here. `fold.as` stores literal names, so it keeps the raw
+ * measure name, which is what an escaped reference such as `pivot.value`
+ * resolves to; Vega also emits the raw name as the `measure_key` value.
  * Embedded Vega expression literals escape `\` and `'` via `escapeVegaString`.
  */
 export function createComparisonTransforms(
@@ -38,7 +46,10 @@ export function createComparisonTransforms(
   // Fold the current and previous measure fields into the original measure
   // column, with a `measure_key` flag indicating which period each row is.
   transforms.push({
-    fold: [measureField, previousMeasureField],
+    fold: [
+      sanitizeValueForVega(measureField),
+      sanitizeValueForVega(previousMeasureField),
+    ],
     as: [MeasureKeyField, measureField],
   });
 
@@ -84,7 +95,7 @@ export function createComparisonOpacityEncoding(
     condition: [
       {
         test: `datum['${MeasureKeyField}'] === '${previousLiteral}'`,
-        value: 0.4,
+        value: ComparisonMarkOpacity,
       },
     ],
     value: 1,

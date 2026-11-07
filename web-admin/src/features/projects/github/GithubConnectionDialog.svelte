@@ -250,7 +250,7 @@
             errors={$errors?.branch}
             id="branch"
             label={m.github_branch_label()}
-            placeholder="main"
+            placeholder={m.github_branch_placeholder()}
             capitalizeLabel={false}
           />
 

@@ -36,7 +36,6 @@ type MetricsViewAggregation struct {
 	PivotOn             []string                                       `json:"pivot_on,omitempty"`
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
 	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
@@ -162,8 +161,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
+	qryTimeDim := ""
+	if q.TimeRange != nil {
+		qryTimeDim = q.TimeRange.TimeDimension
+	}
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeRange.TimeDimension, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, qryTimeDim, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -308,7 +311,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	var measureFilter *runtimev1.Expression
 
 	for _, m := range q.Measures {
-		res := metricsview.Measure{Name: m.Name}
+		res := metricsview.Measure{Name: m.Name, Exact: m.Exact}
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			res.Compute = &metricsview.MeasureCompute{Count: true}
@@ -350,6 +353,11 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 			case *runtimev1.MetricsViewAggregationMeasure_ComparisonTime:
 				res.Compute = &metricsview.MeasureCompute{ComparisonTime: &metricsview.MeasureComputeComparisonTime{
 					Dimension: c.ComparisonTime.Dimension,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_Expression:
+				res.Compute = &metricsview.MeasureCompute{Expression: &metricsview.MeasureComputeExpression{
+					Expression:  c.Expression.Expression,
+					DisplayName: c.Expression.DisplayName,
 				}}
 			}
 		}
@@ -520,7 +528,7 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, title)
 
 	// Build date range
-	if !qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero() {
+	if qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero()) {
 		timeRange := fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start.Format(time.RFC3339), qry.TimeRange.End.Format(time.RFC3339))
 		headers = append(headers, timeRange)
 	}

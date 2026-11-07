@@ -14,7 +14,10 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
-import { isNewRillTimeFormat } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  isAbsoluteTimeRange,
+  isNewRillTimeFormat,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 
 export function getComparisonTransform(
   start: Date,
@@ -322,7 +325,14 @@ export function getComparisonInterval(
   comparisonRange: string | undefined,
   activeTimeZone: string,
 ): Interval<true> | undefined {
-  if (!interval || !comparisonRange || isNewRillTimeFormat(comparisonRange))
+  // New format ranges are resolved by the backend, so there is nothing to compute here.
+  // Absolute ranges are the exception: they carry their own start and end, so they are parsed below.
+  if (
+    !interval ||
+    !comparisonRange ||
+    (isNewRillTimeFormat(comparisonRange) &&
+      !isAbsoluteTimeRange(comparisonRange))
+  )
     return undefined;
 
   let comparisonInterval: Interval | undefined = undefined;

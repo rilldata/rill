@@ -4,9 +4,9 @@
     V1ListOrganizationInvitesResponse,
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
-    V1OrganizationInvite,
     V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
+  import type { OrgUserRow as OrgUser } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import UserCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserCompositeCell.svelte";
   import UserActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserActionsCell.svelte";
   import UserRoleCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserRoleCell.svelte";
@@ -20,10 +20,7 @@
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-
-  interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
-    invitedBy?: string;
-  }
+  import { loadNextInvitePageForFilter } from "@rilldata/web-admin/features/organizations/user-management/pagination";
 
   export let organization: string;
   export let data: OrgUser[];
@@ -40,13 +37,36 @@
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
   export let guestOnly: boolean;
+  export let hasActiveFilters = false;
+  export let isSearchPending = false;
+  export let showMembers = true;
+  export let showInvites = true;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
   export let onEditUserGroup: (groupName: string) => void;
   export let onConvertToMember: (user: V1OrganizationMemberUser) => void;
+  export let onManageGroups: (user: OrgUser) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
+
+  $: loadNextInvitePageForFilter(invitesQuery, showInvites && hasActiveFilters);
+  // Show the footer spinner only while rows are still arriving: the initial
+  // load, placeholder rows for a new search or role, or the next page.
+  // Background refetches after mutations or refocus must not show it, since
+  // they refetch every loaded page and would also pause infinite scrolling.
+  $: isLoadingMembers =
+    usersQuery.isPending ||
+    usersQuery.isPlaceholderData ||
+    usersQuery.isFetchingNextPage;
+  $: isLoadingInvites =
+    invitesQuery.isPending ||
+    invitesQuery.isFetchingNextPage ||
+    (hasActiveFilters && invitesQuery.isSuccess && invitesQuery.hasNextPage);
+  $: isLoading =
+    isSearchPending ||
+    (showMembers && isLoadingMembers) ||
+    (showInvites && isLoadingInvites);
 
   const UserCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "user",
@@ -57,9 +77,10 @@
         name: row.original.userName ?? row.original.email,
         email: row.original.userEmail,
         isCurrentUser: row.original.userEmail === currentUserEmail,
-        pendingAcceptance: "invitedBy" in row.original,
+        pendingAcceptance: !!row.original.pendingAcceptance,
         photoUrl: row.original.userPhotoUrl,
         role: row.original.roleName,
+        attributes: row.original.attributes,
       }),
     meta: {
       widthPercent: 50,
@@ -87,10 +108,15 @@
     header: m.users_table_header_groups(),
     cell: ({ row }) =>
       renderComponent(UserGroupsCell, {
-        userId: row.original.userId,
+        userId: row.original.userId ?? "",
         organization,
         groupCount: row.original.usergroupsCount ?? 0,
+        pendingAcceptance: !!row.original.pendingAcceptance,
+        usergroups: row.original.usergroups ?? [],
         onEditUserGroup,
+        onManageGroups: organizationPermissions.manageOrgMembers
+          ? () => onManageGroups(row.original)
+          : undefined,
       }),
     meta: {
       widthPercent: 40,
@@ -122,9 +148,10 @@
         isCurrentUser: row.original.userEmail === currentUserEmail,
         organizationPermissions,
         isBillingContact: row.original.userEmail === billingContact,
-        pendingAcceptance: "invitedBy" in row.original,
+        pendingAcceptance: !!row.original.pendingAcceptance,
         onAttemptRemoveBillingContactUser,
         onConvertToMember: () => onConvertToMember(row.original),
+        onManageGroups: () => onManageGroups(row.original),
       }),
     meta: {
       widthPercent: 5,
@@ -135,11 +162,22 @@
     : [UserCell, RoleCell, UserGroupCell];
 
   function handleLoadMore() {
-    if (usersQuery.hasNextPage) {
-      usersQuery.fetchNextPage();
+    if (
+      showMembers &&
+      usersQuery.hasNextPage &&
+      !usersQuery.isFetching &&
+      !usersQuery.isPlaceholderData &&
+      !usersQuery.isError
+    ) {
+      void usersQuery.fetchNextPage();
     }
-    if (invitesQuery.hasNextPage) {
-      invitesQuery.fetchNextPage();
+    if (
+      showInvites &&
+      invitesQuery.hasNextPage &&
+      !invitesQuery.isFetching &&
+      !invitesQuery.isError
+    ) {
+      void invitesQuery.fetchNextPage();
     }
   }
 
@@ -157,9 +195,9 @@
 <InfiniteScrollTable
   data={safeData}
   {columns}
-  hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
-  isFetchingNextPage={usersQuery.isFetchingNextPage ||
-    invitesQuery.isFetchingNextPage}
+  hasNextPage={(showMembers && usersQuery.hasNextPage && !usersQuery.isError) ||
+    (showInvites && invitesQuery.hasNextPage && !invitesQuery.isError)}
+  isFetchingNextPage={isLoading}
   onLoadMore={handleLoadMore}
   maxHeight={dynamicTableMaxHeight}
   emptyStateMessage={m.users_table_empty()}

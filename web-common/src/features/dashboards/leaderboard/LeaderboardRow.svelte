@@ -28,8 +28,8 @@
   export let atLeastOneActive: boolean;
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
-  export let leaderboardShowContextForAllMeasures: boolean;
-  export let leaderboardSortByMeasureName: string | null;
+  // Measures that render context columns; see Leaderboard.svelte.
+  export let measuresWithContext: Set<string>;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let dimensionColumnWidth: number;
   export let maxValues: Record<string, number> = {};
@@ -48,13 +48,6 @@
     (value: number | string | null | undefined) => string | null | undefined
   >;
   export let lowerIsBetterMap: Record<string, boolean> = {};
-
-  function shouldShowContextColumns(measureName: string): boolean {
-    return (
-      leaderboardShowContextForAllMeasures ||
-      measureName === leaderboardSortByMeasureName
-    );
-  }
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
@@ -269,7 +262,7 @@
       {/if}
     </LeaderboardCell>
 
-    {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+    {#if isValidPercentOfTotal(measureName) && measuresWithContext.has(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
         tooltipValue={pctOfTotals[measureName] != null
@@ -289,7 +282,7 @@
       </LeaderboardCell>
     {/if}
 
-    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+    {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
         tooltipValue={deltaAbsMap[measureName] != null
@@ -299,29 +292,31 @@
           : ""}
         cellType="comparison"
       >
-        <FormattedDataType
-          color="text-fg-secondary"
-          type="INTEGER"
-          value={deltaAbsMap[measureName]
-            ? formatters[measureName]?.(deltaAbsMap[measureName])
-            : null}
-          customStyle={deltaAbsMap[measureName] !== null &&
-          (lowerIsBetterMap[measureName]
-            ? deltaAbsMap[measureName] > 0
-            : deltaAbsMap[measureName] < 0)
-            ? "text-kpi-negative"
-            : deltaAbsMap[measureName] !== null &&
-                (lowerIsBetterMap[measureName]
-                  ? deltaAbsMap[measureName] < 0
-                  : deltaAbsMap[measureName] > 0)
-              ? "text-kpi-positive"
-              : ""}
-          truncate={true}
-        />
+        <div class="w-fit ml-auto bg-transparent" bind:contentRect={deltaRect}>
+          <FormattedDataType
+            color="text-fg-secondary"
+            type="INTEGER"
+            value={deltaAbsMap[measureName]
+              ? formatters[measureName]?.(deltaAbsMap[measureName])
+              : null}
+            customStyle={deltaAbsMap[measureName] !== null &&
+            (lowerIsBetterMap[measureName]
+              ? deltaAbsMap[measureName] > 0
+              : deltaAbsMap[measureName] < 0)
+              ? "text-kpi-negative"
+              : deltaAbsMap[measureName] !== null &&
+                  (lowerIsBetterMap[measureName]
+                    ? deltaAbsMap[measureName] < 0
+                    : deltaAbsMap[measureName] > 0)
+                ? "text-kpi-positive"
+                : ""}
+            truncate={true}
+          />
+        </div>
       </LeaderboardCell>
     {/if}
 
-    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+    {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
         tooltipValue={deltaRels[measureName] != null

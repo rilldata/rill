@@ -46,11 +46,6 @@ type ColumnTimeseries struct {
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 	FirstDayOfWeek      uint32
 	FirstMonthOfYear    uint32
-
-	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsViewSpec   `json:"-"`
-	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
-	MetricsViewPolicy *runtime.ResolvedSecurity    `json:"security"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}

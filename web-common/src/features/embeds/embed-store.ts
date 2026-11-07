@@ -9,12 +9,21 @@ export class EmbedStore {
   public readonly instanceId: string;
   public readonly runtimeHost: string;
   public readonly accessToken: string;
+  public readonly adminToken: string;
+  public readonly userEmail: string;
   /**
    * Array of missing required params.
    * instance_id, runtime_host and access_token are required params.
    */
   public readonly missingRequireParams: string[] = [];
   public readonly navigationEnabled: boolean;
+  /**
+   * Whether the embed's top navigation bar should render.
+   * The bar is always hidden when navigation is disabled, regardless of `hide_navigation_bar`.
+   * `hide_navigation_bar` only suppresses the bar in the navigation-enabled case, leaving
+   * in-dashboard navigation such as the canvas drill-through to an explore dashboard intact.
+   */
+  public readonly navigationBarEnabled: boolean;
   public readonly theme: string | null;
   public readonly themeMode: string | null;
   public readonly externalUserId: string | null;
@@ -45,7 +54,12 @@ export class EmbedStore {
     this.instanceId = url.searchParams.get("instance_id") ?? "";
     this.runtimeHost = url.searchParams.get("runtime_host") ?? "";
     this.accessToken = url.searchParams.get("access_token") ?? "";
+    this.adminToken = url.searchParams.get("admin_token") ?? "";
+    this.userEmail = url.searchParams.get("user_email") ?? "";
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
+    this.navigationBarEnabled =
+      this.navigationEnabled &&
+      url.searchParams.get("hide_navigation_bar") !== "true";
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
     this.externalUserId = url.searchParams.get("external_user_id");

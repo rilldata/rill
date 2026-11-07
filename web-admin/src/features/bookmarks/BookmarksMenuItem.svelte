@@ -112,7 +112,7 @@
                   type="tertiary"
                   onClick={deleteBookmark}
                   disabled={disableDelete}
-                  label="Delete bookmark"
+                  label={m.bookmark_delete_bookmark()}
                 >
                   <Trash size="16px" />
                 </Button>

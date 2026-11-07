@@ -1,9 +1,15 @@
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -13,8 +19,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
+  V1MetricsViewSpec,
   V1Query,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -32,7 +40,11 @@ export function getDimensionTableExportQuery(
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
 
-  if (!validSpecStore.data?.explore || !timeControlState.ready)
+  if (
+    !validSpecStore.data?.explore ||
+    !validSpecStore.data.metricsView ||
+    !timeControlState.ready
+  )
     return undefined;
 
   let timeRange: V1TimeRange | undefined;
@@ -66,14 +78,32 @@ export function getDimensionTableExportQuery(
     }
   }
 
+  // A one-shot export downloads what is on screen, so it carries the viewer's
+  // exact selection. A scheduled report must not: exact values are only
+  // fetched after an explicit click, never on a schedule.
+  const exactMeasures = isScheduled
+    ? undefined
+    : requestExactNames(
+        [
+          ...exploreState.visibleMeasures,
+          exploreState.leaderboardSortByMeasureName,
+        ],
+        get(ctx.selectors.exactMeasures.exactMeasureContext)(
+          exploreExactSurface.dimensionTable,
+        ),
+      );
+
   const query: V1Query = {
     metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime({
       instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       exploreState,
+      metricsViewSpec: validSpecStore.data.metricsView,
+      filter: ctx.expressionFilterManager.exprByMetricsView[metricsViewName],
       timeRange,
       comparisonTimeRange,
       dimensionSearchText,
+      exactMeasures,
     }),
   };
 
@@ -84,16 +114,23 @@ export function getDimensionTableAggregationRequestForTime({
   instanceId,
   metricsViewName,
   exploreState,
+  metricsViewSpec,
+  filter,
   timeRange,
   comparisonTimeRange,
   dimensionSearchText,
+  exactMeasures,
 }: {
   instanceId: string;
   metricsViewName: string;
   exploreState: ExploreState;
+  metricsViewSpec: V1MetricsViewSpec;
+  filter?: V1Expression | undefined;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
   dimensionSearchText: string;
+  // Measures to request with `exact: true`; see `requestExactNames`.
+  exactMeasures?: ReadonlySet<string>;
 }): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] =
     exploreState.visibleMeasures.map((name) => ({
@@ -122,9 +159,18 @@ export function getDimensionTableAggregationRequestForTime({
     }
   }
 
+  // The query groups only by the selected dimension, as in the dimension table itself.
+  const { measures: supportedMeasures, sort } =
+    getDimensionQueryMeasuresAndSort(
+      exploreState,
+      metricsViewSpec,
+      measures,
+      exploreState.selectedDimensionName!,
+      apiSortName,
+    );
+
   const where = buildWhereParamForDimensionTableAndTDDExports(
-    exploreState.whereFilter,
-    exploreState.dimensionThresholdFilters,
+    filter,
     exploreState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );
@@ -137,15 +183,16 @@ export function getDimensionTableAggregationRequestForTime({
         name: exploreState.selectedDimensionName,
       },
     ],
-    measures,
+    measures: applyExactMeasures(
+      mapEphemeralMeasuresForRequest(
+        supportedMeasures,
+        exploreState.ephemeralMeasures,
+      ),
+      exactMeasures,
+    ),
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
-    sort: [
-      {
-        name: apiSortName,
-        desc: exploreState.sortDirection === SortDirection.DESCENDING,
-      },
-    ],
+    sort,
     where,
     offset: "0",
   };

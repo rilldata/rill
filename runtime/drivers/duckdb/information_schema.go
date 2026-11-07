@@ -219,9 +219,11 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 		for idx, colName := range row.ColumnNames {
 			databaseType := row.ColumnTypes[idx].(string)
 			nullable := row.ColumnNullable[idx].(bool)
-			// For views that depend on secrets, we have an inaccessible schema since
-			// the secret is only set at write time.
-			if strings.HasPrefix(colName.(string), "error(") && databaseType == "\"NULL\"" {
+			// Views that wrap an error() call have an inaccessible schema.
+			// This happens for views that depend on secrets (since the secret is only set at write time)
+			// and for views that rduckdb has replaced with an error placeholder because they broke against the underlying data.
+			// Note: depending on the DuckDB version, the generated column name may or may not quote the function name.
+			if (strings.HasPrefix(colName.(string), "error(") || strings.HasPrefix(colName.(string), `"error"(`)) && databaseType == `"NULL"` {
 				continue
 			}
 			colType, err := databaseTypeToPB(databaseType, nullable)
@@ -305,7 +307,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_POINT
 	case "POLYGON_2D":
 		t.Code = runtimev1.Type_CODE_POLYGON
-	case "NULL":
+	// The type of the SQL NULL constant; information_schema reports it quoted as `"NULL"` in recent DuckDB versions.
+	case "NULL", `"NULL"`:
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:
 		match = false

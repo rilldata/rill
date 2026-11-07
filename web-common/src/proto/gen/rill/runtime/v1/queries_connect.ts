@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryBatchRequest, QueryBatchResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
+import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -22,17 +22,6 @@ export const QueryService = {
       I: QueryRequest,
       O: QueryResponse,
       kind: MethodKind.Unary,
-    },
-    /**
-     * Batch request with different queries
-     *
-     * @generated from rpc rill.runtime.v1.QueryService.QueryBatch
-     */
-    queryBatch: {
-      name: "QueryBatch",
-      I: QueryBatchRequest,
-      O: QueryBatchResponse,
-      kind: MethodKind.ServerStreaming,
     },
     /**
      * Export builds a URL to download the results of a query as a file.

@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const (
@@ -40,6 +41,12 @@ type DimensionSummary struct {
 func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
+	}
+
+	// Compile the security policy's row filter and query filter so the summary only reflects rows the user can access
+	securityFilter, securityFilterArgs, err := metricsview.SecurityFilterSQL(e.metricsView, e.security, e.olap.Dialect())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile the security policy's filters: %w", err)
 	}
 
 	// Gather the categorical and time dimensions
@@ -85,7 +92,9 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		timeDimensions = timeDimensions[0:SummaryTimeDimensionsLimit]
 	}
 
-	// Compute the time dimension summaries
+	// Compute the time dimension summaries.
+	// Note that Timestamps intentionally does not apply the security policy's filters (see its docstring),
+	// so unlike the dimension summaries below, the time ranges reflect all rows in the underlying table.
 	var summaries []DimensionSummary
 	var defaultTimeDimensionSummary DimensionSummary
 	for _, dim := range timeDimensions {
@@ -149,15 +158,21 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		}
 	}
 
-	// Create a where clause that applies the SummarySampleInterval to the default time dimension
-	var whereClause string
+	// Create a where clause that applies the SummarySampleInterval to the default time dimension and the security policy's filters
+	var whereClauses []string
 	var args []any
 	if timeDimExpr != "" && defaultTimeDimensionSummary.MaxValue != nil {
 		maxTime, _ := defaultTimeDimensionSummary.MaxValue.(time.Time)
 		if !maxTime.IsZero() {
-			whereClause = fmt.Sprintf("WHERE %s >= ?", timeDimExpr)
-			args = []any{maxTime.Add(-SummarySampleInterval)}
+			whereClauses = append(whereClauses, fmt.Sprintf("%s >= ?", timeDimExpr))
+			args = append(args, maxTime.Add(-SummarySampleInterval))
 		}
+	}
+	// Note the sample interval is derived from the unfiltered max timestamp,
+	// so if the user's accessible rows are all older than the sample interval, the summary values will be null.
+	if securityFilter != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("(%s)", securityFilter))
+		args = append(args, securityFilterArgs...)
 	}
 
 	// Build the SQL query
@@ -166,9 +181,9 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	sqlBuilder.WriteString(strings.Join(selectClauses, ", "))
 	sqlBuilder.WriteString(" FROM ")
 	sqlBuilder.WriteString(e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-	if whereClause != "" {
-		sqlBuilder.WriteString(" ")
-		sqlBuilder.WriteString(whereClause)
+	if len(whereClauses) > 0 {
+		sqlBuilder.WriteString(" WHERE ")
+		sqlBuilder.WriteString(strings.Join(whereClauses, " AND "))
 	}
 	sqlBuilder.WriteString(" LIMIT 1")
 	sql := sqlBuilder.String()

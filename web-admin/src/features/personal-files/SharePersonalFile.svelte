@@ -7,6 +7,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -56,7 +57,9 @@
 
       eventBus.emit("notification", {
         type: "success",
-        message: `Dashboard ${share ? "shared" : "hidden"} successfully`,
+        message: share
+          ? m.personal_files_share_shared_notification()
+          : m.personal_files_share_hidden_notification(),
       });
     } catch (e) {
       console.error("Error sharing dashboard:", e);
@@ -77,18 +80,18 @@
             selected={open}
             loading={isPending}
           >
-            Share
+            {m.personal_files_share_button()}
           </Button>
         </Tooltip.Trigger>
-        <Tooltip.Content>Share dashboard</Tooltip.Content>
+        <Tooltip.Content>{m.personal_files_share_tooltip()}</Tooltip.Content>
       </Tooltip.Root>
     {/snippet}
   </Popover.Trigger>
   <Popover.Content align="end">
     {#if shared}
-      This dashboard is shared with all users in the project.
+      {m.personal_files_share_shared_message()}
     {:else}
-      Share this dashboard with other users in the project?
+      {m.personal_files_share_prompt()}
     {/if}
 
     <div class="flex pt-2">
@@ -99,7 +102,9 @@
         {loading}
         disabled={loading}
       >
-        {shared ? "Hide" : "Share"}
+        {shared
+          ? m.personal_files_share_hide_button()
+          : m.personal_files_share_button()}
       </Button>
     </div>
   </Popover.Content>

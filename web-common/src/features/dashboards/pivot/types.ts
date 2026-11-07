@@ -1,3 +1,4 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimension,
@@ -60,12 +61,80 @@ export interface PivotState {
   activeCell: PivotCell | null;
   showTotalsColumn: boolean;
   showTotalsRow: boolean;
+  // Where the grand-totals row is pinned. Undefined means "top".
+  totalsRowPosition?: PivotTotalsRowPosition;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
+  // Per-measure conditional formatting, keyed by measure name. Measures not
+  // present here render without any cell formatting.
+  measureFormatting?: Record<string, PivotMeasureFormatting>;
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+export type PivotColumnAlign = "left" | "center" | "right";
+
+// Presentation overrides for one column, keyed in PivotColumnStyles by the
+// tanstack column id: the field name in flat tables; the measure name or the
+// first row dimension name in nested tables.
+export interface PivotColumnStyle {
+  // Pixel width; the column is pinned, so stretch and fit never change it.
+  width?: number;
+  // Wrap cell text instead of truncating it. Dimension columns only.
+  wrap?: boolean;
+  align?: PivotColumnAlign;
+}
+
+export type PivotColumnStyles = Record<string, PivotColumnStyle>;
+
+export type PivotTotalsRowPosition = "top" | "bottom";
+export const PIVOT_TOTALS_ROW_POSITIONS: readonly PivotTotalsRowPosition[] = [
+  "top",
+  "bottom",
+];
+
+// Conditional formatting applied to a measure's cells in the pivot table,
+// discriminated on `mode`.
+export type PivotMeasureFormatting =
+  | PivotScaleFormatting
+  | PivotRulesFormatting;
+
+// Value-scaled formatting: a color gradient (heatmap) or proportional bar
+// (data_bar) over the measure's min-max domain in the current result.
+export type PivotScaleFormatting = {
+  mode: "heatmap" | "data_bar";
+  // For heatmap: the gradient color scheme. For data_bar: the source of the bar
+  // color. Keyed into PIVOT_FORMATTING_SCHEMES (e.g. "greens", "redYellowGreen",
+  // "theme-sequential").
+  scheme: string;
+};
+
+// Threshold-based formatting: an ordered rule list where the first matching
+// rule colors the cell (Excel convention). Cells matching no rule are left
+// unformatted.
+export type PivotRulesFormatting = {
+  mode: "rules";
+  rules: PivotFormatRule[];
+};
+
+export type PivotFormatRuleOperator =
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "eq"
+  | "between";
+
+export type PivotFormatRule = {
+  operator: PivotFormatRuleOperator;
+  value: number;
+  // Upper bound (inclusive), only for "between".
+  value2?: number;
+  // A semantic color key from PIVOT_RULE_COLORS (e.g. "positive") or a raw hex
+  // string (with or without the leading "#").
+  color: string;
+};
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
@@ -110,6 +179,15 @@ export interface PivotDataStoreConfig {
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
   isFlat: boolean;
+  // ephemeral measure definitions available to this pivot.
+  // Sourced from the explore state in explore dashboards, and from the
+  // component spec in canvas table/pivot components.
+  ephemeralMeasures?: EphemeralMeasureDef[];
+  // Measures to request with `exact: true` (see `requestExactNames`).
+  // Sourced from the viewer's exact selection in explore dashboards, and from
+  // the canvas exact selection plus the component's `exact` pin in canvas
+  // table/pivot components.
+  exactMeasures?: string[];
 }
 
 export interface PivotAxesData {

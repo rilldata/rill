@@ -211,6 +211,7 @@ var _ drivers.FileIterator = &fileIterator{}
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
+	f.client.Close()
 	return os.RemoveAll(f.tempDir)
 }
 

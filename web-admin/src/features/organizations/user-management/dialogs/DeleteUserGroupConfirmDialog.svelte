@@ -1,10 +1,11 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
+  import { createAdminServiceDeleteUsergroup } from "@rilldata/web-admin/client";
   import {
-    createAdminServiceDeleteUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-  } from "@rilldata/web-admin/client";
+    invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -33,14 +34,9 @@
         usergroup: deletedUserGroupName,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
+      // The deleted group disappears from every member's group list
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       eventBus.emit("notification", { message: m.groups_deleted() });
     } catch (error) {

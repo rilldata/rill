@@ -1,14 +1,18 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -37,18 +41,15 @@ func SetAttributesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Check for existing attributes unless force flag is set
 			if !force {
-				existingUser, err := client.GetOrganizationMemberUser(cmd.Context(), &adminv1.GetOrganizationMemberUserRequest{
-					Org:   ch.Org,
-					Email: email,
-				})
+				existing, err := existingAttributes(cmd.Context(), client, ch.Org, email)
 				if err != nil {
-					return fmt.Errorf("failed to get existing user: %w", err)
+					return err
 				}
 
-				if existingUser.Member.Attributes != nil && len(existingUser.Member.Attributes.Fields) > 0 {
+				if len(existing) > 0 {
 					ch.PrintfWarn("User already has attributes. This will overwrite existing attributes.\n")
 					ch.PrintfWarn("Current attributes:\n")
-					for key, value := range existingUser.Member.Attributes.AsMap() {
+					for key, value := range existing {
 						ch.Printf("  %s: %v\n", key, value)
 					}
 					ch.Printf("\nUse --force to proceed without this warning.\n")
@@ -89,6 +90,45 @@ func SetAttributesCmd(ch *cmdutil.Helper) *cobra.Command {
 	setAttributesCmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt when overwriting existing attributes")
 
 	return setAttributesCmd
+}
+
+// existingAttributes returns the attributes currently set for the user in the org.
+// It checks their membership first, then any pending invite, since the update replaces
+// the attributes of whichever of the two exists.
+func existingAttributes(ctx context.Context, c *client.Client, org, email string) (map[string]interface{}, error) {
+	member, err := c.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+		Org:   org,
+		Email: email,
+	})
+	if err == nil {
+		return member.Member.GetAttributes().AsMap(), nil
+	}
+	if status.Code(err) != codes.NotFound {
+		return nil, fmt.Errorf("failed to get existing user: %w", err)
+	}
+
+	// The user has not signed up yet, so look for a pending invite.
+	// There is no lookup by email, so page through the org's invites.
+	var pageToken string
+	for {
+		res, err := c.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{
+			Org:       org,
+			PageSize:  1000,
+			PageToken: pageToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list pending invites: %w", err)
+		}
+		for _, invite := range res.Invites {
+			if strings.EqualFold(invite.Email, email) {
+				return invite.GetAttributes().AsMap(), nil
+			}
+		}
+		if res.NextPageToken == "" {
+			return nil, nil
+		}
+		pageToken = res.NextPageToken
+	}
 }
 
 func parseAttributes(attributes map[string]string, attributesJSON string) (map[string]interface{}, error) {

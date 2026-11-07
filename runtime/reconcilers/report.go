@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,16 +10,17 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -203,11 +205,12 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
-			Claims:     claims,
-			ForExport:  false,
+			Runtime:         r.C.Runtime,
+			InstanceID:      r.C.InstanceID,
+			Properties:      resolverProperties(spec),
+			ProjectDeclared: false, // Report templates never access project variables (the parser rejects references to them).
+			Claims:          claims,
+			ForExport:       false,
 		})
 		if err != nil {
 			return nil, err
@@ -249,7 +252,30 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	}
 	if canvas != "" {
 		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-		conditionRes = append(conditionRes, c)
+
+		// Also allow access to the canvas's components and the resources their renderers reference (e.g. metrics views).
+		// This enables report recipients to render the canvas in the browser (e.g. for PDF exports).
+		canvasRes, err := r.C.Get(ctx, c, false)
+		if err == nil {
+			canvasResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, canvasRes)
+			if err != nil {
+				return nil, err
+			}
+			conditionRes = append(conditionRes, canvasResources...)
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			// Canvas not found: still allow access to the name so requests fail with a clear error on the canvas itself.
+			conditionRes = append(conditionRes, c)
+		} else {
+			return nil, err
+		}
+
+		// Restrict recipients to the data selected by the filters that were captured when the report was created (if any).
+		filterRules, err := canvasFilterSecurityRules(spec.Annotations["metrics_view_filters"])
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, filterRules...)
+
 		for _, r := range rules {
 			if rfa := r.GetFieldAccess(); rfa != nil {
 				rfa.ConditionResources = append(rfa.ConditionResources, c)
@@ -536,6 +562,51 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
+	// Reports created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no edit or download links; they have an unsubscribe link,
+	// and the creator's notification has an open link to the embedder's app if rill.yaml configures `embeds.open_url`.
+	// The embed owner annotation is only set for reports created from an embed.
+	// If the embed owner is missing or inactive, GetReportMetadata fails above, so nothing is sent.
+	embedCreated := rep.Spec.Annotations["admin_embed_owner_id"] != ""
+
+	// Embed users can only use reports if the project enables the "reports" feature flag for them (it's disabled for embeds by default).
+	// The UI hides reports otherwise, but this check also covers reports created directly through the API.
+	// Reports created from an embed are run as the creator, so every delivery has the same attributes.
+	if embedCreated {
+		for _, delivery := range meta.ReportDelivery {
+			flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: delivery.UserAttrs})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to resolve feature flags: %w", err)
+			}
+			if !flags["reports"] {
+				return false, nil, errors.New(`reports created from an embed require the "reports" feature flag to be enabled for embed users`)
+			}
+			break
+		}
+	}
+
+	// The open link only works for the embed user who created the report, since the embedder's app opens it with their external user ID.
+	// So it's only added to the delivery that the admin service marks as the creator's (see embedOpenLink).
+	var embedLink string
+	if embedCreated {
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+		if err != nil {
+			return false, nil, err
+		}
+		if inst.EmbedOpenURL != "" {
+			embedLink, err = embedopen.Link(inst.EmbedOpenURL, &embedopen.Payload{Kind: embedopen.KindReport, Name: self.Meta.Name.Name, ExecutionTime: t})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to build open link: %w", err)
+			}
+		}
+	}
+	embedOpenLink := func(delivery drivers.ReportDelivery) string {
+		if delivery.EmbedOwner {
+			return embedLink
+		}
+		return ""
+	}
+
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
 
@@ -547,21 +618,31 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
 		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		// The session is owned by the user, which restricts access to it. So we require a user ID.
 		for recipient, delivery := range meta.ReportDelivery {
 			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
-				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+				r.C.Logger.Warn("Skipping recipient - no user ID or attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 				continue
 			}
-			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
-				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources))
 				if err != nil {
 					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
 				allWarnings = append(allWarnings, triggerWarnings...)
 				aiReports[delivery.UserID] = report
+			}
+
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					openLink:        embedOpenLink(delivery),
+					unsubscribeLink: delivery.UnsubscribeURL,
+					summary:         truncateSummary(report.summary, 500),
+				}
+				continue
 			}
 
 			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
@@ -576,17 +657,66 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		}
 	default: // add more resolvers here, for default just generate export links
+		// Export the data to attach to emails.
+		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
+		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the embed user for reports created from an embed),
+		// which it returns for every recipient.
+		var attachment *email.Attachment
+		var attachmentTooLarge bool
+		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
+			delivery := meta.ReportDelivery[emailRecipients[0]]
+			if len(delivery.UserAttrs) == 0 {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner or identity to run as")
+			} else {
+				claims := &runtime.SecurityClaims{
+					UserID:          delivery.UserID,
+					UserAttributes:  delivery.UserAttrs,
+					Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					AdditionalRules: runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources),
+				}
+				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
+					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
+					Annotations:        rep.Spec.Annotations,
+					ExecutionTime:      t,
+					Claims:             claims,
+					Format:             rep.Spec.ExportFormat,
+					IncludeHeader:      rep.Spec.ExportIncludeHeader,
+					Limit:              rep.Spec.ExportLimit,
+					Priority:           reportQueryPriority,
+				})
+				if errors.Is(err, errAttachmentTooLarge) {
+					attachmentTooLarge = true
+					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", exportAttachmentSizeLimit/1024/1024))
+				} else if err != nil {
+					return false, nil, fmt.Errorf("failed to export attachment: %w", err)
+				}
+			}
+		}
+
 		for recipient, delivery := range meta.ReportDelivery {
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					openLink:           embedOpenLink(delivery),
+					unsubscribeLink:    delivery.UnsubscribeURL,
+					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+					attachment:         attachment,
+					attachmentTooLarge: attachmentTooLarge,
+				}
+				continue
+			}
+
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err
 			}
 			notificationsContent[recipient] = &notificationData{
-				openLink:        delivery.OpenURL,
-				editLink:        delivery.EditURL,
-				unsubscribeLink: delivery.UnsubscribeURL,
-				downloadLink:    downloadURL.String(),
-				downloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+				openLink:           delivery.OpenURL,
+				editLink:           delivery.EditURL,
+				unsubscribeLink:    delivery.UnsubscribeURL,
+				downloadLink:       downloadURL.String(),
+				downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+				attachment:         attachment,
+				attachmentTooLarge: attachmentTooLarge,
 			}
 		}
 	}
@@ -622,16 +752,18 @@ func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runt
 		}
 
 		opts := &email.ScheduledReport{
-			ToEmail:         recipient,
-			ToName:          "",
-			DisplayName:     rep.Spec.DisplayName,
-			ReportTime:      t,
-			Summary:         content.summary,
-			OpenLink:        content.openLink,
-			EditLink:        content.editLink,
-			UnsubscribeLink: content.unsubscribeLink,
-			DownloadLink:    content.downloadLink,
-			DownloadFormat:  content.downloadFormat,
+			ToEmail:            recipient,
+			ToName:             "",
+			DisplayName:        rep.Spec.DisplayName,
+			ReportTime:         t,
+			Summary:            content.summary,
+			OpenLink:           content.openLink,
+			EditLink:           content.editLink,
+			UnsubscribeLink:    content.unsubscribeLink,
+			DownloadLink:       content.downloadLink,
+			DownloadFormat:     content.downloadFormat,
+			Attachment:         content.attachment,
+			AttachmentTooLarge: content.attachmentTooLarge,
 		}
 		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
 			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
@@ -689,14 +821,54 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 	return true, nil
 }
 
+// canvasFilterSecurityRules builds row filter security rules from a report's "metrics_view_filters" annotation,
+// which contains a JSON object of metrics view name to filter expression (in protojson format).
+// The annotation is set for canvas reports and captures the filters that were selected when the report was created;
+// baking them in as row filters ensures magic-token recipients cannot query data beyond the report's filters.
+func canvasFilterSecurityRules(annotation string) ([]*runtimev1.SecurityRule, error) {
+	if annotation == "" {
+		return nil, nil
+	}
+
+	var filters map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(annotation), &filters); err != nil {
+		return nil, fmt.Errorf(`failed to parse "metrics_view_filters" annotation: %w`, err)
+	}
+
+	var rules []*runtimev1.SecurityRule
+	for mv, data := range filters {
+		if mv == "" {
+			return nil, errors.New(`empty metrics view name in "metrics_view_filters" annotation`)
+		}
+		expr := &runtimev1.Expression{}
+		if err := protojson.Unmarshal(data, expr); err != nil {
+			return nil, fmt.Errorf("failed to parse filter for metrics view %q: %w", mv, err)
+		}
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					ConditionResources: []*runtimev1.ResourceName{{
+						Kind: runtime.ResourceKindMetricsView,
+						Name: mv,
+					}},
+					Expression: expr,
+				},
+			},
+		})
+	}
+	return rules, nil
+}
+
 // common notification data used for reports
 type notificationData struct {
-	openLink        string
-	editLink        string
-	downloadLink    string
-	downloadFormat  string
-	unsubscribeLink string
-	summary         string
+	openLink           string
+	editLink           string
+	downloadLink       string
+	downloadFormat     string
+	unsubscribeLink    string
+	summary            string
+	attachment         *email.Attachment // Only sent to email recipients
+	attachmentTooLarge bool
 } // add more fields as needed for new resolver types that reports will support
 
 type aiReport struct {
@@ -705,8 +877,9 @@ type aiReport struct {
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-// If userID is provided, the session will be created with that user's claims for row-level security.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
+// The session will be created with the given user's claims for row-level security, and is owned by the user.
+// The additionalRules optionally further restrict the data the session can access.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any, additionalRules []*runtimev1.SecurityRule) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
@@ -718,24 +891,19 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	// Create claims for executing the AI resolver
 	// The userID and userAttrs determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
-		UserID:         userID,
-		UserAttributes: userAttrs,
-		SkipChecks:     false,
-		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
-	}
-
-	// Get resolver properties from spec and add is_report flag
-	props := rep.Spec.ResolverProperties.AsMap()
-	props["is_report"] = true
-	if props["agent"] == nil {
-		props["agent"] = ai.AnalystAgentName
+		UserID:          userID,
+		UserAttributes:  userAttrs,
+		SkipChecks:      false,
+		Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		AdditionalRules: additionalRules,
 	}
 
 	// Execute AI resolver
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
-		ResolverProperties: props,
+		ResolverProperties: resolverProperties(rep.Spec),
+		ProjectDeclared:    false, // Report templates never access project variables (the parser rejects references to them).
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -812,9 +980,21 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 		return "Excel"
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		return "Parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PDF:
+		return "PDF"
 	default:
 		return f.String()
 	}
+}
+
+// resolverProperties returns the report's resolver properties as they should be passed to the resolver.
+// For AI reports, it marks the properties as belonging to a report, which lets the resolver's validation pass (e.g. a prompt is optional).
+func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_report"] = true
+	}
+	return props
 }
 
 // computeInheritedWatermark computes the inherited watermark for the report.
@@ -822,6 +1002,20 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,

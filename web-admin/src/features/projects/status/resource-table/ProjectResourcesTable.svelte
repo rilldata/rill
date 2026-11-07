@@ -35,7 +35,7 @@
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
   let dialogResourceKind = "";
-  let dialogRefreshType: "full" | "incremental" = "full";
+  let dialogRefreshType: "refresh" | "full" | "incremental" = "refresh";
 
   let isSpecDialogOpen = false;
   let specResourceName = "";
@@ -61,7 +61,7 @@
   const openRefreshDialog = (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "refresh" | "full" | "incremental",
   ) => {
     dialogResourceName = resourceName;
     dialogResourceKind = resourceKind;

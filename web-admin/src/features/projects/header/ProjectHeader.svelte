@@ -54,6 +54,9 @@
   import { useReports } from "../../scheduled-reports/selectors";
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
+  import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
+  import { migrateLegacyDashboardStores } from "../../dashboards/listing/dashboard-favourites.ts";
+  import EditSessionViewAs from "@rilldata/web-admin/features/edit-session/EditSessionViewAs.svelte";
 
   export let organization: string;
   export let project: string;
@@ -65,6 +68,8 @@
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
   export let editContext: boolean = false;
+  export let editSessionDeploymentId: string | undefined = undefined;
+  export let editSessionJwt: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -107,6 +112,11 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
+
+  // The header is mounted on every project page, so migrate the per-project
+  // favourites and recently-used stores here rather than in each consumer.
+  $: if ($visualizationsQuery.isSuccess)
+    migrateLegacyDashboardStores(organization, project, visualizations);
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -121,19 +131,28 @@
         return aName.localeCompare(bName);
       })
       .reduce((map, resource) => {
-        const name = resource.meta.name.name;
+        const name = resource.meta?.name?.name ?? "";
         const isMetricsExplorer = !!resource?.explore;
-        return map.set(name.toLowerCase(), {
+        const resourceKind = isMetricsExplorer
+          ? ResourceKind.Explore
+          : ResourceKind.Canvas;
+        // Keyed by kind as well as name: an explore and a canvas may share a name.
+        return map.set(resourceKey(resourceKind, name), {
           label:
             (isMetricsExplorer
               ? resource?.explore?.spec?.displayName
               : resource?.canvas?.spec?.displayName) || name,
           section: isMetricsExplorer ? "explore" : "canvas",
-          resourceKind: isMetricsExplorer
-            ? ResourceKind.Explore
-            : ResourceKind.Canvas,
+          resourceKind,
+          param: name.toLowerCase(),
         });
       }, new Map<string, PathOption>()),
+    currentId: dashboard
+      ? resourceKey(
+          onCanvasDashboardPage ? ResourceKind.Canvas : ResourceKind.Explore,
+          dashboard,
+        )
+      : undefined,
     carryOverSearchParams: $stickyDashboardState,
     content: visualizationsDropdown,
   };
@@ -181,10 +200,12 @@
       !!onPublicURLPage,
   });
 
-  $: publicURLDashboardTitle = onCanvasDashboardPage
-    ? $canvasQuery.data?.canvas?.displayName || dashboard
-    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-      dashboard;
+  // Public URL pages without a dashboard (e.g. a shared AI conversation) render no title.
+  $: publicURLDashboardTitle =
+    (onCanvasDashboardPage
+      ? $canvasQuery.data?.canvas?.displayName || dashboard
+      : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+        dashboard) ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -216,6 +237,12 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
+      {#if editSessionDeploymentId && editSessionJwt}
+        <EditSessionViewAs
+          deploymentId={editSessionDeploymentId}
+          {editSessionJwt}
+        />
+      {/if}
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
@@ -271,7 +298,6 @@
               <ExploreBookmarks
                 {organization}
                 {project}
-                metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
               {#if $alertsFlag}

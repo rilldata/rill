@@ -10,6 +10,8 @@
   export let value: Array<{ key: string; value: string }> = [];
   export let keyPlaceholder = "Header name";
   export let valuePlaceholder = "Value";
+  export let itemLabel = "Header";
+  export let addLabel = "Add header";
 
   let keyInputs: HTMLInputElement[] = [];
 
@@ -66,7 +68,7 @@
           placeholder={keyPlaceholder}
           value={entry.key}
           oninput={(e) => updateKey(i, e.currentTarget.value)}
-          aria-label="Header name {i + 1}"
+          aria-label="{itemLabel} name {i + 1}"
           class="kv-input"
         />
       </div>
@@ -76,7 +78,7 @@
           placeholder={valuePlaceholder}
           value={entry.value}
           oninput={(e) => updateValue(i, e.currentTarget.value)}
-          aria-label="Header value {i + 1}"
+          aria-label="{itemLabel} value {i + 1}"
           class="kv-input"
         />
       </div>
@@ -84,7 +86,7 @@
         type="button"
         class="remove-button"
         onclick={() => removeRow(i)}
-        aria-label="Remove header {i + 1}"
+        aria-label="Remove {itemLabel.toLowerCase()} {i + 1}"
       >
         <XIcon size="14px" />
       </button>
@@ -98,7 +100,7 @@
 
   <button type="button" class="add-button" onclick={addRow}>
     <PlusIcon size="14px" />
-    Add header
+    {addLabel}
   </button>
 </div>
 

@@ -12,7 +12,7 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import type { Snippet } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
@@ -29,11 +29,14 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
+    getResourceFromPage,
+    getScreenNameFromPage,
     isEditPage,
     isProjectInvitePage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
+    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -41,6 +44,7 @@
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
+  import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -51,11 +55,18 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    behaviourEvent,
+    metricsService,
+  } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
-  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { Throttler } from "@rilldata/web-common/lib/throttler";
+  import { setMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
+  import { mcpConnectUrl } from "@rilldata/web-admin/features/ai/mcp/mcp-connect-url";
+
+  const PAGE_VIEW_THROTTLE_TIMEOUT = 250;
 
   let { children }: { children: Snippet } = $props();
 
@@ -72,9 +83,19 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert pages
+  // External MCP servers are authorized through the admin service, which stores each user's token.
+  setMcpConnectContext({
+    connectUrl: (connector) =>
+      mcpConnectUrl(organization, project, connector, activeBranch),
+  });
+
+  // Token: from route params, or from search params on report/alert/AI conversation pages
   let token = $derived.by(() => {
-    if (isPublicReportPage(page) || isPublicAlertPage(page)) {
+    if (
+      isPublicReportPage(page) ||
+      isPublicAlertPage(page) ||
+      isPublicAIPage(page)
+    ) {
       return page.url.searchParams.get("token") ?? page.params.token;
     }
     return page.params.token;
@@ -186,7 +207,11 @@
   // --- Derived state (resolve effective runtime connection from whichever auth mode is active) ---
 
   let projectData = $derived($projectQuery.data);
-  let error = $derived($projectQuery.error as HTTPError);
+  // A failed background refetch keeps the cached project on screen unless the user can no
+  // longer reach it; see `resolveProjectError`.
+  let projectError = $derived(
+    resolveProjectError($projectQuery.error, projectData !== undefined),
+  );
 
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(
@@ -246,9 +271,49 @@
       });
     }
   });
+
+  // Fire a page view for every dashboard, canvas and project page the user opens.
+  // This runs off `page` rather than `afterNavigate` because the first page view has to wait for the
+  // current user query above to resolve, which happens after the initial navigation has completed.
+  //
+  // Views are deduped on the path plus the explore view mode. The view mode is a query param rather
+  // than a path segment, so keying on the path alone would never record a user switching to pivot or
+  // time dimension detail. The rest of the query string is deliberately excluded: filters, time range
+  // and sort change on nearly every interaction, and keying on them would emit an event per click.
+  //
+  // Events are throttled so that pages the user only passes through, like clicking into a dashboard
+  // and immediately hitting back, don't each record a view. The throttler keeps the most recent
+  // callback, so the page the user actually landed on is the one reported.
+  const pageViewThrottler = new Throttler(
+    PAGE_VIEW_THROTTLE_TIMEOUT,
+    PAGE_VIEW_THROTTLE_TIMEOUT,
+  );
+  let lastTrackedView: string | undefined;
+  $effect(() => {
+    const trackedView = `${page.url.pathname}?view=${page.url.searchParams.get("view") ?? ""}`;
+    // Events are dropped until loadCloudFields has run, so wait on the same inputs it needs.
+    if (!project || !$user.data?.user?.id || trackedView === lastTrackedView)
+      return;
+    lastTrackedView = trackedView;
+    // Capture the page's fields now; `page` will have moved on by the time the throttler fires.
+    const screenName = getScreenNameFromPage(page);
+    const resource = getResourceFromPage(page);
+    pageViewThrottler.throttle(() =>
+      behaviourEvent?.firePageViewEvent(
+        screenName,
+        resource.type,
+        resource.name,
+      ),
+    );
+  });
+
+  // Navigating out of the project within the throttle window destroys this layout with a callback
+  // still pending. Left alone it would fire from the page the user has already left, and the event's
+  // `page_url` is read when it fires, so it would pair this page's resource with the next page's URL.
+  onDestroy(() => pageViewThrottler.cancel());
 </script>
 
-{#if error}
+{#if projectError}
   <SlimProjectHeader
     {organization}
     {project}
@@ -257,9 +322,9 @@
     {organizationLogoUrl}
   />
   <ErrorPage
-    statusCode={error.response.status}
+    statusCode={projectError.statusCode}
     header={m.error_fetching_deployment()}
-    body={error.response.data?.message}
+    body={projectError.message}
   />
 {:else if projectData}
   {#if onEditPage}
@@ -308,6 +373,7 @@
               pathname={page.url.pathname}
               {project}
               {branchPrefix}
+              hasUser={!!$user.data?.user}
             />
           {/if}
         {/if}

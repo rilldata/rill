@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -109,11 +110,18 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Validate refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
+	metricsViews := r.getReferencedMetricsViews(ctx, components)
 	if validateErr == nil {
-		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
+		validateErr = r.validateMetricsViewTimeConsistency(metricsViews)
 	}
 	if validateErr == nil {
 		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
+	}
+	if validateErr == nil {
+		validateErr = r.validateItemParamBindings(ctx, c.Spec, components)
+	}
+	if validateErr == nil {
+		validateErr = r.validateDefaultFilters(c.Spec, metricsViews)
 	}
 
 	// Capture the valid spec in the state
@@ -155,23 +163,43 @@ func (r *CanvasReconciler) checkAnyComponentHasValidSpec(components map[string]*
 }
 
 func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
+	conditionResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, res)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build a security rule based on the collected references.
+	return []*runtimev1.SecurityRule{{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				ConditionKinds:     []string{runtime.ResourceKindTheme},
+				ConditionResources: conditionResources,
+				Allow:              true,
+				Exclusive:          true,
+			},
+		},
+	}}, nil
+}
+
+// canvasTransitiveConditionResources returns the resources needed to render the given canvas:
+// the canvas itself, its components, and all resources referenced by component renderers (e.g. metrics views).
+// It is used to build transitive access rules for canvases; also for reports that reference a canvas.
+func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controller, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.ResourceName, error) {
 	var conditionResources []*runtimev1.ResourceName
 	refs := &rendererRefs{
-		rt:           r.C.Runtime,
-		instanceID:   r.C.InstanceID,
+		rt:           c.Runtime,
+		instanceID:   c.InstanceID,
 		claims:       claims,
 		metricsViews: make(map[string]bool),
 	}
 
-	canvas := res.GetCanvas()
-	if canvas == nil {
+	canvasResource := res.GetCanvas()
+	if canvasResource == nil {
 		return nil, fmt.Errorf("resource is not a canvas")
 	}
-	spec := canvas.GetState().GetValidSpec()
+	spec := canvasResource.GetState().GetValidSpec()
 	if spec == nil {
-		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+		spec = canvasResource.GetSpec() // Fallback to spec if ValidSpec is not available
 	}
 	if spec == nil {
 		return nil, fmt.Errorf("canvas spec is nil")
@@ -179,39 +207,68 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 
 	// explicitly allow access to the canvas itself
 	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
-	// Get controller to fetch components
-	ctr, err := r.C.Runtime.Controller(ctx, r.C.InstanceID)
+	// Only grant the content that the canvas's `if` conditions show to these claims.
+	// The conditions are evaluated directly, since going through the security engine would recurse into this function.
+	// The evaluator is cached per claims and memoizes its results, so expanding the transitive rule on every security check stays cheap.
+	visibility, err := c.Runtime.VisibilityConditions(ctx, c.InstanceID, claims)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get controller: %w", err)
+		return nil, err
 	}
+	rows, _ := canvas.PruneRows(spec.Rows, visibility.Keep())
 
-	// Collect all component names referenced by the canvas (including those nested in tab groups)
-	componentNames := make(map[string]bool)
-	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
+	// Collect all items referenced by the canvas (including those nested in tab groups)
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(rows, &items)
 
-	// Process each component
-	for componentName := range componentNames {
-		componentRef := &runtimev1.ResourceName{
-			Kind: runtime.ResourceKindComponent,
-			Name: componentName,
+	// Process each item
+	seenComponents := make(map[string]bool, len(items))
+	for _, item := range items {
+		// Track metrics views bound to the item's params.
+		if item.Params != nil {
+			for _, name := range canvas.MetricsViewNamesFromBindings(item.Params.AsMap()) {
+				refs.metricsViews[name] = true
+			}
 		}
-		// Allow access to the component itself
-		conditionResources = append(conditionResources, componentRef)
 
-		// Get component resource
-		componentRes, err := ctr.Get(ctx, componentRef, false)
-		if err != nil {
-			// If component is not found, skip it but still allow access to the component name
+		if seenComponents[item.Component] {
 			continue
 		}
+		seenComponents[item.Component] = true
+
+		componentRef := &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindComponent,
+			Name: item.Component,
+		}
+
+		// Get component resource
+		componentRes, err := c.Get(ctx, componentRef, false)
+		if err != nil {
+			// If component is not found, skip it but still allow access to the component name
+			conditionResources = append(conditionResources, componentRef)
+			continue
+		}
+
+		// Skip a component whose own `if` conditions hide it from these claims,
+		// such as an inline component of another canvas referenced by name.
+		if !visibility.ComponentMet(componentRes) {
+			continue
+		}
+
+		// Allow access to the component itself
+		conditionResources = append(conditionResources, componentRef)
 
 		// Get component spec to extract renderer properties
 		componentSpec := componentRes.GetComponent().State.ValidSpec
 		if componentSpec == nil {
 			componentSpec = componentRes.GetComponent().Spec
 		}
+
+		// Track metrics views set as defaults of the component's declared metrics_view params.
+		for _, name := range canvas.BoundMetricsViewNames(componentSpec.Params, nil) {
+			refs.metricsViews[name] = true
+		}
+
 		if componentSpec.RendererProperties == nil {
 			continue
 		}
@@ -228,25 +285,10 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	// Add the discovered refs to the condition resources.
 	conditionResources = append(conditionResources, refs.result()...)
 
-	// Now build security rules based on the collected references.
-	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
-				},
-			},
-		})
-	}
-
-	return rules, nil
+	return conditionResources, nil
 }
 
-// validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
-func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, components map[string]*runtimev1.Resource) error {
+func (r *CanvasReconciler) getReferencedMetricsViews(ctx context.Context, components map[string]*runtimev1.Resource) map[string]*runtimev1.Resource {
 	metricsViews := make(map[string]*runtimev1.Resource)
 	for _, component := range components {
 		if component == nil {
@@ -279,6 +321,11 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 		}
 	}
 
+	return metricsViews
+}
+
+// validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
+func (r *CanvasReconciler) validateMetricsViewTimeConsistency(metricsViews map[string]*runtimev1.Resource) error {
 	// Validate all metrics views have consistent first_day_of_week or first_month_of_year
 	if len(metricsViews) > 0 {
 		first := false
@@ -365,6 +412,78 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 	return nil
 }
 
+// validateItemParamBindings validates the param values that canvas items bind to their referenced
+// components' declared params, including that field-typed params reference fields that exist in
+// the bound metrics views.
+func (r *CanvasReconciler) validateItemParamBindings(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(spec.Rows, &items)
+
+	// Cache of valid metrics view specs bound to params, shared across items.
+	mvs := make(map[string]*runtimev1.MetricsViewSpec)
+
+	for _, item := range items {
+		cmp := components[item.Component]
+		if cmp == nil {
+			// Missing components are reported by checkRefs.
+			continue
+		}
+		componentSpec := cmp.GetComponent().State.ValidSpec
+		if componentSpec == nil {
+			componentSpec = cmp.GetComponent().Spec
+		}
+
+		var bound map[string]any
+		if item.Params != nil {
+			bound = item.Params.AsMap()
+		}
+		if len(bound) == 0 && len(componentSpec.Params) == 0 {
+			continue
+		}
+		if len(bound) > 0 && len(componentSpec.Params) == 0 {
+			return fmt.Errorf("item passes params to component %q, which does not declare any params", item.Component)
+		}
+
+		// Fetch the specs of the metrics views bound to params.
+		// It is safe to fetch them here because the parser added them as refs of the canvas, so DAG ordering holds.
+		for _, name := range canvas.BoundMetricsViewNames(componentSpec.Params, bound) {
+			if _, ok := mvs[name]; ok {
+				continue
+			}
+			res, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				// Not found or invalid; ValidateParamBindings reports it as an invalid metrics view.
+				continue
+			}
+			if mvSpec := res.GetMetricsView().State.ValidSpec; mvSpec != nil {
+				mvs[name] = mvSpec
+			}
+		}
+
+		err := canvas.ValidateParamBindings(componentSpec.Params, bound, mvs)
+		if err != nil {
+			return fmt.Errorf("invalid params for component %q: %w", item.Component, err)
+		}
+	}
+	return nil
+}
+
+// validateDefaultFilters validates that all metrics views referenced in the default filter expression exist.
+// Expressions themselves are validated in parse_canvas.
+func (r *CanvasReconciler) validateDefaultFilters(spec *runtimev1.CanvasSpec, metricsViews map[string]*runtimev1.Resource) error {
+	if spec.DefaultPreset == nil {
+		return nil
+	}
+
+	for mv := range spec.DefaultPreset.FilterExpr {
+		_, ok := metricsViews[mv]
+		if !ok {
+			return fmt.Errorf("metrics view %q referenced in default filter does not exist", mv)
+		}
+	}
+	return nil
+}
+
 // rendererRefs tracks all metrics views found in canvas component renderer properties.
 // It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
 // We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
@@ -408,9 +527,13 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string
 }
 
 // metricsView registers a metrics view reference.
+// Templated values (e.g. {{ .params.metrics_view }}) are skipped; the metrics views bound to
+// params are tracked from the canvas items' params instead.
 func (r *rendererRefs) metricsView(mv any) error {
 	if mv, ok := mv.(string); ok {
-		r.metricsViews[mv] = true
+		if !canvas.IsTemplated(mv) {
+			r.metricsViews[mv] = true
+		}
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
@@ -428,9 +551,10 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("text resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"text": contentStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"text": contentStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,
@@ -450,21 +574,40 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 	return nil
 }
 
-// metricsSQL parses and registers metrics view references found in a metrics SQL string.
+// metricsSQL parses and registers metrics view references found in a metrics_sql property,
+// which holds either a single query string or a list of query strings.
 func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
-	sqlStr, ok := sql.(string)
-	if !ok {
-		return fmt.Errorf("metrics_sql field is not a string")
+	switch v := sql.(type) {
+	case string:
+		return r.metricsSQLString(ctx, v)
+	case []any:
+		// Multi-query custom charts: register refs per query, best-effort,
+		// so one malformed query doesn't drop refs from the others.
+		for _, e := range v {
+			if s, ok := e.(string); ok {
+				_ = r.metricsSQLString(ctx, s)
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("metrics_sql field is not a string or a list of strings")
 	}
+}
 
+// metricsSQLString parses and registers metrics view references found in a single metrics SQL query.
+func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) error {
 	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
 	if !ok {
 		return fmt.Errorf("metrics_sql resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"sql": sqlStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"sql": sqlStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,

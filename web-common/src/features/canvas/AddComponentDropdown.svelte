@@ -4,8 +4,13 @@
     CHART_CONFIG,
     VISIBLE_CHART_TYPES,
   } from "@rilldata/web-common/features/components/charts/config";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Layers, Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
@@ -13,6 +18,7 @@
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
+  import MapIcon from "./icons/MapIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
   type MainMenuItem = {
@@ -29,6 +35,7 @@
     { id: "kpi_grid", label: m.canvas_kpi(), icon: BigNumberIcon },
     { id: "leaderboard", label: m.canvas_leaderboard(), icon: LeaderboardIcon },
     { id: "image", label: m.canvas_image(), icon: ChartIcon },
+    { id: "map", label: m.canvas_map(), icon: MapIcon },
   ];
 
   export let disabled = false;
@@ -40,13 +47,30 @@
   export let rowIndex: number | undefined = undefined;
   export let columnIndex: number | undefined = undefined;
   export let onItemClick: (type: CanvasComponentType) => void;
+  // When provided (and the customComponents flag is on), the menu lists the project's
+  // standalone components (custom viz) so they can be added as references.
+  export let onAddComponentRef: ((componentName: string) => void) | undefined =
+    undefined;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
   // When provided, the menu offers "Tab group" as a final item. Only passed at the
   // top level (tab groups cannot be nested inside a tab or a column).
   export let onAddTabGroup: (() => void) | undefined = undefined;
 
-  const { customCharts } = featureFlags;
+  const { customCharts, customComponents } = featureFlags;
+
+  const client = useRuntimeClient();
+
+  $: componentsQuery = useFilteredResources(client, ResourceKind.Component);
+  // Standalone (custom viz) components only: inline canvas components are excluded.
+  $: customVizComponents = ($componentsQuery?.data ?? []).filter(
+    (res) =>
+      !res.component?.spec?.definedInCanvas &&
+      (res.component?.state?.validSpec?.renderer ??
+        res.component?.spec?.renderer) === "custom_chart" &&
+      !!res.meta?.name?.name &&
+      !res.meta.name.name.includes("--component-"),
+  );
 
   const ADD_DROPDOWN_CHART_TYPES = VISIBLE_CHART_TYPES.filter((type) => {
     return type !== "stacked_bar" && type !== "stacked_bar_normalized";
@@ -161,6 +185,31 @@
           </DropdownMenu.Item>
         {/if}
       {/each}
+
+      {#if $customComponents && onAddComponentRef}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger class="flex flex-row gap-x-2">
+            <ChartIcon />
+            {m.canvas_your_components()}
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent class="min-w-[160px]">
+            {#each customVizComponents as res (res.meta?.name?.name)}
+              <DropdownMenu.Item
+                class="flex flex-row gap-x-2 text-fg-primary"
+                onclick={() => onAddComponentRef?.(res.meta?.name?.name ?? "")}
+              >
+                <ChartIcon />
+                {res.component?.spec?.displayName || res.meta?.name?.name}
+              </DropdownMenu.Item>
+            {:else}
+              <div class="px-2 py-1.5 text-xs text-fg-secondary">
+                {m.canvas_no_components_yet()}
+              </div>
+            {/each}
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      {/if}
 
       {#if onAddTabGroup}
         <DropdownMenu.Separator />

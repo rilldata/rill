@@ -14,6 +14,7 @@
   } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import type { ConnectorTable } from "../connectors-utils";
   import { onMount } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -86,13 +87,15 @@
     return () => observer.disconnect();
   });
 
-  // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
-  $: typedData = data?.tables?.map((table: V1TableInfo) => ({
-    name: table.name ?? "",
-    database,
-    databaseSchema,
-    view: table.view ?? false,
-  }));
+  // Normalize V1TableInfo[] from ListTables into the tables TableEntry takes
+  $: typedData = data?.tables?.map(
+    (table: V1TableInfo): ConnectorTable => ({
+      connector: connectorName,
+      database,
+      databaseSchema,
+      tableName: table.name ?? "",
+    }),
+  );
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -124,7 +127,7 @@
   {#if expanded}
     {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Error: {error.message}
+        {m.connector_explorer_error({ error: error.message })}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
@@ -136,24 +139,21 @@
       </div>
     {:else if !connector.driver || !connector.driver.name}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Connector not found
+        {m.connector_explorer_connector_not_found()}
       </div>
     {:else if !typedData || typedData.length === 0}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        No tables found
+        {m.status_no_tables()}
       </div>
     {:else if typedData.length > 0}
       <ol>
         {#each typedData as tableInfo (tableInfo)}
           <TableEntry
             driver={connector.driver.name}
-            connector={connectorName}
             showGenerateMetricsAndDashboard={isOlapConnector || canImport}
             showGenerateModel={canImport}
             {isOlapConnector}
-            {database}
-            {databaseSchema}
-            table={tableInfo.name}
+            table={tableInfo}
             {store}
           />
         {/each}
@@ -165,9 +165,11 @@
           bind:this={loadMoreContainer}
         >
           {#if error}
-            <span class="error">Failed to load more tables.</span>
+            <span class="error">
+              {m.connector_explorer_load_more_tables_error()}
+            </span>
             <Button type="tertiary" small onClick={() => fetchNextPage()}>
-              Retry
+              {m.common_retry()}
             </Button>
           {:else}
             <Button

@@ -51,7 +51,8 @@
 {#if visible && dragData?.tagPayload}
   <div class="header-row" transition:slide={{ duration: 160, axis: "y" }}>
     <span class="row-label">
-      <Pivot size="16px" /> Auto
+      <Pivot size="16px" />
+      {m.pivot_auto()}
     </span>
     <div
       role="presentation"

@@ -105,7 +105,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
 		queryCfg := queryConfigFromContext(ctx)
 
-		dr := newDruidRequest(query, args, queryCfg)
+		dr, queryID := newDruidRequest(query, args, queryCfg)
 		b, err := json.Marshal(dr)
 		if err != nil {
 			return nil, retrier.Fail, err
@@ -116,7 +116,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		context.AfterFunc(ctx, func() {
 			tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, urlutil.MustJoinURL(c.dsn, dr.Context.SQLQueryID), http.NoBody)
+			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, urlutil.MustJoinURL(c.dsn, queryID), http.NoBody)
 			if err != nil {
 				return
 			}
@@ -398,7 +398,7 @@ var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
 // b) if the coordinator has a transient error -> not a hard-failure - the table 'A' can exist
 // c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
 func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
-	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil, nil)
+	dr, _ := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil, nil)
 	b, err := json.Marshal(dr)
 	if err != nil {
 		return false, err
@@ -452,29 +452,22 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	}
 }
 
-type DruidQueryContext struct {
-	SQLQueryID                 string `json:"sqlQueryId"`
-	EnableTimeBoundaryPlanning bool   `json:"enableTimeBoundaryPlanning"`
-	UseCache                   *bool  `json:"useCache,omitempty"`
-	PopulateCache              *bool  `json:"populateCache,omitempty"`
-	Priority                   int    `json:"priority,omitempty"`
-}
-
 type DruidParameter struct {
 	Type  string `json:"type"`
 	Value any    `json:"value"`
 }
 
 type DruidRequest struct {
-	Query          string            `json:"query"`
-	Header         bool              `json:"header"`
-	SQLTypesHeader bool              `json:"sqlTypesHeader"`
-	ResultFormat   string            `json:"resultFormat"`
-	Parameters     []DruidParameter  `json:"parameters"`
-	Context        DruidQueryContext `json:"context"`
+	Query          string           `json:"query"`
+	Header         bool             `json:"header"`
+	SQLTypesHeader bool             `json:"sqlTypesHeader"`
+	ResultFormat   string           `json:"resultFormat"`
+	Parameters     []DruidParameter `json:"parameters"`
+	Context        map[string]any   `json:"context"`
 }
 
-func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConfig) *DruidRequest {
+// newDruidRequest builds a Druid SQL API request and returns it along with the generated query ID.
+func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConfig) (*DruidRequest, string) {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
@@ -482,27 +475,52 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConf
 			Value: arg.Value,
 		}
 	}
-	var useCache, populateCache *bool
-	priority := 0
-	if queryCfg != nil {
-		useCache = queryCfg.UseCache
-		populateCache = queryCfg.PopulateCache
-		priority = queryCfg.Priority
-	}
+	queryID := uuid.New().String()
 	return &DruidRequest{
 		Query:          query,
 		Header:         true,
 		SQLTypesHeader: true,
 		ResultFormat:   "arrayLines",
 		Parameters:     parameters,
-		Context: DruidQueryContext{
-			SQLQueryID:                 uuid.New().String(),
-			EnableTimeBoundaryPlanning: true,
-			UseCache:                   useCache,
-			PopulateCache:              populateCache,
-			Priority:                   priority,
-		},
+		Context:        newQueryContext(queryID, queryCfg),
+	}, queryID
+}
+
+// reservedContextKeys are the query context keys set by the driver itself;
+// they cannot be overridden by the pass-through attributes in QueryConfig.Attributes.
+var reservedContextKeys = map[string]bool{
+	"sqlQueryId":                 true,
+	"enableTimeBoundaryPlanning": true,
+	"useCache":                   true,
+	"populateCache":              true,
+	"priority":                   true,
+}
+
+// newQueryContext builds the Druid query context: https://druid.apache.org/docs/latest/querying/query-context/
+func newQueryContext(queryID string, queryCfg *QueryConfig) map[string]any {
+	qctx := map[string]any{
+		"sqlQueryId":                 queryID,
+		"enableTimeBoundaryPlanning": true,
 	}
+	if queryCfg == nil {
+		return qctx
+	}
+	if queryCfg.UseCache != nil {
+		qctx["useCache"] = *queryCfg.UseCache
+	}
+	if queryCfg.PopulateCache != nil {
+		qctx["populateCache"] = *queryCfg.PopulateCache
+	}
+	if queryCfg.Priority != 0 {
+		qctx["priority"] = queryCfg.Priority
+	}
+	for k, v := range queryCfg.Attributes {
+		if k == "" || reservedContextKeys[k] {
+			continue
+		}
+		qctx[k] = v
+	}
+	return qctx
 }
 
 func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
@@ -517,6 +535,10 @@ type QueryConfig struct {
 	UseCache      *bool
 	PopulateCache *bool
 	Priority      int
+	// Attributes are passed through to the Druid query context as-is,
+	// e.g. for attributing queries to callers in Druid's query logs.
+	// Empty keys and keys that collide with the driver's own context keys are skipped.
+	Attributes map[string]string
 }
 
 type queryCfgCtxKey struct{}

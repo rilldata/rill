@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { onDestroy, setContext } from "svelte";
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
   import { useExploreState } from "../stores/dashboard-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -31,6 +31,10 @@
   $: exploreStore = useExploreState(exploreName);
 
   $: ready = Boolean($exploreStore) && Boolean(stateManagers);
+
+  onDestroy(() => {
+    stateManagers?.cleanup();
+  });
 </script>
 
 <slot {ready} />

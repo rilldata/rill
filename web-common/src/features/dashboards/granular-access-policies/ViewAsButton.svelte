@@ -1,7 +1,6 @@
 <script lang="ts">
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
@@ -14,13 +13,20 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
-  let viewAsMenuOpen = false;
-  let open = false;
+  let {
+    devJWTUpdater = updateDevJWT,
+  }: {
+    devJWTUpdater?: typeof updateDevJWT;
+  } = $props();
+
+  let viewAsMenuOpen = $state(false);
+  let open = $state(false);
 
   const client = useRuntimeClient();
 
-  $: mockUsers = useMockUsers(client);
+  let mockUsers = $derived(useMockUsers(client));
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -44,11 +50,13 @@
             active={viewAsMenuOpen}
             removeTooltipText={m.dashboard_clear_view()}
             onRemove={() => {
-              updateDevJWT(queryClient, client, null);
+              devJWTUpdater(queryClient, client, null);
             }}
           >
             <div slot="body">
-              {m.dashboard_viewing_as()} <b>{$selectedMockUserStore.email}</b>
+              {@html m.dashboard_viewing_as({
+                email: escapeHtml($selectedMockUserStore.email ?? ""),
+              })}
             </div>
           </Chip>
         </button>
@@ -65,7 +73,7 @@
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           onclick={() => {
-            updateDevJWT(queryClient, client, user);
+            devJWTUpdater(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"
         >

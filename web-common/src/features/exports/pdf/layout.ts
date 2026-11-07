@@ -47,6 +47,10 @@ export interface PaginationResult {
   pageWidthPt: number;
   pageHeightPt: number;
   marginPt: number;
+  // Horizontal inset applied to every placement: a capture narrower than the
+  // page is centred in the content box. Exposed so the page chrome can line up
+  // with the blocks rather than with the margin.
+  contentOffsetPt: number;
   pageCount: number;
   orientation: ResolvedOrientation;
   placements: Placement[];
@@ -63,7 +67,8 @@ export function resolveOrientation(
 }
 
 // Groups blocks into canvas rows (preserving DOM order within a row) and walks
-// them top-to-bottom, scaling the on-screen layout to the page content width.
+// them top-to-bottom, fitting the on-screen layout to the page content width:
+// wider captures are scaled down, narrower ones keep their size and are centred.
 // A row that would overflow the current page moves wholesale to the next page;
 // a single-block row taller than a full page is sliced across pages.
 export function paginate(
@@ -78,8 +83,21 @@ export function paginate(
 
   const contentWidthPt = pageWidthPt - 2 * marginPt;
   const contentHeightPt = pageHeightPt - 2 * marginPt;
+  // Never magnify. Blocks are a fixed-resolution raster, so stretching a capture
+  // narrower than the page (a phone-width dashboard) both softens it and inflates
+  // every row past the page height, which slices charts across pages: a doughnut
+  // ends up halved, and the rest of the page is left empty. At 1:1 the content
+  // keeps its natural size and is centred in the content box.
   const scale =
-    opts.contentWidthPx > 0 ? contentWidthPt / opts.contentWidthPx : 1;
+    opts.contentWidthPx > 0
+      ? Math.min(contentWidthPt / opts.contentWidthPx, 1)
+      : 1;
+  // A capture that never laid out has no width to centre, and offsetting against
+  // it would push every block half a content width towards the right edge.
+  const contentOffsetPt =
+    opts.contentWidthPx > 0
+      ? (contentWidthPt - opts.contentWidthPx * scale) / 2
+      : 0;
 
   const rows = groupIntoRows(blocks);
 
@@ -93,8 +111,12 @@ export function paginate(
   let cursorYPt = pageTopPt(0);
 
   for (const row of rows) {
+    // Size the row by the vertical extent of its blocks, not the tallest block:
+    // a row can stack blocks with different tops (a tab label band grouped with
+    // the tab's first row of cards; see rowIndexFor in capture.ts).
     const rowTopPx = Math.min(...row.map((b) => b.yPx));
-    const rowHeightPt = Math.max(...row.map((b) => b.heightPx)) * scale;
+    const rowBottomPx = Math.max(...row.map((b) => b.yPx + b.heightPx));
+    const rowHeightPt = (rowBottomPx - rowTopPx) * scale;
 
     // True when nothing has been placed on the current page yet, so we must not
     // advance to a fresh page (that would strand the page, e.g. page 0 holding
@@ -137,7 +159,7 @@ export function paginate(
           placements.push({
             block,
             page,
-            xPt: marginPt + block.xPx * scale,
+            xPt: marginPt + contentOffsetPt + block.xPx * scale,
             yPt: pageTopPt(page) + (sliceTopPx - rowSrcYPx) * scale,
             wPt: block.widthPx * scale,
             hPt: srcHeightPx * scale,
@@ -164,7 +186,7 @@ export function paginate(
       placements.push({
         block,
         page,
-        xPt: marginPt + block.xPx * scale,
+        xPt: marginPt + contentOffsetPt + block.xPx * scale,
         yPt: cursorYPt + (block.yPx - rowTopPx) * scale,
         wPt: block.widthPx * scale,
         hPt: block.heightPx * scale,
@@ -178,6 +200,7 @@ export function paginate(
     pageWidthPt,
     pageHeightPt,
     marginPt,
+    contentOffsetPt,
     pageCount: placements.length
       ? Math.max(...placements.map((p) => p.page)) + 1
       : 0,

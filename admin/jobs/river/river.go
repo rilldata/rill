@@ -132,13 +132,13 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		{&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true},    // every 12 hours
 		{&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true},      // every 6 hours
 		{&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true},          // Monday at 7:00am UTC
-		{&CheckProvisionersArgs{}, "0 */15 * * *", true},           // every 15 minutes
+		{&CheckProvisionersArgs{}, "*/15 * * * *", true},           // every 15 minutes
 		{&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true},       // every 6 hours
 		{&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true}, // every 6 hours
 		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},          // every 6 hours
 		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
 		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
-		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
+		{&DeploymentsHealthCheckArgs{}, "*/10 * * * *", true},      // every 10 minutes
 		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true}, // every 15 minutes
 	}
 
@@ -441,7 +441,7 @@ func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID s
 	}, nil
 }
 
-func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, PaymentFailedArgs{
 		BillingCustomerID: billingCustomerID,
 		InvoiceID:         invoiceID,
@@ -450,7 +450,6 @@ func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID
 		Amount:            amount,
 		Currency:          currency,
 		DueDate:           dueDate,
-		FailedAt:          failedAt,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -461,7 +460,7 @@ func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("PaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate), zap.Time("failed_at", failedAt))
+		c.logger.Warn("PaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate))
 	}
 
 	return &jobs.InsertResult{

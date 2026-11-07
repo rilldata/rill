@@ -22,7 +22,7 @@ Follow the instructions below to grant Rill access to your Google BigQuery datas
 
 4. In the IAM menu click the ADD button. This will display a form where you can input the service accounts that can access your project and the permissions with which they can access it.
 
-5. In the New members field, enter your google service account, found in step 1.  
+5. In the New members field, enter your Google service account, found in step 1.
 
 6. Select the role `BigQuery Data Viewer`, `BigQuery Read Session User`, and `BigQuery Job User`. This will permit Rill to fetch your projects tables into BigQuery. 
   

@@ -474,43 +474,30 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 	return res, nil
 }
 
-func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
+func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, err error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	defer func() { _ = release() }()
 
-	var q string
-	if c.config.Cluster == "" {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			0 AS is_on_cluster
-			FROM system.tables AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?`
-	} else {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + safeSQLName(c.config.Cluster) + `, system.tables) AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
-			GROUP BY engine, t.name`
-	}
+	// A local system.tables lookup suffices even when a cluster is configured:
+	// all DDL in cluster mode runs ON CLUSTER, so the entity always exists on the connected node.
+	q := `SELECT multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type
+	FROM system.tables
+	WHERE database = coalesce(?, currentDatabase()) AND name = ?`
 	var args []any
 	if db == "" {
 		args = []any{nil, name}
 	} else {
 		args = []any{db, name}
 	}
-	row := conn.QueryRowxContext(ctx, q, args...)
-	err = row.Scan(&typ, &onCluster)
+	err = conn.QueryRowxContext(ctx, q, args...).Scan(&typ)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, drivers.ErrNotFound
+			return "", drivers.ErrNotFound
 		}
-		return "", false, err
+		return "", err
 	}
-	return typ, onCluster, nil
+	return typ, nil
 }

@@ -23,6 +23,13 @@ export interface MetricsEvent extends CommonFields, CommonUserFields {
   event_time: string;
   event_type: string;
   event_name: string;
+  // The URL at the moment the event was fired.
+  // This is what attributes an event to the dashboard or canvas the user was on, since the resource
+  // name only exists in the URL.
+  // Note that the query string is a snapshot, not a history: it reflects the dashboard state at the
+  // instant of this event, so what it tells you depends on when the event fires. Page views are
+  // deduped per path and view mode, so their filters and time range are whatever the page loaded with.
+  page_url: string;
   // Legacy:
   event_datetime: number;
 }

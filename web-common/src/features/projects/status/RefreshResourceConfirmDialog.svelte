@@ -13,7 +13,7 @@
   export let open = false;
   export let name: string;
   export let onRefresh: () => Promise<void> | void;
-  export let refreshType: "full" | "incremental" = "full";
+  export let refreshType: "refresh" | "full" | "incremental" = "full";
 
   let isRefreshing = false;
 
@@ -45,15 +45,19 @@
       <AlertDialogTitle>
         {refreshType === "full"
           ? m.status_action_full_refresh()
-          : m.status_action_incremental_refresh()}
+          : refreshType === "incremental"
+            ? m.status_action_incremental_refresh()
+            : m.status_action_refresh()}
         <span class="font-semibold" title={name}>{truncateName(name)}</span>?
       </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
           {#if refreshType === "full"}
             {m.status_full_refresh_warning()}
-          {:else}
+          {:else if refreshType === "incremental"}
             {m.status_incremental_refresh_description()}
+          {:else}
+            {m.status_refresh_description()}
           {/if}
         </div>
       </AlertDialogDescription>

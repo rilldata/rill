@@ -268,6 +268,13 @@ export class DashboardState extends Message<DashboardState> {
   pivotShowTotalsRow?: boolean;
 
   /**
+   * Where the totals row is pinned (top by default, or bottom).
+   *
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotTotalsRowPosition pivot_totals_row_position = 46;
+   */
+  pivotTotalsRowPosition?: DashboardState_PivotTotalsRowPosition;
+
+  /**
    * List of all dimensions selected for rows
    *
    * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_all_dimensions = 35;
@@ -280,6 +287,20 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: repeated rill.ui.v1.PivotElement pivot_column_all_dimensions = 36;
    */
   pivotColumnAllDimensions: PivotElement[] = [];
+
+  /**
+   * Per-measure conditional formatting (heatmap / data bar) for pivot cells.
+   *
+   * @generated from field: repeated rill.ui.v1.PivotConditionalFormat pivot_conditional_formatting = 44;
+   */
+  pivotConditionalFormatting: PivotConditionalFormat[] = [];
+
+  /**
+   * Ephemeral measures defined for the explore.
+   *
+   * @generated from field: repeated rill.ui.v1.EphemeralMeasure ephemeral_measures = 45;
+   */
+  ephemeralMeasures: EphemeralMeasure[] = [];
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -329,8 +350,11 @@ export class DashboardState extends Message<DashboardState> {
     { no: 41, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 42, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 43, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 46, name: "pivot_totals_row_position", kind: "enum", T: proto3.getEnumType(DashboardState_PivotTotalsRowPosition), opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 44, name: "pivot_conditional_formatting", kind: "message", T: PivotConditionalFormat, repeated: true },
+    { no: 45, name: "ephemeral_measures", kind: "message", T: EphemeralMeasure, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -504,6 +528,32 @@ proto3.util.setEnumType(DashboardState_PivotTableMode, "rill.ui.v1.DashboardStat
   { no: 0, name: "PIVOT_TABLE_MODE_UNSPECIFIED" },
   { no: 1, name: "PIVOT_TABLE_MODE_FLAT" },
   { no: 2, name: "PIVOT_TABLE_MODE_NEST" },
+]);
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.PivotTotalsRowPosition
+ */
+export enum DashboardState_PivotTotalsRowPosition {
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_TOP = 1;
+   */
+  TOP = 1,
+
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_BOTTOM = 2;
+   */
+  BOTTOM = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotTotalsRowPosition)
+proto3.util.setEnumType(DashboardState_PivotTotalsRowPosition, "rill.ui.v1.DashboardState.PivotTotalsRowPosition", [
+  { no: 0, name: "PIVOT_TOTALS_ROW_POSITION_UNSPECIFIED" },
+  { no: 1, name: "PIVOT_TOTALS_ROW_POSITION_TOP" },
+  { no: 2, name: "PIVOT_TOTALS_ROW_POSITION_BOTTOM" },
 ]);
 
 /**
@@ -726,6 +776,199 @@ export class PivotElement extends Message<PivotElement> {
 
   static equals(a: PivotElement | PlainMessage<PivotElement> | undefined, b: PivotElement | PlainMessage<PivotElement> | undefined): boolean {
     return proto3.util.equals(PivotElement, a, b);
+  }
+}
+
+/**
+ * An ephemeral measure defined ad-hoc for an explore dashboard,
+ * derived from existing metrics view measures via an arithmetic expression.
+ *
+ * @generated from message rill.ui.v1.EphemeralMeasure
+ */
+export class EphemeralMeasure extends Message<EphemeralMeasure> {
+  /**
+   * Query alias, e.g. "profit". Must not collide with metrics view field names.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Display name shown in the UI, e.g. "Profit".
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * Arithmetic expression over existing measure names, e.g. "revenue - cost".
+   *
+   * @generated from field: string expression = 3;
+   */
+  expression = "";
+
+  /**
+   * Optional format preset for rendering values.
+   *
+   * @generated from field: string format_preset = 4;
+   */
+  formatPreset = "";
+
+  constructor(data?: PartialMessage<EphemeralMeasure>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.EphemeralMeasure";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EphemeralMeasure | PlainMessage<EphemeralMeasure> | undefined, b: EphemeralMeasure | PlainMessage<EphemeralMeasure> | undefined): boolean {
+    return proto3.util.equals(EphemeralMeasure, a, b);
+  }
+}
+
+/**
+ * Conditional formatting applied to a measure's cells in a pivot table.
+ *
+ * @generated from message rill.ui.v1.PivotConditionalFormat
+ */
+export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  /**
+   * Formatting style: "heatmap", "data_bar" or "rules".
+   *
+   * @generated from field: string mode = 2;
+   */
+  mode = "";
+
+  /**
+   * Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+   * Only for "heatmap" and "data_bar" modes.
+   *
+   * @generated from field: string scheme = 3;
+   */
+  scheme = "";
+
+  /**
+   * Ordered threshold rules; first match wins. Only for "rules" mode.
+   *
+   * @generated from field: repeated rill.ui.v1.PivotFormatRule rules = 5;
+   */
+  rules: PivotFormatRule[] = [];
+
+  constructor(data?: PartialMessage<PivotConditionalFormat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotConditionalFormat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "scheme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "rules", kind: "message", T: PivotFormatRule, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined, b: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined): boolean {
+    return proto3.util.equals(PivotConditionalFormat, a, b);
+  }
+}
+
+/**
+ * A single threshold rule for "rules" mode conditional formatting.
+ *
+ * @generated from message rill.ui.v1.PivotFormatRule
+ */
+export class PivotFormatRule extends Message<PivotFormatRule> {
+  /**
+   * Comparison operator: "gt", "gte", "lt", "lte", "eq" or "between".
+   *
+   * @generated from field: string operator = 1;
+   */
+  operator = "";
+
+  /**
+   * @generated from field: double value = 2;
+   */
+  value = 0;
+
+  /**
+   * Upper bound (inclusive), only for "between".
+   *
+   * @generated from field: optional double value2 = 3;
+   */
+  value2?: number;
+
+  /**
+   * Semantic color key (e.g. "positive") or hex string.
+   *
+   * @generated from field: string color = 4;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<PivotFormatRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotFormatRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "value2", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 4, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotFormatRule | PlainMessage<PivotFormatRule> | undefined, b: PivotFormatRule | PlainMessage<PivotFormatRule> | undefined): boolean {
+    return proto3.util.equals(PivotFormatRule, a, b);
   }
 }
 

@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
@@ -17,6 +19,10 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -150,7 +156,7 @@ measures:
 		ConversationId: res1.ConversationId,
 		MessageId:      "doesntexist",
 	})
-	require.ErrorContains(t, err, "failed to find the call")
+	require.ErrorContains(t, err, "not found in conversation")
 	// Happy path for getting a message.
 	msgRes, err := srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
 		InstanceId:     instanceID,
@@ -388,6 +394,94 @@ func TestAnonymousSessionAccess(t *testing.T) {
 	require.Equal(t, msg.Call.ID, msgRes.Message.Id)
 }
 
+func TestUpdateAndDeleteConversation(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	perms := []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}
+	ownerClaims := &runtime.SecurityClaims{UserID: "foo", Permissions: perms}
+	ownerCtx := auth.WithClaims(t.Context(), ownerClaims)
+	otherCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "bar", Permissions: perms})
+	anonCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "", Permissions: perms})
+
+	// Create a session directly to avoid LLM calls.
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	sess, err := runner.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims:     ownerClaims,
+		UserAgent:  "test",
+	})
+	require.NoError(t, err)
+	sessionID := sess.ID()
+
+	// Share the session to check that being able to view a conversation does not allow renaming or deleting it.
+	// It flushes twice to check that already persisted messages are not inserted again.
+	_, err = sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.Flush(t.Context()))
+	msg, err := sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.UpdateSharedUntilMessageID(t.Context(), msg.Result.ID))
+	require.NoError(t, sess.Flush(t.Context()))
+	_, err = srv.GetConversation(otherCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+
+	// Non-owners cannot rename or delete the conversation.
+	title := "Renamed"
+	for _, ctx := range []context.Context{otherCtx, anonCtx} {
+		_, err = srv.UpdateConversation(ctx, &runtimev1.UpdateConversationRequest{
+			InstanceId:     instanceID,
+			ConversationId: sessionID,
+			Title:          &title,
+		})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		_, err = srv.DeleteConversation(ctx, &runtimev1.DeleteConversationRequest{
+			InstanceId:     instanceID,
+			ConversationId: sessionID,
+		})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+	}
+
+	// The owner can rename the conversation.
+	_, err = srv.UpdateConversation(ownerCtx, &runtimev1.UpdateConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+		Title:          &title,
+	})
+	require.NoError(t, err)
+	getRes, err := srv.GetConversation(ownerCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Renamed", getRes.Conversation.Title)
+
+	// The owner can delete the conversation.
+	_, err = srv.DeleteConversation(ownerCtx, &runtimev1.DeleteConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+	listRes, err := srv.ListConversations(ownerCtx, &runtimev1.ListConversationsRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.Empty(t, listRes.Conversations)
+
+	// A session that is still in use when deleted, e.g. during a streaming completion, does not recreate messages when flushed.
+	_, err = sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.Flush(t.Context()))
+	catalog, release, err := rt.Catalog(t.Context(), instanceID)
+	require.NoError(t, err)
+	defer release()
+	msgs, err := catalog.FindAIMessages(t.Context(), sessionID)
+	require.NoError(t, err)
+	require.Empty(t, msgs)
+}
+
 func TestAgentChoiceAndContext(t *testing.T) {
 	// Skip in CI since we make real LLM calls.
 	testmode.Expensive(t)
@@ -477,4 +571,53 @@ func TestListTools(t *testing.T) {
 		require.NotEmpty(t, tool.InputSchema)
 		require.NotEmpty(t, tool.OutputSchema)
 	}
+}
+
+func TestListConversationsInvalidUTF8Title(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Bytes stored by the old promptToTitle byte-wise cut of
+	// "今年乘用车增长快于大盘的区域都有哪些" (splits 有, then appends "...").
+	invalidTitle := string([]byte{
+		0xe4, 0xbb, 0x8a, 0xe5, 0xb9, 0xb4, 0xe4, 0xb9, 0x98, 0xe7, 0x94, 0xa8,
+		0xe8, 0xbd, 0xa6, 0xe5, 0xa2, 0x9e, 0xe9, 0x95, 0xbf, 0xe5, 0xbf, 0xab,
+		0xe4, 0xba, 0x8e, 0xe5, 0xa4, 0xa7, 0xe7, 0x9b, 0x98, 0xe7, 0x9a, 0x84,
+		0xe5, 0x8c, 0xba, 0xe5, 0x9f, 0x9f, 0xe9, 0x83, 0xbd, 0xe6, 0x9c, 0x2e,
+		0x2e, 0x2e,
+	})
+
+	catalog, release, err := rt.Catalog(t.Context(), instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	now := time.Now()
+	err = catalog.InsertAISession(t.Context(), &drivers.AISession{
+		ID:         "invalid-utf8-title",
+		InstanceID: instanceID,
+		OwnerID:    "foo",
+		Title:      invalidTitle,
+		UserAgent:  "rill/test",
+		CreatedOn:  now,
+		UpdatedOn:  now,
+	})
+	require.NoError(t, err)
+
+	ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+		UserID:      "foo",
+		Permissions: []runtime.Permission{runtime.UseAI},
+	})
+	list, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+	})
+	require.NoError(t, err)
+	require.Len(t, list.Conversations, 1)
+	require.Equal(t, "invalid-utf8-title", list.Conversations[0].Id)
+	require.True(t, utf8.ValidString(list.Conversations[0].Title))
+
+	_, err = proto.Marshal(list)
+	require.NoError(t, err)
+	_, err = protojson.Marshal(list)
+	require.NoError(t, err)
 }

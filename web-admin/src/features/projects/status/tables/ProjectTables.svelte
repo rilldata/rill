@@ -101,7 +101,7 @@
     ...(availableTags.length > 0
       ? [
           <FilterGroup>{
-            label: "Tags",
+            label: m.status_filter_tags(),
             key: "tags",
             options: availableTags.map((t) => ({
               value: t.name,

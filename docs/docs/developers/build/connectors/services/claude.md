@@ -49,6 +49,17 @@ For details on managing credentials across environments, see [Configure Local Cr
 
 For additional configuration options (model, temperature, token limits, etc.), see the [Claude connector reference](/reference/project-files/connectors#claude).
 
+### Prompt caching
+
+Set `prompt_caching: true` to cache the tools, system prompt, and conversation between requests. AI chat resends these on every step of answering a question, so caching typically lowers cost and latency: cache reads cost a fraction of the input price, while cache writes cost somewhat more than it (see [Anthropic's pricing](https://www.anthropic.com/pricing)). It is disabled by default.
+
+```yaml
+type: connector
+driver: claude
+api_key: "{{ .env.CLAUDE_API_KEY }}"
+prompt_caching: true
+```
+
 ## Deploy to Rill Cloud
 
 Rill requires you to explicitly provide a Claude API key to use the Claude connector. See the [connector reference](/reference/project-files/connectors#claude) for details.

@@ -112,15 +112,17 @@ export async function invalidateAllMetricsViews(
     queryKey: getRuntimeServiceGetInstanceQueryKey(instanceId),
   });
 
-  // Second, refetch the resource entries (which returns the available dimensions and measures)
+  // Second, refetch the resource entries (which return the available dimensions and measures)
   await queryClient.refetchQueries({
     type: "active",
     predicate: (query) => {
       const key = query.queryKey;
-      // Format: ["RuntimeService", "getResource" or "listResources", instanceId, ...]
+      // Format: ["RuntimeService", "getResource" or "getExplore" or "listResources", instanceId, ...]
       return (
         key[0] === "RuntimeService" &&
-        (key[1] === "getResource" || key[1] === "listResources") &&
+        (key[1] === "getResource" ||
+          key[1] === "getExplore" ||
+          key[1] === "listResources") &&
         key[2] === instanceId
       );
     },
@@ -149,6 +151,30 @@ export async function invalidateAllMetricsViews(
         typeof query.queryKey[0] === "string" &&
         (query.queryKey[0].startsWith(`dashboardFilteredRowsCt`) ||
           query.queryKey[0].startsWith(`dashboardAllRowsCt`))
+      );
+    },
+  });
+}
+
+/**
+ * Removes the cached resources that aren't in use, for when the viewer's identity changes (e.g. View as).
+ * The runtime prunes canvas and component resources to what each identity can see,
+ * so resources cached for the previous identity must not be shown to the new one.
+ * (Active queries are refetched by invalidateAllMetricsViews.)
+ */
+export function removeInactiveResourceQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  queryClient.removeQueries({
+    type: "inactive",
+    predicate: (query: Query) => {
+      const key = query.queryKey;
+      // Format: ["RuntimeService", "getResource" | "listResources", instanceId, ...]
+      return (
+        key[0] === "RuntimeService" &&
+        (key[1] === "getResource" || key[1] === "listResources") &&
+        key[2] === instanceId
       );
     },
   });

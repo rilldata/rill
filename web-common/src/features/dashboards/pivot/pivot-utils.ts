@@ -10,7 +10,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  Period,
   TimeOffsetType,
   type AvailableTimeGrain,
   type TimeRangeString,
@@ -26,11 +25,21 @@ import type {
 import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import type { Row } from "tanstack-table-8-svelte-5";
+import type { Column, Row } from "tanstack-table-8-svelte-5";
+import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { SHOW_MORE_BUTTON } from "./pivot-constants";
+import {
+  MAX_PIVOT_COMPARISON_MEASURES,
+  PIVOT_TOTALS_ROW_ID,
+  SHOW_MORE_BUTTON,
+} from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -96,8 +105,14 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
+  // Ephemeral measure definitions are part of the key so editing an
+  // expression (without renaming) refetches instead of serving cached data.
+  const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
+  // The exact selection is part of the key so switching a measure to exact
+  // refetches instead of serving cached approximate rows.
+  const exactMeasuresKey = JSON.stringify(config.exactMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}_${exactMeasuresKey}`;
 }
 
 /**
@@ -125,7 +140,7 @@ export function getTimeForQuery(
       startTimeOfLastInterval = startTimeDt;
     }
 
-    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
+    const duration = TIME_GRAIN[filter.interval]?.duration;
     const endTimeDt = getOffset(
       startTimeOfLastInterval,
       duration,
@@ -541,14 +556,51 @@ export function prepareMeasureForComparison(
   });
 }
 
+/**
+ * Maps plain measure names to request measures: comparison-suffixed names get
+ * their comparison compute, ephemeral measure names get the `expression`
+ * compute carrying their definition, and exact measures (and the comparison
+ * measures derived from them) get `exact: true`.
+ */
+export function prepareMeasuresForRequest(
+  measures: V1MetricsViewAggregationMeasure[],
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+  exactMeasures?: Iterable<string>,
+): V1MetricsViewAggregationMeasure[] {
+  return applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      prepareMeasureForComparison(measures),
+      ephemeralMeasures,
+    ),
+    exactMeasures ? new Set(exactMeasures) : undefined,
+  );
+}
+
+/**
+ * The precision chip of a pivot column header. Only the main measure columns
+ * get one: their delta and percent companions share the base measure in their
+ * column meta but are named with a comparison suffix.
+ */
+export function precisionForColumn(
+  column: Column<PivotDataRow, unknown>,
+  precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined,
+): PrecisionChipProps | undefined {
+  if (!precisionFor) return undefined;
+  const measureName = column.columnDef.meta?.measureName;
+  const columnName = (column.columnDef as { name?: string }).name;
+  if (!measureName || columnName !== measureName) return undefined;
+  return precisionFor(measureName);
+}
+
 export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 10 measures
-
+  // Disable if there are too many measures to compare
   const measures = splitPivotChips(pivotState.columns).measure;
-  if (measures.length > 10) {
+  if (measures.length > MAX_PIVOT_COMPARISON_MEASURES) {
     return false;
   }
   // Disable if time comparison is not present
@@ -584,14 +636,12 @@ export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,
-  hasTotalsRow: boolean,
 ): string[] {
-  let index = parseInt(rowId, 10);
   const dimensionValues: string[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (rowId === PIVOT_TOTALS_ROW_ID) return dimensionValues;
 
-  if (hasTotalsRow) index = index - 1;
-
-  const row = tableData?.[index];
+  const row = tableData?.[parseInt(rowId, 10)];
   if (!row) return dimensionValues;
 
   // For flat tables, collect all dimension values in order
@@ -607,7 +657,14 @@ export function getValuesForFlatTable(
 /**
  * Shared core for all pivot filter builders. Takes dimension name/value pairs,
  * separates time dimensions into TimeFilters, creates IN expressions for the rest,
- * computes the narrowed time range, and merges everything with optional extra filters.
+ * and computes the narrowed time range.
+ *
+ * The returned expression describes only the clicked element; the dashboard's
+ * global where filter is deliberately left out. Click-to-filter reads these
+ * expressions back to decide which dimension values to toggle, so folding the
+ * global filter in here would make deselecting a pivot cell also drop unrelated
+ * global filters. Callers that query data with the result (the rows viewer)
+ * merge config.whereFilter themselves.
  *
  * Every public getFiltersFor* function delegates here after extracting its
  * dimension entries from whichever data source it uses (positional rowId,
@@ -616,7 +673,6 @@ export function getValuesForFlatTable(
 export function buildPivotFilter(
   config: PivotDataStoreConfig,
   dimEntries: Array<{ name: string; value: string | null }>,
-  extraFilters?: V1Expression,
 ): PivotFilter {
   const timeFilters: TimeFilters[] = [];
   const dimExprs: V1Expression[] = [];
@@ -637,15 +693,7 @@ export function buildPivotFilter(
     dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
   const timeRange = getTimeForQuery(config.time, timeFilters);
 
-  let filters: V1Expression | undefined;
-  if (extraFilters) {
-    const combined = mergeFilters(dimFilter, extraFilters);
-    filters = mergeFilters(combined, config.whereFilter);
-  } else {
-    filters = mergeFilters(dimFilter, config.whereFilter);
-  }
-
-  return { filters, timeRange };
+  return { filters: dimFilter, timeRange };
 }
 
 export function getFiltersForCell(
@@ -656,28 +704,16 @@ export function getFiltersForCell(
   tableData: PivotDataRow[],
   upToDimensionIndex?: number,
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
 
   let values: string[];
   if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForFlatTable(tableData, rowDimensionNames, rowId);
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
     }
   } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
   }
 
   const rowEntries = values.map((value, index) => ({

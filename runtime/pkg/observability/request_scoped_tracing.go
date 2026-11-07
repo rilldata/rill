@@ -135,6 +135,6 @@ func attributeValueToString(v attribute.Value) string {
 	case attribute.FLOAT64:
 		return fmt.Sprintf("%g", v.AsFloat64())
 	default:
-		return v.Emit()
+		return v.String()
 	}
 }

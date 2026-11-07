@@ -200,7 +200,7 @@
   {#if $form["mode"] === "table"}
     {#if analyzedConnector}
       <div class="flex flex-row flex-1 min-h-0 w-full overflow-hidden border-t">
-        <div class="flex flex-col flex-grow min-h-0 border-r pr-6 py-2">
+        <div class="flex flex-col flex-grow min-w-0 min-h-0 border-r pr-6 py-2">
           <DatabaseExplorer
             connector={analyzedConnector}
             store={connectorExplorerStore}
@@ -216,10 +216,12 @@
           {#if $form["table"]}
             <div class="text-base px-4 py-2">SCHEMA</div>
             <TableSchema
-              connector={step.connector}
-              database={$form["database"]}
-              databaseSchema={$form["schema"]}
-              table={$form["table"]}
+              table={{
+                connector: step.connector,
+                database: $form["database"] ?? "",
+                databaseSchema: $form["schema"] ?? "",
+                tableName: $form["table"],
+              }}
               forcedLeftPadding="pl-4"
             />
           {/if}

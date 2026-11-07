@@ -4,10 +4,12 @@ import {
   createAdminServiceListOrganizationMemberUsergroups,
   getAdminServiceListOrganizationMemberUsergroupsQueryOptions,
   getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions,
+  createAdminServiceListOrganizationMemberUsergroupsInfinite,
+  getAdminServiceListOrganizationMemberUsersInfiniteQueryOptions,
 } from "@rilldata/web-admin/client";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-import { createQuery } from "@tanstack/svelte-query";
-import { type Readable, derived } from "svelte/store";
+import { createInfiniteQuery, createQuery } from "@tanstack/svelte-query";
+import { type Readable, derived, readable } from "svelte/store";
 
 const PAGE_SIZE = 50;
 
@@ -76,30 +78,54 @@ export function getUserGroupsForUsersInOrg(
 
 const INFINITE_PAGE_SIZE = 50;
 
-export function getOrgUserMembers({
-  organization,
-  guestOnly,
-}: {
+export type OrgUserMemberFilters = {
   organization: string;
   guestOnly: boolean;
-}) {
-  return createAdminServiceListOrganizationMemberUsersInfinite(
+  searchText?: string;
+  role?: string;
+  enabled?: boolean;
+};
+
+export function getOrgUserMembersQueryOptions({
+  organization,
+  guestOnly,
+  searchText = "",
+  role,
+  enabled = true,
+}: OrgUserMemberFilters) {
+  return getAdminServiceListOrganizationMemberUsersInfiniteQueryOptions(
     organization,
     {
       pageSize: INFINITE_PAGE_SIZE,
-      role: guestOnly ? OrgUserRoles.Guest : undefined,
+      role: guestOnly ? OrgUserRoles.Guest : role,
+      // Preserve literal, case-insensitive substring matching with SQL ILIKE.
+      searchPattern: searchText
+        ? `%${searchText.replace(/[\\%_]/g, "\\$&")}%`
+        : undefined,
       includeCounts: true,
     },
     {
       query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
+        enabled: !!organization && enabled,
+        initialPageParam: undefined,
+        getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
+        // Keep the table mounted during search/role changes, but never show
+        // another organization's users as placeholder data.
+        placeholderData: (previousData, previousQuery) =>
+          previousQuery?.queryKey[1] === `/v1/orgs/${organization}/members`
+            ? previousData
+            : undefined,
       },
     },
+  );
+}
+
+export function getOrgUserMembers(
+  filters: OrgUserMemberFilters | Readable<OrgUserMemberFilters>,
+) {
+  const filtersStore = "subscribe" in filters ? filters : readable(filters);
+  return createInfiniteQuery(
+    derived(filtersStore, getOrgUserMembersQueryOptions),
   );
 }
 
@@ -165,6 +191,26 @@ export function getUserCounts(organization: string) {
         guestsCount: guestUsersCounts,
         groupsCount,
       };
+    },
+  );
+}
+
+export function getOrgUsergroupsInfinite(organization: string) {
+  return createAdminServiceListOrganizationMemberUsergroupsInfinite(
+    organization,
+    {
+      pageSize: INFINITE_PAGE_SIZE,
+      includeCounts: true,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
     },
   );
 }

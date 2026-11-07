@@ -143,6 +143,16 @@ export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
 
+// An extra entry at the top of a range or comparison menu that hands the choice back to a parent,
+// such as a canvas widget following the canvas time range.
+export type InheritRangeOption = {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  // What the parent currently uses, shown next to the label while inherited.
+  description?: string;
+};
+
 export type NamedRange =
   | RillPeriodToDate
   | RillPreviousPeriod
@@ -377,6 +387,8 @@ export async function deriveInterval(
   metricsViewName: string,
   activeTimeZone: string,
   timeDimension?: string,
+  // When set, relative ranges are anchored at this time instead of now/latest (e.g. for scheduled report exports).
+  executionTime?: string,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
@@ -403,6 +415,7 @@ export async function deriveInterval(
       rillTimes: [name],
       timeZone: activeTimeZone,
       timeDimension,
+      executionTime,
       cacheBust,
     });
 

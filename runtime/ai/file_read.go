@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -43,15 +42,17 @@ func (t *ReadFile) Spec() *mcp.Tool {
 }
 
 func (t *ReadFile) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {
 	s := GetSession(ctx)
 
-	if !strings.HasPrefix(args.Path, "/") {
-		args.Path = "/" + args.Path
+	path, err := normalizeFilePath(args.Path)
+	if err != nil {
+		return nil, err
 	}
+	args.Path = path
 
 	blob, _, err := t.Runtime.GetFile(ctx, s.InstanceID(), args.Path)
 	if err != nil {

@@ -21,7 +21,7 @@ type Client interface {
 	CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*InsertResult, error)
 
 	// biller related jobs
-	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
+	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate time.Time) (*InsertResult, error)
 	PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
 	CreditBalanceDropped(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 	CreditBalanceDepleted(ctx context.Context, billingCustomerID string) (*InsertResult, error)

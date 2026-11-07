@@ -90,9 +90,9 @@
       id="role"
       label=""
       options={[
-        { value: ProjectUserRoles.Viewer, label: "Viewer" },
-        { value: ProjectUserRoles.Editor, label: "Editor" },
-        { value: ProjectUserRoles.Admin, label: "Admin" },
+        { value: ProjectUserRoles.Viewer, label: m.role_viewer() },
+        { value: ProjectUserRoles.Editor, label: m.role_editor() },
+        { value: ProjectUserRoles.Admin, label: m.role_admin() },
       ]}
     />
     <Button

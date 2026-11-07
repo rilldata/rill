@@ -58,9 +58,9 @@
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}
-      >{m.billing_upgrade_to_team()}</button
-    >
+    <button class="subscribe-btn" onclick={upgrade}>
+      {m.billing_upgrade_to_paid_plan()}
+    </button>
   {/snippet}
 
   <div class="trial-section">

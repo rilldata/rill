@@ -80,4 +80,21 @@ func TestWriteFile(t *testing.T) {
 		Remove: true,
 	})
 	require.Error(t, err)
+
+	// Reject paths that traverse outside the project directory
+	for _, path := range []string{"../escape.sql", "/../escape.sql", "models/../../escape.sql", "..\\escape.sql"} {
+		res = nil
+		_, err = s.CallTool(t.Context(), ai.RoleUser, ai.WriteFileName, &res, &ai.WriteFileArgs{
+			Path:     path,
+			Contents: "SELECT 1 AS val",
+		})
+		require.ErrorContains(t, err, "must not contain", "path %q", path)
+
+		res = nil
+		_, err = s.CallTool(t.Context(), ai.RoleUser, ai.WriteFileName, &res, &ai.WriteFileArgs{
+			Path:   path,
+			Remove: true,
+		})
+		require.ErrorContains(t, err, "must not contain", "path %q", path)
+	}
 }

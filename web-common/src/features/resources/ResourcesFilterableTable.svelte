@@ -17,6 +17,7 @@
     filterableTypes,
     filterResources,
     getStatusPriority,
+    refreshableTypes,
     statusFilters,
   } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ActionsCell from "@rilldata/web-common/features/projects/status/ActionsCell.svelte";
@@ -194,8 +195,9 @@
           resourceName: row.original.meta?.name?.name ?? "",
           canRefresh:
             !isRowReconciling &&
-            (row.original.meta?.name?.kind === ResourceKind.Model ||
-              row.original.meta?.name?.kind === ResourceKind.Source),
+            refreshableTypes.includes(
+              row.original.meta?.name?.kind as ResourceKind,
+            ),
           resource: row.original,
           onRefresh: onRefetch,
           onDescribe: handleDescribe,
@@ -214,7 +216,7 @@
 
 <section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Resources</h2>
+    <h2 class="text-lg font-medium">{m.status_nav_resources()}</h2>
   </div>
 
   <!-- Search, Filter, and Action Controls -->
@@ -273,7 +275,7 @@
       >
         <span class="text-fg-secondary font-medium">
           {#if selectedStatuses.length === 0}
-            All statuses
+            {m.status_all_statuses()}
           {:else if selectedStatuses.length === 1}
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
@@ -311,7 +313,7 @@
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         onclick={clearFilters}
       >
-        Clear
+        {m.status_clear()}
       </button>
     {/if}
 
@@ -324,8 +326,10 @@
       }}
       disabled={isRefreshDisabled}
     >
-      <span class="hidden lg:inline">Refresh all sources and models</span>
-      <span class="lg:hidden">Refresh all</span>
+      <span class="hidden lg:inline">
+        {m.status_refresh_all_sources_models()}
+      </span>
+      <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
   </div>
 
@@ -333,7 +337,7 @@
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if isError}
     <div class="text-red-500">
-      Error loading resources: {errorMessage}
+      {m.status_error_loading_resources({ error: errorMessage })}
     </div>
   {:else}
     <VirtualizedTable

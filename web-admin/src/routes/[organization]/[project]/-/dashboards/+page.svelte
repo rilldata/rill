@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-  <title>{project} overview - Rill</title>
+  <title>{m.project_overview_page_title({ project })}</title>
 </svelte:head>
 
 <ContentContainer

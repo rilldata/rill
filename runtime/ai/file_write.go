@@ -52,15 +52,17 @@ func (t *WriteFile) Spec() *mcp.Tool {
 }
 
 func (t *WriteFile) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {
 	s := GetSession(ctx)
 
-	if !strings.HasPrefix(args.Path, "/") {
-		args.Path = "/" + args.Path
+	path, err := normalizeFilePath(args.Path)
+	if err != nil {
+		return nil, err
 	}
+	args.Path = path
 
 	// Read existing content before writing (for diff computation)
 	var isNewFile bool

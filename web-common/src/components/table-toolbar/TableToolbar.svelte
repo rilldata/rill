@@ -6,7 +6,7 @@
   import TableToolbarViewToggle from "./TableToolbarViewToggle.svelte";
   import type { FilterGroup, SortOption, ViewMode } from "./types";
   import type { Snippet } from "svelte";
-  import type { RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { type RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let {
     searchTextStore,

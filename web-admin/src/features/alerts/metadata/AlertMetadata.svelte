@@ -18,7 +18,10 @@
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
-  import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
+  import {
+    exportFormatToPrettyString,
+    formatRefreshSchedule,
+  } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -30,6 +33,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -139,7 +143,10 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
+        <h1
+          class="text-fg-primary text-lg font-bold"
+          aria-label={m.alert_metadata_name_aria()}
+        >
           {alertSpec.displayName}
         </h1>
         <div class="grow"></div>
@@ -164,7 +171,10 @@
     <!-- Five columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_dashboard_name_aria()}
+      >
         {#if dashboardTitle}
           <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
           <MetadataValue>
@@ -193,7 +203,10 @@
       </div>
 
       <!-- Split by dimension -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_split_by_dimension_aria()}
+      >
         <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
         <MetadataValue>
           {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
@@ -202,7 +215,10 @@
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_schedule_aria()}
+      >
         <MetadataLabel>{m.alert_schedule()}</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
@@ -212,6 +228,20 @@
         <MetadataLabel>{m.alert_snooze()}</MetadataLabel>
         <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
+
+      <!-- Email attachment -->
+      {#if alertSpec.exportAttach}
+        <div class="flex flex-col gap-y-3">
+          <MetadataLabel>{m.alert_email_attachment()}</MetadataLabel>
+          <MetadataValue>
+            {exportFormatToPrettyString(
+              alertSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_CSV,
+            )} • {!alertSpec.exportLimit || alertSpec.exportLimit === "0"
+              ? m.report_no_row_limit()
+              : m.report_row_limit({ count: alertSpec.exportLimit })}
+          </MetadataValue>
+        </div>
+      {/if}
     </div>
 
     <!-- Filters -->

@@ -56,6 +56,12 @@
   export let viewingDashboard: boolean;
   export let autoSave: boolean;
   export let switchView: () => void;
+  // When the explore is defined inline in a metrics view file, keyPath points at the
+  // nested block holding the explore properties (e.g. ["explore"]). Empty for a
+  // standalone explore file, where the properties live at the top level.
+  export let keyPath: string[] = [];
+
+  $: isInlineExplore = keyPath.length > 0;
 
   const runtimeClient = useRuntimeClient();
   const StateManagers = getStateManagers();
@@ -109,15 +115,15 @@
 
   $: metricsViewSpec = metricsViewResource?.state?.validSpec;
 
-  $: rawTitle = parsedDocument.get("title");
-  $: rawDisplayName = parsedDocument.get("display_name");
-  $: rawMetricsView = parsedDocument.get("metrics_view");
-  $: rawDimensions = parsedDocument.get("dimensions");
-  $: rawMeasures = parsedDocument.get("measures");
-  $: rawTimeZones = parsedDocument.get("time_zones");
-  $: rawTheme = parsedDocument.get("theme");
-  $: rawTimeRanges = parsedDocument.get("time_ranges");
-  $: rawDefaults = parsedDocument.get("defaults");
+  $: rawTitle = parsedDocument.getIn([...keyPath, "title"]);
+  $: rawDisplayName = parsedDocument.getIn([...keyPath, "display_name"]);
+  $: rawMetricsView = parsedDocument.getIn([...keyPath, "metrics_view"]);
+  $: rawDimensions = parsedDocument.getIn([...keyPath, "dimensions"]);
+  $: rawMeasures = parsedDocument.getIn([...keyPath, "measures"]);
+  $: rawTimeZones = parsedDocument.getIn([...keyPath, "time_zones"]);
+  $: rawTheme = parsedDocument.getIn([...keyPath, "theme"]);
+  $: rawTimeRanges = parsedDocument.getIn([...keyPath, "time_ranges"]);
+  $: rawDefaults = parsedDocument.getIn([...keyPath, "defaults"]);
 
   $: resourceTags = readRootYamlTags(parsedDocument);
   $: tagSuggestions = getResourceTagSuggestions(
@@ -260,9 +266,9 @@
   ) {
     Object.entries(newRecord).forEach(([property, value]) => {
       if (!value) {
-        parsedDocument.delete(property);
+        parsedDocument.deleteIn([...keyPath, property]);
       } else {
-        parsedDocument.set(property, value);
+        parsedDocument.setIn([...keyPath, property], value);
       }
     });
 
@@ -270,9 +276,9 @@
       removeProperties.forEach((prop) => {
         try {
           if (Array.isArray(prop)) {
-            parsedDocument.deleteIn(prop);
+            parsedDocument.deleteIn([...keyPath, ...prop]);
           } else {
-            parsedDocument.delete(prop);
+            parsedDocument.deleteIn([...keyPath, prop]);
           }
         } catch {
           // ignore
@@ -410,32 +416,34 @@
       onChange={updateResourceTags}
     />
 
-    <Input
-      hint="View documentation"
-      link="https://docs.rilldata.com/reference/project-files/metrics-views"
-      lockable
-      lockTooltip="Unlock to change metrics view"
-      label="Metrics view referenced"
-      capitalizeLabel={false}
-      bind:value={metricsView}
-      sameWidth
-      options={metricsViewNames.map((name) => ({
-        label: name,
-        value: name,
-      }))}
-      onChange={() => {
-        killState();
+    {#if !isInlineExplore}
+      <Input
+        hint="View documentation"
+        link="https://docs.rilldata.com/reference/project-files/metrics-views"
+        lockable
+        lockTooltip="Unlock to change metrics view"
+        label="Metrics view referenced"
+        capitalizeLabel={false}
+        bind:value={metricsView}
+        sameWidth
+        options={metricsViewNames.map((name) => ({
+          label: name,
+          value: name,
+        }))}
+        onChange={() => {
+          killState();
 
-        updateProperties(
-          {
-            metrics_view: metricsView,
-            measures: "*",
-            dimensions: "*",
-          },
-          ["defaults"],
-        );
-      }}
-    />
+          updateProperties(
+            {
+              metrics_view: metricsView,
+              measures: "*",
+              dimensions: "*",
+            },
+            ["defaults"],
+          );
+        }}
+      />
+    {/if}
 
     {#each itemTypes as type (type)}
       {@const items = type === "measures" ? measures : dimensions}
@@ -558,14 +566,30 @@
         const altMode = isDarkMode ? "light" : "dark";
 
         // check if theme exists for alt mode
-        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+        const setAltMode = !parsedDocument.hasIn([
+          ...keyPath,
+          "theme",
+          altMode,
+        ]);
 
-        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
-        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+        parsedDocument.setIn(
+          [...keyPath, "theme", modeKey, "primary"],
+          primary,
+        );
+        parsedDocument.setIn(
+          [...keyPath, "theme", modeKey, "secondary"],
+          secondary,
+        );
 
         if (setAltMode) {
-          parsedDocument.setIn(["theme", altMode, "primary"], primary);
-          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+          parsedDocument.setIn(
+            [...keyPath, "theme", altMode, "primary"],
+            primary,
+          );
+          parsedDocument.setIn(
+            [...keyPath, "theme", altMode, "secondary"],
+            secondary,
+          );
         }
 
         killState();

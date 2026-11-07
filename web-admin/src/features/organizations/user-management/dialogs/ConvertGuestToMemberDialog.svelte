@@ -3,10 +3,12 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceSetOrganizationMemberUserRole,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1OrganizationMemberUser,
   } from "@rilldata/web-admin/client";
+  import {
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import {
     getProjectRolesDescriptionMap,
     getProjectRolesOptions,
@@ -45,14 +47,9 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.users_guest_upgraded({ role }),

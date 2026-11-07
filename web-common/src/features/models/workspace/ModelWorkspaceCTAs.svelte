@@ -52,7 +52,7 @@
 <ModelRefreshButton {resource} {hasUnsavedChanges} />
 
 <ExportMenu
-  label="Export model data"
+  label={m.dashboard_export_model_data()}
   disabled={!hasResultTable || !isModelIdle}
   workspace
   getQuery={() => {
@@ -100,7 +100,7 @@
           disabled={!hasResultTable}
         >
           <Add />
-          Create metrics view
+          {m.model_workspace_create_metrics_view()}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     {/if}

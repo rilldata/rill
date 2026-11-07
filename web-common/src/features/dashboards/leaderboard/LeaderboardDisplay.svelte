@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
@@ -7,12 +8,12 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
     dimensionColumn,
     MAX_DIMENSION_COLUMN_WIDTH,
     MIN_DIMENSION_COLUMN_WIDTH,
@@ -20,14 +21,14 @@
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
 
   const StateManagers = getStateManagers();
   const {
+    dashboardStore,
     selectors: {
       numberFormat: {
         measureFormatters,
@@ -35,7 +36,6 @@
         measureTooltipFormatters,
         activeMeasureTooltipFormatter,
       },
-      dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
@@ -45,15 +45,16 @@
         leaderboardMeasures,
         leaderboardSortByMeasureName,
       },
+      exactMeasures: { exactMeasureContext, hasAnyExactVariant },
     },
     actions: {
       dimensions: { setPrimaryDimension },
       sorting: { toggleSort },
-      dimensionsFilter: { toggleDimensionValueSelection },
       comparison: { toggleComparisonDimension },
+      exactMeasures: { toggleExactMeasure },
     },
     exploreName,
-    dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const client = useRuntimeClient();
@@ -63,6 +64,7 @@
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
+    deltaColumn.reset();
   }
 
   $: dimensionColumnWidth = clamp(
@@ -71,19 +73,26 @@
     MAX_DIMENSION_COLUMN_WIDTH,
   );
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
-    $leaderboardSortByMeasureName,
+  $: measuresWithContext = new Set(
+    $leaderboardShowContextForAllMeasures
+      ? $leaderboardMeasures.map((measure) => measure.name!)
+      : [$leaderboardSortByMeasureName],
   );
-  $: showDeltaPercent = !!comparisonTimeRange;
 
-  $: tableWidth =
-    dimensionColumnWidth +
-    $valueColumn +
-    (comparisonTimeRange
-      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
-      : showPercentOfTotal
+  // Mirrors the columns rendered in Leaderboard.svelte's colgroup.
+  $: tableWidth = $leaderboardMeasures.reduce((width, measure) => {
+    const showContext = measuresWithContext.has(measure.name!);
+    return (
+      width +
+      $valueColumn +
+      (showContext && $isMeasureValidPercentOfTotal(measure.name!)
         ? COMPARISON_COLUMN_WIDTH
-        : 0);
+        : 0) +
+      (showContext && comparisonTimeRange
+        ? $deltaColumn + COMPARISON_COLUMN_WIDTH
+        : 0)
+    );
+  }, dimensionColumnWidth);
 </script>
 
 <div
@@ -98,20 +107,33 @@
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
+            {@const dimensionName = dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasures={$leaderboardMeasures}
+              ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+              exactContext={$hasAnyExactVariant
+                ? $exactMeasureContext(
+                    exploreExactSurface.leaderboard(dimensionName),
+                  )
+                : undefined}
+              onToggleExact={(measureName) =>
+                toggleExactMeasure(
+                  exploreExactSurface.leaderboard(dimensionName),
+                  measureName,
+                )}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
-              {dimensionThresholdFilters}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
-              filterExcludeMode={$isFilterExcludeMode(dimension.name)}
+              filterExcludeMode={expressionFilterManager.sortedFilterManagers.dimensions.find(
+                (dfm) => dfm.name === dimension.name,
+              )?.exclude ?? false}
               {comparisonTimeRange}
               {dimension}
               {parentElement}
@@ -119,7 +141,7 @@
               selectedValues={selectedDimensionValues(
                 client,
                 [metricsViewName],
-                $dashboardStore.whereFilter,
+                whereFilter,
                 dimension.name,
                 timeRange.start,
                 timeRange.end,
@@ -136,7 +158,12 @@
                   }}
               {setPrimaryDimension}
               {toggleSort}
-              {toggleDimensionValueSelection}
+              toggleDimensionValueSelection={(_1, value, _2, exclusive) =>
+                expressionFilterManager.dimensionFilterAction(
+                  dimension.name!,
+                  (dimensionManager) =>
+                    dimensionManager.toggleValue(value, exclusive ?? false),
+                )}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
               onDimensionColumnResize={dimensionColumn.set}

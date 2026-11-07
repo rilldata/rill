@@ -38,6 +38,7 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.PivotRowLimit,
     ExploreStateURLParams.PivotShowTotalsColumn,
     ExploreStateURLParams.PivotShowTotalsRow,
+    ExploreStateURLParams.PivotFormatting,
     ExploreStateURLParams.SortBy,
     ExploreStateURLParams.SortDirection,
   ],

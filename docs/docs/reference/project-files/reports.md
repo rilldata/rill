@@ -98,10 +98,10 @@ Supports ai resolvers only as of now.
 
         - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
-        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": groups files by directory, returning one row per directory that directly contains matched files. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns. The "directory" and "hive" modes group matched files, so the glob must match files (e.g. `s3://bucket/year=*/*.parquet`); a glob that matches only directories returns an error.
 
 
-        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning with a glob that matches files.
 
         - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
 
@@ -110,6 +110,8 @@ Supports ai resolvers only as of now.
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
+
+      - **`where_resource`** - _[array of string]_ - Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
 
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
@@ -121,37 +123,31 @@ Supports ai resolvers only as of now.
 
       - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period
+      - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+        - **`expression`** - _[string]_ - Rill time expression. Note that snapping excludes the period containing the reference point, so '1D as of latest/D' is the day before the latest data; use '1D as of latest/D+1D' for the last day with data.
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
-
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '1D as of latest/D' when the time range is '1D as of latest/D+1D')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period
+      - **`time_zone`** - _[string]_ - IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis
+      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time.
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
+      - **`dimensions`** - _[array of string]_ - List of dimensions to include in the analysis
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
+      - **`measures`** - _[array of string]_ - List of measures to include in the analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis
+      - **`where`** - _[object]_ - Optional filter expression to apply to the analysis, in the same format as metrics view query filters
 
 ### `query`
 
@@ -172,6 +168,8 @@ _[object]_ - Export configuration for query-based reports
   - **`include_header`** - _[boolean]_ - Include column headers in the export
 
   - **`limit`** - _[integer]_ - Maximum number of rows to export
+
+  - **`attach`** - _[boolean]_ - If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
 
 ### `notify`
 
@@ -206,6 +204,10 @@ _[array of string]_ - List of resource references
 ### `tags`
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 
@@ -250,15 +252,15 @@ type: report
 display_name: Daily AI Insights
 refresh:
     cron: "0 8 * * *"
+watermark: inherit # resolve "latest" against the explore's data instead of the trigger time
 data:
     ai:
         prompt: "Analyze key metrics and identify significant changes"
         time_range:
-            expression: "1D as of latest/D"
+            expression: "1D as of latest/D+1D" # the last day with data
         comparison_time_range:
-            expression: "1D as of latest/D offset -1D"
-        context:
-            explore: my_explore
+            expression: "1D as of latest/D" # the day before it
+        explore: my_explore
 notify:
     email:
         recipients:

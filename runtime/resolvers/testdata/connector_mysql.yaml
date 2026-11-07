@@ -67,7 +67,7 @@ tests:
     properties:
       sql: "select * from all_datatypes_clickhouse order by tinyint_col"
       connector: clickhouse
-    result_csv: "tinyint_col,smallint_col,mediumint_col,int_col,bigint_col,float_col,double_col,decimal_col,char_col,varchar_col,tinytext_col,text_col,mediumtext_col,longtext_col,binary_col,varbinary_col,tinyblob_col,blob_col,mediumblob_col,longblob_col,enum_col,set_col,date_col,datetime_col,timestamp_col,time_col,year_col,boolean_col,bit_col,json_col\n0,0,0,0,0,0,0,0.00,,,,,,,\0\0\0\0\0\0\0\0\0\0,,,,,,small,,1970-01-01,1970-01-01T00:00:00Z,,00:00:00,1970,0,0,{}\n127,32767,8388607,2147483647,1000000000000000000,1.100000023841858,2.2,3.30,C,VarChar,Tiny Text,Text,Medium Text,Long text content,Binary\0\0\0\0,VarBinary,Tiny Blob,Blob,Medium Blob,Long Blob,medium,\"a,b\",2024-02-14,2025-02-14T12:34:56Z,2025-02-14T12:34:56Z,12:34:56,2024,1,1,\"{\"\"key\"\": \"\"value\"\"}\"\n,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n"
+    result_csv: "tinyint_col,smallint_col,mediumint_col,int_col,bigint_col,float_col,double_col,decimal_col,char_col,varchar_col,tinytext_col,text_col,mediumtext_col,longtext_col,binary_col,varbinary_col,tinyblob_col,blob_col,mediumblob_col,longblob_col,enum_col,set_col,date_col,datetime_col,timestamp_col,time_col,year_col,boolean_col,bit_col,json_col\n0,0,0,0,0,0,0,0,,,,,,,\0\0\0\0\0\0\0\0\0\0,,,,,,small,,1970-01-01,1970-01-01T00:00:00Z,,00:00:00,1970,0,0,{}\n127,32767,8388607,2147483647,1000000000000000000,1.100000023841858,2.2,3.3,C,VarChar,Tiny Text,Text,Medium Text,Long text content,Binary\0\0\0\0,VarBinary,Tiny Blob,Blob,Medium Blob,Long Blob,medium,\"a,b\",2024-02-14,2025-02-14T12:34:56Z,2025-02-14T12:34:56Z,12:34:56,2024,1,1,\"{\"\"key\"\": \"\"value\"\"}\"\n,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n"
   - name: query_all_datatypes_clickhouse
     resolver: sql
     properties:
@@ -83,7 +83,7 @@ tests:
       bigint_col,Nullable(Int64)
       float_col,Nullable(Float32)
       double_col,Nullable(Float64)
-      decimal_col,Nullable(String)
+      decimal_col,"Nullable(Decimal(10, 2))"
       char_col,Nullable(String)
       varchar_col,Nullable(String)
       tinytext_col,Nullable(String)
@@ -98,8 +98,8 @@ tests:
       longblob_col,Nullable(String)
       enum_col,Nullable(String)
       set_col,Nullable(String)
-      date_col,Nullable(Date)
-      datetime_col,Nullable(DateTime)
+      date_col,Nullable(Date32)
+      datetime_col,Nullable(DateTime64(0))
       timestamp_col,Nullable(DateTime)
       time_col,Nullable(String)
       year_col,Nullable(String)

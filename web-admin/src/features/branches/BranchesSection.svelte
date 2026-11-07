@@ -354,7 +354,8 @@
                     <span>
                       {m.branch_recreate_with()}
                       <code class="font-mono"
-                        >rill project deployment create {branchName} --editable</code
+                        ><!-- i18n-ignore: CLI command -->rill project
+                        deployment create {branchName} --editable</code
                       >.
                     </span>
                   </div>
@@ -467,13 +468,15 @@
           </div>
         </div>
       {/each}
-      <div class="branch-hint">
-        <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
-        <span class="text-xs text-fg-secondary">
-          {m.branch_add_from_cli()}
-        </span>
-        <CopyableCodeBlock code="rill project deployment create <branch>" />
-      </div>
+      {#if $cloudEditing}
+        <div class="branch-hint">
+          <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
+          <span class="text-xs text-fg-secondary">
+            {m.branch_add_from_cli()}
+          </span>
+          <CopyableCodeBlock code="rill project deployment create <branch>" />
+        </div>
+      {/if}
     </div>
   {/if}
 </section>

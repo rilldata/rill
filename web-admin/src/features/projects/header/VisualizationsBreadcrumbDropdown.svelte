@@ -12,6 +12,12 @@
     InMemoryRuneStore,
   } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
+  import {
+    getDashboardFavouritesStore,
+    sortByFavourites,
+  } from "../../dashboards/listing/dashboard-favourites.ts";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
+  import { page } from "$app/state";
 
   let {
     options,
@@ -37,14 +43,22 @@
     filterResources(allDashboards, [], searchText, [], selectedTagsStore.value),
   );
 
-  let filteredDashboardNames = $derived(
-    new Set(
-      filteredDashboards.map((r) => r.meta?.name?.name?.toLowerCase() ?? ""),
-    ),
+  // Option ids are `kind/name` resource keys, the same as table row ids.
+  let filteredDashboardIds = $derived(
+    new Set(filteredDashboards.map(resourceTableGetRowId)),
   );
 
   let filteredOptions = $derived(
-    [...options].filter(([id]) => filteredDashboardNames.has(id)),
+    [...options].filter(([id]) => filteredDashboardIds.has(id)),
+  );
+
+  let { organization, project } = $derived(page.params);
+  let dashboardFavourites = $derived(
+    getDashboardFavouritesStore(organization, project),
+  );
+
+  let sortedOptions = $derived(
+    sortByFavourites(filteredOptions, dashboardFavourites.value, ([id]) => id),
   );
 </script>
 
@@ -62,7 +76,7 @@
     </div>
   {/if}
 
-  {#each filteredOptions as [id, option] (id)}
+  {#each sortedOptions as [id, option] (id)}
     <BreadcrumbDropdownItem
       {id}
       {option}
