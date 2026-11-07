@@ -68,6 +68,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &DevelopPersonalCanvas{Runtime: rt})
 	RegisterTool(r, &WritePersonalCanvas{Runtime: rt})
 	RegisterTool(r, &ChartData{Runtime: rt})
+	RegisterTool(r, &SaveAlert{Runtime: rt})
+	RegisterTool(r, &ListAlerts{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
 	RegisterTool(r, &SearchExternalTools{Runtime: rt})

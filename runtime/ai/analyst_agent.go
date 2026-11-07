@@ -231,8 +231,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if !args.DisableCharts && !args.IsAlert {
 		tools = append(tools, CreateChartName)
 	}
-	// develop_personal_canvas is dropped automatically by Complete when the user can't have personal canvases (see DevelopPersonalCanvas.CheckAccess).
-	tools = append(tools, DevelopPersonalCanvasName)
+	// develop_personal_canvas is dropped automatically by Complete when the user can't have personal canvases (see DevelopPersonalCanvas.CheckAccess),
+	// and the alert tools when no user is present to confirm what they save (see checkAlertReportAccess).
+	tools = append(tools, DevelopPersonalCanvasName, SaveAlertName, ListAlertsName)
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
