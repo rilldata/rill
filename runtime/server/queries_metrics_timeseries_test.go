@@ -2,17 +2,24 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -994,4 +1001,55 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 
 func testClaims() *runtime.SecurityClaims {
 	return &runtime.SecurityClaims{SkipChecks: true}
+}
+
+// Day buckets near 0001-01-01 are truncated into year 0 in time zones east of UTC, for data rows as well as null-filled gaps.
+// The response must clamp them to the range of a protobuf timestamp instead of failing to marshal.
+func TestServer_MetricsViewTimeSeries_ClampsToProtoTimestampRange(t *testing.T) {
+	t.Parallel()
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/placeholder_dates.sql": `
+SELECT TIMESTAMP '0001-01-01 01:00:00' AS event_time, 'a' AS country, 1 AS value
+UNION ALL
+SELECT TIMESTAMP '0001-01-02 01:00:00' AS event_time, 'a' AS country, 2 AS value
+`,
+			"metrics/placeholder_metrics.yaml": `
+type: metrics_view
+model: placeholder_dates
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: SUM(value)
+`,
+		},
+	})
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	res, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "placeholder_metrics",
+		MeasureNames:    []string{"total"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "0001-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "0001-01-03T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		TimeZone:        "Asia/Kolkata",
+	})
+	require.NoError(t, err)
+
+	// The response must be marshalable, which is where out-of-range timestamps used to fail.
+	_, err = protojson.Marshal(res)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, res.Data)
+	for _, v := range res.Data {
+		require.NoError(t, v.Ts.CheckValid())
+	}
+	// The first bucket starts before 0001-01-01T00:00:00Z in Asia/Kolkata and is clamped to it.
+	require.Equal(t, time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), res.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, res.Data[0].Records.Fields["total"].GetNumberValue())
 }

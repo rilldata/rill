@@ -48,6 +48,7 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { isWithinTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import type { SortingState } from "tanstack-table-8-svelte-5";
 
 /**
@@ -237,6 +238,22 @@ function fromTimeRangesParams(
 
 export const CustomTimeRangeRegex =
   /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z),(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/;
+
+/**
+ * Whether an absolute time range from the URL can be sent to the runtime.
+ * Panning or comparing from a placeholder date such as 0001-01-01 lands in year 0, outside the bounds of a protobuf timestamp.
+ * Anything that is not an absolute range passes; the rill time parser validates those.
+ */
+export function isCustomTimeRangeWithinBounds(tr: string): boolean {
+  const customTimeRangeMatch = CustomTimeRangeRegex.exec(tr);
+  if (!customTimeRangeMatch) return true;
+  const [, start, end] = customTimeRangeMatch;
+  return (
+    isWithinTimestampBounds(new Date(start)) &&
+    isWithinTimestampBounds(new Date(end))
+  );
+}
+
 export function fromTimeRangeUrlParam(tr: string) {
   const customTimeRangeMatch = CustomTimeRangeRegex.exec(tr);
   if (customTimeRangeMatch?.length) {
