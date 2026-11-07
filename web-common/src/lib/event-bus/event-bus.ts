@@ -19,6 +19,8 @@ export interface Events {
   "rill-yaml-updated": void;
   "env-file-updated": string;
   "remote-changes-detected": void;
+  // A personal file was saved outside the page that lists them (e.g. by the AI).
+  "personal-files-changed": void;
 }
 
 export const eventBus = new EventEmitter<Events>();

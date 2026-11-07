@@ -63,6 +63,9 @@ export const ToolName = {
   // Memory tool
   UPDATE_MEMORY: "update_memory",
 
+  // Personal dashboard tool
+  DEVELOP_PERSONAL_CANVAS: "develop_personal_canvas",
+
   // Common tools
   NAVIGATE: "navigate",
   CLICK_UI: "click_ui",

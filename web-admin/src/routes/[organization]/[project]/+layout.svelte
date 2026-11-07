@@ -42,6 +42,7 @@
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
+  import PersonalFilesChangeListener from "@rilldata/web-admin/features/personal-files/PersonalFilesChangeListener.svelte";
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
@@ -373,6 +374,8 @@
             />
           {/if}
         {/if}
+        <!-- Keeps the personal files list current when the AI saves one from any chat in the project. -->
+        <PersonalFilesChangeListener {organization} {project} />
         {@render children()}
       </RuntimeProvider>
     {/key}
