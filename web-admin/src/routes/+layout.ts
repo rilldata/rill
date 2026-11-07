@@ -21,6 +21,10 @@ import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/aut
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
+import {
+  resolvePublicURLBearer,
+  type PublicURLBearer,
+} from "@rilldata/web-admin/features/public-urls/public-url-bearer";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
@@ -41,7 +45,18 @@ export const load = async ({ params, url, route, depends }) => {
   if (url.searchParams.has("token")) {
     searchParamToken = url.searchParams.get("token") ?? undefined;
   }
-  const token = searchParamToken ?? routeToken;
+  let token = searchParamToken ?? routeToken;
+
+  // On a public URL (identified by its route token), a password-protected token grants no access
+  // until it has been unlocked with its password. See `resolvePublicURLBearer`.
+  let publicURL: PublicURLBearer | undefined;
+  if (routeToken && !searchParamToken) {
+    publicURL = await resolvePublicURLBearer(routeToken).catch((e) => {
+      console.error(e);
+      throw error(404, m.route_error_token_not_found());
+    });
+    token = publicURL.bearer;
+  }
 
   let user: V1User | undefined;
   try {
@@ -60,6 +75,20 @@ export const load = async ({ params, url, route, depends }) => {
 
   // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
   if (user) await maybeRedirectToWelcomePage(route);
+
+  // A locked public URL can't read its organization or project.
+  // The project layout renders the password prompt in their place.
+  if (publicURL?.locked) {
+    return {
+      user,
+      organizationPermissions: <V1OrganizationPermissions>{},
+      projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization: undefined,
+      publicURLLocked: true,
+      tokenMetadata: publicURL.tokenMetadata,
+    };
+  }
 
   // If no organization or project, return empty permissions
   if (!organization) {
@@ -126,6 +155,8 @@ export const load = async ({ params, url, route, depends }) => {
       token,
       project: proj,
       runtime: runtimeData,
+      publicURLLocked: false,
+      tokenMetadata: publicURL?.tokenMetadata,
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {

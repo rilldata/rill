@@ -1673,6 +1673,20 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecr
 	return c.magicAuthTokenFromDTO(res, withSecret)
 }
 
+// FindMagicAuthTokenForUpdate is like FindMagicAuthToken without the secret, but it must be called in a transaction:
+// it locks the token's row until the transaction ends, so concurrent updates of the token wait for it.
+func (c *connection) FindMagicAuthTokenForUpdate(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+	if txFromContext(ctx) == nil {
+		return nil, errors.New("FindMagicAuthTokenForUpdate must be called in a transaction")
+	}
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1 FOR UPDATE", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return c.magicAuthTokenFromDTO(res, false)
+}
+
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
 	res := &magicAuthTokenWithUserDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, COALESCE(u.email, '') AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
@@ -1707,14 +1721,23 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, password_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.PasswordHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
 	return c.magicAuthTokenFromDTO(res, true)
+}
+
+func (c *connection) UpdateMagicAuthToken(ctx context.Context, id string, opts *database.UpdateMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE magic_auth_tokens SET display_name=$1, password_hash=$2 WHERE id=$3 RETURNING *", opts.DisplayName, opts.PasswordHash, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return c.magicAuthTokenFromDTO(res, false)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1738,6 +1761,47 @@ func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) er
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("magic auth token", err)
+}
+
+func (c *connection) FindMagicAuthTokenSession(ctx context.Context, id string) (*database.MagicAuthTokenSession, error) {
+	res := &database.MagicAuthTokenSession{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT s.* FROM magic_auth_token_sessions s WHERE s.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token session", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertMagicAuthTokenSession(ctx context.Context, opts *database.InsertMagicAuthTokenSessionOptions) (*database.MagicAuthTokenSession, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.MagicAuthTokenSession{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_token_sessions (id, secret_hash, magic_auth_token_id, expires_on)
+		VALUES ($1, $2, $3, $4) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.MagicAuthTokenID, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token session", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteMagicAuthTokenSession(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE id=$1", id)
+	return checkDeleteRow("magic auth token session", res, err)
+}
+
+func (c *connection) DeleteMagicAuthTokenSessionsForToken(ctx context.Context, magicAuthTokenID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE magic_auth_token_id=$1", magicAuthTokenID)
+	return parseErr("magic auth token session", err)
+}
+
+func (c *connection) DeleteExpiredMagicAuthTokenSessions(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE expires_on + $1 < now()", retention)
+	return parseErr("magic auth token session", err)
 }
 
 func (c *connection) FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationToken, error) {

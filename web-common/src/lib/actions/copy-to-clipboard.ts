@@ -16,23 +16,29 @@ export function isClipboardApiSupported(): boolean {
   return true;
 }
 
-function copyToClipboardAPI(value: string) {
-  navigator.clipboard.writeText(value).catch(console.error);
-}
-
 export function copyToClipboard(
   value: string,
   message?: string,
   notify: boolean = true,
-) {
-  if (isClipboardApiSupported()) {
-    copyToClipboardAPI(value);
-    if (notify) {
+): void {
+  void tryCopyToClipboard(value).then((copied) => {
+    if (copied && notify) {
       eventBus.emit("notification", {
         message: message || `Copied ${value} to clipboard`,
       });
     }
-  } else {
-    console.warn("Clipboard API not supported.");
+  });
+}
+
+export async function tryCopyToClipboard(value: string): Promise<boolean> {
+  if (!isClipboardApiSupported()) return false;
+
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch (error) {
+    console.error(error);
+    return false;
   }
+
+  return true;
 }
