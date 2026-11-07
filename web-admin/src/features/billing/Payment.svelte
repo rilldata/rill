@@ -3,6 +3,7 @@
   import {
     getPaymentIssueErrorText,
     needsPaymentSetup,
+    PaymentBillingIssueTypes,
   } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -18,7 +19,11 @@
   let hasPaymentCustomer = $derived(
     !!$org.data?.organization?.paymentCustomerId,
   );
-  let paymentIssues = $derived($categorisedIssues.data?.payment);
+  let paymentIssues = $derived(
+    $categorisedIssues.data?.payment.filter(
+      (issue) => issue.type && issue.type in PaymentBillingIssueTypes,
+    ),
+  );
   async function handleManageCards() {
     const setup = paymentIssues?.length
       ? needsPaymentSetup(paymentIssues)

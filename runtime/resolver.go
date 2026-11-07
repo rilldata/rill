@@ -12,6 +12,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -86,10 +87,35 @@ type ResolverExportOptions struct {
 type ResolverOptions struct {
 	Runtime    *Runtime
 	InstanceID string
+	// Properties are the resolver's static properties, such as the SQL of a SQL resolver.
 	Properties map[string]any
-	Args       map[string]any
-	Claims     *SecurityClaims
-	ForExport  bool
+	// ProjectDeclared is set when Properties were declared in the project's source files and are resolved on the project's behalf,
+	// which today means the model reconciler (incremental state, partitions and tests).
+	// Only templates in such properties may access project variables, since the variables commonly hold secrets such as connector credentials.
+	// It must be left unset for properties supplied by an API caller, and for resources whose results are served to viewers
+	// or that users create through the admin API (custom APIs, dashboards, alerts and reports); the parser rejects variable references there. See TemplateVariables.
+	ProjectDeclared bool
+	Args            map[string]any
+	Claims          *SecurityClaims
+	ForExport       bool
+}
+
+// TemplateVariables returns the project variables that templates in the resolver's properties may access.
+// Project variables commonly hold secrets such as connector credentials, so they are only available to templates declared
+// in the project's source files (see ProjectDeclared), whoever the caller is.
+// Otherwise it returns an error if any of the given templates reference variables,
+// since resolving them to empty values would silently produce wrong results.
+// The templates may be strings or nested maps and slices of strings, matching the shapes accepted by parser.ResolveTemplateRecursively.
+func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
+	if o.ProjectDeclared {
+		return inst.ResolveVariables(false), nil
+	}
+	for _, tmpl := range templates {
+		if parser.TemplateReferencesVariables(tmpl) {
+			return nil, errors.New(`project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
+		}
+	}
+	return nil, nil
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -111,8 +137,10 @@ type ResolveOptions struct {
 	InstanceID         string
 	Resolver           string
 	ResolverProperties map[string]any
-	Args               map[string]any
-	Claims             *SecurityClaims
+	// ProjectDeclared is set when ResolverProperties were declared in the project's source files. See ResolverOptions.ProjectDeclared.
+	ProjectDeclared bool
+	Args            map[string]any
+	Claims          *SecurityClaims
 }
 
 type ResolveInfo struct {
@@ -152,12 +180,13 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:    r,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  false,
+		Runtime:         r,
+		InstanceID:      opts.InstanceID,
+		Properties:      opts.ResolverProperties,
+		ProjectDeclared: opts.ProjectDeclared,
+		Args:            opts.Args,
+		Claims:          opts.Claims,
+		ForExport:       false,
 	})
 	if err != nil {
 		return nil, nil, err

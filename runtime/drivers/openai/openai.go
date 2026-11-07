@@ -150,7 +150,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[strin
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -313,6 +313,11 @@ func (o *openaiHandle) AsModelExecutor(instanceID string, opts *drivers.ModelExe
 // AsModelManager implements drivers.Handle.
 func (o *openaiHandle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (o *openaiHandle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.

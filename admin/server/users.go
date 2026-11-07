@@ -692,12 +692,13 @@ func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUse
 
 func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.UsergroupMemberUser {
 	return &adminv1.UsergroupMemberUser{
-		UserId:       m.ID,
-		UserEmail:    m.Email,
-		UserName:     m.DisplayName,
-		UserPhotoUrl: m.PhotoURL,
-		CreatedOn:    timestamppb.New(m.CreatedOn),
-		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+		UserId:            m.ID,
+		UserEmail:         m.Email,
+		UserName:          m.DisplayName,
+		UserPhotoUrl:      m.PhotoURL,
+		PendingAcceptance: m.PendingAcceptance,
+		CreatedOn:         timestamppb.New(m.CreatedOn),
+		UpdatedOn:         timestamppb.New(m.UpdatedOn),
 	}
 }
 
@@ -714,6 +715,7 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 		RoleName:   i.RoleName,
 		InvitedBy:  safeStr(i.InvitedBy),
 		Attributes: attributes,
+		Usergroups: i.Usergroups,
 	}
 }
 

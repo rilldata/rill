@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -65,24 +66,37 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		zap.Int("output_messages", len(res.Message.Content)),
 		zap.Int("input_tokens", res.InputTokens),
 		zap.Int("cached_input_tokens", res.CachedInputTokens),
+		zap.Int("cache_write_input_tokens", res.CacheWriteInputTokens),
 		zap.Int("output_tokens", res.OutputTokens),
 		observability.ZapCtx(ctx),
 	)
 
+	// Older runtimes don't support reasoning blocks, so remove them unless the client opted in.
+	responseMessage := res.Message
+	if !req.IncludeReasoning {
+		responseMessage = &aiv1.CompletionMessage{
+			Role: res.Message.Role,
+			Data: res.Message.Data,
+			Content: slices.DeleteFunc(slices.Clone(res.Message.Content), func(block *aiv1.ContentBlock) bool {
+				return block.GetReasoning() != nil
+			}),
+		}
+	}
+
 	// Handle response backwards compatibility: if request used old format,
 	// populate both data and content fields for old runtime compatibility
-	responseMessage := res.Message
 	if needsBackwardsCompatibleResponse {
-		responseMessage = convertContentToData(res.Message)
+		responseMessage = convertContentToData(responseMessage)
 	}
 
 	// Any tool use response will be passed to the client (the runtime server) for execution.
 	return &adminv1.CompleteResponse{
-		Message:           responseMessage,
-		Provider:          res.Provider,
-		InputTokens:       uint32(res.InputTokens),
-		OutputTokens:      uint32(res.OutputTokens),
-		CachedInputTokens: uint32(res.CachedInputTokens),
+		Message:               responseMessage,
+		Provider:              res.Provider,
+		InputTokens:           uint32(res.InputTokens),
+		OutputTokens:          uint32(res.OutputTokens),
+		CachedInputTokens:     uint32(res.CachedInputTokens),
+		CacheWriteInputTokens: uint32(res.CacheWriteInputTokens),
 	}, nil
 }
 

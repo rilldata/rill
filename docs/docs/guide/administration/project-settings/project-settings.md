@@ -23,6 +23,8 @@ After deploying to Rill Cloud, you can navigate to the status page to monitor yo
 
 ![Status](<https://cdn.rilldata.com/docs/screenshots/guide/administration/project-status-overview.png>)
 
+To change the compute allocated to your deployments, see [Deployment Slots](/guide/administration/project-settings/deployment-slots).
+
 ### Resources
 
 The Resources tab lists all project resources (sources, models, metrics views, explores, etc.) with their current reconciliation status. You can search, filter by resource type or status (OK, Error, Warn), and trigger a full refresh of all sources and models. Parse errors are also surfaced here. You can filter by resource type and status to get quick information about the status of your project.

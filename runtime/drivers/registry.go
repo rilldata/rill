@@ -65,10 +65,15 @@ type Instance struct {
 	Annotations map[string]string
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `db:"public_paths"`
+	// EmbedOpenURL is the base URL for open links in emails from reports created from an embed.
+	// It's configured in rill.yaml.
+	EmbedOpenURL string `db:"embed_open_url"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
 	AIInstructions string `db:"ai_instructions"`
+	// AIPrompts are suggested prompts configured in rill.yaml, shown as starters in the project-wide AI chat.
+	AIPrompts []*runtimev1.AIPrompt `db:"ai_prompts"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
 	// Theme is the name of the theme resource to use for AI-generated charts.
@@ -103,10 +108,20 @@ type InstanceConfig struct {
 	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
 	// MetricsApproxComparisonTwoPhaseLimit if query limit is less than this then rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
 	MetricsApproxComparisonTwoPhaseLimit int64 `mapstructure:"rill.metrics.approximate_comparisons_two_phase_limit"`
+	// MetricsExactMeasures indicates whether queries may compute measures with their exact_expression (requested per measure with `exact: true`).
+	// When false, such queries fail with an error. Acts as a kill switch for expensive exact aggregations.
+	MetricsExactMeasures bool `mapstructure:"rill.metrics.exact_measures"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
 	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
+	// MetricsDruidMVDFilteredGroupBy indicates whether to narrow unnested (multi-value) dimensions in a GROUP BY to the values allowed by the query filter in Druid, using MV_FILTER_ONLY.
+	// Druid unnests multi-value dimensions implicitly, so a filter on such a dimension keeps every matching row and a GROUP BY then emits every value in those rows, not just the filtered ones.
+	MetricsDruidMVDFilteredGroupBy bool `mapstructure:"rill.metrics.druid_mvd_filtered_group_by"`
+	// MetricsDruidMVDFilteredSearch extends MetricsDruidMVDFilteredGroupBy to ILIKE filters (as issued by dimension search), using MV_FILTER_REGEX.
+	// When a search is combined with a filter on the searched dimension, the search regex takes precedence, so the results contain only values matching the search text.
+	// It requires Druid 35.0.0 or newer, where MV_FILTER_REGEX was introduced. It has no effect unless MetricsDruidMVDFilteredGroupBy is also enabled.
+	MetricsDruidMVDFilteredSearch bool `mapstructure:"rill.metrics.druid_mvd_filtered_search"`
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
@@ -120,6 +135,9 @@ type InstanceConfig struct {
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
 	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
+	// HealthMakeLiveQueries indicates whether health checks run live queries against the OLAP (including pings).
+	// When false, OLAP and metrics view health are not checked.
+	HealthMakeLiveQueries bool `mapstructure:"rill.health.make_live_queries"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
 	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
@@ -137,8 +155,6 @@ type InstanceConfig struct {
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
 	// AIMaxMessageSizeBytes is the maximum allowed size of an AI message's contents (tool call args or results). Exceeding it results in an error.
 	AIMaxMessageSizeBytes int64 `mapstructure:"rill.ai.max_message_size_bytes"`
-	// AIMCPTolerantArgs indicates whether MCP tool-call arguments with object/array fields JSON-encoded as strings are tolerantly decoded.
-	AIMCPTolerantArgs bool `mapstructure:"rill.ai.mcp_tolerant_args"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -214,7 +230,10 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisons:        true,
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
+		MetricsExactMeasures:                 true,
 		MetricsExactifyDruidTopN:             false,
+		MetricsDruidMVDFilteredGroupBy:       false,
+		MetricsDruidMVDFilteredSearch:        false,
 		MetricsNullFillingImplementation:     "pushdown",
 		MetricsPivotExportColumnLimit:        15000,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
@@ -225,7 +244,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
 		AIMaxMessageSizeBytes:                200 * 1024, // 200 KB
-		AIMCPTolerantArgs:                    true,
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}

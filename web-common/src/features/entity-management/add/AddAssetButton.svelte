@@ -5,6 +5,7 @@
     Database,
     File,
     Folder,
+    GraduationCap,
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
@@ -27,7 +28,8 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
   import { directoryState } from "../../file-explorer/directory-store.ts";
-  import { createResourceAndNavigate } from "./new-files.ts";
+  import ChartTypesDialog from "@rilldata/web-common/features/custom-viz/examples/ChartTypesDialog.svelte";
+  import { createResourceAndNavigate, skillFileTemplate } from "./new-files.ts";
   import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "../entity-mappers.ts";
@@ -41,11 +43,13 @@
   import AddModelSubOption from "@rilldata/web-common/features/entity-management/add/AddModelSubOption.svelte";
   import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
   import AddMetricsViewSubOption from "@rilldata/web-common/features/entity-management/add/AddMetricsViewSubOption.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let active = false;
   let showExploreDialog = false;
   let generateDataDialog = false;
   let showAiConnectorDialog = false;
+  let showChartTypesDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
   let addDataTargetResource: ResourceKind | undefined;
@@ -57,7 +61,7 @@
   const createFile = createRuntimeServicePutFileMutation(runtimeClient);
   const createFolder =
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
-  const { developerChat } = featureFlags;
+  const { developerChat, customComponents } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -71,6 +75,16 @@
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
     currentDirectory,
+  );
+
+  // Skills are keyed by name across both supported roots, so a new skill must not collide with either
+  $: skillDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    runtimeClient,
+    "skills",
+  );
+  $: agentsSkillDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    runtimeClient,
+    ".agents/skills",
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
@@ -139,6 +153,33 @@
 
     await navigateToFile(`/${path}`);
   }
+
+  /**
+   * Put a skill file (markdown instructions for the AI agents) in the skills directory
+   */
+  async function handleAddSkill() {
+    // Skill names only allow lowercase letters, numbers and hyphens, so we can't use getName, which appends "_N" suffixes
+    const existingNames = new Set(
+      [
+        ...($skillDirectoryNamesQuery?.data ?? []),
+        ...($agentsSkillDirectoryNamesQuery?.data ?? []),
+      ].map((n) => n.toLowerCase()),
+    );
+    let name = "my-skill";
+    for (let i = 1; existingNames.has(name); i++) {
+      name = `my-skill-${i}`;
+    }
+    const path = `skills/${name}/SKILL.md`;
+
+    await $createFile.mutateAsync({
+      path,
+      blob: skillFileTemplate(name),
+      create: true,
+      createOnly: true,
+    });
+
+    await navigateToFile(`/${path}`);
+  }
 </script>
 
 <DropdownMenu.Root bind:open={active}>
@@ -146,14 +187,14 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        label="Add Asset"
+        label={m.add_asset_label()}
         class="w-full"
         type="secondary"
         selected={active}
       >
         <PlusCircleIcon size="14px" />
         <div class="flex gap-x-1 items-center">
-          Add
+          {m.add_asset_add()}
           <span class="transition-transform" class:-rotate-180={active}>
             <CaretDownIcon size="10px" />
           </span>
@@ -168,12 +209,12 @@
     }]`}
   >
     <DropdownMenu.Item
-      aria-label="Add Data"
+      aria-label={m.add_asset_add_data()}
       class="flex gap-x-2"
       onclick={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
-      Data
+      {m.add_asset_data()}
     </DropdownMenu.Item>
     <AddModelSubOption
       onSelect={(connector) => {
@@ -191,7 +232,7 @@
     />
     <DropdownMenu.Separator />
     <DropdownMenu.Item
-      aria-label="Add Explore Dashboard"
+      aria-label={m.add_asset_add_explore_dashboard()}
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
       onclick={() => {
@@ -212,10 +253,10 @@
           size="16px"
         />
         <div class="flex flex-col items-start">
-          Explore dashboard
+          {m.add_asset_explore_dashboard()}
           {#if metricsViews.length === 0}
             <span class="text-fg-secondary text-xs">
-              Requires a metrics view
+              {m.add_asset_requires_metrics_view()}
             </span>
           {/if}
         </div>
@@ -234,32 +275,46 @@
           size="16px"
         />
         <div class="flex flex-col items-start">
-          Canvas dashboard
+          {m.add_asset_canvas_dashboard()}
           {#if metricsViews.length === 0}
             <span class="text-fg-secondary text-xs">
-              Requires a metrics view
+              {m.add_asset_requires_metrics_view()}
             </span>
           {/if}
         </div>
       </div>
     </DropdownMenu.Item>
+    {#if $customComponents}
+      <DropdownMenu.Item
+        class="flex gap-x-2 items-center"
+        onclick={() => (showChartTypesDialog = true)}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Component]}
+          size="16px"
+        />
+        {m.component_custom_viz()}
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+      <DropdownMenu.SubTrigger>{m.add_asset_more()}</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddFolder}>
-          <Folder size="14px" class="stroke-icon-muted" /> Folder
+          <Folder size="14px" class="stroke-icon-muted" />
+          {m.add_asset_folder()}
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddBlankFile}>
-          <File size="14px" class="stroke-icon-muted" /> Blank file
+          <File size="14px" class="stroke-icon-muted" />
+          {m.add_asset_blank_file()}
         </DropdownMenu.Item>
         {#if $developerChat}
           <DropdownMenu.Item
             class="flex gap-x-2"
             onclick={() => (generateDataDialog = true)}
           >
-            <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
-            using AI
+            <Wand size="14px" class="stroke-accent-primary-action" />
+            {m.add_asset_generate_data_with_ai()}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />
@@ -282,7 +337,7 @@
           }}
         >
           <Bot size="14px" class="stroke-icon-muted" />
-          AI Connector
+          {m.status_label_ai_connector()}
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -294,7 +349,12 @@
             this={resourceIconMapping[ResourceKind.Theme]}
             size="16px"
           />
-          Theme
+          {m.theme_label()}
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddSkill}>
+          <GraduationCap size="14px" class="stroke-icon-muted" />
+          {m.add_asset_ai_skill()}
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
         <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
@@ -303,7 +363,7 @@
               className="text-fg-primary"
               size="16px"
             />
-            Report
+            {m.nav_tab_reports()}
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
@@ -311,7 +371,7 @@
               className="text-fg-primary"
               size="16px"
             />
-            Alert
+            {m.nav_tab_alerts()}
           </DropdownMenu.Item> -->
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>
@@ -323,6 +383,10 @@
 <AddAiConnectorDialog bind:open={showAiConnectorDialog} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
+
+{#if $customComponents}
+  <ChartTypesDialog bind:open={showChartTypesDialog} />
+{/if}
 
 <AddDataModal
   config={{

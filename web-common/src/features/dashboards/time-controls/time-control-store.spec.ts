@@ -96,6 +96,11 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
+    // Fix the grain so the store honours the intervals set below instead of deriving them.
+    metricsExplorerStore.setTimeGrain(
+      AD_BIDS_EXPLORE_NAME,
+      V1TimeGrain.TIME_GRAIN_HOUR,
+    );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
@@ -408,14 +413,21 @@ describe("time-control-store", () => {
       metricsView,
       AD_BIDS_EXPLORE_INIT,
     );
-    const { stateManagers, queryClient } = initStateManagers();
+    const { stateManagers, queryClient, destroy } = initStateManagers();
     const timeControlsStore = createTimeControlStore(stateManagers);
 
     const { unmount } = render(TimeControlsStoreTest, {
       timeControlsStore,
     });
 
-    return { unmount, queryClient, timeControlsStore };
+    return {
+      unmount: () => {
+        unmount();
+        destroy();
+      },
+      queryClient,
+      timeControlsStore,
+    };
   }
 });
 

@@ -3,31 +3,59 @@
   import { getCanvasStore } from "../state-managers/state-managers";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import CanvasFilterChipsReadOnly from "../../dashboards/filters/CanvasFilterChipsReadOnly.svelte";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
-  export let canvasName: string;
+  let { canvasName }: { canvasName: string } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: ({
+  let {
     canvasEntity: {
+      specStore,
       clearDefaultFilters,
-      filterManager: { defaultUIFiltersStore },
       timeManager: {
         state: { interval: _interval },
         defaultTimeRangeStore,
         defaultComparisonRangeStore,
       },
+      dashboardProvider,
     },
-  } = getCanvasStore(canvasName, instanceId));
+  } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
-  $: interval = $_interval;
+  let interval = $derived($_interval);
 
-  $: defaultTimeRange = $defaultTimeRangeStore;
+  let defaultTimeRange: V1TimeRange | undefined = $derived(
+    $defaultTimeRangeStore
+      ? {
+          expression: $defaultTimeRangeStore,
+        }
+      : undefined,
+  );
+  let defaultComparisonRange: V1TimeRange | undefined = $derived(
+    $defaultComparisonRangeStore
+      ? {
+          expression: $defaultComparisonRangeStore,
+        }
+      : undefined,
+  );
 
-  $: defaultComparisonRange = $defaultComparisonRangeStore;
+  let defaultFiltersManager = $derived(
+    new ExpressionFilterManager(
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+    ),
+  );
+  $effect(() => {
+    const filterExpr = $specStore.data?.canvas?.defaultPreset?.filterExpr ?? {};
+    dashboardProvider.metricsViewsProvider.metricsViewNames.forEach((key) => {
+      defaultFiltersManager.setExprForMetricsView(
+        key,
+        filterExpr[key]?.expression,
+      );
+    });
+  });
 </script>
 
 <div class="flex-col flex h-full">
@@ -37,12 +65,12 @@
       automatically apply each time you open this dashboard in Rill Cloud.
     </p>
 
-    <CanvasFilterChipsReadOnly
-      uiFilters={$defaultUIFiltersStore}
-      timeRangeString={defaultTimeRange}
-      comparisonRange={defaultComparisonRange}
-      timeStart={interval?.start?.toUTC().toISO()}
-      timeEnd={interval?.end?.toUTC().toISO()}
+    <ReadonlyExpressionFilters
+      expressionFilterManager={defaultFiltersManager}
+      displayTimeRange={defaultTimeRange}
+      displayComparisonTimeRange={defaultComparisonRange}
+      queryTimeStart={interval?.start?.toUTC().toISO()}
+      queryTimeEnd={interval?.end?.toUTC().toISO()}
     />
   </div>
 

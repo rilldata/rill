@@ -26,6 +26,10 @@ type issueRuntimeTokenOptions struct {
 	projectPermissions *adminv1.ProjectPermissions
 	// forOwner issues the token for the current claims owner (user/service/anon/etc).
 	forOwner bool
+	// omitServiceSubject leaves the subject empty when forOwner is set and the owner is a service.
+	// Some users use service accounts to issue tokens for end users without specifying who they are;
+	// a shared subject across those users could leak per-user state, such as AI chats.
+	omitServiceSubject bool
 	// forUserID issues the token for a specific Rill user. Mutually exclusive with the other for* fields.
 	forUserID string
 	// forUserEmail issues the token for a user by email.
@@ -93,18 +97,16 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		switch claims.OwnerType() {
 		case auth.OwnerTypeUser:
 			subject = claims.OwnerID()
-			a, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), opts.project.OrganizationID, opts.projectPermissions)
+			a, r, err := s.jwtAttributesAndRulesForUser(ctx, opts.project, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
 			}
 			attr = a
-			restrict, resources, err := s.getResourceRestrictionsForUser(ctx, opts.project.ID, claims.OwnerID())
-			if err != nil {
-				return "", err
-			}
-			rules = append(rules, securityRulesFromResources(restrict, resources)...)
+			rules = append(rules, r...)
 		case auth.OwnerTypeService:
-			subject = claims.OwnerID()
+			if !opts.omitServiceSubject {
+				subject = claims.OwnerID()
+			}
 			a, err := s.jwtAttributesForService(ctx, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
@@ -127,26 +129,19 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupported owner type %q", claims.OwnerType())
 		}
-	case opts.forUserID != "":
-		if opts.externalUserID != "" {
-			return "", status.Error(codes.Internal, "externalUserID cannot be specified together with forUserID")
+	case opts.forUserID != "", opts.forUserEmail != "", opts.forUserAttributes != nil:
+		if opts.forUserID != "" {
+			if opts.externalUserID != "" {
+				return "", status.Error(codes.Internal, "externalUserID cannot be specified together with forUserID")
+			}
+			subject = opts.forUserID
 		}
-		subject = opts.forUserID
-		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, opts.forUserID, "")
+		u, err := s.resolveEndUser(ctx, opts.project, opts.forUserID, opts.forUserEmail, opts.forUserAttributes)
 		if err != nil {
 			return "", err
 		}
-		attr = a
-		rules = append(rules, securityRulesFromResources(restrict, resources)...)
-	case opts.forUserEmail != "":
-		a, restrict, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, opts.project.OrganizationID, opts.project.ID, "", opts.forUserEmail)
-		if err != nil {
-			return "", err
-		}
-		attr = a
-		rules = append(rules, securityRulesFromResources(restrict, resources)...)
-	case opts.forUserAttributes != nil:
-		attr = opts.forUserAttributes
+		attr = u.attributes
+		rules = append(rules, securityRulesFromResources(u.restrictResources, u.resources)...)
 	default:
 		// No principal: no subject, no attributes, no rules.
 	}
@@ -161,17 +156,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		rules = securityRulesFromResources(true, opts.overrideResources)
 	}
 
-	// Merge extraAttributes (earlier keys win)
-	if len(opts.extraAttributes) > 0 {
-		if attr == nil {
-			attr = make(map[string]any, len(opts.extraAttributes))
-		}
-		for k, v := range opts.extraAttributes {
-			if _, exists := attr[k]; !exists {
-				attr[k] = v
-			}
-		}
-	}
+	attr = mergeExtraAttributes(attr, opts.extraAttributes)
 
 	// Check if has elevated permissions for the deployment's environment.
 	// NOTE: Only applicable for tokens issued for the claims owner (not possible to delegate to other end users).
@@ -251,6 +236,60 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	return jwt, nil
 }
 
+// endUser is the resolved identity of an end user that a runtime token or report is issued for.
+type endUser struct {
+	// userID is set if the end user resolved to a Rill user.
+	userID            string
+	attributes        map[string]any
+	restrictResources bool
+	resources         []database.ResourceName
+}
+
+// resolveEndUser resolves the identity of an end user identified by a Rill user ID, an email, or explicit attributes.
+// The caller should only provide one of them; if none is set, the end user has no attributes.
+// An email that doesn't belong to a Rill user resolves to synthetic attributes that present the email as a non-admin user.
+// It is shared by runtime tokens issued for end users and by reports that run as an embed user,
+// so that both evaluate security policies with the same identity.
+func (s *Server) resolveEndUser(ctx context.Context, proj *database.Project, userID, email string, attributes map[string]any) (*endUser, error) {
+	if userID == "" && email == "" {
+		return &endUser{attributes: attributes}, nil
+	}
+
+	attr, userID, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, userID, email)
+	if err != nil {
+		return nil, err
+	}
+	if userID == "" {
+		return &endUser{attributes: attr}, nil
+	}
+
+	// Determine resource restrictions from project member and usergroups
+	restrict, resources, err := s.getResourceRestrictionsForUser(ctx, proj.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &endUser{
+		userID:            userID,
+		attributes:        attr,
+		restrictResources: restrict,
+		resources:         resources,
+	}, nil
+}
+
+// jwtAttributesAndRulesForUser returns the attributes and security rules that a runtime evaluates a user's access with.
+// projectPermissions are the user's permissions on the project, which may include overrides (e.g. for public projects).
+func (s *Server) jwtAttributesAndRulesForUser(ctx context.Context, proj *database.Project, userID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, []*runtimev1.SecurityRule, error) {
+	attr, err := s.jwtAttributesForUser(ctx, userID, proj.OrganizationID, projectPermissions)
+	if err != nil {
+		return nil, nil, err
+	}
+	restrict, resources, err := s.getResourceRestrictionsForUser(ctx, proj.ID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return attr, securityRulesFromResources(restrict, resources), nil
+}
+
 // securityRulesFromMagicAuthToken builds the security rules encoded by a magic auth token:
 // a resource allow-list (or blanket deny), metrics-view row filters, and a field allow-list.
 func securityRulesFromMagicAuthToken(mdl *database.MagicAuthToken) ([]*runtimev1.SecurityRule, error) {
@@ -322,4 +361,20 @@ func securityRulesFromMagicAuthToken(mdl *database.MagicAuthToken) ([]*runtimev1
 	}
 
 	return rules, nil
+}
+
+// mergeExtraAttributes returns attr with the keys of extra that attr doesn't already have.
+// It doesn't modify attr, which may be shared with the caller.
+func mergeExtraAttributes(attr, extra map[string]any) map[string]any {
+	if len(extra) == 0 {
+		return attr
+	}
+	res := make(map[string]any, len(attr)+len(extra))
+	for k, v := range extra {
+		res[k] = v
+	}
+	for k, v := range attr {
+		res[k] = v
+	}
+	return res
 }

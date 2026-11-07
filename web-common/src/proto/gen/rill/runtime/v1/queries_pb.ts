@@ -1103,7 +1103,12 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: bool exact = 17;
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+   * That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+   *
+   * @generated from field: bool exact = 17 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -1375,7 +1380,21 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonTime;
     case: "comparisonTime";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression expression = 13;
+     */
+    value: MetricsViewAggregationMeasureComputeExpression;
+    case: "expression";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+   * No-op for measures without an `exact_expression`, which only simple measures define.
+   *
+   * @generated from field: bool exact = 14;
+   */
+  exact = false;
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
@@ -1397,6 +1416,8 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
     { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
+    { no: 13, name: "expression", kind: "message", T: MetricsViewAggregationMeasureComputeExpression, oneof: "compute" },
+    { no: 14, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1703,6 +1724,58 @@ export class MetricsViewAggregationMeasureComputeComparisonTime extends Message<
 
   static equals(a: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined, b: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonTime, a, b);
+  }
+}
+
+/**
+ * Computes an ephemeral measure derived from other measures in the metrics view.
+ * The expression may only contain measure references, numeric literals, NULL,
+ * the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+ * Referenced measures are subject to the metrics view's security policies.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression
+ */
+export class MetricsViewAggregationMeasureComputeExpression extends Message<MetricsViewAggregationMeasureComputeExpression> {
+  /**
+   * Arithmetic expression over existing measure names, e.g. "revenue - cost".
+   *
+   * @generated from field: string expression = 1;
+   */
+  expression = "";
+
+  /**
+   * Optional display name used in exports and result metadata.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeExpression>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined, b: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeExpression, a, b);
   }
 }
 
@@ -2057,9 +2130,12 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   priority = 0;
 
   /**
-   * Optional, defaults to false
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+   * Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
    *
-   * @generated from field: bool exact = 13;
+   * @generated from field: bool exact = 13 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -2513,9 +2589,28 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   metricsViewName = "";
 
   /**
+   * Names of measures in the metrics view to include.
+   * At least one of measure_names or ephemeral_measures must be provided.
+   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
+
+  /**
+   * Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+   * Only the `expression` compute is supported for time series.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure ephemeral_measures = 17;
+   */
+  ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
+
+  /**
+   * Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+   * No-op for measures without an `exact_expression`.
+   *
+   * @generated from field: repeated string exact_measure_names = 18;
+   */
+  exactMeasureNames: string[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2610,6 +2705,8 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
+    { no: 18, name: "exact_measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -4291,6 +4388,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   unsafe = false;
 
+  /**
+   * If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+   * Used by the visual editor, which maps canvas elements to their position in the YAML.
+   * Requires permission to edit the canvas.
+   *
+   * @generated from field: bool include_hidden = 5;
+   */
+  includeHidden = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4303,6 +4409,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
     { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "include_hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
@@ -4349,6 +4456,14 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
    */
   referencedMetricsViews: { [key: string]: Resource } = {};
 
+  /**
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * The paths follow the canvas YAML. Only set when include_hidden is true.
+   *
+   * @generated from field: repeated string hidden_paths = 4;
+   */
+  hiddenPaths: string[] = [];
+
   constructor(data?: PartialMessage<ResolveCanvasResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4360,6 +4475,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
     { no: 1, name: "canvas", kind: "message", T: Resource },
     { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
     { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 4, name: "hidden_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {
@@ -4445,6 +4561,13 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
    */
   rendererProperties?: Struct;
 
+  /**
+   * The effective args used for resolution: the component's declared param defaults merged with the provided args.
+   *
+   * @generated from field: google.protobuf.Struct resolved_args = 3;
+   */
+  resolvedArgs?: Struct;
+
   constructor(data?: PartialMessage<ResolveComponentResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4454,6 +4577,7 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 3, name: "resolved_args", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {

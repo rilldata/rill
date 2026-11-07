@@ -217,7 +217,7 @@ func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runti
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
 // The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
-func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
+func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string, hidden bool, r *runtimev1.Resource) error {
 	r = c.clone(r) // The passed resource is cached as-is, so we must ensure future mutations to r don't affect the cached resource.
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
@@ -232,6 +232,7 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		Owner:           owner,
 		FilePaths:       paths,
 		Tags:            tags,
+		Metadata:        metadata,
 		Hidden:          hidden,
 		Version:         1,
 		SpecVersion:     1,
@@ -297,7 +298,7 @@ func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
 }
 
 // updateMeta updates the meta fields of a resource.
-func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string) error {
+func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string) error {
 	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
@@ -307,6 +308,7 @@ func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev
 	r.Meta.Owner = owner
 	r.Meta.FilePaths = paths
 	r.Meta.Tags = tags
+	r.Meta.Metadata = metadata
 	r.Meta.Version++
 	r.Meta.SpecVersion++
 	r.Meta.SpecUpdatedOn = timestamppb.Now()

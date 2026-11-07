@@ -87,7 +87,7 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	// Validate the renderer properties (only if all metrics view refs have a ValidSpec).
 	var rendererErr error
 	if allMetricsValid {
-		rendererErr = canvas.ValidateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs)
+		rendererErr = canvas.ValidateRendererProperties(c.Spec.Renderer, c.Spec.RendererProperties.AsMap(), mvs, len(c.Spec.Params) > 0)
 	} else {
 		rendererErr = errors.New("one or more referenced metrics views are invalid")
 	}

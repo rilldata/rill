@@ -9,7 +9,12 @@ import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
 export interface CreateBaseEmbedOptionsParams {
-  client: RuntimeClient;
+  /**
+   * Runtime client for the Vega loader (instance assets, auth header).
+   * Without one the view cannot load external resources, which standalone
+   * renderers such as the MCP chart widget never need.
+   */
+  client?: RuntimeClient | null;
   config?: Config;
   renderer?: "canvas" | "svg";
   themeMode?: "light" | "dark";
@@ -22,11 +27,13 @@ export interface CreateBaseEmbedOptionsParams {
 /**
  * Builds the size-independent half of the vega-embed options.
  *
- * Callers spread `width` and `height` on top of the result, and must keep this object's
- * identity stable while only the dimensions change: svelte-vega compares options key by key
- * with `===` (ignoring width and height), and a single fresh nested object makes it tear
- * down and re-embed the whole view instead of calling `view.width()`. That loses brush state
- * and, while a resize divider is being dragged, re-embeds on every frame.
+ * Callers spread `width` and `height` on top of the result, and must not rebuild the spread
+ * on every resize: svelte-vega re-embeds the whole view (losing brush state, and on every
+ * frame of a divider drag) whenever the options object it was handed is not the one it saw
+ * last. Its cheaper `view.width()` path is unreachable in practice, because it keeps the
+ * previous options in a Svelte `$state` proxy and so its `===` comparison of nested values
+ * such as `config` never passes. Resize the live view directly instead, as
+ * `VegaLiteRenderer` does.
  */
 export function createBaseEmbedOptions({
   client,
@@ -38,7 +45,7 @@ export function createBaseEmbedOptions({
   colorMapping,
   hasComparison,
 }: CreateBaseEmbedOptionsParams): EmbedOptions {
-  const jwt = client.getJwt();
+  const jwt = client?.getJwt();
 
   return {
     config: config || getRillTheme(themeMode === "dark"),
@@ -57,16 +64,18 @@ export function createBaseEmbedOptions({
       expr: expressionInterpreter,
     }),
     expressionFunctions,
-    loader: {
-      baseURL: `${client.host}/v1/instances/${client.instanceId}/assets/`,
-      ...(jwt && {
-        http: {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
+    ...(client && {
+      loader: {
+        baseURL: `${client.host}/v1/instances/${client.instanceId}/assets/`,
+        ...(jwt && {
+          http: {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
           },
-        },
-      }),
-    },
+        }),
+      },
+    }),
   };
 }
 

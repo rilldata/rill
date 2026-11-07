@@ -57,7 +57,7 @@ func (t *ProjectStatus) Spec() *mcp.Tool {
 }
 
 func (t *ProjectStatus) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*ProjectStatusResult, error) {
@@ -237,4 +237,5 @@ var projectStatusDefaultResourceKinds = []string{
 	runtime.ResourceKindExplore,
 	runtime.ResourceKindMetricsView,
 	runtime.ResourceKindModel,
+	runtime.ResourceKindSkill,
 }

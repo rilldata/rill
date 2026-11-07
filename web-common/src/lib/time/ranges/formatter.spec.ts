@@ -3,8 +3,12 @@ import {
   prettyFormatTimeRange,
 } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import { DateTime, Interval } from "luxon";
+import { DateTime, Interval, Settings } from "luxon";
 import { describe, expect, it } from "vitest";
+
+// The expected strings below are en-US formatted.
+// Pin the locale so the test does not depend on the machine's locale.
+Settings.defaultLocale = "en-US";
 
 describe("prettyFormatTimeRange", () => {
   describe("one point", () => {

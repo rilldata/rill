@@ -42,6 +42,8 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	// Names of metrics view measures that must be computed with their exact_expression (see ExactMeasureSet).
+	exactMeasures map[string]bool
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -119,11 +121,37 @@ type ExprNode struct {
 	Args []any
 }
 
+// lookupMeta describes how a lookup dimension resolves its value: the value column of the lookup table for the row's key.
+// Keys that are absent from the lookup table resolve to NULL, or to defaultExpr if it is set.
+// The NULL case requires the value column to be nullable without a custom default in the lookup table.
 type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
+	table       string
+	keyExpr     string
+	keyCol      string
+	valueCol    string
+	defaultExpr string
+}
+
+// newLookupMeta returns the lookup metadata of a dimension, or nil if it is not a lookup dimension.
+func newLookupMeta(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) *lookupMeta {
+	if dim.LookupTable == "" {
+		return nil
+	}
+	return &lookupMeta{
+		table:       dim.LookupTable,
+		keyExpr:     LookupKeyExpr(dialect, dim),
+		keyCol:      dim.LookupKeyColumn,
+		valueCol:    dim.LookupValueColumn,
+		defaultExpr: dim.LookupDefaultExpression,
+	}
+}
+
+// LookupKeyExpr returns the expression of a lookup dimension's key in the underlying table.
+func LookupKeyExpr(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) string {
+	if dim.Column != "" {
+		return dialect.EscapeIdentifier(dim.Column)
+	}
+	return dim.Expression
 }
 
 // And returns a new node that is the AND of the current node and the given expression.
@@ -191,6 +219,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		Dialect:     dialect,
 	}
 
+	// Resolve up front which measures must use their exact_expression.
+	// This must happen before any measure is resolved, because a measure name has exactly one value per query and AddMeasureField dedupes by name.
+	// The executor resolves the set once per query and derived queries copy it (see Query.ExactMeasures);
+	// a query that did not pass through the executor, such as the schema probe, resolves it from its flags here.
+	ast.exactMeasures = qry.ExactMeasures
+	if ast.exactMeasures == nil {
+		ast.exactMeasures = ExactMeasureSet(mv, qry)
+	}
+
 	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified
 	for _, qd := range ast.Query.Dimensions {
@@ -228,28 +265,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
 		}
 
-		var lkMeta *lookupMeta
-		if dim.LookupTable != "" {
-			var keyExpr string
-			if dim.Column != "" {
-				keyExpr = ast.Dialect.EscapeIdentifier(dim.Column)
-			} else {
-				keyExpr = dim.Expression
-			}
-			lkMeta = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  keyExpr,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
-			}
-		}
-
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
 			Unnest:      dim.Unnest,
-			LookupMeta:  lkMeta,
+			LookupMeta:  newLookupMeta(ast.Dialect, dim),
 		}
 
 		if dim.Unnest {
@@ -266,7 +287,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				if tupleStyle {
-					f.Expr = ast.Dialect.EscapeMember(unnestAlias, f.Name)
+					f.Expr = ast.Dialect.UnnestedColumn(unnestAlias, f.Name)
 				} else {
 					f.Expr = ast.Dialect.EscapeMember("", f.Name)
 				}
@@ -493,7 +514,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonValue.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonValue.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -513,7 +534,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonDelta.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonDelta.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -533,7 +554,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -559,7 +580,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("totals not computed for %s", qm.Name)
 		}
 
-		m, err := a.LookupMeasure(qm.Compute.PercentOfTotal.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.PercentOfTotal.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -577,6 +598,41 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
 			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
+		}, nil
+	}
+
+	if qm.Compute.Expression != nil {
+		parsed, err := ParseMeasureExpression(qm.Compute.Expression.Expression)
+		if err != nil {
+			return nil, fmt.Errorf("invalid expression for measure %q: %w", qm.Name, err)
+		}
+
+		// Resolve every referenced measure to check it exists and is visible under the security policy.
+		for _, ref := range parsed.Refs() {
+			if _, err := a.LookupMeasure(ref, visible); err != nil {
+				return nil, fmt.Errorf("invalid expression for measure %q: measure %q: %w", qm.Name, ref, err)
+			}
+		}
+
+		// Re-render the expression from the parsed tree with dialect-safe escaping.
+		// Never splice the user-supplied string into SQL directly.
+		expr := parsed.Render(MeasureExpressionRenderOptions{
+			Dialect:    a.Dialect.String(),
+			EscapeRef:  a.Dialect.EscapeAlias,
+			SafeDivide: a.Dialect.SafeDivideExpression,
+		})
+
+		displayName := qm.Compute.Expression.DisplayName
+		if displayName == "" {
+			displayName = qm.Name
+		}
+
+		return &runtimev1.MetricsViewSpec_Measure{
+			Name:               qm.Name,
+			Expression:         expr,
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: parsed.Refs(),
+			DisplayName:        displayName,
 		}, nil
 	}
 
@@ -690,6 +746,27 @@ func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 	for _, m := range a.MetricsView.Measures {
 		if m.Name == name {
 			return m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("measure %q not found", name)
+}
+
+// resolveReferencedMeasure resolves a measure referenced by name from another measure,
+// such as the base measure of a comparison delta or a measure referenced by a derived measure.
+// The referenced measure is either a measure in the metrics view or an expression measure defined in the same query,
+// which lets ad-hoc measures support comparisons without being declared in the metrics view.
+// Expression measures may only reference metrics view measures, so the recursion is at most one level deep.
+func (a *AST) resolveReferencedMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
+	for _, m := range a.MetricsView.Measures {
+		if m.Name == name {
+			return a.LookupMeasure(name, visible)
+		}
+	}
+
+	for _, qm := range a.Query.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return a.ResolveMeasure(qm, visible)
 		}
 	}
 
@@ -1030,7 +1107,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 
 	for _, rm := range referencedMeasures {
 		// Note we pass visible==false because the measure won't be projected into the current node's SELECT list, only brought into scope for derived measures.
-		m, err := a.LookupMeasure(rm, false)
+		m, err := a.resolveReferencedMeasure(rm, false)
 		if err != nil {
 			return err
 		}
@@ -1103,7 +1180,11 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
-	if a.Query.Spine != nil && !(a.Query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
+	// Time range spines are skipped in the comparison select.
+	// They are also skipped when the time range is empty: the base select then returns no rows, so there is nothing to fill,
+	// and dialects that inline the spine's bins (e.g. ClickHouse's VALUES(...)) cannot express a spine with zero rows.
+	skipTimeSpine := a.Query.Spine != nil && a.Query.Spine.TimeRange != nil && (comparison || !a.Query.Spine.TimeRange.Start.Before(a.Query.Spine.TimeRange.End))
+	if a.Query.Spine != nil && !skipTimeSpine {
 		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
 		if err != nil {
 			return nil, err
@@ -1444,15 +1525,22 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, 
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
+// It uses the measure's exact_expression if the query requests the measure exactly (see ExactMeasureSet).
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
+	// NOTE: m may be the metrics view's own spec measure, which is shared across queries, so it must never be mutated here.
+	expr := m.Expression
+	if m.ExactExpression != "" && a.exactMeasures[m.Name] {
+		expr = m.ExactExpression
+	}
+
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression, nil
+		return expr, nil
 	}
 
 	// If partitioning is not enabled, ordering and framing doesn't matter
 	if !m.Window.Partition {
-		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+		return fmt.Sprintf("%s OVER ()", expr), nil
 	}
 
 	// If partitioning is enabled, we partition by all dimensions that we don't order by.
@@ -1487,7 +1575,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode)
 
 	// Build the window expression
 	b := &strings.Builder{}
-	b.WriteString(m.Expression)
+	b.WriteString(expr)
 	b.WriteString(" OVER (")
 	if len(partitionFields) > 0 {
 		b.WriteString("PARTITION BY ")
@@ -1573,4 +1661,18 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 	}
 
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
+}
+
+// IsTimeDimension reports whether name is the metrics view's primary time dimension or a declared dimension of the time type.
+// The primary time dimension is not necessarily declared in the dimensions list, so it is checked separately.
+func IsTimeDimension(mv *runtimev1.MetricsViewSpec, name string) bool {
+	if mv.TimeDimension == name {
+		return true
+	}
+	for _, d := range mv.Dimensions {
+		if d.Name == name {
+			return d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		}
+	}
+	return false
 }

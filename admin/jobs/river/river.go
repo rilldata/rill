@@ -132,13 +132,13 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		{&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true},    // every 12 hours
 		{&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true},      // every 6 hours
 		{&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true},          // Monday at 7:00am UTC
-		{&CheckProvisionersArgs{}, "0 */15 * * *", true},           // every 15 minutes
+		{&CheckProvisionersArgs{}, "*/15 * * * *", true},           // every 15 minutes
 		{&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true},       // every 6 hours
 		{&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true}, // every 6 hours
 		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},          // every 6 hours
 		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
 		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
-		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
+		{&DeploymentsHealthCheckArgs{}, "*/10 * * * *", true},      // every 10 minutes
 		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true}, // every 15 minutes
 	}
 

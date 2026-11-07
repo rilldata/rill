@@ -2,6 +2,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Duration, Interval } from "luxon";
   import type {
+    InheritRangeOption,
     ISODurationString,
     NamedRange,
     RangeBuckets,
@@ -51,6 +52,7 @@
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let context: string;
   export let minDate: DateTime<true> | undefined;
   export let maxDate: DateTime<true> | undefined;
@@ -113,6 +115,11 @@
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
+
+  // While the range is inherited, `timeString` describes the parent's range:
+  // it is shown on the trigger but must not highlight a menu entry.
+  $: inherited = Boolean(inheritOption?.selected);
+  $: highlightedTimeString = inherited ? undefined : timeString;
 
   // Resolve the active time axis to a defined time dimension, if any. When the
   // timeseries points at a raw column this is undefined and the tooltip omits
@@ -247,8 +254,14 @@
               aria-label={m.dashboard_select_time_range()}
               type="button"
             >
+              {#if inherited && inheritOption}
+                <b class="line-clamp-1 flex-none">{inheritOption.label}</b>
+              {/if}
               {#if timeString}
-                <b class="line-clamp-1 flex-none">
+                <b
+                  class="line-clamp-1 flex-none"
+                  class:inherited-range={inherited}
+                >
                   {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
                     {m.dashboard_custom()}
                   {:else}
@@ -318,10 +331,27 @@
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
       >
         <div class="overflow-x-hidden">
+          {#if inheritOption}
+            <div class="w-full h-fit px-1">
+              <button
+                type="button"
+                role="menuitem"
+                class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
+                onclick={() => {
+                  inheritOption?.onSelect();
+                  closeMenu();
+                }}
+              >
+                <span class:font-bold={inherited}>{inheritOption.label}</span>
+              </button>
+              <div class="h-px w-full bg-border my-1"></div>
+            </div>
+          {/if}
+
           {#if showDefaultItem && defaultTimeRange}
             <TimeRangeOptionGroup
               {filter}
-              {timeString}
+              timeString={highlightedTimeString}
               options={[parseRillTime(defaultTimeRange)]}
               onClick={handleRangeSelect}
             />
@@ -329,28 +359,28 @@
 
           <TimeRangeOptionGroup
             {filter}
-            {timeString}
+            timeString={highlightedTimeString}
             options={rangeBuckets.custom}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
-            {timeString}
+            timeString={highlightedTimeString}
             options={rangeBuckets.latest}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
-            {timeString}
+            timeString={highlightedTimeString}
             options={rangeBuckets.periodToDate}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
-            {timeString}
+            timeString={highlightedTimeString}
             options={rangeBuckets.previous}
             onClick={(r) => {
               handleRangeSelect(r, true);
@@ -367,7 +397,10 @@
                   handleRangeSelect("inf");
                 }}
               >
-                <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
+                <span
+                  class:font-bold={highlightedTimeString ===
+                    ALL_TIME_RANGE_ALIAS}
+                >
                   {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
                 </span>
               </button>
@@ -545,7 +578,7 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if dateTimeAnchor && !hideTruncationSelector}
+{#if dateTimeAnchor && !hideTruncationSelector && !inherited}
   <TruncationSelector
     {dateTimeAnchor}
     grain={truncationGrain}
@@ -568,6 +601,10 @@
 {/if}
 
 <style lang="postcss">
+  .inherited-range {
+    @apply font-normal text-fg-secondary;
+  }
+
   .item {
     @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
   }

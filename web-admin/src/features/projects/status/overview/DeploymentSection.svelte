@@ -38,6 +38,7 @@
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import ClusterSize from "./ClusterSize.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -167,6 +168,16 @@
         <span class="info-label">{m.status_label_cluster_size()}</span>
         <span class="info-value">
           <ClusterSize slots={currentSlots} />
+          {#if $proj.data?.projectPermissions?.manageProject && !activeBranch}
+            <Button
+              type="tertiary"
+              small
+              href="/{organization}/{project}/-/status/branches"
+              label={m.settings_slots_edit()}
+            >
+              {m.settings_slots_edit()}
+            </Button>
+          {/if}
         </span>
       </div>
     {/if}

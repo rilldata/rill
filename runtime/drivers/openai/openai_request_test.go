@@ -113,7 +113,7 @@ func TestCompleteDefaultsToJSONSchema(t *testing.T) {
 
 func TestOpenValidatesProviderRequestBehavior(t *testing.T) {
 	t.Run("structured output mode", func(t *testing.T) {
-		_, err := (driver{}).Open("", "", map[string]any{
+		_, err := (driver{}).Open(t.Context(), "", "", map[string]any{
 			"api_key":                "test-key",
 			"structured_output_mode": "xml",
 		}, nil, nil, nil)
@@ -121,7 +121,7 @@ func TestOpenValidatesProviderRequestBehavior(t *testing.T) {
 	})
 
 	t.Run("reserved extra body fields", func(t *testing.T) {
-		_, err := (driver{}).Open("", "", map[string]any{
+		_, err := (driver{}).Open(t.Context(), "", "", map[string]any{
 			"api_key": "test-key",
 			"extra_body": map[string]any{
 				"audio":      map[string]any{"format": "wav"},
@@ -135,7 +135,7 @@ func TestOpenValidatesProviderRequestBehavior(t *testing.T) {
 	})
 
 	t.Run("non JSON extra body", func(t *testing.T) {
-		_, err := (driver{}).Open("", "", map[string]any{
+		_, err := (driver{}).Open(t.Context(), "", "", map[string]any{
 			"api_key": "test-key",
 			"extra_body": map[string]any{
 				"extension": make(chan int),
@@ -163,7 +163,7 @@ func openTestAI(t *testing.T, serverURL string, config map[string]any) drivers.A
 	config["base_url"] = serverURL + "/v1"
 	config["model"] = "test-model"
 
-	handle, err := (driver{}).Open("", "", config, nil, nil, nil)
+	handle, err := (driver{}).Open(t.Context(), "", "", config, nil, nil, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, handle.Close()) })
 	ai, ok := handle.AsAI("")

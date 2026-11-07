@@ -27,6 +27,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
@@ -75,6 +76,7 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 
 	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testMetricsViewAggregation_measure_filters(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
@@ -116,6 +118,7 @@ func TestMetricViewAggregationAgainstBigQuery(t *testing.T) {
 
 	rt, instanceID := newBigQueryInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID, "Timestamp__day") })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID, "Timestamp__hour") })
@@ -164,6 +167,7 @@ func TestMetricViewAggregationAgainstDatabricks(t *testing.T) {
 
 	rt, instanceID := newDatabricksInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testDatabricksMetricsViewAggregation_measure_filters(t, rt, instanceID) })
@@ -207,6 +211,7 @@ func TestMetricViewAggregationAgainstDatabricks(t *testing.T) {
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
@@ -252,6 +257,7 @@ func TestMetricViewAggregationAgainstSnowflake(t *testing.T) {
 
 	rt, instanceID := newSnowflakeInstance(t)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_expression_measures", func(t *testing.T) { testMetricsViewsAggregation_expression_measures(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })

@@ -10,7 +10,6 @@ import type {
   CanvasEntity,
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   PivotChipType,
   type PivotChipData,
@@ -81,9 +80,9 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     if (!match) return;
 
     this.metricsViewName = match[1];
-    this.localFilters = this.parent.filterManager.createLocalFilterStore(
+    this.localExpressionFilters.metricsViewsProvider.setMetricsViewNames([
       this.metricsViewName,
-    );
+    ]);
     // Update specStore in-memory so the filter system has a metrics_view name
     // to work with. This does NOT persist to YAML — only setSpec() and
     // updateProperty() write to YAML via updateYAML().
@@ -113,10 +112,6 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   getExploreTransformerProperties(): Partial<ExploreState> {
     const fields = get(this.queryFieldsMeta);
     const timeAndFilter = get(this.timeAndFilterStore);
-
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      timeAndFilter?.where,
-    );
 
     const columns: PivotChipData[] = [];
     const rows: PivotChipData[] = [];
@@ -152,8 +147,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     };
 
     return {
-      whereFilter: dimensionFilters,
-      dimensionThresholdFilters,
+      whereFilter: timeAndFilter?.where,
       showTimeComparison: false,
       activePage: DashboardState_ActivePage.PIVOT,
       pivot,

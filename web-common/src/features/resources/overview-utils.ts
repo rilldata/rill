@@ -64,3 +64,18 @@ export function groupErrorsByKind(resources: V1Resource[]): ResourceCount[] {
     }))
     .sort((a, b) => b.count - a.count);
 }
+
+/**
+ * Case-insensitive identity of a resource as `kind/name`.
+ * Resource names are case-insensitive in the runtime, so the name is lowercased.
+ * Used as the row id in resource tables and as the key for dashboard favourites.
+ */
+export function resourceKey(kind: string, name: string): string {
+  return `${kind}/${name.toLowerCase()}`;
+}
+
+export function resourceTableGetRowId(row: unknown, index: number): string {
+  const res = row as V1Resource;
+  if (!res?.meta?.name?.name || !res?.meta?.name?.kind) return index.toString();
+  return resourceKey(res.meta.name.kind, res.meta.name.name);
+}

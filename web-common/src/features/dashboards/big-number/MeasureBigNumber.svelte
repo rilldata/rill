@@ -27,10 +27,25 @@
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import {
+    applyExactMeasures,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+  import type { PrecisionState } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
   export let measure: MetricsViewSpecMeasure;
+  // ephemeral measure definitions; when `measure` is one of
+  // them, the request carries its `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  export let exact = false;
+  // Precision chip shown after the name; null hides it (no exact variant).
+  export let precision: PrecisionState | null = null;
+  export let onToggleExact: (() => void) | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
   export let metricsViewName: string;
@@ -47,6 +62,10 @@
   const client = useRuntimeClient();
 
   $: measureName = measure.name ?? "";
+  $: requestMeasures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest([{ name: measureName }], ephemeralMeasures),
+    exact ? new Set([measureName]) : undefined,
+  );
 
   // Measures with required dimensions (e.g. a rolling window ordered by the time
   // dimension) produce one value per dimension value and have no single total,
@@ -58,7 +77,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: timeStart as any,
@@ -84,7 +103,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: comparisonTimeStart as any,
@@ -128,6 +147,17 @@
       $comparisonQuery.error?.message ??
       undefined)
     : undefined;
+
+  // While an exact value is computed, keep the previous (approximate) value
+  // visible but dimmed instead of replacing it with a spinner; exact queries
+  // can take a while and a blank card reads as broken.
+  $: exactLoading =
+    precision !== null &&
+    precision !== "approx" &&
+    isFetching &&
+    !isError &&
+    value !== null &&
+    value !== undefined;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -209,6 +239,8 @@
   }
 
   let suppressTooltip = false;
+  // The chip has its own tooltip; the card's tooltip hides while it is hovered.
+  let chipHovered = false;
 
   const handleExpandMeasure = () => {
     if (!isMeasureExpanded) {
@@ -227,7 +259,7 @@
 </script>
 
 <Tooltip
-  suppress={suppressTooltip || isError}
+  suppress={suppressTooltip || isError || chipHovered}
   distance={8}
   location="right"
   alignment="start"
@@ -259,10 +291,22 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 text-fg-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
+      class="flex items-start gap-1 text-fg-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
-      {name}
+      <span class="line-clamp-2">{name}</span>
+      {#if precision}
+        <span class="pt-0.5">
+          <PrecisionChip
+            state={precision}
+            measureLabel={name ?? measureName}
+            loading={exactLoading}
+            error={precision !== "approx" ? errorMessage : undefined}
+            onToggle={onToggleExact}
+            onHoverChange={(hovered) => (chipHovered = hovered)}
+          />
+        </span>
+      {/if}
     </h2>
     <div
       role="button"
@@ -275,10 +319,12 @@
     >
       {#if !supportsTotal}
         <span class="text-fg-muted italic text-sm">{m.kpi_no_total()}</span>
-      {:else if value !== null && value !== undefined && status === EntityStatus.Idle}
-        <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-          {measureValueFormatter(output)}
-        </WithTween>
+      {:else if value !== null && value !== undefined && (status === EntityStatus.Idle || exactLoading)}
+        <span class:opacity-50={exactLoading}>
+          <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+            {measureValueFormatter(output)}
+          </WithTween>
+        </span>
         {#if showComparison && comparisonValue}
           <div class="flex items-baseline gap-x-3 text-sm">
             {#if comparisonValue != null}

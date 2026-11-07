@@ -1,4 +1,13 @@
 <script lang="ts">
+  import {
+    applyExactMeasures,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -22,24 +31,21 @@
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
-  import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
   const queryLimit = 250;
 
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let whereFilter: V1Expression;
+  export let whereFilter: V1Expression | undefined;
   export let metricsViewName: string;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimension;
@@ -47,23 +53,21 @@
 
   const {
     selectors: {
-      dimensionFilters: { unselectedDimensionValues },
       dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
       leaderboard: {
         leaderboardShowContextForAllMeasures,
         leaderboardSortByMeasureName,
       },
+      measures: { measureLabel },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
-      dimensionsFilter: {
-        toggleDimensionValueSelection,
-        selectItemsInFilter,
-        deselectItemsInFilter,
-      },
+      exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
     validSpecStore,
+    expressionFilterManager,
   } = getStateManagers();
 
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
@@ -75,7 +79,7 @@
   $: selectedValues = selectedDimensionValues(
     client,
     [metricsViewName],
-    $dashboardStore.whereFilter,
+    whereFilter,
     dimensionName,
     timeRange.start,
     timeRange.end,
@@ -87,28 +91,52 @@
     dimensionName,
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowContextForAllMeasures
-        ? null
-        : $leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  // Measures requested with `exact: true`: the table's own selection plus the
+  // visible measures that reference a selected measure.
+  $: exactContext = $exactMeasureContext(exploreExactSurface.dimensionTable);
+  $: exactNames = requestExactNames(
+    [...visibleMeasureNames, $leaderboardSortByMeasureName],
+    exactContext,
+  );
 
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($leaderboardShowContextForAllMeasures
-          ? visibleMeasureNames
-          : [$leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
+  $: measures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      [
+        ...getMeasuresForDimensionOrLeaderboardDisplay(
+          $leaderboardShowContextForAllMeasures
+            ? null
+            : $leaderboardSortByMeasureName,
+          whereFilter,
+          visibleMeasureNames,
+        ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+        // Add comparison measures if comparison time range exists.
+        ...(comparisonTimeRange
+          ? ($leaderboardShowContextForAllMeasures
+              ? visibleMeasureNames
+              : [$leaderboardSortByMeasureName]
+            ).flatMap((name) => getComparisonRequestMeasures(name))
+          : []),
+      ],
+      $dashboardStore.ephemeralMeasures,
+    ),
+    exactNames,
+  );
+  // The table groups by the dimension, so it can query measures that require only that dimension.
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     $dashboardStore,
     metricsViewSpec,
     measures,
-    false,
+    { dimensions: [dimensionName] },
+  );
+  // The totals query has no dimensions, so it cannot query measures with required dimensions.
+  $: totalsMeasures = filterOutSomeAdvancedAggregationMeasures(
+    $dashboardStore,
+    metricsViewSpec,
+    measures,
+    {},
+  ).filter(
+    (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
   );
 
   // Request the URI measure so the dimension values can be rendered as links.
@@ -122,15 +150,9 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: filteredMeasures.filter(
-        (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
-      ),
+      measures: totalsMeasures,
       where: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, dimensionName),
-          dimensionThresholdFilters,
-        ),
-        undefined,
+        getFiltersForOtherDimensions(whereFilter, dimensionName),
       ),
       timeRange,
     },
@@ -162,11 +184,6 @@
     !!comparisonTimeRange,
   );
 
-  $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
-    undefined,
-  );
-
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     client,
     {
@@ -176,13 +193,13 @@
       timeRange,
       comparisonTimeRange,
       sort,
-      where,
+      where: sanitiseExpression(filterSet),
       limit: queryLimit.toString(),
       offset: "0",
     },
     {
       query: {
-        enabled: timeControlsReady && !!filterSet,
+        enabled: timeControlsReady,
       },
     },
   );
@@ -196,18 +213,40 @@
   $: columns = $virtualizedTableColumns(
     tableRows,
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
-  );
+  ).map((column) => {
+    // Measure columns with an exact variant get a precision chip in their header.
+    if (!visibleMeasureNames.includes(column.name)) return column;
+    const state = precisionStateFor(column.name, exactContext);
+    if (!state) return column;
+    return {
+      ...column,
+      precision: {
+        state,
+        measureLabel: $measureLabel(column.name),
+        loading: state !== "approx" && !!$sortedQuery?.isFetching,
+        error: state !== "approx" ? $sortedQuery?.error?.message : undefined,
+        onToggle: () =>
+          toggleExactMeasure(exploreExactSurface.dimensionTable, column.name),
+      },
+    };
+  });
 
   function onSelectItem(data: { index: number; meta: boolean }) {
     const label = tableRows[data.index][dimensionName] as string;
-    toggleDimensionValueSelection(dimensionName, label, false, data.meta);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleValue(label, data.meta),
+    );
   }
 
   function toggleAllSearchItems() {
     const labels = tableRows.map((row) => row[dimensionName] as string);
 
     if (areAllTableRowsSelected) {
-      deselectItemsInFilter(dimensionName, labels);
+      expressionFilterManager.dimensionFilterAction(
+        dimensionName,
+        (dimensionManager) => dimensionManager.removeSelectedValues(labels),
+      );
 
       eventBus.emit("notification", {
         message: m.dashboard_removed_items_filter({
@@ -216,16 +255,17 @@
       });
       return;
     } else {
-      const newValuesSelected = $unselectedDimensionValues(
+      const newValuesSelected = expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        labels,
+        (dimensionManager) => dimensionManager.appendSelectedValues(labels),
       );
-      selectItemsInFilter(dimensionName, labels);
-      eventBus.emit("notification", {
-        message: m.dashboard_added_items_filter({
-          count: newValuesSelected.length.toString(),
-        }),
-      });
+      if (newValuesSelected?.length) {
+        eventBus.emit("notification", {
+          message: m.dashboard_added_items_filter({
+            count: newValuesSelected?.length.toString(),
+          }),
+        });
+      }
     }
   }
 

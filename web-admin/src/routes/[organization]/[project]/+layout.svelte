@@ -36,6 +36,7 @@
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
+    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -43,6 +44,7 @@
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
+  import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -58,10 +60,11 @@
     metricsService,
   } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
-  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { Throttler } from "@rilldata/web-common/lib/throttler";
+  import { setMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
+  import { mcpConnectUrl } from "@rilldata/web-admin/features/ai/mcp/mcp-connect-url";
 
   const PAGE_VIEW_THROTTLE_TIMEOUT = 250;
 
@@ -80,9 +83,19 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert pages
+  // External MCP servers are authorized through the admin service, which stores each user's token.
+  setMcpConnectContext({
+    connectUrl: (connector) =>
+      mcpConnectUrl(organization, project, connector, activeBranch),
+  });
+
+  // Token: from route params, or from search params on report/alert/AI conversation pages
   let token = $derived.by(() => {
-    if (isPublicReportPage(page) || isPublicAlertPage(page)) {
+    if (
+      isPublicReportPage(page) ||
+      isPublicAlertPage(page) ||
+      isPublicAIPage(page)
+    ) {
       return page.url.searchParams.get("token") ?? page.params.token;
     }
     return page.params.token;
@@ -194,7 +207,11 @@
   // --- Derived state (resolve effective runtime connection from whichever auth mode is active) ---
 
   let projectData = $derived($projectQuery.data);
-  let error = $derived($projectQuery.error as HTTPError);
+  // A failed background refetch keeps the cached project on screen unless the user can no
+  // longer reach it; see `resolveProjectError`.
+  let projectError = $derived(
+    resolveProjectError($projectQuery.error, projectData !== undefined),
+  );
 
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(
@@ -296,7 +313,7 @@
   onDestroy(() => pageViewThrottler.cancel());
 </script>
 
-{#if error}
+{#if projectError}
   <SlimProjectHeader
     {organization}
     {project}
@@ -305,9 +322,9 @@
     {organizationLogoUrl}
   />
   <ErrorPage
-    statusCode={error.response.status}
+    statusCode={projectError.statusCode}
     header={m.error_fetching_deployment()}
-    body={error.response.data?.message}
+    body={projectError.message}
   />
 {:else if projectData}
   {#if onEditPage}
@@ -356,6 +373,7 @@
               pathname={page.url.pathname}
               {project}
               {branchPrefix}
+              hasUser={!!$user.data?.user}
             />
           {/if}
         {/if}
