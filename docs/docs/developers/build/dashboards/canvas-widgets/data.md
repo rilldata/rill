@@ -27,6 +27,8 @@ KPI grids display key performance indicators in a compact grid format with compa
 
 Widgets follow the canvas time range and time comparison by default. Override either one with `time_filters`, which takes the same `tr` and `compare_tr` parameters as an explore URL. `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` turns delta and comparison off for that widget only. `compare_tr=inherit` follows the canvas comparison, and a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
 
+The aggregation grain works the same way with `grain`. Time-series charts and KPI sparklines bucket by the grain chosen in the canvas filter bar, and `grain=week` on its own keeps the canvas time range while bucketing that widget by week. A grain the time range cannot hold, such as `grain=month` on a seven day range, falls back to the canvas grain. Tables and pivots pick their grain through their time dimension instead.
+
 ```yaml
 - kpi_grid:
     metrics_view: auction_metrics
@@ -34,6 +36,13 @@ Widgets follow the canvas time range and time comparison by default. Override ei
       - requests
     # Canvas time range, comparison off
     time_filters: tr=inherit
+
+- line_chart:
+    metrics_view: auction_metrics
+    x: __time
+    y: requests
+    # Canvas time range, bucketed by week
+    time_filters: grain=week
 ```
 
 ## Leaderboard
@@ -161,6 +170,10 @@ Adhoc measures belong to a single widget: to use the same calculation in two wid
 - Define at most 10 adhoc measures per widget.
 
 For a calculation that many widgets or dashboards share, add a measure to the [metrics view](/developers/build/metrics-view) instead.
+
+## Exact values
+
+Measures that define an [`exact_expression`](/developers/build/metrics-view/measures/exact-measures) are approximate by default and show a `≈` chip next to their name in KPIs, tables, pivots and leaderboards. A chart shows one chip next to its title that covers every measure of the chart. Viewers click a chip to compute that measure, or that chart, exactly in that widget (in a leaderboard widget, in that one leaderboard) until they change the time range, comparison, grain, timezone, filters or tab. Other widgets keep their approximate values until their own chip is clicked. The selection is not part of the URL, so links and scheduled reports of the canvas open approximate. See [Exact values](/guide/dashboards/explore/exact-measures) in the guide for the chip states.
 
 ## Navigation
 

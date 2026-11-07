@@ -32,6 +32,14 @@ export class CompleteRequest extends Message<CompleteRequest> {
    */
   outputJsonSchema = "";
 
+  /**
+   * Whether the response may include reasoning blocks.
+   * Older clients don't support them, so they are removed from the response unless this is set.
+   *
+   * @generated from field: bool include_reasoning = 4;
+   */
+  includeReasoning = false;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -43,6 +51,7 @@ export class CompleteRequest extends Message<CompleteRequest> {
     { no: 1, name: "messages", kind: "message", T: CompletionMessage, repeated: true },
     { no: 2, name: "tools", kind: "message", T: Tool, repeated: true },
     { no: 3, name: "output_json_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "include_reasoning", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -95,6 +104,13 @@ export class CompleteResponse extends Message<CompleteResponse> {
   cachedInputTokens = 0;
 
   /**
+   * Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+   *
+   * @generated from field: uint32 cache_write_input_tokens = 6;
+   */
+  cacheWriteInputTokens = 0;
+
+  /**
    * The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
    *
    * @generated from field: string provider = 5;
@@ -113,6 +129,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
     { no: 2, name: "input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "output_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "cached_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "cache_write_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

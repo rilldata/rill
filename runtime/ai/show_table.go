@@ -56,7 +56,7 @@ func (t *ShowTable) Spec() *mcp.Tool {
 }
 
 func (t *ShowTable) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *ShowTable) Handler(ctx context.Context, args *ShowTableArgs) (*ShowTableResult, error) {

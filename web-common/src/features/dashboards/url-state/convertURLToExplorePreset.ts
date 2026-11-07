@@ -1,4 +1,3 @@
-import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import {
   injectEphemeralMeasuresIntoMap,
@@ -10,10 +9,8 @@ import {
   toPivotFormattingParam,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import {
-  createAndExpression,
-  filterIdentifiers,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -30,21 +27,14 @@ import {
   FromURLParamTimeDimensionMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import {
-  parseRillTime,
-  validateRillTime,
-} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import {
-  DateTimeUnitToV1TimeGrain,
-  V1TimeGrainToDateTimeUnit,
-} from "@rilldata/web-common/lib/time/new-grains";
-import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
+import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -310,42 +300,12 @@ function fromFilterUrlParam(
     ) {
       expr = createAndExpression([expr]);
     }
-    const errors: Error[] = [];
-    const missingDims: string[] = [];
-    const missingFields: string[] = [];
-    expr =
-      filterIdentifiers(expr, (e, ident) => {
-        if (
-          // these we are sure are dimensions so add errors as "missing dimension"
-          e.cond?.op === V1Operation.OPERATION_IN ||
-          e.cond?.op === V1Operation.OPERATION_NIN ||
-          !!e.subquery
-        ) {
-          if (dimensions.has(ident)) {
-            return true;
-          }
-          missingDims.push(ident);
-          return false;
-        }
-
-        if (
-          measures.has(ident) ||
-          measures.has(stripMeasureSuffix(ident)) ||
-          dimensions.has(ident)
-        ) {
-          return true;
-        }
-        missingFields.push(ident);
-
-        return false;
-      }) ?? createAndExpression([]);
-    if (missingDims.length) {
-      errors.push(getMultiFieldError("filter dimension", missingDims));
-    }
-    if (missingFields.length) {
-      errors.push(getMultiFieldError("filter field", missingFields));
-    }
-    return { expr, dimensionsWithInlistFilter, errors };
+    const { expr: cleanedExpr, errors } = dropUnknownFieldsFromFilter(
+      expr,
+      measures,
+      dimensions,
+    );
+    return { expr: cleanedExpr, dimensionsWithInlistFilter, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],
@@ -394,6 +354,7 @@ export function fromTimeRangesParams(
     }
   }
 
+  // A missing grain means adaptive mode; the grain is derived from the time range later.
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
 
@@ -401,20 +362,6 @@ export function fromTimeRangesParams(
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
-    }
-  } else {
-    try {
-      const parsed = parseRillTime(preset.timeRange ?? "");
-      const grain = getAggregationGrain(parsed);
-
-      if (grain && grain in V1TimeGrainToDateTimeUnit) {
-        preset.timeGrain = V1TimeGrainToDateTimeUnit[grain];
-      } else if (grain) {
-        // Only throw error if grain is defined
-        errors.push(getSingleFieldError("time grain", grain));
-      }
-    } catch {
-      // ignore
     }
   }
 
@@ -621,7 +568,8 @@ function fromPivotUrlParams(
     const rowsParam = searchParams.get(
       ExploreStateURLParams.PivotRows,
     ) as string;
-    const rows = rowsParam === "" ? [] : rowsParam.split(",");
+    // A leading or trailing comma leaves an empty entry: not a field, so skip it.
+    const rows = rowsParam.split(",").filter((r) => r !== "");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -636,7 +584,7 @@ function fromPivotUrlParams(
     const colsParam = searchParams.get(
       ExploreStateURLParams.PivotColumns,
     ) as string;
-    const cols = colsParam === "" ? [] : colsParam.split(",");
+    const cols = colsParam.split(",").filter((c) => c !== "");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||

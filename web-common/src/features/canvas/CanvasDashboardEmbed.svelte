@@ -13,6 +13,8 @@
     getEmbedThemeStoreInstance,
     resolveEmbedTheme,
   } from "../embeds/embed-theme";
+  import { featureFlags } from "../feature-flags";
+  import { selectedMockUserStore } from "../dashboards/granular-access-policies/stores";
 
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
@@ -42,6 +44,15 @@
   $: maxWidth = $_maxWidth;
   $: rows = $_rows;
   $: blocks = $layout;
+
+  const { adminServer } = featureFlags;
+  // Viewers only receive the content they may see, so in Rill Cloud, or when previewing as another user,
+  // an empty canvas most likely means everything on it is hidden from them. Authors previewing
+  // their own canvas locally see everything, so an empty canvas there has no components yet.
+  $: emptyMessage =
+    $adminServer || $selectedMockUserStore
+      ? m.canvas_visibility_empty()
+      : m.canvas_no_components_added();
 
   // Re-apply the active tab per group whenever the URL changes (e.g. browser back/forward),
   // so deep-linked tab state is restored on navigation, not just on initial load.
@@ -90,7 +101,7 @@
           <Spinner status={EntityStatus.Running} size="32px" />
         {:else}
           <p class="text-lg text-fg-secondary">
-            {m.canvas_no_components_added()}
+            {emptyMessage}
           </p>
         {/if}
       </div>

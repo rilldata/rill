@@ -79,7 +79,8 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		claims = &nested
 	}
 
-	// Resolve the API to JSON data
+	// Resolve the API to JSON data.
+	// API templates never access project variables (the parser rejects references to them), so ProjectDeclared is left unset.
 	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,

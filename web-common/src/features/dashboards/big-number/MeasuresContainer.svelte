@@ -2,6 +2,11 @@
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -17,9 +22,11 @@
     selectors: {
       measures: { allMeasures, visibleMeasures },
       tags: { measureTagIndex },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
       measures: { setMeasureVisibility },
+      exactMeasures: { toggleExactMeasure },
     },
   } = ctx;
 
@@ -28,6 +35,9 @@
   $: visibleMeasureNames = $visibleMeasures
     .map(({ name }) => name)
     .filter(isDefined);
+  // The big numbers are one surface: a click applies to this row only.
+  $: exactContext = $exactMeasureContext(exploreExactSurface.measures);
+  $: exactRequestNames = requestExactNames(visibleMeasureNames, exactContext);
   $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
@@ -61,11 +71,16 @@
 
   <div class="flex flex-row flex-wrap mt-2 gap-x-7 gap-y-9">
     {#each $visibleMeasures as measure (measure.name)}
+      {@const measureName = measure.name ?? ""}
       <div class="inline-grid">
         <!-- FIXME: I can't select the big number by the measure id. -->
         <MeasureBigNumber
           {measure}
           ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+          exact={exactRequestNames.has(measureName)}
+          precision={precisionStateFor(measureName, exactContext)}
+          onToggleExact={() =>
+            toggleExactMeasure(exploreExactSurface.measures, measureName)}
           withTimeseries={false}
           {metricsViewName}
           where={whereFilter}

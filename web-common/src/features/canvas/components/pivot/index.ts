@@ -60,6 +60,7 @@ import {
   comparisonWidthPatch,
   splitComparisonColumnId,
 } from "./field-config";
+import { getItemPropertiesExcept } from "../../layout-util";
 import {
   createPivotConfig,
   ROW_LIMIT_ALL_VALUE,
@@ -221,16 +222,16 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   selfFilteredDimensions: Writable<Set<string>>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = (resource.component?.state?.validSpec?.renderer ??
-      (parent.allowUnvalidatedSpec
-        ? resource.component?.spec?.renderer
-        : undefined)) as CanvasComponentType;
-
-    if (type !== "table" && type !== "pivot") {
-      throw new Error(
-        `Invalid table type: ${type}. Expected "table" or "pivot".`,
-      );
-    }
+    // The factory (createComponent) picks this class by the valid spec's renderer,
+    // else by the unvalidated spec's, so read the table type the same way. When a
+    // table's spec fails validation the runtime clears its valid spec but keeps the
+    // spec, and a viewer's component reads neither (its spec store starts from the
+    // defaults). The table still has to build to render its error state; throwing
+    // here would take the whole canvas down.
+    const renderer =
+      resource.component?.state?.validSpec?.renderer ??
+      resource.component?.spec?.renderer;
+    const type: "table" | "pivot" = renderer === "pivot" ? "pivot" : "table";
 
     const defaultPivotSpec: PivotSpec = {
       metrics_view: "",
@@ -258,6 +259,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     this.config = createPivotConfig(
       this.parent,
+      this.id,
       this.specStore,
       this.pivotState,
       this.timeAndFilterStore,
@@ -852,11 +854,19 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       delete newSpec.sort_comparison;
     }
 
-    const width = parsedDocument.getIn([...parentPath, "width"]);
+    // Keep the item's other properties, such as its width and `if` condition
+    const itemProperties = getItemPropertiesExcept(
+      parsedDocument,
+      parentPath,
+      this.pathInYAML.at(-1),
+    );
 
     this.specStore.set(newSpec);
 
-    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
+    parsedDocument.setIn(parentPath, {
+      [newTableType]: newSpec,
+      ...itemProperties,
+    });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), false, true);

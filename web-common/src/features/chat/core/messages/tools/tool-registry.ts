@@ -10,6 +10,7 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "../../types";
 import { createChartBlock, type ChartBlock } from "../chart/chart-block";
+import type { McpAuthRequiredBlock } from "../mcp-auth-required/mcp-auth-required-block";
 import {
   createFileDiffBlock,
   type FileDiffBlock,
@@ -55,7 +56,8 @@ export type ToolBlockType =
   | ChartBlock
   | FileDiffBlock
   | SimpleToolCall
-  | MemoryUpdateBlock;
+  | MemoryUpdateBlock
+  | McpAuthRequiredBlock;
 
 /**
  * Configuration for a tool's rendering behavior.

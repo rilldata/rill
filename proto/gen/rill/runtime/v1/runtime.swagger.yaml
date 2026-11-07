@@ -438,7 +438,7 @@ paths:
                   The field is ignored if another agent is selected.
               uiPagePath:
                 type: string
-                description: Optional current browser path. The origin is intentionally omitted.
+                description: 'Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.'
               uiActions:
                 type: array
                 items:
@@ -507,7 +507,7 @@ paths:
                   The field is ignored if another agent is selected.
               uiPagePath:
                 type: string
-                description: Optional current browser path. The origin is intentionally omitted.
+                description: 'Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.'
               uiActions:
                 type: array
                 items:
@@ -564,6 +564,62 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - RuntimeService
+    delete:
+      summary: DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+      operationId: RuntimeService_DeleteConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    patch:
+      summary: UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+      operationId: RuntimeService_UpdateConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: New title for the conversation. Not changed if unset.
+            title: Request message for RuntimeService.UpdateConversation
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
@@ -702,6 +758,58 @@ paths:
                   only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
                   It supports a special value of "none" to unshare the conversation.
             title: Request message for RuntimeService.ShareConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers:
+    get:
+      summary: |-
+        ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+        including the tools each server exposes to the user and whether the user has authorized it.
+      operationId: RuntimeService_ListMCPServers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListMCPServersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers/{connector}/disconnect:
+    post:
+      summary: DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+      operationId: RuntimeService_DisconnectMCPServer
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DisconnectMCPServerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.DisconnectMCPServer
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/memories:
@@ -970,6 +1078,50 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/instances/{instanceId}/connectors/{connector}/oauth-config:
+    post:
+      summary: |-
+        GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+        after checking that the given user may use the connector.
+        It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+        because the response contains secrets.
+      operationId: RuntimeService_GetConnectorOAuthConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userAttributes:
+                type: object
+                description: Attributes of the user the authorization flow runs for; the connector's security policy is evaluated with them.
+              userRules:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1SecurityRule'
+                description: Additional security rules that apply to the user, such as resource restrictions.
+            title: Request message for RuntimeService.GetConnectorOAuthConfig
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -1966,6 +2118,12 @@ paths:
                   If true, fall back to the unvalidated spec when no valid spec is available.
                   Only for use by the visual editor in Rill Developer. Must never be sent by
                   Rill Cloud, read-only previews, shared token access, or embedded viewers.
+              includeHidden:
+                type: boolean
+                description: |-
+                  If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+                  Used by the visual editor, which maps canvas elements to their position in the YAML.
+                  Requires permission to edit the canvas.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -2326,6 +2484,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+                  That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
               fillMissing:
                 type: boolean
               rows:
@@ -2495,7 +2657,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
-                title: Optional, defaults to false
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+                  Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
@@ -2820,6 +2985,13 @@ paths:
                 description: |-
                   Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
                   Only the `expression` compute is supported for time series.
+              exactMeasureNames:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+                  No-op for measures without an `exact_expression`.
               timeStart:
                 type: string
                 format: date-time
@@ -4091,6 +4263,11 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      lookupGroupByKey:
+        type: boolean
+        description: |-
+          If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+          Only for ClickHouse dictionaries with few keys; see the metrics view docs.
       smallestTimeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: The smallest time grain for the dimension. Only populated for time dimensions.
@@ -4167,6 +4344,9 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      exactExpression:
+        type: string
+        description: Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -4505,6 +4685,17 @@ definitions:
         type: string
       queryForAttributes:
         type: object
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+        description: Format of the attached export.
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       notifyOnRecover:
         type: boolean
       notifyOnFail:
@@ -4718,6 +4909,11 @@ definitions:
       widthUnit:
         type: string
         description: 'Unit of the width. Current possible values: empty string.'
+      conditionExpression:
+        type: string
+        description: |-
+          Templated boolean expression from the item's `if` property.
+          The item is only shown to viewers for whom it evaluates to true.
   v1CanvasPreset:
     type: object
     properties:
@@ -4764,6 +4960,11 @@ definitions:
         description: |-
           If set, this row renders a tab group instead of items.
           A row has either items or a tab_group, never both.
+      conditionExpression:
+        type: string
+        description: |-
+          Templated boolean expression from the row's `if` property.
+          The row (or tab group) is only shown to viewers for whom it evaluates to true.
   v1CanvasSpec:
     type: object
     properties:
@@ -4887,6 +5088,11 @@ definitions:
         description: |-
           Rows to render when the tab is active. These are always plain rows;
           a tab's rows never contain a nested tab_group.
+      conditionExpression:
+        type: string
+        description: |-
+          Templated boolean expression from the tab's `if` property.
+          The tab is only shown to viewers for whom it evaluates to true.
   v1CanvasTabGroup:
     type: object
     properties:
@@ -5301,6 +5507,11 @@ definitions:
         $ref: '#/definitions/v1ComponentVariable'
       definedInCanvas:
         type: boolean
+      conditionExpression:
+        type: string
+        description: |-
+          For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+          Only viewers for whom it evaluates to true can access the component.
   v1ComponentState:
     type: object
     properties:
@@ -5404,6 +5615,28 @@ definitions:
       implementsWarehouse:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1ConnectorOAuthConfig:
+    type: object
+    properties:
+      resourceUrl:
+        type: string
+        description: URL of the protected resource. The authorization server is discovered from its protected resource metadata (RFC 9728).
+      clientId:
+        type: string
+        description: Pre-registered client credentials. If empty, a client is registered dynamically (RFC 7591).
+      clientSecret:
+        type: string
+      scopes:
+        type: array
+        items:
+          type: string
+        description: Scopes to request. If empty, the scopes the resource advertises are requested.
+      authorizationParams:
+        type: object
+        additionalProperties:
+          type: string
+        description: Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
+    description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object
     properties:
@@ -5419,6 +5652,19 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+        description: |-
+          Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+          Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
   v1ConnectorState:
     type: object
     properties:
@@ -5440,6 +5686,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1Conversation:
     type: object
@@ -5542,6 +5790,9 @@ definitions:
   v1DeleteAIMemoryResponse:
     type: object
     title: Response message for RuntimeService.DeleteAIMemory
+  v1DeleteConversationResponse:
+    type: object
+    title: Response message for RuntimeService.DeleteConversation
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -5569,6 +5820,9 @@ definitions:
         type: string
       isDir:
         type: boolean
+  v1DisconnectMCPServerResponse:
+    type: object
+    title: Response message for RuntimeService.DisconnectMCPServer
   v1EditInstanceResponse:
     type: object
     properties:
@@ -5964,6 +6218,15 @@ definitions:
       result:
         $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
+  v1GetConnectorOAuthConfigResponse:
+    type: object
+    properties:
+      configHash:
+        type: string
+        description: Opaque hash of the OAuth configuration. Any change to the configuration changes the hash, which invalidates existing authorizations.
+      config:
+        $ref: '#/definitions/v1ConnectorOAuthConfig'
+    title: Response message for RuntimeService.GetConnectorOAuthConfig
   v1GetConversationResponse:
     type: object
     properties:
@@ -6216,6 +6479,9 @@ definitions:
         type: string
       theme:
         type: string
+      embedOpenUrl:
+        type: string
+        description: Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -6367,6 +6633,15 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListMCPServersResponse:
+    type: object
+    properties:
+      servers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPServer'
+    title: Response message for RuntimeService.ListMCPServers
   v1ListNotifierConnectorsResponse:
     type: object
     properties:
@@ -6441,6 +6716,52 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
+  v1MCPServer:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector that defines the server.
+      displayName:
+        type: string
+        description: Human-friendly name of the server.
+      oauth:
+        type: boolean
+        description: True if the server requires a per-user OAuth authorization.
+      connected:
+        type: boolean
+        description: |-
+          True if the server can be used by the current user right now: it was reached and its tools were listed.
+          Always true for reachable servers that don't use OAuth.
+      authorized:
+        type: boolean
+        description: |-
+          True if the current user has granted the server an OAuth authorization that Rill still holds.
+          Unlike connected, it does not depend on the server being reachable, so an authorization can be removed during an outage.
+          Only set for servers that use OAuth.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the server. Empty means all agents.
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPTool'
+        description: Tools the server exposes to the current user. Empty if the server could not be reached or the user is not connected.
+      error:
+        type: string
+        description: Error encountered when connecting to the server or listing its tools, if any.
+    description: MCPServer describes an external MCP server from the perspective of the current user.
+  v1MCPTool:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+    description: MCPTool describes a tool exposed by an external MCP server.
   v1MapType:
     type: object
     properties:
@@ -6536,6 +6857,11 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
       expression:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeExpression'
+      exact:
+        type: boolean
+        description: |-
+          Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+          No-op for measures without an `exact_expression`, which only simple measures define.
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -6668,6 +6994,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+          That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
       fillMissing:
         type: boolean
       rows:
@@ -6832,7 +7162,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
-        title: Optional, defaults to false
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+          Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
@@ -7252,6 +7585,13 @@ definitions:
         description: |-
           Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
           Only the `expression` compute is supported for time series.
+      exactMeasureNames:
+        type: array
+        items:
+          type: string
+        description: |-
+          Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+          No-op for measures without an `exact_expression`.
       timeStart:
         type: string
         format: date-time
@@ -7966,6 +8306,21 @@ definitions:
         type: array
         items:
           type: object
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1ReconcileStatus:
     type: string
     enum:
@@ -8092,6 +8447,9 @@ definitions:
         $ref: '#/definitions/v1ExportFormat'
       exportIncludeHeader:
         type: boolean
+      exportAttach:
+        type: boolean
+        description: If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
       notifiers:
         type: array
         items:
@@ -8146,6 +8504,13 @@ definitions:
         additionalProperties:
           $ref: '#/definitions/v1Resource'
         description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+      hiddenPaths:
+        type: array
+        items:
+          type: string
+        description: |-
+          Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+          The paths follow the canvas YAML. Only set when include_hidden is true.
   v1ResolveComponentResponse:
     type: object
     properties:
@@ -8862,6 +9227,9 @@ definitions:
   v1UpdateAIMemorySettingsResponse:
     type: object
     title: Response message for RuntimeService.UpdateAIMemorySettings
+  v1UpdateConversationResponse:
+    type: object
+    title: Response message for RuntimeService.UpdateConversation
   v1WatchFilesResponse:
     type: object
     properties:

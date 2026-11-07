@@ -117,6 +117,7 @@
   );
 
   let activeTimeGrain = $derived(selectedTimeRange?.interval);
+  let adaptiveTimeGrain = $derived(!!$exploreState?.adaptiveTimeGrain);
   let defaultTimeRange = $derived(exploreSpec.defaultPreset?.timeRange);
 
   let { selectedTimeDimension } = $derived($dashboardStore);
@@ -348,10 +349,14 @@
       !selectedRangeAlias?.startsWith("rill-"),
   );
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (usingRillTime && selectedRangeAlias) {
-      metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
-    } else if (baseTimeRange) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    if (timeGrain === undefined) {
+      metricsExplorerStore.setAdaptiveTimeGrain($exploreName, metricsViewSpec);
+      return;
+    }
+    metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
+    if (!usingRillTime && baseTimeRange) {
+      // Legacy ranges are re-resolved with the new grain.
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
@@ -426,6 +431,8 @@
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
           {maxQueryTimeRange}
           {activeTimeGrain}
+          {adaptiveTimeGrain}
+          allowAdaptiveTimeGrain
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}

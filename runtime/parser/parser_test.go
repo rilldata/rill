@@ -59,6 +59,34 @@ mock_users:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLEmbedOpenURL(t *testing.T) {
+	ctx := context.Background()
+
+	// Not set by default
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	res, err := ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Empty(t, res.EmbedOpenURL)
+
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: https://app.acme.com/analytics/open?tenant=foo
+`})
+	res, err = ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://app.acme.com/analytics/open?tenant=foo", res.EmbedOpenURL)
+
+	// Must be an absolute http(s) URL
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: /analytics/open
+`})
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Contains(t, p.Errors[0].Message, `invalid property "embeds.open_url"`)
+}
+
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
@@ -925,6 +953,32 @@ driver: duckdb
 	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
+func TestConnectorTemplatedPropertiesOrder(t *testing.T) {
+	// The project parser compares specs with proto.Equal to detect changes,
+	// so re-parsing an unchanged connector must return its templated properties in the same order.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+mode: readwrite
+dsn: "{{ .env.dsn }}"
+write_dsn: "{{ .env.write_dsn }}"
+password: "{{ .env.password }}"
+`,
+	})
+
+	// Parse several times since an unstable order only shows up on some runs
+	for range 20 {
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"}]
+		require.NotNil(t, r)
+		require.Equal(t, []string{"dsn", "password", "write_dsn"}, r.ConnectorSpec.TemplatedProperties)
+	}
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{
@@ -1672,6 +1726,143 @@ notify:
 	})
 }
 
+func TestReportAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based report run as the creator
+		`reports/r1.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: xlsx
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: creator
+`,
+		// Reports without a web open mode are run as the creator
+		`reports/r2.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for reports run as the recipient
+		`reports/r3.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: recipient
+`,
+		// Attachments are not supported for canvas PDF reports
+		`reports/r4.yaml`: `
+type: report
+export:
+  format: pdf
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  canvas: c1
+`,
+		// Attachments are not supported for AI reports
+		`reports/r5.yaml`: `
+type: report
+data:
+  ai:
+    prompt: Analyze key metrics
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resolverProps := must(structpb.NewStruct(map[string]any{
+		"query_name":      "MetricsViewAggregation",
+		"query_args_json": "{\"metrics_view\":\"mv1\"}",
+	}))
+	notifiers := []*runtimev1.Notifier{{
+		Connector:  "email",
+		Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+	}}
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R1",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+				Annotations:        map[string]string{"web_open_mode": "creator"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R2",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `"export.attach" is not supported for web_open_mode "recipient" (must be "creator")`,
+			FilePath: "/reports/r3.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r5.yaml",
+		},
+	})
+}
+
 func TestAlert(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
@@ -1760,6 +1951,159 @@ annotations:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlertAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based alert with all export options
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: xlsx
+  include_header: true
+  limit: 100
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require an export format
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for alerts using "data"
+		`alerts/a3.yaml`: `
+type: alert
+data:
+  sql: SELECT 1
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// PDF exports are not supported for alerts
+		`alerts/a4.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require email recipients
+		`alerts/a5.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: csv
+notify:
+  slack:
+    channels:
+      - alerts
+`,
+		// Export options are ignored when not attaching
+		`alerts/a6.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				ExportAttach:        true,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportIncludeHeader: true,
+				ExportLimit:         100,
+				NotifyOnFail:        true,
+				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a6"},
+			Paths: []string{"/alerts/a6.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A6",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail: true,
+				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `missing required property "export.format"`,
+			FilePath: "/alerts/a2.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/alerts/a3.yaml",
+		},
+		{
+			Message:  `export format "pdf" is not supported for alerts`,
+			FilePath: "/alerts/a4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires email recipients`,
+			FilePath: "/alerts/a5.yaml",
+		},
+	})
 }
 
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
@@ -2680,6 +3024,126 @@ rows:
 	// Name defaults from the label.
 	require.Equal(t, "deep-dive", tabs[1].Name)
 	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
+}
+
+func TestCanvasConditions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups }}'
+  items:
+  - if: '{{ .user.admin }}'
+    markdown:
+      content: "Admins in finance"
+  - component: c1
+    if: false
+- name: deep_dive
+  if: "'{{ .user.domain }}' = 'acme.com'"
+  tabs:
+  - label: Premium
+    if: '{{ eq .user.plan "premium" }}'
+    rows:
+    - items:
+      - markdown:
+          content: "Premium"
+  - label: Region
+    rows:
+    - if: '{{ .user.is_emea }}'
+      items:
+      - markdown:
+          content: "EMEA"
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	canvas := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}].CanvasSpec
+	require.Equal(t, `{{ has "finance" .user.groups }}`, canvas.Rows[0].ConditionExpression)
+	require.Equal(t, `{{ .user.admin }}`, canvas.Rows[0].Items[0].ConditionExpression)
+	require.Equal(t, "false", canvas.Rows[0].Items[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, canvas.Rows[1].ConditionExpression)
+	tabs := canvas.Rows[1].TabGroup.Tabs
+	require.Equal(t, `{{ eq .user.plan "premium" }}`, tabs[0].ConditionExpression)
+	require.Equal(t, "", tabs[1].ConditionExpression)
+	// A condition on a custom attribute can't be evaluated at parse time, but its template is valid.
+	require.Equal(t, `{{ .user.is_emea }}`, tabs[1].Rows[0].ConditionExpression)
+
+	// Inline components inherit the conditions of their item and its ancestors.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ eq .user.plan "premium" }})`, component("d1--component-g1-t0-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ .user.is_emea }})`, component("d1--component-g1-t1-0-0").ConditionExpression)
+	// Components defined in their own file can be shared by canvases, so they don't inherit a canvas item's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasConditionErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "invalid template on a row",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  items:
+  - markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid expression on an item",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - if: "'{{ .user.domain }}' = "
+    markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid template on a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    if: '{{ .user.plan'
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, "invalid 'if'")
+		})
+	}
 }
 
 func TestKindBackwardsCompatibility(t *testing.T) {
@@ -3719,4 +4183,127 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// TestTemplatesRejectProjectVariables verifies that templates whose results are served to viewers or that users write can't reference project variables,
+// which commonly hold secrets, or the full template data that includes them: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
+// Models, which the server resolves on the project's behalf, may reference them.
+func TestTemplatesRejectProjectVariables(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/markdown.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Region: {{ .env.region }}"
+`,
+		`canvases/chart.yaml`: `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      metrics_sql: "SELECT count FROM {{ .env.mv }}"
+      vega_spec: "{}"
+`,
+		`canvases/nested.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: '{{ metrics_sql "SELECT count FROM {{ .env.mv }}" }}'
+`,
+		`canvases/condition.yaml`: `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+    if: '{{ eq .env.secret "guess" }}'
+`,
+		`components/standalone.yaml`: `
+type: component
+markdown:
+  content: '{{ env "secret" }}'
+`,
+		// Uses the full template data without naming the variables; it is rejected too, since the data includes them.
+		`canvases/root.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ index . "user" "email" }}'
+`,
+		`alerts/a.yaml`: `
+type: alert
+display_name: Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: "SELECT count FROM mv1 WHERE country = '{{ .env.secret }}'"
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`reports/r.yaml`: `
+type: report
+display_name: Report
+refresh:
+  cron: 0 * * * *
+data:
+  sql: "SELECT '{{ .env.secret }}' AS v"
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`apis/a.yaml`: `
+type: api
+sql: "SELECT '{{ .env.secret }}' AS v"
+`,
+		// Allowed: user attributes and metrics queries in dashboards, and models the server resolves on the project's behalf.
+		`canvases/ok.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ .user.name }}: {{ metrics_sql "SELECT count FROM mv1" }}'
+    if: '{{ .user.admin }}'
+`,
+		`models/ok.sql`: `SELECT '{{ .env.secret }}' AS v`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+
+	wantErrors := map[string]string{
+		"/canvases/markdown.yaml":     `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/chart.yaml":        `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/nested.yaml":       `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/condition.yaml":    `"if" conditions can't access project variables (".env") or the full template data ("." or "$")`,
+		"/components/standalone.yaml": `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/root.yaml":         `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/alerts/a.yaml":              `templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/reports/r.yaml":             `templates in report properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/apis/a.yaml":                `templates in API properties can't access project variables (".env") or the full template data ("." or "$")`,
+	}
+	gotErrors := make(map[string]string)
+	for _, e := range p.Errors {
+		gotErrors[e.FilePath] = e.Message
+	}
+	for path, want := range wantErrors {
+		require.Contains(t, gotErrors[path], want, "for path %q", path)
+	}
+	require.NotContains(t, gotErrors, "/canvases/ok.yaml")
+	require.NotContains(t, gotErrors, "/models/ok.sql")
+	require.Len(t, gotErrors, len(wantErrors))
 }

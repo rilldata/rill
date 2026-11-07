@@ -220,22 +220,22 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	// Save the original PreExec so we can restore it later if the query fails
 	originalPreExec := inputProps.PreExec
+	// Create secrets before the user's pre_exec so that statements like ATTACH can use them.
 	if inputProps.InternalCreateSecretSQL != "" {
-		if inputProps.PreExec != "" {
-			inputProps.PreExec += "\n;" // adding \n if there is comment in pre_exec
+		inputProps.PreExec = inputProps.InternalCreateSecretSQL
+		if originalPreExec != "" {
+			inputProps.PreExec += ";\n" + originalPreExec
 		}
-		inputProps.PreExec += inputProps.InternalCreateSecretSQL
 	}
 	duration, err := e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
 	if err != nil {
 		// On failure, try cleaning up secrets and retry without secrets for anonymous bucket access
 		if inputProps.InternalDropSecretSQL != "" && (strings.Contains(err.Error(), "HTTP 403") || strings.Contains(err.Error(), "IO Error") || strings.Contains(err.Error(), "region being set incorrectly")) {
-			// Restore original PreExec, append drop secret, and retry.
-			inputProps.PreExec = originalPreExec
-			if inputProps.PreExec != "" {
-				inputProps.PreExec += "\n;" // adding \n if there is comment in pre_exec
+			// Drop secrets before the original PreExec and retry.
+			inputProps.PreExec = inputProps.InternalDropSecretSQL
+			if originalPreExec != "" {
+				inputProps.PreExec += ";\n" + originalPreExec
 			}
-			inputProps.PreExec += inputProps.InternalDropSecretSQL
 			var anonymErr error
 			duration, anonymErr = e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
 			if anonymErr != nil {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import { computeNiceYExtent } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/scales";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -91,7 +92,11 @@
   $: mins = allYExtents.map((extents) => extents[0]).filter(isNumber);
   $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
 
-  $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
+  // No padding: keep the line flush with the top of the sparkline
+  $: yExtents = computeNiceYExtent(min(mins) ?? 0, max(maxes) ?? 0, {
+    includeZero: true,
+    paddingFactor: 1,
+  });
   $: yScale = scaleLinear().domain(yExtents).range([100, 0]);
 
   // Bridge gaps in the data, treating missing data as zero

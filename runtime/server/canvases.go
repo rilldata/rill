@@ -31,7 +31,10 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		return nil, status.Error(codes.PermissionDenied, "does not have access to canvas data")
 	}
 
-	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, req.Unsafe)
+	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, &runtime.ResolveCanvasOptions{
+		Unsafe:        req.Unsafe,
+		IncludeHidden: req.IncludeHidden,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +43,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		Canvas:                 res.Canvas,
 		ResolvedComponents:     res.ResolvedComponents,
 		ReferencedMetricsViews: res.ReferencedMetricsViews,
+		HiddenPaths:            res.HiddenPaths,
 	}, nil
 }
 
@@ -66,6 +70,16 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if err != nil {
 		return nil, err
 	}
+
+	// Check the user can access the component (e.g. it's not hidden from them on its canvas)
+	res, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, res)
+	if err != nil {
+		return nil, err
+	}
+	if !access {
+		return nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", req.Component)
+	}
+
 	spec := res.GetComponent().State.ValidSpec
 	if spec == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "component %q is invalid", req.Component)
@@ -94,12 +108,17 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		}
 	}
 
+	// Dashboard templates never access project variables, which commonly hold secrets: the parser rejects references to them,
+	// and this check covers components reconciled before that rule existed.
+	if parser.TemplateReferencesVariables(spec.RendererProperties.AsMap()) {
+		return nil, status.Errorf(codes.InvalidArgument, `templates in component %q can't access project variables (".env") or the full template data ("." or "$")`, req.Component)
+	}
+
 	// Setup templating data.
 	// The effective args are exposed both as .params (canonical, matching the YAML key) and .args (legacy alias).
 	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        claims.UserAttributes,
-		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args":   effectiveArgs,
 			"params": effectiveArgs,
@@ -114,6 +133,17 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if spec.RendererProperties != nil {
 		props := canvas.CoerceScalarParams(spec.RendererProperties.AsMap(), spec.Params, effectiveArgs)
 
+		// A custom chart's vega_spec is a JSON document held in a string, so it is set aside and
+		// resolved below with JSON-escaped template data; resolving it with the plain data would
+		// splice a display name or string param containing a quote into the JSON unescaped.
+		var vegaSpec string
+		var hasVegaSpec bool
+		if spec.Renderer == "custom_chart" {
+			if vegaSpec, hasVegaSpec = props["vega_spec"].(string); hasVegaSpec {
+				delete(props, "vega_spec")
+			}
+		}
+
 		v, err := parser.ResolveTemplateRecursively(props, td, false)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to resolve renderer properties: %s", err.Error())
@@ -124,15 +154,22 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 			return nil, status.Errorf(codes.Internal, "failed to convert resolved renderer properties to map: %v", v)
 		}
 
-		// For custom charts, inject scalar param values as native Vega-Lite params into the vega_spec.
-		if spec.Renderer == "custom_chart" {
-			if vegaSpec, ok := props["vega_spec"].(string); ok {
-				injected, err := canvas.InjectVegaParams(vegaSpec, spec.Params, effectiveArgs)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "failed to inject params into vega_spec: %s", err.Error())
-				}
-				props["vega_spec"] = injected
+		// For custom charts, resolve the vega_spec and inject scalar param values into it as native Vega-Lite params.
+		// The params are injected from the unescaped args; InjectVegaParams encodes them itself.
+		if hasVegaSpec {
+			vegaTD := td
+			vegaTD.User = canvas.EscapeJSONStrings(td.User)
+			vegaTD.Variables = canvas.EscapeJSONStrings(td.Variables)
+			vegaTD.ExtraProps = canvas.EscapeJSONStrings(td.ExtraProps)
+			resolved, err := parser.ResolveTemplate(vegaSpec, vegaTD, false)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to resolve vega_spec: %s", err.Error())
 			}
+			injected, err := canvas.InjectVegaParams(resolved, spec.Params, effectiveArgs)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to inject params into vega_spec: %s", err.Error())
+			}
+			props["vega_spec"] = injected
 		}
 
 		rendererProps, err = structpb.NewStruct(props)

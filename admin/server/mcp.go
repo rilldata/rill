@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/ai/mcpapp"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -48,11 +49,15 @@ const (
 // mcpForwardedTools are the runtime tools exposed on the MCP server.
 // The runtime exposes more tools than these, but the rest require runtime.EditRepo,
 // which is only granted for editable deployments, and a project's primary deployment is never editable.
+// create_chart is always exposed: clients that do not get the MCP Apps widget receive its markdown fallback.
+// chart_data may only be called by the widget, so it is only exposed when this server serves the widget (see mcpForwardedToolSpecs).
 var mcpForwardedTools = []string{
 	ai.ListMetricsViewsName,
 	ai.GetMetricsViewName,
 	ai.QueryMetricsViewSummaryName,
 	ai.QueryMetricsViewName,
+	ai.CreateChartName,
+	ai.ChartDataName,
 	ai.ListSkillsName,
 	ai.LoadSkillName,
 }
@@ -66,8 +71,14 @@ var mcpSessionNamespace = uuid.MustParse("6f4a1c94-3d1e-4f6b-9a02-1c0f6b7d5e8a")
 // Unlike the per-project runtime proxy, it serves a single endpoint for all the projects a caller has access to:
 // it answers the MCP protocol methods itself and forwards tool calls to the runtime of the project named in the tool arguments.
 func (s *Server) mcpHandler() (http.Handler, error) {
+	// The MCP Apps widget is served whenever the binary carries the widget bundle (see runtime/ai/mcpapp).
+	widget, ok := mcpapp.Widget()
+	if !ok {
+		s.logger.Warn("mcp: the MCP Apps widget bundle is not embedded in this binary; serving the chart tools without the widget")
+	}
+
 	adminTools := s.mcpAdminTools()
-	forwardedTools, err := mcpForwardedToolSpecs()
+	forwardedTools, err := mcpForwardedToolSpecs(widget)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +90,12 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	var capabilities *mcp.ServerCapabilities
+	if widget != nil {
+		capabilities = mcpapp.ServerCapabilities()
+	}
+
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
 				Name:    "rill",
@@ -89,8 +105,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
-				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-				GetSessionID: uuid.NewString,
+				Capabilities: capabilities,
 			},
 		)
 
@@ -102,7 +117,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			sessionID:       r.Header.Get(middleware.MCPSessionIDHeader), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -113,11 +128,14 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		for _, t := range forwardedTools {
 			srv.AddTool(t, s.mcpForwardToolCall(t.Name, client))
 		}
+		if widget != nil {
+			mcpapp.Register(srv, widget)
+		}
 
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true, // Required since the server serves multiple users.
-	}), nil
+	})), nil
 }
 
 // mcpRequireAuth rejects unauthenticated requests to the MCP server.
@@ -164,7 +182,9 @@ type mcpAdminTool struct {
 
 // mcpForwardedToolSpecs returns the specs of the tools forwarded to a project's runtime, using the tool definitions in runtime/ai as the source of truth.
 // It injects the "project" argument into the input schema of each tool, which we intercept to route calls to the correct runtime.
-func mcpForwardedToolSpecs() ([]*mcp.Tool, error) {
+// The tools that take part in the MCP Apps widget get the matching _meta.ui: create_chart links to the widget when it is served,
+// and app-only tools, which only the widget may call, declare their visibility and are left out when it is not served.
+func mcpForwardedToolSpecs(widget *mcpapp.Asset) ([]*mcp.Tool, error) {
 	specs := ai.MCPToolSpecs()
 
 	res := make([]*mcp.Tool, 0, len(mcpForwardedTools))
@@ -173,6 +193,11 @@ func mcpForwardedToolSpecs() ([]*mcp.Tool, error) {
 		if !ok {
 			return nil, fmt.Errorf("mcp: no spec for tool %q", name)
 		}
+
+		if widget == nil && ai.IsMCPAppOnlyTool(name) {
+			continue
+		}
+		spec = mcpapp.ToolWithMeta(spec, ai.MCPAppToolMeta(name, widget))
 
 		// Inject the "project" argument into the input schema.
 		schema, ok := spec.InputSchema.(*jsonschema.Schema)
@@ -226,19 +251,20 @@ func (s *Server) mcpForwardToolCall(name string, client *mcpClient) mcp.ToolHand
 
 		s.admin.Used.Deployment(depl.ID)
 
-		return s.callRuntimeTool(ctx, depl, jwt, client, name, args)
+		// The client's _meta is passed through, since protocol versions >= 2026-07-28 carry the protocol version and client capabilities in it.
+		return s.callRuntimeTool(ctx, depl, jwt, client, &mcp.CallToolParams{Meta: req.Params.Meta, Name: name, Arguments: args})
 	}
 }
 
 // callRuntimeTool calls a tool on a deployment's MCP server.
 // It sends a plain JSON-RPC request instead of using the MCP SDK's client, which would add an initialization
 // handshake to every tool call and would not let us pass through the session ID and user agent.
-func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, name string, args json.RawMessage) (*mcp.CallToolResult, error) {
+func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, params *mcp.CallToolParams) (*mcp.CallToolResult, error) {
 	body, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      1,
 		"method":  "tools/call",
-		"params":  mcp.CallToolParams{Name: name, Arguments: args},
+		"params":  params,
 	})
 	if err != nil {
 		return nil, err
@@ -257,18 +283,19 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream") // The runtime requires both, even though it responds with JSON
 	req.Header.Set("Authorization", "Bearer "+jwt)
+	// Protocol versions >= 2026-07-28 require these headers to mirror the body; older versions ignore them.
+	req.Header.Set("Mcp-Method", "tools/call")
+	req.Header.Set("Mcp-Name", params.Name)
 	if client.protocolVersion != "" {
 		req.Header.Set("Mcp-Protocol-Version", client.protocolVersion)
 	}
 	if client.userAgent != "" {
 		req.Header.Set("User-Agent", client.userAgent)
 	}
-	if client.sessionID != "" {
-		// Derive a session ID per project instead of passing the client's through.
-		// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
-		sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
-		req.Header.Set("Mcp-Session-Id", sessionID.String())
-	}
+	// Derive a session ID per project instead of passing the client's through.
+	// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
+	sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
+	req.Header.Set(middleware.MCPSessionIDHeader, sessionID.String())
 
 	// Uses http.DefaultClient to get caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
@@ -309,6 +336,9 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 			return nil, errors.New(rpc.Error.Message)
 		}
 		if rpc.Result != nil {
+			// On protocol versions >= 2026-07-28, the runtime identifies itself in the result's _meta.
+			// It's removed so the MCP SDK annotates the result with the admin service's server info instead.
+			delete(rpc.Result.Meta, mcp.MetaKeyServerInfo)
 			return rpc.Result, nil
 		}
 	}

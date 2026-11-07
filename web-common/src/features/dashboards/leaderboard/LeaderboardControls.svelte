@@ -34,11 +34,13 @@
   $: exploreState = $metricsExplorerStore.entities[exploreName];
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
+  // Leaderboards group by each visible dimension in turn and also query totals,
+  // so they cannot query measures with required dimensions.
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     exploreState,
     metricsViewSpec,
     $visibleMeasures,
-    false,
+    {},
   );
 
   $: activeLeaderboardMeasure = $getMeasureByName(

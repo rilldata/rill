@@ -1,6 +1,7 @@
 package canvas_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -136,6 +137,46 @@ func TestValidateParamBindings(t *testing.T) {
 	}
 	err = canvas.ValidateParamBindings(withDefault, nil, mvs)
 	require.ErrorContains(t, err, `not a measure in metrics view "mv1"`)
+}
+
+func TestEscapeJSONStrings(t *testing.T) {
+	in := map[string]any{
+		"params": map[string]any{
+			"measure":  "revenue",
+			"subtitle": `back\slash, "quote", tab\t, <html> & newline\n`,
+			"limit":    10.0,
+			"smooth":   true,
+			"groups":   []any{`a "b"`, 1.0, nil},
+		},
+		"fields": map[string]any{
+			"measure": map[string]any{"display_name": `Revenue "net"`},
+		},
+	}
+	out := canvas.EscapeJSONStrings(in)
+	require.Equal(t, map[string]any{
+		"params": map[string]any{
+			"measure":  "revenue",
+			"subtitle": `back\\slash, \"quote\", tab\\t, <html> & newline\\n`,
+			"limit":    10.0,
+			"smooth":   true,
+			"groups":   []any{`a \"b\"`, 1.0, nil},
+		},
+		"fields": map[string]any{
+			"measure": map[string]any{"display_name": `Revenue \"net\"`},
+		},
+	}, out)
+	// The input is not modified.
+	require.Equal(t, `Revenue "net"`, in["fields"].(map[string]any)["measure"].(map[string]any)["display_name"])
+
+	// Control characters are escaped too, and every escaped string decodes back to the original.
+	for _, s := range []string{"tab\there", "new\nline", "nul\x00", `C:\path\"dir"`, "plain"} {
+		var back string
+		require.NoError(t, json.Unmarshal([]byte(`"`+canvas.EscapeJSONStrings(s)+`"`), &back))
+		require.Equal(t, s, back)
+	}
+
+	require.Equal(t, map[string]string{"k": `v \"q\"`}, canvas.EscapeJSONStrings(map[string]string{"k": `v "q"`}))
+	require.Nil(t, canvas.EscapeJSONStrings[map[string]any](nil)["x"])
 }
 
 func TestCoerceScalarParams(t *testing.T) {

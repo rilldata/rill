@@ -191,7 +191,10 @@ function toTimeRangesUrl(
     );
   }
 
+  // Only a fixed grain goes in the URL. In adaptive mode, the default, the grain is derived
+  // from the time range on load, so a partial state without the flag also writes no grain.
   if (
+    partialExploreState.adaptiveTimeGrain === false &&
     timeControlsState.selectedTimeRange &&
     "interval" in timeControlsState.selectedTimeRange
   ) {
@@ -404,17 +407,23 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
     return searchParams;
   }
 
-  const mapPivotEntry = (data: PivotChipData) => {
+  // Undefined for a time chip without a known grain. Such a chip is skipped:
+  // an empty name in the url is not a field.
+  const mapPivotEntry = (data: PivotChipData): string | undefined => {
     if (data.type === PivotChipType.Time)
-      return ToURLParamTimeDimensionMap[data.id] as string;
+      return ToURLParamTimeDimensionMap[data.id] as string | undefined;
     return data.id;
   };
 
-  const rows = partialExploreState.pivot.rows.map(mapPivotEntry);
+  const rows = partialExploreState.pivot.rows
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const rowsParams = rows.join(",");
   searchParams.set(ExploreStateURLParams.PivotRows, rowsParams);
 
-  const cols = partialExploreState.pivot.columns.map(mapPivotEntry);
+  const cols = partialExploreState.pivot.columns
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const colsParams = cols.join(",");
 
   searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);

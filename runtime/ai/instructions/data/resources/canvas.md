@@ -211,6 +211,30 @@ rows:
                 bar_chart: # ...
 ```
 
+### Conditional content (`if`)
+
+Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+
+```yaml
+rows:
+  - if: '{{ has "finance" .user.groups }}' # row: finance group only
+    items:
+      - width: 8
+        line_chart: # ...
+      - width: 4
+        if: '{{ .user.admin }}' # item: admins only
+        table: # ...
+  - name: deep_dives
+    tabs:
+      - label: Premium
+        if: '{{ eq .user.plan "premium" }}' # tab: custom attribute, e.g. from an embed
+        rows: # ...
+```
+
+- Prefer comparisons inside the template (`{{ eq .user.plan "premium" }}`, `{{ has "finance" .user.groups }}`) over SQL comparisons of quoted values.
+- Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; referencing a missing custom attribute makes the condition false. Use `get .user "plan"` to treat a missing attribute as an empty string.
+- `if` controls what the dashboard shows, not data access. Use the metrics view's `security` to restrict data.
+
 ## Dashboard Composition Best Practices
 
 When building a new canvas dashboard, follow this recommended structure:
@@ -970,7 +994,7 @@ image:
 
 Build fully custom visualizations using Metrics SQL queries and Vega-Lite specifications. Use this when the built-in chart types are insufficient and you need complete control over the visualization.
 
-**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz_library/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. Note that component files describe charts with a chart spec under `spec` rather than with `vega_spec`, switching to `vega_spec` only when the chart spec cannot express the chart: the format below applies to inline blocks, and to an ejected component with the addition of param templating. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
+**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. Note that component files describe charts with a chart spec under `spec` rather than with `vega_spec`, switching to `vega_spec` only when the chart spec cannot express the chart: the format below applies to inline blocks, and to a converted component with the addition of param templating. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
 
 ```yaml
 rows:
