@@ -1,9 +1,9 @@
-import {
-  type V1Condition,
-  type V1Expression,
-  V1Operation,
-  type V1Subquery,
+import type {
+  V1Condition,
+  V1Expression,
+  V1Subquery,
 } from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 export function createLikeExpression(
   ident: string,

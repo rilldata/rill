@@ -29,6 +29,7 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { dedupePivotChips } from "../pivot/pivot-chip-utils";
 import {
   PivotChipType,
   type PivotChipData,
@@ -368,13 +369,9 @@ const metricsViewReducers = {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
 
-      const dimensions: PivotChipData[] = [];
-
-      value.forEach((val) => {
-        if (val.type !== PivotChipType.Measure) {
-          dimensions.push(val);
-        }
-      });
+      const dimensions = dedupePivotChips(
+        value.filter((val) => val.type !== PivotChipType.Measure),
+      );
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
@@ -394,11 +391,13 @@ const metricsViewReducers = {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
 
+      const columns = dedupePivotChips(value);
+
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
 
         if (exploreState.pivot.tableMode === "flat") {
-          const validAccessors = value.map((d) => d.id);
+          const validAccessors = columns.map((d) => d.id);
           if (!validAccessors.includes(accessor)) {
             exploreState.pivot.sorting = [];
           }
@@ -410,12 +409,20 @@ const metricsViewReducers = {
         }
       }
       exploreState.pivot.expanded = {};
-      exploreState.pivot.columns = value;
+      exploreState.pivot.columns = columns;
     });
   },
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
+      // Already placed in either zone: nothing to add. The sidebar hides
+      // placed fields, but its list can lag behind the state.
+      const isPlaced = [
+        ...exploreState.pivot.rows,
+        ...exploreState.pivot.columns,
+      ].some((chip) => chip.id === value.id);
+      if (isPlaced) return;
+
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
       exploreState.pivot.expanded = {};
@@ -491,8 +498,8 @@ const metricsViewReducers = {
       exploreState.activePage = DashboardState_ActivePage.PIVOT;
       exploreState.pivot = {
         ...exploreState.pivot,
-        rows,
-        columns,
+        rows: dedupePivotChips(rows),
+        columns: dedupePivotChips(columns),
         expanded: {},
         sorting: [],
         columnPage: 1,
@@ -680,8 +687,8 @@ const metricsViewReducers = {
       exploreState.pivot = {
         ...exploreState.pivot,
         tableMode,
-        rows,
-        columns,
+        rows: dedupePivotChips(rows),
+        columns: dedupePivotChips(columns),
         sorting: [],
         expanded: {},
         activeCell: null,

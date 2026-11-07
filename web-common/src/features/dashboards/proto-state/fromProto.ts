@@ -15,6 +15,7 @@ import {
   FromProtoPivotTotalsRowPositionMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
@@ -23,6 +24,7 @@ import {
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
@@ -249,6 +251,10 @@ export function getDashboardStateFromProto(
 
   Object.assign(entity, fromActivePageProto(dashboard));
 
+  // The proto can name measures and dimensions that the metrics view or explore no longer defines,
+  // so drop them before they are queried.
+  validateAndCleanExploreState(metricsView, explore, entity);
+
   return entity;
 }
 
@@ -458,22 +464,24 @@ function fromPivotProto(
     ];
   }
 
-  const columns = [
-    ...colDimensions,
-    ...dashboard.pivotColumnMeasures.map(mapMeasure),
-  ];
+  // Legacy state can hold a field twice; the pivot header keys chips by field.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    [...colDimensions, ...dashboard.pivotColumnMeasures.map(mapMeasure)],
+    rows.map((chip) => chip.id),
+  );
   const tableMode =
     FromProtoPivotTableModeMap[
       dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
     ];
 
   return {
-    rows: rowDimensions,
+    rows,
     columns,
     expanded: dashboard.pivotExpanded,
     // The sorted field may have left the pivot since the state was saved.
     sorting: (dashboard.pivotSort ?? []).filter((sort) =>
-      pivotHasSortField(sort.id, { rows: rowDimensions, columns, tableMode }),
+      pivotHasSortField(sort.id, { rows, columns, tableMode }),
     ),
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,

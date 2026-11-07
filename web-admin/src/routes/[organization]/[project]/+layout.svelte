@@ -44,6 +44,7 @@
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
+  import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -59,7 +60,6 @@
     metricsService,
   } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
-  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { Throttler } from "@rilldata/web-common/lib/throttler";
@@ -207,7 +207,11 @@
   // --- Derived state (resolve effective runtime connection from whichever auth mode is active) ---
 
   let projectData = $derived($projectQuery.data);
-  let error = $derived($projectQuery.error as HTTPError);
+  // A failed background refetch keeps the cached project on screen unless the user can no
+  // longer reach it; see `resolveProjectError`.
+  let projectError = $derived(
+    resolveProjectError($projectQuery.error, projectData !== undefined),
+  );
 
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(
@@ -309,7 +313,7 @@
   onDestroy(() => pageViewThrottler.cancel());
 </script>
 
-{#if error}
+{#if projectError}
   <SlimProjectHeader
     {organization}
     {project}
@@ -318,9 +322,9 @@
     {organizationLogoUrl}
   />
   <ErrorPage
-    statusCode={error.response.status}
+    statusCode={projectError.statusCode}
     header={m.error_fetching_deployment()}
-    body={error.response.data?.message}
+    body={projectError.message}
   />
 {:else if projectData}
   {#if onEditPage}

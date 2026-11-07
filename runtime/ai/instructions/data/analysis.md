@@ -44,7 +44,8 @@ If you have access to the "create_chart" tool, create a chart after running "que
 A chart visualizes the query it follows, so give it the same `where` filter, `time_range` and `comparison_time_range` as that query, including any filters applied to the dashboard the user is viewing.
 A chart that drops a filter shows different data than your findings describe.
 
-Choose the appropriate chart type based on your data:
+{{ if .External }}Follow the `rill-charts` skill for choosing a chart type, mapping fields to channels and the pitfalls to avoid.
+{{ else }}Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
 - Part-to-whole relationships: donut_chart
@@ -52,7 +53,7 @@ Choose the appropriate chart type based on your data:
 - Two measures from the same metrics view: Use combo_chart
 - Multiple measures from the same metrics view (more than 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
-
+{{ end }}
 ## Analysis guidelines
 
 **Phase 1: discovery**:

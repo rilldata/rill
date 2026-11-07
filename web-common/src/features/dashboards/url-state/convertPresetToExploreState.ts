@@ -1,6 +1,7 @@
 import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import { pivotHasSortField } from "@rilldata/web-common/features/dashboards/pivot/pivot-sorting";
 import {
   PIVOT_TOTALS_ROW_POSITIONS,
@@ -23,6 +24,7 @@ import {
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
+  dedupe,
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
@@ -262,7 +264,10 @@ function fromExploreUrlParams(
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
-    const selectedMeasures = preset.measures.filter((m) => measures.has(m));
+    // A URL or a legacy bookmark can name a field twice; the lists that render the fields are keyed by name.
+    const selectedMeasures = dedupe(preset.measures).filter((m) =>
+      measures.has(m),
+    );
     const missingMeasures = getMissingValues(selectedMeasures, preset.measures);
     if (missingMeasures.length) {
       errors.push(getMultiFieldError("measure", missingMeasures));
@@ -276,7 +281,7 @@ function fromExploreUrlParams(
   }
 
   if (preset.dimensions?.length) {
-    const selectedDimensions = preset.dimensions.filter((d) =>
+    const selectedDimensions = dedupe(preset.dimensions).filter((d) =>
       dimensions.has(d),
     );
     const missingDimensions = getMissingValues(
@@ -317,8 +322,21 @@ function fromExploreUrlParams(
   }
 
   if (preset.exploreLeaderboardMeasures !== undefined) {
-    partialExploreState.leaderboardMeasureNames =
-      preset.exploreLeaderboardMeasures;
+    // The url parser validates these already, but a default preset built from the explore spec
+    // can name a measure the metrics view dropped.
+    const leaderboardMeasures = preset.exploreLeaderboardMeasures.filter((m) =>
+      measures.has(m),
+    );
+    const missingLeaderboardMeasures = getMissingValues(
+      leaderboardMeasures,
+      preset.exploreLeaderboardMeasures,
+    );
+    if (missingLeaderboardMeasures.length) {
+      errors.push(
+        getMultiFieldError("leaderboard measure", missingLeaderboardMeasures),
+      );
+    }
+    partialExploreState.leaderboardMeasureNames = leaderboardMeasures;
   }
 
   if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
@@ -419,6 +437,9 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   const mapPivotEntry = (entry: string): PivotChipData | undefined => {
+    // An empty entry is a url artifact (`rows=a,`), not a field: skip it quietly.
+    if (!entry) return undefined;
+
     if (entry in FromURLParamTimeDimensionMap) {
       const grain = FromURLParamTimeDimensionMap[entry];
       return {
@@ -472,6 +493,14 @@ function fromPivotUrlParams(
     });
     hasSomePivotFields = true;
   }
+
+  // A field listed twice, or in both zones, is dropped: the drop zones key
+  // their chips by id, so a repeat is a keyed-each error that breaks the view.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    colChips,
+    rows.map((chip) => chip.id),
+  );
 
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
   const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
@@ -547,13 +576,7 @@ function fromPivotUrlParams(
     // Any column id goes through (measures, dimensions, time columns and
     // minimized accessors like "c0v2m0") as long as its field is still in
     // the pivot; the pivot's queries fail on a sort by a removed field.
-    if (
-      pivotHasSortField(sortById, {
-        rows: rowDimensions,
-        columns: colChips,
-        tableMode,
-      })
-    ) {
+    if (pivotHasSortField(sortById, { rows, columns, tableMode })) {
       sorting.push({
         id: sortById,
         desc: !preset.pivotSortAsc,
@@ -571,8 +594,8 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        rows: rowDimensions,
-        columns: colChips,
+        rows,
+        columns,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},
