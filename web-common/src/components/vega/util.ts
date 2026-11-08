@@ -1,4 +1,4 @@
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { TimeUnit } from "vega-lite/types_unstable/timeunit.js";
 
 // Multiples such as TIME_GRAIN_10_MINUTE have no Vega time unit; their values are already bucketed by the query.

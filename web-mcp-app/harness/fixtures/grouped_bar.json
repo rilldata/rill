@@ -1,0 +1,206 @@
+{
+  "name": "Grouped bar chart",
+  "description": "Impressions per publisher with devices side by side (the `group` channel).",
+  "expect": "canvas",
+  "arguments": {
+    "chart_spec": {
+      "chartType": "Grouped Bar Chart",
+      "encodings": {
+        "x": {
+          "field": "publisher",
+          "limit": 10
+        },
+        "y": "impressions",
+        "group": {
+          "field": "device",
+          "limit": 10
+        }
+      }
+    },
+    "data": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Grouped Bar Chart: Impressions by Publisher and Device** (2023-09-09 to 2023-09-16)\n\n| Publisher | Device | Impressions |\n| - | - | - |\n| news.example | Mobile | 58505 |\n| news.example | Desktop | 36627 |\n| news.example | Tablet | 83018 |\n| sports.example | Mobile | 75005 |\n| sports.example | Desktop | 26870 |\n| sports.example | Tablet | 72557 |\n| video.example | Mobile | 47684 |\n| video.example | Desktop | 17749 |\n| video.example | Tablet | 13571 |\n| music.example | Mobile | 50110 |\n| music.example | Desktop | 69097 |\n| music.example | Tablet | 68673 |\n| shop.example | Mobile | 57664 |\n| shop.example | Desktop | 35153 |\n| shop.example | Tablet | 47995 |\n\n_15 of 15 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "Grouped Bar Chart",
+      "input": {
+        "chart_spec": {
+          "chartType": "Grouped Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "publisher",
+              "limit": 10
+            },
+            "y": "impressions",
+            "group": {
+              "field": "device",
+              "limit": 10
+            }
+          }
+        },
+        "data": {
+          "metrics_view": "bids_metrics",
+          "time_range": {
+            "start": "2023-09-09T00:00:00Z",
+            "end": "2023-09-16T00:00:00Z"
+          }
+        }
+      },
+      "message": "Chart created successfully: Grouped Bar Chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Impressions by Publisher and Device",
+      "data": [
+        {
+          "publisher": "news.example",
+          "device": "Mobile",
+          "impressions": 58505
+        },
+        {
+          "publisher": "news.example",
+          "device": "Desktop",
+          "impressions": 36627
+        },
+        {
+          "publisher": "news.example",
+          "device": "Tablet",
+          "impressions": 83018
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Mobile",
+          "impressions": 75005
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Desktop",
+          "impressions": 26870
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Tablet",
+          "impressions": 72557
+        },
+        {
+          "publisher": "video.example",
+          "device": "Mobile",
+          "impressions": 47684
+        },
+        {
+          "publisher": "video.example",
+          "device": "Desktop",
+          "impressions": 17749
+        },
+        {
+          "publisher": "video.example",
+          "device": "Tablet",
+          "impressions": 13571
+        },
+        {
+          "publisher": "music.example",
+          "device": "Mobile",
+          "impressions": 50110
+        },
+        {
+          "publisher": "music.example",
+          "device": "Desktop",
+          "impressions": 69097
+        },
+        {
+          "publisher": "music.example",
+          "device": "Tablet",
+          "impressions": 68673
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Mobile",
+          "impressions": 57664
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Desktop",
+          "impressions": 35153
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Tablet",
+          "impressions": 47995
+        }
+      ],
+      "fields": {
+        "publisher": {
+          "name": "publisher",
+          "kind": "dimension",
+          "display_name": "Publisher",
+          "type": "STRING"
+        },
+        "device": {
+          "name": "device",
+          "kind": "dimension",
+          "display_name": "Device",
+          "type": "STRING"
+        },
+        "impressions": {
+          "name": "impressions",
+          "kind": "measure",
+          "display_name": "Impressions",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "publisher": [
+          "news.example",
+          "sports.example",
+          "video.example",
+          "music.example",
+          "shop.example"
+        ],
+        "device": ["Mobile", "Desktop", "Tablet"]
+      },
+      "semantic_types": {
+        "publisher": "Category",
+        "device": "Category",
+        "impressions": "Count"
+      },
+      "field_display_names": {
+        "publisher": "Publisher",
+        "device": "Device",
+        "impressions": "Impressions"
+      }
+    }
+  }
+}

@@ -568,7 +568,8 @@ function fromPivotUrlParams(
     const rowsParam = searchParams.get(
       ExploreStateURLParams.PivotRows,
     ) as string;
-    const rows = rowsParam === "" ? [] : rowsParam.split(",");
+    // A leading or trailing comma leaves an empty entry: not a field, so skip it.
+    const rows = rowsParam.split(",").filter((r) => r !== "");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -583,7 +584,7 @@ function fromPivotUrlParams(
     const colsParam = searchParams.get(
       ExploreStateURLParams.PivotColumns,
     ) as string;
-    const cols = colsParam === "" ? [] : colsParam.split(",");
+    const cols = colsParam.split(",").filter((c) => c !== "");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||
