@@ -104,7 +104,7 @@
   </div>
   <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
     {#if parentElement}
-      <div class="leaderboard-grid overflow-hidden pb-4">
+      <div class="leaderboard-grid overflow-hidden pb-4" data-horizontal-scroll>
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             {@const dimensionName = dimension.name}

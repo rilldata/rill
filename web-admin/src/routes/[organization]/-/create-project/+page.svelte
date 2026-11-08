@@ -48,7 +48,9 @@
   <div class="flex flex-col gap-4 mx-auto w-fit pt-48">
     {#if deployError && isQuotaDeployError(deployError)}
       <CTAHeader variant="bold">{deployError.title}</CTAHeader>
-      <p class="text-base text-fg-secondary text-left w-[500px]">
+      <p
+        class="text-base text-fg-secondary text-left w-[min(500px,calc(100vw-2rem))]"
+      >
         {deployError.message}
       </p>
       <Button
@@ -81,7 +83,7 @@
         </div>
 
         {#if $projectsQuery.isPending}
-          <div class="h-36 w-[500px]">
+          <div class="h-36 w-[min(500px,calc(100vw-2rem))]">
             <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
           </div>
         {:else}

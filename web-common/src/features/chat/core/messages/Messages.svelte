@@ -199,10 +199,13 @@
     @apply min-h-full;
   }
 
+  /* Grows to fill the panel so a short list stays centered, but never shrinks
+     below its content: a fixed height would center an overflowing list too,
+     pushing the heading above the scroll area where it can't be reached. */
   .chat-empty {
     @apply flex flex-col;
     @apply items-center justify-center;
-    @apply h-full text-center;
+    @apply grow shrink-0 text-center;
     @apply text-fg-secondary;
   }
 

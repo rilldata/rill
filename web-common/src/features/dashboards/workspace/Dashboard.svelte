@@ -1,6 +1,11 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { belowSm } from "@rilldata/web-common/lib/store-utils/media-query-store";
   import {
     extractErrorStatusCode,
     isNotFoundError,
@@ -45,6 +50,10 @@
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
+  // Stacks the dashboard below `sm` and hands the pivot a "use desktop" notice there.
+  // Width alone can't tell a phone from a narrow embed iframe or Rill Developer window,
+  // so only Rill Cloud's own explore route opts in.
+  export let phoneLayout: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
 
   // Vertical space reserved below the chart for the chart toolbar, axis, big
@@ -165,22 +174,35 @@
 <ThemeProvider theme={$theme}>
   <article
     class="flex flex-col overflow-y-hidden bg-surface-background"
+    class:phone-layout={phoneLayout}
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
+      class="border-b {phoneLayout
+        ? 'w-full sm:w-fit'
+        : 'w-fit'} min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
         <div class="mb-3"></div>
       {:else}
         {#key exploreName}
-          <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <!-- In the phone layout the tab bar leaves the corner overlay (it would sit on
+               top of wrapped filter chips) and flows below the filters. -->
+          <section
+            class="flex relative justify-between gap-x-4 py-4 px-4 {phoneLayout
+              ? 'flex-col sm:flex-row gap-y-2 pb-2 sm:pb-6'
+              : 'pb-6'}"
+          >
             <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
-            <div class="absolute bottom-0 flex flex-col right-0">
+            <div
+              class="flex flex-col {phoneLayout
+                ? 'self-end sm:absolute sm:bottom-0 sm:right-0'
+                : 'absolute bottom-0 right-0'}"
+            >
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
           </section>
@@ -196,20 +218,36 @@
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />
     {:else if $showPivot}
-      <PivotDisplay {isEmbedded} />
+      {#if phoneLayout && $belowSm}
+        <!-- The pivot's table and config sidebar don't fit phones, so a notice takes its place
+             and the tab bar above leads back to Explore. `{#if}` keeps the pivot and its queries
+             from mounting behind the notice. -->
+        <div class="flex flex-1 items-center justify-center p-8">
+          <CtaContentContainer>
+            <CtaHeader>{m.pivot_desktop_only_title()}</CtaHeader>
+            <CtaMessage>{m.pivot_desktop_only_message()}</CtaMessage>
+          </CtaContentContainer>
+        </div>
+      {:else}
+        <PivotDisplay {isEmbedded} />
+      {/if}
     {:else}
       <div
-        class="flex gap-x-1 overflow-hidden slide pb-0"
-        class:gap-y-2={showTimeDimensionDetail}
-        class:flex-col={showTimeDimensionDetail}
-        class:flex-row={!showTimeDimensionDetail}
+        class="flex gap-x-1 overflow-hidden slide pb-0 {showTimeDimensionDetail
+          ? 'flex-col gap-y-2'
+          : phoneLayout
+            ? 'flex-col sm:flex-row'
+            : 'flex-row'}"
         class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
         bind:clientHeight={exploreContainerHeight}
       >
         <div
-          class="flex-none pl-4"
+          class="flex-none pl-4 {phoneLayout && !showTimeDimensionDetail
+            ? 'h-[50vh] overflow-y-auto sm:h-auto sm:overflow-y-visible'
+            : ''}"
+          class:max-w-full={phoneLayout}
           class:pt-2={!showTimeDimensionDetail}
           style:width={showTimeDimensionDetail
             ? "auto"
@@ -254,7 +292,11 @@
             hideStartPivotButton={hidePivot}
           />
         {:else}
-          <div class="relative flex-none bg-border w-[1px]">
+          <div
+            class="relative flex-none bg-border w-[1px] {phoneLayout
+              ? 'hidden sm:block'
+              : ''}"
+          >
             <Resizer
               dimension={$exploreTimeseriesWidth}
               min={MIN_TIMESERIES_WIDTH}
@@ -267,7 +309,10 @@
               }}
             />
           </div>
-          <div class="pt-2 pl-1 overflow-auto w-full">
+          <div
+            class="pt-2 pl-1 overflow-auto w-full"
+            class:min-h-0={phoneLayout}
+          >
             {#if showDimensionTable && selectedDimension}
               <DimensionDisplay
                 dimension={selectedDimension}
@@ -308,5 +353,11 @@
 <style lang="postcss">
   .left-shift {
     @apply pl-8;
+  }
+
+  /* Clears the floating nav-toggle button; phones have no room to spare
+     for the indent and the toggle overlays content anyway. */
+  .phone-layout .left-shift {
+    @apply pl-0 sm:pl-8;
   }
 </style>

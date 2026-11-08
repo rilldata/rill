@@ -184,7 +184,7 @@
     The "bookmark current view" action and search stay pinned; only the lists scroll.
   -->
   <DropdownMenuContent
-    class="flex flex-col w-[450px] max-h-[min(600px,var(--bits-floating-available-height))] overflow-hidden p-0"
+    class="flex flex-col w-[min(450px,calc(100vw-2rem))] max-h-[min(600px,var(--bits-floating-available-height))] overflow-hidden p-0"
   >
     <div class="flex-none p-1.5">
       <DropdownMenuItem onclick={() => (showDialog = true)}>

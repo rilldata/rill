@@ -200,16 +200,32 @@
   }
 
   @media (max-width: 640px) {
-    .conversation-sidebar:not(.collapsed) {
-      width: 100%;
-      height: 200px;
+    /* The layout stacks vertically, so the sidebar divides with a bottom
+       border instead of a right one. */
+    .conversation-sidebar {
+      @apply border-r-0 border-b;
     }
 
-    .conversation-list {
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      gap: 0.25rem;
+    /* Expanded: a drawer over the whole chat, with the same vertical list
+       as on desktop, instead of a strip that pushes the chat down. */
+    .conversation-sidebar:not(.collapsed) {
+      @apply absolute inset-0 z-20 border-b-0;
+      width: 100%;
+    }
+
+    /* Collapsed: a compact horizontal action bar instead of a vertical
+       icon rail, which would otherwise push the chat far down the page. */
+    .conversation-sidebar.collapsed {
+      @apply flex-row items-center;
+      width: 100%;
+    }
+
+    .collapsed-actions {
+      @apply flex-row;
+    }
+
+    .collapsed-footer {
+      @apply flex-row mt-0 ml-auto;
     }
   }
 </style>

@@ -403,8 +403,10 @@
     container-type: inline-size;
   }
 
+  /* The sparkline sits beside the number while both fit and wraps below it
+     when the card is too narrow, so the number never has to give way. */
   .wrapper.spark-right {
-    @apply flex-row;
+    @apply flex-row flex-wrap;
   }
 
   .data-wrapper {
@@ -413,9 +415,8 @@
   }
 
   .spark-right .data-wrapper {
-    @apply items-start h-full;
-    flex: 0 4 20%;
-    min-width: 0;
+    @apply items-start w-auto;
+    flex: none;
   }
 
   .measure-name {
@@ -435,6 +436,11 @@
     @apply text-3xl font-medium text-fg-primary;
   }
 
+  /* Beside a sparkline the number keeps one line; the sparkline wraps instead. */
+  .spark-right .big-number {
+    @apply whitespace-nowrap;
+  }
+
   :global(.dark) .big-number {
     @apply text-fg-primary;
   }
@@ -451,10 +457,11 @@
     @apply size-full flex items-center justify-center flex-shrink min-h-12;
   }
 
+  /* 128px is SPARKLINE_MIN_WIDTH. */
   .spark-right .sparkline-wrapper {
-    @apply mt-2;
-    flex: 4 1 80%;
-    min-width: 0;
+    @apply mt-2 h-auto self-stretch;
+    flex: 1 1 128px;
+    min-width: 128px;
   }
 
   .comparison-value {
