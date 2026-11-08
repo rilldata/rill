@@ -4,6 +4,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
   import { onMount } from "svelte";
+  import { mediaQueryStore } from "@rilldata/web-common/lib/store-utils/media-query-store";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     cleanupConversationManager,
@@ -44,6 +45,19 @@
 
   let chatInputComponent: ChatInput;
 
+  // On a phone the conversation list is a drawer over the chat: it always
+  // starts closed and closes again once a conversation is picked, so its
+  // state is kept here and not in the persisted desktop preference.
+  // Same breakpoint as the stacked layout below.
+  const isPhone = mediaQueryStore("(max-width: 640px)");
+  let drawerOpen = false;
+  $: sidebarCollapsed = $isPhone ? !drawerOpen : $conversationSidebarCollapsed;
+
+  function toggleSidebar() {
+    if ($isPhone) drawerOpen = !drawerOpen;
+    else toggleConversationSidebar();
+  }
+
   function onMessageSend() {
     chatInputComponent?.focusInput();
   }
@@ -71,12 +85,14 @@
     <ConversationSidebar
       {conversationManager}
       basePath={`/${organization}/${project}/-/ai`}
-      collapsed={$conversationSidebarCollapsed}
-      onToggle={toggleConversationSidebar}
+      collapsed={sidebarCollapsed}
+      onToggle={toggleSidebar}
       onConversationClick={() => {
+        drawerOpen = false;
         chatInputComponent?.focusInput();
       }}
       onNewConversationClick={() => {
+        drawerOpen = false;
         chatInputComponent?.focusInput();
       }}
     >
@@ -136,7 +152,7 @@
 
 <style lang="postcss">
   .chat-fullpage {
-    @apply flex h-full w-full;
+    @apply relative flex h-full w-full;
     background: var(--surface);
   }
 

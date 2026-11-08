@@ -103,11 +103,7 @@
       </div>
     </div>
 
-    <div
-      class="conversation-list"
-      data-testid="conversation-list"
-      data-horizontal-scroll
-    >
+    <div class="conversation-list" data-testid="conversation-list">
       {#if isLoading}
         <div class="loading-conversations">
           <DelayedContent visible={isLoading} delay={300}>
@@ -210,9 +206,11 @@
       @apply border-r-0 border-b;
     }
 
+    /* Expanded: a drawer over the whole chat, with the same vertical list
+       as on desktop, instead of a strip that pushes the chat down. */
     .conversation-sidebar:not(.collapsed) {
+      @apply absolute inset-0 z-20 border-b-0;
       width: 100%;
-      height: 200px;
     }
 
     /* Collapsed: a compact horizontal action bar instead of a vertical
@@ -228,13 +226,6 @@
 
     .collapsed-footer {
       @apply flex-row mt-0 ml-auto;
-    }
-
-    .conversation-list {
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      gap: 0.25rem;
     }
   }
 </style>

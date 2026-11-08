@@ -143,11 +143,4 @@
   .conversation-item:focus-within .conversation-actions {
     @apply flex;
   }
-
-  @media (max-width: 640px) {
-    .conversation-item {
-      flex-shrink: 0;
-      min-width: 150px;
-    }
-  }
 </style>
