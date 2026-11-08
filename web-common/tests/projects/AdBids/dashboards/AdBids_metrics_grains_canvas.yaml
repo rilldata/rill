@@ -8,7 +8,7 @@ defaults:
 rows:
   - items:
       - line_chart:
-          metrics_view: AdBids_grains_metrics
+          metrics_view: AdBids_metrics_grains
           x:
             type: temporal
             field: timestamp

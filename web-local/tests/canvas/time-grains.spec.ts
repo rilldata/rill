@@ -1,15 +1,18 @@
 import { expect } from "@playwright/test";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 import { test } from "../setup/base";
 
-// AdBids_grains_canvas renders a line chart on AdBids_grains_metrics, which declares
+// AdBids_metrics_grains_canvas renders a line chart on AdBids_metrics_grains, which declares
 // `time_grains: [10m, hour, day, week]`. The canvas filter bar offers those grains that fit the
 // 24-hour default range and the chart re-queries with the 10-minute multiple once it is picked.
 test.describe("canvas time grains", () => {
   test.use({ project: "AdBids" });
 
   test("the filter bar offers only the declared grains", async ({ page }) => {
-    await gotoNavEntry(page, "/dashboards/AdBids_grains_canvas.yaml");
+    // The canvas shows a building screen until the AdBids model and metrics views reconcile.
+    await waitForReconciliation(page);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_grains_canvas.yaml");
 
     const grainSelector = page.getByLabel("Select aggregation grain");
     await expect(grainSelector).toContainText("by hour");

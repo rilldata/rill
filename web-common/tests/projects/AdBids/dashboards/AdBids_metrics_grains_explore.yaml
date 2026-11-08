@@ -4,7 +4,7 @@
 type: explore
 
 title: "Adbids grains dashboard"
-metrics_view: AdBids_grains_metrics
+metrics_view: AdBids_metrics_grains
 
 dimensions: '*'
 measures: '*'

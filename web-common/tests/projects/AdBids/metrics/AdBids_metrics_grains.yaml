@@ -9,6 +9,8 @@ table: AdBids_model
 timeseries: timestamp
 smallest_time_grain: minute
 # Only these grains are offered in dashboards; see the time-grains e2e specs.
+# The name sorts after AdBids_metrics on purpose: a new canvas defaults to the first metrics view by name,
+# and the canvas setup spec expects AdBids_metrics there.
 time_grains: [10m, hour, day, week]
 
 dimensions:
