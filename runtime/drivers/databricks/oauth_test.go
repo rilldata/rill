@@ -2,9 +2,13 @@ package databricks
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,6 +101,94 @@ func TestUserDBConcurrentOpen(t *testing.T) {
 	}
 	wg.Wait()
 	require.Len(t, c.userDBs, 1)
+}
+
+// refreshCaller returns user a's token and counts forced refreshes.
+type refreshCaller struct {
+	refreshErr error
+	forced     int
+}
+
+func (f *refreshCaller) Token(ctx context.Context, instanceID, connector, configHash string, forceRefresh bool) (*drivers.OAuthToken, error) {
+	if !forceRefresh {
+		return &drivers.OAuthToken{UserID: "a", AccessToken: "a1"}, nil
+	}
+	f.forced++
+	if f.refreshErr != nil {
+		return nil, f.refreshErr
+	}
+	return &drivers.OAuthToken{UserID: "a", AccessToken: "a2"}, nil
+}
+
+func TestRejectedTokenRefreshesOnce(t *testing.T) {
+	c := openOAuthConnection(t)
+	errRejected := errors.New("HTTP Response code: 401")
+
+	// rejectFirst fails its first call with the pool's token rejected.
+	rejectFirst := func(calls *int) func(db *sqlx.DB) error {
+		return func(db *sqlx.DB) error {
+			*calls++
+			if *calls == 1 {
+				c.userDBs["a"].rejected.Store(true)
+				return errRejected
+			}
+			return nil
+		}
+	}
+
+	caller := &refreshCaller{}
+	ctx := drivers.WithOAuthCaller(context.Background(), caller)
+	var calls int
+	require.NoError(t, c.withRetry(ctx, rejectFirst(&calls)))
+	require.Equal(t, 2, calls)
+	require.Equal(t, 1, caller.forced)
+	require.Equal(t, "a2", *c.userDBs["a"].token.Load())
+	require.False(t, c.userDBs["a"].rejected.Load())
+
+	// Other errors aren't retried
+	calls = 0
+	err := c.withRetry(ctx, func(db *sqlx.DB) error {
+		calls++
+		return errRejected
+	})
+	require.ErrorIs(t, err, errRejected)
+	require.Equal(t, 1, calls)
+	require.Equal(t, 1, caller.forced)
+
+	// The user must sign in again
+	caller = &refreshCaller{refreshErr: &drivers.OAuthAuthorizationRequiredError{Connector: "dbx"}}
+	ctx = drivers.WithOAuthCaller(context.Background(), caller)
+	calls = 0
+	err = c.withRetry(ctx, rejectFirst(&calls))
+	var target *drivers.OAuthAuthorizationRequiredError
+	require.ErrorAs(t, err, &target)
+	require.Equal(t, "dbx", target.Connector)
+	require.Equal(t, 1, calls)
+	require.Equal(t, 1, caller.forced)
+}
+
+func TestUserDBFlagsRejectedToken(t *testing.T) {
+	status := http.StatusOK
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(status)
+	}))
+	defer srv.Close()
+
+	u := &userDB{}
+	roundTrip := func() {
+		req, err := http.NewRequest(http.MethodPost, srv.URL, http.NoBody)
+		require.NoError(t, err)
+		res, err := u.RoundTrip(req)
+		require.NoError(t, err)
+		require.NoError(t, res.Body.Close())
+	}
+
+	roundTrip()
+	require.False(t, u.rejected.Load())
+
+	status = http.StatusUnauthorized
+	roundTrip()
+	require.True(t, u.rejected.Load())
 }
 
 func TestOAuthConfigValidation(t *testing.T) {

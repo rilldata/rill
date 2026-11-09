@@ -68,28 +68,31 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		ctx = driverctx.NewContextWithQueryTags(ctx, stmt.QueryAttributes)
 	}
 
-	db, err := c.getDB(ctx)
+	var res *drivers.Result
+	err := c.withRetry(ctx, func(db *sqlx.DB) error {
+		if stmt.DryRun {
+			_, err := db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+			return err
+		}
+
+		rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+		if err != nil {
+			return err
+		}
+
+		schema, err := rowsToSchema(rows)
+		if err != nil {
+			_ = rows.Close()
+			return err
+		}
+
+		res = &drivers.Result{Rows: rows, Schema: schema}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	if stmt.DryRun {
-		_, err = db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
-		return nil, err
-	}
-
-	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
-	if err != nil {
-		return nil, err
-	}
-
-	schema, err := rowsToSchema(rows)
-	if err != nil {
-		_ = rows.Close()
-		return nil, err
-	}
-
-	return &drivers.Result{Rows: rows, Schema: schema}, nil
+	return res, nil
 }
 
 // QuerySchema implements drivers.OLAPStore.
@@ -98,21 +101,24 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 		c.logger.Info("databricks query schema", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args), observability.ZapCtx(ctx))
 	}
 
-	db, err := c.getDB(ctx)
+	var schema *runtimev1.StructType
+	err := c.withRetry(ctx, func(db *sqlx.DB) error {
+		ctx, cancel := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+		defer cancel()
+
+		rows, err := db.QueryxContext(ctx, fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query), args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		schema, err = rowsToSchema(rows)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
-	defer cancel()
-
-	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query), args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return rowsToSchema(rows)
+	return schema, nil
 }
 
 // WithConnection implements drivers.OLAPStore.
