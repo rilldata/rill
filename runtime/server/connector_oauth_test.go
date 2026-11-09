@@ -152,6 +152,22 @@ func TestConnectorOAuthTokenCache(t *testing.T) {
 		require.Equal(t, 2, admin.callCount())
 	})
 
+	t.Run("force refresh doesn't join a fetch in flight", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{tok: "t", delay: 100 * time.Millisecond}
+		c := newFakeOAuthCaller(admin)
+		done := make(chan error)
+		go func() {
+			_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+			done <- err
+		}()
+		require.Eventually(t, func() bool { return admin.callCount() == 1 }, time.Second, time.Millisecond)
+
+		_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", true)
+		require.NoError(t, err)
+		require.NoError(t, <-done)
+		require.Equal(t, []bool{false, true}, admin.forceRefreshes)
+	})
+
 	t.Run("users are separate", func(t *testing.T) {
 		admin := &fakeOAuthAdmin{tok: "t"}
 		c := newFakeOAuthCaller(admin)
@@ -225,13 +241,13 @@ func (a *fakeOAuthAdmin) callCount() int {
 }
 
 func (a *fakeOAuthAdmin) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
-	time.Sleep(a.delay)
 	a.mu.Lock()
-	defer a.mu.Unlock()
 	if !slices.Contains(a.userIDs, userID) {
 		a.userIDs = append(a.userIDs, userID)
 	}
 	a.forceRefreshes = append(a.forceRefreshes, forceRefresh)
+	a.mu.Unlock()
+	time.Sleep(a.delay)
 	if a.err != nil {
 		return nil, a.err
 	}

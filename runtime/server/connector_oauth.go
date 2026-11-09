@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -57,7 +58,8 @@ func (c *connectorOAuthCaller) Token(ctx context.Context, instanceID, connector,
 		}
 	}
 
-	return c.flight.Do(ctx, key, func(ctx context.Context) (*drivers.OAuthToken, error) {
+	// A forced refresh must not join a fetch that may return the token being replaced.
+	return c.flight.Do(ctx, key+"\x00"+strconv.FormatBool(forceRefresh), func(ctx context.Context) (*drivers.OAuthToken, error) {
 		admin, release, err := c.admin(ctx, instanceID)
 		if err != nil {
 			return nil, err

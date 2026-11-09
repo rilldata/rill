@@ -60,47 +60,39 @@ func newOAuthConfig(conf *configProperties) *drivers.OAuthConfig {
 // Without per-user OAuth, and for system work marked with drivers.WithServiceCredential, it is the service credential's pool.
 // Otherwise it is the caller's own pool; it never falls back to the service credential for a caller.
 func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
-	db, _, err := c.getPool(ctx)
-	return db, err
-}
-
-// getPool is like getDB, and also returns the caller's userDB, or nil for the service credential's pool.
-func (c *connection) getPool(ctx context.Context) (*sqlx.DB, *userDB, error) {
 	if c.oauthConfig == nil || drivers.UsesServiceCredential(ctx) {
-		db, err := c.getServiceDB(ctx)
-		return db, nil, err
+		return c.getServiceDB(ctx)
 	}
 	caller := drivers.OAuthCallerFromContext(ctx)
 	if caller == nil {
-		return nil, nil, drivers.ErrOAuthUserRequired
+		return nil, drivers.ErrOAuthUserRequired
 	}
 	tok, err := caller.Token(ctx, c.instanceID, c.name, c.oauthConfig.Hash, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
 			// Rill Developer: there are no users, so the service credential is used.
-			db, err := c.getServiceDB(ctx)
-			return db, nil, err
+			return c.getServiceDB(ctx)
 		}
-		return nil, nil, err
+		return nil, err
 	}
-	u, err := c.getUserDB(tok)
-	if err != nil {
-		return nil, nil, err
-	}
-	return u.db, u, nil
+	return c.getUserDB(tok)
 }
 
 // withRetry runs fn on the caller's pool.
 // If Databricks rejected the user's token during the call, it force-refreshes the token and runs fn once more.
-func (c *connection) withRetry(ctx context.Context, fn func(db *sqlx.DB) error) error {
-	db, u, err := c.getPool(ctx)
+// fn must use the context it is passed.
+func (c *connection) withRetry(ctx context.Context, fn func(ctx context.Context, db *sqlx.DB) error) error {
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return err
 	}
-	err = fn(db)
-	if err == nil || u == nil || !u.rejected.Swap(false) {
+	rejected := &atomic.Bool{}
+	err = fn(context.WithValue(ctx, rejectedKey{}, rejected), db)
+	if err == nil || !rejected.Load() {
 		return err
 	}
+
+	// Only user pools flag rejections, so there is a caller.
 	tok, refreshErr := drivers.OAuthCallerFromContext(ctx).Token(ctx, c.instanceID, c.name, c.oauthConfig.Hash, true)
 	if refreshErr != nil {
 		var authErr *drivers.OAuthAuthorizationRequiredError
@@ -109,15 +101,20 @@ func (c *connection) withRetry(ctx context.Context, fn func(db *sqlx.DB) error) 
 		}
 		return errors.Join(err, refreshErr)
 	}
-	u, err = c.getUserDB(tok)
+	db, err = c.getUserDB(tok)
 	if err != nil {
 		return err
 	}
-	return fn(u.db)
+	rejected = &atomic.Bool{}
+	err = fn(context.WithValue(ctx, rejectedKey{}, rejected), db)
+	if err != nil && rejected.Load() {
+		return &drivers.OAuthAuthorizationRequiredError{Connector: c.name}
+	}
+	return err
 }
 
 // getUserDB returns the user's connection pool, opening it if needed, and sets the token it authenticates with.
-func (c *connection) getUserDB(tok *drivers.OAuthToken) (*userDB, error) {
+func (c *connection) getUserDB(tok *drivers.OAuthToken) (*sqlx.DB, error) {
 	c.userDBsMu.Lock()
 	defer c.userDBsMu.Unlock()
 
@@ -140,7 +137,7 @@ func (c *connection) getUserDB(tok *drivers.OAuthToken) (*userDB, error) {
 			dbsql.WithSessionParams(map[string]string{"timezone": "UTC"}),
 			// The authenticator runs on every HTTP request, so the pool keeps working as the user's access token rotates.
 			dbsql.WithAuthenticator(u),
-			dbsql.WithTransport(u),
+			dbsql.WithTransport(rejectionTransport{}),
 		)
 		if err != nil {
 			return nil, err
@@ -152,15 +149,13 @@ func (c *connection) getUserDB(tok *drivers.OAuthToken) (*userDB, error) {
 	}
 	u.token.Store(&tok.AccessToken)
 	u.lastUsed.Store(now.UnixNano())
-	return u, nil
+	return u.db, nil
 }
 
 // userDB is a connection pool that authenticates as one user.
 type userDB struct {
-	db    *sqlx.DB
-	token atomic.Pointer[string]
-	// rejected is set when Databricks responds 401 to the token.
-	rejected atomic.Bool
+	db       *sqlx.DB
+	token    atomic.Pointer[string]
 	lastUsed atomic.Int64
 }
 
@@ -174,11 +169,19 @@ func (u *userDB) Authenticate(r *http.Request) error {
 	return nil
 }
 
-// RoundTrip implements http.RoundTripper; it carries the pool's requests, including those of the Thrift client.
-func (u *userDB) RoundTrip(r *http.Request) (*http.Response, error) {
+// rejectedKey is the context key of a withRetry call's *atomic.Bool, set when Databricks rejects the user's token.
+type rejectedKey struct{}
+
+// rejectionTransport carries a user pool's requests, including those of the Thrift client.
+type rejectionTransport struct{}
+
+// RoundTrip implements http.RoundTripper.
+func (rejectionTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	res, err := http.DefaultTransport.RoundTrip(r)
 	if err == nil && res.StatusCode == http.StatusUnauthorized {
-		u.rejected.Store(true)
+		if rejected, ok := r.Context().Value(rejectedKey{}).(*atomic.Bool); ok {
+			rejected.Store(true)
+		}
 	}
 	return res, err
 }

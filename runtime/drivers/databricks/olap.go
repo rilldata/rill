@@ -69,7 +69,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	}
 
 	var res *drivers.Result
-	err := c.withRetry(ctx, func(db *sqlx.DB) error {
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
 		if stmt.DryRun {
 			_, err := db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
 			return err
@@ -102,7 +102,7 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 	}
 
 	var schema *runtimev1.StructType
-	err := c.withRetry(ctx, func(db *sqlx.DB) error {
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
 		ctx, cancel := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
 		defer cancel()
 
