@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
 	dbsqllog "github.com/databricks/databricks-sql-go/logger"
 	"github.com/jmoiron/sqlx"
@@ -66,6 +67,31 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
+			Key:         "auth",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Authentication",
+			Hint:        "Set to 'oauth' to run dashboard queries as each viewer with their own Databricks OAuth token (Rill Cloud only)",
+		},
+		{
+			Key:         "oauth_client_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "OAuth Client ID",
+			Hint:        "Client ID of the Databricks OAuth app connection for 'auth: oauth' (Rill Cloud only)",
+		},
+		{
+			Key:         "oauth_client_secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "OAuth Client Secret",
+			Hint:        "Client secret of the Databricks OAuth app connection for 'auth: oauth' (Rill Cloud only)",
+			Secret:      true,
+		},
+		{
+			Key:         "oauth_scopes",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "OAuth Scopes",
+			Hint:        "List of OAuth scopes for 'auth: oauth' (Rill Cloud only; defaults to 'sql' and 'offline_access')",
+		},
+		{
 			Key:         "catalog",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Catalog",
@@ -91,8 +117,14 @@ type configProperties struct {
 	Host     string `mapstructure:"host"`
 	HTTPPath string `mapstructure:"http_path"`
 	Token    string `mapstructure:"token"`
-	Catalog  string `mapstructure:"catalog"`
-	Schema   string `mapstructure:"schema"`
+	// Auth is "oauth" to run queries on behalf of users with their own Databricks OAuth tokens (Rill Cloud only).
+	// The token above remains the service credential for work with no user, such as reconciling resources.
+	Auth              string   `mapstructure:"auth"`
+	OAuthClientID     string   `mapstructure:"oauth_client_id"`
+	OAuthClientSecret string   `mapstructure:"oauth_client_secret"`
+	OAuthScopes       []string `mapstructure:"oauth_scopes"`
+	Catalog           string   `mapstructure:"catalog"`
+	Schema            string   `mapstructure:"schema"`
 	// CatalogWhitelist is a comma separated list of catalogs to list in information schema calls.
 	CatalogWhitelist string `mapstructure:"catalog_whitelist"`
 	LogQueries       bool   `mapstructure:"log_queries"`
@@ -121,6 +153,12 @@ func (c *configProperties) validate() error {
 	if c.DSN == "" && (c.Host == "" || c.HTTPPath == "" || c.Token == "") {
 		return errors.New("databricks: either 'dsn' or 'host', 'http_path', and 'token' are required")
 	}
+	if c.Auth != "" && c.Auth != authOAuth {
+		return fmt.Errorf("databricks: invalid 'auth': expected %q or empty, got %q", authOAuth, c.Auth)
+	}
+	if c.Auth == authOAuth && (c.DSN != "" || c.OAuthClientID == "" || c.OAuthClientSecret == "") {
+		return errors.New("databricks: 'auth: oauth' requires 'host', 'oauth_client_id' and 'oauth_client_secret', and can't be used with 'dsn'")
+	}
 	return nil
 }
 
@@ -147,7 +185,7 @@ func (c *configProperties) resolveDSN() string {
 	return u.String()
 }
 
-func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("databricks driver can't be shared")
 	}
@@ -161,12 +199,19 @@ func (d driver) Open(_ context.Context, _, instanceID string, config map[string]
 		return nil, err
 	}
 
-	return &connection{
-		config:  conf,
-		storage: st,
-		logger:  logger,
-		dbMu:    semaphore.NewWeighted(1),
-	}, nil
+	c := &connection{
+		name:       connectorName,
+		instanceID: instanceID,
+		config:     conf,
+		storage:    st,
+		logger:     logger,
+		dbMu:       semaphore.NewWeighted(1),
+	}
+	if conf.Auth == authOAuth {
+		c.oauthConfig = newOAuthConfig(conf)
+		c.userDBs = make(map[string]*userDB)
+	}
+	return c, nil
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -182,13 +227,23 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config  *configProperties
-	storage *storage.Client
-	logger  *zap.Logger
+	name       string
+	instanceID string
+	config     *configProperties
+	storage    *storage.Client
+	logger     *zap.Logger
 
-	db    *sqlx.DB // lazily populated using getDB
+	// db authenticates with the service credential. It is lazily populated using getServiceDB.
+	db    *sqlx.DB
 	dbErr error
 	dbMu  *semaphore.Weighted
+
+	// oauthConfig is set if the connector uses per-user OAuth.
+	oauthConfig *drivers.OAuthConfig
+	// userDBs are the per-user connection pools, keyed by Rill user ID.
+	// A Databricks session belongs to the identity that opened it, so pools are never shared across users.
+	userDBs   map[string]*userDB
+	userDBsMu sync.Mutex
 }
 
 // Ping implements drivers.Handle.
@@ -227,6 +282,12 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
+	c.userDBsMu.Lock()
+	for id, u := range c.userDBs {
+		_ = u.db.Close()
+		delete(c.userDBs, id)
+	}
+	c.userDBsMu.Unlock()
 	if c.db != nil {
 		return c.db.Close()
 	}
@@ -303,7 +364,8 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+// getServiceDB returns the connection pool that authenticates with the service credential.
+func (c *connection) getServiceDB(ctx context.Context) (*sqlx.DB, error) {
 	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err

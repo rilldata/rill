@@ -19,6 +19,8 @@ import (
 )
 
 func TestGetConnectorOAuthConfig(t *testing.T) {
+	// Parallel because the databricks connector's reconcile ping retries for about 15s against its unreachable host
+	t.Parallel()
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
@@ -39,6 +41,16 @@ security:
 type: connector
 driver: mcp
 url: https://static.example.com/mcp
+`,
+			"connectors/dbx.yaml": `
+type: connector
+driver: databricks
+host: dbc-test.invalid
+http_path: /sql/1.0/warehouses/abc
+token: service
+auth: oauth
+oauth_client_id: client-2
+oauth_client_secret: secret-2
 `,
 		},
 	})
@@ -62,6 +74,15 @@ url: https://static.example.com/mcp
 		require.Equal(t, "secret-1", res.Config.ClientSecret)
 		require.Equal(t, []string{"read"}, res.Config.Scopes)
 		require.Equal(t, map[string]string{"access_type": "offline"}, res.Config.AuthorizationParams)
+	})
+
+	t.Run("returns the config for a databricks connector", func(t *testing.T) {
+		res, err := get(mgmtCtx, "dbx", "example.com")
+		require.NoError(t, err)
+		require.NotEmpty(t, res.ConfigHash)
+		require.Equal(t, "https://dbc-test.invalid/oidc", res.Config.Issuer)
+		require.Equal(t, "client-2", res.Config.ClientId)
+		require.Equal(t, []string{"sql", "offline_access"}, res.Config.Scopes)
 	})
 
 	t.Run("denies a user without access", func(t *testing.T) {
