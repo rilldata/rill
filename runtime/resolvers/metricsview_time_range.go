@@ -114,7 +114,7 @@ func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bo
 	}
 
 	// When spec has rollups and MV-level caching is disabled, use TTL-based caching to ensure rollup timestamp queries are cached
-	if !ok && len(r.mv.Rollups) > 0 {
+	if !ok && len(r.mv.Rollups) > 0 && !r.executor.UsesPerUserOAuth() {
 		ttl := defaultTimestampsCacheTTL
 		if r.mv.CacheTimestampsTtlSeconds > 0 {
 			ttl = time.Duration(r.mv.CacheTimestampsTtlSeconds) * time.Second

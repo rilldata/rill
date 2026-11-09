@@ -108,9 +108,20 @@ func (e *Executor) LatestQueryTable() string {
 	return e.latestQueryTable
 }
 
+// UsesPerUserOAuth reports whether the metrics view's connector runs queries with the caller's own credentials.
+// Results then depend on the caller, so they must never be cached or shared across callers.
+func (e *Executor) UsesPerUserOAuth() bool {
+	oc, ok := e.olap.(drivers.OAuthConfigurer)
+	return ok && oc.OAuthConfig() != nil
+}
+
 // CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
 // If ok is false, caching is disabled for the metrics view.
 func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	if e.UsesPerUserOAuth() {
+		return nil, false, nil
+	}
+
 	spec := e.metricsView
 	// Cache is disabled for metrics views based on external table
 	if (spec.CacheEnabled != nil && !*spec.CacheEnabled) || (spec.CacheEnabled == nil && e.streaming) {
