@@ -289,6 +289,117 @@ describe("getDashboardFromAggregationRequest", () => {
           },
         },
       },
+
+      // Reports sort a time dimension by its name, while the pivot keys its
+      // column by name and grain.
+      {
+        title: "With simple and time dimension, sorted by the time dimension",
+        aggregationRequest: {
+          dimensions: [
+            { name: AD_BIDS_DOMAIN_DIMENSION },
+            {
+              name: AD_BIDS_TIMESTAMP_DIMENSION,
+              timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+            },
+          ],
+          measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+          sort: [{ desc: true, name: AD_BIDS_TIMESTAMP_DIMENSION }],
+        },
+        expectedNonPivotState: {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          selectedDimensionName: AD_BIDS_DOMAIN_DIMENSION,
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_DOMAIN_DIMENSION,
+                title: AD_BIDS_DOMAIN_DIMENSION,
+                type: PivotChipType.Dimension,
+              },
+              {
+                id: V1TimeGrain.TIME_GRAIN_WEEK,
+                title: "week",
+                type: PivotChipType.Time,
+              },
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [
+              {
+                desc: true,
+                id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_WEEK}`,
+              },
+            ],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
+
+      // The pivot has no column for a measure's previous value, so the sort
+      // cannot carry over.
+      {
+        title: "With a single measure, sorted by its previous value",
+        aggregationRequest: {
+          dimensions: [],
+          measures: [
+            { name: AD_BIDS_BID_PRICE_MEASURE },
+            {
+              name: `${AD_BIDS_BID_PRICE_MEASURE}__previous`,
+              comparisonValue: { measure: AD_BIDS_BID_PRICE_MEASURE },
+            },
+          ],
+          sort: [
+            { desc: true, name: `${AD_BIDS_BID_PRICE_MEASURE}__previous` },
+          ],
+        },
+        expectedNonPivotState: {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          tdd: {
+            expandedMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+            chartType: TDDChart.DEFAULT,
+            pinIndex: -1,
+          },
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
     ];
 
     for (const {
