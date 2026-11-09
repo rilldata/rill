@@ -196,10 +196,15 @@ export function getPivotAggregationRequest({
         },
       ];
     } else {
+      // Without a measure, sort by the first dimension's request alias:
+      // a time column is selected as `<time>_rill_<grain>`, not by its name.
       sort = [
         {
           desc: measures?.[0] ? true : false,
-          name: measures?.[0]?.name || allDimensions?.[0]?.name,
+          name:
+            measures?.[0]?.name ||
+            allDimensions?.[0]?.alias ||
+            allDimensions?.[0]?.name,
         },
       ];
     }

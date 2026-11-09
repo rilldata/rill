@@ -17,7 +17,15 @@ const chip = (type: PivotChipType, id: string): PivotChipData => ({
 });
 
 describe("getPivotAggregationRequest", () => {
-  function flatRequestSort(sorting: SortingState, enableComparison = false) {
+  function flatRequestSort(
+    sorting: SortingState,
+    enableComparison = false,
+    columns: PivotState["columns"] = [
+      chip(PivotChipType.Dimension, "domain"),
+      chip(PivotChipType.Time, V1TimeGrain.TIME_GRAIN_DAY),
+      chip(PivotChipType.Measure, "impressions"),
+    ],
+  ) {
     const pivotState: PivotState = {
       rows: [],
       columns: [],
@@ -42,11 +50,8 @@ describe("getPivotAggregationRequest", () => {
       timeRange: { start: "2024-01-01T00:00:00Z", end: "2024-02-01T00:00:00Z" },
       rows: [],
       columns: {
-        dimension: [
-          chip(PivotChipType.Dimension, "domain"),
-          chip(PivotChipType.Time, V1TimeGrain.TIME_GRAIN_DAY),
-        ],
-        measure: [chip(PivotChipType.Measure, "impressions")],
+        dimension: columns.filter((c) => c.type !== PivotChipType.Measure),
+        measure: columns.filter((c) => c.type === PivotChipType.Measure),
       },
       enableComparison,
       comparisonTime: enableComparison
@@ -86,5 +91,12 @@ describe("getPivotAggregationRequest", () => {
       { name: "impressions", desc: true },
     ]);
     expect(flatRequestSort([])).toEqual([{ name: "impressions", desc: true }]);
+  });
+
+  it("falls back to the time column's request alias when there are no measures", () => {
+    const timeOnly = [chip(PivotChipType.Time, V1TimeGrain.TIME_GRAIN_DAY)];
+    expect(
+      flatRequestSort([{ id: "bid_price", desc: true }], false, timeOnly),
+    ).toEqual([{ name: "timestamp_rill_TIME_GRAIN_DAY", desc: false }]);
   });
 });
