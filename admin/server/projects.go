@@ -357,6 +357,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		deployment:         depl,
 		projectPermissions: permissions,
 		forOwner:           true,
+		interactiveUser:    true,
 		grantManageAll:     req.IssueSuperuserToken,
 		ttl:                ttlDuration,
 	})

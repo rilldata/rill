@@ -82,6 +82,20 @@ func TestDeploymentJWTs(t *testing.T) {
 		requireHasPerms(t, perms, runtime.ReadInstance, runtime.ReadResolvers, runtime.EditTrigger)
 	})
 
+	t.Run("Own-session endpoints other than GetProject are not interactive", func(t *testing.T) {
+		resp, err := u1Client.GetDeployment(t.Context(), &adminv1.GetDeploymentRequest{DeploymentId: depl.ID})
+		require.NoError(t, err)
+		require.False(t, decodeJWT(t, resp.AccessToken).InteractiveUser)
+
+		iframe, err := u1Client.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:        "jwt-test",
+			Project:    "jwt-project",
+			Navigation: true,
+		})
+		require.NoError(t, err)
+		require.False(t, decodeJWT(t, iframe.AccessToken).InteractiveUser)
+	})
+
 	t.Run("GetDeploymentCredentials for user ID (View as)", func(t *testing.T) {
 		creds, err := u1Client.GetDeploymentCredentials(t.Context(), &adminv1.GetDeploymentCredentialsRequest{
 			Org:     "jwt-test",

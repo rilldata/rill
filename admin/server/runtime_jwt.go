@@ -45,6 +45,9 @@ type issueRuntimeTokenOptions struct {
 	// It cannot be combined with forOwner or forUserID.
 	// It may be set on its own, i.e. you do not have to set any of the for* fields.
 	externalUserID string
+	// interactiveUser marks the token as the signed-in Rill user's own session, which allows the runtime to use that user's personal connector credentials.
+	// Requires forOwner with a user owner; it is silently dropped for superuser "represent" tokens.
+	interactiveUser bool
 	// grantManageAll grants runtime.ManageInstances permission.
 	// Only available for tokens with forOwner where the owner is a superuser.
 	grantManageAll bool
@@ -84,6 +87,11 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	if forCount > 1 {
 		return "", status.Error(codes.Internal, "at most one of forOwner/forUserID/forUserEmail/forUserAttributes may be set")
 	}
+
+	if opts.interactiveUser && (!opts.forOwner || claims.OwnerType() != auth.OwnerTypeUser) {
+		return "", status.Error(codes.Internal, "interactiveUser requires forOwner with a user owner")
+	}
+	_, assumed := claims.AssumedByUserID()
 
 	// Resolve principal: subject, attributes, and resource-restriction rules.
 	var subject string
@@ -229,7 +237,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		},
 		Attributes:      attr,
 		SecurityRules:   rules,
-		InteractiveUser: opts.forOwner && claims.OwnerType() == auth.OwnerTypeUser && opts.externalUserID == "",
+		InteractiveUser: opts.interactiveUser && !assumed,
 	})
 	if err != nil {
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

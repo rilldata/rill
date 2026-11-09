@@ -113,12 +113,12 @@ func NewEphemeralIssuer(issuerURL string) (*Issuer, error) {
 type TokenOptions struct {
 	AudienceURL         string
 	Subject             string
+	InteractiveUser     bool
 	TTL                 time.Duration
 	SystemPermissions   []runtime.Permission
 	InstancePermissions map[string][]runtime.Permission
 	Attributes          map[string]any
 	SecurityRules       []*runtimev1.SecurityRule
-	InteractiveUser     bool
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -147,12 +147,11 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 			Subject:   opts.Subject,
 			Audience:  []string{opts.AudienceURL},
 		},
-		System:    opts.SystemPermissions,
-		Instances: opts.InstancePermissions,
-		Attrs:     opts.Attributes,
-		Security:  sec,
-
 		InteractiveUser: opts.InteractiveUser,
+		System:          opts.SystemPermissions,
+		Instances:       opts.InstancePermissions,
+		Attrs:           opts.Attributes,
+		Security:        sec,
 	}
 
 	return i.SignClaims(claims)

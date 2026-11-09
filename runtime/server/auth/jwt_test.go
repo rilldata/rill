@@ -52,14 +52,16 @@ func TestTokens(t *testing.T) {
 			{"set with SkipChecks", TokenOptions{Subject: "alice", InteractiveUser: true, SystemPermissions: []runtime.Permission{runtime.ManageInstances}}, true},
 			{"omitted", TokenOptions{Subject: "alice"}, false},
 		} {
-			tc.opts.AudienceURL = aud.audienceURL
-			tc.opts.TTL = time.Hour
-			token, err := iss.NewToken(tc.opts)
-			require.NoError(t, err)
+			t.Run(tc.name, func(t *testing.T) {
+				tc.opts.AudienceURL = aud.audienceURL
+				tc.opts.TTL = time.Hour
+				token, err := iss.NewToken(tc.opts)
+				require.NoError(t, err)
 
-			cp, err := aud.ParseAndValidate(token)
-			require.NoError(t, err)
-			require.Equal(t, tc.want, cp.Claims("").InteractiveUser, tc.name)
+				cp, err := aud.ParseAndValidate(token)
+				require.NoError(t, err)
+				require.Equal(t, tc.want, cp.Claims("").InteractiveUser)
+			})
 		}
 	})
 
