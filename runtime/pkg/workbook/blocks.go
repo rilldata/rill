@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
+	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/xuri/excelize/v2"
@@ -27,6 +28,8 @@ const (
 	// Rows a KPI's sparkline needs below its value; shorter blocks get no sparkline.
 	sparklineMinRows = 3
 	sparklineColor   = "#2563EB"
+	// Characters of a muted label that fit in one grid column.
+	labelCharsPerCol = 9
 	// Grid columns a table preview gives a text column and a number column.
 	previewTextCols   = 3
 	previewNumberCols = 2
@@ -69,7 +72,7 @@ func (w *writer) writeDashboardSheet(name string, sheet *runtimev1.WorkbookDashb
 		case *runtimev1.WorkbookBlock_Text:
 			err = w.writeText(name, b, c.Text.Text, col, row, g)
 		case *runtimev1.WorkbookBlock_Note:
-			err = w.writeNote(name, b, c.Note.Text, col, row)
+			err = w.writeNote(name, b, c.Note.Text, col, row, g)
 		}
 		if err != nil {
 			return fmt.Errorf("block %q: %w", b.Component, err)
@@ -234,8 +237,10 @@ func (w *writer) writeKpiComparison(sheet string, v *runtimev1.WorkbookKpiValue,
 	if err != nil {
 		return err
 	}
+	// The labels share the KPI's width with the numbers, which take its last column.
+	// A comparison period named at length ("Previous quarter") becomes "Previous" when it wouldn't fit.
 	comparisonLabel := v.ComparisonLabel
-	if comparisonLabel == "" {
+	if comparisonLabel == "" || utf8.RuneCountInString(comparisonLabel) > (cols-1)*labelCharsPerCol {
 		comparisonLabel = "Previous"
 	}
 	rows := []struct {
@@ -321,7 +326,8 @@ func (w *writer) writeTablePreview(sheet string, b *runtimev1.WorkbookBlock, t *
 	return nil
 }
 
-// writePreviewTable writes the preview of one data sheet at col and row: at most rows data rows within width grid columns.
+// writePreviewTable writes the preview of one data sheet at col and row: at most rows rows within width grid columns.
+// The totals row, if the sheet has one, comes first, as on the canvas by default.
 func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) error {
 	ds := w.dataSheets[id]
 	dsName := w.dataSheetNames[id]
@@ -329,10 +335,17 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 
 	// The columns that fit the width, with their spans. A column never spans more than the width,
 	// so the first one always fits and a preview never overlaps its neighbour.
+	// When the second column wouldn't fit beside the first at full span, the first one (the label) narrows,
+	// so a narrow preview still shows a number next to each label.
 	var columns, spans []int
 	used := 0
 	for j, column := range ds.Columns {
 		span := min(previewColumnSpan(column), width)
+		if j == 0 && len(ds.Columns) > 1 {
+			if rest := width - previewColumnSpan(ds.Columns[1]); rest >= 1 && rest < span {
+				span = rest
+			}
+		}
 		if used+span > width {
 			break
 		}
@@ -348,16 +361,27 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 		}
 		c += spans[k]
 	}
-	n := min(len(ds.Rows), rows)
-	for i := 0; i < n; i++ {
+	var lines []*structpb.ListValue
+	if ds.Totals != nil {
+		lines = append(lines, ds.Totals)
+	}
+	totalsLines := len(lines)
+	lines = append(lines, ds.Rows[:min(len(ds.Rows), max(0, rows-totalsLines))]...)
+	for i, line := range lines {
+		isTotals := i < totalsLines
 		c := col
 		for k, j := range columns {
 			column := ds.Columns[j]
-			value, err := cellValue(column, rowValue(ds.Rows[i], j))
+			value, err := cellValue(column, rowValue(line, j))
 			if err != nil {
 				return err
 			}
-			style, err := w.styles.previewStyle(column, i%2 == 0)
+			var style int
+			if isTotals {
+				style, err = w.styles.previewTotalsStyle(column)
+			} else {
+				style, err = w.styles.previewStyle(column, (i-totalsLines)%2 == 0)
+			}
 			if err != nil {
 				return err
 			}
@@ -371,10 +395,13 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 	if ds.MoreRows {
 		link = fmt.Sprintf("Data: %s (first %d rows)", dsName, len(ds.Rows))
 	}
-	if hidden := len(ds.Columns) - len(columns); hidden > 0 {
+	switch hidden := len(ds.Columns) - len(columns); {
+	case hidden == 1:
+		link += ", 1 more column"
+	case hidden > 1:
 		link += fmt.Sprintf(", %d more columns", hidden)
 	}
-	return w.setLink(sheet, col, row+1+n, link, quoteSheet(dsName)+"!A1", "Location")
+	return w.setLink(sheet, col, row+1+len(lines), link, quoteSheet(dsName)+"!A1", "Location")
 }
 
 func previewColumnSpan(column *runtimev1.WorkbookColumn) int {
@@ -414,8 +441,9 @@ func (w *writer) writeText(sheet string, b *runtimev1.WorkbookBlock, text string
 	return w.f.SetCellStyle(sheet, from, from, w.styles.wrap)
 }
 
-func (w *writer) writeNote(sheet string, b *runtimev1.WorkbookBlock, text string, col, row int) error {
-	used, err := w.writeHeading(sheet, b, col, row, previewTextCols)
+// writeNote writes the block's heading across its width and the note below it.
+func (w *writer) writeNote(sheet string, b *runtimev1.WorkbookBlock, text string, col, row int, g geometry) error {
+	used, err := w.writeHeading(sheet, b, col, row, max(previewTextCols, g.width/cellWidthPx))
 	if err != nil {
 		return err
 	}

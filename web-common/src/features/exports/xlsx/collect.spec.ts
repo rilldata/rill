@@ -7,11 +7,13 @@ import {
   jsonCell,
   kpiTrendTable,
   leaderboardTable,
+  needsImage,
   stackRows,
   stripMarkdown,
   toDataSheet,
 } from "./collect";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 
 function block(
   id: string,
@@ -205,11 +207,29 @@ describe("toDataSheet", () => {
         },
       ],
       rows: [["w1", 1, 1]],
+      totals: ["Total", 1, 1],
+      rowNumberFormats: ["0.0%"],
       moreRows: true,
     });
     expect(sheet.columns.map((c) => c.name)).toStrictEqual(["week", "spend"]);
     expect(sheet.rows[0].toJson()).toStrictEqual(["w1", 1]);
+    expect(sheet.totals?.toJson()).toStrictEqual(["Total", 1]);
+    expect(sheet.rowNumberFormats).toStrictEqual(["0.0%"]);
     expect(sheet.moreRows).toBe(true);
+  });
+});
+
+describe("needsImage", () => {
+  it("snapshots images, maps and custom charts, and charts only where Excel has no equivalent", () => {
+    const component = { type: "image" } as BaseCanvasComponent;
+    expect(
+      needsImage(component, { kind: "imageUrl", url: "logo.png" }, "native"),
+    ).toBe(true);
+    expect(needsImage(component, { kind: "text", text: "x" }, "native")).toBe(
+      false,
+    );
+    // A static component without a payload would be captured as a blank card.
+    expect(needsImage(component, undefined, "native")).toBe(false);
   });
 });
 

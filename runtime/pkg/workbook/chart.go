@@ -7,6 +7,9 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// scatterMarkerColor is Excel's first theme accent, the colour a scatter series gets by default.
+const scatterMarkerColor = "#4472C4"
+
 // addChart adds a native chart bound to the cells of the block's data sheet.
 func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, cell string, g geometry, offsetX, offsetY int) error {
 	ds := w.dataSheets[c.DataSheetId]
@@ -59,8 +62,14 @@ func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, 
 			cs.Marker = excelize.ChartMarker{Symbol: "none"}
 		case excelize.Scatter:
 			// Points only: Excel's default scatter style joins the points with lines.
+			// The marker needs an explicit fill: excelize drops the theme colour it would get otherwise,
+			// and LibreOffice then draws no points at all.
 			cs.Line = excelize.LineOptions{Type: excelize.LineNone}
-			cs.Marker = excelize.ChartMarker{Symbol: "circle", Size: 5}
+			cs.Marker = excelize.ChartMarker{
+				Symbol: "circle",
+				Size:   5,
+				Fill:   excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{scatterMarkerColor}},
+			}
 		}
 		secondary := c.Type == runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_COMBO && s.SecondaryAxis
 		addSeries(typ, secondary, cs)

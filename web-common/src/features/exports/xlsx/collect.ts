@@ -57,9 +57,9 @@ export interface CollectInput {
 export const ROW_GAP_PX = 40;
 
 // Whether a component is exported as a PNG snapshot: charts in image mode and
-// chart types without a native Excel equivalent always; custom charts and maps
-// always; components without a payload (e.g. referenced components) as a
-// fallback, except static ones that would be captured as blank cards.
+// chart types without a native Excel equivalent always; custom charts, maps and
+// images always; components without a payload (e.g. referenced components) as
+// a fallback, except static ones that would be captured as blank cards.
 export function needsImage(
   component: BaseCanvasComponent,
   payload: ComponentExportPayload | undefined,
@@ -70,15 +70,13 @@ export function needsImage(
   }
   switch (payload.kind) {
     case "chart":
-      return (
-        chartMode === "image" ||
-        !hasNativeChart(payload.chartType, payload.spec)
-      );
+      return chartMode === "image" || !hasNativeChart(payload.chartType);
     // In image mode a KPI block is a snapshot too, so its sparklines come out as Rill draws them.
     case "kpi":
       return chartMode === "image";
     case "customChart":
     case "map":
+    case "imageUrl":
       return true;
     default:
       return false;
@@ -95,7 +93,7 @@ export async function buildWorkbookRequest(
 ): Promise<CanvasWorkbookExportRequest> {
   const components = get(input.canvasEntity.componentsStore);
   const dataSheets: WorkbookDataSheet[] = [];
-  const kpiRows: unknown[][] = [];
+  const kpis: KpiRows = { rows: [], formats: [] };
   const usedIds = new Set<string>();
 
   const sheetFor = async (blocks: MeasuredBlock[], title: string) => {
@@ -114,7 +112,7 @@ export async function buildWorkbookRequest(
         heightPx: Math.max(1, Math.round(measured.heightPx)),
       });
       const block = component
-        ? await blockFor(component, input, dataSheets, kpiRows, usedIds)
+        ? await blockFor(component, input, dataSheets, kpis, usedIds)
         : { title: "", subtitle: "", content: note("No valid component") };
       sheet.blocks.push(
         new WorkbookBlock({
@@ -144,7 +142,9 @@ export async function buildWorkbookRequest(
     );
   }
 
-  if (kpiRows.length) {
+  if (kpis.rows.length) {
+    // One row per KPI, so the value columns have no format of their own: each
+    // row takes its measure's.
     dataSheets.push(
       toDataSheet(uniqueId("kpis", usedIds), "KPIs", {
         columns: [
@@ -180,7 +180,8 @@ export async function buildWorkbookRequest(
             numberFormat: PERCENT_FORMAT,
           },
         ],
-        rows: kpiRows,
+        rows: kpis.rows,
+        rowNumberFormats: kpis.formats,
       }),
     );
   }
@@ -273,6 +274,12 @@ function exportedTabTitles(canvasEntity: CanvasEntity): Map<SheetKey, string> {
   return titles;
 }
 
+// The rows of the KPIs data sheet, with the number format of each row's measure.
+interface KpiRows {
+  rows: unknown[][];
+  formats: string[];
+}
+
 interface BlockContent {
   title: string;
   // The component's description.
@@ -284,7 +291,7 @@ async function blockFor(
   component: BaseCanvasComponent,
   input: CollectInput,
   dataSheets: WorkbookDataSheet[],
-  kpiRows: unknown[][],
+  kpis: KpiRows,
   usedIds: Set<string>,
 ): Promise<BlockContent> {
   const payload = get(component.exportPayload);
@@ -342,7 +349,7 @@ async function blockFor(
     }
     case "kpi": {
       for (const value of payload.values) {
-        kpiRows.push([
+        kpis.rows.push([
           value.label,
           value.value,
           value.comparisonLabel ?? null,
@@ -350,6 +357,13 @@ async function blockFor(
           value.delta,
           value.deltaPercent,
         ]);
+        kpis.formats.push(
+          excelNumberFormat(value.measure, [
+            value.value,
+            value.comparisonValue,
+            value.delta,
+          ]),
+        );
       }
       const trend = kpiTrendTable(payload.values, timeZone);
       const trendDataSheetId = trend
@@ -439,13 +453,17 @@ async function blockFor(
         },
       };
     case "imageUrl":
+      // The snapshot is the image as the canvas shows it; the URL is its alt
+      // text, and the block's text when the snapshot failed.
       return {
-        title,
+        title: title || payload.url,
         subtitle,
-        content: {
-          case: "text",
-          value: new WorkbookTextBlock({ text: `Image: ${payload.url}` }),
-        },
+        content: image
+          ? { case: "image", value: new WorkbookImageBlock({ png: image }) }
+          : {
+              case: "text",
+              value: new WorkbookTextBlock({ text: `Image: ${payload.url}` }),
+            },
       };
     case "error":
       return { title, subtitle, content: note(payload.message || "Error") };
@@ -679,6 +697,10 @@ export function toDataSheet(
     rows: table.rows.map((row) =>
       ListValue.fromJson(kept.map((i) => jsonCell(row[i]))),
     ),
+    totals: table.totals
+      ? ListValue.fromJson(kept.map((i) => jsonCell(table.totals![i])))
+      : undefined,
+    rowNumberFormats: table.rowNumberFormats ?? [],
     moreRows: table.moreRows ?? false,
   });
 }

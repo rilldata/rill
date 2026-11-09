@@ -94,7 +94,16 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 				return validationErrorf("row %d of data sheet %q has %d values but the sheet has %d columns", i+1, ds.Title, len(r.Values), len(ds.Columns))
 			}
 		}
+		if ds.Totals != nil && len(ds.Totals.Values) > len(ds.Columns) {
+			return validationErrorf("the totals row of data sheet %q has %d values but the sheet has %d columns", ds.Title, len(ds.Totals.Values), len(ds.Columns))
+		}
+		if len(ds.RowNumberFormats) > len(ds.Rows) {
+			return validationErrorf("data sheet %q has %d row number formats but %d rows", ds.Title, len(ds.RowNumberFormats), len(ds.Rows))
+		}
 		cells += len(ds.Rows) * len(ds.Columns)
+		if ds.Totals != nil {
+			cells += len(ds.Columns)
+		}
 		if cells > MaxCells {
 			return validationErrorf("the data sheets hold more than %d cells", MaxCells)
 		}

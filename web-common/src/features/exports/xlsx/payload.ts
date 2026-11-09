@@ -82,6 +82,12 @@ export interface ExportColumn {
 export interface ExportTable {
   columns: ExportColumn[];
   rows: unknown[][];
+  // The totals row, kept apart from the rows so the data sheet can write it
+  // below its Excel table rather than in it.
+  totals?: unknown[];
+  // Number formats by row, for a table whose rows hold different measures
+  // (the KPIs sheet); see WorkbookDataSheet.row_number_formats.
+  rowNumberFormats?: string[];
   // True when the source has more rows than the table holds (the component
   // had not loaded them, or the export's row cap trimmed them).
   moreRows?: boolean;

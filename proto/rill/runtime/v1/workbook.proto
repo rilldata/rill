@@ -175,6 +175,12 @@ message WorkbookDataSheet {
   repeated WorkbookColumn columns = 3;
   // One list per row with one value per column. Dates and timestamps are RFC 3339 strings.
   repeated google.protobuf.ListValue rows = 4;
+  // The table's totals row, if it shows one. It is written below the Excel table rather than in it,
+  // so sorting the table, filtering it and formulas over its columns leave the totals out.
+  google.protobuf.ListValue totals = 6;
+  // Number formats by row, for sheets whose rows hold different measures (the KPIs sheet).
+  // A row's format applies to its cells in number columns that have no format of their own.
+  repeated string row_number_formats = 7;
   // True when the source has more rows than the sheet holds, because the component had not
   // loaded them or the export's row cap trimmed them. Links to the sheet then say "first N rows".
   bool more_rows = 5;

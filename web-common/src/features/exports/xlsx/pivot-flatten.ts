@@ -8,7 +8,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   ComparisonModifierSuffixRegex,
+  COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  COMPARISON_VALUE,
   type PivotDataRow,
   type PivotDataState,
   type PivotDataStoreConfig,
@@ -26,15 +28,22 @@ import {
 import type { ExportColumn, ExportTable } from "./payload";
 
 interface LeafColumn {
+  // The row field the column reads: a measure or dimension name, or a cell
+  // key like "c0v1m0" under column dimensions.
   key: string;
+  // Headers of the column groups above the leaf, outermost first.
+  groups: string[];
   header: string;
+  // The measure the column shows, with its comparison suffix if it has one;
+  // undefined for dimension columns.
+  measure?: string;
 }
 
 // Turns the pivot's rendered state into a flat table: the leaf columns of the
-// (possibly nested) column definitions, and the rows the viewer sees, with
-// expanded rows followed by their sub-rows and the totals row where the pivot
-// shows it. Nested row headers share one column, so their time values become
-// labels; a flat table's time columns stay typed.
+// (possibly nested) column definitions, the rows the viewer sees, with expanded
+// rows followed by their sub-rows, and the totals row when the pivot shows one.
+// Nested row headers share one column, so their time values become labels; a
+// flat table's time columns stay typed.
 export function flattenPivotData(
   state: PivotDataState,
   config: PivotDataStoreConfig,
@@ -51,40 +60,32 @@ export function flattenPivotData(
     columnFor(leaf, config, nestedRowHeader),
   );
 
-  const rows: unknown[][] = [];
-  const pushRow = (row: PivotDataRow, depth: number) => {
-    rows.push(
-      leaves.map((leaf, i) =>
-        cellValue(row[leaf.key], columns[i], leaf.key, depth, {
-          config,
-          nestedRowHeader,
-          timeDimension,
-          timeZone,
-        }),
-      ),
+  const toCells = (row: PivotDataRow, depth: number) =>
+    leaves.map((leaf, i) =>
+      cellValue(row[leaf.key], columns[i], leaf.key, depth, {
+        config,
+        nestedRowHeader,
+        timeDimension,
+        timeZone,
+      }),
     );
-  };
 
+  const rows = visibleRows(state.data, config.pivot.expanded).map(
+    ({ row, depth }) => toCells(row, depth),
+  );
   const totals = state.totalsRowData;
-  const showTotals = !!totals && config.pivot.showTotalsRow !== false;
-  if (showTotals && config.pivot.totalsRowPosition !== "bottom") {
-    pushRow(totalsRow(totals, leaves), 0);
+  if (!totals || config.pivot.showTotalsRow === false) {
+    return { columns, rows };
   }
-  for (const { row, depth } of visibleRows(state.data, config.pivot.expanded)) {
-    pushRow(row, depth);
-  }
-  if (showTotals && config.pivot.totalsRowPosition === "bottom") {
-    pushRow(totalsRow(totals, leaves), 0);
-  }
-
-  return { columns, rows };
+  return { columns, rows, totals: toCells(totalsRow(totals, leaves), 0) };
 }
 
-// The leaf columns in display order, with group headers folded into the leaf
-// header ("US / Impressions"). The row-totals group has an empty header.
+// The leaf columns in display order, each with the headers of the groups above
+// it ("US" for a column dimension value). The row-totals group has an empty
+// header and is named "Total".
 export function leafColumns(
   defs: ColumnDef<PivotDataRow>[],
-  prefix: string[] = [],
+  groups: string[] = [],
 ): LeafColumn[] {
   return defs.flatMap((def) => {
     const group = def as ColumnDef<PivotDataRow> & {
@@ -94,12 +95,15 @@ export function leafColumns(
     const header = rawHeader.replace(/\u00A0/g, "").trim();
     if (group.columns) {
       const label =
-        header || (group.columns.length && prefix.length === 0 ? "Total" : "");
-      return leafColumns(group.columns, label ? [...prefix, label] : prefix);
+        header || (group.columns.length && groups.length === 0 ? "Total" : "");
+      return leafColumns(group.columns, label ? [...groups, label] : groups);
     }
     const accessor = (def as { accessorKey?: string }).accessorKey;
     const key = accessor ? String(accessor) : (def.id ?? "");
-    return [{ key, header: [...prefix, header || key].join(" / ") }];
+    // Measure leaves carry the measure's name (see pivot-column-definition.ts),
+    // which their key no longer holds under column dimensions.
+    const measure = (def as { name?: string }).name;
+    return [{ key, groups, header: header || key, measure }];
   });
 }
 
@@ -146,7 +150,8 @@ function columnFor(
   config: PivotDataStoreConfig,
   nestedRowHeader: string | undefined,
 ): ExportColumn {
-  const base = leaf.key.replace(ComparisonModifierSuffixRegex, "");
+  const measureName = leaf.measure ?? leaf.key;
+  const base = measureName.replace(ComparisonModifierSuffixRegex, "");
   const measure =
     config.allMeasures.find((m) => m.name === base) ??
     config.ephemeralMeasures?.find((m) => m.name === base);
@@ -154,9 +159,12 @@ function columnFor(
   if (isMeasure) {
     return {
       name: leaf.key,
-      displayName: leaf.header,
+      displayName: displayName(
+        leaf,
+        measureHeader(measureName, measure?.displayName || base, leaf.header),
+      ),
       type: WorkbookColumnType.NUMBER,
-      numberFormat: leaf.key.endsWith(COMPARISON_PERCENT)
+      numberFormat: measureName.endsWith(COMPARISON_PERCENT)
         ? PERCENT_FORMAT
         : excelNumberFormat(measure),
     };
@@ -168,16 +176,39 @@ function columnFor(
     const grain = getTimeGrainFromDimension(leaf.key) as V1TimeGrain;
     return {
       name: leaf.key,
-      displayName: leaf.header,
+      displayName: displayName(leaf, leaf.header),
       type: timeColumnType(grain),
       numberFormat: excelDateFormat(grain),
     };
   }
   return {
     name: leaf.key,
-    displayName: leaf.header,
+    displayName: displayName(leaf, leaf.header),
     type: WorkbookColumnType.STRING,
   };
+}
+
+// A header with the column's groups folded in: "US / Impressions".
+function displayName(leaf: LeafColumn, header: string): string {
+  return [...leaf.groups, header].join(" / ");
+}
+
+// The header of a measure column. A comparison column's own header ("Δ",
+// "Δ %") relies on the measure column beside it, so on a data sheet it names
+// the measure, like the leaderboard sheets do.
+function measureHeader(
+  measureName: string,
+  measureLabel: string,
+  header: string,
+): string {
+  if (measureName.endsWith(COMPARISON_DELTA)) return `${measureLabel} change`;
+  if (measureName.endsWith(COMPARISON_PERCENT)) {
+    return `${measureLabel} % change`;
+  }
+  if (measureName.endsWith(COMPARISON_VALUE)) {
+    return `${measureLabel} (previous)`;
+  }
+  return header;
 }
 
 function cellValue(

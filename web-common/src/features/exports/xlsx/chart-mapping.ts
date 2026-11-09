@@ -69,23 +69,11 @@ const NATIVE_CHART_TYPES: ReadonlySet<ChartType> = new Set<ChartType>([
 const MAX_HORIZONTAL_LEGEND_ENTRIES = 6;
 
 // Whether a canvas chart type maps to a native Excel chart. Heatmaps and
-// funnels don't, and a combo chart split by a dimension doesn't either.
-export function hasNativeChart(
-  type: ChartType,
-  spec: CanvasChartSpec,
-): boolean {
-  if (!NATIVE_CHART_TYPES.has(type)) return false;
-  if (type === "combo_chart") {
-    return !isSplitDimension((spec as ComboChartSpec).color);
-  }
-  return true;
-}
-
-// A colour field that splits the data by a dimension, as opposed to a static
-// colour or the "measures" pseudo-field that colours each measure of a
-// multi-measure chart (whose `type` is "value").
-function isSplitDimension(color: unknown): color is FieldConfig {
-  return isFieldConfig(color) && color.type === "nominal" && !!color.field;
+// funnels don't. A combo chart always does: its colour field only names the
+// legend entries of its two measures and never splits the data by a dimension
+// (see ComboChartProvider).
+export function hasNativeChart(type: ChartType): boolean {
+  return NATIVE_CHART_TYPES.has(type);
 }
 
 // Maps a rendered chart to the data sheet behind it and, where Excel has an
@@ -146,26 +134,14 @@ function mapCartesian(input: ChartExportInput): ChartExport {
   }
 
   const categoryColumn = fieldColumn(x, data.fields, timeGrain);
-  let table: ExportTable;
-  let series: WorkbookChartSeries[];
-  if (colorField && measures.length === 1) {
-    table = wideTable(
-      categoryColumn,
-      x,
-      colorField,
-      measures[0],
-      data,
-      timeZone,
-    );
-    series = table.columns
-      .slice(1)
-      .map((column) => new WorkbookChartSeries({ column: column.name }));
-  } else {
-    table = longTable([x], measures, data, timeGrain, timeZone);
-    series = table.columns
-      .slice(1)
-      .map((column) => new WorkbookChartSeries({ column: column.name }));
-  }
+  const table = sortByTime(
+    colorField && measures.length === 1
+      ? wideTable(categoryColumn, x, colorField, measures[0], data, timeZone)
+      : longTable([x], measures, data, timeGrain, timeZone),
+  );
+  const series = table.columns
+    .slice(1)
+    .map((column) => new WorkbookChartSeries({ column: column.name }));
 
   const horizontal = isHorizontal(raw);
   const barType = horizontal ? WorkbookChartType.BAR : WorkbookChartType.COLUMN;
@@ -296,15 +272,16 @@ function mapCombo(input: ChartExportInput): ChartExport {
   const measures = [spec.y1?.field, spec.y2?.field].filter(
     (f): f is string => !!f,
   );
-  const dimensions: FieldConfig[] = [];
-  if (spec.x?.field) dimensions.push(spec.x);
-  if (isSplitDimension(spec.color)) dimensions.push(spec.color);
-  const table = longTable(dimensions, measures, data, timeGrain, timeZone);
-  if (
-    !spec.x?.field ||
-    !spec.y1?.field ||
-    !hasNativeChart("combo_chart", spec)
-  ) {
+  const table = sortByTime(
+    longTable(
+      spec.x?.field ? [spec.x] : [],
+      measures,
+      data,
+      timeGrain,
+      timeZone,
+    ),
+  );
+  if (!spec.x?.field || !spec.y1?.field) {
     return { table, chart: undefined };
   }
 
@@ -357,12 +334,14 @@ function mapHeatmap(input: ChartExportInput): ChartExport {
     (f): f is FieldConfig => !!f?.field,
   );
   return {
-    table: longTable(
-      dimensions,
-      spec.color?.field ? [spec.color.field] : [],
-      data,
-      timeGrain,
-      timeZone,
+    table: sortByTime(
+      longTable(
+        dimensions,
+        spec.color?.field ? [spec.color.field] : [],
+        data,
+        timeGrain,
+        timeZone,
+      ),
     ),
     chart: undefined,
   };
@@ -466,6 +445,29 @@ function wideTable(
     ...colorValues.map((value) => entry.values.get(value) ?? null),
   ]);
   return { columns, rows };
+}
+
+// Puts the rows of a table whose first column holds time in time order, oldest
+// first, as a time axis draws them: chart data does not always arrive in that
+// order. Rows without a time keep their place at the end.
+function sortByTime(table: ExportTable): ExportTable {
+  const type = table.columns[0]?.type;
+  if (
+    type !== WorkbookColumnType.DATE &&
+    type !== WorkbookColumnType.TIMESTAMP
+  ) {
+    return table;
+  }
+  const time = (row: unknown[]) =>
+    typeof row[0] === "string" ? row[0] : undefined;
+  const rows = [...table.rows].sort((a, b) => {
+    const [ta, tb] = [time(a), time(b)];
+    if (ta === undefined || tb === undefined) {
+      return (ta === undefined ? 1 : 0) - (tb === undefined ? 1 : 0);
+    }
+    return ta < tb ? -1 : ta > tb ? 1 : 0;
+  });
+  return { ...table, rows };
 }
 
 function measureFields(field: FieldConfig | undefined): string[] {

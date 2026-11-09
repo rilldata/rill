@@ -244,6 +244,87 @@ describe("mapChart", () => {
     ]);
   });
 
+  it("keeps a combo chart native when its colour names a dimension, which only labels the measures", () => {
+    const { table, chart } = mapChart({
+      chartType: "combo_chart",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "country", type: "nominal" },
+        y1: { field: "spend", type: "quantitative", mark: "bar" },
+        y2: { field: "cpa", type: "quantitative", mark: "line" },
+        color: { field: "device", type: "nominal", legendOrientation: "top" },
+      } as CanvasChartSpec,
+      data: data([{ country: "US", spend: 10, cpa: 2.5 }]),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(table.columns.map((c) => c.name)).toStrictEqual([
+      "country",
+      "spend",
+      "cpa",
+    ]);
+    expect(chart?.type).toBe(WorkbookChartType.COMBO);
+    expect(chart?.legendPosition).toBe("top");
+  });
+
+  it("puts the rows of a time axis in time order", () => {
+    const rows = [
+      { timestamp: "2026-01-03T00:00:00Z", spend: 3, cpa: 1 },
+      { timestamp: "2026-01-01T00:00:00Z", spend: 1, cpa: 1 },
+      { timestamp: null, spend: 0, cpa: 0 },
+      { timestamp: "2026-01-02T00:00:00Z", spend: 2, cpa: 1 },
+    ];
+    const line = mapChart({
+      chartType: "line_chart",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "timestamp", type: "temporal" },
+        y: { field: "spend", type: "quantitative" },
+      } as CanvasChartSpec,
+      data: data(rows),
+      timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
+      timeZone: "UTC",
+    });
+    expect(line.table.rows).toStrictEqual([
+      ["2026-01-01T00:00:00", 1],
+      ["2026-01-02T00:00:00", 2],
+      ["2026-01-03T00:00:00", 3],
+      [null, 0],
+    ]);
+    const combo = mapChart({
+      chartType: "combo_chart",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "timestamp", type: "temporal" },
+        y1: { field: "spend", type: "quantitative", mark: "bar" },
+        y2: { field: "cpa", type: "quantitative", mark: "line" },
+      } as CanvasChartSpec,
+      data: data(rows),
+      timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
+      timeZone: "UTC",
+    });
+    expect(combo.table.rows.map((row) => row[1])).toStrictEqual([1, 2, 3, 0]);
+    // A nominal axis keeps the order the chart sorts it in.
+    const bars = mapChart({
+      chartType: "bar_chart",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "country", type: "nominal" },
+        y: { field: "spend", type: "quantitative" },
+      } as CanvasChartSpec,
+      data: data([
+        { country: "US", spend: 1 },
+        { country: "CA", spend: 2 },
+      ]),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(bars.table.rows).toStrictEqual([
+      ["US", 1],
+      ["CA", 2],
+    ]);
+  });
+
   it("keeps a combo chart native when its colour is the measures pseudo-field", () => {
     const { table, chart } = mapChart({
       chartType: "combo_chart",
@@ -353,24 +434,10 @@ describe("mapChart", () => {
 });
 
 describe("hasNativeChart", () => {
-  it("excludes heatmaps, funnels and split combo charts", () => {
-    expect(
-      hasNativeChart("bar_chart", { metrics_view: "mv" } as CanvasChartSpec),
-    ).toBe(true);
-    expect(
-      hasNativeChart("heatmap", { metrics_view: "mv" } as CanvasChartSpec),
-    ).toBe(false);
-    expect(
-      hasNativeChart("funnel_chart", { metrics_view: "mv" } as CanvasChartSpec),
-    ).toBe(false);
-    expect(
-      hasNativeChart("combo_chart", { metrics_view: "mv" } as CanvasChartSpec),
-    ).toBe(true);
-    expect(
-      hasNativeChart("combo_chart", {
-        metrics_view: "mv",
-        color: { field: "device", type: "nominal" },
-      } as CanvasChartSpec),
-    ).toBe(false);
+  it("excludes heatmaps and funnels", () => {
+    expect(hasNativeChart("bar_chart")).toBe(true);
+    expect(hasNativeChart("combo_chart")).toBe(true);
+    expect(hasNativeChart("heatmap")).toBe(false);
+    expect(hasNativeChart("funnel_chart")).toBe(false);
   });
 });

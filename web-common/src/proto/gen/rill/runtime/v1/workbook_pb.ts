@@ -1033,6 +1033,22 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
   rows: ListValue[] = [];
 
   /**
+   * The table's totals row, if it shows one. It is written below the Excel table rather than in it,
+   * so sorting the table, filtering it and formulas over its columns leave the totals out.
+   *
+   * @generated from field: google.protobuf.ListValue totals = 6;
+   */
+  totals?: ListValue;
+
+  /**
+   * Number formats by row, for sheets whose rows hold different measures (the KPIs sheet).
+   * A row's format applies to its cells in number columns that have no format of their own.
+   *
+   * @generated from field: repeated string row_number_formats = 7;
+   */
+  rowNumberFormats: string[] = [];
+
+  /**
    * True when the source has more rows than the sheet holds, because the component had not
    * loaded them or the export's row cap trimmed them. Links to the sheet then say "first N rows".
    *
@@ -1052,6 +1068,8 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "columns", kind: "message", T: WorkbookColumn, repeated: true },
     { no: 4, name: "rows", kind: "message", T: ListValue, repeated: true },
+    { no: 6, name: "totals", kind: "message", T: ListValue },
+    { no: 7, name: "row_number_formats", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "more_rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

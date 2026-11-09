@@ -452,22 +452,154 @@ func TestWriteTablePreviewLayout(t *testing.T) {
 		require.NoError(t, err)
 		return v
 	}
-	// The 600 px block spans nine columns, so each sheet gets four and only its first column fits.
+	// The 600 px block spans nine columns, so each sheet gets four:
+	// the label column narrows to two so the first number fits beside it.
 	require.Equal(t, "Top", cell("A8"))
 	require.Equal(t, "Line Item", cell("A10"))
+	require.Equal(t, "Impressions", cell("C10"))
 	require.Equal(t, "Display", cell("A11"))
-	require.Equal(t, "Full data: Data - Line items (2 rows), 3 more columns", cell("A13"))
+	require.Equal(t, "43.2M", cell("C11"))
+	require.Equal(t, "Full data: Data - Line items (2 rows), 2 more columns", cell("A13"))
 	require.Equal(t, "Week ending", cell("F10"))
+	require.Equal(t, "Client Spend", cell("H10"))
 	require.Equal(t, "2026-01-04", cell("F11"))
-	require.Equal(t, "Data: Data - Spend and CPA by week (first 3 rows), 2 more columns", cell("F14"))
+	require.Equal(t, "Data: Data - Spend and CPA by week (first 3 rows), 1 more column", cell("F14"))
 	merged, err := f.GetMergeCells(dashboard)
 	require.NoError(t, err)
 	var ranges []string
 	for _, m := range merged {
 		ranges = append(ranges, m.GetStartAxis()+":"+m.GetEndAxis())
 	}
-	require.Contains(t, ranges, "A10:C10")
-	require.Contains(t, ranges, "F10:H10")
+	require.Contains(t, ranges, "A10:B10")
+	require.Contains(t, ranges, "C10:D10")
+	require.Contains(t, ranges, "F10:G10")
+	require.Contains(t, ranges, "H10:I10")
+}
+
+func TestWriteTotalsAndRowFormats(t *testing.T) {
+	req := testRequest(t)
+	// The line items carry a totals row; a KPIs-like sheet holds a different measure on each row.
+	req.DataSheets[1].Totals = row(t, "Total", 44837645, nil, nil)
+	req.DataSheets = append(req.DataSheets, &runtimev1.WorkbookDataSheet{
+		Id:    "kpis",
+		Title: "KPIs",
+		Columns: []*runtimev1.WorkbookColumn{
+			{Name: "measure", DisplayName: "Measure", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_STRING},
+			{Name: "value", DisplayName: "Value", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER},
+			{Name: "delta_percent", DisplayName: "% change", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER, NumberFormat: "0.0%"},
+		},
+		Rows: []*structpb.ListValue{
+			row(t, "Spend", 1234.5, 0.25),
+			row(t, "CTR", 0.0123, 0.5),
+			row(t, "Bids", 98765, nil),
+		},
+		RowNumberFormats: []string{`"$"#,##0.00`, "0.00%"},
+	})
+	req.DashboardSheets[0].Blocks = []*runtimev1.WorkbookBlock{{
+		Component: "table", Title: "Line items", Geometry: geo(0, 0, 1000, 200),
+		Content: &runtimev1.WorkbookBlock_Table{Table: &runtimev1.WorkbookTableBlock{DataSheetIds: []string{"lines"}}},
+	}}
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+	cell := func(sheet, ref string) string {
+		v, err := f.GetCellValue(sheet, ref)
+		require.NoError(t, err)
+		return v
+	}
+	bold := func(sheet, ref string) bool {
+		id, err := f.GetCellStyle(sheet, ref)
+		require.NoError(t, err)
+		style, err := f.GetStyle(id)
+		require.NoError(t, err)
+		return style.Font != nil && style.Font.Bold
+	}
+
+	// The totals row sits directly below the table, outside its range, in bold.
+	const lines = "Data - Line items"
+	tables, err := f.GetTables(lines)
+	require.NoError(t, err)
+	require.Len(t, tables, 1)
+	require.Equal(t, "A1:D3", tables[0].Range)
+	require.Equal(t, "Total", cell(lines, "A4"))
+	require.Equal(t, "44,837,645", cell(lines, "B4"))
+	require.True(t, bold(lines, "A4"))
+	require.True(t, bold(lines, "B4"))
+	require.False(t, bold(lines, "B3"))
+
+	// The preview shows the totals row first, in bold, and counts only the data rows.
+	const dashboard = "Campaign report"
+	require.Equal(t, "Line Item", cell(dashboard, "A10"))
+	require.Equal(t, "Total", cell(dashboard, "A11"))
+	require.Equal(t, "44.8M", cell(dashboard, "D11"))
+	require.True(t, bold(dashboard, "A11"))
+	require.Equal(t, "Display", cell(dashboard, "A12"))
+	require.Equal(t, "Full data: Data - Line items (2 rows)", cell(dashboard, "A14"))
+
+	// A row's format applies to number columns without a format of their own; the rest keep theirs.
+	const kpis = "Data - KPIs"
+	require.Equal(t, "$1,234.50", cell(kpis, "B2"))
+	require.Equal(t, "25.0%", cell(kpis, "C2"))
+	require.Equal(t, "1.23%", cell(kpis, "B3"))
+	require.Equal(t, "50.0%", cell(kpis, "C3"))
+	require.Equal(t, "98765", cell(kpis, "B4"))
+}
+
+func TestWriteScatterMarkers(t *testing.T) {
+	// Scatter points get an explicit fill: without one, LibreOffice draws no points.
+	req := testRequest(t)
+	req.DashboardSheets[0].Blocks = []*runtimev1.WorkbookBlock{{
+		Component: "scatter", Title: "Spend vs CPA", Geometry: geo(0, 0, 600, 300),
+		Content: &runtimev1.WorkbookBlock_Chart{Chart: &runtimev1.WorkbookChartBlock{
+			DataSheetId:    "trend",
+			Type:           runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_SCATTER,
+			CategoryColumn: "spend",
+			Series:         []*runtimev1.WorkbookChartSeries{{Column: "cpa"}},
+		}},
+	}}
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	charts := chartParts(t, buf.Bytes())
+	require.Len(t, charts, 1)
+	marker := charts[0][strings.Index(charts[0], "<marker>"):strings.Index(charts[0], "</marker>")]
+	require.Contains(t, marker, `<a:srgbClr val="4472C4">`)
+}
+
+func TestWriteNarrowBlocks(t *testing.T) {
+	req := testRequest(t)
+	kpi := req.DashboardSheets[0].Blocks[3]
+	// Two KPIs in a 300 px block get two columns each, too narrow for "Previous quarter" beside a number.
+	kpi.Geometry = geo(0, 0, 300, 200)
+	note := req.DashboardSheets[0].Blocks[6]
+	note.Title = "Funnel of bids to clicks, by stage"
+	note.Geometry = geo(0, 220, 600, 60)
+	req.DashboardSheets[0].Blocks = []*runtimev1.WorkbookBlock{kpi, note}
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+
+	const dashboard = "Campaign report"
+	cell := func(ref string) string {
+		v, err := f.GetCellValue(dashboard, ref)
+		require.NoError(t, err)
+		return v
+	}
+	require.Equal(t, "Impressions", cell("A9"))
+	require.Equal(t, "Previous", cell("A11"))
+	require.Equal(t, "41.2M", cell("B11"))
+	// A note's heading spans the block, not just the first three columns.
+	require.Equal(t, "Funnel of bids to clicks, by stage", cell("A19"))
+	merged, err := f.GetMergeCells(dashboard)
+	require.NoError(t, err)
+	var ranges []string
+	for _, m := range merged {
+		ranges = append(ranges, m.GetStartAxis()+":"+m.GetEndAxis())
+	}
+	require.Contains(t, ranges, "A19:I19")
 }
 
 func TestWriteLongCanvas(t *testing.T) {
@@ -553,6 +685,20 @@ func TestValidate(t *testing.T) {
 				req.DataSheets[2].Rows = []*structpb.ListValue{row(t, "a", "b")}
 			},
 			want: "has 2 values but the sheet has 1 columns",
+		},
+		{
+			name: "totals row wider than the sheet",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DataSheets[2].Totals = row(t, "a", "b")
+			},
+			want: "the totals row of data sheet \"Empty\" has 2 values",
+		},
+		{
+			name: "more row formats than rows",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DataSheets[2].RowNumberFormats = []string{"0.0%"}
+			},
+			want: "has 1 row number formats but 0 rows",
 		},
 		{
 			name: "unknown category column",

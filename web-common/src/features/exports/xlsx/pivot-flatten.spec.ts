@@ -84,9 +84,19 @@ describe("leafColumns", () => {
     ] as ColumnDef<PivotDataRow>[];
 
     expect(leafColumns(defs)).toStrictEqual([
-      { key: "country", header: "Country" },
-      { key: "impressions", header: "Total / Impressions" },
-      { key: "mobile_impressions", header: "Mobile / Impressions" },
+      { key: "country", groups: [], header: "Country", measure: undefined },
+      {
+        key: "impressions",
+        groups: ["Total"],
+        header: "Impressions",
+        measure: undefined,
+      },
+      {
+        key: "mobile_impressions",
+        groups: ["Mobile"],
+        header: "Impressions",
+        measure: undefined,
+      },
     ]);
   });
 });
@@ -117,7 +127,7 @@ describe("flattenPivotData", () => {
     { accessorKey: "impressions__delta_rel", header: "Impressions Δ%" },
   ] as ColumnDef<PivotDataRow>[];
 
-  it("types measures by their format and keeps the totals row where the pivot shows it", () => {
+  it("types measures by their format and keeps the totals row apart from the rows", () => {
     const table = flattenPivotData(
       state(
         defs,
@@ -153,10 +163,50 @@ describe("flattenPivotData", () => {
       ["ctr", WorkbookColumnType.NUMBER, "0.0%"],
       ["impressions__delta_rel", WorkbookColumnType.NUMBER, "0.0%"],
     ]);
-    expect(table.rows).toStrictEqual([
-      ["US", 10, 0.5, 0.1],
-      ["Total", 10, 0.5, 0.1],
+    // A comparison column's own header leans on the column beside it; the sheet names the measure.
+    expect(table.columns[3].displayName).toBe("Impressions % change");
+    expect(table.rows).toStrictEqual([["US", 10, 0.5, 0.1]]);
+    expect(table.totals).toStrictEqual(["Total", 10, 0.5, 0.1]);
+  });
+
+  it("types the measure cells under column dimensions by the measure the column shows", () => {
+    // Under a column dimension the cell keys ("c0v0m0") no longer name the measure; the leaf's `name` does.
+    const nestedDefs = [
+      { id: "country", accessorFn: () => null, header: "Country" },
+      {
+        header: "Mobile",
+        columns: [
+          { accessorKey: "c0v0m0", header: "Impressions", name: "impressions" },
+          {
+            accessorKey: "c0v0m1",
+            header: "Δ",
+            name: "impressions__delta_abs",
+          },
+          { accessorKey: "c0v0m2", header: "CTR", name: "ctr" },
+        ],
+      },
+    ] as unknown as ColumnDef<PivotDataRow>[];
+    const table = flattenPivotData(
+      state(nestedDefs, [
+        { country: "US", c0v0m0: 117.50599999999999, c0v0m1: -3, c0v0m2: 0.5 },
+      ]),
+      config({ colDimensionNames: ["device"] }),
+    );
+    expect(
+      table.columns.map((c) => [c.name, c.displayName, c.type, c.numberFormat]),
+    ).toStrictEqual([
+      ["country", "Country", WorkbookColumnType.STRING, undefined],
+      ["c0v0m0", "Mobile / Impressions", WorkbookColumnType.NUMBER, "#,##0"],
+      [
+        "c0v0m1",
+        "Mobile / Impressions change",
+        WorkbookColumnType.NUMBER,
+        "#,##0",
+      ],
+      ["c0v0m2", "Mobile / CTR", WorkbookColumnType.NUMBER, "0.0%"],
     ]);
+    expect(table.rows).toStrictEqual([["US", 117.50599999999999, -3, 0.5]]);
+    expect(table.totals).toBeUndefined();
   });
 
   it("labels nested time row headers and types flat time columns", () => {

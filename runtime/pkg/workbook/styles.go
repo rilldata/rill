@@ -39,14 +39,24 @@ type styleSet struct {
 	header        int
 	previewHeader int
 	// Styles that carry a number format, cached by format code (and banding for previews).
-	numFmt    map[string]int
-	kpiValue  map[string]int
-	kpiNumber map[string]int
-	preview   map[string]int
+	numFmt        map[string]int
+	totals        map[string]int
+	kpiValue      map[string]int
+	kpiNumber     map[string]int
+	preview       map[string]int
+	previewTotals map[string]int
 }
 
 func newStyleSet(f *excelize.File) (*styleSet, error) {
-	s := &styleSet{f: f, numFmt: map[string]int{}, kpiValue: map[string]int{}, kpiNumber: map[string]int{}, preview: map[string]int{}}
+	s := &styleSet{
+		f:             f,
+		numFmt:        map[string]int{},
+		totals:        map[string]int{},
+		kpiValue:      map[string]int{},
+		kpiNumber:     map[string]int{},
+		preview:       map[string]int{},
+		previewTotals: map[string]int{},
+	}
 	var err error
 	if s.title, err = f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 16}}); err != nil {
 		return nil, err
@@ -98,6 +108,14 @@ func (s *styleSet) numFmtStyle(format string) (int, error) {
 	return id, nil
 }
 
+// totalsStyle returns the style of a data sheet's totals row: bold, with a rule above it, and the given number format.
+func (s *styleSet) totalsStyle(format string) (int, error) {
+	return s.cachedStyle(s.totals, format, format, &excelize.Style{
+		Font:   &excelize.Font{Bold: true},
+		Border: []excelize.Border{{Type: "top", Color: tableHeaderFill, Style: 1}},
+	})
+}
+
 // kpiValueStyle returns the large bold style of a KPI value with the given number format.
 // KPI numbers are left-aligned under their labels rather than right-aligned like a column of figures.
 func (s *styleSet) kpiValueStyle(format string) (int, error) {
@@ -130,11 +148,6 @@ func (s *styleSet) cachedStyle(cache map[string]int, key, format string, style *
 	return id, nil
 }
 
-// columnStyle returns the style of a data column's cells, or 0 when the column needs none.
-func (s *styleSet) columnStyle(col *runtimev1.WorkbookColumn) (int, error) {
-	return s.numFmtStyle(columnFormat(col))
-}
-
 // previewStyle returns the style of a column's cells in a table preview on a dashboard sheet:
 // numbers are shown compactly and every other row is banded like the data sheets' tables.
 func (s *styleSet) previewStyle(col *runtimev1.WorkbookColumn, banded bool) (int, error) {
@@ -146,6 +159,12 @@ func (s *styleSet) previewStyle(col *runtimev1.WorkbookColumn, banded bool) (int
 		style.Fill = excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{tableBandFill}}
 	}
 	return s.cachedStyle(s.preview, key, format, style)
+}
+
+// previewTotalsStyle returns the style of a column's cell in the totals row of a table preview: bold, compact numbers.
+func (s *styleSet) previewTotalsStyle(col *runtimev1.WorkbookColumn) (int, error) {
+	format := compactNumberFormat(columnFormat(col))
+	return s.cachedStyle(s.previewTotals, format, format, &excelize.Style{Font: &excelize.Font{Bold: true}})
 }
 
 // compactNumberFormat abbreviates thousands and millions ("1.5M", "$347.1k") the way the dashboard does,

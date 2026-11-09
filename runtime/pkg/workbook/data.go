@@ -21,17 +21,22 @@ const (
 
 // writeDataSheet fills a data sheet: a header row of display names, typed rows with their number formats,
 // a frozen header and an Excel table over the data so structured references work.
+// The totals row, if any, goes directly below the table, so sorting and formulas over the table leave it out.
 // The rows are streamed to a temporary file rather than held in excelize's in-memory sheet model,
 // so a large table doesn't multiply the runtime's memory use.
 func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) error {
 	headers := uniqueHeaders(ds.Columns)
+	rows := ds.Rows
+	if ds.Totals != nil {
+		rows = append(rows[:len(rows):len(rows)], ds.Totals)
+	}
 	// The stream writer needs the column widths before the first row,
 	// so the values are converted twice: once to size the columns and once to write them.
 	widths := make([]int, len(headers))
 	for i, h := range headers {
 		widths[i] = utf8.RuneCountInString(h)
 	}
-	for i, r := range ds.Rows {
+	for i, r := range rows {
 		for j, col := range ds.Columns {
 			cell, err := cellValue(col, rowValue(r, j))
 			if err != nil {
@@ -47,13 +52,9 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 	if err != nil {
 		return err
 	}
-	styles := make([]int, len(ds.Columns))
-	for j, col := range ds.Columns {
+	for j := range ds.Columns {
 		width := math.Min(math.Max(float64(widths[j])+2, minDataColWidth), maxDataColWidth)
 		if err := sw.SetColWidth(j+1, j+1, width); err != nil {
-			return err
-		}
-		if styles[j], err = w.styles.columnStyle(col); err != nil {
 			return err
 		}
 	}
@@ -68,15 +69,29 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 	if err := sw.SetRow("A1", row); err != nil {
 		return err
 	}
-	for i, r := range ds.Rows {
+	for i, r := range rows {
+		isTotals := i == len(ds.Rows)
 		for j, col := range ds.Columns {
 			// Validated by the sizing pass above.
 			cell, _ := cellValue(col, rowValue(r, j))
+			format := columnFormat(col)
+			if format == "" && col.Type == runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER && i < len(ds.RowNumberFormats) {
+				format = ds.RowNumberFormats[i]
+			}
+			var style int
+			if isTotals {
+				style, err = w.styles.totalsStyle(format)
+			} else {
+				style, err = w.styles.numFmtStyle(format)
+			}
+			if err != nil {
+				return err
+			}
 			switch {
-			case cell == nil:
+			case cell == nil && !isTotals:
 				row[j] = nil
-			case styles[j] != 0:
-				row[j] = excelize.Cell{StyleID: styles[j], Value: cell}
+			case style != 0:
+				row[j] = excelize.Cell{StyleID: style, Value: cell}
 			default:
 				row[j] = cell
 			}

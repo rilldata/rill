@@ -78,6 +78,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   exportPayload: Writable<ComponentExportPayload | undefined> =
     writable(undefined);
 
+  // True while the component's export render is still drawing after its data
+  // arrived, like a map loading its tiles. The canvas exports wait for it
+  // before they capture the component (see prepareCanvasForCapture).
+  drawing = writable(false);
+
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
   // emissions and mutates the shared filter/time state of a deleted widget.

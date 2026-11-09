@@ -10,7 +10,8 @@ export async function postWorkbookRequest(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  const jwt = client.getJwt();
+  // The request follows a capture that can take a while, so the token may be close to expiring.
+  const jwt = await client.getFreshJwt();
   if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
 
   const response = await fetch(

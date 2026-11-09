@@ -93,6 +93,15 @@ export class RuntimeClient {
     return this.currentJwt;
   }
 
+  /**
+   * Returns the JWT once it is not about to expire, waiting for a refresh like
+   * queries do. For one-off requests sent outside the query client.
+   */
+  async getFreshJwt(): Promise<string | undefined> {
+    if (this.currentJwt) await this.waitForFreshJwt();
+    return this.currentJwt;
+  }
+
   /** Returns how the client authenticates with the runtime, e.g. "magic" on public URLs. */
   get authContext(): AuthContext {
     return this._authContext;
