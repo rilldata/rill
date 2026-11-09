@@ -1,3 +1,5 @@
+import { TimeBoundedBuffer } from "@rilldata/web-common/lib/time-bounded-buffer";
+
 /**
  * Wraps the global ResizeObserver so that error telemetry can say which observer callbacks ran in the frame before
  * the browser reported "ResizeObserver loop completed with undelivered notifications."; the notice itself has no stack.
@@ -11,13 +13,19 @@ export interface ResizeCallbackRecord {
   targets: string[];
 }
 
-const MAX_RECORDS = 8;
+// The loop notice arrives in the same frame as the callbacks that caused it
+const RECORD_WINDOW_MS = 100;
+// A hard limit for frames in which many observers fire, such as a canvas with many charts
+const MAX_RECORDS = 50;
 const MAX_TARGETS_PER_CALLBACK = 3;
 const MAX_CLASSES = 3;
 const MAX_DESCRIPTION_CHARS = 80;
 
-// Descriptions only, never the elements themselves, so the tracker holds no DOM alive
-const recent: ResizeCallbackRecord[] = [];
+// Weak references to the resized elements, described only when a notice is reported, so the tracker holds no DOM alive
+const recent = new TimeBoundedBuffer<Array<WeakRef<Element>>>(
+  RECORD_WINDOW_MS,
+  MAX_RECORDS,
+);
 let installed = false;
 
 export function installResizeObserverTracker(): void {
@@ -34,25 +42,26 @@ export function installResizeObserverTracker(): void {
   window.ResizeObserver = class extends NativeResizeObserver {
     constructor(callback: ResizeObserverCallback) {
       super((entries, observer) => {
-        recent.push({
-          at: performance.now(),
-          targets: entries
+        recent.push(
+          entries
             .slice(0, MAX_TARGETS_PER_CALLBACK)
-            .map((entry) => describeElement(entry.target)),
-        });
-        if (recent.length > MAX_RECORDS) recent.shift();
-        callback(entries, observer);
+            .map((entry) => new WeakRef(entry.target)),
+        );
+        callback.call(observer, entries, observer);
       });
     }
   };
 }
 
-/** The callbacks that ran within the last `withinMs` milliseconds, most recent first. */
-export function getRecentResizeObserverCallbacks(
-  withinMs = 100,
-): ResizeCallbackRecord[] {
-  const now = performance.now();
-  return recent.filter((record) => now - record.at <= withinMs).reverse();
+/** The callbacks that ran within the last 100 milliseconds, most recent first. */
+export function getRecentResizeObserverCallbacks(): ResizeCallbackRecord[] {
+  return recent.recent().map(({ at, item }) => ({
+    at,
+    targets: item
+      .map((target) => target.deref())
+      .filter((element) => element !== undefined)
+      .map(describeElement),
+  }));
 }
 
 /** `tag#id.class.class`, plus the closest ancestor with an id when the element has none, kept short. */

@@ -38,8 +38,13 @@
 
   const { deploy } = featureFlags;
 
+  const shouldSendAnalytics =
+    data.metadata.analyticsEnabled &&
+    !import.meta.env.VITE_PLAYWRIGHT_TEST &&
+    !dev;
+
   // Before any component mounts, so ResizeObserver loop notices in error telemetry can name the callbacks that preceded them
-  installResizeObserverTracker();
+  if (shouldSendAnalytics) installResizeObserverTracker();
 
   queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
     errorEventHandler?.requestErrorEventHandler(error, query);
@@ -63,9 +68,6 @@
   let removeJavascriptListeners: () => void;
   onMount(async () => {
     const config = data.metadata;
-
-    const shouldSendAnalytics =
-      config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
       await initMetrics(config, host); // Proxies events through the Rill "intake" service

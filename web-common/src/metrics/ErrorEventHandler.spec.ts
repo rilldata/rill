@@ -378,7 +378,7 @@ describe("ErrorEventHandler.addJavascriptErrorListeners", () => {
       COMMON_USER_FIELDS,
       MetricsEventScreenName.Dashboard,
       expect.stringMatching(
-        /\nrequest: QueryService\/metricsViewAggregation \(revenue\)$/,
+        /^request: QueryService\/metricsViewAggregation \(revenue\)\n/,
       ),
       "[canceled] signal is aborted without reason [aborted request: QueryService/metricsViewAggregation]",
       PAGE_URL,

@@ -273,7 +273,8 @@ function describeJavascriptError(
   return {
     api,
     message: hint ? `${message} [${hint}]` : message,
-    stack: [stack, ...details]
+    // Details first, so that a long stack is what the cap cuts
+    stack: [...details, stack]
       .filter(Boolean)
       .join("\n")
       .slice(0, MAX_STACK_CHARS),
