@@ -84,6 +84,7 @@ class FeatureFlags {
   customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);
   personalCanvases = new FeatureFlag("user", false);
+  embeddedBookmarks = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 

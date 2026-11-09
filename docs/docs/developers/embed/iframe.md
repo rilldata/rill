@@ -327,7 +327,7 @@ The `user_email`, `attributes` and `external_user_id` parameters serve two purpo
 Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
-- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history and [scheduled reports](#scheduled-reports-in-embeds).
+- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history, [scheduled reports](#scheduled-reports-in-embeds) and [bookmarks](#bookmarks-in-embeds).
 
 :::warning Use one `external_user_id` per security context
 Rill stores per-user state, such as AI chat history and the identity that scheduled reports run as, by `external_user_id`. So the ID must identify one security context, not just one person. If the same person can open your app in several tenants, and the `user_email` or `attributes` you pass vary by tenant, include the tenant in the ID, for example `<tenant id>:<user id>`. Use a separator that can't appear in either part; otherwise IDs collide (user `a_b` in tenant `c` and user `a` in tenant `b_c` both become `a_b_c`).
@@ -362,6 +362,23 @@ Personal canvases created from an embed work as follows:
 - **They are listed in the embed.** The navigation bar has a menu to open, create and delete personal canvases, and the project home page lists them above the other dashboards.
 - **Only the owner can see them.** Personal canvases created from an embed can't be shared, so other embed users and project members can't see them. Rill project admins can also access them.
 - **They respect security policies.** Like any dashboard, a personal canvas only shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
+
+## Bookmarks in embeds
+
+Embed users can save the current state of a dashboard, such as its filters and time range, as a bookmark, and reopen it later. Bookmarks in embeds are disabled by default; enable them with the `embedded_bookmarks` [feature flag](/reference/project-files/rill-yaml#features). Feature flags can be templated with user attributes, so you can enable bookmarks for embed users only:
+
+```yaml
+features:
+  embedded_bookmarks: '{{ .user.embed }}'
+```
+
+Bookmarks created from an embed work as follows:
+- **They require `external_user_id`.** Each bookmark is owned by the external user who created it, so iframes without an `external_user_id` don't show bookmarks. Bookmarks are stored by `external_user_id`, so follow the [guidance on choosing it](#user-identity-in-embeds): a user who has several IDs has separate bookmarks for each, and users who share an ID share their bookmarks.
+- **They are managed from the navigation bar.** The bookmarks menu is in the embed's navigation bar, so it isn't shown when the navigation bar is hidden.
+- **Only the owner can see them.** Bookmarks created from an embed can't be shared, so other embed users and project members can't see them. Likewise, embed users don't see the shared and home bookmarks that project admins create in Rill Cloud.
+- **They follow the iframe's dashboards.** If the iframe is limited to one dashboard with `resource`, the embed user can only create and see bookmarks for that dashboard.
+- **They respect security policies.** A bookmark only stores the dashboard state; opening it shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
+- **They are limited to 100 per external user** in a project.
 
 ## Embedding the project vs embedding an individual dashboard
 

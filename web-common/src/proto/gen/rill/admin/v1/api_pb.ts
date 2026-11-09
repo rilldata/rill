@@ -10630,11 +10630,14 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 /**
  * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
  * the caller's own bookmarks plus shared and default bookmarks.
+ * Embed users only see their own personal bookmarks.
  *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
@@ -10825,6 +10828,8 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   resourceName = "";
 
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 6;
    */
   projectId = "";
@@ -18552,6 +18557,13 @@ export class Bookmark extends Message<Bookmark> {
   shared = false;
 
   /**
+   * Whether the caller can update and remove the bookmark.
+   *
+   * @generated from field: bool can_manage = 14;
+   */
+  canManage = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
    */
   createdOn?: Timestamp;
@@ -18580,6 +18592,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "can_manage", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);

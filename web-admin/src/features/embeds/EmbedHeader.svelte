@@ -19,6 +19,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
   import EmbedPersonalCanvasButton from "@rilldata/web-admin/features/embeds/EmbedPersonalCanvasButton.svelte";
+  import EmbedBookmarks from "@rilldata/web-admin/features/bookmarks/EmbedBookmarks.svelte";
+  import { embedBookmarksEnabled } from "@rilldata/web-admin/features/embeds/embed-bookmarks.ts";
+  import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { embedPersonalCanvasesEnabled } from "@rilldata/web-admin/features/embeds/embed-personal-canvases.ts";
   import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/personal-files/selectors.ts";
 
@@ -51,6 +55,14 @@
   $: personalCanvasDisplayName =
     $personalCanvasQuery.data?.canvas?.spec?.displayName ||
     activeResource?.name;
+
+  // Bookmarks are only supported on project dashboards, not on personal canvases.
+  $: bookmarkResource = onPersonalCanvasPage
+    ? null
+    : (getDashboardFromEmbedRoute($page.route.id, $page.params) as {
+        kind: ResourceKind.Explore | ResourceKind.Canvas;
+        name: string;
+      } | null);
 
   $: breadcrumbOptions = {
     options: dashboards?.reduce((map, { meta, explore, canvas }) => {
@@ -108,6 +120,13 @@
       <div class="flex-1"></div>
     {/if}
 
+    {#if $embedBookmarksEnabled && bookmarkResource}
+      {#key `${bookmarkResource.kind}:${bookmarkResource.name}`}
+        <div class="flex items-center gap-x-2 pr-2">
+          <EmbedBookmarks resource={bookmarkResource} />
+        </div>
+      {/key}
+    {/if}
     {#if $embedPersonalCanvasesEnabled}
       <EmbedPersonalCanvasButton />
     {/if}
