@@ -63,6 +63,8 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
+
+	connectorOAuth *connectorOAuthCaller
 }
 
 var (
@@ -91,6 +93,8 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		limiter:  limiter,
 		activity: activityClient,
 		ai:       ai.NewRunner(rt, activityClient),
+
+		connectorOAuth: newConnectorOAuthCaller(rt.Admin),
 	}
 
 	if opts.AuthEnable {

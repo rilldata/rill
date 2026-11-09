@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -59,11 +61,7 @@ func TestConnectorOAuthCaller(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			admin := &fakeOAuthAdmin{tok: tt.adminTok, err: tt.adminErr}
-			c := connectorOAuthCaller{
-				admin: func(ctx context.Context, instanceID string) (drivers.AdminService, func(), error) {
-					return admin, func() {}, nil
-				},
-			}
+			c := newFakeOAuthCaller(admin)
 			ctx := auth.WithClaims(context.Background(), tt.claims)
 
 			tok, err := c.Token(ctx, "inst", "dbx", "hash", false)
@@ -100,23 +98,149 @@ func TestMapGRPCErrorOAuth(t *testing.T) {
 	require.Equal(t, drivers.ErrOAuthUserRequired.Error(), st.Message())
 }
 
+func TestConnectorOAuthTokenCache(t *testing.T) {
+	ctxFor := func(user string) context.Context {
+		return auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserID: user, InteractiveUser: true})
+	}
+
+	t.Run("concurrent calls collapse", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{tok: "t", delay: 50 * time.Millisecond}
+		c := newFakeOAuthCaller(admin)
+		var wg sync.WaitGroup
+		for range 20 {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				tok, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+				require.NoError(t, err)
+				require.Equal(t, "t", tok.AccessToken)
+			}()
+		}
+		wg.Wait()
+		require.Equal(t, 1, admin.callCount())
+
+		_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+		require.NoError(t, err)
+		require.Equal(t, 1, admin.callCount())
+	})
+
+	t.Run("short-lived token is not cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{tok: "t", expiresOn: time.Now().Add(30 * time.Second)}
+		c := newFakeOAuthCaller(admin)
+		for range 2 {
+			_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+			require.NoError(t, err)
+		}
+		require.Equal(t, 2, admin.callCount())
+	})
+
+	t.Run("force refresh", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{tok: "old"}
+		c := newFakeOAuthCaller(admin)
+		_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+		require.NoError(t, err)
+
+		admin.tok = "new"
+		tok, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", true)
+		require.NoError(t, err)
+		require.Equal(t, "new", tok.AccessToken)
+		require.Equal(t, []bool{false, true}, admin.forceRefreshes)
+
+		tok, err = c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+		require.NoError(t, err)
+		require.Equal(t, "new", tok.AccessToken)
+		require.Equal(t, 2, admin.callCount())
+	})
+
+	t.Run("users are separate", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{tok: "t"}
+		c := newFakeOAuthCaller(admin)
+		for _, u := range []string{"a", "b", "a", "b"} {
+			tok, err := c.Token(ctxFor(u), "inst", "dbx", "hash", false)
+			require.NoError(t, err)
+			require.Equal(t, u, tok.UserID)
+		}
+		require.Equal(t, []string{"a", "b"}, admin.userIDs)
+	})
+
+	t.Run("errors are not cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: drivers.ErrNotFound}
+		c := newFakeOAuthCaller(admin)
+		for range 2 {
+			var authzErr *drivers.OAuthAuthorizationRequiredError
+			_, err := c.Token(ctxFor("u"), "inst", "dbx", "hash", false)
+			require.ErrorAs(t, err, &authzErr)
+		}
+		require.Equal(t, 2, admin.callCount())
+	})
+
+	t.Run("non-interactive probe is cached per instance", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: drivers.ErrNotImplemented}
+		c := newFakeOAuthCaller(admin)
+		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
+		for range 2 {
+			_, err := c.Token(ctx, "inst", "dbx", "hash", false)
+			require.ErrorIs(t, err, drivers.ErrNotImplemented)
+		}
+		require.Equal(t, 1, admin.callCount())
+	})
+
+	t.Run("transient probe error is not cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: errors.New("unavailable")}
+		c := newFakeOAuthCaller(admin)
+		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
+		for range 2 {
+			_, err := c.Token(ctx, "inst", "dbx", "hash", false)
+			require.ErrorIs(t, err, drivers.ErrOAuthUserRequired)
+		}
+		require.Equal(t, 2, admin.callCount())
+	})
+}
+
+func newFakeOAuthCaller(admin *fakeOAuthAdmin) *connectorOAuthCaller {
+	return newConnectorOAuthCaller(func(ctx context.Context, instanceID string) (drivers.AdminService, func(), error) {
+		return admin, func() {}, nil
+	})
+}
+
 var fakeOAuthExpiresOn = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
 
-// fakeOAuthAdmin is a drivers.AdminService that serves a fixed connector OAuth token and records the users it was requested for.
+// fakeOAuthAdmin is a drivers.AdminService that serves a fixed connector OAuth token and records the requests it received.
 type fakeOAuthAdmin struct {
 	drivers.AdminService
-	tok     string
-	err     error
-	userIDs []string
+	tok       string
+	err       error
+	expiresOn time.Time
+	delay     time.Duration
+
+	mu             sync.Mutex
+	userIDs        []string
+	forceRefreshes []bool
+}
+
+func (a *fakeOAuthAdmin) callCount() int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return len(a.forceRefreshes)
 }
 
 func (a *fakeOAuthAdmin) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
-	a.userIDs = append(a.userIDs, userID)
+	time.Sleep(a.delay)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if !slices.Contains(a.userIDs, userID) {
+		a.userIDs = append(a.userIDs, userID)
+	}
+	a.forceRefreshes = append(a.forceRefreshes, forceRefresh)
 	if a.err != nil {
 		return nil, a.err
 	}
 	if connector != "dbx" || configHash != "hash" {
 		return nil, errors.New("unexpected connector")
 	}
-	return &drivers.MCPOAuthToken{AccessToken: a.tok, ExpiresOn: fakeOAuthExpiresOn}, nil
+	exp := a.expiresOn
+	if exp.IsZero() {
+		exp = fakeOAuthExpiresOn
+	}
+	return &drivers.MCPOAuthToken{AccessToken: a.tok, ExpiresOn: exp}, nil
 }
