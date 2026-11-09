@@ -549,7 +549,7 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 			})
 		},
 		// External tools are never exposed through Rill's own MCP server.
-		RegisterWithMCPServer: func(srv *mcp.Server) {},
+		RegisterWithMCPServer: func(srv *mcp.Server, meta map[string]any) {},
 	}
 }
 

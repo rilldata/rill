@@ -18,6 +18,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -603,9 +604,27 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.resource", req.Resource),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 		attribute.String("args.state", req.State),
+		attribute.String("args.open", req.Open),
 	)
 
-	if !req.Navigation && req.Resource == "" {
+	// Decode the "rill_open" param of an open link from an email sent by a report created from an embed.
+	var open *embedopen.Payload
+	if req.Open != "" {
+		if req.Resource != "" {
+			return nil, status.Error(codes.InvalidArgument, "open can't be combined with resource")
+		}
+		// Only reports created from an embed can be opened, and they are owned by the embed user's external user ID.
+		if req.ExternalUserId == "" {
+			return nil, status.Error(codes.InvalidArgument, "open requires external_user_id")
+		}
+		var err error
+		open, err = embedopen.Decode(req.Open)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
+		}
+	}
+
+	if !req.Navigation && req.Resource == "" && open == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
@@ -653,6 +672,30 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			Type: req.Type,
 			Name: req.Resource,
 		}}
+	}
+
+	// When opening a report, the embed opens the explore dashboard it targets.
+	// If navigation is disabled, limit access to the report and its dashboard.
+	if open != nil {
+		// The open payload is not signed, so only allow opening a report created by the embed user.
+		// Otherwise, a user could edit the payload to open another user's report and gain access to its dashboard.
+		// Embed users are identified by their external user ID, and the virtual file's embed owner is the source of truth for ownership.
+		embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, open.Name)
+		if err != nil {
+			return nil, err
+		}
+		if embedInfo == nil || embedInfo.ownerID == "" || embedInfo.ownerID != subjectForExternalUser(req.ExternalUserId, proj.ID) {
+			return nil, status.Errorf(codes.PermissionDenied, "report %q was not created by the provided external_user_id", open.Name)
+		}
+
+		// Reports created from an embed only support explore dashboards (see yamlForManagedReport).
+		req.Type = runtime.ResourceKindExplore
+		if !req.Navigation {
+			overrideResources = []database.ResourceName{
+				{Type: runtime.ResourceKindReport, Name: open.Name},
+				{Type: runtime.ResourceKindExplore, Name: embedInfo.explore},
+			}
+		}
 	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
@@ -733,6 +776,14 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource
+	}
+
+	// Pass the decoded open payload, so the iframe doesn't need to decode it again.
+	if open != nil {
+		iframeQuery["open_report"] = open.Name
+		if !open.ExecutionTime.IsZero() {
+			iframeQuery["open_execution_time"] = open.ExecutionTime.UTC().Format(time.RFC3339)
+		}
 	}
 
 	if req.Theme != "" {

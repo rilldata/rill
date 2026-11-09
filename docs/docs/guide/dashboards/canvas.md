@@ -68,6 +68,24 @@ If no Explore dashboard exists, and/or you don't have [permissions to view it](/
 
 :::
 
+## Download a Component as PNG
+
+You can save any component on a canvas, including KPIs, charts, tables, text and images, as a PNG image. Hover over the component and click the three-dot menu in its top-right corner, next to the Explore button, then select **Download as PNG**. When you're editing the canvas, the same option is in the component's menu.
+
+![The Download as PNG option in a canvas component's menu](/img/explore/canvas/download-as-png-menu.png)
+
+A preview opens with the component at the size it has on the canvas. By default, the image has a header with the dashboard title, the exact time range (and the comparison period, if comparison is on), the time zone and any active filters, so the image makes sense on its own when you share it. A footer shows when the image was generated.
+
+![The Download as PNG preview with the dashboard title, time range, comparison period and a filter above a line chart](/img/explore/canvas/download-as-png-dialog.png)
+
+To export only the component, clear **Include dashboard title, time range and filters**. Click **Download PNG** to save the image.
+
+![The Download as PNG preview with the header turned off, showing only the line chart](/img/explore/canvas/download-as-png-dialog-no-header.png)
+
+:::note Embedded dashboards
+In an [embedded dashboard](/developers/embed/iframe), the image doesn't include the Rill name in the footer.
+:::
+
 ## Maps
 
 Map widgets plot a measure by location, as points or as shaded regions. Drag to pan, scroll or use the buttons in the top-right corner to zoom, and hover over a point or region to see its values. The map keeps your position when you change filters or the time range. To add a map to a dashboard, see [Map widget](/developers/build/dashboards/canvas-widgets/map).

@@ -243,6 +243,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           this.metricsViewName,
         ),
         this.parent.timeManager.hasTimeSeriesMap,
+        this.parent.timeManager.availableGrainsMap,
         this.specStore,
       ],
       ([
@@ -260,6 +261,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         minTimeGrain,
         metricsViewFilters,
         hasTimeSeriesMap,
+        availableGrainsMap,
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
@@ -277,9 +279,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           timeGrain = localGrainStore ?? globalGrainStore;
         } else if (
           localRequestedGrain &&
-          allowedGrainsForInterval(globalInterval, minTimeGrain).includes(
-            localRequestedGrain,
-          )
+          allowedGrainsForInterval(
+            globalInterval,
+            minTimeGrain,
+            availableGrainsMap.get(this.metricsViewName),
+          ).includes(localRequestedGrain)
         ) {
           timeGrain = localRequestedGrain;
         }

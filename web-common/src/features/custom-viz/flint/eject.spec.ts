@@ -197,6 +197,21 @@ describe("ejectToVegaSpec", () => {
     expect(stripped).not.toContain("bid_price_sum");
   });
 
+  it("templates the display name on columns derived from a bound measure", () => {
+    // The compiler titles a waterfall's running sums with the display name of the measure they
+    // sum, on columns of its own, and routes them through the measure's formatter.
+    const { json } = eject(
+      {
+        chartType: "Waterfall Chart",
+        encodings: { x: { field: "publisher" }, y: { field: "bid_price_sum" } },
+      },
+      ["publisher", "bid_price_sum"],
+    );
+
+    expect(json).toContain('"title": "{{ .fields.y_axis.display_name }}"');
+    expect(json).not.toContain("Sum of Bid Price");
+  });
+
   it("keeps hard-coded labels that only read like a display name", () => {
     // The waterfall legend is titled "Type" by the compiler, on an encoding bound to a derived
     // column. Only a title on the encoding that binds the field is treated as its display name.

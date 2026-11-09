@@ -307,6 +307,25 @@ iframe.contentWindow.postMessage({
 
 **Note:** The AI pane is only available for dashboards when the chat feature is enabled. If the AI pane is not available, calling this method will not cause an error, but the pane will not be shown.
 
+### `navigate({ type, name })`
+
+Navigates the embed to a page or dashboard.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 9,
+  method: "navigate",
+  params: { type: "explore", name: "dashboardName" }
+}, "*");
+```
+
+**Parameters:**
+- `type` (string): One of:
+  - `"page"`: A page of the embed; `name` is `"home"` for the project home page or `"reports"` for the user's scheduled reports.
+  - `"explore"`: An explore dashboard; `name` is the dashboard name.
+  - `"canvas"`: A canvas dashboard; `name` is the dashboard name.
+- `name` (string): The page or dashboard to navigate to.
+
 ## Notifications
 
 Notifications are sent **from the iframe** to the parent window. These do not include an `id`.

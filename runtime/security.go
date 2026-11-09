@@ -415,7 +415,8 @@ func (p *securityEngine) resolveRulesForResource(instanceID, environment string,
 	// The canvas's conditions are evaluated lazily when its content is pruned.
 	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
 	if res.CanAccess() && (r.Meta.Name.Kind == ResourceKindCanvas || r.Meta.Name.Kind == ResourceKindComponent) {
-		visibility, err := p.visibilityConditions(instanceID, environment, vars, claims)
+		// `if` conditions never access project variables (the parser rejects references to them), so none are passed.
+		visibility, err := p.visibilityConditions(instanceID, environment, nil, claims)
 		if err != nil {
 			return nil, err
 		}
@@ -738,18 +739,8 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 		}
 	}
 
-	// Extract the calling user id
-	var userID string
-	if len(claims.UserAttributes) != 0 {
-		userID, _ = claims.UserAttributes["id"].(string)
-	}
-	ownedByUser := userID != "" && userID == spec.Annotations["admin_owner_user_id"]
-
-	shared, ok := spec.Annotations["admin_shared"]
-	sharedBool := ok && shared == "true"
-
 	// Allow if the calling user is the owner or if the canvas is shared
-	if spec.Annotations != nil && (ownedByUser || sharedBool) {
+	if adminOwnerCanAccess(claims, spec.Annotations, false) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
@@ -761,6 +752,27 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 	}
 
 	return nil
+}
+
+func adminOwnerCanAccess(claims *SecurityClaims, annotations map[string]string, skipShared bool) bool {
+	var allow bool
+	if embedOwnerID := annotations["admin_embed_owner_id"]; embedOwnerID != "" {
+		// Canvases created from an embed are only accessible to admins and the embed user who created them.
+		// The embed user is identified by the subject of the embed's runtime JWT, not by the "id" attribute,
+		// since the embedder controls the attributes.
+		// Sharing is not supported for embed-owned canvases, so "admin_shared" is ignored.
+		allow = claims.UserID != "" && claims.UserID == embedOwnerID
+	} else {
+		// Extract the calling user id
+		var userID string
+		if len(claims.UserAttributes) != 0 {
+			userID, _ = claims.UserAttributes["id"].(string)
+		}
+		ownedByUser := userID != "" && userID == annotations["admin_owner_user_id"]
+		sharedBool := !skipShared && annotations["admin_shared"] == "true"
+		allow = ownedByUser || sharedBool
+	}
+	return allow
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.

@@ -7,6 +7,7 @@
   export let project: string;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
   export let open = false;
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
@@ -22,6 +23,7 @@
       {manageProjectAdmins}
       {manageOrgAdmins}
       {manageOrgMembers}
+      {readOrgMembers}
       enabled={open}
     />
   </Dialog.Content>

@@ -1252,7 +1252,7 @@ export class MetricsViewAggregationDimension extends Message<MetricsViewAggregat
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -2287,7 +2287,7 @@ export class TimeRange extends Message<TimeRange> {
   /**
    * @generated from field: rill.runtime.v1.TimeGrain round_to_grain = 5;
    */
-  roundToGrain = TimeGrain.UNSPECIFIED;
+  roundToGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -2631,7 +2631,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 6;
    */
-  timeGranularity = TimeGrain.UNSPECIFIED;
+  timeGranularity = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -2992,7 +2992,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
    */
-  timeGranularity = TimeGrain.UNSPECIFIED;
+  timeGranularity = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -3991,7 +3991,7 @@ export class ResolvedTimeRange extends Message<ResolvedTimeRange> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain grain = 3;
    */
-  grain = TimeGrain.UNSPECIFIED;
+  grain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * The time dimension that was used to resolve the time range.
@@ -4081,7 +4081,7 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -4803,7 +4803,7 @@ export class ColumnRollupIntervalResponse extends Message<ColumnRollupIntervalRe
    *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 3;
    */
-  interval = TimeGrain.UNSPECIFIED;
+  interval = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<ColumnRollupIntervalResponse>) {
     super();
@@ -5747,7 +5747,7 @@ export class ColumnTimeGrainResponse extends Message<ColumnTimeGrainResponse> {
   /**
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 1;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<ColumnTimeGrainResponse>) {
     super();
@@ -6520,7 +6520,7 @@ export class TimeSeriesTimeRange extends Message<TimeSeriesTimeRange> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 4;
    */
-  interval = TimeGrain.UNSPECIFIED;
+  interval = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<TimeSeriesTimeRange>) {
     super();

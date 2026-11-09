@@ -17,6 +17,7 @@
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
@@ -55,7 +56,8 @@
 
   let metricsViewName = $derived(leaderboardProperties.metrics_view);
   let leaderboardMeasureNames = $derived(leaderboardProperties.measures ?? []);
-  let dimensionNames = $derived(leaderboardProperties.dimensions ?? []);
+  // The YAML can list a dimension twice, and the leaderboards are keyed by dimension name.
+  let dimensionNames = $derived(dedupe(leaderboardProperties.dimensions ?? []));
   let numRows = $derived(leaderboardProperties.num_rows ?? 7);
 
   let metricsViewQuery = $derived(

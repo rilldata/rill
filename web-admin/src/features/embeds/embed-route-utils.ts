@@ -16,7 +16,8 @@ export function getDashboardFromEmbedRoute(
     return { name: params.name, kind: ResourceKind.Explore };
   }
 
-  if (routeId.includes("/canvas/")) {
+  // Personal canvases are canvases created by the embed user.
+  if (routeId.includes("/canvas/") || routeId.includes("/personal/")) {
     return { name: params.name, kind: ResourceKind.Canvas };
   }
 

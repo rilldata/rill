@@ -15,7 +15,6 @@
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createQueryServiceMetricsViewAggregation,
@@ -153,8 +152,10 @@
     },
     {
       query: {
+        // Without a comparison interval the query would cover all time.
         enabled:
-          comparisonTimeRange &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end &&
           showComparison &&
           isValid &&
           supportsTotal &&
@@ -174,14 +175,22 @@
       exactMeasureNames: tsExactMeasureNames,
       timeStart: start,
       timeEnd: end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
-        enabled: !!start && !!end && isValid && showSparkline && visible,
+        // The sparkline renders only once the grain is known, so wait for it
+        // instead of querying at a fallback grain.
+        enabled:
+          !!start &&
+          !!end &&
+          !!timeGrain &&
+          isValid &&
+          showSparkline &&
+          visible,
       },
     },
   );
@@ -195,15 +204,18 @@
       exactMeasureNames: tsExactMeasureNames,
       timeStart: comparisonTimeRange?.start,
       timeEnd: comparisonTimeRange?.end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
+        // Wait for the comparison interval and the grain, as the primary sparkline does.
         enabled:
-          comparisonTimeRange &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end &&
+          !!timeGrain &&
           isValid &&
           showSparkline &&
           showComparison &&
