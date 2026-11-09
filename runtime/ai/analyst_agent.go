@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -43,6 +44,7 @@ type AnalystAgentArgs struct {
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
 	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
 	IsReport            bool                    `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
+	IsAlert             bool                    `json:"is_alert" yaml:"is_alert" jsonschema:"Flag indicating this judges an AI alert's condition. The prompt is the condition, and the agent ends with a verdict."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -55,6 +57,35 @@ func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
 
 type AnalystAgentResult struct {
 	Response string `json:"response"`
+	// Verdict is set when the agent judged an AI alert's condition (see AnalystAgentArgs.IsAlert).
+	Verdict *AlertVerdict `json:"verdict,omitempty"`
+}
+
+// AlertVerdict is the analyst's verdict on an AI alert's condition.
+type AlertVerdict struct {
+	Met    bool   `json:"met" jsonschema:"True only if the data shows that the condition holds."`
+	Reason string `json:"reason" jsonschema:"One to three plain sentences explaining the verdict with the figures it rests on."`
+}
+
+// UnmarshalJSON rejects a verdict with a missing or empty field.
+// A malformed verdict must surface as an error, not decode silently to "not met".
+func (v *AlertVerdict) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Met    *bool   `json:"met"`
+		Reason *string `json:"reason"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("malformed alert verdict: %w", err)
+	}
+	if raw.Met == nil {
+		return errors.New(`malformed alert verdict: missing "met"`)
+	}
+	if raw.Reason == nil || strings.TrimSpace(*raw.Reason) == "" {
+		return errors.New(`malformed alert verdict: missing "reason"`)
+	}
+	v.Met = *raw.Met
+	v.Reason = *raw.Reason
+	return nil
 }
 
 func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
@@ -195,7 +226,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
-	if !args.DisableCharts {
+	// Judging an AI alert offers no charts: a verdict cannot show one,
+	// and Gemini rejects a request that pairs the verdict's output schema with both query_metrics_view and create_chart.
+	if !args.DisableCharts && !args.IsAlert {
 		tools = append(tools, CreateChartName)
 	}
 	if len(skills) > 0 {
@@ -237,6 +270,23 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		dashboardFilters[metricsViewNames[0]] = args.Where
 	}
 	ctx = WithDashboardFilters(ctx, dashboardFilters)
+
+	// Judging an AI alert ends with a structured verdict instead of a free-form answer.
+	// The loop fails rather than force a verdict after the tool budget runs out, since that verdict would not rest on the data.
+	if args.IsAlert {
+		verdict := &AlertVerdict{}
+		err = s.Complete(ctx, "Analyst loop", verdict, &CompleteOptions{
+			Messages:             messages,
+			Tools:                tools,
+			MaxIterations:        20,
+			UnwrapCall:           true,
+			FailOnIterationLimit: true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to reach a verdict on the alert's condition: %w", err)
+		}
+		return &AnalystAgentResult{Response: verdict.Reason, Verdict: verdict}, nil
+	}
 
 	// Run an LLM tool call loop
 	var response string
@@ -304,6 +354,7 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 		"measures":         strings.Join(measuresQuoted, ", "),
 		"forked":           session.Forked(),
 		"is_report":        args.IsReport,
+		"is_alert":         args.IsAlert,
 		"now":              time.Now(),
 		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 		"external_servers": session.ExternalServerPromptData(ctx, "analyst"),
@@ -346,9 +397,17 @@ You are operating in an automated scheduled insight report mode where you will c
 {{ if .is_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically.{{ end }}
 {{ end }}
 
+{{ if .is_alert }}
+You are operating as the judge of an automated alert, without additional user input.
+The alert's condition is given at the end of this message: a statement about the data that either holds or does not.
+Query the data to decide whether the condition holds. Do not ask questions, since nobody will answer them.
+Your final response is a verdict: "met" is true only if the data shows that the condition holds, and "reason" explains the verdict in one to three plain sentences with the figures it rests on, without citation links.
+{{ if (and .time_start .time_end) }}Relative expressions in the condition, such as "this month", "this week", "today", "yesterday" or "compared with the previous period", refer to the time range start={{.time_start}}, end={{.time_end}}, not to today's date.{{ else }}Relative expressions in the condition, such as "this month", "this week", "today", "yesterday" or "compared with the previous period", refer to the latest data available, not to today's date.{{ end }}
+{{ end }}
+
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view(s) {{ .metrics_views }}.
-{{ if not .is_report }}The user is actively viewing this dashboard, and it's what they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
+{{ if not (or .is_report .is_alert) }}The user is actively viewing this dashboard, and it's what they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
 Here is an overview of the settings applied to the dashboard:
@@ -443,7 +502,7 @@ If a memory conflicts with the user's current request, follow the current reques
 {{ end }}
 
 {{ if .is_prompt }}
-The user's request:
+{{ if .is_alert }}The alert's condition:{{ else }}The user's request:{{ end }}
 {{ .prompt }}
 {{ end }}
 `, data)

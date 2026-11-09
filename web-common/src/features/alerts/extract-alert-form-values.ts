@@ -1,3 +1,9 @@
+import {
+  AIConditionType,
+  CriteriaConditionType,
+  getAggregationRequestFromAIAlertProperties,
+  isAIAlertSpec,
+} from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
@@ -98,17 +104,29 @@ export function getExistingAlertInitialFormValues(
   alertSpec: V1AlertSpec,
   metricsViewName: string,
 ): AlertFormValues {
-  const queryArgsJson = JSON.parse(
-    (alertSpec.resolverProperties?.query_args_json ??
-      alertSpec.queryArgsJson) as string,
-  ) as V1MetricsViewAggregationRequest;
+  // An AI alert keeps its data context in the ai resolver's properties, which may have been written without the dialog (through the API).
+  const isAI = isAIAlertSpec(alertSpec);
+  const queryArgsJson = isAI
+    ? getAggregationRequestFromAIAlertProperties(
+        alertSpec.resolverProperties ?? {},
+        metricsViewName,
+      )
+    : (JSON.parse(
+        (alertSpec.resolverProperties?.query_args_json ??
+          alertSpec.queryArgsJson) as string,
+      ) as V1MetricsViewAggregationRequest);
 
-  const exploreName = getExploreName(
-    alertSpec.annotations?.web_open_path ?? "",
-  );
+  let exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
+  if (isAI && !exploreName) {
+    exploreName = (alertSpec.resolverProperties?.explore as string) ?? "";
+  }
 
   return {
     name: alertSpec.displayName as string,
+    conditionType: isAI ? AIConditionType : CriteriaConditionType,
+    aiCondition: isAI
+      ? ((alertSpec.resolverProperties?.prompt as string) ?? "")
+      : "",
     exploreName: exploreName ?? metricsViewName,
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",

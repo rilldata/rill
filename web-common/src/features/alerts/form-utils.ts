@@ -1,4 +1,12 @@
 import {
+  AIAlertResolver,
+  AIConditionType,
+  type AlertConditionType,
+  CriteriaConditionType,
+  getAIAlertResolverProperties,
+  isAIAlertSpec,
+} from "@rilldata/web-common/features/alerts/ai-alert-utils";
+import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
@@ -16,6 +24,7 @@ import {
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
+  V1AlertSpec,
   V1ExploreSpec,
   V1ExportFormat,
   V1Expression,
@@ -27,8 +36,14 @@ import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
 import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
 import { object, array, string } from "yup";
 
+// An alert fires either on criteria over a measure, or when the analyst judges that an AI alert's Condition holds.
+export type { AlertConditionType };
+
 export type AlertFormValues = {
   name: string;
+  conditionType: AlertConditionType;
+  // The AI alert's Condition, used when conditionType is AIConditionType.
+  aiCondition: string;
   measure: string;
   splitByDimension: string;
   criteria: MeasureFilterEntry[];
@@ -127,41 +142,99 @@ export function getAlertQueryArgsFromFormValues(
   };
 }
 
+/**
+ * The resolver options the alert dialog saves: an AI alert's ai resolver properties, or a criteria alert's metrics query.
+ * `previousSpec` is the alert being edited. When it already was an AI alert, the ai resolver properties the dialog does not edit survive;
+ * a criteria alert's properties (query_name, query_args_json) belong to another resolver and are dropped.
+ */
+export function getAlertResolverOptions(
+  values: AlertFormValues,
+  where: V1Expression | undefined,
+  timeControlState: TimeControlState,
+  exploreSpec: V1ExploreSpec,
+  previousSpec?: Pick<V1AlertSpec, "resolver" | "resolverProperties">,
+):
+  | { resolver: string; resolverProperties: Record<string, unknown> }
+  | { queryName: string; queryArgsJson: string } {
+  if (values.conditionType === AIConditionType) {
+    return {
+      resolver: AIAlertResolver,
+      resolverProperties: getAIAlertResolverProperties({
+        condition: values.aiCondition,
+        exploreName: values.exploreName,
+        measure: values.measure,
+        splitByDimension: values.splitByDimension,
+        where,
+        selectedTimeRange: timeControlState.selectedTimeRange,
+        defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
+        timeZone: timeControlState.selectedTimezone,
+        previous: isAIAlertSpec(previousSpec)
+          ? previousSpec?.resolverProperties
+          : undefined,
+      }),
+    };
+  }
+  return {
+    queryName: "MetricsViewAggregation",
+    queryArgsJson: JSON.stringify(
+      getAlertQueryArgsFromFormValues(
+        values,
+        where,
+        timeControlState,
+        exploreSpec,
+      ),
+    ),
+  };
+}
+
 export const alertFormValidationSchema = yup(
   object({
     name: string().required("Required"),
-    measure: string().required("Required"),
-    criteria: array().of(
-      object().shape({
-        measure: string().required("Required"),
-        operation: string().required("Required"),
-        type: string().required("Required"),
-        value1: string()
-          .required("Required")
-          .test((value, context) => {
-            // `number` doest allow for string representation of number with the superforms yup adapter.
-            // So we use `string` and check for NaN
-            // TODO: do a greater refactor changing the type of value1 in all the places to a number
-            const numValue = Number(value);
-            if (Number.isNaN(numValue)) {
-              return context.createError({
-                message: `${context.path} must be a valid number.`,
-              });
-            }
+    conditionType: string().oneOf([CriteriaConditionType, AIConditionType]),
+    aiCondition: string().when("conditionType", {
+      is: AIConditionType,
+      then: (s) => s.trim().required("Required"),
+    }),
+    // An AI alert's measure only narrows what the AI looks at, so it is optional; its criteria are not used.
+    measure: string().when("conditionType", {
+      is: AIConditionType,
+      otherwise: (s) => s.required("Required"),
+    }),
+    criteria: array().when("conditionType", {
+      is: AIConditionType,
+      otherwise: (s) =>
+        s.of(
+          object().shape({
+            measure: string().required("Required"),
+            operation: string().required("Required"),
+            type: string().required("Required"),
+            value1: string()
+              .required("Required")
+              .test((value, context) => {
+                // `number` doest allow for string representation of number with the superforms yup adapter.
+                // So we use `string` and check for NaN
+                // TODO: do a greater refactor changing the type of value1 in all the places to a number
+                const numValue = Number(value);
+                if (Number.isNaN(numValue)) {
+                  return context.createError({
+                    message: `${context.path} must be a valid number.`,
+                  });
+                }
 
-            const criteria = context.parent as MeasureFilterEntry;
-            if (
-              criteria.type === MeasureFilterType.PercentOfTotal &&
-              (numValue < 0 || numValue > 100)
-            ) {
-              return context.createError({
-                message: `${context.path} must be a value between 0 and 100.`,
-              });
-            }
-            return true;
+                const criteria = context.parent as MeasureFilterEntry;
+                if (
+                  criteria.type === MeasureFilterType.PercentOfTotal &&
+                  (numValue < 0 || numValue > 100)
+                ) {
+                  return context.createError({
+                    message: `${context.path} must be a value between 0 and 100.`,
+                  });
+                }
+                return true;
+              }),
           }),
-      }),
-    ),
+        ),
+    }),
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
@@ -176,7 +249,7 @@ export const alertFormValidationSchema = yup(
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
-  ["criteria", "criteriaOperation"],
+  ["criteria", "criteriaOperation", "aiCondition"],
   ["name", "snooze", "slackUsers", "emailRecipients"],
 ];
 
@@ -191,8 +264,12 @@ export function checkIsTabValid(
   let hasErrors: boolean;
 
   if (tabIndex === 0) {
-    hasRequiredFields = formValues.measure !== "";
+    hasRequiredFields =
+      formValues.conditionType === AIConditionType || formValues.measure !== "";
     hasErrors = !!errors.measure;
+  } else if (tabIndex === 1 && formValues.conditionType === AIConditionType) {
+    hasRequiredFields = formValues.aiCondition.trim() !== "";
+    hasErrors = !!errors.aiCondition;
   } else if (tabIndex === 1) {
     hasRequiredFields = true;
     formValues.criteria.forEach((criteria) => {
