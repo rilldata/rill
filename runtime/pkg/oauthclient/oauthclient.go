@@ -59,6 +59,9 @@ type Client struct {
 type DiscoverOptions struct {
 	ServerURL   string
 	RedirectURL string
+	// Issuer is the authorization server, for resources without protected resource metadata (e.g. Databricks).
+	// If set, the resource's metadata is not looked up and no resource indicator is sent.
+	Issuer string
 	// ClientID and ClientSecret are pre-registered client credentials, used when the authorization server does not support dynamic client registration.
 	ClientID     string
 	ClientSecret string
@@ -79,10 +82,16 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 
 	// Find the authorization server through the protected resource metadata at its well-known URLs.
 	// The metadata must declare the resource its URL was derived from (RFC 9728 section 3.3), which then becomes the resource indicator.
-	var issuer string
+	issuer := opts.Issuer
 	var scopes []string
 	var prmErrs []error
-	for _, c := range protectedResourceMetadataCandidates(resource) {
+	var candidates []protectedResourceMetadataCandidate
+	if issuer == "" {
+		candidates = protectedResourceMetadataCandidates(resource)
+	} else {
+		resource = ""
+	}
+	for _, c := range candidates {
 		prm, err := oauthex.GetProtectedResourceMetadata(ctx, c.url, c.resource, hc)
 		if err != nil {
 			prmErrs = append(prmErrs, err)
@@ -107,7 +116,15 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 		issuer = u.Scheme + "://" + u.Host
 	}
 
-	meta, err := auth.GetAuthServerMetadata(ctx, issuer, hc)
+	var meta *oauthex.AuthServerMeta
+	var err error
+	if opts.Issuer != "" {
+		// Servers like Databricks only serve metadata appended to the issuer's path.
+		meta, err = oauthex.GetAuthServerMeta(ctx, strings.TrimSuffix(issuer, "/")+"/.well-known/oauth-authorization-server", issuer, hc)
+	}
+	if meta == nil && err == nil {
+		meta, err = auth.GetAuthServerMetadata(ctx, issuer, hc)
+	}
 	if err == nil && meta == nil {
 		err = errors.New("no metadata found at its well-known URLs")
 	}
@@ -208,7 +225,10 @@ func (c *Client) AuthCodeURL(state, verifier string) string {
 	for k, v := range c.AuthorizationParams {
 		opts = append(opts, oauth2.SetAuthURLParam(k, v))
 	}
-	opts = append(opts, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("resource", c.Resource))
+	opts = append(opts, oauth2.S256ChallengeOption(verifier))
+	if c.Resource != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("resource", c.Resource))
+	}
 	return c.oauth2Config().AuthCodeURL(state, opts...)
 }
 
@@ -243,7 +263,11 @@ func (c *Client) ValidateIssuer(iss string) error {
 // Exchange exchanges an authorization code for a token.
 func (c *Client) Exchange(ctx context.Context, code, verifier string, hc *http.Client) (*oauth2.Token, error) {
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, hc)
-	tok, err := c.oauth2Config().Exchange(ctx, code, oauth2.VerifierOption(verifier), oauth2.SetAuthURLParam("resource", c.Resource))
+	opts := []oauth2.AuthCodeOption{oauth2.VerifierOption(verifier)}
+	if c.Resource != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("resource", c.Resource))
+	}
+	tok, err := c.oauth2Config().Exchange(ctx, code, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange authorization code: %w", err)
 	}
@@ -260,7 +284,9 @@ func (c *Client) Refresh(ctx context.Context, tok *oauth2.Token, hc *http.Client
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tok.RefreshToken},
-		"resource":      {c.Resource},
+	}
+	if c.Resource != "" {
+		form.Set("resource", c.Resource)
 	}
 	// The scope is omitted, so the new token has the scopes of the original grant (RFC 6749 section 6),
 	// which may be fewer than the scopes requested.

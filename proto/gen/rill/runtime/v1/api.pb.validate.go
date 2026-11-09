@@ -10219,6 +10219,8 @@ func (m *ConnectorOAuthConfig) validate(all bool) error {
 
 	// no validation rules for AuthorizationParams
 
+	// no validation rules for Issuer
+
 	if len(errors) > 0 {
 		return ConnectorOAuthConfigMultiError(errors)
 	}

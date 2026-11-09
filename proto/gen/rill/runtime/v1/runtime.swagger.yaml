@@ -5592,6 +5592,11 @@ definitions:
         additionalProperties:
           type: string
         description: Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
+      issuer:
+        type: string
+        description: |-
+          Issuer of the authorization server, for resources that serve no protected resource metadata (e.g. Databricks).
+          If set, discovery skips the resource's metadata and no resource indicator is sent.
     description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object
