@@ -16,7 +16,10 @@ import { flattenPivotData, isPlaceholderRow } from "./pivot-flatten";
 
 // Rows a flat table exports at most. Flat tables page their rows in as the
 // viewer scrolls, so the export queries them again up to this cap rather than
-// exporting only the pages the viewer happened to see.
+// exporting only the pages the viewer happened to see. The cap is the runtime's
+// default limit on the rows of one interactive query
+// (`rill.interactive_sql_row_limit`), which rejects any request above it, so no
+// request here may ask for more.
 export const MAX_FLAT_TABLE_ROWS = 10_000;
 
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -33,19 +36,40 @@ export async function tableExportTable(
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<ExportTable> {
   if (config.isFlat && hasMoreRows(state, config)) {
-    const rows = await loadFlatRows(
-      component,
-      config,
-      MAX_FLAT_TABLE_ROWS + 1,
-      timeoutMs,
-    );
-    return {
-      ...flattenPivotData(
-        { ...state, data: rows.slice(0, MAX_FLAT_TABLE_ROWS) },
+    try {
+      const rows = await loadFlatRows(
+        component,
         config,
-      ),
-      moreRows: rows.length > MAX_FLAT_TABLE_ROWS,
-    };
+        MAX_FLAT_TABLE_ROWS,
+        0,
+        timeoutMs,
+      );
+      // A full page may be the whole table: one row past it settles that. If
+      // that row can't be loaded, the sheet says it may not be complete.
+      const moreRows =
+        rows.length >= MAX_FLAT_TABLE_ROWS &&
+        (await loadFlatRows(
+          component,
+          config,
+          1,
+          MAX_FLAT_TABLE_ROWS,
+          timeoutMs,
+        ).then(
+          (next) => next.length > 0,
+          () => true,
+        ));
+      return {
+        ...flattenPivotData({ ...state, data: rows }, config),
+        moreRows,
+      };
+    } catch (e) {
+      // For example an instance with a lower row limit. The rows on screen
+      // still make a valid sheet, marked as partial, so the workbook downloads.
+      console.warn(
+        `Failed to load the rows of table "${component.id}"; exporting the rows on screen`,
+        e,
+      );
+    }
   }
   return {
     ...flattenPivotData(state, config),
@@ -72,12 +96,13 @@ export function hasMoreRows(
   );
 }
 
-// Queries the rows of a flat table from the first row, sorted like the table,
+// Queries `limit` rows of a flat table from `offset`, sorted like the table,
 // through the same query builder the table uses.
 function loadFlatRows(
   component: BaseCanvasComponent,
   config: PivotDataStoreConfig,
   limit: number,
+  offset: number,
   timeoutMs: number,
 ): Promise<PivotDataRow[]> {
   // The builder's type is a union of its store types; this is the one the flat table gets.
@@ -96,7 +121,7 @@ function loadFlatRows(
     {},
     [],
     String(limit),
-    "0",
+    String(offset),
   ) as Readable<QueryObserverResult<
     V1MetricsViewAggregationResponse,
     ConnectError

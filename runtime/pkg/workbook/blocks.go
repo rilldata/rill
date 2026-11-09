@@ -82,11 +82,12 @@ type geometry struct {
 	x, y, width, height int
 }
 
-// clampGeometry caps a block's geometry and insets it, so adjacent blocks keep a visible gap.
+// clampGeometry caps a block's size and insets it, so adjacent blocks keep a visible gap.
+// The position is kept as sent (validate bounds it): moving a block would put it on top of another one.
 func clampGeometry(g *runtimev1.WorkbookGeometry) geometry {
 	return geometry{
-		x:      min(int(g.XPx), maxBlockSidePx) + blockInsetPx,
-		y:      min(int(g.YPx), maxBlockSidePx) + blockInsetPx,
+		x:      int(g.XPx) + blockInsetPx,
+		y:      int(g.YPx) + blockInsetPx,
 		width:  max(1, min(int(g.WidthPx), maxBlockSidePx)-2*blockInsetPx),
 		height: max(1, min(int(g.HeightPx), maxBlockSidePx)-2*blockInsetPx),
 	}

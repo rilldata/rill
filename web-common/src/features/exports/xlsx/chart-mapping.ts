@@ -91,6 +91,19 @@ function isSplitDimension(color: unknown): color is FieldConfig {
 // Maps a rendered chart to the data sheet behind it and, where Excel has an
 // equivalent, a native chart bound to that sheet.
 export function mapChart(input: ChartExportInput): ChartExport {
+  const mapped = mapByType(input);
+  // A chart with nothing to plot (no rows, or a split with no values and so no
+  // series) has no native chart: its block says "No data", like the canvas does.
+  if (
+    mapped.chart &&
+    (mapped.table.rows.length === 0 || mapped.chart.series.length === 0)
+  ) {
+    return { table: mapped.table, chart: undefined };
+  }
+  return mapped;
+}
+
+function mapByType(input: ChartExportInput): ChartExport {
   switch (input.chartType) {
     case "bar_chart":
     case "line_chart":

@@ -19,6 +19,7 @@ import {
   WorkbookTableBlock,
   WorkbookTextBlock,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
+import { marked, type Token, type Tokens } from "marked";
 import { get } from "svelte/store";
 import type { MeasuredBlock } from "../pdf/capture";
 import { hasNativeChart, mapChart } from "./chart-mapping";
@@ -704,21 +705,108 @@ export function jsonCell(value: unknown): JsonValue {
   }
 }
 
-// Reduces markdown to plain text for a cell: headings, emphasis, code, links
-// and images lose their syntax; HTML tags are dropped. Emphasis markers only
-// count at word boundaries, so snake_case names and stray asterisks survive.
+// Reduces markdown to the plain text a cell shows, by walking the token tree of
+// the parser the markdown component renders with: headings, emphasis, code,
+// links and images keep their text, list items get a marker and raw HTML is
+// dropped. Blocks keep a blank line between them where the source had one.
 export function stripMarkdown(markdown: string): string {
-  return markdown
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]+>/g, "")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "• ")
-    .replace(/^\s*>\s?/gm, "")
-    .replace(/(\*\*|__)(\S(?:.*?\S)?)\1/g, "$2")
-    .replace(/(^|[^\w*])\*(\S(?:.*?\S)?)\*(?![\w*])/g, "$1$2")
-    .replace(/(^|[^\w])_(\S(?:.*?\S)?)_(?!\w)/g, "$1$2")
-    .replace(/`([^`]*)`/g, "$1")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return blocksText(marked.lexer(markdown)).trim();
+}
+
+function blocksText(tokens: Token[]): string {
+  let text = "";
+  let separator = "";
+  for (const token of tokens) {
+    if (token.type === "space") {
+      separator = "\n\n";
+      continue;
+    }
+    const block = blockText(token);
+    if (block === undefined) continue;
+    if (text) text += separator;
+    text += block;
+    separator = token.raw.endsWith("\n\n") ? "\n\n" : "\n";
+  }
+  return text;
+}
+
+// The text of a block-level token, or undefined for one that shows no text.
+function blockText(token: Token): string | undefined {
+  switch (token.type) {
+    case "html":
+    case "hr":
+    case "def":
+      return undefined;
+    case "blockquote":
+      return blocksText((token as Tokens.Blockquote).tokens);
+    case "list": {
+      const list = token as Tokens.List;
+      const start = Number(list.start) || 1;
+      return list.items
+        .map(
+          (item, i) =>
+            (list.ordered ? `${start + i}. ` : "• ") + blocksText(item.tokens),
+        )
+        .join("\n");
+    }
+    case "code":
+      return (token as Tokens.Code).text;
+    case "table": {
+      const table = token as Tokens.Table;
+      return [table.header, ...table.rows]
+        .map((cells) =>
+          cells.map((cell) => inlineText(cell.tokens)).join(" | "),
+        )
+        .join("\n");
+    }
+    default:
+      return inlineText([token]);
+  }
+}
+
+function inlineText(tokens: Token[]): string {
+  let text = "";
+  for (const token of tokens) {
+    const { tokens: children, text: own } = token as {
+      tokens?: Token[];
+      text?: string;
+    };
+    switch (token.type) {
+      case "html":
+        break;
+      case "br":
+        text += "\n";
+        break;
+      case "codespan":
+        text += own ?? "";
+        break;
+      default:
+        text += children ? inlineText(children) : decodeEntities(own ?? "");
+    }
+  }
+  return text;
+}
+
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
+// Markdown text may spell characters as HTML entities; a cell shows the characters.
+function decodeEntities(text: string): string {
+  return text.replace(
+    /&(#\d+|#x[0-9a-f]+|[a-z]+);/gi,
+    (entity, name: string) => {
+      if (name[0] !== "#") return HTML_ENTITIES[name.toLowerCase()] ?? entity;
+      const code =
+        name[1].toLowerCase() === "x"
+          ? parseInt(name.slice(2), 16)
+          : parseInt(name.slice(1), 10);
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+    },
+  );
 }

@@ -160,6 +160,32 @@ describe("stripMarkdown", () => {
       "snake_case_name costs 2 * 3 * 4, really",
     );
   });
+
+  it("drops raw HTML and decodes entities", () => {
+    expect(
+      stripMarkdown(
+        "Spend <b>up</b> 5% &amp; CPA &lt; $2\n\n<div>hidden block</div>\n\nDone",
+      ),
+    ).toBe("Spend up 5% & CPA < $2\n\nDone");
+  });
+
+  it("leaves text that only looks like a tag as literal cell text", () => {
+    // The parser sees one tag inside the broken one; what remains is plain
+    // text in a cell, which nothing renders as HTML.
+    expect(stripMarkdown("<scr<script>ipt>alert(1)</script>")).toBe(
+      "<script>alert(1)",
+    );
+  });
+
+  it("keeps lists, tables, code and line breaks readable", () => {
+    expect(
+      stripMarkdown(
+        "1. one\n2. two\n\n| Channel | Spend |\n|---|---|\n| Search | **10** |\n\n```\nselect 1\n```\n\n![Logo](logo.png) first  \nsecond `a < b`",
+      ),
+    ).toBe(
+      "1. one\n2. two\n\nChannel | Spend\nSearch | 10\n\nselect 1\n\nLogo first\nsecond a < b",
+    );
+  });
 });
 
 describe("toDataSheet", () => {

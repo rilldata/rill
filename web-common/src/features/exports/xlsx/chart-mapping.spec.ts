@@ -133,6 +133,41 @@ describe("mapChart", () => {
     expect(chart?.numberFormat).toBe(`"$"#,##0.00`);
   });
 
+  it("has no native chart when there is nothing to plot", () => {
+    const stacked = {
+      metrics_view: "mv",
+      x: { field: "country", type: "nominal" },
+      y: { field: "spend", type: "quantitative" },
+      color: { field: "device", type: "nominal" },
+    } as CanvasChartSpec;
+    // A split chart whose filters match no rows has no split values, so no series.
+    const split = mapChart({
+      chartType: "stacked_bar",
+      spec: stacked,
+      data: data([]),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(split.chart).toBeUndefined();
+    expect(split.table.columns.map((c) => c.displayName)).toStrictEqual([
+      "Country",
+    ]);
+    expect(split.table.rows).toStrictEqual([]);
+
+    const plain = mapChart({
+      chartType: "bar_chart",
+      spec: { ...stacked, color: undefined } as CanvasChartSpec,
+      data: data([]),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(plain.chart).toBeUndefined();
+    expect(plain.table.columns.map((c) => c.displayName)).toStrictEqual([
+      "Country",
+      "Spend",
+    ]);
+  });
+
   it("adds previous-period columns when the chart compares periods", () => {
     const { table, chart } = mapChart({
       chartType: "stacked_bar_normalized",

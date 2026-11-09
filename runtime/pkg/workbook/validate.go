@@ -21,6 +21,10 @@ const (
 	MaxImageBytes = 32 << 20
 	// Blocks wider or taller than this are clamped so a bad geometry can't produce a huge drawing.
 	maxBlockSidePx = 10_000
+	// How far right and down a block may start: about 1,500 grid columns and 100,000 grid rows, well inside a sheet.
+	// Positions are rejected rather than clamped, since clamping would stack the blocks of a long canvas on top of each other.
+	maxBlockXPx = 100_000
+	maxBlockYPx = 2_000_000
 )
 
 var pngMagic = []byte("\x89PNG\r\n\x1a\n")
@@ -101,6 +105,9 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 		for _, b := range sheet.Blocks {
 			if b.Geometry == nil || b.Geometry.WidthPx == 0 || b.Geometry.HeightPx == 0 {
 				return validationErrorf("block %q has no size", b.Component)
+			}
+			if b.Geometry.XPx > maxBlockXPx || b.Geometry.YPx > maxBlockYPx {
+				return validationErrorf("block %q is placed beyond the edge of the sheet", b.Component)
 			}
 			switch c := b.Content.(type) {
 			case *runtimev1.WorkbookBlock_Chart:

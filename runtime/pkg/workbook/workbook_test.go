@@ -3,6 +3,7 @@ package workbook
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"image"
 	"image/png"
 	"io"
@@ -469,6 +470,39 @@ func TestWriteTablePreviewLayout(t *testing.T) {
 	require.Contains(t, ranges, "F10:H10")
 }
 
+func TestWriteLongCanvas(t *testing.T) {
+	// Blocks far down a long canvas keep their own position instead of piling up at a cap.
+	req := testRequest(t)
+	var blocks []*runtimev1.WorkbookBlock
+	for i := range 30 {
+		blocks = append(blocks, &runtimev1.WorkbookBlock{
+			Component: fmt.Sprintf("markdown-%d", i),
+			Geometry:  geo(0, uint32(i*450), 600, 440),
+			Content:   &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: fmt.Sprintf("Row %d", i+1)}},
+		})
+	}
+	req.DashboardSheets[0].Blocks = blocks
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+
+	rows, err := f.GetRows("Campaign report")
+	require.NoError(t, err)
+	found := map[string]int{}
+	for i, r := range rows {
+		for _, v := range r {
+			if strings.HasPrefix(v, "Row ") {
+				found[v] = i
+			}
+		}
+	}
+	require.Len(t, found, 30)
+	// 450 px between blocks is 22.5 grid rows of 20 px.
+	require.InDelta(t, 29*450/20, found["Row 30"]-found["Row 1"], 1)
+}
+
 func TestValidate(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -479,6 +513,13 @@ func TestValidate(t *testing.T) {
 			name:   "no dashboard sheet",
 			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) { req.DashboardSheets = nil },
 			want:   "at least one dashboard sheet",
+		},
+		{
+			name: "block beyond the sheet",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DashboardSheets[0].Blocks[0].Geometry.YPx = maxBlockYPx + 1
+			},
+			want: "beyond the edge of the sheet",
 		},
 		{
 			name:   "duplicate data sheet id",
