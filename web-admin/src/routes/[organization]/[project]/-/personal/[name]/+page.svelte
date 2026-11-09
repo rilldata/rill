@@ -58,7 +58,13 @@
 </script>
 
 {#if resourceKind === ResourceKind.Canvas}
-  <CanvasPersonalFile {fileArtifact} {fileIo} name={resourceName} />
+  <CanvasPersonalFile
+    {fileArtifact}
+    {fileIo}
+    organization={page.params.organization}
+    project={page.params.project}
+    name={resourceName}
+  />
 {:else}
   Unsupported resource kind: {resourceKind}
 {/if}
