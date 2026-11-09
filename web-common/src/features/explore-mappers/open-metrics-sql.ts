@@ -1,4 +1,4 @@
-import type { PartialMessage, Timestamp } from "@bufbuild/protobuf";
+import type { PartialMessage, Struct, Timestamp } from "@bufbuild/protobuf";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -177,8 +177,10 @@ async function havingAsInFilter(
   }
   const { data } = await runtimeServiceQueryResolver(client, {
     resolver: "metrics_sql",
-    resolverProperties: { sql },
-    resolverArgs: executionTime ? { execution_time: executionTime } : undefined,
+    resolverProperties: { sql } as unknown as PartialMessage<Struct>,
+    resolverArgs: executionTime
+      ? ({ execution_time: executionTime } as unknown as PartialMessage<Struct>)
+      : undefined,
   });
   const name = dimension.name;
   const values = (data ?? []).map((row) => {
