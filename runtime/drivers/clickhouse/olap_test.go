@@ -1302,6 +1302,8 @@ func testDateTruncExprOnDateColumns(t *testing.T, olap drivers.OLAPStore) {
 	}{
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: daily},
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_MINUTE, want: daily},
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, want: daily},
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, want: daily},
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_DAY, want: daily},
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_MONTH, want: map[string]uint64{"2024-01-01 00:00:00": 6}},
 	}

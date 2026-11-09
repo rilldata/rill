@@ -28,7 +28,7 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -142,7 +142,7 @@ function fromTimeRangesParams(
   if (preset.timeGrain) {
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
-      DateTimeUnitToV1TimeGrain[preset.timeGrain];
+      TokenToV1TimeGrain[preset.timeGrain];
     partialExploreState.adaptiveTimeGrain = false;
   } else if (preset.timeRange) {
     // A time range without a grain is adaptive: `correctExploreState` derives the grain from the range.

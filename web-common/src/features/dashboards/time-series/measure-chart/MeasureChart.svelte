@@ -10,7 +10,10 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    floorToGrain,
+    plusGrain,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -319,11 +322,12 @@
     let endDt = DateTime.fromJSDate(end, { zone: timeZone });
 
     if (timeGranularity) {
-      const unit = V1TimeGrainToDateTimeUnit[timeGranularity];
-      const startFloor = startDt.startOf(unit);
+      const startFloor = floorToGrain(startDt, timeGranularity);
       startDt =
-        +startFloor < +startDt ? startFloor.plus({ [unit]: 1 }) : startDt;
-      endDt = endDt.startOf(unit);
+        +startFloor < +startDt
+          ? plusGrain(startFloor, timeGranularity)
+          : startDt;
+      endDt = floorToGrain(endDt, timeGranularity);
     }
 
     // Guard: if brush was within a single grain, snapping can invert the range

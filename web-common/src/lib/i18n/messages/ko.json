@@ -2379,6 +2379,8 @@
   "time_grain_millisecond": "밀리초",
   "time_grain_minute": "분",
   "time_grain_minutes": "분",
+  "time_grain_n_hours": "{count}시간",
+  "time_grain_n_minutes": "{count}분",
   "time_grain_month": "월",
   "time_grain_months": "월",
   "time_grain_quarter": "분기",

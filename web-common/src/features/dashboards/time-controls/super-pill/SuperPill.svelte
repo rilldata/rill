@@ -24,6 +24,8 @@
   export let selectedRangeAlias: string | undefined;
   export let showPivot: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
+  /** The grains the metrics view offers; see TimeGrainSelector. */
+  export let availableTimeGrains: V1TimeGrain[] | undefined = undefined;
   export let defaultTimeRange: string | undefined;
   export let availableTimeZones: string[];
   export let timeRanges: V1ExploreTimeRange[];
@@ -159,6 +161,7 @@
       {adaptiveTimeGrain}
       {allowAdaptiveTimeGrain}
       {minTimeGrain}
+      {availableTimeGrains}
       {timeStart}
       {timeEnd}
       {complete}

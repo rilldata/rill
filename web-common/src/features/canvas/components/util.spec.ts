@@ -95,6 +95,7 @@ function viewerCanvasEntity(): CanvasEntity {
       createLocalTimeState: () => localTimeControls,
       largestMinTimeGrain: store(),
       hasTimeSeriesMap: writable(new Map()),
+      availableGrainsMap: writable(new Map()),
       state: {
         interval: store(),
         grainStore: store(),
