@@ -1,9 +1,8 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { error, redirect } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({
+export const load = async ({
   params: { organization, project, token },
   url,
   parent,

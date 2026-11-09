@@ -37,8 +37,12 @@ beforeEach(() => {
     value: { writeText: mocks.write },
   });
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // bits-ui's Dialog restores the body scroll lock on a short timer after unmount.
+  // Let it fire while the jsdom environment still exists, or the last test's timer
+  // throws "document is not defined" after teardown and fails the whole run.
+  await new Promise((resolve) => setTimeout(resolve, 50));
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

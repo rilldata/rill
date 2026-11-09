@@ -165,3 +165,41 @@ func TestMagicAuthTokenPassword(t *testing.T) {
 	_, err = open.UnlockMagicAuthToken(ctx, &adminv1.UnlockMagicAuthTokenRequest{Password: "anything"})
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
 }
+
+// Alert and report emails link to the share route with an internal token.
+// The frontend resolves the bearer of every share route with GetCurrentMagicAuthToken, so it must work for internal tokens too,
+// even though they are hidden from the public URL list.
+func TestGetCurrentMagicAuthTokenInternal(t *testing.T) {
+	ctx := context.Background()
+	fix := testadmin.New(t)
+
+	_, admin := fix.NewUser(t)
+	org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+	require.NoError(t, err)
+	proj, err := admin.CreateProject(ctx, &adminv1.CreateProjectRequest{
+		Org:        org.Organization.Name,
+		Project:    "proj1",
+		ProdSlots:  1,
+		SkipDeploy: true,
+	})
+	require.NoError(t, err)
+
+	tkn, err := fix.Admin.IssueMagicAuthToken(ctx, &adminpkg.IssueMagicAuthTokenOptions{
+		ProjectID: proj.Project.Id,
+		Internal:  true,
+		Resources: []database.ResourceName{{Type: "rill.runtime.v1.Report", Name: "report1"}},
+	})
+	require.NoError(t, err)
+
+	internal := fix.NewClient(t, tkn.Token().String())
+	cur, err := internal.GetCurrentMagicAuthToken(ctx, &adminv1.GetCurrentMagicAuthTokenRequest{})
+	require.NoError(t, err)
+	require.False(t, cur.Locked)
+	require.False(t, cur.Token.PasswordProtected)
+	require.Equal(t, tkn.OwnerID(), cur.Token.Id)
+	require.Len(t, cur.Token.Resources, 1)
+
+	listRes, err := admin.ListMagicAuthTokens(ctx, &adminv1.ListMagicAuthTokensRequest{Org: org.Organization.Name, Project: proj.Project.Name})
+	require.NoError(t, err)
+	require.Empty(t, listRes.Tokens)
+}

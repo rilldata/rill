@@ -178,7 +178,7 @@ test.describe.serial("Password-protected public URLs", () => {
       anonPage.getByText("This dashboard is password protected"),
     ).toBeVisible();
     await expect(
-      anonPage.getByRole("button", { name: /Requests/ }),
+      anonPage.getByRole("button", { name: "Requests 6.60M" }),
     ).toBeHidden();
 
     // A wrong password is rejected
@@ -190,7 +190,7 @@ test.describe.serial("Password-protected public URLs", () => {
     await anonPage.getByPlaceholder("Password").fill(password);
     await anonPage.getByRole("button", { name: "Continue" }).click();
     await expect(
-      anonPage.getByRole("button", { name: /Requests/ }),
+      anonPage.getByRole("button", { name: "Requests 6.60M" }),
     ).toBeVisible();
     await expect(
       anonPage.getByText("This dashboard is password protected"),
@@ -221,7 +221,7 @@ test.describe.serial("Password-protected public URLs", () => {
     // The URL now opens without a password
     await anonPage.goto(publicUrl);
     await expect(
-      anonPage.getByRole("button", { name: /Requests/ }),
+      anonPage.getByRole("button", { name: "Requests 6.60M" }),
     ).toBeVisible();
     await expect(
       anonPage.getByText("This dashboard is password protected"),
