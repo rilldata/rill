@@ -38,6 +38,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { BookmarkIcon, BookmarkPlusIcon } from "lucide-svelte";
 
+  export let variant: "cloud" | "embed" = "cloud";
   export let organization: string;
   export let project: string;
   // Empty in embeds, where the server resolves the project from the embed's admin token.
@@ -50,9 +51,6 @@
     defaultHomeBookmarkUrl?: string;
     showFiltersOnly?: boolean;
   };
-  // Whether to show the home bookmark and shared bookmarks, and allow creating them.
-  // Embeds only support personal bookmarks.
-  export let showSharedBookmarks = true;
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
   $: ({
@@ -71,6 +69,7 @@
     recentlyUsedBookmarks.update(bookmark.resource.id);
   }
 
+  $: showSharedBookmarks = variant === "cloud";
   // Only the home bookmark button needs the project permissions, so embeds never request them.
   $: projectPermissions = showSharedBookmarks
     ? getProjectPermissions(organization, project)
@@ -174,6 +173,7 @@
         {...props}
         compact
         square
+        noStroke={variant === "embed"}
         type="secondary"
         label={m.bookmark_other_dropdown_label()}
         active={open}

@@ -62,6 +62,7 @@
 </script>
 
 <Bookmarks
+  variant="embed"
   {organization}
   {project}
   projectId=""
@@ -72,5 +73,4 @@
     defaultUrlParams: $rillDefaultExploreUrlParams,
     showFiltersOnly: isExplore,
   }}
-  showSharedBookmarks={false}
 />
