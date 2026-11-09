@@ -70,6 +70,9 @@ var AllPermissions = []Permission{
 type SecurityClaims struct {
 	// UserID is the ID of the end user (or service account).
 	UserID string
+	// InteractiveUser is set only for a Rill user's own token;
+	// false for service accounts, magic tokens, embeds, View as, and alert/report delegation.
+	InteractiveUser bool
 	// UserAttributes about the current user (or service account). Usually exposed through templating as {{ .user }}.
 	UserAttributes map[string]any
 	// Permissions is a list of assigned permissions.
@@ -103,6 +106,7 @@ func (c *SecurityClaims) Can(p Permission) bool {
 func (c *SecurityClaims) MarshalJSON() ([]byte, error) {
 	tmp := securityClaimsJSON{
 		UserID:          c.UserID,
+		InteractiveUser: c.InteractiveUser,
 		UserAttributes:  c.UserAttributes,
 		Permissions:     c.Permissions,
 		AdditionalRules: make([]json.RawMessage, len(c.AdditionalRules)),
@@ -129,6 +133,7 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 	}
 
 	c.UserID = tmp.UserID
+	c.InteractiveUser = tmp.InteractiveUser
 	c.UserAttributes = tmp.UserAttributes
 	c.Permissions = tmp.Permissions
 	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
@@ -148,6 +153,7 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 // SecurityClaims can't be directly serialized to JSON because the SecurityRule proto is not directly JSON serializable.
 type securityClaimsJSON struct {
 	UserID          string            `json:"uid"`
+	InteractiveUser bool              `json:"iu,omitempty"`
 	UserAttributes  map[string]any    `json:"attrs"`
 	Permissions     []Permission      `json:"perms"`
 	AdditionalRules []json.RawMessage `json:"rules"`

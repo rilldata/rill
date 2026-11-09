@@ -227,8 +227,9 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		InstancePermissions: map[string][]runtime.Permission{
 			opts.deployment.RuntimeInstanceID: instancePermissions,
 		},
-		Attributes:    attr,
-		SecurityRules: rules,
+		Attributes:      attr,
+		SecurityRules:   rules,
+		InteractiveUser: opts.forOwner && claims.OwnerType() == auth.OwnerTypeUser && opts.externalUserID == "",
 	})
 	if err != nil {
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

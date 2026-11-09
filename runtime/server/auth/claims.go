@@ -18,10 +18,11 @@ type ClaimsProvider interface {
 // jwtClaims implements a ClaimsProvider that resolves claims from a JWT payload.
 type jwtClaims struct {
 	jwt.RegisteredClaims
-	System    []runtime.Permission            `json:"sys,omitempty"`
-	Instances map[string][]runtime.Permission `json:"ins,omitempty"`
-	Attrs     map[string]any                  `json:"attr,omitempty"`
-	Security  []json.RawMessage               `json:"sec,omitempty"` // []*runtimev1.SecurityRule serialized with protojson
+	System          []runtime.Permission            `json:"sys,omitempty"`
+	Instances       map[string][]runtime.Permission `json:"ins,omitempty"`
+	Attrs           map[string]any                  `json:"attr,omitempty"`
+	Security        []json.RawMessage               `json:"sec,omitempty"` // []*runtimev1.SecurityRule serialized with protojson
+	InteractiveUser bool                            `json:"iu,omitempty"`
 }
 
 var _ ClaimsProvider = (*jwtClaims)(nil)
@@ -43,10 +44,11 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 
 	if slices.Contains(permissions, runtime.ManageInstances) {
 		return &runtime.SecurityClaims{
-			UserID:         c.RegisteredClaims.Subject,
-			UserAttributes: attrs,
-			Permissions:    permissions,
-			SkipChecks:     true,
+			UserID:          c.RegisteredClaims.Subject,
+			InteractiveUser: c.InteractiveUser,
+			UserAttributes:  attrs,
+			Permissions:     permissions,
+			SkipChecks:      true,
 		}
 	}
 
@@ -65,6 +67,7 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 
 	return &runtime.SecurityClaims{
 		UserID:          c.RegisteredClaims.Subject,
+		InteractiveUser: c.InteractiveUser,
 		UserAttributes:  attrs,
 		Permissions:     permissions,
 		AdditionalRules: rules,

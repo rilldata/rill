@@ -118,6 +118,7 @@ type TokenOptions struct {
 	InstancePermissions map[string][]runtime.Permission
 	Attributes          map[string]any
 	SecurityRules       []*runtimev1.SecurityRule
+	InteractiveUser     bool
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -150,6 +151,8 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		Instances: opts.InstancePermissions,
 		Attrs:     opts.Attributes,
 		Security:  sec,
+
+		InteractiveUser: opts.InteractiveUser,
 	}
 
 	return i.SignClaims(claims)

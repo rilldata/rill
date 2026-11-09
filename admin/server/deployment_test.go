@@ -58,6 +58,7 @@ func TestDeploymentJWTs(t *testing.T) {
 		require.Equal(t, u1.ID, c.Subject)
 		require.Equal(t, u1.Email, c.Attrs["email"])
 		require.Equal(t, true, c.Attrs["admin"])
+		require.True(t, c.InteractiveUser)
 
 		perms := c.Instances[depl.RuntimeInstanceID]
 		requireHasPerms(t, perms, runtime.ReadObjects, runtime.ReadMetrics, runtime.ReadAPI, runtime.UseAI)
@@ -79,6 +80,19 @@ func TestDeploymentJWTs(t *testing.T) {
 
 		perms := c.Instances[depl.RuntimeInstanceID]
 		requireHasPerms(t, perms, runtime.ReadInstance, runtime.ReadResolvers, runtime.EditTrigger)
+	})
+
+	t.Run("GetDeploymentCredentials for user ID (View as)", func(t *testing.T) {
+		creds, err := u1Client.GetDeploymentCredentials(t.Context(), &adminv1.GetDeploymentCredentialsRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+			For:     &adminv1.GetDeploymentCredentialsRequest_UserId{UserId: u1.ID},
+		})
+		require.NoError(t, err)
+
+		c := decodeJWT(t, creds.AccessToken)
+		require.Equal(t, u1.ID, c.Subject)
+		require.False(t, c.InteractiveUser)
 	})
 
 	t.Run("GetDeployment for non-Rill email", func(t *testing.T) {
@@ -155,6 +169,7 @@ func TestDeploymentJWTs(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, svc.Service.Id, decodeJWT(t, proj.Jwt).Subject)
+		require.False(t, decodeJWT(t, proj.Jwt).InteractiveUser)
 
 		// Endpoints commonly used to issue tokens for end users must not share the service subject across them.
 		depl, err := svcClient.GetDeployment(t.Context(), &adminv1.GetDeploymentRequest{
@@ -187,6 +202,8 @@ type jwtPayload struct {
 	Instances map[string][]runtime.Permission `json:"ins,omitempty"`
 	Attrs     map[string]any                  `json:"attr,omitempty"`
 	Security  []json.RawMessage               `json:"sec,omitempty"`
+
+	InteractiveUser bool `json:"iu,omitempty"`
 }
 
 func decodeJWT(t *testing.T, tok string) *jwtPayload {
