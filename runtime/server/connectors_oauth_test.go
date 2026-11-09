@@ -57,6 +57,7 @@ url: https://static.example.com/mcp
 		require.NoError(t, err)
 		require.NotEmpty(t, res.ConfigHash)
 		require.Equal(t, "https://mcp.example.com/mcp", res.Config.ResourceUrl)
+		require.Empty(t, res.Config.Issuer)
 		require.Equal(t, "client-1", res.Config.ClientId)
 		require.Equal(t, "secret-1", res.Config.ClientSecret)
 		require.Equal(t, []string{"read"}, res.Config.Scopes)
