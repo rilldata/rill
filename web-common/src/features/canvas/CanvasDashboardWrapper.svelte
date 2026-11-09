@@ -6,6 +6,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
   import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
+  import CanvasTableOfContents from "./toc/CanvasTableOfContents.svelte";
   import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
   import { type Snippet } from "svelte";
@@ -22,6 +23,7 @@
     filtersEnabled = undefined,
     embedded = false,
     builder = false,
+    showTableOfContents = false,
     onClick = () => {},
   }: {
     children: Snippet;
@@ -32,10 +34,23 @@
     filtersEnabled?: boolean | undefined;
     embedded?: boolean;
     builder?: boolean;
+    showTableOfContents?: boolean;
     onClick?: () => void;
   } = $props();
 
   let contentRect = $state(new DOMRectReadOnly(0, 0, 0, 0));
+  let scrollContainer = $state<HTMLElement | undefined>(undefined);
+  let bandWidth = $state(0);
+
+  // Collapse the rail's bars to dots once the viewport is too narrow for the bars to sit in the
+  // content's left margin (i.e. the centered content is near full width). Based on the stable
+  // `maxWidth` rather than the measured content width, so there's no feedback loop.
+  const RAIL_BAR_MARGIN_PX = 48;
+  let compactRail = $derived(
+    showTableOfContents &&
+      bandWidth > 0 &&
+      bandWidth < maxWidth + RAIL_BAR_MARGIN_PX,
+  );
 
   let {
     canvasEntity: {
@@ -106,31 +121,46 @@
 
     <div
       role="presentation"
-      id="canvas-scroll-container"
-      class="p-2 flex flex-col items-center bg-surface-background select-none overflow-y-auto overflow-x-hidden"
-      class:!cursor-grabbing={showGrabCursor}
+      class="relative flex overflow-hidden"
       class:w-full={$dynamicHeight}
       class:size-full={!$dynamicHeight}
-      class:pb-48={!embedded}
-      onclick={(e) => {
-        if (e.target === e.currentTarget) onClick();
-      }}
+      bind:clientWidth={bandWidth}
     >
-      {#if hasMissingRequired}
-        <MissingRequiredFiltersMessage
-          {missingRequiredFilters}
-          metricsViewsProvider={dashboardProvider.metricsViewsProvider}
-        />
-      {:else}
-        <div
-          class="w-full h-fit flex flex-col items-center row-container relative"
-          style:max-width="{maxWidth}px"
-          style:min-width="420px"
-          bind:contentRect
-        >
-          {@render children()}
-        </div>
+      <!-- Overlays the content's left margin without reserving layout width, so the content stays
+           centered in the full viewport. On narrow screens the bars collapse to dots so they don't
+           overlap the content. -->
+      {#if showTableOfContents && scrollContainer}
+        <CanvasTableOfContents {scrollContainer} compact={compactRail} />
       {/if}
+
+      <div
+        role="presentation"
+        id="canvas-scroll-container"
+        bind:this={scrollContainer}
+        class="p-2 flex flex-col items-center bg-surface-background select-none overflow-y-auto overflow-x-hidden flex-1 min-w-0"
+        class:!cursor-grabbing={showGrabCursor}
+        class:h-full={!$dynamicHeight}
+        class:pb-48={!embedded}
+        onclick={(e) => {
+          if (e.target === e.currentTarget) onClick();
+        }}
+      >
+        {#if hasMissingRequired}
+          <MissingRequiredFiltersMessage
+            {missingRequiredFilters}
+            metricsViewsProvider={dashboardProvider.metricsViewsProvider}
+          />
+        {:else}
+          <div
+            class="w-full h-fit flex flex-col items-center row-container relative"
+            style:max-width="{maxWidth}px"
+            style:min-width="420px"
+            bind:contentRect
+          >
+            {@render children()}
+          </div>
+        {/if}
+      </div>
     </div>
 
     <CellInspector />
