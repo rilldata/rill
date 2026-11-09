@@ -33,6 +33,10 @@
   export let visible: boolean;
   // The exact-selection surface of the KPI (its component); see `canvasExactSurface`.
   export let surface: string;
+  // Measure to compare against over the primary time range (e.g. a target),
+  // instead of the time comparison. Set by the KPI grid from its
+  // `measure_comparisons`; it is not part of the `kpi` component spec.
+  export let comparisonMeasureName: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -48,6 +52,11 @@
     comparison: comparisonOptions,
     hide_time_range: hideTimeRange,
   } = spec);
+
+  // Compare against another measure over the primary time range, instead of
+  // against the same measure over the comparison range.
+  $: comparisonMeasureKey = comparisonMeasureName ?? "";
+  $: measureComparison = comparisonMeasureKey !== "";
 
   $: ({
     timeGrain,
@@ -78,14 +87,40 @@
   // also wait for it.
   $: supportsTotal = !!measure && measureSupportsTotalsQuery(measure);
 
+  $: comparisonEphemeralDef = ephemeralMeasures?.find(
+    (def) => def.name === comparisonMeasureKey,
+  );
+  $: comparisonMeasureStore = getMeasureForMetricView(
+    comparisonMeasureKey,
+    metricsViewName,
+  );
+  $: comparisonMeasure =
+    $comparisonMeasureStore ??
+    (comparisonEphemeralDef
+      ? ephemeralMeasureToSpecMeasure(comparisonEphemeralDef)
+      : undefined);
+
+  // A comparison measure without a single total has no value to compare
+  // against, so the card shows no comparison at all.
+  $: comparisonSupportsTotal =
+    !!comparisonMeasure && measureSupportsTotalsQuery(comparisonMeasure);
+
+  $: comparisonEnabled = measureComparison
+    ? comparisonSupportsTotal
+    : showTimeComparison;
+
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
-  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
+  $: showComparison = !!comparisonOptions?.length && comparisonEnabled;
 
-  $: comparisonLabel =
-    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
-    (TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
-      ?.label as string | undefined);
+  $: comparisonLabel = measureComparison
+    ? (comparisonMeasure?.displayName ?? comparisonMeasureKey)
+    : comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
+      (
+        TIME_COMPARISON[
+          comparisonTimeRangeState?.selectedComparisonTimeRange.name
+        ]?.label as string | undefined
+      )?.toLowerCase();
 
   // Exact measures: the selection of this KPI's surface.
   $: exactContextStore = canvasExactMeasureContext(
@@ -110,6 +145,34 @@
   );
   $: tsRequestEphemeralMeasures =
     tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
+
+  // The comparison measure is exact when the surface's selection holds it,
+  // so it has the same value as on its own card in the grid.
+  $: comparisonExactNames = measureComparison
+    ? requestExactNames([comparisonMeasureKey], $exactContextStore)
+    : exactNames;
+  $: comparisonQueryMeasures = measureComparison
+    ? applyExactMeasures(
+        mapEphemeralMeasuresForRequest(
+          [{ name: comparisonMeasureKey }],
+          ephemeralMeasures,
+        ),
+        comparisonExactNames,
+      )
+    : queryMeasures;
+  $: ({
+    measureNames: comparisonTsMeasureNames,
+    ephemeralMeasures: comparisonTsEphemeralMeasures,
+  } = measureComparison
+    ? splitTimeSeriesMeasures([comparisonMeasureKey], ephemeralMeasures)
+    : { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures });
+  $: comparisonTsExactMeasureNames = exactTimeSeriesMeasureNames(
+    comparisonTsMeasureNames,
+    comparisonExactNames,
+  );
+  $: comparisonTsRequestEphemeralMeasures =
+    comparisonTsEphemeralMeasures &&
+    applyExactMeasures(comparisonTsEphemeralMeasures, comparisonExactNames);
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -139,26 +202,52 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: queryMeasures,
-      timeRange: comparisonTimeRange,
+      measures: comparisonQueryMeasures,
+      timeRange: measureComparison
+        ? { start, end, timeZone }
+        : comparisonTimeRange,
       where,
       priority: 50,
     },
     {
       query: {
-        // Without a comparison interval the query would cover all time.
-        enabled:
-          !!comparisonTimeRange?.start &&
-          !!comparisonTimeRange?.end &&
-          showComparison &&
-          isValid &&
-          supportsTotal &&
-          !!start &&
-          !!end &&
-          visible,
+        // Without a comparison interval the time comparison would cover all
+        // time; a measure comparison uses the primary range instead.
+        enabled: measureComparison
+          ? showComparison &&
+            isValid &&
+            supportsTotal &&
+            visible &&
+            (!hasTimeSeries || (!!start && !!end))
+          : !!comparisonTimeRange?.start &&
+            !!comparisonTimeRange?.end &&
+            showComparison &&
+            isValid &&
+            supportsTotal &&
+            !!start &&
+            !!end &&
+            visible,
       },
     },
   );
+
+  // KPI.svelte reads comparison values keyed by the primary measure name.
+  // Only rewritten once the data is in: spreading the result while loading or
+  // in error breaks TanStack Query's discriminated union.
+  $: comparisonTotalResult = !measureComparison
+    ? $comparisonTotalQuery
+    : !$comparisonTotalQuery.data
+      ? $comparisonTotalQuery
+      : {
+          ...$comparisonTotalQuery,
+          data: {
+            ...$comparisonTotalQuery.data,
+            data: $comparisonTotalQuery.data.data?.map((row) => ({
+              ...row,
+              [measureName]: row[comparisonMeasureKey],
+            })),
+          },
+        };
 
   $: primarySparklineQuery = createQueryServiceMetricsViewTimeSeries(
     client,
@@ -193,11 +282,11 @@
     client,
     {
       metricsViewName,
-      measureNames: tsMeasureNames,
-      ephemeralMeasures: tsRequestEphemeralMeasures,
-      exactMeasureNames: tsExactMeasureNames,
-      timeStart: comparisonTimeRange?.start,
-      timeEnd: comparisonTimeRange?.end,
+      measureNames: comparisonTsMeasureNames,
+      ephemeralMeasures: comparisonTsRequestEphemeralMeasures,
+      exactMeasureNames: comparisonTsExactMeasureNames,
+      timeStart: measureComparison ? start : comparisonTimeRange?.start,
+      timeEnd: measureComparison ? end : comparisonTimeRange?.end,
       timeGranularity: timeGrain,
       timeZone,
       where,
@@ -206,17 +295,44 @@
     {
       query: {
         // Wait for the comparison interval and the grain, as the primary sparkline does.
-        enabled:
-          !!comparisonTimeRange?.start &&
-          !!comparisonTimeRange?.end &&
-          !!timeGrain &&
-          isValid &&
-          showSparkline &&
-          showComparison &&
-          visible,
+        enabled: measureComparison
+          ? !!start &&
+            !!end &&
+            !!timeGrain &&
+            isValid &&
+            showSparkline &&
+            showComparison &&
+            visible
+          : !!comparisonTimeRange?.start &&
+            !!comparisonTimeRange?.end &&
+            !!timeGrain &&
+            isValid &&
+            showSparkline &&
+            showComparison &&
+            visible,
       },
     },
   );
+
+  $: comparisonSparklineResult = !measureComparison
+    ? $comparisonSparklineQuery
+    : !$comparisonSparklineQuery.data
+      ? $comparisonSparklineQuery
+      : {
+          ...$comparisonSparklineQuery,
+          data: {
+            ...$comparisonSparklineQuery.data,
+            data: $comparisonSparklineQuery.data.data?.map((point) => ({
+              ...point,
+              records: point.records && {
+                ...point.records,
+                [measureName]: (point.records as Record<string, unknown>)[
+                  comparisonMeasureKey
+                ],
+              },
+            })),
+          },
+        };
 
   $: interval = Interval.fromDateTimes(
     DateTime.fromISO(start ?? "").setZone(timeZone),
@@ -241,7 +357,7 @@
   {precision}
   {timeGrain}
   {timeZone}
-  {showTimeComparison}
+  showTimeComparison={comparisonEnabled}
   {hasTimeSeries}
   {comparisonLabel}
   {interval}
@@ -249,7 +365,7 @@
   {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
-  comparisonTotalResult={$comparisonTotalQuery}
+  {comparisonTotalResult}
   primarySparklineResult={$primarySparklineQuery}
-  comparisonSparklineResult={$comparisonSparklineQuery}
+  {comparisonSparklineResult}
 />

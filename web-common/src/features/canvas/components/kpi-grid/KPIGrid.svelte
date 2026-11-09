@@ -32,6 +32,13 @@
     time_filters: kpiGridProperties.time_filters,
   }));
 
+  $: comparisonMeasureNames = kpis.map(
+    (kpi) =>
+      kpiGridProperties.measure_comparisons?.find(
+        (comparison) => comparison?.measure === kpi.measure,
+      )?.compare_to,
+  );
+
   $: filters = {
     time_filters: kpiGridProperties.time_filters,
     dimension_filters: kpiGridProperties.dimension_filters,
@@ -72,6 +79,7 @@
           {#if $timeAndFilterStore}
             <KPIProvider
               spec={kpi}
+              comparisonMeasureName={comparisonMeasureNames[i]}
               {timeAndFilterStore}
               {canvasName}
               visible={$visible}
