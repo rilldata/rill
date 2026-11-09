@@ -2,6 +2,7 @@ import { page } from "$app/state";
 import {
   createAdminServiceGetCurrentUser,
   createAdminServiceListProjectMemberUsers,
+  type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
@@ -43,7 +44,9 @@ export interface FormMetadataProvider<M, D> {
   userEmail: string;
   // True until the current user has loaded.
   isLoading: boolean;
-  projectMembersSet: Set<string>;
+  // The emails of the project's members, which the recipients of a report that runs as the recipient must be part of.
+  // Undefined when the current user is not allowed to list the project's members, so the recipients cannot be checked.
+  projectMembersSet: Set<string> | undefined;
   hasSlackNotifier: boolean;
 
   cleanup(): void;
@@ -71,7 +74,7 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
 
   public userEmail = $state<string>("");
   public isLoading = $state(true);
-  public projectMembersSet = $state<Set<string>>(new Set());
+  public projectMembersSet = $state<Set<string> | undefined>(new Set());
   public hasSlackNotifier = $state(false);
 
   private readonly userUnsub: () => void;
@@ -93,15 +96,28 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
       this.userEmail = userResp.data.user.email;
     });
 
-    const listProjectMemberUsersQuery =
-      createAdminServiceListProjectMemberUsers(this.organization, this.project);
-    this.projectMembersUnsub = listProjectMemberUsersQuery.subscribe(
-      (projectMembersResp) => {
-        this.projectMembersSet = new Set(
-          projectMembersResp.data?.members?.map((m) => m.userEmail!) ?? [],
+    // Only users who can read the project's members can list them; the admin server rejects everyone else.
+    // Viewers can create reports without that permission, so their recipients go unchecked.
+    const projectPermissions = page.data.projectPermissions as
+      | V1ProjectPermissions
+      | undefined;
+    if (projectPermissions?.readProjectMembers) {
+      const listProjectMemberUsersQuery =
+        createAdminServiceListProjectMemberUsers(
+          this.organization,
+          this.project,
         );
-      },
-    );
+      this.projectMembersUnsub = listProjectMemberUsersQuery.subscribe(
+        (projectMembersResp) => {
+          this.projectMembersSet = new Set(
+            projectMembersResp.data?.members?.map((m) => m.userEmail!) ?? [],
+          );
+        },
+      );
+    } else {
+      this.projectMembersSet = undefined;
+      this.projectMembersUnsub = () => {};
+    }
 
     const notifierConnectorsQuery = createRuntimeServiceListNotifierConnectors(
       client,
