@@ -699,6 +699,8 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
+	// Alerts and reports run on behalf of users, so connectors with per-user OAuth must not use their service credential.
+	ctx = drivers.WithoutServiceCredential(ctx)
 
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
@@ -1018,6 +1020,8 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*email.Attachment, bool, error) {
 	// Tag as alert execution so the export query is attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
+	// Alerts and reports run on behalf of users, so connectors with per-user OAuth must not use their service credential.
+	ctx = drivers.WithoutServiceCredential(ctx)
 
 	attachment, err := exportAttachment(ctx, r.C, &exportAttachmentOptions{
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
