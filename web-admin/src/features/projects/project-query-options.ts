@@ -5,7 +5,6 @@ import {
   getAdminServiceGetProjectQueryKey,
   V1DeploymentStatus,
   type RpcStatus,
-  type V1GetDeploymentCredentialsResponse,
   type V1GetProjectResponse,
 } from "@rilldata/web-admin/client";
 import {
@@ -19,18 +18,15 @@ import type {
   AuthContext,
   JwtRefresher,
 } from "@rilldata/web-common/runtime-client/v2";
-import type {
-  CreateQueryOptions,
-  FetchQueryOptions,
-} from "@tanstack/svelte-query";
+import type { CreateQueryOptions, QueryKey } from "@tanstack/svelte-query";
 
 const PollTimeWhenProjectDeploymentPending = 1000;
 const PollTimeWhenProjectDeploymentError = 5000;
 const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
-// A refetch that completed this recently already carries a fresh JWT; hand it over instead of fetching again.
-const FreshJwtStaleTime = 5000;
 // Retries of a JWT refetch that failed with a network or server error; delays come from the query client's retryDelay.
 const FreshJwtMaxRetries = 3;
+// A JWT refetch attempt still pending after this long is aborted and retried; a stalled request can take minutes to fail.
+const FreshJwtAttemptTimeout = 15_000;
 
 export const baseGetProjectQueryOptions: Partial<
   CreateQueryOptions<V1GetProjectResponse, RpcStatus>
@@ -88,64 +84,51 @@ export function createRuntimeJwtRefresher(
     case "mock": {
       if (!mockedUserId) return undefined;
       const body = { userId: mockedUserId, ...(branch ? { branch } : {}) };
-      return (signal) =>
-        fetchFreshJwt<V1GetDeploymentCredentialsResponse>(
-          {
-            queryKey: getAdminServiceGetDeploymentCredentialsQueryKey(
+      return () =>
+        fetchFreshJwt(
+          getAdminServiceGetDeploymentCredentialsQueryKey(
+            organization,
+            project,
+            body,
+          ),
+          (signal) =>
+            adminServiceGetDeploymentCredentials(
               organization,
               project,
               body,
+              signal,
             ),
-            queryFn: ({ signal }) =>
-              adminServiceGetDeploymentCredentials(
-                organization,
-                project,
-                body,
-                signal,
-              ),
-          },
           (data) => data.accessToken,
-          signal,
         );
     }
     case "magic": {
       if (!token) return undefined;
-      return (signal) =>
-        fetchFreshJwt<V1GetProjectResponse>(
-          {
-            queryKey: getAdminServiceGetProjectWithBearerTokenQueryKey(
+      return () =>
+        fetchFreshJwt(
+          getAdminServiceGetProjectWithBearerTokenQueryKey(
+            organization,
+            project,
+            token,
+          ),
+          (signal) =>
+            adminServiceGetProjectWithBearerToken(
               organization,
               project,
               token,
+              undefined,
+              signal,
             ),
-            queryFn: ({ signal }) =>
-              adminServiceGetProjectWithBearerToken(
-                organization,
-                project,
-                token,
-                undefined,
-                signal,
-              ),
-          },
           (data) => data.jwt,
-          signal,
         );
     }
     case "user": {
       const params = branch ? { branch } : undefined;
-      return (signal) =>
-        fetchFreshJwt<V1GetProjectResponse>(
-          {
-            queryKey: getAdminServiceGetProjectQueryKey(
-              organization,
-              project,
-              params,
-            ),
-            queryFn: ({ signal }) =>
-              adminServiceGetProject(organization, project, params, signal),
-          },
+      return () =>
+        fetchFreshJwt(
+          getAdminServiceGetProjectQueryKey(organization, project, params),
+          (signal) =>
+            adminServiceGetProject(organization, project, params, signal),
           (data) => data.jwt,
-          signal,
         );
     }
     case "embed":
@@ -157,20 +140,26 @@ export function createRuntimeJwtRefresher(
 /**
  * Fetches the query that issues a JWT, through the query client: concurrent callers and a refetch already in flight
  * share one request, and network or server errors are retried with backoff. Refusals (4xx) fail at once.
+ * Each attempt is cut off after FreshJwtAttemptTimeout, so a stalled request is retried instead of being joined by every
+ * later caller. No caller cancels the shared request; one that stops waiting simply stops listening.
  */
 export function fetchFreshJwt<TData>(
-  options: FetchQueryOptions<TData, RpcStatus>,
+  queryKey: QueryKey,
+  fetchData: (signal: AbortSignal) => Promise<TData>,
   selectJwt: (data: TData) => string | undefined,
-  signal: AbortSignal,
 ): Promise<string | undefined> {
-  // The runtime client gave up waiting: cancel the request so the next caller does not join it if it stalled
-  const cancel = () =>
-    void queryClient.cancelQueries({ queryKey: options.queryKey });
-  signal.addEventListener("abort", cancel, { once: true });
   return queryClient
-    .fetchQuery({
-      ...options,
-      staleTime: FreshJwtStaleTime,
+    .fetchQuery<TData, RpcStatus>({
+      queryKey,
+      queryFn: ({ signal }) =>
+        fetchData(
+          AbortSignal.any([
+            signal,
+            AbortSignal.timeout(FreshJwtAttemptTimeout),
+          ]),
+        ),
+      // Always refetch unless a request is already in flight: the cached token may be the one the runtime just rejected
+      staleTime: 0,
       retry: (failureCount, error) => {
         const status = extractErrorStatusCode(error);
         return (
@@ -179,6 +168,5 @@ export function fetchFreshJwt<TData>(
         );
       },
     })
-    .then(selectJwt)
-    .finally(() => signal.removeEventListener("abort", cancel));
+    .then(selectJwt);
 }

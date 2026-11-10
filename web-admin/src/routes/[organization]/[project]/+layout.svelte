@@ -235,10 +235,14 @@
     resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
   );
 
+  // Read on its own so the refresher below keeps its identity across polls: `runtime` is a new object
+  // on every GetProject update, but the auth context only changes when View As starts or ends.
+  let authContext = $derived(runtime.authContext);
+
   // Re-requests the runtime JWT from the query that issued it when a request finds it expired, e.g. after a
   // laptop sleep or a network drop skipped the scheduled refetch, instead of waiting for the next poll.
   let refreshJwt = $derived(
-    createRuntimeJwtRefresher(runtime.authContext, {
+    createRuntimeJwtRefresher(authContext, {
       organization,
       project,
       branch: activeBranch,
@@ -367,7 +371,7 @@
         host={runtime.host}
         instanceId={runtime.instanceId}
         jwt={runtime.jwt}
-        authContext={runtime.authContext}
+        {authContext}
         {refreshJwt}
       >
         {#if !onWelcomePage}

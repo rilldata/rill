@@ -112,9 +112,7 @@ describe("edit session View As", () => {
     selectedMockUserStore.set(mockUser);
 
     const refresh = createMockUserJwtRefresher("deployment-1", mockUser);
-    await expect(refresh(new AbortController().signal)).resolves.toBe(
-      "mock-token-2",
-    );
+    await expect(refresh()).resolves.toBe("mock-token-2");
 
     expect(getDeployment).toHaveBeenCalledTimes(1);
     const [deploymentId, body, signal] = getDeployment.mock.calls[0];
@@ -137,7 +135,7 @@ describe("edit session View As", () => {
     selectedMockUserJWT.set("viewer-token");
 
     const refresh = createMockUserJwtRefresher("deployment-1", mockUser);
-    const reissued = refresh(new AbortController().signal);
+    const reissued = refresh();
     selectedMockUserStore.set({ email: "other@example.com" });
     selectedMockUserJWT.set("other-token");
     await reissued;

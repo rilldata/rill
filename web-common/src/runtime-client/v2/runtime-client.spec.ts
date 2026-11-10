@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { RuntimeClient, type AuthContext } from "./runtime-client";
 import {
@@ -464,27 +465,87 @@ describe("RuntimeClient JWT refresh", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("gives up on a refresh that stalls and cancels it", async () => {
+    it("gives up on a refresh that stalls after 60s", async () => {
       const client = createClient({ jwt: "expiring-token" });
-      const signals: AbortSignal[] = [];
-      const refreshJwt = vi.fn((signal: AbortSignal) => {
-        signals.push(signal);
-        return new Promise<string>(() => {});
-      });
+      const refreshJwt = vi.fn(() => new Promise<string>(() => {}));
       client.setJwtRefresher(refreshJwt);
       vi.advanceTimersByTime(PAST_WARNING_WINDOW);
 
-      const promise = client.runtimeService.ping({}).catch((e: Error) => e);
+      let settled = false;
+      const promise = client.runtimeService
+        .ping({})
+        .catch((e: Error) => e)
+        .finally(() => {
+          settled = true;
+        });
       await vi.advanceTimersByTimeAsync(59_000);
-      expect(signals[0].aborted).toBe(false);
+      expect(settled).toBe(false);
 
       await vi.advanceTimersByTimeAsync(2_000);
       const error = await promise;
       expect((error as Error).message).toContain(
         "Timed out waiting for a fresh JWT",
       );
-      expect(signals[0].aborted).toBe(true);
       expect(refreshJwt).toHaveBeenCalledTimes(1);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("leaves a refresh that one request gave up on to the requests still waiting for it", async () => {
+      const client = createClient({ jwt: "expiring-token" });
+      // Plays the query client: every caller joins the request already in flight
+      let resolveRefresh!: (jwt: string) => void;
+      const inFlight = new Promise<string>((resolve) => {
+        resolveRefresh = resolve;
+      });
+      const refreshJwt = vi.fn(() => inFlight);
+      client.setJwtRefresher(refreshJwt);
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      const first = client.runtimeService.ping({}).catch((e: Error) => e);
+      await vi.advanceTimersByTimeAsync(50_000);
+      let secondSettled = false;
+      const second = makeRequest(client).then(() => {
+        secondSettled = true;
+      });
+
+      // The first request runs out of time; the second keeps waiting on the same refresh
+      await vi.advanceTimersByTimeAsync(11_000);
+      expect(((await first) as Error).message).toContain(
+        "Timed out waiting for a fresh JWT",
+      );
+      expect(secondSettled).toBe(false);
+
+      resolveRefresh("fresh-token");
+      await vi.advanceTimersByTimeAsync(CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL);
+      await second;
+      expect(refreshJwt).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(getLastAuthHeader(fetchMock)).toBe("Bearer fresh-token");
+    });
+
+    it("stops waiting as soon as the request is cancelled", async () => {
+      // e.g. a query cancelled on navigation: it must not hold its queue slot until the refresh completes
+      const client = createClient({ jwt: "expiring-token" });
+      client.setJwtRefresher(vi.fn(() => new Promise<string>(() => {})));
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      const abort = new AbortController();
+      let settled = false;
+      const promise = client.runtimeService
+        .ping({}, { signal: abort.signal })
+        .catch((e: Error) => e)
+        .finally(() => {
+          settled = true;
+        });
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(settled).toBe(false);
+
+      abort.abort();
+      await vi.advanceTimersByTimeAsync(CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL);
+      expect(settled).toBe(true);
+      const error = await promise;
+      expect(error).toBeInstanceOf(ConnectError);
+      expect((error as ConnectError).code).toBe(Code.Canceled);
       expect(fetchMock).not.toHaveBeenCalled();
     });
 

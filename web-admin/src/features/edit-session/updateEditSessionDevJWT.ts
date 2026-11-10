@@ -69,16 +69,12 @@ export function createMockUserJwtRefresher(
   deploymentId: string,
   mockUser: MockUser,
 ): JwtRefresher {
-  return async (signal) => {
+  return async () => {
     const accessToken = await fetchFreshJwt(
-      {
-        // GetDeployment is a POST, so Orval generates no query key for it
-        queryKey: ["edit-session-mock-user-jwt", deploymentId, mockUser],
-        queryFn: ({ signal }) =>
-          issueMockUserJwt(deploymentId, mockUser, signal),
-      },
+      // GetDeployment is a POST, so Orval generates no query key for it
+      ["edit-session-mock-user-jwt", deploymentId, mockUser],
+      (signal) => issueMockUserJwt(deploymentId, mockUser, signal),
       (accessToken) => accessToken,
-      signal,
     );
     // The edit layout passes this store to RuntimeProvider; skip it if View As moved on while the request was in flight
     if (accessToken && get(selectedMockUserStore) === mockUser) {

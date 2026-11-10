@@ -54,8 +54,6 @@ describe("baseGetProjectQueryOptions.refetchInterval", () => {
 });
 
 describe("createRuntimeJwtRefresher", () => {
-  const neverAborted = new AbortController().signal;
-
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
@@ -76,7 +74,7 @@ describe("createRuntimeJwtRefresher", () => {
       branch: "dev",
     });
 
-    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
+    await expect(refresh?.()).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ["/v1/orgs/org/projects/proj", { branch: "dev" }],
@@ -92,7 +90,7 @@ describe("createRuntimeJwtRefresher", () => {
       token: "magic",
     });
 
-    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
+    await expect(refresh?.()).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ["/v1/orgs/org/projects/proj", "token/magic"],
@@ -109,7 +107,7 @@ describe("createRuntimeJwtRefresher", () => {
       mockedUserId: "u1",
     });
 
-    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
+    await expect(refresh?.()).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: [
@@ -118,27 +116,6 @@ describe("createRuntimeJwtRefresher", () => {
         ],
       }),
     );
-  });
-
-  it("cancels the admin request when the client abandons the refresh", () => {
-    vi.spyOn(queryClient, "fetchQuery").mockImplementation(
-      () => new Promise(() => {}) as never,
-    );
-    const cancelQueries = vi
-      .spyOn(queryClient, "cancelQueries")
-      .mockResolvedValue();
-    const abort = new AbortController();
-    const refresh = createRuntimeJwtRefresher("user", {
-      organization: "org",
-      project: "proj",
-    });
-
-    void refresh?.(abort.signal);
-    abort.abort();
-
-    expect(cancelQueries).toHaveBeenCalledWith({
-      queryKey: ["/v1/orgs/org/projects/proj"],
-    });
   });
 
   describe("through the query client", () => {
@@ -162,7 +139,7 @@ describe("createRuntimeJwtRefresher", () => {
         .mockRejectedValueOnce(httpError(503))
         .mockResolvedValueOnce({ jwt: "fresh" });
 
-      const jwt = userRefresher()(neverAborted);
+      const jwt = userRefresher()();
       await vi.advanceTimersByTimeAsync(10_000);
 
       await expect(jwt).resolves.toBe("fresh");
@@ -172,9 +149,52 @@ describe("createRuntimeJwtRefresher", () => {
     it("fails at once when the session or the project access is gone", async () => {
       getProject.mockReset().mockRejectedValue(httpError(403));
 
-      await expect(userRefresher()(neverAborted)).rejects.toEqual(
-        httpError(403),
-      );
+      await expect(userRefresher()()).rejects.toEqual(httpError(403));
+      expect(getProject).toHaveBeenCalledTimes(1);
+    });
+
+    it("abandons an attempt that stalls and retries it", async () => {
+      vi.useFakeTimers();
+      // Node runs AbortSignal.timeout on its own timer, out of the fake timers' reach
+      vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(
+          () => controller.abort(new DOMException("Timed out", "TimeoutError")),
+          ms,
+        );
+        return controller.signal;
+      });
+      const signals: AbortSignal[] = [];
+      getProject
+        .mockReset()
+        .mockImplementation((_org, _project, _params, signal) => {
+          if (!signal) throw new Error("expected the query client's signal");
+          signals.push(signal);
+          if (signals.length > 1) return Promise.resolve({ jwt: "fresh" });
+          // Fails only once aborted, like an axios request on a dead connection
+          return new Promise((_, reject) =>
+            signal.addEventListener("abort", () => reject(networkError)),
+          );
+        });
+
+      const jwt = userRefresher()();
+      await vi.advanceTimersByTimeAsync(14_000);
+      expect(getProject).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(jwt).resolves.toBe("fresh");
+      expect(signals[0].aborted).toBe(true);
+      expect(getProject).toHaveBeenCalledTimes(2);
+    });
+
+    it("refetches even when the cached token is seconds old", async () => {
+      // The runtime may have just rejected that token, so handing it back would not help
+      queryClient.setQueryData(["/v1/orgs/org/projects/proj"], {
+        jwt: "rejected",
+      });
+      getProject.mockReset().mockResolvedValue({ jwt: "fresh" });
+
+      await expect(userRefresher()()).resolves.toBe("fresh");
       expect(getProject).toHaveBeenCalledTimes(1);
     });
 
@@ -188,7 +208,7 @@ describe("createRuntimeJwtRefresher", () => {
       );
 
       const refresh = userRefresher();
-      const jwts = Promise.all([refresh(neverAborted), refresh(neverAborted)]);
+      const jwts = Promise.all([refresh(), refresh()]);
       resolveProject({ jwt: "fresh" });
 
       await expect(jwts).resolves.toEqual(["fresh", "fresh"]);
