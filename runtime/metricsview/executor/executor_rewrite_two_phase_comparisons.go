@@ -68,8 +68,9 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
-	// Execute the query for the base time range
-	baseRes, err := e.Query(ctx, baseQry, nil)
+	// Execute the query for the base time range.
+	// It calls the unexported query to not take a second heavy query slot (see Query), since the outer query already holds one.
+	baseRes, err := e.query(ctx, baseQry, nil)
 	if err != nil {
 		return false, err
 	}
