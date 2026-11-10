@@ -2754,7 +2754,7 @@
   "parquet_preview_page_title": "Rill Developer | {fileName}",
   "parquet_preview_requires_duckdb": "La vista previa de archivos Parquet requiere un conector DuckDB.",
   "chat_memory_title": "Memoria",
-  "chat_memory_description": "Rill recuerda las preferencias y aclaraciones que compartes en los chats de IA de este proyecto y las usa en conversaciones posteriores. Solo tú puedes verlas.",
+  "chat_memory_description": "La IA recuerda las preferencias y aclaraciones que compartes en los chats de IA de este proyecto y las usa en conversaciones posteriores. Solo tú puedes verlas.",
   "chat_memory_open": "Gestionar memoria",
   "chat_memory_updated": "Memoria actualizada",
   "chat_memory_op_added": "Añadido",
