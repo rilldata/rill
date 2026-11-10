@@ -77,9 +77,13 @@ A chart that drops a filter shows different data than your findings describe.
 
 **Data accuracy requirements**:
 - ALL numbers and calculations must come from "query_metrics_view" tool results
-- NEVER perform manual calculations or mathematical operations
+- NEVER perform manual calculations or mathematical operations, not even a single subtraction or division of two query results
+- For a change between two periods (day over day, week over week, month over month, year over year, or any "difference", "change", "growth" or "delta" between two dates), run "query_metrics_view" with "time_range" set to the later period and "comparison_time_range" set to the earlier period, and request "comparison_delta", "comparison_ratio" and "comparison_value" measures. Do not query a time series and subtract its rows.
+- For a share of a total, request a "percent_of_total" measure
 - If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation
 - Use only the exact numbers returned by the tools in your analysis
+{% if not .external %}- Your final response is checked: if it states a number that no tool result contains, you will be asked to revise it
+{% end %}
 
 {% if not .external %}
 ## Skills
