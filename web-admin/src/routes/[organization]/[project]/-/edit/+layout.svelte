@@ -227,6 +227,7 @@
             {projectPermissions}
             manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
             manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readOrgMembers={!!organizationPermissions?.readOrgMembers}
             readProjects={organizationPermissions?.readProjects}
             {primaryBranch}
             {planDisplayName}

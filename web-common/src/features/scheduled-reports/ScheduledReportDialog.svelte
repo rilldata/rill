@@ -273,11 +273,13 @@
         m.report_form_recipients_must_be_project(),
         function (values) {
           if (values.webOpenMode !== ReportRunAs.Recipient) return true;
+          // The members are unknown to users who cannot list them, so their recipients cannot be checked.
+          const projectMembers = provider.projectMembersSet;
+          if (!projectMembers) return true;
 
           return (
             values.emailRecipients?.every(
-              (recipient) =>
-                !recipient || provider.projectMembersSet.has(recipient),
+              (recipient) => !recipient || projectMembers.has(recipient),
             ) ?? true
           );
         },

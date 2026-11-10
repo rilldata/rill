@@ -14,6 +14,7 @@ import {
   RUNTIME_ACCESS_TOKEN_DEFAULT_TTL,
   JWT_EXPIRY_WARNING_WINDOW,
 } from "../constants";
+import { createRequestAttributionInterceptor } from "./request-attribution";
 import { RequestQueue, createQueueInterceptor } from "./request-queue";
 
 export type AuthContext = "user" | "mock" | "magic" | "embed";
@@ -90,7 +91,10 @@ export class RuntimeClient {
     this.transport = createConnectTransport({
       baseUrl: opts.host,
       interceptors: [
-        // Queue controls when requests fire (outermost: wraps everything)
+        // Names the RPC on every error or abort reason that leaves it, so error telemetry can attribute
+        // unhandled rejections to a request (outermost: it must see the signal before the queue rejects)
+        createRequestAttributionInterceptor(),
+        // Queue controls when requests fire
         createQueueInterceptor(this.requestQueue),
         // JWT interceptor adds auth header just before the network call
         (next) => async (req) => {
@@ -183,6 +187,15 @@ export class RuntimeClient {
     return this.currentJwt;
   }
 
+  /**
+   * Returns the JWT once it is not about to expire, waiting for a refresh like
+   * queries do. For one-off requests sent outside the query client.
+   */
+  async getFreshJwt(): Promise<string | undefined> {
+    if (this.currentJwt) await this.waitForFreshJwt();
+    return this.currentJwt;
+  }
+
   /** Returns how the client authenticates with the runtime, e.g. "magic" on public URLs. */
   get authContext(): AuthContext {
     return this._authContext;
@@ -220,7 +233,10 @@ export class RuntimeClient {
     let lastError: unknown;
     while (!this.isJwtFresh()) {
       if (this.disposed) {
-        throw new DOMException("Request cancelled", "AbortError");
+        throw new DOMException(
+          "Request cancelled: runtime client disposed while waiting for a fresh JWT",
+          "AbortError",
+        );
       }
       const remaining = deadline - Date.now();
       if (remaining <= 0) {

@@ -1,5 +1,9 @@
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import {
+  aggregationGrainOrder,
+  getAvailableTimeGrains,
+} from "@rilldata/web-common/lib/time/new-grains";
+import {
   V1ExploreComparisonMode,
   V1TimeGrain,
   type V1ExploreTimeRange,
@@ -22,6 +26,11 @@ export class TimeManager {
 
   hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
   minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
+  // The grains each metrics view with a time dimension offers, see getAvailableTimeGrains.
+  availableGrainsMap = writable<Map<string, V1TimeGrain[]>>(new Map());
+  // The grains every referenced metrics view offers, which the canvas filter bar lists.
+  // When the views share none, the grains any of them offers.
+  commonAvailableGrains: Readable<V1TimeGrain[]>;
   hasTimeSeriesStore: Readable<boolean>;
 
   defaultTimeRangeStore = maybeWritable<string>();
@@ -51,6 +60,26 @@ export class TimeManager {
       }
       return largest;
     });
+
+    this.commonAvailableGrains = derived(
+      [this.availableGrainsMap, this.largestMinTimeGrain],
+      ([map, largestMinTimeGrain]) => {
+        const lists = Array.from(map.values());
+        if (!lists.length) {
+          return getAvailableTimeGrains({
+            smallestTimeGrain: largestMinTimeGrain,
+          });
+        }
+        const common = lists[0].filter((grain) =>
+          lists.every((list) => list.includes(grain)),
+        );
+        if (common.length) return common;
+        // Never offer a grain that no view declares, so `time_grains` keeps replacing the default list.
+        return aggregationGrainOrder.filter((grain) =>
+          lists.some((list) => list.includes(grain)),
+        );
+      },
+    );
 
     this.hasTimeSeriesStore = derived(
       [this.hasTimeSeriesMap],
@@ -130,6 +159,7 @@ export class TimeManager {
     const metricsViews = response.metricsViews || {};
 
     const timeGrainMap = new Map<string, V1TimeGrain>();
+    const availableGrainsMap = new Map<string, V1TimeGrain[]>();
     const hasTimeSeriesMap = new Map<string, boolean>();
 
     Object.entries(metricsViews).forEach(([mvName, mv]) => {
@@ -138,9 +168,13 @@ export class TimeManager {
       timeGrainMap.set(mvName, timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
       const hasTimeDimension = Boolean(metricsViewSpec?.timeDimension);
       hasTimeSeriesMap.set(mvName, hasTimeDimension);
+      if (hasTimeDimension) {
+        availableGrainsMap.set(mvName, getAvailableTimeGrains(metricsViewSpec));
+      }
     });
 
     this.minTimeGrainMap.set(timeGrainMap);
+    this.availableGrainsMap.set(availableGrainsMap);
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
   }
 

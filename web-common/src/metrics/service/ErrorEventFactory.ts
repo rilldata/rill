@@ -42,6 +42,8 @@ export interface HTTPErrorEvent extends MetricsEvent {
 export interface JavascriptErrorEvent extends MetricsEvent {
   action: ErrorEventAction;
   screen_name: MetricsEventScreenName;
+  // The runtime RPC the error belonged to, such as `QueryService/metricsViewAggregation`; empty when unknown
+  api: string;
   stack: string;
   message: string;
   page_url: string;
@@ -136,6 +138,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     stack: string,
     message: string,
     pageUrl: string,
+    api = "",
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
@@ -145,6 +148,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     ) as JavascriptErrorEvent;
     event.action = ErrorEventAction.ErrorBoundary;
     event.screen_name = screen_name;
+    event.api = api;
     event.stack = stack;
     event.message = message;
     event.page_url = sanitizePageUrl(pageUrl);

@@ -73,8 +73,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
+	unit, n := timeutil.TimeGrainBase(grain)
 	var specifier string
-	if tz != "" {
+	if tz != "" || n > 1 {
 		specifier = druidTimeFloorSpecifier(grain)
 	} else {
 		specifier = d.ConvertToDateTruncSpecifier(grain)
@@ -85,6 +86,37 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples use time_floor with an ISO period; date_trunc only supports standard units.
+		if tz == "" {
+			return fmt.Sprintf("time_floor(%s, '%s')", expr, specifier), nil
+		}
+		if unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR {
+			// time_floor steps hour periods in absolute time from 1970-01-01 local,
+			// so during DST its 6-hour buckets start at 01:00 local.
+			// Shifting local midnight by the bucket's wall-clock hour is exact unless a DST change earlier that day moved it off that time;
+			// then the event's own hour start, moved back by the hours it is into the bucket, is exact unless the bucket starts in a DST gap.
+			// That start lands before the gap, so moving it forward to the bucket's wall-clock time gives the first instant after the gap,
+			// as in the other engines and TruncateTime.
+			// Comparing minutes of the day, not just hours, also catches the 30-minute DST change of Australia/Lord_Howe.
+			hour := fmt.Sprintf("time_extract(%s, 'HOUR', '%s')", expr, tz)
+			bucketHour := fmt.Sprintf("(%s - mod(%s, %d))", hour, hour, n)
+			bucketMinute := fmt.Sprintf("(%s * 60)", bucketHour)
+			minuteOfDay := func(t string) string {
+				return fmt.Sprintf("(time_extract(%s, 'HOUR', '%s') * 60 + time_extract(%s, 'MINUTE', '%s'))", t, tz, t, tz)
+			}
+			fromMidnight := fmt.Sprintf("time_shift(time_floor(%s, 'P1D', null, '%s'), 'PT1H', %s, '%s')", expr, tz, bucketHour, tz)
+			fromHour := fmt.Sprintf("time_shift(time_floor(%s, 'PT1H', null, '%s'), 'PT1H', -mod(%s, %d), '%s')", expr, tz, hour, n, tz)
+			pastGap := fmt.Sprintf("time_shift(%s, 'PT1M', mod(%s - %s + 1440, 1440), '%s')", fromHour, bucketMinute, minuteOfDay(fromHour), tz)
+			return fmt.Sprintf("CASE WHEN %s = %s THEN %s WHEN %s = %s THEN %s ELSE %s END",
+				minuteOfDay(fromMidnight), bucketMinute, fromMidnight,
+				minuteOfDay(fromHour), bucketMinute, fromHour,
+				pastGap,
+			), nil
+		}
+		return fmt.Sprintf("time_floor(%s, '%s', null, '%s')", expr, specifier, tz), nil
 	}
 
 	var shift int
@@ -207,26 +239,28 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	return prefix + suffix, nil, dimVals, nil
 }
 
+// druidTimeFloorSpecifier returns the ISO 8601 period for a grain, including multiples such as PT10M.
 func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
-	switch grain {
+	unit, n := timeutil.TimeGrainBase(grain)
+	switch unit {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return "PT0.001S"
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return "PT1S"
+		return fmt.Sprintf("PT%dS", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return "PT1M"
+		return fmt.Sprintf("PT%dM", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return "PT1H"
+		return fmt.Sprintf("PT%dH", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return "P1D"
+		return fmt.Sprintf("P%dD", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return "P1W"
+		return fmt.Sprintf("P%dW", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return "P1M"
+		return fmt.Sprintf("P%dM", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return "P3M"
+		return fmt.Sprintf("P%dM", 3*n)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return "P1Y"
+		return fmt.Sprintf("P%dY", n)
 	}
 	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
 }

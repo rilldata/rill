@@ -348,6 +348,21 @@ Reports created from an embed work as follows:
 - **They pause after 90 days of inactivity.** If you don't request an iframe for the owner for 90 days, their reports stop running. They resume the next time you request an iframe for the owner. To stop a user's reports right away, for example when you remove the user from your app, delete the reports in Rill Cloud.
 - **Only the owner can manage them in the embed.** Embed users whose attributes include `admin: true` can also see other users' reports, but can't edit them. Project admins can manage all reports in Rill Cloud, where reports created from an embed are shown with the owner's `external_user_id`.
 
+## Personal canvases in embeds
+
+Embed users can create, edit and delete their own canvas dashboards, called personal canvases. Personal canvases are disabled by default; enable them with the `personal_canvases` [feature flag](/reference/project-files/rill-yaml#features). Feature flags can be templated with user attributes, so you can enable personal canvases for embed users only:
+
+```yaml
+features:
+  personal_canvases: '{{ .user.embed }}'
+```
+
+Personal canvases created from an embed work as follows:
+- **They require `external_user_id` and `navigation: true`.** Each personal canvas is owned by the external user who created it, so iframes without an `external_user_id`, or limited to a single dashboard, don't show personal canvases.
+- **They are listed in the embed.** The navigation bar has a menu to open, create and delete personal canvases, and the project home page lists them above the other dashboards.
+- **Only the owner can see them.** Personal canvases created from an embed can't be shared, so other embed users and project members can't see them. Rill project admins can also access them.
+- **They respect security policies.** Like any dashboard, a personal canvas only shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
+
 ## Embedding the project vs embedding an individual dashboard
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!

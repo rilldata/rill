@@ -765,6 +765,84 @@ func TestResolveEmbedReportSecurity(t *testing.T) {
 	}
 }
 
+func TestResolveEmbedCanvasSecurity(t *testing.T) {
+	canvas := func(annotations map[string]string) *runtimev1.Resource {
+		return &runtimev1.Resource{
+			Meta: &runtimev1.ResourceMeta{
+				Name:           &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: "c1"},
+				StateUpdatedOn: timestamppb.Now(),
+			},
+			Resource: &runtimev1.Resource_Canvas{
+				Canvas: &runtimev1.Canvas{
+					Spec:  &runtimev1.CanvasSpec{Annotations: annotations},
+					State: &runtimev1.CanvasState{},
+				},
+			},
+		}
+	}
+	embedCanvas := canvas(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"})
+	sharedEmbedCanvas := canvas(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner", "admin_shared": "true"})
+	userCanvas := canvas(map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"})
+
+	tests := []struct {
+		name   string
+		canvas *runtimev1.Resource
+		claims *SecurityClaims
+		want   bool
+	}{
+		{
+			name:   "embed owner can access embed canvas",
+			canvas: embedCanvas,
+			claims: &SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}},
+			want:   true,
+		},
+		{
+			name:   "other embed user can't access embed canvas",
+			canvas: embedCanvas,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}},
+			want:   false,
+		},
+		{
+			name:   "admin can access embed canvas",
+			canvas: embedCanvas,
+			claims: &SecurityClaims{UserID: "u3", UserAttributes: map[string]any{"id": "u3", "admin": true}},
+			want:   true,
+		},
+		{
+			name:   "matching id attribute without matching subject can't access embed canvas",
+			canvas: embedCanvas,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"id": "ext_owner", "embed": true}},
+			want:   false,
+		},
+		{
+			name:   "shared annotation doesn't grant access to embed canvas",
+			canvas: sharedEmbedCanvas,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2"}},
+			want:   false,
+		},
+		{
+			name:   "owner can access user canvas",
+			canvas: userCanvas,
+			claims: &SecurityClaims{UserID: "u1", UserAttributes: map[string]any{"id": "u1"}},
+			want:   true,
+		},
+		{
+			name:   "other user can't access user canvas",
+			canvas: userCanvas,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2"}},
+			want:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, tt.claims, tt.canvas)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got.CanAccess())
+		})
+	}
+}
+
 func TestResolveAPI(t *testing.T) {
 	tests := []struct {
 		name       string

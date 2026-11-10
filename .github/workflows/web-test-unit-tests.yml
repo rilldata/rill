@@ -35,6 +35,7 @@ jobs:
               - "package.json"
               - "package-lock.json"
               - "web-common/**"
+              - "web-local/**"
             mcpapp:
               - ".github/workflows/web-test-unit-tests.yml"
               - ".nvmrc"
@@ -56,7 +57,10 @@ jobs:
         run: npm run build:i18n
 
       - name: Sync SvelteKit
-        run: npm run generate:sveltekit -w web-common
+        # Some web-common specs import web-local modules, whose tsconfig extends web-local's generated one.
+        run: |
+          npm run generate:sveltekit -w web-common
+          npm exec -w web-local -- svelte-kit sync
 
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'

@@ -16,6 +16,7 @@
   import type { View, VisualizationSpec } from "svelte-vega";
   import { derived, get } from "svelte/store";
   import { metricsSQLFilterProperties } from "./expression-utils";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
 
   export let spec: string | undefined = undefined;
   export let metricsSQL: string[] = [];
@@ -26,6 +27,11 @@
   export let name: string = "Custom Chart";
   export let onMetaChange:
     | ((meta: Record<string, unknown> | undefined) => void)
+    | undefined = undefined;
+  // Reports the rows and schema of every query once they have all loaded
+  // (undefined until then), for the canvas workbook export.
+  export let onResults:
+    | ((results: CustomChartExportResult[] | undefined) => void)
     | undefined = undefined;
 
   const viewOptions = ["Chart", "Data"];
@@ -116,6 +122,15 @@
   }
 
   $: queryError = $combinedResults.find((r) => r.error)?.error;
+
+  $: onResults?.(
+    $combinedResults.length && $combinedResults.every((r) => r.isSuccess)
+      ? $combinedResults.map((r) => ({
+          data: r.data as Record<string, unknown>[] | undefined,
+          schema: r.tableSchema,
+        }))
+      : undefined,
+  );
 
   $: isLoading = $combinedResults.some((r) => r.isLoading);
 
