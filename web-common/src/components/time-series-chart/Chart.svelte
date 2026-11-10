@@ -4,7 +4,7 @@
   import { computeNiceYExtent } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/scales";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { plusGrain } from "@rilldata/web-common/lib/time/new-grains";
   import {
     V1TimeGrain,
     type V1TimeSeriesValue,
@@ -168,9 +168,7 @@
 
     const interval = Interval.fromDateTimes(
       DateTime.fromJSDate(date).setZone(selectedTimeZone),
-      DateTime.fromJSDate(date)
-        .setZone(selectedTimeZone)
-        .plus({ [TIME_GRAIN[timeGrain]?.unit || "minute"]: 1 }),
+      plusGrain(DateTime.fromJSDate(date).setZone(selectedTimeZone), timeGrain),
     );
 
     hoveredIntervalCache.set(cacheKey, interval);

@@ -2,6 +2,7 @@ import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashbo
 import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
+import { pivotHasSortField } from "@rilldata/web-common/features/dashboards/pivot/pivot-sorting";
 import {
   PIVOT_TOTALS_ROW_POSITIONS,
   type PivotChipData,
@@ -28,7 +29,7 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -142,7 +143,7 @@ function fromTimeRangesParams(
   if (preset.timeGrain) {
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
-      DateTimeUnitToV1TimeGrain[preset.timeGrain];
+      TokenToV1TimeGrain[preset.timeGrain];
     partialExploreState.adaptiveTimeGrain = false;
   } else if (preset.timeRange) {
     // A time range without a grain is adaptive: `correctExploreState` derives the grain from the range.
@@ -549,6 +550,18 @@ function fromPivotUrlParams(
     };
   }
 
+  let tableMode: PivotTableMode = "nest";
+
+  if (preset.pivotTableMode) {
+    if (preset.pivotTableMode === "nest" || preset.pivotTableMode === "flat") {
+      tableMode = preset.pivotTableMode;
+    } else {
+      errors.push(
+        getSingleFieldError("pivot table mode", preset.pivotTableMode),
+      );
+    }
+  }
+
   const sorting: SortingState = [];
   if (preset.pivotSortBy) {
     const isTimeDim = preset.pivotSortBy in FromURLParamTimeDimensionMap;
@@ -560,24 +573,16 @@ function fromPivotUrlParams(
     } else {
       sortById = preset.pivotSortBy;
     }
-    // Allow all sort IDs through: measures, dimensions, time dimensions,
-    // and unrecognized IDs (e.g. minimized accessors like "c0v2m0") which
-    // TanStack Table will simply ignore if they don't match any column
-    sorting.push({
-      id: sortById,
-      desc: !preset.pivotSortAsc,
-    });
-  }
-
-  let tableMode: PivotTableMode = "nest";
-
-  if (preset.pivotTableMode) {
-    if (preset.pivotTableMode === "nest" || preset.pivotTableMode === "flat") {
-      tableMode = preset.pivotTableMode;
+    // Any column id goes through (measures, dimensions, time columns and
+    // minimized accessors like "c0v2m0") as long as its field is still in
+    // the pivot; the pivot's queries fail on a sort by a removed field.
+    if (pivotHasSortField(sortById, { rows, columns, tableMode })) {
+      sorting.push({
+        id: sortById,
+        desc: !preset.pivotSortAsc,
+      });
     } else {
-      errors.push(
-        getSingleFieldError("pivot table mode", preset.pivotTableMode),
-      );
+      errors.push(getSingleFieldError("pivot sort field", preset.pivotSortBy));
     }
   }
 

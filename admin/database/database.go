@@ -329,6 +329,8 @@ type DB interface {
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
+	// FindVirtualFilesByEmbedOwner TODO: pagination
+	FindVirtualFilesByEmbedOwner(ctx context.Context, projectID, environment, embedOwnerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error

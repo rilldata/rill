@@ -5,6 +5,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,6 +54,19 @@ func TestGrainDerivableFrom(t *testing.T) {
 		{"minute from hour", runtimev1.TimeGrain_TIME_GRAIN_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_HOUR, false},
 		{"day from month", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_MONTH, false},
 
+		// Multiples: the rollup bucket must divide the query bucket
+		{"10m from minute", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_MINUTE, true},
+		{"10m from 5m", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE, true},
+		{"30m from 15m", runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE, true},
+		{"10m from 15m", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE, false},
+		{"10m from hour", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_HOUR, false},
+		{"hour from 10m", runtimev1.TimeGrain_TIME_GRAIN_HOUR, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, true},
+		{"6h from hour", runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, runtimev1.TimeGrain_TIME_GRAIN_HOUR, true},
+		{"8h from 6h", runtimev1.TimeGrain_TIME_GRAIN_8_HOUR, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, false},
+		{"day from 6h", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, true},
+		{"week from 10m", runtimev1.TimeGrain_TIME_GRAIN_WEEK, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, true},
+		{"month from 12h", runtimev1.TimeGrain_TIME_GRAIN_MONTH, runtimev1.TimeGrain_TIME_GRAIN_12_HOUR, true},
+
 		// Unspecified
 		{"unspecified query", runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, runtimev1.TimeGrain_TIME_GRAIN_DAY, false},
 		{"unspecified rollup", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, false},
@@ -62,6 +76,31 @@ func TestGrainDerivableFrom(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := grainDerivableFrom(tt.query, tt.rollup)
 			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestExtractQueryTimeGrain(t *testing.T) {
+	timeFloor := func(g metricsview.TimeGrain) metricsview.Dimension {
+		return metricsview.Dimension{Name: string(g), Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "ts", Grain: g}}}
+	}
+	tests := []struct {
+		name     string
+		grains   []metricsview.TimeGrain
+		expected runtimev1.TimeGrain
+	}{
+		{"single multiple", []metricsview.TimeGrain{metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"minute finer than 6h", []metricsview.TimeGrain{metricsview.TimeGrain6Hour, metricsview.TimeGrainMinute}, runtimev1.TimeGrain_TIME_GRAIN_MINUTE},
+		{"10m finer than hour", []metricsview.TimeGrain{metricsview.TimeGrainHour, metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"12h finer than day", []metricsview.TimeGrain{metricsview.TimeGrainDay, metricsview.TimeGrain12Hour}, runtimev1.TimeGrain_TIME_GRAIN_12_HOUR},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &metricsview.Query{}
+			for _, g := range tt.grains {
+				qry.Dimensions = append(qry.Dimensions, timeFloor(g))
+			}
+			require.Equal(t, tt.expected, extractQueryTimeGrain(qry))
 		})
 	}
 }

@@ -1,0 +1,174 @@
+connectors:
+  - druid
+project_files:
+  druid_metrics.yaml:
+    type: metrics_view
+    connector: druid
+    table: AdBids
+    timeseries: __time
+    time_grains: [10m, 2h, 6h, day]
+    measures:
+      - name: bids
+        expression: count(*)
+tests:
+  # 2022-03-13 is the spring-forward day in New York: buckets stay on local 00:00, 06:00, 12:00 and 18:00,
+  # i.e. 05:00Z before the change and 10:00Z, 16:00Z and 22:00Z after it.
+  - name: time_floor_6h_new_york_dst
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: __time
+              grain: 6h
+      measures:
+        - name: bids
+      time_range:
+        start: 2022-03-13T05:00:00Z
+        end: 2022-03-14T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+    result:
+      - bids: 218
+        time__6h: "2022-03-13T05:00:00Z"
+      - bids: 263
+        time__6h: "2022-03-13T10:00:00Z"
+      - bids: 258
+        time__6h: "2022-03-13T16:00:00Z"
+      - bids: 257
+        time__6h: "2022-03-13T22:00:00Z"
+  - name: time_spine_6h_new_york_dst
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: __time
+              grain: 6h
+      measures:
+        - name: bids
+      time_range:
+        start: 2022-03-13T05:00:00Z
+        end: 2022-03-14T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - bids: 218
+        time__6h: "2022-03-13T05:00:00Z"
+      - bids: 263
+        time__6h: "2022-03-13T10:00:00Z"
+      - bids: 258
+        time__6h: "2022-03-13T16:00:00Z"
+      - bids: 257
+        time__6h: "2022-03-13T22:00:00Z"
+  # Local 02:00 does not exist that day, so the 02:00 bucket starts at 03:00 EDT (07:00Z) and the next one at 04:00 EDT (08:00Z).
+  - name: time_spine_2h_new_york_dst
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: __time
+              grain: 2h
+      measures:
+        - name: bids
+      time_range:
+        start: 2022-03-13T05:00:00Z
+        end: 2022-03-13T14:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - bids: 93
+        time__2h: "2022-03-13T05:00:00Z"
+      - bids: 45
+        time__2h: "2022-03-13T07:00:00Z"
+      - bids: 80
+        time__2h: "2022-03-13T08:00:00Z"
+      - bids: 97
+        time__2h: "2022-03-13T10:00:00Z"
+      - bids: 92
+        time__2h: "2022-03-13T12:00:00Z"
+  # 2022-03-13 is also the spring-forward day in Havana, where local midnight does not exist,
+  # so the first bucket of the day starts at 01:00 CDT (05:00Z).
+  - name: time_spine_6h_havana_dst
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: __time
+              grain: 6h
+      measures:
+        - name: bids
+      time_range:
+        start: 2022-03-13T05:00:00Z
+        end: 2022-03-14T04:00:00Z
+      time_zone: America/Havana
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - bids: 218
+        time__6h: "2022-03-13T05:00:00Z"
+      - bids: 263
+        time__6h: "2022-03-13T10:00:00Z"
+      - bids: 258
+        time__6h: "2022-03-13T16:00:00Z"
+      - bids: 257
+        time__6h: "2022-03-13T22:00:00Z"
+  - name: time_floor_10m_new_york
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__10m
+          compute:
+            time_floor:
+              dimension: __time
+              grain: 10m
+      measures:
+        - name: bids
+      time_range:
+        start: 2022-03-14T14:00:00Z
+        end: 2022-03-14T15:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__10m
+    result:
+      - bids: 7
+        time__10m: "2022-03-14T14:00:00Z"
+      - bids: 5
+        time__10m: "2022-03-14T14:10:00Z"
+      - bids: 7
+        time__10m: "2022-03-14T14:20:00Z"
+      - bids: 4
+        time__10m: "2022-03-14T14:30:00Z"
+      - bids: 13
+        time__10m: "2022-03-14T14:40:00Z"
+      - bids: 10
+        time__10m: "2022-03-14T14:50:00Z"

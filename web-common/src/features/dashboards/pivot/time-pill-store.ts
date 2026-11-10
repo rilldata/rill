@@ -24,6 +24,8 @@ export interface TimeControlsInfo {
   timeStart: string;
   timeEnd: string;
   minTimeGrain?: V1TimeGrain;
+  // The grains the metrics view offers, see getAvailableTimeGrains
+  availableTimeGrains?: V1TimeGrain[];
 }
 
 const timePillStore = writable<TimePillStoreState>({});
@@ -45,6 +47,7 @@ export const timePills = derived(
       const allAllowedGrains = getAllowedTimeGrains(
         new Date(timeControls.timeStart),
         new Date(timeControls.timeEnd),
+        timeControls.availableTimeGrains,
       )
         .map((tg) => tg.grain)
         .filter(isAvailableTimeGrain);
@@ -84,8 +87,14 @@ export const timePillActions = {
     timeStart: string,
     timeEnd: string,
     minTimeGrain?: V1TimeGrain,
+    availableTimeGrains?: V1TimeGrain[],
   ) {
-    timeControlsInfo.set({ timeStart, timeEnd, minTimeGrain });
+    timeControlsInfo.set({
+      timeStart,
+      timeEnd,
+      minTimeGrain,
+      availableTimeGrains,
+    });
   },
 
   // Initialize a time dimension
