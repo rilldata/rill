@@ -12,8 +12,6 @@
       ? getEmbedBookmarkResource(page.route.id, page.params)
       : null,
   );
-
-  $effect(() => console.log(bookmarkResource));
 </script>
 
 {#if bookmarkResource}

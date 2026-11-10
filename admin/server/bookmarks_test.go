@@ -411,6 +411,10 @@ func TestEmbedBookmarks(t *testing.T) {
 		require.ElementsMatch(t, []string{allowed.Id, other.Id}, list(t, open))
 		_, err = get(t, fixed, other.Id)
 		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		require.Equal(t, codes.PermissionDenied, status.Code(update(t, fixed, other.Id, false)))
+		require.Equal(t, codes.PermissionDenied, status.Code(remove(t, fixed, other.Id)))
+		require.NoError(t, update(t, fixed, allowed.Id, false))
+		require.NoError(t, remove(t, fixed, allowed.Id))
 	})
 
 	t.Run("embed users can only create a limited number of bookmarks", func(t *testing.T) {

@@ -1,6 +1,8 @@
-import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+import {
+  type DashboardInfo,
+  getDashboardFromEmbedRoute,
+} from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
-import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { derived } from "svelte/store";
 
 /**
@@ -21,10 +23,7 @@ export const embedBookmarksEnabled = derived(
 export function getEmbedBookmarkResource(
   routeId: string | null,
   params: Record<string, string> | undefined,
-): { kind: ResourceKind.Explore | ResourceKind.Canvas; name: string } | null {
-  if (routeId?.includes("/-/embed/personal/")) return null;
-  return getDashboardFromEmbedRoute(routeId, params) as {
-    kind: ResourceKind.Explore | ResourceKind.Canvas;
-    name: string;
-  } | null;
+): DashboardInfo | null {
+  const dashboard = getDashboardFromEmbedRoute(routeId, params);
+  return dashboard?.personal ? null : dashboard;
 }

@@ -20,6 +20,7 @@
   import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
   import EmbedPersonalCanvasButton from "@rilldata/web-admin/features/embeds/EmbedPersonalCanvasButton.svelte";
   import EmbedBookmarks from "@rilldata/web-admin/features/bookmarks/EmbedBookmarks.svelte";
+  import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
   import {
     embedBookmarksEnabled,
     getEmbedBookmarkResource,
@@ -48,7 +49,10 @@
   $: currentResourceName = currentResource?.meta?.name?.name;
 
   // Personal canvases aren't valid dashboards for the breadcrumb, so we show their display name instead.
-  $: onPersonalCanvasPage = !!$page.route.id?.includes("/-/embed/personal/");
+  $: onPersonalCanvasPage = !!getDashboardFromEmbedRoute(
+    $page.route.id,
+    $page.params,
+  )?.personal;
   $: personalCanvasQuery = getPersonalFilteredResourceByName(
     runtimeClient,
     activeResource?.name ?? "",

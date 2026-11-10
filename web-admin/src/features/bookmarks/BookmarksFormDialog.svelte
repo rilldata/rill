@@ -228,12 +228,12 @@
           });
           reset();
         }
+        // Capture before `onClose`, since the parent resets `bookmark` to null when the dialog closes.
+        const message = bookmark ? m.bookmark_updated() : m.bookmark_created();
         onClose();
 
         await invalidateBookmarkQueries();
-        eventBus.emit("notification", {
-          message: bookmark ? m.bookmark_updated() : m.bookmark_created(),
-        });
+        eventBus.emit("notification", { message });
       },
     },
   );

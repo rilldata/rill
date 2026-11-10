@@ -308,6 +308,7 @@ type DB interface {
 	// Unlike FindBookmarks, it never returns shared or default bookmarks.
 	// resourceKind and resourceName are optional filters; when both are empty, all of the embed user's bookmarks in the project are returned.
 	FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*Bookmark, error)
+	// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
 	CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)

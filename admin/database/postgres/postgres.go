@@ -2958,6 +2958,7 @@ func (c *connection) FindBookmarksByEmbedOwner(ctx context.Context, projectID, r
 	return res, nil
 }
 
+// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
 func (c *connection) CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM bookmarks WHERE project_id = $1 AND embed_owner_id = $2", projectID, embedOwnerID).Scan(&count)

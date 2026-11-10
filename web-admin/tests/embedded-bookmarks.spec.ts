@@ -84,6 +84,45 @@ test.describe("Embedded bookmarks", () => {
     await expect(bookmarkEntry(embedHost, renamed)).toHaveCount(0);
   });
 
+  test("Should work for embeds without navigation", async ({ embedHost }) => {
+    const { frame } = embedHost;
+    const displayName = `No navigation bookmark ${Date.now()}`;
+
+    // Alice filters the explore dashboard and bookmarks it.
+    await embedHost.goto({ user: "alice", navigation: false });
+    await expectEmbedLoaded(embedHost);
+    await frame.getByRole("row", { name: /^Facebook/ }).click();
+    await expect(publisherFilter(embedHost)).toBeVisible();
+
+    await bookmarksButton(embedHost).click();
+    await frame
+      .getByRole("menuitem", { name: "Bookmark current view", exact: true })
+      .click();
+    await frame.getByLabel("Label").fill(displayName);
+    await frame.getByRole("button", { name: "Save" }).click();
+    await expect(frame.getByText("Bookmark created")).toBeVisible();
+
+    // Reloading the embed resets the dashboard; opening the bookmark applies the filter again.
+    await embedHost.goto({ user: "alice", navigation: false });
+    await expectEmbedLoaded(embedHost);
+    await expect(publisherFilter(embedHost)).toHaveCount(0);
+    await bookmarksButton(embedHost).click();
+    await bookmarkEntry(embedHost, displayName).getByRole("link").click();
+    await expect(publisherFilter(embedHost)).toBeVisible();
+
+    // Alice deletes the bookmark.
+    await bookmarksButton(embedHost).click();
+    await bookmarkEntry(embedHost, displayName).hover();
+    await bookmarkEntry(embedHost, displayName)
+      .getByRole("button", { name: "Delete bookmark" })
+      .click();
+    await expect(
+      frame.getByText(`Bookmark ${displayName} deleted`),
+    ).toBeVisible();
+    await bookmarksButton(embedHost).click();
+    await expect(bookmarkEntry(embedHost, displayName)).toHaveCount(0);
+  });
+
   test("Should bookmark canvas dashboards", async ({ embedHost }) => {
     const { frame } = embedHost;
     const displayName = `Canvas bookmark ${Date.now()}`;

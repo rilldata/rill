@@ -115,12 +115,8 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 		if !owned {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to read the bookmark")
 		}
-		embedResources, err := embedResourcesFromClaims(claims)
-		if err != nil {
+		if err := checkEmbedResource(claims, bookmark.ResourceKind, bookmark.ResourceName); err != nil {
 			return nil, err
-		}
-		if len(embedResources) > 0 && !containsResource(embedResources, bookmark.ResourceKind, bookmark.ResourceName) {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read the bookmark")
 		}
 	} else if !owned && !bookmark.Shared && !bookmark.Default {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the bookmark")
@@ -167,12 +163,8 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 	// Embed users are untrusted outside users, so we limit the resources they can bookmark and how many bookmarks they can create.
 	if o.isEmbed() {
-		embedResources, err := embedResourcesFromClaims(claims)
-		if err != nil {
+		if err := checkEmbedResource(claims, req.ResourceKind, req.ResourceName); err != nil {
 			return nil, err
-		}
-		if len(embedResources) > 0 && !containsResource(embedResources, req.ResourceKind, req.ResourceName) {
-			return nil, status.Errorf(codes.PermissionDenied, "bookmarks created from this embed can't target %s %q", req.ResourceKind, req.ResourceName)
 		}
 
 		count, err := s.admin.DB.CountBookmarksByEmbedOwner(ctx, proj.ID, o.embedUserID)
@@ -250,6 +242,12 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
 	}
 
+	if o.isEmbed() {
+		if err := checkEmbedResource(claims, bookmark.ResourceKind, bookmark.ResourceName); err != nil {
+			return nil, err
+		}
+	}
+
 	if req.Shared && !permissions.ManageBookmarks {
 		// only admins can share bookmarks
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to share the bookmark")
@@ -303,6 +301,12 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
 	}
 
+	if o.isEmbed() {
+		if err := checkEmbedResource(claims, bookmark.ResourceKind, bookmark.ResourceName); err != nil {
+			return nil, err
+		}
+	}
+
 	err = s.admin.DB.DeleteBookmark(ctx, req.BookmarkId)
 	if err != nil {
 		return nil, err
@@ -341,6 +345,18 @@ func embedResourcesFromClaims(claims auth.Claims) ([]database.ResourceName, erro
 		return nil, status.Error(codes.Internal, "unexpected embed token model")
 	}
 	return tkn.Resources, nil
+}
+
+// checkEmbedResource returns a PermissionDenied error if the embed token is limited to specific resources and the given resource is not one of them.
+func checkEmbedResource(claims auth.Claims, kind, name string) error {
+	embedResources, err := embedResourcesFromClaims(claims)
+	if err != nil {
+		return err
+	}
+	if len(embedResources) > 0 && !containsResource(embedResources, kind, name) {
+		return status.Errorf(codes.PermissionDenied, "this embed does not have access to bookmarks for %s %q", kind, name)
+	}
+	return nil
 }
 
 // containsResource returns true if the resource kind and name are in the list of resources.
