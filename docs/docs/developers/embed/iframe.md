@@ -422,8 +422,10 @@ While it is possible to create the iframeSrc URL via the CLI or code to _test_ y
 ## Frontend: Embed the dashboard
 Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html
-<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
+<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" allow="clipboard-write" />
 ```
+
+The `allow="clipboard-write"` attribute lets the dashboard copy values to the clipboard, for example when users Shift+Click a cell. Chrome and Edge block the Clipboard API in cross-origin iframes that are not granted this permission.
 
 Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
 
@@ -530,6 +532,7 @@ export default function RillDashboard() {
       src={iframeSrc}
       width="100%"
       height="1000"
+      allow="clipboard-write"
     />
   );
 };
