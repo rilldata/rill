@@ -2822,7 +2822,7 @@
   "parquet_preview_page_title": "Rill Developer | {fileName}",
   "parquet_preview_requires_duckdb": "Parquet 파일 미리보기에는 DuckDB 커넥터가 필요합니다.",
   "chat_memory_title": "메모리",
-  "chat_memory_description": "Rill은 이 프로젝트의 AI 채팅에서 공유한 선호 사항과 설명을 기억하고 이후 대화에 활용합니다. 나만 볼 수 있습니다.",
+  "chat_memory_description": "AI는 이 프로젝트의 AI 채팅에서 공유한 선호 사항과 설명을 기억하고 이후 대화에 활용합니다. 나만 볼 수 있습니다.",
   "chat_memory_open": "메모리 관리",
   "chat_memory_updated": "메모리가 업데이트되었습니다",
   "chat_memory_op_added": "추가됨",
