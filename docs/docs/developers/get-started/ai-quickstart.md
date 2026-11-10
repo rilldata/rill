@@ -64,7 +64,7 @@ Launch Rill Developer in [preview mode](/developers/build/getting-started#previe
 rill start my-project --preview
 ```
 
-This also starts a local MCP server at `http://localhost:9009/mcp`. If you generated agent instructions in Step 1, `.mcp.json` registers that server as `rill-developer`. Approve the server when your agent asks. Claude does not show the Rill tools until you add the Rill plugin and fully quit and restart Claude, as described below.
+This also starts a local MCP server at `http://localhost:9009/mcp`. If you generated agent instructions in Step 1, `.mcp.json` registers that server as `rill-developer`. In Claude Code, approve `rill-developer` when asked. That approval connects Claude Code to the server and its tools. For the Claude desktop app, add the Rill plugin and fully quit and restart the app, as described below.
 
 The MCP server gives your AI agent access to:
 - **Project status** — see which resources are healthy, errored, or pending
@@ -72,18 +72,11 @@ The MCP server gives your AI agent access to:
 - **SQL queries** — run analytical queries against your OLAP engine
 - **File operations** — read and write project files
 
-### Add the Rill plugin to Claude
+### Add the Rill plugin in the Claude desktop app
 
-If you are using Claude, add the [Rill plugin](https://claude.com/marketplace/plugins/rill) before you start building. The plugin provides the Rill skills and connects Claude to the local MCP server at `http://localhost:9009/mcp` (Rill Developer must be running).
+In the Claude desktop app, add the [Rill plugin](https://claude.com/marketplace/plugins/rill). Open **Customize → Plugins**, find **Rill**, and select **Add**.
 
-In the Claude desktop app, open **Customize → Plugins**, find **Rill**, and select **Add**. In Claude Code, run these commands inside the session. They are slash commands, not shell commands:
-
-```text
-/plugin marketplace add rilldata/agent-skills
-/plugin install rill@rilldata
-```
-
-The plugin name is `rill`, from the `rilldata` marketplace (`rill@rilldata`). The same commands are documented in the [plugin repository](https://github.com/rilldata/agent-skills).
+The plugin connects to Rill Developer at `http://localhost:9009/mcp`. That address uses the default HTTP port, `9009` (`rill start --port`, default `9009`). Keep Rill Developer on port 9009. Starting it with a different `--port` leaves the plugin pointed at 9009, so it cannot connect.
 
 :::warning Fully quit Claude, then start it again
 Claude loads plugins when the process starts. Closing the window leaves Claude running, so the Rill tools stay missing until you terminate Claude and open it again.
