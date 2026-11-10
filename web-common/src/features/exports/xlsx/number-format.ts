@@ -18,7 +18,7 @@ export function excelNumberFormat(
     case FormatPreset.CURRENCY_EUR:
       return `"€"#,##0.00`;
     case FormatPreset.PERCENTAGE:
-      return PERCENT_FORMAT;
+      return percentFormat(values);
     case FormatPreset.INTERVAL:
     case FormatPreset.NONE:
       return "General";
@@ -31,6 +31,23 @@ export function excelNumberFormat(
       )
     : undefined;
   return fromD3 ?? (allIntegers(values) ? INTEGER_FORMAT : DECIMAL_FORMAT);
+}
+
+// A percentage format with enough decimals to show the smallest non-zero value
+// with two significant digits, as the dashboard's humanized percentages do
+// (0.53%, 6.6%), keeping between one and four decimals. A fixed "0.0%" would
+// turn a 0.53% click-through rate into 0.5% and a 0.03% one into 0.0%.
+function percentFormat(values: Iterable<unknown> | undefined): string {
+  let smallest = Infinity;
+  for (const value of values ?? []) {
+    if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+      smallest = Math.min(smallest, Math.abs(value) * 100);
+    }
+  }
+  const digits = Number.isFinite(smallest)
+    ? 1 - Math.floor(Math.log10(smallest))
+    : 1;
+  return "0." + "0".repeat(Math.min(4, Math.max(1, digits))) + "%";
 }
 
 // The currency symbols of a measure's d3 locale, [prefix, suffix], when it sets them.

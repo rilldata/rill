@@ -197,6 +197,8 @@ describe("mapChart", () => {
     ]);
     expect(table.rows).toStrictEqual([["US", 10, 5, 8]]);
     expect(chart?.percentStacked).toBe(true);
+    // The axis shows shares, whatever the measure's format.
+    expect(chart?.numberFormat).toBe("0%");
     expect(chart?.legendPosition).toBe("bottom");
   });
 
@@ -323,6 +325,83 @@ describe("mapChart", () => {
       ["US", 1],
       ["CA", 2],
     ]);
+  });
+
+  it("orders category rows like the chart's domain values", () => {
+    // The canvas sorts a category axis by its domain values (e.g. the top
+    // values by spend), not by the order the rows arrive in.
+    const domainValues = { country: ["US", "CA", "MX"] };
+    const rows = [
+      { country: "FR", spend: 1 },
+      { country: "MX", spend: 2 },
+      { country: "US", spend: 9 },
+      { country: "CA", spend: 5 },
+    ];
+    const bars = mapChart({
+      chartType: "bar_chart",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "spend", type: "quantitative" },
+        y: { field: "country", type: "nominal", sort: "-x" },
+      } as CanvasChartSpec,
+      data: data(rows, { domainValues }),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(bars.chart?.type).toBe(WorkbookChartType.BAR);
+    // Values missing from the domain go last, in their original order.
+    expect(bars.table.rows.map((row) => row[0])).toStrictEqual([
+      "US",
+      "CA",
+      "MX",
+      "FR",
+    ]);
+
+    const split = mapChart({
+      chartType: "stacked_bar",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "country", type: "nominal", sort: "-y" },
+        y: { field: "spend", type: "quantitative" },
+        color: { field: "device", type: "nominal" },
+      } as CanvasChartSpec,
+      data: data(
+        [
+          { country: "CA", device: "mobile", spend: 1 },
+          { country: "US", device: "desktop", spend: 2 },
+          { country: "US", device: "mobile", spend: 3 },
+        ],
+        { domainValues: { ...domainValues, device: ["mobile", "desktop"] } },
+      ),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(split.table.rows).toStrictEqual([
+      ["US", 3, 2],
+      ["CA", 1, null],
+    ]);
+
+    const heatmap = mapChart({
+      chartType: "heatmap",
+      spec: {
+        metrics_view: "mv",
+        x: { field: "country", type: "nominal" },
+        y: { field: "device", type: "nominal" },
+        color: { field: "spend", type: "quantitative" },
+      } as CanvasChartSpec,
+      data: data(
+        [
+          { country: "CA", device: "desktop", spend: 1 },
+          { country: "US", device: "desktop", spend: 2 },
+          { country: "CA", device: "mobile", spend: 3 },
+          { country: "US", device: "mobile", spend: 4 },
+        ],
+        { domainValues: { ...domainValues, device: ["mobile", "desktop"] } },
+      ),
+      timeGrain: undefined,
+      timeZone: "UTC",
+    });
+    expect(heatmap.table.rows.map((row) => row[2])).toStrictEqual([4, 2, 3, 1]);
   });
 
   it("keeps a combo chart native when its colour is the measures pseudo-field", () => {

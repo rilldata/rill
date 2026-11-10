@@ -453,17 +453,25 @@ async function blockFor(
         },
       };
     case "imageUrl":
-      // The snapshot is the image as the canvas shows it; the URL is its alt
-      // text, and the block's text when the snapshot failed.
+      // The snapshot is the image as the canvas shows it, with the URL as its
+      // alt text; when the snapshot failed, the block names the URL instead.
+      if (image) {
+        return {
+          title: title || payload.url,
+          subtitle,
+          content: {
+            case: "image",
+            value: new WorkbookImageBlock({ png: image }),
+          },
+        };
+      }
       return {
-        title: title || payload.url,
+        title,
         subtitle,
-        content: image
-          ? { case: "image", value: new WorkbookImageBlock({ png: image }) }
-          : {
-              case: "text",
-              value: new WorkbookTextBlock({ text: `Image: ${payload.url}` }),
-            },
+        content: {
+          case: "text",
+          value: new WorkbookTextBlock({ text: `Image: ${payload.url}` }),
+        },
       };
     case "error":
       return { title, subtitle, content: note(payload.message || "Error") };
@@ -481,7 +489,11 @@ function kpiValue(
   return new WorkbookKpiValue({
     label: value.label,
     value: Value.fromJson(jsonCell(value.value)),
-    numberFormat: excelNumberFormat(value.measure, [value.value]),
+    numberFormat: excelNumberFormat(value.measure, [
+      value.value,
+      value.comparisonValue,
+      value.delta,
+    ]),
     comparisonLabel: value.comparisonLabel ?? "",
     comparisonValue: Value.fromJson(jsonCell(value.comparisonValue)),
     delta: Value.fromJson(jsonCell(value.delta)),
@@ -700,6 +712,7 @@ export function toDataSheet(
     totals: table.totals
       ? ListValue.fromJson(kept.map((i) => jsonCell(table.totals![i])))
       : undefined,
+    totalsLast: table.totalsLast ?? false,
     rowNumberFormats: table.rowNumberFormats ?? [],
     moreRows: table.moreRows ?? false,
   });

@@ -336,6 +336,9 @@ func TestWrite(t *testing.T) {
 		require.Contains(t, combo, `formatCode="yyyy-mm-dd" sourceLinked="true"`)
 		// Two value axes: the line series sits on the secondary axis.
 		require.Equal(t, 2, strings.Count(combo, "<valAx>"))
+		// The secondary axis shows its own measure in that measure's format (CPA keeps its cents).
+		secondaryAxis := combo[strings.LastIndex(combo, "<valAx>"):]
+		require.Contains(t, secondaryAxis, `formatCode="[&gt;=1000000]&#34;$&#34;#,##0.0,,&#34;M&#34;;[&gt;=1000]&#34;$&#34;#,##0.0,&#34;k&#34;;&#34;$&#34;#,##0.00"`)
 
 		require.Contains(t, pie, "Data - Line items&#39;!$A$2:$A$3")
 		require.Contains(t, pie, "Data - Line items&#39;!$B$2:$B$3")
@@ -428,6 +431,8 @@ func TestWriteChartOptions(t *testing.T) {
 	charts := chartParts(t, buf.Bytes())
 	require.Len(t, charts, 1)
 	require.Contains(t, charts[0], `<orientation val="maxMin">`)
+	valAx := charts[0][strings.Index(charts[0], "<valAx>"):]
+	require.Contains(t, valAx, `<tickLblPos val="high">`)
 	require.NotContains(t, charts[0], "<legend>")
 }
 
@@ -545,6 +550,79 @@ func TestWriteTotalsAndRowFormats(t *testing.T) {
 	require.Equal(t, "1.23%", cell(kpis, "B3"))
 	require.Equal(t, "50.0%", cell(kpis, "C3"))
 	require.Equal(t, "98765", cell(kpis, "B4"))
+}
+
+func TestWritePreviewTotalsLastAndTextColumns(t *testing.T) {
+	req := testRequest(t)
+	// Totals shown after the rows, as a pivot with its totals at the bottom does.
+	req.DataSheets[1].Totals = row(t, "Total", 44837645, nil, nil)
+	req.DataSheets[1].TotalsLast = true
+	// Two text columns before the first number: the label keeps its span rather than narrowing for a text column.
+	req.DataSheets = append(req.DataSheets, &runtimev1.WorkbookDataSheet{
+		Id:    "places",
+		Title: "Places",
+		Columns: []*runtimev1.WorkbookColumn{
+			{Name: "country", DisplayName: "Country", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_STRING},
+			{Name: "city", DisplayName: "City", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_STRING},
+			{Name: "spend", DisplayName: "Spend", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER},
+		},
+		Rows: []*structpb.ListValue{row(t, "United States of America", "San Francisco", 10)},
+	})
+	req.DashboardSheets[0].Blocks = []*runtimev1.WorkbookBlock{
+		{
+			Component: "lines", Title: "Line items", Geometry: geo(0, 0, 1000, 200),
+			Content: &runtimev1.WorkbookBlock_Table{Table: &runtimev1.WorkbookTableBlock{DataSheetIds: []string{"lines"}}},
+		},
+		{
+			// 120 px tall: one row for data after the title, blank row, header and link.
+			Component: "short", Title: "Short", Geometry: geo(0, 220, 1000, 120),
+			Content: &runtimev1.WorkbookBlock_Table{Table: &runtimev1.WorkbookTableBlock{DataSheetIds: []string{"lines"}}},
+		},
+		{
+			Component: "places", Title: "Places", Geometry: geo(0, 360, 300, 120),
+			Content: &runtimev1.WorkbookBlock_Table{Table: &runtimev1.WorkbookTableBlock{DataSheetIds: []string{"places"}}},
+		},
+	}
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+	const dashboard = "Campaign report"
+	cell := func(ref string) string {
+		v, err := f.GetCellValue(dashboard, ref)
+		require.NoError(t, err)
+		return v
+	}
+
+	// The data rows come first and the totals row after them; banding starts on the first data row.
+	require.Equal(t, "Line Item", cell("A10"))
+	require.Equal(t, "Display", cell("A11"))
+	require.Equal(t, "Video", cell("A12"))
+	require.Equal(t, "Total", cell("A13"))
+	require.Equal(t, "Full data: Data - Line items (2 rows)", cell("A14"))
+	first, err := f.GetCellStyle(dashboard, "A11")
+	require.NoError(t, err)
+	style, err := f.GetStyle(first)
+	require.NoError(t, err)
+	require.Equal(t, []string{"D9E1F2"}, style.Fill.Color)
+
+	// A block with room for one row still shows the totals row.
+	require.Equal(t, "Short", cell("A19"))
+	require.Equal(t, "Total", cell("A22"))
+	require.Equal(t, "Full data: Data - Line items (2 rows)", cell("A23"))
+
+	// The 300 px block spans four columns: the country keeps three, so only it fits.
+	require.Equal(t, "Country", cell("A28"))
+	require.Equal(t, "United States of America", cell("A29"))
+	require.Equal(t, "Full data: Data - Places (1 rows), 2 more columns", cell("A30"))
+	merged, err := f.GetMergeCells(dashboard)
+	require.NoError(t, err)
+	var ranges []string
+	for _, m := range merged {
+		ranges = append(ranges, m.GetStartAxis()+":"+m.GetEndAxis())
+	}
+	require.Contains(t, ranges, "A28:C28")
 }
 
 func TestWriteScatterMarkers(t *testing.T) {

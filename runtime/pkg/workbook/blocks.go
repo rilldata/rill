@@ -327,7 +327,6 @@ func (w *writer) writeTablePreview(sheet string, b *runtimev1.WorkbookBlock, t *
 }
 
 // writePreviewTable writes the preview of one data sheet at col and row: at most rows rows within width grid columns.
-// The totals row, if the sheet has one, comes first, as on the canvas by default.
 func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) error {
 	ds := w.dataSheets[id]
 	dsName := w.dataSheetNames[id]
@@ -335,14 +334,14 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 
 	// The columns that fit the width, with their spans. A column never spans more than the width,
 	// so the first one always fits and a preview never overlaps its neighbour.
-	// When the second column wouldn't fit beside the first at full span, the first one (the label) narrows,
-	// so a narrow preview still shows a number next to each label.
+	// When a number column follows the first one (the label) and wouldn't fit beside it at full span,
+	// the label narrows, so a narrow preview still shows a number next to each label.
 	var columns, spans []int
 	used := 0
 	for j, column := range ds.Columns {
 		span := min(previewColumnSpan(column), width)
-		if j == 0 && len(ds.Columns) > 1 {
-			if rest := width - previewColumnSpan(ds.Columns[1]); rest >= 1 && rest < span {
+		if j == 0 && len(ds.Columns) > 1 && previewColumnSpan(ds.Columns[1]) == previewNumberCols {
+			if rest := width - previewNumberCols; rest >= 1 && rest < span {
 				span = rest
 			}
 		}
@@ -361,26 +360,39 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 		}
 		c += spans[k]
 	}
-	var lines []*structpb.ListValue
-	if ds.Totals != nil {
-		lines = append(lines, ds.Totals)
+	// The totals row keeps one of the preview's rows, before or after the data rows as the dashboard shows it.
+	type line struct {
+		values   *structpb.ListValue
+		isTotals bool
 	}
-	totalsLines := len(lines)
-	lines = append(lines, ds.Rows[:min(len(ds.Rows), max(0, rows-totalsLines))]...)
-	for i, line := range lines {
-		isTotals := i < totalsLines
+	var lines []line
+	dataRows := ds.Rows[:min(len(ds.Rows), rows)]
+	if ds.Totals != nil {
+		dataRows = dataRows[:min(len(dataRows), max(0, rows-1))]
+	}
+	if ds.Totals != nil && !ds.TotalsLast {
+		lines = append(lines, line{values: ds.Totals, isTotals: true})
+	}
+	for _, r := range dataRows {
+		lines = append(lines, line{values: r})
+	}
+	if ds.Totals != nil && ds.TotalsLast {
+		lines = append(lines, line{values: ds.Totals, isTotals: true})
+	}
+	banded := true
+	for i, l := range lines {
 		c := col
 		for k, j := range columns {
 			column := ds.Columns[j]
-			value, err := cellValue(column, rowValue(line, j))
+			value, err := cellValue(column, rowValue(l.values, j))
 			if err != nil {
 				return err
 			}
 			var style int
-			if isTotals {
+			if l.isTotals {
 				style, err = w.styles.previewTotalsStyle(column)
 			} else {
-				style, err = w.styles.previewStyle(column, (i-totalsLines)%2 == 0)
+				style, err = w.styles.previewStyle(column, banded)
 			}
 			if err != nil {
 				return err
@@ -389,6 +401,9 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 				return err
 			}
 			c += spans[k]
+		}
+		if !l.isTotals {
+			banded = !banded
 		}
 	}
 	link := fmt.Sprintf("Full data: %s (%d rows)", dsName, len(ds.Rows))

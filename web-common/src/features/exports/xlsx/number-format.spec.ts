@@ -14,6 +14,17 @@ describe("excelNumberFormat", () => {
     expect(excelNumberFormat({ formatPreset: "interval_ms" })).toBe("General");
   });
 
+  it("shows small percentages with two significant digits", () => {
+    const percentage = { formatPreset: "percentage" };
+    expect(excelNumberFormat(percentage, [0.56, null])).toBe("0.0%");
+    expect(excelNumberFormat(percentage, [0.066])).toBe("0.0%");
+    expect(excelNumberFormat(percentage, [0.005258, 0.012, -0.0067])).toBe(
+      "0.00%",
+    );
+    expect(excelNumberFormat(percentage, [0.0007, 0])).toBe("0.000%");
+    expect(excelNumberFormat(percentage, [0.0000001])).toBe("0.0000%");
+  });
+
   it("picks a grouped integer or decimal format from the values", () => {
     expect(
       excelNumberFormat({ formatPreset: "humanize" }, [1, 2000, null]),

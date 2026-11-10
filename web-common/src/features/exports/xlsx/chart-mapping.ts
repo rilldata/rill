@@ -11,6 +11,7 @@ import type { HeatmapChartSpec } from "@rilldata/web-common/features/components/
 import type { ScatterPlotChartSpec } from "@rilldata/web-common/features/components/charts/scatter/ScatterPlotChartProvider";
 import type {
   ChartDataResult,
+  ChartDomainValues,
   ChartFieldsMap,
   ChartType,
   FieldConfig,
@@ -135,9 +136,13 @@ function mapCartesian(input: ChartExportInput): ChartExport {
 
   const categoryColumn = fieldColumn(x, data.fields, timeGrain);
   const table = sortByTime(
-    colorField && measures.length === 1
-      ? wideTable(categoryColumn, x, colorField, measures[0], data, timeZone)
-      : longTable([x], measures, data, timeGrain, timeZone),
+    sortByDomain(
+      colorField && measures.length === 1
+        ? wideTable(categoryColumn, x, colorField, measures[0], data, timeZone)
+        : longTable([x], measures, data, timeGrain, timeZone),
+      data.domainValues,
+      [x.field],
+    ),
   );
   const series = table.columns
     .slice(1)
@@ -185,10 +190,10 @@ function mapCartesian(input: ChartExportInput): ChartExport {
           : "",
       stacked,
       percentStacked,
-      numberFormat: excelNumberFormat(
-        measure,
-        columnValues(table, measures[0]),
-      ),
+      // A 100% stacked chart's axis shows each value's share, not the measure.
+      numberFormat: percentStacked
+        ? "0%"
+        : excelNumberFormat(measure, columnValues(table, measures[0])),
     }),
   };
 }
@@ -273,12 +278,16 @@ function mapCombo(input: ChartExportInput): ChartExport {
     (f): f is string => !!f,
   );
   const table = sortByTime(
-    longTable(
-      spec.x?.field ? [spec.x] : [],
-      measures,
-      data,
-      timeGrain,
-      timeZone,
+    sortByDomain(
+      longTable(
+        spec.x?.field ? [spec.x] : [],
+        measures,
+        data,
+        timeGrain,
+        timeZone,
+      ),
+      data.domainValues,
+      spec.x?.field ? [spec.x.field] : [],
     ),
   );
   if (!spec.x?.field || !spec.y1?.field) {
@@ -335,12 +344,16 @@ function mapHeatmap(input: ChartExportInput): ChartExport {
   );
   return {
     table: sortByTime(
-      longTable(
-        dimensions,
-        spec.color?.field ? [spec.color.field] : [],
-        data,
-        timeGrain,
-        timeZone,
+      sortByDomain(
+        longTable(
+          dimensions,
+          spec.color?.field ? [spec.color.field] : [],
+          data,
+          timeGrain,
+          timeZone,
+        ),
+        data.domainValues,
+        dimensions.map((f) => f.field),
       ),
     ),
     chart: undefined,
@@ -445,6 +458,40 @@ function wideTable(
     ...colorValues.map((value) => entry.values.get(value) ?? null),
   ]);
   return { columns, rows };
+}
+
+// Orders the rows of a table the way the chart orders its categories. The
+// canvas sorts a category axis by its domain values (the top values in the
+// configured sort, or a custom order) rather than by the order rows arrive in,
+// so the rows follow the position of their values in those lists, the first
+// field first. Values missing from a list keep their order after the listed
+// ones; fields without a list, such as time, are left alone.
+function sortByDomain(
+  table: ExportTable,
+  domainValues: ChartDomainValues | undefined,
+  fields: string[],
+): ExportTable {
+  const keys = fields.flatMap((field) => {
+    const domain = domainValues?.[field];
+    const column = table.columns.findIndex((c) => c.name === field);
+    if (!domain?.length || column < 0) return [];
+    const rank = new Map(
+      (domain as unknown[]).map((value, i): [string, number] => [
+        String(value),
+        i,
+      ]),
+    );
+    return [(row: unknown[]) => rank.get(String(row[column])) ?? domain.length];
+  });
+  if (keys.length === 0) return table;
+  const rows = [...table.rows].sort((a, b) => {
+    for (const key of keys) {
+      const order = key(a) - key(b);
+      if (order !== 0) return order;
+    }
+    return 0;
+  });
+  return { ...table, rows };
 }
 
 // Puts the rows of a table whose first column holds time in time order, oldest

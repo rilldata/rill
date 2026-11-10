@@ -85,6 +85,9 @@ export interface ExportTable {
   // The totals row, kept apart from the rows so the data sheet can write it
   // below its Excel table rather than in it.
   totals?: unknown[];
+  // Whether the dashboard shows the totals row after the rows (a pivot's
+  // "bottom" position); previews on the dashboard sheet follow it.
+  totalsLast?: boolean;
   // Number formats by row, for a table whose rows hold different measures
   // (the KPIs sheet); see WorkbookDataSheet.row_number_formats.
   rowNumberFormats?: string[];

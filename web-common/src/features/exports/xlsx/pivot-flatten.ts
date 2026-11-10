@@ -56,8 +56,14 @@ export function flattenPivotData(
       ? config.rowDimensionNames[0]
       : undefined;
 
+  const visible = visibleRows(state.data, config.pivot.expanded);
   const columns = leaves.map((leaf) =>
-    columnFor(leaf, config, nestedRowHeader),
+    columnFor(
+      leaf,
+      config,
+      nestedRowHeader,
+      visible.map(({ row }) => row[leaf.key]),
+    ),
   );
 
   const toCells = (row: PivotDataRow, depth: number) =>
@@ -70,14 +76,17 @@ export function flattenPivotData(
       }),
     );
 
-  const rows = visibleRows(state.data, config.pivot.expanded).map(
-    ({ row, depth }) => toCells(row, depth),
-  );
+  const rows = visible.map(({ row, depth }) => toCells(row, depth));
   const totals = state.totalsRowData;
   if (!totals || config.pivot.showTotalsRow === false) {
     return { columns, rows };
   }
-  return { columns, rows, totals: toCells(totalsRow(totals, leaves), 0) };
+  return {
+    columns,
+    rows,
+    totals: toCells(totalsRow(totals, leaves), 0),
+    totalsLast: config.pivot.totalsRowPosition === "bottom",
+  };
 }
 
 // The leaf columns in display order, each with the headers of the groups above
@@ -145,10 +154,13 @@ function totalsRow(totals: PivotDataRow, leaves: LeafColumn[]): PivotDataRow {
   return row;
 }
 
+// `values` are the column's values in the visible rows; they size the decimals
+// of measures whose format depends on them.
 function columnFor(
   leaf: LeafColumn,
   config: PivotDataStoreConfig,
   nestedRowHeader: string | undefined,
+  values: unknown[],
 ): ExportColumn {
   const measureName = leaf.measure ?? leaf.key;
   const base = measureName.replace(ComparisonModifierSuffixRegex, "");
@@ -166,7 +178,7 @@ function columnFor(
       type: WorkbookColumnType.NUMBER,
       numberFormat: measureName.endsWith(COMPARISON_PERCENT)
         ? PERCENT_FORMAT
-        : excelNumberFormat(measure),
+        : excelNumberFormat(measure, values),
     };
   }
   if (

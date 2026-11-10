@@ -167,6 +167,7 @@ describe("flattenPivotData", () => {
     expect(table.columns[3].displayName).toBe("Impressions % change");
     expect(table.rows).toStrictEqual([["US", 10, 0.5, 0.1]]);
     expect(table.totals).toStrictEqual(["Total", 10, 0.5, 0.1]);
+    expect(table.totalsLast).toBe(true);
   });
 
   it("types the measure cells under column dimensions by the measure the column shows", () => {
@@ -196,7 +197,8 @@ describe("flattenPivotData", () => {
       table.columns.map((c) => [c.name, c.displayName, c.type, c.numberFormat]),
     ).toStrictEqual([
       ["country", "Country", WorkbookColumnType.STRING, undefined],
-      ["c0v0m0", "Mobile / Impressions", WorkbookColumnType.NUMBER, "#,##0"],
+      // The column's values size its decimals, as they do for chart columns.
+      ["c0v0m0", "Mobile / Impressions", WorkbookColumnType.NUMBER, "#,##0.00"],
       [
         "c0v0m1",
         "Mobile / Impressions change",

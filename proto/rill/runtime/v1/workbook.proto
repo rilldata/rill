@@ -178,6 +178,9 @@ message WorkbookDataSheet {
   // The table's totals row, if it shows one. It is written below the Excel table rather than in it,
   // so sorting the table, filtering it and formulas over its columns leave the totals out.
   google.protobuf.ListValue totals = 6;
+  // Whether the dashboard shows the totals row after the rows rather than before them, as a pivot can.
+  // Table previews follow it; on the data sheet the totals row is always below the table.
+  bool totals_last = 8;
   // Number formats by row, for sheets whose rows hold different measures (the KPIs sheet).
   // A row's format applies to its cells in number columns that have no format of their own.
   repeated string row_number_formats = 7;

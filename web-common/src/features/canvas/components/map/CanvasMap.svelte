@@ -52,6 +52,7 @@
   // not report: it has no say in when an export is ready.
   let inExportView = false;
   let dataDrawn = false;
+  let styleLoaded = false;
   let currentMapStyle = "";
   let layerHandlersRegistered = false;
   // Identifies the dataset the camera was last auto-fit to, so a filter change
@@ -260,8 +261,10 @@
   function updateMap(geoJson: GeoJSON.FeatureCollection) {
     if (!map) return;
 
+    // `isStyleLoaded` is also false while tiles load, and `load` fires only
+    // once, so a retry on `load` would never come; `idle` follows every load.
     if (!map.isStyleLoaded()) {
-      map.once("load", () => {
+      map.once("idle", () => {
         updateMap(geoJson);
       });
       return;
@@ -382,8 +385,12 @@
       if (!canRender || dataDrawn) setDrawing(false);
     });
     // A style that fails to load (e.g. a rejected token) never goes idle.
+    // Errors after the style loaded (a tile, a sprite) don't stop the map.
+    map.on("style.load", () => {
+      styleLoaded = true;
+    });
     map.on("error", () => {
-      if (!mapReady) setDrawing(false);
+      if (!styleLoaded) setDrawing(false);
     });
   });
 

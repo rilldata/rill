@@ -26,17 +26,19 @@ func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, 
 	type group struct {
 		typ       excelize.ChartType
 		secondary bool
-		series    []excelize.ChartSeries
+		// The number format of the group's first series, which a secondary axis takes.
+		format string
+		series []excelize.ChartSeries
 	}
 	var groups []*group
-	addSeries := func(typ excelize.ChartType, secondary bool, s excelize.ChartSeries) {
+	addSeries := func(typ excelize.ChartType, secondary bool, format string, s excelize.ChartSeries) {
 		for _, grp := range groups {
 			if grp.typ == typ && grp.secondary == secondary {
 				grp.series = append(grp.series, s)
 				return
 			}
 		}
-		groups = append(groups, &group{typ: typ, secondary: secondary, series: []excelize.ChartSeries{s}})
+		groups = append(groups, &group{typ: typ, secondary: secondary, format: format, series: []excelize.ChartSeries{s}})
 	}
 	for _, s := range c.Series {
 		idx := columnIndex(ds, s.Column)
@@ -72,7 +74,7 @@ func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, 
 			}
 		}
 		secondary := c.Type == runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_COMBO && s.SecondaryAxis
-		addSeries(typ, secondary, cs)
+		addSeries(typ, secondary, columnFormat(ds.Columns[idx-1]), cs)
 	}
 
 	varyColors := c.Type == runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_PIE || c.Type == runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_DOUGHNUT
@@ -84,6 +86,11 @@ func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, 
 			VaryColors: &varyColors,
 		}
 		chart.YAxis.Secondary = grp.secondary
+		// The chart's number format describes the primary axis; a secondary axis shows another measure,
+		// such as a rate beside a count, so it takes the format of that measure's column.
+		if grp.secondary && grp.format != "" {
+			chart.YAxis.NumFmt = excelize.ChartNumFmt{CustomNumFmt: compactNumberFormat(grp.format)}
+		}
 		if i == 0 {
 			// The first chart carries the frame: size, position, title, legend and axes.
 			chart.Dimension = excelize.ChartDimension{Width: uint(g.width), Height: uint(g.height)}
@@ -97,8 +104,11 @@ func (w *writer) addChart(sheet, title string, c *runtimev1.WorkbookChartBlock, 
 				chart.XAxis.Title = excelize.ChartTitle{Paragraph: []excelize.RichTextRun{{Text: c.XAxisTitle}}}
 			}
 			// Excel draws the first category of a bar chart at the bottom; reversing the axis keeps the canvas order, top to bottom.
+			// The value labels would then move to the top, next to the first category,
+			// so they go to the axis's high end, the bottom, where the canvas draws them.
 			if c.Type == runtimev1.WorkbookChartType_WORKBOOK_CHART_TYPE_BAR {
 				chart.XAxis.ReverseOrder = true
+				chart.YAxis.TickLabelPosition = excelize.ChartTickLabelHigh
 			}
 			// Category labels follow the data cells' format, so dates don't show as serial numbers.
 			if format := columnFormat(ds.Columns[categoryIndex-1]); format != "" {

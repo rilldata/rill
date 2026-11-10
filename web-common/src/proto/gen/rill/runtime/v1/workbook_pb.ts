@@ -1041,6 +1041,14 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
   totals?: ListValue;
 
   /**
+   * Whether the dashboard shows the totals row after the rows rather than before them, as a pivot can.
+   * Table previews follow it; on the data sheet the totals row is always below the table.
+   *
+   * @generated from field: bool totals_last = 8;
+   */
+  totalsLast = false;
+
+  /**
    * Number formats by row, for sheets whose rows hold different measures (the KPIs sheet).
    * A row's format applies to its cells in number columns that have no format of their own.
    *
@@ -1069,6 +1077,7 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
     { no: 3, name: "columns", kind: "message", T: WorkbookColumn, repeated: true },
     { no: 4, name: "rows", kind: "message", T: ListValue, repeated: true },
     { no: 6, name: "totals", kind: "message", T: ListValue },
+    { no: 8, name: "totals_last", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "row_number_formats", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "more_rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

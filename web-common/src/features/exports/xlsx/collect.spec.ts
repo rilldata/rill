@@ -208,12 +208,14 @@ describe("toDataSheet", () => {
       ],
       rows: [["w1", 1, 1]],
       totals: ["Total", 1, 1],
+      totalsLast: true,
       rowNumberFormats: ["0.0%"],
       moreRows: true,
     });
     expect(sheet.columns.map((c) => c.name)).toStrictEqual(["week", "spend"]);
     expect(sheet.rows[0].toJson()).toStrictEqual(["w1", 1]);
     expect(sheet.totals?.toJson()).toStrictEqual(["Total", 1]);
+    expect(sheet.totalsLast).toBe(true);
     expect(sheet.rowNumberFormats).toStrictEqual(["0.0%"]);
     expect(sheet.moreRows).toBe(true);
   });

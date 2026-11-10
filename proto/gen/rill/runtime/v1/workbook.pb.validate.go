@@ -2247,6 +2247,8 @@ func (m *WorkbookDataSheet) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TotalsLast
+
 	// no validation rules for MoreRows
 
 	if len(errors) > 0 {
