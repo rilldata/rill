@@ -64,13 +64,35 @@ Launch Rill Developer in [preview mode](/developers/build/getting-started#previe
 rill start my-project --preview
 ```
 
-This also starts a local MCP server at `http://localhost:9009/mcp`. If you generated agent instructions in Step 1, your AI agent will connect to this server automatically via the `.mcp.json` config — no additional setup required.
+This also starts a local MCP server at `http://localhost:9009/mcp`. If you generated agent instructions in Step 1, `.mcp.json` registers that server as `rill-developer`. Approve the server when your agent asks. Claude does not show the Rill tools until you add the Rill plugin and fully quit and restart Claude, as described below.
 
 The MCP server gives your AI agent access to:
 - **Project status** — see which resources are healthy, errored, or pending
 - **Table schemas** — inspect columns, types, and sample data
 - **SQL queries** — run analytical queries against your OLAP engine
 - **File operations** — read and write project files
+
+### Add the Rill plugin to Claude
+
+If you are using Claude, add the [Rill plugin](https://claude.com/marketplace/plugins/rill) before you start building. The plugin provides the Rill skills and connects Claude to the local MCP server at `http://localhost:9009/mcp` (Rill Developer must be running).
+
+In the Claude desktop app, open **Customize → Plugins**, find **Rill**, and select **Add**. In Claude Code, run these commands inside the session. They are slash commands, not shell commands:
+
+```text
+/plugin marketplace add rilldata/agent-skills
+/plugin install rill@rilldata
+```
+
+The plugin name is `rill`, from the `rilldata` marketplace (`rill@rilldata`). The same commands are documented in the [plugin repository](https://github.com/rilldata/agent-skills).
+
+:::warning Fully quit Claude, then start it again
+Claude loads plugins when the process starts. Closing the window leaves Claude running, so the Rill tools stay missing until you terminate Claude and open it again.
+
+- **macOS:** Quit from the menu bar, or press **Cmd+Q**, then open Claude again.
+- **Windows:** Quit from the system tray (right-click the Claude icon and choose **Quit**), or end the Claude process. Closing the window leaves Claude running in the tray.
+
+After Claude restarts, with Rill Developer still running, the Rill tools are available.
+:::
 
 ## Step 3: Build with your AI agent
 
