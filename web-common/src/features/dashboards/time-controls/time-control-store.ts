@@ -24,6 +24,7 @@ import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   allowedGrainsForInterval,
+  getAvailableTimeGrains,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -97,6 +98,8 @@ export type TimeControlState = {
 
   // Computed properties from all time range query
   minTimeGrain?: V1TimeGrain;
+  // The grains the metrics view offers, see getAvailableTimeGrains
+  availableTimeGrains?: V1TimeGrain[];
   allTimeRange?: TimeRange;
   defaultTimeRange?: TimeRange;
   timeDimension?: string;
@@ -185,6 +188,7 @@ export function getTimeControlState(
   const minTimeGrain =
     (metricsViewSpec.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  const availableTimeGrains = getAvailableTimeGrains(metricsViewSpec);
 
   const defaultTimeRange = isoDurationToFullTimeRange(
     exploreSpec.defaultPreset?.timeRange,
@@ -210,6 +214,7 @@ export function getTimeControlState(
     defaultTimeRange,
     minTimeGrain,
     !!adaptiveTimeGrain,
+    availableTimeGrains,
   );
   if (!timeRangeState) {
     return undefined;
@@ -227,6 +232,7 @@ export function getTimeControlState(
 
   return {
     minTimeGrain,
+    availableTimeGrains,
     allTimeRange,
     defaultTimeRange,
     timeDimension,
@@ -326,6 +332,7 @@ export function calculateTimeRangePartial(
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
   adaptiveTimeGrain = false,
+  availableTimeGrains?: V1TimeGrain[],
 ): TimeRangeState | undefined {
   if (!currentSelectedTimeRange) return undefined;
 
@@ -361,13 +368,18 @@ export function calculateTimeRangePartial(
 
   const interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
-  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
+  const aggregationOptions = allowedGrainsForInterval(
+    interval,
+    minTimeGrain,
+    availableTimeGrains,
+  );
 
   const validatedGrain = getValidatedTimeGrain(
     interval,
     minTimeGrain,
     adaptiveTimeGrain ? undefined : currentSelectedTimeRange?.interval,
     parsed,
+    availableTimeGrains,
   );
   if (selectedTimeRange && validatedGrain) {
     selectedTimeRange.interval = validatedGrain;

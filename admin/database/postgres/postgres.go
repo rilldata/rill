@@ -3079,6 +3079,20 @@ func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, env
 	return res, nil
 }
 
+func (c *connection) FindVirtualFilesByEmbedOwner(ctx context.Context, projectID, environment, embedOwnerID string) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, owner_id, embed_owner_id, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND embed_owner_id=$3
+		ORDER BY path
+	`, projectID, environment, embedOwnerID)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err

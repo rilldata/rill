@@ -11,6 +11,7 @@
  * - Correlating tool calls with their results
  */
 
+import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
@@ -80,12 +81,16 @@ export function transformToBlocks(
 ): Block[] {
   const blocks: Block[] = [];
 
+  // Block ids derive from message ids and the rendered list is keyed by them,
+  // so a message that is in the list twice is only transformed once.
+  const uniqueMessages = dedupe(messages, (msg) => msg.id);
+
   // Build lookup maps.
   // Feedback is pre-built (unlike other blocks) because it attaches to a different
   // message — the target assistant message appears before its feedback CALL/RESULT
   // messages in the array, so we need the data ready before we encounter the target.
-  const resultMap = buildResultMessageMap(messages);
-  const feedbackMap = buildFeedbackMap(messages);
+  const resultMap = buildResultMessageMap(uniqueMessages);
+  const feedbackMap = buildFeedbackMap(uniqueMessages);
 
   // Accumulator for messages going into the current thinking block
   let thinkingMessages: V1Message[] = [];
@@ -105,7 +110,7 @@ export function transformToBlocks(
   }
 
   // Process each message
-  for (const msg of messages) {
+  for (const msg of uniqueMessages) {
     const routing = getBlockRoute(msg, resultMap);
 
     switch (routing.route) {

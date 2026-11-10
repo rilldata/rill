@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { beforeNavigate } from "$app/navigation";
+  import { onDestroy } from "svelte";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceRemoveBookmark,
@@ -70,6 +72,11 @@
     UrlParamsState.createStringParam("q"),
     500,
   );
+  beforeNavigate(({ to }) => {
+    // A delayed search must not navigate back to this table after a bookmark was opened.
+    if (to?.url.pathname !== page.url.pathname) searchTextStore.cancel();
+  });
+  onDestroy(() => searchTextStore.cancel());
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);

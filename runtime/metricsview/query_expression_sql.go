@@ -128,6 +128,10 @@ func (b exprSQLBuilder) writeJoinedExpressions(exprs []*Expression, joiner strin
 func (b exprSQLBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 1 {
+			// A flattened list with no values is just the left hand side; treat it as an empty list.
+			exprs = []*Expression{exprs[0], {Value: []any{}}}
+		}
 		if len(exprs) == 2 {
 			rhs := exprs[1]
 			typ := reflect.TypeOf(rhs.Value)
@@ -143,6 +147,19 @@ func (b exprSQLBuilder) writeBinaryCondition(exprs []*Expression, op Operator) e
 				vals = append(vals, e.Value)
 			}
 			exprs = []*Expression{exprs[0], {Value: vals}}
+		}
+		// A membership condition with no values has no SQL form that reads back with the same meaning:
+		// IN () does not parse, and IN (NULL) would match NULL rows.
+		// It is written as a comparison of constants instead: no row passes an IN and every row passes a NIN.
+		if len(exprs) == 2 && exprs[1] != nil {
+			if rhs := reflect.ValueOf(exprs[1].Value); rhs.IsValid() && rhs.Kind() == reflect.Slice && rhs.Len() == 0 {
+				if op == OperatorIn {
+					b.writeString("1 = 0")
+				} else {
+					b.writeString("1 = 1")
+				}
+				return nil
+			}
 		}
 	}
 

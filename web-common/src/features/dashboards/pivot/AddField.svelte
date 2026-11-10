@@ -48,6 +48,7 @@
   $: allTimeGrains = getAllowedTimeGrains(
     new Date($timeControlsStore.timeStart!),
     new Date($timeControlsStore.timeEnd!),
+    $timeControlsStore.availableTimeGrains,
   ).map((tgo) => {
     return {
       id: tgo.grain,

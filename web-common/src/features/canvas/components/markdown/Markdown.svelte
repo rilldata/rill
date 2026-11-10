@@ -94,6 +94,11 @@
 
     return extractErrorMessage(error);
   })();
+
+  // The resolved text for the workbook export; see BaseCanvasComponent.exportPayload.
+  $: component?.exportPayload.set(
+    resolvedContent ? { kind: "text", text: resolvedContent } : undefined,
+  );
 </script>
 
 <div

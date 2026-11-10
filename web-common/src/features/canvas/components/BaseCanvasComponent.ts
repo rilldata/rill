@@ -48,6 +48,7 @@ import type {
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { ComponentExportPayload } from "@rilldata/web-common/features/exports/xlsx/payload";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -70,6 +71,17 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // visible or while the canvas is exporting to PDF. Export uses this rather than
   // forcing `visible` so it never mutates the live lazy-load state.
   dataEnabled: Readable<boolean>;
+
+  // The data the component currently renders, published by its display
+  // component for the workbook export (see features/exports/xlsx). Undefined
+  // while loading or when the component has nothing to export.
+  exportPayload: Writable<ComponentExportPayload | undefined> =
+    writable(undefined);
+
+  // True while the component's export render is still drawing after its data
+  // arrived, like a map loading its tiles. The canvas exports wait for it
+  // before they capture the component (see prepareCanvasForCapture).
+  drawing = writable(false);
 
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
@@ -236,6 +248,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           this.metricsViewName,
         ),
         this.parent.timeManager.hasTimeSeriesMap,
+        this.parent.timeManager.availableGrainsMap,
         this.specStore,
       ],
       ([
@@ -253,6 +266,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         minTimeGrain,
         metricsViewFilters,
         hasTimeSeriesMap,
+        availableGrainsMap,
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
@@ -270,9 +284,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           timeGrain = localGrainStore ?? globalGrainStore;
         } else if (
           localRequestedGrain &&
-          allowedGrainsForInterval(globalInterval, minTimeGrain).includes(
-            localRequestedGrain,
-          )
+          allowedGrainsForInterval(
+            globalInterval,
+            minTimeGrain,
+            availableGrainsMap.get(this.metricsViewName),
+          ).includes(localRequestedGrain)
         ) {
           timeGrain = localRequestedGrain;
         }

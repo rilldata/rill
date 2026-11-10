@@ -406,3 +406,101 @@ func TestLookupDimensionFilter(t *testing.T) {
 		})
 	}
 }
+
+// A flattened IN or NIN with no values arrives as the left hand side alone.
+// It is compiled like an empty list: IN matches nothing and NIN matches everything.
+func TestInConditionWithoutValues(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "test_table",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "city", Column: "city"},
+			{Name: "tags", Column: "tags", Unnest: true},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	sec := skipMetricsViewSecurity{}
+
+	tests := []struct {
+		name     string
+		dialect  drivers.Dialect
+		where    *Expression
+		wantSQL  string
+		wantArgs []any
+	}{
+		{
+			name:    "in without values",
+			dialect: duckdb.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorIn,
+				Expressions: []*Expression{{Name: "city"}},
+			}},
+			wantSQL: `FALSE`,
+		},
+		{
+			name:    "nin without values",
+			dialect: duckdb.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorNin,
+				Expressions: []*Expression{{Name: "city"}},
+			}},
+			wantSQL: `TRUE`,
+		},
+		{
+			name:    "in without values on unnest dim",
+			dialect: duckdb.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorIn,
+				Expressions: []*Expression{{Name: "tags"}},
+			}},
+			wantSQL: `FALSE`,
+		},
+		{
+			name:    "nin without values on unnest dim",
+			dialect: clickhouse.DialectClickhouse,
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorNin,
+				Expressions: []*Expression{{Name: "tags"}},
+			}},
+			wantSQL: `TRUE`,
+		},
+		{
+			name:    "in without values nested in and",
+			dialect: duckdb.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorAnd,
+				Expressions: []*Expression{
+					{Condition: &Condition{
+						Operator:    OperatorIn,
+						Expressions: []*Expression{{Name: "city"}},
+					}},
+					{Condition: &Condition{
+						Operator:    OperatorEq,
+						Expressions: []*Expression{{Name: "city"}, {Value: "NYC"}},
+					}},
+				},
+			}},
+			wantSQL:  `(FALSE AND (("city") = ?))`,
+			wantArgs: []any{"NYC"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &Query{
+				MetricsView: "test",
+				Measures:    []Measure{{Name: "count"}},
+				Where:       tt.where,
+			}
+
+			ast, err := NewAST(mv, sec, qry, tt.dialect)
+			require.NoError(t, err)
+
+			sql, args, err := ast.SQLForExpression(tt.where, nil, false, false)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantSQL, sql)
+			require.Equal(t, tt.wantArgs, args)
+		})
+	}
+}

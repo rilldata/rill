@@ -49,6 +49,7 @@
     filters,
     timeControls,
     ephemeralMeasures,
+    showEmbedOwnerEmail = false,
     provider,
   }: {
     formId: string;
@@ -65,6 +66,8 @@
     filters?: ExpressionFilterManager;
     timeControls?: TimeControls;
     ephemeralMeasures?: EphemeralMeasureDef[];
+    // Shows the field for the email of the embed user who created the report (see ScheduledReportDialog).
+    showEmbedOwnerEmail?: boolean;
     provider: ReportFormMetadataProvider;
   } = $props();
 
@@ -83,6 +86,10 @@
   const runtimeClient = useRuntimeClient();
   // Reports created from an embed always run as the creator.
   const isEmbedded = EmbedStore.isEmbedded();
+
+  // The creator's email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
+  // Outside of an embed, it's always locked, since only the creator can change it.
+  const embedOwnerEmailLocked = $derived(!isEmbedded || !!provider.userEmail);
 
   const selectedRunAsOption = $derived(
     RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
@@ -310,6 +317,24 @@
       plural="emails"
       placeholder={m.report_form_email_placeholder()}
     />
+    {#if showEmbedOwnerEmail}
+      <Input
+        bind:value={$data["embedOwnerEmail"]}
+        errors={$errors["embedOwnerEmail"]}
+        id="embedOwnerEmail"
+        label={isEmbedded
+          ? m.report_form_embed_owner_email_label()
+          : m.report_form_embed_creator_email_label()}
+        placeholder={m.report_form_email_placeholder()}
+        disabled={embedOwnerEmailLocked}
+        optional={!embedOwnerEmailLocked}
+        hint={!isEmbedded
+          ? m.report_form_embed_creator_email_hint()
+          : embedOwnerEmailLocked
+            ? m.report_form_embed_owner_email_hint()
+            : m.report_form_embed_owner_email_optional_hint()}
+      />
+    {/if}
     <!-- Reports created from an embed can't be sent to Slack. -->
     {#if !isEmbedded}
       {#if provider.hasSlackNotifier}

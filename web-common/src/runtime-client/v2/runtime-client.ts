@@ -8,6 +8,7 @@ import {
   JWT_EXPIRY_WARNING_WINDOW,
   CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
 } from "../constants";
+import { createRequestAttributionInterceptor } from "./request-attribution";
 import { RequestQueue, createQueueInterceptor } from "./request-queue";
 
 export type AuthContext = "user" | "mock" | "magic" | "embed";
@@ -57,7 +58,10 @@ export class RuntimeClient {
     this.transport = createConnectTransport({
       baseUrl: opts.host,
       interceptors: [
-        // Queue controls when requests fire (outermost: wraps everything)
+        // Names the RPC on every error or abort reason that leaves it, so error telemetry can attribute
+        // unhandled rejections to a request (outermost: it must see the signal before the queue rejects)
+        createRequestAttributionInterceptor(),
+        // Queue controls when requests fire
         createQueueInterceptor(this.requestQueue),
         // JWT interceptor adds auth header just before the network call
         (next) => async (req) => {
@@ -90,6 +94,15 @@ export class RuntimeClient {
 
   /** Returns the current JWT (used by SSE clients and other non-query consumers). */
   getJwt(): string | undefined {
+    return this.currentJwt;
+  }
+
+  /**
+   * Returns the JWT once it is not about to expire, waiting for a refresh like
+   * queries do. For one-off requests sent outside the query client.
+   */
+  async getFreshJwt(): Promise<string | undefined> {
+    if (this.currentJwt) await this.waitForFreshJwt();
     return this.currentJwt;
   }
 
@@ -129,7 +142,10 @@ export class RuntimeClient {
     let expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
     while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > expiresAt) {
       if (this.disposed) {
-        throw new DOMException("Request cancelled", "AbortError");
+        throw new DOMException(
+          "Request cancelled: runtime client disposed while waiting for a fresh JWT",
+          "AbortError",
+        );
       }
       if (Date.now() > deadline) {
         throw new Error("Timed out waiting for a fresh JWT");

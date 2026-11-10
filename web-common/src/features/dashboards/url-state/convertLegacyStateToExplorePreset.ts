@@ -16,6 +16,7 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   getMultiFieldError,
@@ -51,7 +52,7 @@ import {
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 
 export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
@@ -119,6 +120,16 @@ export function convertLegacyStateToExplorePreset(
       );
     });
   }
+  if (preset.where) {
+    // The legacy filter and measure filters can name fields the metrics view no longer defines.
+    const { expr, errors: filterErrors } = dropUnknownFieldsFromFilter(
+      preset.where,
+      measures,
+      dimensions,
+    );
+    preset.where = expr;
+    errors.push(...filterErrors);
+  }
 
   const { preset: trPreset, errors: trErrors } = fromLegacyTimeRangeFields(
     legacyState,
@@ -172,7 +183,7 @@ function fromLegacyTimeRangeFields(
   }
   if (legacyState.timeGrain) {
     preset.timeGrain =
-      V1TimeGrainToDateTimeUnit[FromProtoTimeGrainMap[legacyState.timeGrain]];
+      V1TimeGrainToToken[FromProtoTimeGrainMap[legacyState.timeGrain]];
   }
 
   if (legacyState.compareTimeRange?.name) {

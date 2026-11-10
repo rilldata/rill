@@ -69,6 +69,7 @@ class FeatureFlags {
   rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
+  canvasExcelExport = new FeatureFlag("user", false);
   // Do not check reports directly to gate UI; use reportsEnabled instead,
   // which also checks that the environment can reach the admin APIs for them.
   alerts = new FeatureFlag("user", true);

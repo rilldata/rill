@@ -32,7 +32,7 @@
   import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 
   interface Props {
     exploreName: string;
@@ -160,7 +160,6 @@
     const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
     if (!dashboardGrain || !expandedMeasureName) return;
 
-    const timeGrain = V1TimeGrainToDateTimeUnit[dashboardGrain];
     const rowDimensions = dimensionName
       ? [
           {
@@ -173,7 +172,7 @@
     metricsExplorerStore.createPivot(exploreName, rowDimensions, [
       {
         id: dashboardGrain,
-        title: timeGrain,
+        title: translateV1TimeGrain(dashboardGrain),
         type: PivotChipType.Time,
       },
       {
@@ -187,6 +186,7 @@
   const timeControlsStore = useTimeControlStore(stateManagers);
 
   const minTimeGrain = $derived($timeControlsStore.minTimeGrain);
+  const availableTimeGrains = $derived($timeControlsStore.availableTimeGrains);
   const timeStart = $derived($timeControlsStore.timeStart);
   const timeEnd = $derived($timeControlsStore.timeEnd);
   const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
@@ -266,6 +266,7 @@
           {timeStart}
           {timeEnd}
           {minTimeGrain}
+          {availableTimeGrains}
         />
         <SearchableFilterChip
           label={selectedMeasureLabel}

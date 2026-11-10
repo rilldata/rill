@@ -25,7 +25,7 @@ Wait for the `ready` notification (see [Notifications](#notifications)) before s
 Embed the iframe in your page:
 
 ```html
-<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400"></iframe>
+<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400" allow="clipboard-write"></iframe>
 ```
 
 Set up message handling and send requests from the parent window:
@@ -306,6 +306,25 @@ iframe.contentWindow.postMessage({
 ```
 
 **Note:** The AI pane is only available for dashboards when the chat feature is enabled. If the AI pane is not available, calling this method will not cause an error, but the pane will not be shown.
+
+### `navigate({ type, name })`
+
+Navigates the embed to a page or dashboard.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 9,
+  method: "navigate",
+  params: { type: "explore", name: "dashboardName" }
+}, "*");
+```
+
+**Parameters:**
+- `type` (string): One of:
+  - `"page"`: A page of the embed; `name` is `"home"` for the project home page or `"reports"` for the user's scheduled reports.
+  - `"explore"`: An explore dashboard; `name` is the dashboard name.
+  - `"canvas"`: A canvas dashboard; `name` is the dashboard name.
+- `name` (string): The page or dashboard to navigate to.
 
 ## Notifications
 

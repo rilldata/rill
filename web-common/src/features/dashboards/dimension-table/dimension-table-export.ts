@@ -9,7 +9,7 @@ import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -22,6 +22,7 @@ import type {
   V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
+  V1MetricsViewSpec,
   V1Query,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -39,7 +40,11 @@ export function getDimensionTableExportQuery(
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
 
-  if (!validSpecStore.data?.explore || !timeControlState.ready)
+  if (
+    !validSpecStore.data?.explore ||
+    !validSpecStore.data.metricsView ||
+    !timeControlState.ready
+  )
     return undefined;
 
   let timeRange: V1TimeRange | undefined;
@@ -93,6 +98,7 @@ export function getDimensionTableExportQuery(
       instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       exploreState,
+      metricsViewSpec: validSpecStore.data.metricsView,
       filter: ctx.expressionFilterManager.exprByMetricsView[metricsViewName],
       timeRange,
       comparisonTimeRange,
@@ -108,6 +114,7 @@ export function getDimensionTableAggregationRequestForTime({
   instanceId,
   metricsViewName,
   exploreState,
+  metricsViewSpec,
   filter,
   timeRange,
   comparisonTimeRange,
@@ -117,6 +124,7 @@ export function getDimensionTableAggregationRequestForTime({
   instanceId: string;
   metricsViewName: string;
   exploreState: ExploreState;
+  metricsViewSpec: V1MetricsViewSpec;
   filter?: V1Expression | undefined;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
@@ -151,6 +159,16 @@ export function getDimensionTableAggregationRequestForTime({
     }
   }
 
+  // The query groups only by the selected dimension, as in the dimension table itself.
+  const { measures: supportedMeasures, sort } =
+    getDimensionQueryMeasuresAndSort(
+      exploreState,
+      metricsViewSpec,
+      measures,
+      exploreState.selectedDimensionName!,
+      apiSortName,
+    );
+
   const where = buildWhereParamForDimensionTableAndTDDExports(
     filter,
     exploreState.selectedDimensionName!, // must exist when viewing a dimension table
@@ -166,17 +184,15 @@ export function getDimensionTableAggregationRequestForTime({
       },
     ],
     measures: applyExactMeasures(
-      mapEphemeralMeasuresForRequest(measures, exploreState.ephemeralMeasures),
+      mapEphemeralMeasuresForRequest(
+        supportedMeasures,
+        exploreState.ephemeralMeasures,
+      ),
       exactMeasures,
     ),
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
-    sort: [
-      {
-        name: apiSortName,
-        desc: exploreState.sortDirection === SortDirection.DESCENDING,
-      },
-    ],
+    sort,
     where,
     offset: "0",
   };

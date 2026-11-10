@@ -126,6 +126,27 @@ describe("RuntimeClient JWT refresh", () => {
       expect(getLastAuthHeader(fetchMock)).toBe("Bearer fresh-token");
     });
 
+    it("getFreshJwt waits for a refresh when the token is about to expire", async () => {
+      const client = createClient({ jwt: "old-token" });
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      let jwt: string | undefined;
+      const promise = client.getFreshJwt().then((value) => {
+        jwt = value;
+      });
+      await vi.advanceTimersByTimeAsync(
+        CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL * 2,
+      );
+      expect(jwt).toBeUndefined();
+
+      client.updateJwt("fresh-token");
+      await vi.advanceTimersByTimeAsync(
+        CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL * 2,
+      );
+      await promise;
+      expect(jwt).toBe("fresh-token");
+    });
+
     it("sends request immediately when JWT is not near expiry", async () => {
       const client = createClient({ jwt: "valid-token" });
 
