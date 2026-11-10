@@ -67,3 +67,24 @@ func TestMiddleware(t *testing.T) {
 	})
 
 }
+
+func TestAuthenticateRawToken(t *testing.T) {
+	iss, aud, close := newTestIssuerAndAudience(t)
+	defer close()
+	token, err := iss.NewToken(TokenOptions{
+		AudienceURL:       aud.audienceURL,
+		Subject:           "pgwire-user",
+		TTL:               time.Hour,
+		SystemPermissions: []runtime.Permission{runtime.ReadMetrics},
+	})
+	require.NoError(t, err)
+	ctx, err := AuthenticateToken(t.Context(), aud, token)
+	require.NoError(t, err)
+	require.Equal(t, "pgwire-user", GetClaims(ctx, "").UserID)
+	require.True(t, GetClaims(ctx, "").Can(runtime.ReadMetrics))
+	_, err = AuthenticateToken(t.Context(), aud, "Bearer "+token)
+	require.Error(t, err)
+	ctx, err = AuthenticateToken(t.Context(), nil, "")
+	require.NoError(t, err)
+	require.True(t, GetClaims(ctx, "").Can(runtime.ManageInstances))
+}
