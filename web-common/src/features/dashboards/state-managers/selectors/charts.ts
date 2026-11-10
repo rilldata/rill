@@ -1,5 +1,4 @@
 import { timeControlsState } from "@rilldata/web-common/features/dashboards/state-managers/selectors/time-range";
-import { isWithinTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   getDurationFromMS,
   getOffset,
@@ -55,10 +54,6 @@ export function getPanRangeForTimeRange(
 
     const newStart = getOffset(start, panAmount, offsetType, timeZone);
     const newEnd = getOffset(end, panAmount, offsetType, timeZone);
-
-    // Panning past the bounds of a protobuf timestamp would produce a range the runtime cannot accept.
-    if (!isWithinTimestampBounds(newStart) || !isWithinTimestampBounds(newEnd))
-      return;
 
     return { start: newStart, end: newEnd };
   };

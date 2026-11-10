@@ -244,14 +244,6 @@ Unexpected " ".`,
     entity: {},
   },
   {
-    title: "Invalid time ranges: custom range before 0001-01-01",
-    url: "http://localhost/explore/AdBids_explore?tr=0000-12-31T00:00:00.000Z,0001-01-01T00:00:00.000Z",
-    errors: [
-      `Selected time range: "0000-12-31T00:00:00.000Z,0001-01-01T00:00:00.000Z" is not valid.`,
-    ],
-    entity: {},
-  },
-  {
     title: "Invalid time ranges: only comparison is invalid",
     url: "http://localhost/explore/AdBids_explore?tr=P4W&grain=week&compare_tr=xyz",
     errors: [`Selected compare time range: "xyz" is not valid.`],

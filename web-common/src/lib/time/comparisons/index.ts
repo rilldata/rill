@@ -18,7 +18,7 @@ import {
   isAbsoluteTimeRange,
   isNewRillTimeFormat,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
-import { isIntervalWithinTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
+import { clampToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 
 export function getComparisonTransform(
   start: Date,
@@ -376,8 +376,7 @@ export function getComparisonInterval(
   }
 
   if (!comparisonInterval.isValid) return undefined;
-  // A comparison that reaches past the bounds of a protobuf timestamp cannot be queried.
-  // This happens when the range starts at a placeholder date such as 0001-01-01.
-  if (!isIntervalWithinTimestampBounds(comparisonInterval)) return undefined;
-  return comparisonInterval;
+  // A previous period of a range that starts at a placeholder date such as 0001-01-01
+  // reaches past the bounds of a protobuf timestamp.
+  return comparisonInterval.mapEndpoints(clampToTimestampBounds);
 }

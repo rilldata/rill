@@ -68,8 +68,6 @@ A reference point is the time that an expression is evaluated relative to. Expre
 | `latest` | Most recent data timestamp | Show data up to (but not including) latest available |
 | `earliest` | Oldest data timestamp | Full historical analysis |
 
-If the metrics view has no data, `latest` and `watermark` resolve to `now`, so ranges anchored at them still produce a valid window.
-
 ### Reference Point Examples
 
 Given: `now = 2025-05-15T10:32:36Z`, `watermark = 2025-05-13T06:32:36Z`, `latest = 2025-05-14T06:32:36Z`

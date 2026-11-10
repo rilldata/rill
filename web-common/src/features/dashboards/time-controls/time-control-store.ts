@@ -476,6 +476,14 @@ export function calculateComparisonTimeRangePartial(
     comparisonTimeEnd = comparisonRange.end;
   }
 
+  // A custom comparison range, or one shifted along with a scrub, can reach past the bounds of a protobuf timestamp.
+  if (comparisonTimeStart) {
+    comparisonTimeStart = clampDateToTimestampBounds(comparisonTimeStart);
+  }
+  if (comparisonTimeEnd) {
+    comparisonTimeEnd = clampDateToTimestampBounds(comparisonTimeEnd);
+  }
+
   return {
     showTimeComparison: showTimeComparison,
     selectedComparisonTimeRange:

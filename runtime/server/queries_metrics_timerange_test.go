@@ -55,7 +55,8 @@ func TestServer_MetricsViewTimeRangeS(t *testing.T) {
 }
 
 // A metrics view without data has no min, max or watermark time.
-// Ranges anchored at latest or watermark used to be computed from the zero time and land in year 0, which cannot be marshaled as a protobuf timestamp.
+// Ranges anchored at latest or watermark are computed from the zero time and land in year 0;
+// they must be clamped to 0001-01-01 instead of failing to marshal.
 func TestServer_MetricsViewTimeRanges_NoData(t *testing.T) {
 	t.Parallel()
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
@@ -79,7 +80,6 @@ measures:
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	before := time.Now()
 	res, err := server.MetricsViewTimeRanges(testCtx(), &runtimev1.MetricsViewTimeRangesRequest{
 		InstanceId:      instanceID,
 		MetricsViewName: "empty_metrics",
@@ -99,20 +99,57 @@ measures:
 	for _, tr := range res.ResolvedTimeRanges {
 		require.NoError(t, tr.Start.CheckValid(), tr.Expression)
 		require.NoError(t, tr.End.CheckValid(), tr.Expression)
-		require.True(t, tr.Start.AsTime().Before(tr.End.AsTime()), tr.Expression)
+		require.Equal(t, time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), tr.Start.AsTime(), tr.Expression)
 	}
+}
 
-	// Relative ranges resolve against now when there is no data.
-	p30d := res.ResolvedTimeRanges[0]
-	require.Equal(t, "P30D", p30d.Expression)
-	require.True(t, p30d.End.AsTime().After(before), "P30D should end after now, got %s", p30d.End.AsTime())
-	require.Equal(t, 30*24*time.Hour, p30d.End.AsTime().Sub(p30d.Start.AsTime()))
+// Placeholder data sits exactly at 0001-01-01T00:00:00Z, which is also Go's zero time.
+// The time range resolver treats a zero min time as no data, so such a metrics view currently resolves like an empty one;
+// either way, ranges that reach back from it land in year 0 and must be clamped instead of failing to marshal.
+func TestServer_MetricsViewTimeRanges_PlaceholderDates(t *testing.T) {
+	t.Parallel()
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/placeholder_dates.sql": `
+SELECT TIMESTAMP '0001-01-01 00:00:00' AS event_time, 'a' AS country
+UNION ALL
+SELECT TIMESTAMP '0001-01-05 00:00:00' AS event_time, 'a' AS country
+`,
+			"metrics/placeholder_metrics.yaml": `
+type: metrics_view
+model: placeholder_dates
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		},
+	})
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
 
-	// "inf" starts at the zero time when the data has no lower bound.
-	inf := res.ResolvedTimeRanges[3]
-	require.Equal(t, "inf", inf.Expression)
-	require.Equal(t, time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), inf.Start.AsTime())
-	require.True(t, inf.End.AsTime().After(before))
+	res, err := server.MetricsViewTimeRanges(testCtx(), &runtimev1.MetricsViewTimeRangesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "placeholder_metrics",
+		Expressions:     []string{"P30D", "P12M", "7D as of latest/D+1D"},
+		TimeZone:        "Asia/Kolkata",
+	})
+	require.NoError(t, err)
+
+	// The response must be marshalable, which is where out-of-range timestamps used to fail.
+	_, err = protojson.Marshal(res)
+	require.NoError(t, err)
+
+	require.Len(t, res.ResolvedTimeRanges, 3)
+	for _, tr := range res.ResolvedTimeRanges {
+		require.NoError(t, tr.Start.CheckValid(), tr.Expression)
+		require.NoError(t, tr.End.CheckValid(), tr.Expression)
+		require.Equal(t, time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), tr.Start.AsTime(), tr.Expression)
+		require.True(t, tr.End.AsTime().After(tr.Start.AsTime()), tr.Expression)
+	}
 }
 
 // Expressions that resolve outside the range of a protobuf timestamp are clamped instead of failing the response.

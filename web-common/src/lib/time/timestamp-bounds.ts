@@ -1,4 +1,4 @@
-import { DateTime, type Interval } from "luxon";
+import { DateTime } from "luxon";
 
 /**
  * The instants a protobuf Timestamp can carry.
@@ -8,22 +8,9 @@ import { DateTime, type Interval } from "luxon";
  */
 // Date.UTC treats years below 100 as 1900-based, so the bounds are parsed from ISO strings instead.
 export const MIN_TIMESTAMP_MS = Date.parse("0001-01-01T00:00:00.000Z");
-// The request encoder rejects anything after 9999-12-31T23:59:59Z, including the rest of that second.
-export const MAX_TIMESTAMP_MS = Date.parse("9999-12-31T23:59:59.000Z");
-
-export function isWithinTimestampBounds(time: Date | DateTime): boolean {
-  const ms = time instanceof Date ? time.getTime() : time.toMillis();
-  return ms >= MIN_TIMESTAMP_MS && ms <= MAX_TIMESTAMP_MS;
-}
-
-export function isIntervalWithinTimestampBounds(
-  interval: Interval<true>,
-): boolean {
-  return (
-    isWithinTimestampBounds(interval.start) &&
-    isWithinTimestampBounds(interval.end)
-  );
-}
+// Largest protobuf timestamp representable at JavaScript's millisecond precision.
+// The request encoder only checks whole seconds, so the rest of 9999-12-31T23:59:59Z is accepted.
+export const MAX_TIMESTAMP_MS = Date.parse("9999-12-31T23:59:59.999Z");
 
 export function clampToTimestampBounds(time: DateTime): DateTime {
   if (time.toMillis() < MIN_TIMESTAMP_MS) {

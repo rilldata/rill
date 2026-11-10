@@ -838,23 +838,11 @@ func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
 	} else if l.Now {
 		return evalOpts.Now
 	} else if l.Latest {
-		return evalOpts.latestOrNow()
+		return evalOpts.MaxTime
 	} else if l.Watermark {
-		if evalOpts.Watermark.IsZero() {
-			return evalOpts.latestOrNow()
-		}
 		return evalOpts.Watermark
 	}
 	return time.Time{}
-}
-
-// latestOrNow returns the latest time in the data, falling back to now when the data has no time bounds (for example, an empty table or a time column that is all NULLs).
-// Without the fallback, a range anchored at `latest` or `watermark` is computed from the zero time and lands in year 0, which cannot be represented as a protobuf timestamp.
-func (o EvalOptions) latestOrNow() time.Time {
-	if o.MaxTime.IsZero() {
-		return o.Now
-	}
-	return o.MaxTime
 }
 
 func (a *ISOPointInTime) parse() error {

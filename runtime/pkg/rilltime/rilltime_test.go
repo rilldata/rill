@@ -530,48 +530,6 @@ func TestParseISO(t *testing.T) {
 	}
 }
 
-// A metrics view without data has zero min, max and watermark times.
-// Ranges anchored at latest or watermark must then fall back to now instead of being computed from the zero time (year 1), which would land in year 0.
-func TestEval_NoDataAnchorsFallBackToNow(t *testing.T) {
-	testCases := []testCase{
-		{"P30D", "2025-04-16T00:00:00Z", "2025-05-16T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
-		{"P12M", "2024-06-01T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
-		{"7D as of latest/D+1D", "2025-05-09T00:00:00Z", "2025-05-16T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
-		{"rill-PQC", "2025-01-01T00:00:00Z", "2025-04-01T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
-		{"watermark/D to watermark", "2025-05-15T00:00:00Z", "2025-05-15T10:32:36Z", timeutil.TimeGrainUnspecified, 1, 1},
-		{"earliest to latest", "0001-01-01T00:00:00Z", "2025-05-15T10:32:36Z", timeutil.TimeGrainUnspecified, 1, 1},
-	}
-
-	nowTm := parseTestTime(t, now)
-	for _, testCase := range testCases {
-		t.Run(testCase.timeRange, func(t *testing.T) {
-			rt, err := Parse(testCase.timeRange, ParseOptions{})
-			require.NoError(t, err)
-
-			start, end, grain := rt.Eval(EvalOptions{Now: nowTm})
-			require.Equal(t, parseTestTime(t, testCase.start), start)
-			require.Equal(t, parseTestTime(t, testCase.end), end)
-			if testCase.grain != timeutil.TimeGrainUnspecified {
-				require.Equal(t, testCase.grain, grain)
-			}
-		})
-	}
-}
-
-// A watermark expression can evaluate to NULL while the data still has a max time, in which case the watermark falls back to the latest time.
-func TestEval_ZeroWatermarkFallsBackToLatest(t *testing.T) {
-	rt, err := Parse("P7D", ParseOptions{})
-	require.NoError(t, err)
-
-	start, end, _ := rt.Eval(EvalOptions{
-		Now:     parseTestTime(t, now),
-		MinTime: parseTestTime(t, minTime),
-		MaxTime: parseTestTime(t, maxTime),
-	})
-	require.Equal(t, parseTestTime(t, "2025-05-08T00:00:00Z"), start)
-	require.Equal(t, parseTestTime(t, "2025-05-15T00:00:00Z"), end)
-}
-
 func TestParseISO_InvalidOffset(t *testing.T) {
 	_, err := ParseLegacy("P7D", "rill-PX", timeutil.TimeGrainUnspecified, ParseOptions{})
 	require.ErrorContains(t, err, `invalid DAX offset "rill-PX"`)

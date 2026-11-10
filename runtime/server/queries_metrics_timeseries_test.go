@@ -1005,15 +1005,16 @@ func testClaims() *runtime.SecurityClaims {
 
 // Day buckets near 0001-01-01 are truncated into year 0 in time zones east of UTC, for data rows as well as null-filled gaps.
 // The response must clamp them to the range of a protobuf timestamp instead of failing to marshal.
+// Placeholder data sits exactly at 0001-01-01T00:00:00Z, which is also Go's zero time.
 func TestServer_MetricsViewTimeSeries_ClampsToProtoTimestampRange(t *testing.T) {
 	t.Parallel()
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/placeholder_dates.sql": `
-SELECT TIMESTAMP '0001-01-01 01:00:00' AS event_time, 'a' AS country, 1 AS value
+SELECT TIMESTAMP '0001-01-01 00:00:00' AS event_time, 'a' AS country, 1 AS value
 UNION ALL
-SELECT TIMESTAMP '0001-01-02 01:00:00' AS event_time, 'a' AS country, 2 AS value
+SELECT TIMESTAMP '0001-01-02 00:00:00' AS event_time, 'a' AS country, 2 AS value
 `,
 			"metrics/placeholder_metrics.yaml": `
 type: metrics_view
