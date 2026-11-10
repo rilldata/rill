@@ -8,8 +8,14 @@ import {
   selectedMockUserJWT,
   selectedMockUserStore,
 } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
-import { createQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
+import {
+  createQueryClient,
+  queryClient as globalQueryClient,
+} from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
+  RUNTIME_ACCESS_TOKEN_DEFAULT_TTL,
+} from "@rilldata/web-common/runtime-client/constants";
 import {
   RuntimeClient,
   type JwtRefresher,
@@ -39,6 +45,8 @@ describe("edit session View As", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
     getDeployment.mockReset();
+    // The mock user refresher fetches through the global query client
+    globalQueryClient.clear();
     selectedMockUserStore.set(null);
     selectedMockUserJWT.set(null);
   });
@@ -63,6 +71,11 @@ describe("edit session View As", () => {
     } catch {
       // no-op
     }
+  }
+
+  /** Lets requests waiting for a fresh JWT see the token that was just applied. */
+  function pollForFreshJwt() {
+    return vi.advanceTimersByTimeAsync(CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL);
   }
 
   function sentAuthHeader(index: number) {
@@ -96,10 +109,12 @@ describe("edit session View As", () => {
 
   it("reissues the mock user's JWT with the same attributes", async () => {
     getDeployment.mockResolvedValueOnce({ accessToken: "mock-token-2" });
-    const abort = new AbortController();
+    selectedMockUserStore.set(mockUser);
 
     const refresh = createMockUserJwtRefresher("deployment-1", mockUser);
-    await expect(refresh(abort.signal)).resolves.toBe("mock-token-2");
+    await expect(refresh(new AbortController().signal)).resolves.toBe(
+      "mock-token-2",
+    );
 
     expect(getDeployment).toHaveBeenCalledTimes(1);
     const [deploymentId, body, signal] = getDeployment.mock.calls[0];
@@ -111,8 +126,23 @@ describe("edit session View As", () => {
     expect(body.accessTokenTtlSeconds).toBe(
       RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 1000,
     );
-    expect(signal).toBe(abort.signal);
+    // The query client's signal, so cancelling the query aborts the request
+    expect(signal).toBeInstanceOf(AbortSignal);
     expect(get(selectedMockUserJWT)).toBe("mock-token-2");
+  });
+
+  it("leaves the View As token alone when View As moved on during the reissue", async () => {
+    getDeployment.mockResolvedValueOnce({ accessToken: "stale-viewer-token" });
+    selectedMockUserStore.set(mockUser);
+    selectedMockUserJWT.set("viewer-token");
+
+    const refresh = createMockUserJwtRefresher("deployment-1", mockUser);
+    const reissued = refresh(new AbortController().signal);
+    selectedMockUserStore.set({ email: "other@example.com" });
+    selectedMockUserJWT.set("other-token");
+    await reissued;
+
+    expect(get(selectedMockUserJWT)).toBe("other-token");
   });
 
   it("keeps the mock credentials when a user JWT refresh lands after View As started", async () => {
@@ -157,6 +187,7 @@ describe("edit session View As", () => {
     );
     await updateDevJWT(queryClient, client, mockUser);
     forwardToProvider("edit-session-jwt");
+    await pollForFreshJwt();
     await request;
     expect(sentAuthHeader(0)).toBe("Bearer mock-token");
 
@@ -169,7 +200,9 @@ describe("edit session View As", () => {
 
     // When the mock token expires, it is the mock issuer that is asked, not the user's
     vi.advanceTimersByTime(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL);
-    await ping(client);
+    const mockRequest = ping(client);
+    await pollForFreshJwt();
+    await mockRequest;
     expect(getDeployment).toHaveBeenCalledTimes(2);
     expect(userRefreshJwt).toHaveBeenCalledTimes(1);
     expect(client.getJwt()).toBe("mock-token-2");

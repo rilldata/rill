@@ -1,10 +1,20 @@
-import { V1DeploymentStatus, type RpcStatus } from "@rilldata/web-admin/client";
+import {
+  adminServiceGetProject,
+  V1DeploymentStatus,
+  type RpcStatus,
+} from "@rilldata/web-admin/client";
 import {
   baseGetProjectQueryOptions,
   createRuntimeJwtRefresher,
 } from "@rilldata/web-admin/features/projects/project-query-options";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { JwtRefresher } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@rilldata/web-admin/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@rilldata/web-admin/client")>()),
+  adminServiceGetProject: vi.fn(),
+}));
 
 const FifteenMinutes = 15 * 60 * 1000;
 const runningDeployment = {
@@ -48,6 +58,8 @@ describe("createRuntimeJwtRefresher", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
+    queryClient.clear();
   });
 
   function mockFetchQuery(data: unknown) {
@@ -126,6 +138,61 @@ describe("createRuntimeJwtRefresher", () => {
 
     expect(cancelQueries).toHaveBeenCalledWith({
       queryKey: ["/v1/orgs/org/projects/proj"],
+    });
+  });
+
+  describe("through the query client", () => {
+    const getProject = vi.mocked(adminServiceGetProject);
+    const networkError = new Error("Network Error");
+
+    function userRefresher(): JwtRefresher {
+      const refresh = createRuntimeJwtRefresher("user", {
+        organization: "org",
+        project: "proj",
+      });
+      if (!refresh) throw new Error("expected a refresher for the user");
+      return refresh;
+    }
+
+    it("retries network and server errors with backoff", async () => {
+      vi.useFakeTimers();
+      getProject
+        .mockReset()
+        .mockRejectedValueOnce(networkError)
+        .mockRejectedValueOnce(httpError(503))
+        .mockResolvedValueOnce({ jwt: "fresh" });
+
+      const jwt = userRefresher()(neverAborted);
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await expect(jwt).resolves.toBe("fresh");
+      expect(getProject).toHaveBeenCalledTimes(3);
+    });
+
+    it("fails at once when the session or the project access is gone", async () => {
+      getProject.mockReset().mockRejectedValue(httpError(403));
+
+      await expect(userRefresher()(neverAborted)).rejects.toEqual(
+        httpError(403),
+      );
+      expect(getProject).toHaveBeenCalledTimes(1);
+    });
+
+    it("shares one request between concurrent refreshes", async () => {
+      let resolveProject!: (data: { jwt: string }) => void;
+      getProject.mockReset().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveProject = resolve;
+          }),
+      );
+
+      const refresh = userRefresher();
+      const jwts = Promise.all([refresh(neverAborted), refresh(neverAborted)]);
+      resolveProject({ jwt: "fresh" });
+
+      await expect(jwts).resolves.toEqual(["fresh", "fresh"]);
+      expect(getProject).toHaveBeenCalledTimes(1);
     });
   });
 

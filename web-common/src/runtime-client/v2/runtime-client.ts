@@ -9,10 +9,12 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { QueryService } from "../../proto/gen/rill/runtime/v1/queries_connect";
 import { RuntimeService } from "../../proto/gen/rill/runtime/v1/api_connect";
 import { ConnectorService } from "../../proto/gen/rill/runtime/v1/connectors_connect";
-import { extractErrorMessage, extractErrorStatusCode } from "../../lib/errors";
+import { extractErrorMessage } from "../../lib/errors";
+import { waitUntil } from "../../lib/waitUtils";
 import {
   RUNTIME_ACCESS_TOKEN_DEFAULT_TTL,
   JWT_EXPIRY_WARNING_WINDOW,
+  CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
 } from "../constants";
 import { createRequestAttributionInterceptor } from "./request-attribution";
 import { RequestQueue, createQueueInterceptor } from "./request-queue";
@@ -22,19 +24,14 @@ export type AuthContext = "user" | "mock" | "magic" | "embed";
 /**
  * Fetches a fresh JWT from whoever issued the current one, e.g. by refetching GetProject in Rill Cloud.
  * Resolves with the new token; rejects when the issuer could not be reached or refused.
- * The signal aborts when the client gives up on the call, so the issuer request can be cancelled.
+ * Retrying transient failures and sharing one request between concurrent callers is up to the refresher;
+ * in Rill Cloud the query client does both. The signal aborts when the client gives up waiting,
+ * so a stalled request can be cancelled instead of being joined by the next caller.
  */
 export type JwtRefresher = (signal: AbortSignal) => Promise<string | undefined>;
 
 // How long a request waits for a fresh JWT before it fails.
 const JWT_REFRESH_TIMEOUT = 60_000;
-// How long one call to the refresher may take before it is abandoned and retried.
-const JWT_REFRESH_ATTEMPT_TIMEOUT = 20_000;
-// Delay before retrying a failed refresh: doubles from the base up to the max while the issuer keeps failing.
-const JWT_REFRESH_BACKOFF_BASE = 1_000;
-const JWT_REFRESH_BACKOFF_MAX = 10_000;
-
-const TimedOut = Symbol("timed out");
 
 export class RuntimeClient {
   readonly host: string;
@@ -46,16 +43,10 @@ export class RuntimeClient {
   private currentJwt: string | undefined;
   private jwtExpiresAt = 0;
   private _authContext: AuthContext;
-  // Resolved and replaced whenever the JWT, the auth context or a refresher changes, or the client
-  // is disposed, so that requests waiting for a fresh JWT re-check their situation right away
-  private jwtChanged = createDeferred();
-  // Refreshers per auth context: RuntimeProvider registers one for its context and View As one for "mock"
-  private readonly jwtRefreshers = new Map<AuthContext, JwtRefresher>();
-  // In-flight refresh shared by every request waiting on it, and the backoff after failures
-  private jwtRefresh: Promise<void> | undefined;
-  private jwtRefreshAbort: AbortController | undefined;
-  private jwtRefreshBackoff = 0;
-  private jwtRefreshNotBefore = 0;
+  // The refresher RuntimeProvider registered, and the auth context it issues tokens for
+  private jwtRefresher:
+    | { refreshJwt: JwtRefresher; authContext: AuthContext }
+    | undefined;
   private disposed = false;
 
   // Cached service clients (created once per RuntimeClient)
@@ -137,49 +128,25 @@ export class RuntimeClient {
     const authContextChanged =
       !!this._authContext && !!authContext && authContext !== this._authContext;
 
-    const jwtChanged = jwt !== this.currentJwt;
-    if (jwtChanged) {
+    if (jwt !== this.currentJwt) {
       this.currentJwt = jwt;
       this.jwtExpiresAt = jwt ? jwtExpiry(jwt, Date.now()) : 0;
     }
     if (authContext) this._authContext = authContext;
-    if (jwtChanged || authContextChanged) this.wakeWaitingRequests();
 
     return authContextChanged;
   }
 
   /**
-   * Registers the callback that fetches a fresh JWT for the current auth context, replacing any earlier
-   * one for that context; undefined removes it. Refreshers are kept per context: RuntimeProvider's stays
-   * registered for its context while View As installs a mock token with its own refresher for "mock",
-   * and applies again once View As ends and the context switches back.
+   * Registers the callback that fetches a fresh JWT for the current auth context; undefined removes it.
+   * RuntimeProvider calls it right after updateJwt() with the refresher matching its JWT. The refresher
+   * only applies while the client stays in that context: when View As in Rill Developer sets a mock JWT
+   * directly on the client, requests wait for the next updateJwt() instead of fetching the user's token.
    */
   setJwtRefresher(refreshJwt: JwtRefresher | undefined): void {
-    const authContext = this._authContext;
-    if (refreshJwt === this.jwtRefreshers.get(authContext)) return;
-    if (refreshJwt) {
-      this.jwtRefreshers.set(authContext, refreshJwt);
-    } else {
-      this.jwtRefreshers.delete(authContext);
-    }
-    // A new issuer starts without the backoff the previous one earned
-    this.jwtRefreshBackoff = 0;
-    this.jwtRefreshNotBefore = 0;
-    this.wakeWaitingRequests();
-  }
-
-  /**
-   * Refreshes the JWT if it is expired or about to expire, e.g. when the tab becomes visible again
-   * after a laptop sleep skipped the scheduled refresh. Failures are left to the next request,
-   * which retries with backoff and surfaces the error.
-   */
-  async refreshJwtIfStale(): Promise<void> {
-    if (this.isJwtFresh() || !this.canRefreshJwt()) return;
-    try {
-      await this.runJwtRefresh();
-    } catch {
-      // Reported by the next request that needs the token
-    }
+    this.jwtRefresher = refreshJwt
+      ? { refreshJwt, authContext: this._authContext }
+      : undefined;
   }
 
   /** Returns the current JWT (used by SSE clients and other non-query consumers). */
@@ -220,52 +187,66 @@ export class RuntimeClient {
   }
 
   /**
-   * Blocks until the JWT is fresh. With a refresher registered for the current auth context it asks
-   * the issuer for a new token right away, retrying with backoff while the issuer is unreachable;
-   * without one it waits for an updateJwt() call. Gives up after JWT_REFRESH_TIMEOUT, or at once
-   * when the issuer refuses because the session or the project access is gone.
+   * Blocks until the JWT is fresh. With a refresher registered for the current auth context it asks the issuer
+   * for a new token right away; without one it waits for an updateJwt() call. Either way a token that arrives
+   * through updateJwt() in the meantime, e.g. from the scheduled GetProject refetch, releases the request.
+   * Gives up after JWT_REFRESH_TIMEOUT, or as soon as the refresher fails.
    */
   private async waitForFreshJwt(): Promise<void> {
     // Embeds have a 24h backend-issued TTL and no refresher; skip client-side expiry check
-    if (this._authContext === "embed") return;
+    if (this._authContext === "embed" || this.isJwtFresh()) return;
 
-    const deadline = Date.now() + JWT_REFRESH_TIMEOUT;
-    let lastError: unknown;
-    while (!this.isJwtFresh()) {
-      if (this.disposed) {
-        throw new DOMException(
-          "Request cancelled: runtime client disposed while waiting for a fresh JWT",
-          "AbortError",
-        );
-      }
-      const remaining = deadline - Date.now();
-      if (remaining <= 0) {
-        throw new Error(
-          "Timed out waiting for a fresh JWT" +
-            (lastError ? `: ${extractErrorMessage(lastError)}` : ""),
-        );
-      }
-      // Whatever happens below, a change to the JWT or the client wakes us to re-check
-      const changed = this.jwtChanged.promise;
-      if (!this.canRefreshJwt()) {
-        // Wait for whoever owns the token (e.g. View As in Rill Developer) to call updateJwt()
-        await waitAtMost(changed, remaining);
-        continue;
-      }
-      try {
-        await waitAtMost(
-          Promise.race([this.runJwtRefresh(), changed]),
-          remaining,
-        );
-      } catch (err) {
-        const status = extractErrorStatusCode(err);
-        if (status === 401 || status === 403) {
-          throw new Error(
-            `Failed to refresh the runtime JWT: ${extractErrorMessage(err)}`,
-          );
-        }
-        lastError = err;
-      }
+    const refresher = this.jwtRefresher;
+    const abort = new AbortController();
+    let refreshError: unknown;
+    if (refresher?.authContext === this._authContext) {
+      this.refreshJwt(refresher, abort.signal).catch((err) => {
+        refreshError = err ?? new Error("unknown error");
+      });
+    }
+    await waitUntil(
+      () => this.isJwtFresh() || this.disposed || refreshError !== undefined,
+      JWT_REFRESH_TIMEOUT,
+      CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
+    );
+    if (this.isJwtFresh()) return;
+
+    // Cancel a refresh that is still running, so the next request does not join a stalled one
+    abort.abort();
+    if (this.disposed) {
+      throw new DOMException(
+        "Request cancelled: runtime client disposed while waiting for a fresh JWT",
+        "AbortError",
+      );
+    }
+    if (refreshError !== undefined) {
+      throw new Error(
+        `Failed to refresh the runtime JWT: ${extractErrorMessage(refreshError)}`,
+      );
+    }
+    throw new Error("Timed out waiting for a fresh JWT");
+  }
+
+  /**
+   * Fetches a JWT with the refresher and applies it, unless the client moved on while the request was in flight,
+   * e.g. View As switched to a mock token: a token must only be applied to the context it was issued for.
+   */
+  private async refreshJwt(
+    refresher: { refreshJwt: JwtRefresher; authContext: AuthContext },
+    signal: AbortSignal,
+  ): Promise<void> {
+    const jwt = await refresher.refreshJwt(signal);
+    if (!jwt) throw new Error("the issuer returned no JWT");
+    if (
+      this.disposed ||
+      this._authContext !== refresher.authContext ||
+      this.jwtRefresher?.refreshJwt !== refresher.refreshJwt
+    ) {
+      return;
+    }
+    this.updateJwt(jwt);
+    if (!this.isJwtFresh()) {
+      throw new Error("the issuer returned an expired JWT");
     }
   }
 
@@ -277,84 +258,11 @@ export class RuntimeClient {
   }
 
   private canRefreshJwt(): boolean {
-    return this.jwtRefreshers.has(this._authContext);
-  }
-
-  private wakeWaitingRequests(): void {
-    const { resolve } = this.jwtChanged;
-    this.jwtChanged = createDeferred();
-    resolve();
-  }
-
-  /** Runs one refresh, shared by every caller that joins while it is in flight. */
-  private runJwtRefresh(): Promise<void> {
-    this.jwtRefresh ??= this.refreshJwtOnce().finally(() => {
-      this.jwtRefresh = undefined;
-    });
-    return this.jwtRefresh;
-  }
-
-  private async refreshJwtOnce(): Promise<void> {
-    // Pin the refresher and the context it serves: both can change while this attempt waits or runs
-    // (e.g. View As switching to a mock token), and a token must only be applied to the context it
-    // was issued for
-    const authContext = this._authContext;
-    const refreshJwt = this.jwtRefreshers.get(authContext);
-    if (!refreshJwt) return;
-    const delay = this.jwtRefreshNotBefore - Date.now();
-    if (delay > 0) await sleep(delay);
-    if (!this.servesCurrentContext(refreshJwt, authContext)) return;
-
-    // A call that stalls is abandoned and cancelled so the retry is not stuck behind it
-    const abort = new AbortController();
-    this.jwtRefreshAbort = abort;
-    try {
-      const jwt = await waitAtMost(
-        refreshJwt(abort.signal),
-        JWT_REFRESH_ATTEMPT_TIMEOUT,
-      );
-      if (jwt === TimedOut) {
-        abort.abort();
-        throw new Error(
-          `the issuer did not respond within ${JWT_REFRESH_ATTEMPT_TIMEOUT / 1000}s`,
-        );
-      }
-      if (!this.servesCurrentContext(refreshJwt, authContext)) return;
-      if (!jwt) throw new Error("the issuer returned no JWT");
-      this.updateJwt(jwt);
-      if (!this.isJwtFresh()) {
-        throw new Error("the issuer returned an expired JWT");
-      }
-      this.jwtRefreshBackoff = 0;
-      this.jwtRefreshNotBefore = 0;
-    } catch (err) {
-      this.jwtRefreshBackoff = Math.min(
-        Math.max(this.jwtRefreshBackoff * 2, JWT_REFRESH_BACKOFF_BASE),
-        JWT_REFRESH_BACKOFF_MAX,
-      );
-      this.jwtRefreshNotBefore = Date.now() + this.jwtRefreshBackoff;
-      throw err;
-    } finally {
-      if (this.jwtRefreshAbort === abort) this.jwtRefreshAbort = undefined;
-    }
-  }
-
-  /** Whether the refresher an attempt pinned is still the one registered for the client's current context. */
-  private servesCurrentContext(
-    refreshJwt: JwtRefresher,
-    authContext: AuthContext,
-  ): boolean {
-    return (
-      !this.disposed &&
-      this._authContext === authContext &&
-      this.jwtRefreshers.get(authContext) === refreshJwt
-    );
+    return this.jwtRefresher?.authContext === this._authContext;
   }
 
   dispose(): void {
     this.disposed = true;
-    this.jwtRefreshAbort?.abort();
-    this.wakeWaitingRequests();
     this.requestQueue.clear();
   }
 }
@@ -402,28 +310,4 @@ function decodeJwtClaims(jwt: string): Record<string, unknown> | undefined {
   } catch {
     return undefined;
   }
-}
-
-/** Settles like the promise, or resolves with TimedOut once `ms` elapse first; the timer that lost is cleared. */
-function waitAtMost<T>(
-  promise: Promise<T>,
-  ms: number,
-): Promise<T | typeof TimedOut> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<typeof TimedOut>((resolve) => {
-    timer = setTimeout(() => resolve(TimedOut), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
-function createDeferred(): { promise: Promise<void>; resolve: () => void } {
-  let resolve!: () => void;
-  const promise = new Promise<void>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -15,6 +15,7 @@ import type {
 } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { adminServiceGetDeployment } from "@rilldata/web-admin/client";
+import { fetchFreshJwt } from "@rilldata/web-admin/features/projects/project-query-options";
 import { getDomain } from "@rilldata/web-admin/features/projects/user-management/selectors.ts";
 import { get } from "svelte/store";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -69,8 +70,20 @@ export function createMockUserJwtRefresher(
   mockUser: MockUser,
 ): JwtRefresher {
   return async (signal) => {
-    const accessToken = await issueMockUserJwt(deploymentId, mockUser, signal);
-    selectedMockUserJWT.set(accessToken);
+    const accessToken = await fetchFreshJwt(
+      {
+        // GetDeployment is a POST, so Orval generates no query key for it
+        queryKey: ["edit-session-mock-user-jwt", deploymentId, mockUser],
+        queryFn: ({ signal }) =>
+          issueMockUserJwt(deploymentId, mockUser, signal),
+      },
+      (accessToken) => accessToken,
+      signal,
+    );
+    // The edit layout passes this store to RuntimeProvider; skip it if View As moved on while the request was in flight
+    if (accessToken && get(selectedMockUserStore) === mockUser) {
+      selectedMockUserJWT.set(accessToken);
+    }
     return accessToken;
   };
 }

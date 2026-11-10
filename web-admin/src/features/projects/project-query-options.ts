@@ -29,6 +29,8 @@ const PollTimeWhenProjectDeploymentError = 5000;
 const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
 // A refetch that completed this recently already carries a fresh JWT; hand it over instead of fetching again.
 const FreshJwtStaleTime = 5000;
+// Retries of a JWT refetch that failed with a network or server error; delays come from the query client's retryDelay.
+const FreshJwtMaxRetries = 3;
 
 export const baseGetProjectQueryOptions: Partial<
   CreateQueryOptions<V1GetProjectResponse, RpcStatus>
@@ -152,17 +154,31 @@ export function createRuntimeJwtRefresher(
   }
 }
 
-function fetchFreshJwt<TData>(
+/**
+ * Fetches the query that issues a JWT, through the query client: concurrent callers and a refetch already in flight
+ * share one request, and network or server errors are retried with backoff. Refusals (4xx) fail at once.
+ */
+export function fetchFreshJwt<TData>(
   options: FetchQueryOptions<TData, RpcStatus>,
   selectJwt: (data: TData) => string | undefined,
   signal: AbortSignal,
 ): Promise<string | undefined> {
-  // The client abandons a call that stalls; cancel the request so the retry is not deduped into it
+  // The runtime client gave up waiting: cancel the request so the next caller does not join it if it stalled
   const cancel = () =>
     void queryClient.cancelQueries({ queryKey: options.queryKey });
   signal.addEventListener("abort", cancel, { once: true });
   return queryClient
-    .fetchQuery({ ...options, staleTime: FreshJwtStaleTime })
+    .fetchQuery({
+      ...options,
+      staleTime: FreshJwtStaleTime,
+      retry: (failureCount, error) => {
+        const status = extractErrorStatusCode(error);
+        return (
+          failureCount < FreshJwtMaxRetries &&
+          (status === undefined || status >= 500)
+        );
+      },
+    })
     .then(selectJwt)
     .finally(() => signal.removeEventListener("abort", cancel));
 }

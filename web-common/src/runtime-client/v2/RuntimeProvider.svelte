@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { onDestroy, onMount, setContext } from "svelte";
+  import { onDestroy, setContext } from "svelte";
   import { featureFlags } from "../../features/feature-flags";
   import { invalidateRuntimeQueries } from "../invalidation";
   import {
@@ -36,23 +36,6 @@
     if (authContextChanged)
       void invalidateRuntimeQueries(queryClient, instanceId);
   }
-
-  // A tab that was asleep, hidden or offline has likely missed the scheduled JWT refetch.
-  // Refresh as soon as it is back so the first requests don't have to wait for it.
-  onMount(() => {
-    const refreshIfStale = () => void client.refreshJwtIfStale();
-    const refreshWhenVisible = () => {
-      if (document.visibilityState !== "hidden") refreshIfStale();
-    };
-    window.addEventListener("online", refreshIfStale);
-    window.addEventListener("focus", refreshWhenVisible);
-    document.addEventListener("visibilitychange", refreshWhenVisible);
-    return () => {
-      window.removeEventListener("online", refreshIfStale);
-      window.removeEventListener("focus", refreshWhenVisible);
-      document.removeEventListener("visibilitychange", refreshWhenVisible);
-    };
-  });
 
   onDestroy(() => {
     featureFlags.clearRuntimeClient();
