@@ -1,35 +1,71 @@
 import { expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "./setup/base";
 import { ADMIN_STORAGE_STATE } from "./setup/constants";
 
-const BOOKMARK_NAME = "Manager bookmark";
+let BOOKMARK_NAME: string;
 const BOOKMARK_DESCRIPTION = "Created for the bookmark manager test.";
-const RENAMED_BOOKMARK_NAME = "Manager bookmark renamed";
+let RENAMED_BOOKMARK_NAME: string;
 
 test.describe.serial("Bookmark manager", () => {
   // The adminPage fixture is test-scoped, so the hook builds its own admin context.
   test.beforeAll(async ({ browser }) => {
+    BOOKMARK_NAME = `Manager bookmark ${randomUUID()}`;
+    RENAMED_BOOKMARK_NAME = `${BOOKMARK_NAME} renamed`;
     const context = await browser.newContext({
       storageState: ADMIN_STORAGE_STATE,
     });
-    const page = await context.newPage();
-    await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+    try {
+      const page = await context.newPage();
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
-    await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+      await interactWithTimeRangeMenu(page, async () => {
+        await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+      });
+
+      await page.getByLabel("Other bookmark dropdown").click();
+      await page
+        .getByRole("menuitem", { name: "Bookmark current view", exact: true })
+        .click();
+      await page.getByTitle("Label").fill(BOOKMARK_NAME);
+      await page.getByTitle("Description").fill(BOOKMARK_DESCRIPTION);
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByText("Bookmark created")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const context = await browser.newContext({
+      storageState: ADMIN_STORAGE_STATE,
     });
-
-    await page.getByLabel("Other bookmark dropdown").click();
-    await page
-      .getByRole("menuitem", { name: "Bookmark current view", exact: true })
-      .click();
-    await page.getByTitle("Label").fill(BOOKMARK_NAME);
-    await page.getByTitle("Description").fill(BOOKMARK_DESCRIPTION);
-    await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Bookmark created")).toBeVisible();
-
-    await context.close();
+    try {
+      const page = await context.newPage();
+      await page.goto("/e2e/openrtb/-/bookmarks");
+      const search = page.getByPlaceholder("Search...");
+      await expect(search).toBeVisible();
+      for (const name of [BOOKMARK_NAME, RENAMED_BOOKMARK_NAME]) {
+        await search.fill(name);
+        await expect
+          .poll(() => new URL(page.url()).searchParams.get("q"))
+          .toBe(name);
+        const entry = page.getByLabel(`${name} Bookmark Entry`, {
+          exact: true,
+        });
+        // The test normally deletes it; cleanup also covers a failed partial attempt.
+        if ((await entry.count()) === 0) continue;
+        await entry
+          .locator("..")
+          .getByRole("button", { name: "Delete bookmark" })
+          .click();
+        await page.getByRole("button", { name: "Delete", exact: true }).click();
+        await expect(entry).toHaveCount(0);
+      }
+    } finally {
+      await context.close();
+    }
   });
 
   test("Project home lists bookmarks and sorts them", async ({ adminPage }) => {
@@ -88,7 +124,10 @@ test.describe.serial("Bookmark manager", () => {
 
     // Edit the name from the manager.
     await entry.hover();
-    await adminPage.getByRole("button", { name: "Edit bookmark" }).click();
+    await entry
+      .locator("..")
+      .getByRole("button", { name: "Edit bookmark" })
+      .click();
     await adminPage.getByTitle("Label").fill(RENAMED_BOOKMARK_NAME);
     await adminPage.getByRole("button", { name: "Save" }).click();
     await expect(adminPage.getByText("Bookmark updated")).toBeVisible();
@@ -110,7 +149,10 @@ test.describe.serial("Bookmark manager", () => {
 
     // Delete with confirmation.
     await renamedEntry.hover();
-    await adminPage.getByRole("button", { name: "Delete bookmark" }).click();
+    await renamedEntry
+      .locator("..")
+      .getByRole("button", { name: "Delete bookmark" })
+      .click();
     await adminPage
       .getByRole("button", { name: "Delete", exact: true })
       .click();
