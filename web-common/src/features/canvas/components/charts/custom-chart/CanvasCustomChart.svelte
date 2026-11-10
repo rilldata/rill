@@ -4,6 +4,7 @@
   import AgenticChartPrompt from "./AgenticChartPrompt.svelte";
   import { clearComponentConversation } from "./chart-ai-agent";
   import type { CustomChartComponent, QueryFieldMeta } from "./index";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
 
   export let component: CustomChartComponent;
   export let editable: boolean = false;
@@ -35,6 +36,10 @@
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
+    onResults={(results: CustomChartExportResult[] | undefined) =>
+      component.exportPayload.set(
+        results ? { kind: "customChart", results } : undefined,
+      )}
   />
 {:else if editable}
   <!-- The prompt edits the component by its YAML path, which only matches the file in the editor:

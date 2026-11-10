@@ -46,6 +46,13 @@
   let mapReady = $state(false);
 
   let map: mapboxgl.Map | null = null;
+  // Whether this map is the export render's (see CanvasPdfExportView), which
+  // reports through `component.drawing` until its style, tiles, data and camera
+  // fit are drawn, so the export captures a finished map. The live map does
+  // not report: it has no say in when an export is ready.
+  let inExportView = false;
+  let dataDrawn = false;
+  let styleLoaded = false;
   let currentMapStyle = "";
   let layerHandlersRegistered = false;
   // Identifies the dataset the camera was last auto-fit to, so a filter change
@@ -175,6 +182,32 @@
   const isPending = $derived($mapDataQuery.isPending);
   const canRender = $derived(mapReady && !isPending && !!colorMeasure);
 
+  // The rows behind the map for the workbook export; see BaseCanvasComponent.exportPayload.
+  $effect(() => {
+    if (isPending || !colorMeasure) {
+      component.exportPayload.set(undefined);
+      return;
+    }
+    const dimensionNames = [geoDimension, tooltipDimension].filter(
+      (name): name is string => !!name,
+    );
+    const measureNames = [colorMeasure, sizeMeasure].filter(
+      (name): name is string => !!name,
+    );
+    component.exportPayload.set({
+      kind: "map",
+      rows,
+      dimensions: dimensionNames.map(
+        (name) =>
+          metricsViewSpec?.dimensions?.find((d) => d.name === name) ?? { name },
+      ),
+      measures: measureNames.map(
+        (name) =>
+          metricsViewSpec?.measures?.find((m) => m.name === name) ?? { name },
+      ),
+    });
+  });
+
   const geoJsonOpts = $derived({
     geoDimension,
     colorMeasure,
@@ -221,15 +254,25 @@
     map.fitBounds(bounds, { padding: 50, maxZoom: 10 });
   }
 
+  function setDrawing(drawing: boolean) {
+    if (inExportView) component.drawing.set(drawing);
+  }
+
   function updateMap(geoJson: GeoJSON.FeatureCollection) {
     if (!map) return;
 
+    // `isStyleLoaded` is also false while tiles load, and `load` fires only
+    // once, so a retry on `load` would never come; `idle` follows every load.
     if (!map.isStyleLoaded()) {
-      map.once("load", () => {
+      map.once("idle", () => {
         updateMap(geoJson);
       });
       return;
     }
+
+    // The next idle event follows the frames that draw this data.
+    dataDrawn = true;
+    setDrawing(true);
 
     const source = map.getSource("map-data") as mapboxgl.GeoJSONSource;
     if (source) {
@@ -309,10 +352,14 @@
 
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
     currentMapStyle = isThemeModeDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
+    inExportView = !!mapContainer.closest("#canvas-pdf-export-view");
 
     map = new mapboxgl.Map({
       container: mapContainer,
       style: currentMapStyle,
+      // The export reads the WebGL canvas back long after it was drawn, which
+      // only works reliably when the drawing buffer is kept.
+      preserveDrawingBuffer: inExportView,
       ...(initialLongitude !== undefined && initialLatitude !== undefined
         ? {
             center: [initialLongitude, initialLatitude] as [number, number],
@@ -329,6 +376,21 @@
 
     map.on("load", () => {
       mapReady = true;
+    });
+
+    setDrawing(true);
+    // Idle means every requested tile is loaded and the camera has stopped.
+    // A map that has data to show is done once that data has been drawn.
+    map.on("idle", () => {
+      if (!canRender || dataDrawn) setDrawing(false);
+    });
+    // A style that fails to load (e.g. a rejected token) never goes idle.
+    // Errors after the style loaded (a tile, a sprite) don't stop the map.
+    map.on("style.load", () => {
+      styleLoaded = true;
+    });
+    map.on("error", () => {
+      if (!styleLoaded) setDrawing(false);
     });
   });
 
@@ -372,6 +434,7 @@
   });
 
   onDestroy(() => {
+    setDrawing(false);
     removeTooltip();
     if (map) {
       map.remove();

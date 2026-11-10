@@ -50,6 +50,7 @@
     getLeaderboardMaxValues,
     getSort,
     prepareLeaderboardItemData,
+    type LeaderboardItemData,
   } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -113,6 +114,9 @@
   // When set, the dimension column becomes resizable and the new width is
   // reported through this callback.
   export let onDimensionColumnResize: ((width: number) => void) | null = null;
+  // Reports the rows the leaderboard shows, for the canvas workbook export.
+  export let onData: ((rows: LeaderboardItemData[]) => void) | undefined =
+    undefined;
 
   onMount(() => {
     if (!parentElement) return;
@@ -381,6 +385,8 @@
     [...aboveTheFold, ...belowTheFoldRows],
     leaderboardMeasures,
   );
+
+  $: onData?.(isFetching ? [] : [...aboveTheFold, ...belowTheFoldRows]);
 </script>
 
 <div

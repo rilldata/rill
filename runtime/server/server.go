@@ -193,6 +193,9 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(http.HandlerFunc(s.downloadHandler)))))
 
+	// Add HTTP handler for canvas workbook (Excel) exports
+	observability.MuxHandle(httpMux, "POST /v1/instances/{instance_id}/exports/workbook", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(httputil.Handler(s.exportWorkbookHandler)))))
+
 	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceAPI)(httputil.Handler(s.apiHandler)))))
 
