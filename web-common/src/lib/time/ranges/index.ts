@@ -7,6 +7,7 @@
  */
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { clampToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   addZoneOffset,
   removeLocalTimezoneOffset,
@@ -184,22 +185,28 @@ export function getAdjustedFetchTime(
 
   // Should only fail if somehow the Luxon unit is invalid
   try {
-    const start = floorToGrain(
-      plusGrain(
-        DateTime.fromJSDate(startTime, { zone: zone || "UTC" }),
+    // The window grows by one grain on each side. Keep it within the bounds of a protobuf timestamp,
+    // which a range starting at a placeholder date such as 0001-01-01 would otherwise cross.
+    const start = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(startTime, { zone: zone || "UTC" }),
+          interval,
+          -1,
+        ),
         interval,
-        -1,
       ),
-      interval,
     );
 
-    const end = floorToGrain(
-      plusGrain(
-        DateTime.fromJSDate(endTime, { zone: zone || "UTC" }),
+    const end = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(endTime, { zone: zone || "UTC" }),
+          interval,
+          1,
+        ),
         interval,
-        1,
       ),
-      interval,
     );
 
     return {
