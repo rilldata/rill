@@ -23,6 +23,7 @@
   import {
     V1DeploymentStatus,
     type V1Organization,
+    adminServiceGetProject,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
@@ -46,13 +47,16 @@
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
   import {
-    baseGetProjectQueryOptions,
     createRuntimeJwtRefresher,
+    getProjectQueryOptions,
   } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import {
+    adminServiceGetProjectWithBearerToken,
+    createAdminServiceGetProjectWithBearerToken,
+  } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -146,14 +150,14 @@
    * When `activeBranch` is set, the branch param is passed so the API
    * returns the branch deployment instead of production.
    */
-  let cookieProjectQuery = $derived(
-    createAdminServiceGetProject(
-      organization,
-      project,
-      activeBranch ? { branch: activeBranch } : undefined,
-      { query: baseGetProjectQueryOptions },
-    ),
-  );
+  let cookieProjectQuery = $derived.by(() => {
+    const params = activeBranch ? { branch: activeBranch } : undefined;
+    return createAdminServiceGetProject(organization, project, params, {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, params, signal),
+      ),
+    });
+  });
 
   /**
    * `GetProject` with token-based auth.
@@ -165,7 +169,17 @@
       project,
       token,
       undefined,
-      { query: baseGetProjectQueryOptions },
+      {
+        query: getProjectQueryOptions((signal) =>
+          adminServiceGetProjectWithBearerToken(
+            organization,
+            project,
+            token,
+            undefined,
+            signal,
+          ),
+        ),
+      },
     ),
   );
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    adminServiceGetProject,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -19,8 +20,8 @@
   } from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT";
   import ProjectHeader from "../../../../../features/projects/header/ProjectHeader.svelte";
   import {
-    baseGetProjectQueryOptions,
     createRuntimeJwtRefresher,
+    getProjectQueryOptions,
   } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
@@ -64,13 +65,18 @@
     pageData?.organization as V1Organization | undefined,
   );
 
-  // Polling and JWT-refresh cadence are governed by `baseGetProjectQueryOptions`,
+  // Polling and JWT-refresh cadence are governed by `getProjectQueryOptions`,
   // shared with the parent project layout so both observers stay in sync.
+  $: branchParams = branch ? { branch } : undefined;
   $: projectQuery = createAdminServiceGetProject(
     organization,
     project,
-    branch ? { branch } : undefined,
-    { query: baseGetProjectQueryOptions },
+    branchParams,
+    {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, branchParams, signal),
+      ),
+    },
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
@@ -80,7 +86,11 @@
     organization,
     project,
     undefined,
-    { query: baseGetProjectQueryOptions },
+    {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, undefined, signal),
+      ),
+    },
   );
   $: hasPrimaryDeployment =
     !!$primaryProjectQuery.data?.project?.primaryDeploymentId;

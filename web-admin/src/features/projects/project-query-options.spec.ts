@@ -1,14 +1,17 @@
 import {
   adminServiceGetProject,
+  getAdminServiceGetProjectQueryKey,
   V1DeploymentStatus,
   type RpcStatus,
 } from "@rilldata/web-admin/client";
 import {
-  baseGetProjectQueryOptions,
   createRuntimeJwtRefresher,
+  getProjectQueryOptions,
 } from "@rilldata/web-admin/features/projects/project-query-options";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { JwtRefresher } from "@rilldata/web-common/runtime-client/v2";
+import { QueryObserver } from "@tanstack/svelte-query";
+import { CanceledError } from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@rilldata/web-admin/client", async (importOriginal) => ({
@@ -26,14 +29,14 @@ function httpError(status: number): RpcStatus {
 }
 
 function refetchInterval(state: { data?: unknown; error?: unknown }) {
-  const compute = baseGetProjectQueryOptions.refetchInterval;
+  const compute = getProjectQueryOptions(vi.fn()).refetchInterval;
   if (typeof compute !== "function") {
     throw new Error("expected refetchInterval to be a function");
   }
   return compute({ state } as unknown as Parameters<typeof compute>[0]);
 }
 
-describe("baseGetProjectQueryOptions.refetchInterval", () => {
+describe("getProjectQueryOptions refetchInterval", () => {
   it("polls a running deployment at half the JWT TTL", () => {
     expect(refetchInterval({ data: runningDeployment })).toBe(FifteenMinutes);
   });
@@ -131,6 +134,33 @@ describe("createRuntimeJwtRefresher", () => {
       return refresh;
     }
 
+    /** Makes the first GetProject attempt hang until it is aborted, like an axios request on a dead connection. */
+    function stallFirstAttempt(): AbortSignal[] {
+      vi.useFakeTimers();
+      // Node runs AbortSignal.timeout on its own timer, out of the fake timers' reach
+      vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(
+          () => controller.abort(new DOMException("Timed out", "TimeoutError")),
+          ms,
+        );
+        return controller.signal;
+      });
+      const signals: AbortSignal[] = [];
+      getProject
+        .mockReset()
+        .mockImplementation((_org, _project, _params, signal) => {
+          if (!signal) throw new Error("expected the query client's signal");
+          signals.push(signal);
+          if (signals.length > 1) return Promise.resolve({ jwt: "fresh" });
+          // Axios rejects with a CanceledError once the signal aborts
+          return new Promise((_, reject) =>
+            signal.addEventListener("abort", () => reject(new CanceledError())),
+          );
+        });
+      return signals;
+    }
+
     it("retries network and server errors with backoff", async () => {
       vi.useFakeTimers();
       getProject
@@ -154,28 +184,7 @@ describe("createRuntimeJwtRefresher", () => {
     });
 
     it("abandons an attempt that stalls and retries it", async () => {
-      vi.useFakeTimers();
-      // Node runs AbortSignal.timeout on its own timer, out of the fake timers' reach
-      vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
-        const controller = new AbortController();
-        setTimeout(
-          () => controller.abort(new DOMException("Timed out", "TimeoutError")),
-          ms,
-        );
-        return controller.signal;
-      });
-      const signals: AbortSignal[] = [];
-      getProject
-        .mockReset()
-        .mockImplementation((_org, _project, _params, signal) => {
-          if (!signal) throw new Error("expected the query client's signal");
-          signals.push(signal);
-          if (signals.length > 1) return Promise.resolve({ jwt: "fresh" });
-          // Fails only once aborted, like an axios request on a dead connection
-          return new Promise((_, reject) =>
-            signal.addEventListener("abort", () => reject(networkError)),
-          );
-        });
+      const signals = stallFirstAttempt();
 
       const jwt = userRefresher()();
       await vi.advanceTimersByTimeAsync(14_000);
@@ -185,6 +194,31 @@ describe("createRuntimeJwtRefresher", () => {
       await expect(jwt).resolves.toBe("fresh");
       expect(signals[0].aborted).toBe(true);
       expect(getProject).toHaveBeenCalledTimes(2);
+    });
+
+    it("is not held up by a stalled poll that it joins", async () => {
+      const signals = stallFirstAttempt();
+      // The layout's query, e.g. a scheduled poll left hanging by a laptop sleep
+      const poll = new QueryObserver(queryClient, {
+        queryKey: getAdminServiceGetProjectQueryKey("org", "proj"),
+        ...getProjectQueryOptions((signal) =>
+          adminServiceGetProject("org", "proj", undefined, signal),
+        ),
+      });
+      const unsubscribe = poll.subscribe(() => {});
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(getProject).toHaveBeenCalledTimes(1);
+
+      // The refresh joins the poll's request instead of sending its own
+      const jwt = userRefresher()();
+      await vi.advanceTimersByTimeAsync(9_000);
+      expect(getProject).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(jwt).resolves.toBe("fresh");
+      expect(signals[0].aborted).toBe(true);
+      expect(getProject).toHaveBeenCalledTimes(2);
+      unsubscribe();
     });
 
     it("refetches even when the cached token is seconds old", async () => {

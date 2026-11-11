@@ -18,17 +18,21 @@ import type {
   AuthContext,
   JwtRefresher,
 } from "@rilldata/web-common/runtime-client/v2";
-import type { CreateQueryOptions, QueryKey } from "@tanstack/svelte-query";
+import type {
+  CreateQueryOptions,
+  QueryFunctionContext,
+  QueryKey,
+} from "@tanstack/svelte-query";
 
 const PollTimeWhenProjectDeploymentPending = 1000;
 const PollTimeWhenProjectDeploymentError = 5000;
 const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
-// Retries of a JWT refetch that failed with a network or server error; delays come from the query client's retryDelay.
-const FreshJwtMaxRetries = 3;
-// A JWT refetch attempt still pending after this long is aborted and retried; a stalled request can take minutes to fail.
-const FreshJwtAttemptTimeout = 15_000;
+// Retries of a request for a JWT that failed with a network or server error; delays come from the query client's retryDelay.
+const JwtRequestMaxRetries = 3;
+// A request for a JWT still pending after this long is aborted and retried; a stalled request can take minutes to fail.
+const JwtRequestAttemptTimeout = 15_000;
 
-export const baseGetProjectQueryOptions: Partial<
+const baseGetProjectQueryOptions: Partial<
   CreateQueryOptions<V1GetProjectResponse, RpcStatus>
 > = {
   gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
@@ -60,6 +64,17 @@ export const baseGetProjectQueryOptions: Partial<
   // refetch. Focus/reconnect refetch still kicks in once data exceeds this window.
   staleTime: PollTimeWhenProjectDeploymentOk,
 };
+
+/**
+ * Options for the layouts' GetProject queries, which poll for the deployment and its runtime JWT.
+ * `fetchProject` is the query's request, passed again so it gets the deadline and retries of a JWT refresh:
+ * a refresh joins a refetch already in flight, so a poll stalled across a laptop sleep would hold it up too.
+ */
+export function getProjectQueryOptions(
+  fetchProject: (signal: AbortSignal) => Promise<V1GetProjectResponse>,
+): Partial<CreateQueryOptions<V1GetProjectResponse, RpcStatus>> {
+  return { ...baseGetProjectQueryOptions, ...jwtRequestOptions(fetchProject) };
+}
 
 /**
  * Creates the callback `RuntimeProvider` uses to fetch a fresh JWT when a request finds the current one
@@ -139,9 +154,8 @@ export function createRuntimeJwtRefresher(
 
 /**
  * Fetches the query that issues a JWT, through the query client: concurrent callers and a refetch already in flight
- * share one request, and network or server errors are retried with backoff. Refusals (4xx) fail at once.
- * Each attempt is cut off after FreshJwtAttemptTimeout, so a stalled request is retried instead of being joined by every
- * later caller. No caller cancels the shared request; one that stops waiting simply stops listening.
+ * share one request, which gets the deadline and retries of jwtRequestOptions.
+ * No caller cancels the shared request; one that stops waiting simply stops listening.
  */
 export function fetchFreshJwt<TData>(
   queryKey: QueryKey,
@@ -151,22 +165,36 @@ export function fetchFreshJwt<TData>(
   return queryClient
     .fetchQuery<TData, RpcStatus>({
       queryKey,
-      queryFn: ({ signal }) =>
-        fetchData(
-          AbortSignal.any([
-            signal,
-            AbortSignal.timeout(FreshJwtAttemptTimeout),
-          ]),
-        ),
+      ...jwtRequestOptions(fetchData),
       // Always refetch unless a request is already in flight: the cached token may be the one the runtime just rejected
       staleTime: 0,
-      retry: (failureCount, error) => {
-        const status = extractErrorStatusCode(error);
-        return (
-          failureCount < FreshJwtMaxRetries &&
-          (status === undefined || status >= 500)
-        );
-      },
     })
     .then(selectJwt);
+}
+
+/**
+ * Request and retry options shared by the queries that issue a runtime JWT, whether a layout polls them or a refresh
+ * fetches them on demand. Each attempt is cut off after JwtRequestAttemptTimeout and retried: a request stalled by a
+ * laptop sleep or a network change can take minutes to fail, and every refetch in the meantime would join it.
+ * Network and server errors are retried with backoff; refusals (4xx) fail at once.
+ */
+function jwtRequestOptions<TData>(
+  fetchData: (signal: AbortSignal) => Promise<TData>,
+) {
+  return {
+    queryFn: ({ signal }: QueryFunctionContext) =>
+      fetchData(
+        AbortSignal.any([
+          signal,
+          AbortSignal.timeout(JwtRequestAttemptTimeout),
+        ]),
+      ),
+    retry: (failureCount: number, error: RpcStatus) => {
+      const status = extractErrorStatusCode(error);
+      return (
+        failureCount < JwtRequestMaxRetries &&
+        (status === undefined || status >= 500)
+      );
+    },
+  };
 }
