@@ -4,7 +4,7 @@ title: Report YAML
 sidebar_position: 38
 ---
 
-Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email or Slack.
+Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email, Slack or webhooks.
 
 
 ## Properties
@@ -173,7 +173,7 @@ _[object]_ - Export configuration for query-based reports
 
 ### `notify`
 
-_[object]_ - Notification configuration for email and Slack delivery
+_[object]_ - Notification configuration for email, Slack and webhook delivery
 
   - **`email`** - _[object]_ - Send notifications via email.
 
@@ -186,6 +186,12 @@ _[object]_ - Notification configuration for email and Slack delivery
     - **`channels`** - _[array of string]_ - An array of Slack channel names to notify.
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
+
+  - **`webhook`** - _[object]_ - Send notifications as JSON payloads to HTTP endpoints.
+
+    - **`urls`** - _[array of string]_ - An array of absolute http or https URLs to send notifications to. _(required)_
+
+    - **`connector`** - _[string]_ - Name of the webhook connector to use. Defaults to `webhook`.
 
 ### `annotations`
 

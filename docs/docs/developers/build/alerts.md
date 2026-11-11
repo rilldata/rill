@@ -145,7 +145,7 @@ Use a `refresh.cron` schedule for these alerts. Don't add the watched resources 
 
 ## Notification Configuration
 
-Configure where and how you receive notifications when alerts trigger. You can send notifications via email, Slack, or both. Notifications are sent when the alert condition is met (when the data query returns rows), and optionally when the alert recovers or encounters evaluation errors.
+Configure where and how you receive notifications when alerts trigger. You can send notifications via email, Slack, webhooks, or any combination of them. Notifications are sent when the alert condition is met (when the data query returns rows), and optionally when the alert recovers or encounters evaluation errors.
 
 ### Email Notifications
 
@@ -172,6 +172,17 @@ notify:
       - "U1234567890"  # Slack user IDs
     webhooks:
       - "https://hooks.slack.com/services/..."
+```
+
+### Webhook Notifications
+
+Webhook notifications send the alert as a JSON payload to HTTP endpoints. To sign deliveries or restrict where they can go, [configure a webhook connector](/developers/build/connectors/services/webhook).
+
+```yaml
+notify:
+  webhook:
+    urls:
+      - "https://hooks.example.com/rill/alerts"
 ```
 
 ### Combined Notifications

@@ -56,6 +56,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
+	_ "github.com/rilldata/rill/runtime/drivers/webhook"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )

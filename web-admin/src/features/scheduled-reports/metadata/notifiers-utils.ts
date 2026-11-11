@@ -8,10 +8,14 @@ export type SlackNotifierProperties = {
   channels: string[];
   webhooks: string[];
 };
+export type WebhookNotifierProperties = {
+  urls: string[];
+};
 
 type NotifierPropsMap = {
   email: EmailNotifierProperties;
   slack: SlackNotifierProperties;
+  webhook: WebhookNotifierProperties;
 };
 
 export function extractNotifier<Notifier extends keyof NotifierPropsMap>(

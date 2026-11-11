@@ -335,7 +335,7 @@
             : m.report_form_embed_owner_email_optional_hint()}
       />
     {/if}
-    <!-- Reports created from an embed can't be sent to Slack. -->
+    <!-- Reports created from an embed can't be sent to Slack or webhooks. -->
     {#if !isEmbedded}
       {#if provider.hasSlackNotifier}
         <FormSection
@@ -371,6 +371,36 @@
             <span class="text-sm text-fg-secondary">
               {@html m.report_form_slack_not_configured({
                 link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
+              })}
+            </span>
+          </svelte:fragment>
+        </FormSection>
+      {/if}
+      {#if provider.hasWebhookNotifier}
+        <FormSection
+          bind:enabled={$data["enableWebhookNotification"]}
+          showSectionToggle
+          title={m.report_form_webhook_title()}
+          padding=""
+        >
+          <MultiInput
+            id="webhookUrls"
+            label={m.report_form_webhook_urls()}
+            hint={m.report_form_webhook_urls_hint()}
+            bind:values={$data["webhookUrls"]}
+            errors={$errors["webhookUrls"]}
+            singular="URL"
+            plural="URLs"
+            placeholder={m.report_form_webhook_placeholder()}
+          />
+        </FormSection>
+      {:else}
+        <FormSection title={m.report_form_webhook_title()} padding="">
+          <svelte:fragment slot="description">
+            <span class="text-sm text-fg-secondary">
+              {@html m.report_form_webhook_not_configured({
+                docsUrl:
+                  "https://docs.rilldata.com/developers/build/connectors/services/webhook",
               })}
             </span>
           </svelte:fragment>

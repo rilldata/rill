@@ -106,3 +106,32 @@ func TestJSONSchemaForResourceType(t *testing.T) {
 		})
 	}
 }
+
+func TestNotifySchemaAcceptsWebhook(t *testing.T) {
+	_, err := JSONSchemaForResourceType(ResourceKindAlert)
+	require.NoError(t, err)
+	notify := parsedResourceYAMLSchema.Definitions["notify_properties"]
+	require.NotNil(t, notify)
+	resolved, err := notify.Resolve(nil)
+	require.NoError(t, err)
+
+	require.NoError(t, resolved.Validate(map[string]any{
+		"webhook": map[string]any{"urls": []any{"https://hooks.example.com/rill"}},
+	}))
+	require.NoError(t, resolved.Validate(map[string]any{
+		"webhook": map[string]any{"urls": []any{"https://hooks.example.com/rill"}, "connector": "ops_webhook"},
+	}))
+	require.Error(t, resolved.Validate(map[string]any{"webhook": map[string]any{}}))
+
+	connector, err := JSONSchemaForResourceType(ResourceKindConnector)
+	require.NoError(t, err)
+	found := false
+	for _, s := range connector.AllOf {
+		for _, c := range s.OneOf {
+			if c.Title == "Webhook" {
+				found = true
+			}
+		}
+	}
+	require.True(t, found, "connector schema should document the webhook driver")
+}
