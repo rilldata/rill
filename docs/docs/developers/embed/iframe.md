@@ -374,7 +374,7 @@ features:
 
 Bookmarks created from an embed work as follows:
 - **They require `external_user_id`.** Each bookmark is owned by the external user who created it, so iframes without an `external_user_id` don't show bookmarks. Bookmarks are stored by `external_user_id`, so follow the [guidance on choosing it](#user-identity-in-embeds): a user who has several IDs has separate bookmarks for each, and users who share an ID share their bookmarks.
-- **They are managed from the navigation bar.** The bookmarks menu is in the embed's navigation bar, so it isn't shown when the navigation bar is hidden.
+- **They are managed from the bookmarks menu.** The bookmarks menu is in the navigation bar when it is visible. When the bar is hidden, the menu appears in the top-right corner of the active dashboard.
 - **Only the owner can see them.** Bookmarks created from an embed can't be shared, so other embed users and project members can't see them. Likewise, embed users don't see the shared and home bookmarks that project admins create in Rill Cloud.
 - **They follow the iframe's dashboards.** If the iframe is limited to one dashboard with `resource`, the embed user can only create and see bookmarks for that dashboard.
 - **They respect security policies.** A bookmark only stores the dashboard state; opening it shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).

@@ -319,6 +319,10 @@ type DB interface {
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// LockEmbedUser locks the embed user's row until the current transaction ends.
+	// It must be called within a transaction started with NewTx.
+	// It serializes quota checks for an embed user across all admin processes, such as counting their bookmarks before inserting one.
+	LockEmbedUser(ctx context.Context, id string) error
 	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
 	// It doesn't write anything otherwise, since it's called on every embed load.
 	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error

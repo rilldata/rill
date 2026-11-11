@@ -3028,6 +3028,19 @@ func (c *connection) FindEmbedUser(ctx context.Context, id string) (*database.Em
 	return res.embedUserFromDTO()
 }
 
+func (c *connection) LockEmbedUser(ctx context.Context, id string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: embed user locks must be acquired within a transaction")
+	}
+	// FOR NO KEY UPDATE conflicts with itself, but not with the FOR KEY SHARE locks taken by foreign key checks on rows that reference the embed user.
+	var res int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT 1 FROM embed_users WHERE id=$1 FOR NO KEY UPDATE", id).Scan(&res)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	return nil
+}
+
 func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertEmbedUserOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err

@@ -4,18 +4,15 @@
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
- * - Query and mutation creators: The token is bound when creating them; query keys and mutation variables match the generated code,
- *   so cache invalidation is shared between the two variants.
+ * - Query options: The token is bound when creating them; the query key matches the generated code, so cache invalidation is shared between the two variants.
+ * - Mutation creators: They delegate to the generated creators, overriding only `mutationFn`, so mutation keys and variables match the generated code.
  */
 
+import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import {
-  createMutation,
-  type CreateMutationOptions,
-  type CreateMutationResult,
-  type CreateQueryOptions,
-  type QueryClient,
-} from "@tanstack/svelte-query";
-import {
+  createAdminServiceCreateBookmark,
+  createAdminServiceRemoveBookmark,
+  createAdminServiceUpdateBookmark,
   getAdminServiceListBookmarksQueryKey,
   type AdminServiceListBookmarksParams,
   type RpcStatus,
@@ -77,36 +74,19 @@ export const adminServiceCreateBookmarkUsingToken = (
   });
 };
 
-export const createAdminServiceCreateBookmarkUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceCreateBookmarkUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreateBookmarkUsingToken>>,
-      TError,
-      { data: V1CreateBookmarkRequest },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreateBookmarkUsingToken>>,
-  TError,
-  { data: V1CreateBookmarkRequest },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceCreateBookmark(
     {
-      mutationKey: ["adminServiceCreateBookmark"],
-      mutationFn: ({ data }) =>
-        adminServiceCreateBookmarkUsingToken(data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ data }) =>
+          adminServiceCreateBookmarkUsingToken(data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceUpdateBookmarkUsingToken = (
   v1UpdateBookmarkRequest: V1UpdateBookmarkRequest,
@@ -126,36 +106,19 @@ export const adminServiceUpdateBookmarkUsingToken = (
   });
 };
 
-export const createAdminServiceUpdateBookmarkUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceUpdateBookmarkUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceUpdateBookmarkUsingToken>>,
-      TError,
-      { data: V1UpdateBookmarkRequest },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceUpdateBookmarkUsingToken>>,
-  TError,
-  { data: V1UpdateBookmarkRequest },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceUpdateBookmark(
     {
-      mutationKey: ["adminServiceUpdateBookmark"],
-      mutationFn: ({ data }) =>
-        adminServiceUpdateBookmarkUsingToken(data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ data }) =>
+          adminServiceUpdateBookmarkUsingToken(data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceRemoveBookmarkUsingToken = (
   bookmarkId: string,
@@ -173,33 +136,16 @@ export const adminServiceRemoveBookmarkUsingToken = (
   });
 };
 
-export const createAdminServiceRemoveBookmarkUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceRemoveBookmarkUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceRemoveBookmarkUsingToken>>,
-      TError,
-      { bookmarkId: string },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceRemoveBookmarkUsingToken>>,
-  TError,
-  { bookmarkId: string },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceRemoveBookmark(
     {
-      mutationKey: ["adminServiceRemoveBookmark"],
-      mutationFn: ({ bookmarkId }) =>
-        adminServiceRemoveBookmarkUsingToken(bookmarkId, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ bookmarkId }) =>
+          adminServiceRemoveBookmarkUsingToken(bookmarkId, token),
+      },
     },
     queryClient,
   );
-};

@@ -161,9 +161,20 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create shared bookmarks")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// Embed users are untrusted outside users, so we limit the resources they can bookmark and how many bookmarks they can create.
 	if o.isEmbed() {
 		if err := checkEmbedResource(claims, req.ResourceKind, req.ResourceName); err != nil {
+			return nil, err
+		}
+
+		// Lock the embed user until the insert commits, so concurrent requests can't all pass the count check.
+		if err := s.admin.DB.LockEmbedUser(ctx, o.embedUserID); err != nil {
 			return nil, err
 		}
 
@@ -201,6 +212,10 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		Shared:       req.Shared,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

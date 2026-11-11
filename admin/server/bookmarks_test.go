@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"testing"
 
 	"github.com/rilldata/rill/admin/client"
@@ -425,6 +426,36 @@ func TestEmbedBookmarks(t *testing.T) {
 		}
 		_, err := create(t, c, "One too many", "e1")
 		require.Equal(t, codes.ResourceExhausted, status.Code(err))
+	})
+
+	t.Run("concurrent creates can't exceed the bookmark limit", func(t *testing.T) {
+		c := embedClient(t, "concurrent-cap", "")
+		for i := 0; i < 95; i++ {
+			_, err := create(t, c, fmt.Sprintf("Bookmark %d", i), "e1")
+			require.NoError(t, err)
+		}
+
+		var wg sync.WaitGroup
+		errs := make([]error, 20)
+		for i := range errs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				_, errs[i] = create(t, c, fmt.Sprintf("Concurrent %d", i), "e1")
+			}()
+		}
+		wg.Wait()
+
+		var created int
+		for _, err := range errs {
+			if err == nil {
+				created++
+				continue
+			}
+			require.Equal(t, codes.ResourceExhausted, status.Code(err))
+		}
+		require.Equal(t, 5, created)
+		require.Len(t, list(t, c), 100)
 	})
 }
 
