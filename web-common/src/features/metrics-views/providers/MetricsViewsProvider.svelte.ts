@@ -5,6 +5,7 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1TimeGrain,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -14,6 +15,11 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { writable } from "svelte/store";
+import {
+  MinSupportedGrain,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -67,19 +73,30 @@ export class MetricsViewsProvider {
   public timeRangeSummary: V1TimeRangeSummary | undefined;
   /** Smallest restriction across the metrics views, since it has to hold for all of them. */
   public maxQueryTimeRange: Duration | undefined;
+  /** Largest `smallest_time_grain` across the metrics views. */
+  public largestMinTimeGrain: V1TimeGrain | undefined;
+  public largestMinGrainOrder: number;
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
   public specsReady = $state(false);
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
 
+  // Stores for legacy svelte4 usages
+  public largestMinTimeGrainStore = writable<V1TimeGrain | undefined>(
+    undefined,
+  );
+
   public cleanup: () => void;
 
   private events = new EventEmitter<MetricsViewsProviderEvents>();
-  public readonly on = this.events.on.bind(this.events);
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
 
   private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();
   private pendingSpecs = new Set<string>();
+  private pendingTimestamps = new Set<string>();
 
   public constructor(
     public readonly runtimeClient: RuntimeClient,
@@ -183,12 +200,16 @@ export class MetricsViewsProvider {
     // `processResources` below marks them ready again if they are already available.
     this.specsReady = false;
     this.pendingSpecs = new Set(metricsViewNames);
+    this.pendingTimestamps = new Set(metricsViewNames);
     this.events.emit("update-metrics-views", this.metricsViewNames);
     this.processResources();
   }
 
   private processResources() {
     const specs: Record<string, V1MetricsViewSpec> = {};
+
+    let largestMinTimeGrain: V1TimeGrain | undefined = undefined;
+    let largestMinGrainOrder: number | undefined = Infinity;
 
     const measureSpecs: Record<
       string,
@@ -242,6 +263,18 @@ export class MetricsViewsProvider {
         specsForDimension[metricsViewName] = dimension;
       });
 
+      if (spec.smallestTimeGrain) {
+        const specGrainOrder = V1TimeGrainToOrder[spec.smallestTimeGrain];
+
+        if (!largestMinTimeGrain) {
+          largestMinTimeGrain = spec.smallestTimeGrain;
+          largestMinGrainOrder = specGrainOrder;
+        } else if (specGrainOrder > largestMinGrainOrder) {
+          largestMinTimeGrain = spec.smallestTimeGrain;
+          largestMinGrainOrder = specGrainOrder;
+        }
+      }
+
       this.subscribeToTimeRange(metricsViewName, spec);
     }
 
@@ -251,6 +284,13 @@ export class MetricsViewsProvider {
     this.simpleMeasures = simpleMeasures;
     this.dimensionSpecs = dimensionSpecs;
     this.dimensions = dimensions;
+    this.largestMinTimeGrain = largestMinTimeGrain;
+    this.largestMinGrainOrder = largestMinTimeGrain
+      ? largestMinGrainOrder
+      : V1TimeGrainToOrder[MinSupportedGrain];
+
+    // Set legacy stores
+    this.largestMinTimeGrainStore.set(largestMinTimeGrain);
 
     Object.keys(specs).forEach((metricsViewName) =>
       this.specLoaded(metricsViewName),
@@ -266,6 +306,7 @@ export class MetricsViewsProvider {
     spec: V1MetricsViewSpec,
   ) {
     if (!spec.timeDimension || this.timeRangeUnsubs.has(metricsViewName)) {
+      this.timeSpecLoaded(metricsViewName);
       return;
     }
 
@@ -279,7 +320,11 @@ export class MetricsViewsProvider {
       metricsViewName,
       timeRangeQuery.subscribe((timeRangeResp) => {
         const summary = timeRangeResp.data?.timeRangeSummary;
-        if (summary) this.timeRangeSummaries[metricsViewName] = summary;
+        if (summary) {
+          this.timeRangeSummaries[metricsViewName] = summary;
+          this.timeSpecLoaded(metricsViewName);
+        }
+        // TODO: handle error
         this.maxQueryTimeRangeMillis[metricsViewName] = Number(
           timeRangeResp.data?.maxQueryTimeRangeMillis ?? 0,
         );
@@ -294,5 +339,13 @@ export class MetricsViewsProvider {
     if (this.pendingSpecs.size > 0) return;
     this.events.emit("specs-loaded");
     this.specsReady = true;
+  }
+
+  private timeSpecLoaded(name: string) {
+    if (!this.pendingTimestamps.has(name)) return;
+    this.pendingTimestamps.delete(name);
+
+    if (this.pendingTimestamps.size > 0) return;
+    this.events.emit("time-specs-loaded");
   }
 }

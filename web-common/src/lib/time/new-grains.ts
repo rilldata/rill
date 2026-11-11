@@ -192,6 +192,11 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
+// We don't want to support small grains like sec/milli-sec.
+export const MinSupportedGrain = V1TimeGrain.TIME_GRAIN_MINUTE;
+export const MinSupportedDateTimeUnit =
+  V1TimeGrainToDateTimeUnit[MinSupportedGrain];
+
 /** Luxon unit to the standard grain of that unit. */
 export const DateTimeUnitToV1TimeGrain = reverseMap(
   Object.fromEntries(

@@ -13,6 +13,7 @@ import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 export class DashboardConfigProvider {
   public readonly metricsViewsProvider: MetricsViewsProvider;
   public readonly yamlConfigProvider: YAMLConfigProvider;
+  public defaultUrlParams: URLSearchParams = $state(new URLSearchParams());
 
   public cleanup: (() => void) | undefined = undefined;
 
@@ -30,6 +31,8 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
       name: exploreName,
     });
     const getExploreUnsub = getExploreQuery.subscribe((getExploreResp) => {
+      const metricsViewSpec =
+        getExploreResp.data?.metricsView?.metricsView?.state?.validSpec ?? {};
       const exploreSpec =
         getExploreResp.data?.explore?.explore?.state?.validSpec ?? {};
 
@@ -43,7 +46,17 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
-      // this.yamlConfigProvider.update() // TODO: once we have this support for explore
+      this.yamlConfigProvider.update({
+        restrictedDimensions: exploreSpec.dimensions,
+        primaryTimeDimension: metricsViewSpec.timeDimension,
+        restrictedMeasures: exploreSpec.measures,
+
+        defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
+        timeRanges: exploreSpec.timeRanges,
+        allowCustomTimeRange: exploreSpec.allowCustomTimeRange,
+        defaultTimeZone: exploreSpec.defaultPreset?.timezone,
+        timeZones: exploreSpec.timeZones,
+      });
     });
 
     this.cleanup = () => {
@@ -82,11 +95,16 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
             ([mv, sqlFilter]) => [mv, sqlFilter.expression],
           ),
         );
-        this.yamlConfigProvider.update(
+        this.yamlConfigProvider.update({
           defaultFilters,
-          canvasSpec.pinnedFilters ?? [],
-          canvasSpec.requiredFilters ?? [],
-        );
+          pinnedFilters: canvasSpec.pinnedFilters,
+          requiredFilters: canvasSpec.requiredFilters,
+
+          defaultTimeRange: canvasSpec.defaultPreset?.timeRange,
+          timeRanges: canvasSpec.timeRanges,
+          allowCustomTimeRange: canvasSpec.allowCustomTimeRange,
+          timeZones: canvasSpec.timeZones,
+        });
       },
     );
 
