@@ -12,6 +12,7 @@ import {
   useTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { getTimeDimensionForComparison } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import type {
   V1ExploreSpec,
   V1MetricsViewAggregationMeasure,
@@ -122,20 +123,21 @@ export function getTDDAggregationRequest({
   const timeDimension =
     exploreState.selectedTimeDimension || metricsViewSpec.timeDimension || "";
 
+  const { dimension: timeDimensionRequest, field: timeField } =
+    getTimeDimensionForComparison(
+      dimensionName,
+      timeDimension,
+      exploreState.selectedTimeRange?.interval,
+      exploreState.selectedTimezone,
+    );
+
   return {
     instanceId,
     metricsView: metricsViewName,
-    dimensions: [
-      { name: dimensionName },
-      {
-        name: timeDimension,
-        timeGrain: exploreState.selectedTimeRange?.interval,
-        timeZone: exploreState.selectedTimezone,
-      },
-    ],
+    dimensions: [{ name: dimensionName }, timeDimensionRequest],
     measures,
     timeRange,
-    pivotOn: [timeDimension],
+    pivotOn: [timeField],
     sort: [
       {
         name: dimensionName,
