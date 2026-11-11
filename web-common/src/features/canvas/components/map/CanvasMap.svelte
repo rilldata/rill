@@ -1,6 +1,7 @@
 <script lang="ts">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { MapExportLayer } from "@rilldata/web-common/features/exports/xlsx/payload";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -10,7 +11,11 @@
   import type { MapComponent, MapSpec } from ".";
   import MapPointsLayer from "./layers/MapPointsLayer.svelte";
   import MapRegionLayer from "./layers/MapRegionLayer.svelte";
-  import type { MapLayerBoundsHandler, MapLayerId } from "./layers/types";
+  import type {
+    MapLayerBoundsHandler,
+    MapLayerExportHandler,
+    MapLayerId,
+  } from "./layers/types";
   import { removeTooltip } from "./map-utils";
   import {
     MAPBOX_ACCESS_TOKEN,
@@ -31,6 +36,12 @@
   let styleKey = $state<number | null>(null);
   let styleLoads = 0;
   let mapLoaded = $state(false);
+  // Whether this map is the export render's (see CanvasPdfExportView), which
+  // reports through `component.drawing` until its style, tiles, data and camera
+  // fit are drawn, so the export captures a finished map. The live map does
+  // not report: it has no say in when an export is ready.
+  let inExportView = false;
+  let styleLoaded = false;
 
   let currentMapStyle = "";
   // Latest bounds reported by each layer, and the data keys of the layers the
@@ -40,6 +51,8 @@
     { dataKey: string; bounds: mapboxgl.LngLatBoundsLike | null }
   >();
   let fittedDataKey: string | null = null;
+  // Latest rows reported by each layer for the workbook export.
+  const layerExports = new Map<MapLayerId, MapExportLayer | undefined>();
 
   const runtimeClient = useRuntimeClient();
   const { instanceId } = runtimeClient;
@@ -87,6 +100,13 @@
   const metricsViewQuery = $derived(getMetricsViewFromName(metricsView));
   const metricsViewSpec = $derived($metricsViewQuery?.metricsView);
 
+  function getActiveLayers(): MapLayerId[] {
+    const activeLayers: MapLayerId[] = [];
+    if (hasRegions) activeLayers.push("regions");
+    if (hasPoints) activeLayers.push("points");
+    return activeLayers;
+  }
+
   // Auto-fit the camera once per dataset, after every active layer has
   // reported its bounds. Re-fitting on every filter change moves the map under
   // the user and discards any panning or zooming they did.
@@ -95,10 +115,7 @@
     layerBounds.set(layer, { dataKey, bounds });
     if (!map || hasInitialView) return;
 
-    const activeLayers: MapLayerId[] = [];
-    if (hasRegions) activeLayers.push("regions");
-    if (hasPoints) activeLayers.push("points");
-    const reported = activeLayers.map((l) => layerBounds.get(l));
+    const reported = getActiveLayers().map((l) => layerBounds.get(l));
     if (reported.some((r) => !r)) return;
 
     const combinedKey = reported.map((r) => r?.dataKey).join("|");
@@ -114,15 +131,54 @@
     map.fitBounds(combined, { padding: 50, maxZoom: 10 });
   };
 
+  // The rows behind the map for the workbook export, once every active layer
+  // has its data; see BaseCanvasComponent.exportPayload.
+  function publishExportPayload() {
+    const layers = getActiveLayers().map((l) => layerExports.get(l));
+    if (layers.length === 0 || layers.some((l) => !l)) {
+      component.exportPayload.set(undefined);
+      return;
+    }
+    component.exportPayload.set({
+      kind: "map",
+      layers: layers as MapExportLayer[],
+    });
+  }
+
+  const handleLayerExport: MapLayerExportHandler = (layer, data) => {
+    layerExports.set(layer, data);
+    publishExportPayload();
+  };
+
+  // Layers that are switched off no longer count towards the export.
+  $effect(() => {
+    void hasRegions;
+    void hasPoints;
+    untrack(publishExportPayload);
+  });
+
+  function setDrawing(drawing: boolean) {
+    if (inExportView) component.drawing.set(drawing);
+  }
+
+  // The next idle event follows the frames that draw a layer's new data.
+  function handleLayerDraw() {
+    setDrawing(true);
+  }
+
   onMount(() => {
     if (!mapContainer) return;
 
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
     currentMapStyle = isThemeModeDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
+    inExportView = !!mapContainer.closest("#canvas-pdf-export-view");
 
     const newMap = new mapboxgl.Map({
       container: mapContainer,
       style: currentMapStyle,
+      // The export reads the WebGL canvas back long after it was drawn, which
+      // only works reliably when the drawing buffer is kept.
+      preserveDrawingBuffer: inExportView,
       ...(initialLongitude !== undefined && initialLatitude !== undefined
         ? {
             center: [initialLongitude, initialLatitude] as [number, number],
@@ -139,10 +195,23 @@
 
     // Fires for the initial style and again after every `setStyle`.
     newMap.on("style.load", () => {
+      styleLoaded = true;
       styleKey = ++styleLoads;
     });
     newMap.on("load", () => {
       mapLoaded = true;
+    });
+
+    setDrawing(true);
+    // Idle means every requested tile is loaded and the camera has stopped.
+    // Layers mark the map as drawing again whenever they hand it new data.
+    newMap.on("idle", () => {
+      setDrawing(false);
+    });
+    // A style that fails to load (e.g. a rejected token) never goes idle.
+    // Errors after the style loaded (a tile, a sprite) don't stop the map.
+    newMap.on("error", () => {
+      if (!styleLoaded) setDrawing(false);
     });
 
     map = newMap;
@@ -173,6 +242,7 @@
   });
 
   onDestroy(() => {
+    setDrawing(false);
     removeTooltip();
     if (map) {
       map.remove();
@@ -204,6 +274,8 @@
             theme={resolvedTheme}
             {isThemeModeDark}
             onBounds={handleLayerBounds}
+            onExport={handleLayerExport}
+            onDraw={handleLayerDraw}
           />
         {/if}
         {#if hasPoints}
@@ -215,6 +287,8 @@
             theme={resolvedTheme}
             {isThemeModeDark}
             onBounds={handleLayerBounds}
+            onExport={handleLayerExport}
+            onDraw={handleLayerDraw}
           />
         {/if}
       </div>

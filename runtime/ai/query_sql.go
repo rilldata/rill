@@ -48,7 +48,7 @@ func (t *QuerySQL) Spec() *mcp.Tool {
 }
 
 func (t *QuerySQL) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLResult, error) {
@@ -88,7 +88,8 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		props["connector"] = args.Connector
 	}
 
-	// Execute via the SQL resolver
+	// Execute via the SQL resolver.
+	// The SQL is written by the model on the user's behalf, so templates in it cannot access project variables.
 	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         s.InstanceID(),
 		Resolver:           "sql",

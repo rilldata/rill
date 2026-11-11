@@ -28,7 +28,7 @@
   } from "../regions/boundaries";
   import { buildRegionIndex, matchRegions } from "../regions/match";
   import { createMapLayerQuery } from "./query";
-  import type { MapLayerBoundsHandler } from "./types";
+  import type { MapLayerBoundsHandler, MapLayerExportHandler } from "./types";
 
   type Props = {
     map: mapboxgl.Map;
@@ -39,6 +39,9 @@
     theme: MapTheme;
     isThemeModeDark: boolean;
     onBounds: MapLayerBoundsHandler;
+    onExport: MapLayerExportHandler;
+    /** Called whenever the layer hands the map new data or paint to draw. */
+    onDraw: () => void;
   };
 
   let {
@@ -49,6 +52,8 @@
     theme,
     isThemeModeDark,
     onBounds,
+    onExport,
+    onDraw,
   }: Props = $props();
 
   const SOURCE_ID = "regions";
@@ -173,6 +178,23 @@
     };
   });
 
+  $effect(() => {
+    if ($dataQuery.isPending || !colorMeasure) {
+      onExport("regions", undefined);
+      return;
+    }
+    onExport("regions", {
+      name: "regions",
+      rows,
+      dimensions: [
+        metricsViewSpec?.dimensions?.find((d) => d.name === dimension) ?? {
+          name: dimension,
+        },
+      ],
+      measures: [measureSpec ?? { name: colorMeasure }],
+    });
+  });
+
   let hoveredId: string | number | undefined;
 
   function setHovered(id: string | number | undefined) {
@@ -271,6 +293,7 @@
     if (!canRender || !match || !boundaries) return;
     if (!map.getSource(SOURCE_ID)) return;
 
+    onDraw();
     map.removeFeatureState({ source: SOURCE_ID });
     for (const [id, { value }] of match.values) {
       map.setFeatureState({ source: SOURCE_ID, id }, { value });

@@ -1,3 +1,4 @@
+import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping.ts";
 import {
@@ -8,6 +9,7 @@ import {
   measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import { pivotHasSortField } from "@rilldata/web-common/features/dashboards/pivot/pivot-sorting";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -15,6 +17,7 @@ import {
   type PivotChipData,
   PivotChipType,
   type PivotState,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import {
   SortDirection,
@@ -176,7 +179,8 @@ export async function getDashboardFromAggregationRequest({
   if (req.dimensions?.length) {
     dashboard.selectedDimensionName = req.dimensions[0].name;
     dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-  } else {
+  } else if (metricsView.timeDimension) {
+    // Time dimension details need a time dimension to chart against.
     dashboard.tdd = {
       chartType: TDDChart.DEFAULT,
       expandedMeasureName: req.measures?.[0]?.name ?? "",
@@ -262,13 +266,30 @@ function getPivotStateFromRequest(
 
   const isFlat = !req.pivotOn?.length;
 
-  const tableMode = isFlat ? "flat" : "nest";
+  const tableMode: PivotTableMode = isFlat ? "flat" : "nest";
 
   const sorting: SortingState =
-    req.sort?.map((s) => ({
-      id: convertComparisonMeasureToPivotMeasures(s.name!),
-      desc: !!s.desc,
-    })) ?? [];
+    req.sort
+      ?.map((s) => {
+        // A request sorts a time dimension by its name or alias, while the
+        // pivot keys its column by name and grain.
+        const dimension = req.dimensions?.find(
+          (d) => d.name === s.name || (!!d.alias && d.alias === s.name),
+        );
+        const id = dimension
+          ? getDimensionNameFromAggregationDimension(dimension)
+          : convertComparisonMeasureToPivotMeasures(s.name!);
+        return { id, desc: !!s.desc };
+      })
+      // A report may sort by a field the pivot has no column for, such as a
+      // measure's previous value.
+      .filter((s) =>
+        pivotHasSortField(s.id, {
+          rows: rowChips,
+          columns: colChips,
+          tableMode,
+        }),
+      ) ?? [];
 
   return {
     rows: rowChips,

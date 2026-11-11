@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { isErrorStoreEmpty } from "@rilldata/web-admin/components/errors/error-store";
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import TwoTieredBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadcrumbItem.svelte";
@@ -16,6 +17,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
+  import EmbedPersonalCanvasButton from "@rilldata/web-admin/features/embeds/EmbedPersonalCanvasButton.svelte";
+  import { embedPersonalCanvasesEnabled } from "@rilldata/web-admin/features/embeds/embed-personal-canvases.ts";
+  import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/personal-files/selectors.ts";
 
   export let activeResource: V1ResourceName;
   export let navigationBarEnabled: boolean = true;
@@ -36,6 +41,16 @@
     (listing) => listing.meta.name.name === activeResource?.name,
   );
   $: currentResourceName = currentResource?.meta?.name?.name;
+
+  // Personal canvases aren't valid dashboards for the breadcrumb, so we show their display name instead.
+  $: onPersonalCanvasPage = !!$page.route.id?.includes("/-/embed/personal/");
+  $: personalCanvasQuery = getPersonalFilteredResourceByName(
+    runtimeClient,
+    activeResource?.name ?? "",
+  );
+  $: personalCanvasDisplayName =
+    $personalCanvasQuery.data?.canvas?.spec?.displayName ||
+    activeResource?.name;
 
   $: breadcrumbOptions = {
     options: dashboards?.reduce((map, { meta, explore, canvas }) => {
@@ -82,6 +97,10 @@
                 isEmbedded
               />
             {/if}
+          {:else if onPersonalCanvasPage}
+            <span class="text-fg-primary font-medium truncate">
+              {personalCanvasDisplayName}
+            </span>
           {/if}
         </ol>
       </nav>
@@ -89,6 +108,10 @@
       <div class="flex-1"></div>
     {/if}
 
+    {#if $embedPersonalCanvasesEnabled}
+      <EmbedPersonalCanvasButton />
+    {/if}
+    <EmbedReportButton />
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />

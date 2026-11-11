@@ -1,3 +1,4 @@
+import type { MapExportLayer } from "@rilldata/web-common/features/exports/xlsx/payload";
 import type mapboxgl from "mapbox-gl";
 
 export type MapLayerId = "points" | "regions";
@@ -11,4 +12,12 @@ export type MapLayerBoundsHandler = (
   layer: MapLayerId,
   dataKey: string,
   bounds: mapboxgl.LngLatBoundsLike | null,
+) => void;
+
+/**
+ * Reports the rows behind a layer for the workbook export; undefined while the layer's data is pending.
+ */
+export type MapLayerExportHandler = (
+  layer: MapLayerId,
+  data: MapExportLayer | undefined,
 ) => void;

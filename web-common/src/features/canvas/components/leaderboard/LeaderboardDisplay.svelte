@@ -17,9 +17,11 @@
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
+  import type { LeaderboardItemData } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
     getDimensionColumnWidth,
@@ -33,6 +35,10 @@
   const { instanceId } = runtimeClient;
 
   let leaderboardWrapperWidth = $state(0);
+
+  // The rows each dimension's leaderboard shows, for the workbook export; see
+  // BaseCanvasComponent.exportPayload.
+  let exportRows = $state<Record<string, LeaderboardItemData[]>>({});
 
   let specStore = $derived(component.specStore);
   let timeAndFilterStore = $derived(component.timeAndFilterStore);
@@ -50,7 +56,8 @@
 
   let metricsViewName = $derived(leaderboardProperties.metrics_view);
   let leaderboardMeasureNames = $derived(leaderboardProperties.measures ?? []);
-  let dimensionNames = $derived(leaderboardProperties.dimensions ?? []);
+  // The YAML can list a dimension twice, and the leaderboards are keyed by dimension name.
+  let dimensionNames = $derived(dedupe(leaderboardProperties.dimensions ?? []));
   let numRows = $derived(leaderboardProperties.num_rows ?? 7);
 
   let metricsViewQuery = $derived(
@@ -164,6 +171,21 @@
   let sortDirection = $derived($leaderboardState.sortDirection);
   let sortType = $derived($leaderboardState.sortType);
 
+  $effect(() => {
+    const tables = visibleDimensions
+      .filter((dimension) => dimension.name && exportRows[dimension.name])
+      .map((dimension) => ({
+        dimension,
+        measures: visibleMeasures,
+        rows: exportRows[dimension.name!],
+      }));
+    component.exportPayload.set(
+      schema.isValid && tables.length === visibleDimensions.length
+        ? { kind: "leaderboard", tables }
+        : undefined,
+    );
+  });
+
   // Reset column widths when the measures change. Uses `$effect.pre` so the reset
   // lands before the DOM update, keeping the width derivations above in sync for
   // the same render rather than one frame later.
@@ -253,6 +275,9 @@
               formatters={measureFormatters}
               tooltipFormatters={measureTooltipFormatters}
               {toggleSort}
+              onData={(rows: LeaderboardItemData[]) => {
+                exportRows = { ...exportRows, [dimension.name!]: rows };
+              }}
               toggleDimensionValueSelection={async (
                 _1,
                 value,

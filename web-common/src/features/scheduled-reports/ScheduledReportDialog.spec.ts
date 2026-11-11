@@ -26,8 +26,10 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { pageStateMock } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/page-state.mock.svelte";
 import ScheduledReportDialogTest from "@rilldata/web-common/features/scheduled-reports/test/ScheduledReportDialogTest.svelte";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {
   V1ExportFormat,
@@ -39,8 +41,10 @@ import {
   RUNTIME_CONTEXT_KEY,
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
+import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
 import type { ActionResult } from "@sveltejs/kit";
 import { act, render, screen, waitFor } from "@testing-library/svelte";
+import { readable } from "svelte/store";
 import {
   afterAll,
   beforeAll,
@@ -56,10 +60,18 @@ const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 const editReport = vi.hoisted(() =>
   vi.fn<
     (request: {
-      data: { options: { queryArgsJson: string; exportAttach?: boolean } };
+      data: {
+        options: {
+          queryArgsJson: string;
+          exportAttach?: boolean;
+          emailRecipients?: string[];
+        };
+      };
     }) => Promise<unknown>
   >(),
 );
+// The project members, which the dialog only lists for users allowed to read them.
+const listProjectMemberUsers = vi.hoisted(() => vi.fn());
 
 vi.stubEnv("TZ", "UTC");
 
@@ -111,15 +123,29 @@ vi.mock("@rilldata/web-admin/client", async () => {
     getAdminServiceListBookmarksQueryOptions: () => ({}),
     createAdminServiceGetCurrentUser: () =>
       readable({ data: { user: { email: "user@rilldata.com" } } }),
-    // The report's recipient is a project member, so the report can also run as the recipient.
-    createAdminServiceListProjectMemberUsers: () =>
-      readable({ data: { members: [{ userEmail: "user@rilldata.com" }] } }),
+    createAdminServiceListProjectMemberUsers: listProjectMemberUsers,
     createAdminServiceCreateReport: () =>
       readable({ mutateAsync: vi.fn(), error: null }),
     createAdminServiceEditReport: () =>
       readable({ mutateAsync: editReport, error: null }),
+    createAdminServiceDeleteReport: () =>
+      readable({ mutateAsync: vi.fn(), error: null }),
   };
 });
+
+// In an embed, the dialog saves with the embed's admin token instead.
+vi.mock(
+  "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts",
+  async () => {
+    const { readable } = await import("svelte/store");
+    return {
+      createAdminServiceEditReportUsingToken: () =>
+        readable({ mutateAsync: editReport, error: null }),
+      createAdminServiceDeleteReportUsingToken: () =>
+        readable({ mutateAsync: vi.fn(), error: null }),
+    };
+  },
+);
 
 const PUBLISHER_FILTER = createAndExpression([
   createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
@@ -128,6 +154,7 @@ const PUBLISHER_FILTER = createAndExpression([
 function getReportSpec(
   where: V1Expression | undefined,
   webOpenMode = "creator",
+  recipients = ["user@rilldata.com"],
 ): V1ReportSpec {
   const queryArgs: V1MetricsViewAggregationRequest = {
     metricsView: AD_BIDS_METRICS_NAME,
@@ -142,9 +169,7 @@ function getReportSpec(
     queryName: "MetricsViewAggregation",
     queryArgsJson: JSON.stringify(queryArgs),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
-    notifiers: [
-      { connector: "email", properties: { recipients: ["user@rilldata.com"] } },
-    ],
+    notifiers: [{ connector: "email", properties: { recipients } }],
     annotations: {
       explore: AD_BIDS_EXPLORE_NAME,
       web_open_mode: webOpenMode,
@@ -168,6 +193,11 @@ async function openEditDialog(reportSpec: V1ReportSpec) {
     expect(screen.getByLabelText("Filters form")).toBeVisible(),
   );
   return rendered;
+}
+
+/** Puts the current user's project permissions on the page, the way the root layout does. */
+function setProjectPermissions(projectPermissions: V1ProjectPermissions) {
+  pageStateMock.data = { projectPermissions };
 }
 
 /** Saves the report and returns the options the dialog sent to the admin API. */
@@ -204,8 +234,15 @@ describe("ScheduledReportDialog", () => {
 
   beforeEach(() => {
     new PageMockForComponentTests(hoistedPage);
+    // Most tests run as a user who can list the project's members.
+    setProjectPermissions({ readProjectMembers: true });
     editReport.mockReset();
     editReport.mockResolvedValue({});
+    listProjectMemberUsers.mockReset();
+    // The report's recipient is a project member, so the report can also run as the recipient.
+    listProjectMemberUsers.mockReturnValue(
+      readable({ data: { members: [{ userEmail: "user@rilldata.com" }] } }),
+    );
 
     mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT_WITH_TIME);
     mocks.mockMetricsExplore(
@@ -278,5 +315,87 @@ describe("ScheduledReportDialog", () => {
     expect(checkbox).toBeDisabled();
 
     expect((await saveAndGetOptions()).exportAttach).toBe(false);
+  });
+
+  it("always attaches the export in an embed", async () => {
+    const isEmbedded = vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
+    const getInstance = vi.spyOn(EmbedStore, "getInstance").mockReturnValue({
+      userEmail: "user@rilldata.com",
+      adminToken: "token",
+    } as EmbedStore);
+    try {
+      await openEditDialog(getReportSpec(undefined));
+
+      expect(screen.queryByLabelText("Attach file to emails")).toBeNull();
+      expect(
+        screen.getByText(
+          "The file is attached to emails if it is 10 MB or smaller.",
+        ),
+      ).toBeVisible();
+
+      expect((await saveAndGetOptions()).exportAttach).toBe(true);
+    } finally {
+      isEmbedded.mockRestore();
+      getInstance.mockRestore();
+    }
+  });
+
+  it("keeps the existing recipients when editing in an embed", async () => {
+    const isEmbedded = vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
+    const getInstance = vi.spyOn(EmbedStore, "getInstance").mockReturnValue({
+      userEmail: "embed@rilldata.com",
+      adminToken: "token",
+    } as EmbedStore);
+    try {
+      await openEditDialog(getReportSpec(undefined));
+
+      // Recipients can be any address, so the email input is shown with the existing recipients
+      expect(screen.getByText("user@rilldata.com")).toBeVisible();
+
+      expect((await saveAndGetOptions()).emailRecipients).toEqual([
+        "user@rilldata.com",
+      ]);
+    } finally {
+      isEmbedded.mockRestore();
+      getInstance.mockRestore();
+    }
+  });
+
+  it("requires the recipients to be project members when the user can list them", async () => {
+    await openEditDialog(
+      getReportSpec(undefined, "recipient", [
+        "user@rilldata.com",
+        "teammate@rilldata.com",
+      ]),
+    );
+
+    await act(() => screen.getByLabelText("Save report").click());
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Recipients must be part of the project when running as recipient",
+        ),
+      ).toBeVisible(),
+    );
+    expect(editReport).not.toHaveBeenCalled();
+  });
+
+  it("does not list the project members for a user who cannot read them, and lets them pick any recipients", async () => {
+    // Viewers can create reports but cannot list the project's members.
+    setProjectPermissions({ readProjectMembers: false });
+    await openEditDialog(
+      getReportSpec(undefined, "recipient", [
+        "user@rilldata.com",
+        "teammate@rilldata.com",
+      ]),
+    );
+
+    // Listing the members would be rejected by the admin server.
+    expect(listProjectMemberUsers).not.toHaveBeenCalled();
+    // Without the members, the recipients cannot be checked, so they are not blocked.
+    expect((await saveAndGetOptions()).emailRecipients).toEqual([
+      "user@rilldata.com",
+      "teammate@rilldata.com",
+    ]);
   });
 });

@@ -28,7 +28,7 @@
     type TooltipRow,
   } from "../map-utils";
   import { createMapLayerQuery } from "./query";
-  import type { MapLayerBoundsHandler } from "./types";
+  import type { MapLayerBoundsHandler, MapLayerExportHandler } from "./types";
 
   type Props = {
     map: mapboxgl.Map;
@@ -39,6 +39,9 @@
     theme: MapTheme;
     isThemeModeDark: boolean;
     onBounds: MapLayerBoundsHandler;
+    onExport: MapLayerExportHandler;
+    /** Called whenever the layer hands the map new data or paint to draw. */
+    onDraw: () => void;
   };
 
   let {
@@ -49,6 +52,8 @@
     theme,
     isThemeModeDark,
     onBounds,
+    onExport,
+    onDraw,
   }: Props = $props();
 
   const SOURCE_ID = "map-data";
@@ -210,6 +215,7 @@
     const source = map.getSource(SOURCE_ID) as
       | mapboxgl.GeoJSONSource
       | undefined;
+    onDraw();
     if (source) {
       source.setData(geoJson);
     } else {
@@ -249,6 +255,28 @@
       `${metricsView}::${geoDimension}`,
       calculateBounds(geoJson.features),
     );
+  });
+
+  $effect(() => {
+    if ($dataQuery.isPending || !colorMeasure) {
+      onExport("points", undefined);
+      return;
+    }
+    const dimensionNames = [geoDimension, tooltipDimension].filter(
+      (name): name is string => !!name,
+    );
+    const measureNames = [colorMeasure, sizeMeasure].filter(
+      (name): name is string => !!name,
+    );
+    onExport("points", {
+      name: "points",
+      rows,
+      dimensions: dimensionNames.map(
+        (name) =>
+          metricsViewSpec?.dimensions?.find((d) => d.name === name) ?? { name },
+      ),
+      measures: measureNames.map((name) => getMeasure(name) ?? { name }),
+    });
   });
 
   $effect(() => {

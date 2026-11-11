@@ -45,7 +45,8 @@ func (r *Runtime) VisibilityConditions(ctx context.Context, instanceID string, c
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.visibilityConditions(instanceID, inst.Environment, inst.ResolveVariables(false), claims)
+	// `if` conditions never access project variables (the parser rejects references to them), so none are passed.
+	return r.securityEngine.visibilityConditions(instanceID, inst.Environment, nil, claims)
 }
 
 // newVisibilityConditions creates an evaluator of `if` conditions for the given template data,
@@ -161,8 +162,7 @@ func canIncludeHiddenCanvasContent(claims *SecurityClaims, res *runtimev1.Resour
 	if !isAdminManagedAnnotations(spec.GetAnnotations()) {
 		return false
 	}
-	userID, _ := claims.UserAttributes["id"].(string)
-	return userID != "" && userID == spec.GetAnnotations()["admin_owner_user_id"]
+	return adminOwnerCanAccess(claims, spec.GetAnnotations(), truth)
 }
 
 // canvasHasConditions reports whether the canvas's spec or valid spec has `if` conditions.

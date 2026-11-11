@@ -1,4 +1,7 @@
-import { formatConversationTitle } from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
+import {
+  formatConversationTitle,
+  stripPartialChatReference,
+} from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
 import type { InlineContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
 import { describe, expect, it } from "vitest";
 
@@ -128,4 +131,25 @@ describe("formatConversationTitle", () => {
       expect(formatConversationTitle(input, m ?? meta)).toBe(expected);
     });
   }
+});
+
+describe("stripPartialChatReference", () => {
+  it("drops a trailing partial reference", () => {
+    expect(
+      stripPartialChatReference(
+        `<chat-reference>type="metricsView" metricsView="orders"</chat-reference> vs <chat-reference>type="metricsVi...`,
+      ),
+    ).toBe(
+      `<chat-reference>type="metricsView" metricsView="orders"</chat-reference> vs`,
+    );
+  });
+
+  it("drops a title cut within the opening tag name", () => {
+    expect(stripPartialChatReference(`Compare <chat-...`)).toBe("Compare");
+  });
+
+  it("keeps complete references", () => {
+    const title = `<chat-reference>type="metricsView" metricsView="orders"</chat-reference> by month`;
+    expect(stripPartialChatReference(title)).toBe(title);
+  });
 });

@@ -25,6 +25,8 @@ import {
   CreateDirectoryRequest,
   CreateTriggerRequest,
   DeleteAIMemoryRequest,
+  DeleteConversationRequest,
+  DeleteConversationResponse,
   DeleteFileRequest,
   DisconnectMCPServerRequest,
   DisconnectMCPServerResponse,
@@ -83,6 +85,8 @@ import {
   UnpackExampleRequest,
   UpdateAIMemoryRequest,
   UpdateAIMemorySettingsRequest,
+  UpdateConversationRequest,
+  UpdateConversationResponse,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
 import type {
   V1AnalyzeConnectorsResponse,
@@ -3639,6 +3643,134 @@ export function createRuntimeServiceCreateTriggerMutation(
   Omit<PartialMessage<CreateTriggerRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCreateTriggerMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.UpdateConversation
+ */
+export async function runtimeServiceUpdateConversation(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<UpdateConversationRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<UpdateConversationResponse>> {
+  const r = await client.runtimeService.updateConversation(
+    UpdateConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<UpdateConversationResponse>;
+}
+
+export function getRuntimeServiceUpdateConversationMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<UpdateConversationResponse>,
+      unknown,
+      Omit<PartialMessage<UpdateConversationRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<UpdateConversationResponse>,
+  unknown,
+  Omit<PartialMessage<UpdateConversationRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceUpdateConversation(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceUpdateConversationMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<UpdateConversationResponse>,
+      unknown,
+      Omit<PartialMessage<UpdateConversationRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<UpdateConversationResponse>,
+  unknown,
+  Omit<PartialMessage<UpdateConversationRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceUpdateConversationMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.DeleteConversation
+ */
+export async function runtimeServiceDeleteConversation(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<DeleteConversationRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<DeleteConversationResponse>> {
+  const r = await client.runtimeService.deleteConversation(
+    DeleteConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<DeleteConversationResponse>;
+}
+
+export function getRuntimeServiceDeleteConversationMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<DeleteConversationResponse>,
+      unknown,
+      Omit<PartialMessage<DeleteConversationRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<DeleteConversationResponse>,
+  unknown,
+  Omit<PartialMessage<DeleteConversationRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceDeleteConversation(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceDeleteConversationMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<DeleteConversationResponse>,
+      unknown,
+      Omit<PartialMessage<DeleteConversationRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<DeleteConversationResponse>,
+  unknown,
+  Omit<PartialMessage<DeleteConversationRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceDeleteConversationMutationOptions(
     client,
     options,
   );

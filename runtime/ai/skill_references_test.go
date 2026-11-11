@@ -19,7 +19,7 @@ import (
 type turnFunc func(opts *drivers.CompleteOptions) *aiv1.CompletionMessage
 
 // scriptedAIService is a deterministic drivers.AIService for tests. Each Complete call consumes the next scripted
-// turn (falling back to a plain "done" reply once turns are exhausted) and records the messages it was given, so
+// turn (falling back to a plain "done" reply once turns are exhausted) and records the messages and tool names it was given, so
 // tests can assert what the model saw.
 type scriptedAIService struct {
 	turns []turnFunc
@@ -27,6 +27,7 @@ type scriptedAIService struct {
 	mu     sync.Mutex
 	calls  int
 	inputs [][]*aiv1.CompletionMessage
+	tools  [][]string
 }
 
 var _ drivers.AIService = (*scriptedAIService)(nil)
@@ -36,6 +37,11 @@ func (s *scriptedAIService) Complete(_ context.Context, opts *drivers.CompleteOp
 	defer s.mu.Unlock()
 
 	s.inputs = append(s.inputs, opts.Messages)
+	tools := make([]string, 0, len(opts.Tools))
+	for _, t := range opts.Tools {
+		tools = append(tools, t.Name)
+	}
+	s.tools = append(s.tools, tools)
 
 	var turn turnFunc
 	if s.calls < len(s.turns) {

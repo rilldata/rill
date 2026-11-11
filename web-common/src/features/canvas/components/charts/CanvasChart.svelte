@@ -106,6 +106,15 @@
 
   $: ({ isFetching, error } = $chartData);
 
+  // The rendered data for the workbook export; see BaseCanvasComponent.exportPayload.
+  $: component.exportPayload.set(
+    !schema.isValid || isFetching
+      ? undefined
+      : error
+        ? { kind: "error", message: error.message }
+        : { kind: "chart", chartType, spec: chartSpec, data: $chartData },
+  );
+
   $: chartTitle = title || component.chartTitle($chartData.fields);
 
   // One chip for the whole chart, right of the title: it switches every

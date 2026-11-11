@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -46,6 +45,7 @@ Request:
 - Include 'limit' and 'sort' parameters to optimize performance. Keep the limit as low as realistically possible for your task (ideally below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does).
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
+- A time dimension's 'compute.time_floor.grain' accepts 'minute', 'hour', 'day', 'week', 'month', 'quarter', 'year' and the multiples '5m', '10m', '15m', '30m', '2h', '3h', '4h', '6h', '8h' and '12h'. Prefer a grain the metrics view lists in 'time_grains' when it declares any.
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
 - Measures that define an 'exact_expression' in the metrics view are approximate by default. Set 'exact: true' on such a measure only when the user explicitly asks for exact, precise or reconciled numbers; exact queries are much slower. Tell the user which precision was used.
 
@@ -286,7 +286,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.ID(), session.ParentID)
+	openURL, err := aiMessageOpenURL(instance.FrontendURL, session.ID(), session.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
@@ -307,33 +307,6 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		result.TruncationWarning = msg
 	}
 	return result, nil
-}
-
-// generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sessionID, callID string) (string, error) {
-	// Get instance to access the configured frontend URL
-	instance, err := t.Runtime.Instance(ctx, instanceID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get instance: %w", err)
-	}
-
-	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
-	if instance.FrontendURL == "" {
-		return "", nil
-	}
-
-	// Build the complete URL for the query
-	openURL, err := url.Parse(instance.FrontendURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
-	}
-
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "message", callID, "-", "open")
-	if err != nil {
-		return "", fmt.Errorf("failed to join path: %w", err)
-	}
-
-	return openURL.String(), nil
 }
 
 func resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {

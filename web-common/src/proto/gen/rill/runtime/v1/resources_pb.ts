@@ -1464,7 +1464,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  /**
+   * Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+   * Empty means the standard grains at or above smallest_time_grain.
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeGrain time_grains = 38;
+   */
+  timeGrains: TimeGrain[] = [];
 
   /**
    * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -1608,6 +1616,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 38, name: "time_grains", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
@@ -1798,7 +1807,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * The data type of the dimension. Only populated in ValidSpec.
@@ -1866,7 +1875,7 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Only for when ordering (optional)
@@ -2263,7 +2272,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * IANA timezone the rollup was aggregated in; defaults to UTC
@@ -4128,6 +4137,30 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
+   * Format of the attached export.
+   *
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 25;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 26;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 27;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: bool notify_on_recover = 15;
    */
   notifyOnRecover = false;
@@ -4185,6 +4218,10 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 25, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 26, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 27, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

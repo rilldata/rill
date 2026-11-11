@@ -18,6 +18,7 @@ import {
   type V1CanvasRow,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
+  type V1ExploreTimeRange,
   type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
@@ -47,7 +48,7 @@ import {
 } from "../components/util";
 import { Grid } from "./grid";
 import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
-import { getComparisonTypeFromRangeString } from "./time-state";
+import { getDefaultComparisonRange } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
@@ -275,8 +276,8 @@ export class CanvasEntity {
     }
   };
 
-  checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
-    const defaultSearchParams = getDefaults(defaultPreset);
+  checkAndSetDefaultParams = ({ defaultPreset, timeRanges }: V1CanvasSpec) => {
+    const defaultSearchParams = getDefaults(defaultPreset ?? {}, timeRanges);
     const currentDefaultParams = get(this.defaultUrlParamsStore);
     if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
       this.defaultUrlParamsStore.set(defaultSearchParams);
@@ -344,7 +345,7 @@ export class CanvasEntity {
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
-    this.checkAndSetDefaultParams(validSpec.defaultPreset ?? {});
+    this.checkAndSetDefaultParams(validSpec);
     this.checkAndSetEmbeddedTheme(validSpec);
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
@@ -1158,7 +1159,10 @@ function areSameType(
   return isTableComponentType(existingType) && isTableComponentType(newType);
 }
 
-function getDefaults(defaultPreset: V1CanvasPreset) {
+function getDefaults(
+  defaultPreset: V1CanvasPreset,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+) {
   const defaultSearchParams = new URLSearchParams();
 
   const resolvedRange = defaultPreset.timeRange;
@@ -1173,7 +1177,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   ) {
     defaultSearchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      getComparisonTypeFromRangeString(defaultPreset.timeRange),
+      getDefaultComparisonRange(defaultPreset.timeRange, timeRanges),
     );
   }
 

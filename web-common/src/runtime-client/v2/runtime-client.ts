@@ -8,6 +8,7 @@ import {
   JWT_EXPIRY_WARNING_WINDOW,
   CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
 } from "../constants";
+import { createRequestAttributionInterceptor } from "./request-attribution";
 import { RequestQueue, createQueueInterceptor } from "./request-queue";
 
 export type AuthContext = "user" | "mock" | "magic" | "embed";
@@ -21,7 +22,7 @@ export class RuntimeClient {
   // JWT state (mutable; read by the transport interceptor)
   private currentJwt: string | undefined;
   private jwtReceivedAt: number;
-  private authContext: AuthContext;
+  private _authContext: AuthContext;
   private disposed = false;
 
   // Cached service clients (created once per RuntimeClient)
@@ -51,13 +52,16 @@ export class RuntimeClient {
     this.instanceId = opts.instanceId;
     this.currentJwt = opts.jwt;
     this.jwtReceivedAt = opts.jwt ? Date.now() : 0;
-    this.authContext = opts.authContext ?? "user";
+    this._authContext = opts.authContext ?? "user";
     this.requestQueue = new RequestQueue();
 
     this.transport = createConnectTransport({
       baseUrl: opts.host,
       interceptors: [
-        // Queue controls when requests fire (outermost: wraps everything)
+        // Names the RPC on every error or abort reason that leaves it, so error telemetry can attribute
+        // unhandled rejections to a request (outermost: it must see the signal before the queue rejects)
+        createRequestAttributionInterceptor(),
+        // Queue controls when requests fire
         createQueueInterceptor(this.requestQueue),
         // JWT interceptor adds auth header just before the network call
         (next) => async (req) => {
@@ -77,13 +81,13 @@ export class RuntimeClient {
    */
   updateJwt(jwt: string | undefined, authContext?: AuthContext): boolean {
     const authContextChanged =
-      !!this.authContext && !!authContext && authContext !== this.authContext;
+      !!this._authContext && !!authContext && authContext !== this._authContext;
 
     if (jwt !== this.currentJwt) {
       this.currentJwt = jwt;
       this.jwtReceivedAt = Date.now();
     }
-    if (authContext) this.authContext = authContext;
+    if (authContext) this._authContext = authContext;
 
     return authContextChanged;
   }
@@ -91,6 +95,20 @@ export class RuntimeClient {
   /** Returns the current JWT (used by SSE clients and other non-query consumers). */
   getJwt(): string | undefined {
     return this.currentJwt;
+  }
+
+  /**
+   * Returns the JWT once it is not about to expire, waiting for a refresh like
+   * queries do. For one-off requests sent outside the query client.
+   */
+  async getFreshJwt(): Promise<string | undefined> {
+    if (this.currentJwt) await this.waitForFreshJwt();
+    return this.currentJwt;
+  }
+
+  /** Returns how the client authenticates with the runtime, e.g. "magic" on public URLs. */
+  get authContext(): AuthContext {
+    return this._authContext;
   }
 
   get queryService() {
@@ -118,13 +136,16 @@ export class RuntimeClient {
    */
   private async waitForFreshJwt(): Promise<void> {
     // Embeds have a 24h backend-issued TTL; skip client-side expiry check
-    if (this.authContext === "embed") return;
+    if (this._authContext === "embed") return;
 
     const deadline = Date.now() + 60_000;
     let expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
     while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > expiresAt) {
       if (this.disposed) {
-        throw new DOMException("Request cancelled", "AbortError");
+        throw new DOMException(
+          "Request cancelled: runtime client disposed while waiting for a fresh JWT",
+          "AbortError",
+        );
       }
       if (Date.now() > deadline) {
         throw new Error("Timed out waiting for a fresh JWT");
