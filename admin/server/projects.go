@@ -91,11 +91,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	dtos := make([]*adminv1.Project, len(projs))
 	for i, p := range projs {
-		dtos[i] = s.projToDTO(p, org.Name)
-		if !manageProjects {
-			// The archive contains the project's files, which should not be exposed to e.g. visitors of public projects.
-			dtos[i].ArchiveAssetId = ""
-		}
+		dtos[i] = s.projToDTOForReader(p, org.Name, manageProjects)
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
@@ -310,11 +306,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	projDTO := s.projToDTO(proj, org.Name)
-	if !permissions.ManageProject {
-		// The archive contains the project's files, which should not be exposed to e.g. visitors of public projects.
-		projDTO.ArchiveAssetId = ""
-	}
+	projDTO := s.projToDTOForReader(proj, org.Name, permissions.ManageProject)
 
 	var depl *database.Deployment
 	if req.Branch != "" {
@@ -407,7 +399,7 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}
 
 	return &adminv1.GetProjectByIDResponse{
-		Project: s.projToDTO(proj, org.Name),
+		Project: s.projToDTOForReader(proj, org.Name, permissions.ManageProject),
 	}, nil
 }
 
@@ -2275,6 +2267,17 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedOn:           timestamppb.New(p.CreatedOn),
 		UpdatedOn:           timestamppb.New(p.UpdatedOn),
 	}
+}
+
+// projToDTOForReader is like projToDTO, but redacts fields that should only be visible to callers that can manage the project.
+// It should be used by read endpoints that are accessible to non-managers, such as visitors of public projects.
+func (s *Server) projToDTOForReader(p *database.Project, orgName string, manageProject bool) *adminv1.Project {
+	dto := s.projToDTO(p, orgName)
+	if !manageProject {
+		// The archive contains the project's files, which should not be exposed to non-managers.
+		dto.ArchiveAssetId = ""
+	}
+	return dto
 }
 
 func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID string) bool {

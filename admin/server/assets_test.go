@@ -54,6 +54,18 @@ func TestPublicProjectArchive(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, res.Project.ArchiveAssetId)
 
+		byID, err := ownerClient.GetProjectByID(t.Context(), &adminv1.GetProjectByIDRequest{Id: proj.Project.Id})
+		require.NoError(t, err)
+		require.Equal(t, assetID, byID.Project.ArchiveAssetId)
+
+		byID, err = outsiderClient.GetProjectByID(t.Context(), &adminv1.GetProjectByIDRequest{Id: proj.Project.Id})
+		require.NoError(t, err)
+		require.Empty(t, byID.Project.ArchiveAssetId)
+
+		byID, err = anonClient.GetProjectByID(t.Context(), &adminv1.GetProjectByIDRequest{Id: proj.Project.Id})
+		require.NoError(t, err)
+		require.Empty(t, byID.Project.ArchiveAssetId)
+
 		list, err := anonClient.ListProjectsForOrganization(t.Context(), &adminv1.ListProjectsForOrganizationRequest{Org: org.Organization.Name})
 		require.NoError(t, err)
 		require.Len(t, list.Projects, 1)
