@@ -304,6 +304,8 @@ export interface V1Bookmark {
   userId?: string;
   default?: boolean;
   shared?: boolean;
+  /** Whether the caller can update and remove the bookmark. */
+  canManage?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -376,6 +378,7 @@ export interface V1CreateBookmarkRequest {
   urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
+  /** ID of the project. Optional for embed users, where it defaults to the embed's project. */
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -2640,6 +2643,9 @@ This is only allowed for superusers. */
 };
 
 export type AdminServiceListBookmarksParams = {
+  /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   */
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").

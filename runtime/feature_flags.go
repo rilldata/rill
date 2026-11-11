@@ -79,6 +79,8 @@ var defaultFeatureFlags = map[string]string{
 	"custom_components": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
+	// Controls whether embed users (embeds with an external user ID) can create personal bookmarks
+	"embedded_bookmarks": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

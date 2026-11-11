@@ -2935,6 +2935,39 @@ func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind,
 	return res, nil
 }
 
+// FindBookmarksByEmbedOwner returns the bookmarks in a project owned by the embed user.
+// resourceKind and resourceName are optional filters; when empty, they are not applied.
+func (c *connection) FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*database.Bookmark, error) {
+	qry := `SELECT * FROM bookmarks WHERE project_id = $1 AND embed_owner_id = $2`
+	args := []any{projectID, embedOwnerID}
+	if resourceKind != "" {
+		args = append(args, resourceKind)
+		qry += fmt.Sprintf(" AND resource_kind = $%d", len(args))
+	}
+	if resourceName != "" {
+		args = append(args, resourceName)
+		qry += fmt.Sprintf(" AND lower(resource_name) = lower($%d)", len(args))
+	}
+	qry += " ORDER BY lower(display_name), created_on"
+
+	var res []*database.Bookmark
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
+// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
+func (c *connection) CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM bookmarks WHERE project_id = $1 AND embed_owner_id = $2", projectID, embedOwnerID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("bookmarks", err)
+	}
+	return count, nil
+}
+
 // FindBookmark returns a bookmark for given bookmark id
 func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}
@@ -2962,9 +2995,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, "default", shared)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, embed_owner_id, "default", shared)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.EmbedOwnerID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2993,6 +3026,19 @@ func (c *connection) FindEmbedUser(ctx context.Context, id string) (*database.Em
 		return nil, parseErr("embed user", err)
 	}
 	return res.embedUserFromDTO()
+}
+
+func (c *connection) LockEmbedUser(ctx context.Context, id string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: embed user locks must be acquired within a transaction")
+	}
+	// FOR NO KEY UPDATE conflicts with itself, but not with the FOR KEY SHARE locks taken by foreign key checks on rows that reference the embed user.
+	var res int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT 1 FROM embed_users WHERE id=$1 FOR NO KEY UPDATE", id).Scan(&res)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	return nil
 }
 
 func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertEmbedUserOptions) error {

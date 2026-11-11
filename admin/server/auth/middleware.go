@@ -35,6 +35,11 @@ var embedTokenAllowedMethods = map[string]bool{
 	adminv1.AdminService_GetPersonalFile_FullMethodName:    true,
 	adminv1.AdminService_EditPersonalFile_FullMethodName:   true,
 	adminv1.AdminService_DeletePersonalFile_FullMethodName: true,
+	adminv1.AdminService_ListBookmarks_FullMethodName:      true,
+	adminv1.AdminService_GetBookmark_FullMethodName:        true,
+	adminv1.AdminService_CreateBookmark_FullMethodName:     true,
+	adminv1.AdminService_UpdateBookmark_FullMethodName:     true,
+	adminv1.AdminService_RemoveBookmark_FullMethodName:     true,
 }
 
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.

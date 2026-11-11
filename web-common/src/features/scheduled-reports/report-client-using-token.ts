@@ -3,20 +3,19 @@
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
- * - Mutation creators: The token is bound when creating the mutation, so the mutation variables match the generated mutations.
+ * - Mutation creators: They delegate to the generated creators, overriding only `mutationFn`, so mutation keys and variables match the generated code.
  */
 
+import type { QueryClient } from "@tanstack/svelte-query";
 import {
-  createMutation,
-  type CreateMutationOptions,
-  type CreateMutationResult,
-  type QueryClient,
-} from "@tanstack/svelte-query";
-import {
+  createAdminServiceCreateReport,
+  createAdminServiceDeleteReport,
+  createAdminServiceEditReport,
+  createAdminServiceTriggerReport,
+  createAdminServiceUnsubscribeReport,
   type AdminServiceCreateReportBodyBody,
   type AdminServiceTriggerReconcileBodyBody,
   type AdminServiceUnsubscribeAlertBodyBody,
-  type RpcStatus,
   type V1CreateReportResponse,
   type V1DeleteReportResponse,
   type V1EditReportResponse,
@@ -45,36 +44,19 @@ export const adminServiceCreateReportUsingToken = (
   });
 };
 
-export const createAdminServiceCreateReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceCreateReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreateReportUsingToken>>,
-      TError,
-      { org: string; project: string; data: AdminServiceCreateReportBodyBody },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreateReportUsingToken>>,
-  TError,
-  { org: string; project: string; data: AdminServiceCreateReportBodyBody },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceCreateReport(
     {
-      mutationKey: ["adminServiceCreateReport"],
-      mutationFn: ({ org, project, data }) =>
-        adminServiceCreateReportUsingToken(org, project, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, data }) =>
+          adminServiceCreateReportUsingToken(org, project, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceEditReportUsingToken = (
   org: string,
@@ -97,46 +79,19 @@ export const adminServiceEditReportUsingToken = (
   });
 };
 
-export const createAdminServiceEditReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceEditReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceEditReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceCreateReportBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceEditReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceCreateReportBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceEditReport(
     {
-      mutationKey: ["adminServiceEditReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceEditReportUsingToken(org, project, name, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceEditReportUsingToken(org, project, name, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceDeleteReportUsingToken = (
   org: string,
@@ -156,36 +111,19 @@ export const adminServiceDeleteReportUsingToken = (
   });
 };
 
-export const createAdminServiceDeleteReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceDeleteReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceDeleteReportUsingToken>>,
-      TError,
-      { org: string; project: string; name: string },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceDeleteReportUsingToken>>,
-  TError,
-  { org: string; project: string; name: string },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceDeleteReport(
     {
-      mutationKey: ["adminServiceDeleteReport"],
-      mutationFn: ({ org, project, name }) =>
-        adminServiceDeleteReportUsingToken(org, project, name, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name }) =>
+          adminServiceDeleteReportUsingToken(org, project, name, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceTriggerReportUsingToken = (
   org: string,
@@ -208,46 +146,19 @@ export const adminServiceTriggerReportUsingToken = (
   });
 };
 
-export const createAdminServiceTriggerReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceTriggerReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceTriggerReconcileBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceTriggerReport(
     {
-      mutationKey: ["adminServiceTriggerReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceTriggerReportUsingToken(org, project, name, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceTriggerReportUsingToken(org, project, name, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceUnsubscribeReportUsingToken = (
   org: string,
@@ -270,49 +181,22 @@ export const adminServiceUnsubscribeReportUsingToken = (
   });
 };
 
-export const createAdminServiceUnsubscribeReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceUnsubscribeReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceUnsubscribeReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceUnsubscribeAlertBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceUnsubscribeReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceUnsubscribeAlertBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceUnsubscribeReport(
     {
-      mutationKey: ["adminServiceUnsubscribeReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceUnsubscribeReportUsingToken(
-          org,
-          project,
-          name,
-          data,
-          token,
-        ),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceUnsubscribeReportUsingToken(
+            org,
+            project,
+            name,
+            data,
+            token,
+          ),
+      },
     },
     queryClient,
   );
-};

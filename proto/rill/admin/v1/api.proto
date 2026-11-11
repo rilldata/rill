@@ -1157,7 +1157,8 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+  // Embed users only see their own personal bookmarks.
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -2755,7 +2756,9 @@ message RevokeCurrentAuthTokenResponse {
 
 // ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
 // the caller's own bookmarks plus shared and default bookmarks.
+// Embed users only see their own personal bookmarks.
 message ListBookmarksRequest {
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 1;
   // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
   // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
@@ -2782,6 +2785,7 @@ message CreateBookmarkRequest {
   string url_search = 9;
   string resource_kind = 4;
   string resource_name = 5;
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 6;
   bool default = 7;
   bool shared = 8;
@@ -3792,6 +3796,8 @@ message Bookmark {
   string user_id = 6;
   bool default = 11;
   bool shared = 12;
+  // Whether the caller can update and remove the bookmark.
+  bool can_manage = 14;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }
