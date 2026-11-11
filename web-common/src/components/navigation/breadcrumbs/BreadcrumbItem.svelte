@@ -15,7 +15,6 @@
     depth = 0,
     currentPath = [],
     onSelect = undefined,
-    isEmbedded = false,
   }: {
     pathOptions: PathOptions;
     current: string;
@@ -23,7 +22,6 @@
     depth?: number;
     currentPath?: (string | undefined)[];
     onSelect?: (id: string) => void;
-    isEmbedded?: boolean;
   } = $props();
 
   let options = $derived(pathOptions.options);
@@ -31,6 +29,12 @@
   let content = $derived(pathOptions.content);
   let currentId = $derived(pathOptions.currentId ?? current.toLowerCase());
   let selected = $derived(options.get(currentId));
+  let hasDropdown = $derived(options.size > 1);
+  // The current page's label would only link back to itself,
+  // so the whole crumb opens the dropdown instead of just the chevron.
+  let isWholeCrumbTrigger = $derived(
+    isCurrentPage && hasDropdown && !!selected,
+  );
 
   function linkMaker(
     current: (string | undefined)[],
@@ -71,39 +75,57 @@
   }
 </script>
 
+{#snippet pill(option: PathOption)}
+  {#if option.pill}
+    <Chip type="dimension" label={option.pill} readOnly compact>
+      <svelte:fragment slot="body">{option.pill}</svelte:fragment>
+    </Chip>
+  {/if}
+{/snippet}
+
 <li class="flex items-center gap-x-2 px-2">
   <div
     class="flex flex-row gap-x-1 items-center"
     aria-label="Breadcrumb navigation, level {depth}"
   >
-    {#if selected}
-      <a
-        onclick={() => {
-          if (isCurrentPage && !isEmbedded) window.location.reload();
-        }}
-        href={isCurrentPage
-          ? "#top"
-          : linkMaker(currentPath, depth, currentId, selected, "")}
-        class={[
-          "text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2",
-          { current: isCurrentPage },
-        ]}
-      >
-        <span>{selected?.label}</span>
-      </a>
-      {#if selected?.pill}
-        <Chip type="dimension" label={selected.pill} readOnly compact>
-          <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
-        </Chip>
+    {#if selected && !isWholeCrumbTrigger}
+      {#if isCurrentPage}
+        <span class="current" aria-current="page">{selected.label}</span>
+      {:else}
+        <a
+          href={linkMaker(currentPath, depth, currentId, selected, "")}
+          class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
+        >
+          <span>{selected.label}</span>
+        </a>
       {/if}
+      {@render pill(selected)}
     {/if}
-    {#if options.size > 1}
+    {#if hasDropdown}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="trigger" aria-label="Breadcrumb dropdown">
-              <CaretDownIcon size="14px" />
-            </button>
+            {#if isWholeCrumbTrigger}
+              <button
+                {...props}
+                class="trigger whole-crumb"
+                aria-current="page"
+              >
+                {#if selected}
+                  <span class="current">{selected.label}</span>
+                  {@render pill(selected)}
+                {/if}
+                <CaretDownIcon size="14px" />
+              </button>
+            {:else}
+              <button
+                {...props}
+                class="trigger"
+                aria-label="Breadcrumb dropdown"
+              >
+                <CaretDownIcon size="14px" />
+              </button>
+            {/if}
           {/snippet}
         </DropdownMenu.Trigger>
 
@@ -153,5 +175,14 @@
   .trigger:hover,
   .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
+  }
+
+  /* Keeps the label and chevron where they sit when they are separate controls. */
+  .whole-crumb {
+    @apply flex-row gap-x-1.5 pl-1 pr-0.5 -ml-1;
+  }
+
+  .whole-crumb:hover .current {
+    @apply text-fg-secondary;
   }
 </style>

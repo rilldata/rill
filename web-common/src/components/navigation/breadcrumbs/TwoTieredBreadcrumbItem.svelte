@@ -10,6 +10,10 @@
   $: ({ options } = pathOptions);
 
   $: selected = options.get(current.toLowerCase());
+  $: hasDropdown = options.size > 1;
+  // The current page's label would only link back to itself,
+  // so the whole crumb opens the dropdown instead of just the chevron.
+  $: isWholeCrumbTrigger = isCurrentPage && hasDropdown && !!selected;
 
   const groupedData = new Map();
 
@@ -29,22 +33,37 @@
 
 <li class="flex items-center gap-x-2 px-2">
   <div class="flex flex-row gap-x-1 items-center">
-    {#if selected}
-      <a
-        href={isCurrentPage ? "#top" : undefined}
-        class="text-fg-secondary hover:text-fg-secondary flex flex-row items-center gap-x-2"
+    {#if selected && !isWholeCrumbTrigger}
+      <span
+        class="text-fg-secondary"
         class:current={isCurrentPage}
+        aria-current={isCurrentPage ? "page" : undefined}
       >
-        <span>{selected?.label}</span>
-      </a>
+        {selected.label}
+      </span>
     {/if}
-    {#if options.size > 1}
+    {#if hasDropdown}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="trigger">
-              <CaretDownIcon size="14px" />
-            </button>
+            {#if isWholeCrumbTrigger}
+              <button
+                {...props}
+                class="trigger whole-crumb"
+                aria-current="page"
+              >
+                <span class="current">{selected?.label}</span>
+                <CaretDownIcon size="14px" />
+              </button>
+            {:else}
+              <button
+                {...props}
+                class="trigger"
+                aria-label="Breadcrumb dropdown"
+              >
+                <CaretDownIcon size="14px" />
+              </button>
+            {/if}
           {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" class="min-w-44">
@@ -106,5 +125,10 @@
 
   .trigger:global([data-state="open"]) {
     @apply bg-gray-100;
+  }
+
+  /* Keeps the label and chevron where they sit when they are separate controls. */
+  .whole-crumb {
+    @apply flex-row gap-x-1.5 pl-1 pr-0.5 -ml-1;
   }
 </style>
