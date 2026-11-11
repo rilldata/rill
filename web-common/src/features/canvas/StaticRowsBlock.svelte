@@ -14,6 +14,8 @@
     navigationEnabled = true,
     activeComponentId = null,
     lazy = true,
+    tabGroupName,
+    tabName,
   }: {
     block: RowsBlock;
     components: Map<string, BaseCanvasComponent>;
@@ -23,6 +25,9 @@
     activeComponentId?: string | null;
     // When false, components render eagerly without lazy-load (PDF export).
     lazy?: boolean;
+    // The tab group and tab of a tab's rows in the export render (see CanvasPdfExportTab).
+    tabGroupName?: string;
+    tabName?: string;
   } = $props();
 
   const rows = $derived(block.grid);
@@ -38,5 +43,7 @@
     {activeComponentId}
     {lazy}
     {idPrefix}
+    {tabGroupName}
+    {tabName}
   />
 {/each}

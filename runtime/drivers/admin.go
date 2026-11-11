@@ -44,6 +44,9 @@ type ReportDelivery struct {
 	UnsubscribeURL string
 	UserID         string         // user ID of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user ID of the creator.
 	UserAttrs      map[string]any // user attrs of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user attrs of the creator.
+	// EmbedOwner is true if the recipient is the embed user who created the report.
+	// Only that recipient gets an open link to the embedder's app.
+	EmbedOwner bool
 	// RestrictResources is true if the report's data must only be accessed through Resources.
 	// It is set for reports created from an embed that was limited to specific resources.
 	RestrictResources bool

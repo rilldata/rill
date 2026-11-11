@@ -23,56 +23,132 @@ const (
 	TimeGrainMonth
 	TimeGrainQuarter
 	TimeGrainYear
+	// Multiples of a base grain.
+	// They are only used to bucket time series.
+	// Their numeric values are not the grain order: use Compare to order grains.
+	TimeGrain5Minute
+	TimeGrain10Minute
+	TimeGrain15Minute
+	TimeGrain30Minute
+	TimeGrain2Hour
+	TimeGrain3Hour
+	TimeGrain4Hour
+	TimeGrain6Hour
+	TimeGrain8Hour
+	TimeGrain12Hour
 )
 
-func TimeGrainFromAPI(tg runtimev1.TimeGrain) TimeGrain {
-	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return TimeGrainMillisecond
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return TimeGrainSecond
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return TimeGrainMinute
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return TimeGrainHour
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return TimeGrainDay
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return TimeGrainWeek
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return TimeGrainMonth
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return TimeGrainQuarter
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return TimeGrainYear
+// multiples maps each multiple grain to its base unit and factor.
+// Every factor divides its parent unit (60 minutes, 24 hours), so buckets nest inside hours and days.
+var multiples = map[TimeGrain]struct {
+	unit TimeGrain
+	n    int
+}{
+	TimeGrain5Minute:  {TimeGrainMinute, 5},
+	TimeGrain10Minute: {TimeGrainMinute, 10},
+	TimeGrain15Minute: {TimeGrainMinute, 15},
+	TimeGrain30Minute: {TimeGrainMinute, 30},
+	TimeGrain2Hour:    {TimeGrainHour, 2},
+	TimeGrain3Hour:    {TimeGrainHour, 3},
+	TimeGrain4Hour:    {TimeGrainHour, 4},
+	TimeGrain6Hour:    {TimeGrainHour, 6},
+	TimeGrain8Hour:    {TimeGrainHour, 8},
+	TimeGrain12Hour:   {TimeGrainHour, 12},
+}
+
+var apiToGrain = map[runtimev1.TimeGrain]TimeGrain{
+	runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND: TimeGrainMillisecond,
+	runtimev1.TimeGrain_TIME_GRAIN_SECOND:      TimeGrainSecond,
+	runtimev1.TimeGrain_TIME_GRAIN_MINUTE:      TimeGrainMinute,
+	runtimev1.TimeGrain_TIME_GRAIN_HOUR:        TimeGrainHour,
+	runtimev1.TimeGrain_TIME_GRAIN_DAY:         TimeGrainDay,
+	runtimev1.TimeGrain_TIME_GRAIN_WEEK:        TimeGrainWeek,
+	runtimev1.TimeGrain_TIME_GRAIN_MONTH:       TimeGrainMonth,
+	runtimev1.TimeGrain_TIME_GRAIN_QUARTER:     TimeGrainQuarter,
+	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        TimeGrainYear,
+	runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE:    TimeGrain5Minute,
+	runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE:   TimeGrain10Minute,
+	runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE:   TimeGrain15Minute,
+	runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE:   TimeGrain30Minute,
+	runtimev1.TimeGrain_TIME_GRAIN_2_HOUR:      TimeGrain2Hour,
+	runtimev1.TimeGrain_TIME_GRAIN_3_HOUR:      TimeGrain3Hour,
+	runtimev1.TimeGrain_TIME_GRAIN_4_HOUR:      TimeGrain4Hour,
+	runtimev1.TimeGrain_TIME_GRAIN_6_HOUR:      TimeGrain6Hour,
+	runtimev1.TimeGrain_TIME_GRAIN_8_HOUR:      TimeGrain8Hour,
+	runtimev1.TimeGrain_TIME_GRAIN_12_HOUR:     TimeGrain12Hour,
+}
+
+var grainToAPI = func() map[TimeGrain]runtimev1.TimeGrain {
+	res := make(map[TimeGrain]runtimev1.TimeGrain, len(apiToGrain))
+	for k, v := range apiToGrain {
+		res[v] = k
 	}
-	return TimeGrainUnspecified
+	return res
+}()
+
+func TimeGrainFromAPI(tg runtimev1.TimeGrain) TimeGrain {
+	return apiToGrain[tg]
 }
 
 func TimeGrainToAPI(tg TimeGrain) runtimev1.TimeGrain {
-	switch tg {
-	case TimeGrainUnspecified:
-		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
-	case TimeGrainMillisecond:
-		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
-	case TimeGrainSecond:
-		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
-	case TimeGrainMinute:
-		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
-	case TimeGrainHour:
-		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
-	case TimeGrainDay:
-		return runtimev1.TimeGrain_TIME_GRAIN_DAY
-	case TimeGrainWeek:
-		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
-	case TimeGrainMonth:
-		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
-	case TimeGrainQuarter:
-		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
-	case TimeGrainYear:
-		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	return grainToAPI[tg]
+}
+
+// TimeGrainBase returns the base unit of an API grain and the number of those units it spans.
+// Standard grains return themselves and 1.
+func TimeGrainBase(tg runtimev1.TimeGrain) (runtimev1.TimeGrain, int) {
+	unit, n := TimeGrainFromAPI(tg).Base()
+	return TimeGrainToAPI(unit), n
+}
+
+// Base returns the unit a grain is a multiple of and the factor.
+// Standard grains return themselves and 1.
+func (tg TimeGrain) Base() (TimeGrain, int) {
+	if m, ok := multiples[tg]; ok {
+		return m.unit, m.n
 	}
-	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	return tg, 1
+}
+
+// Compare orders grains from fine to coarse by their approximate duration.
+// It returns a negative number when tg is finer than other, zero when they are equal, and a positive number when tg is coarser.
+func (tg TimeGrain) Compare(other TimeGrain) int {
+	a, b := tg.ApproxDuration(), other.ApproxDuration()
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	}
+	return 0
+}
+
+// ApproxDuration returns the nominal length of a grain.
+// Calendar grains use fixed approximations, which is enough to order grains and estimate bin counts.
+func (tg TimeGrain) ApproxDuration() time.Duration {
+	unit, n := tg.Base()
+	var d time.Duration
+	switch unit {
+	case TimeGrainMillisecond:
+		d = time.Millisecond
+	case TimeGrainSecond:
+		d = time.Second
+	case TimeGrainMinute:
+		d = time.Minute
+	case TimeGrainHour:
+		d = time.Hour
+	case TimeGrainDay:
+		d = 24 * time.Hour
+	case TimeGrainWeek:
+		d = 7 * 24 * time.Hour
+	case TimeGrainMonth:
+		d = 30 * 24 * time.Hour
+	case TimeGrainQuarter:
+		d = 90 * 24 * time.Hour
+	case TimeGrainYear:
+		d = 365 * 24 * time.Hour
+	}
+	return d * time.Duration(n)
 }
 
 func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
@@ -154,34 +230,36 @@ func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, first
 		return tm.In(time.UTC)
 	}
 
-	return tm
+	// Multiples bucket on the local wall clock so buckets align to local midnight, matching the OLAP dialects.
+	unit, n := tg.Base()
+	if n == 1 {
+		return tm
+	}
+	tm = tm.In(tz)
+	switch unit {
+	case TimeGrainMinute:
+		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour(), tm.Minute()-tm.Minute()%n, 0, 0, tz)
+	case TimeGrainHour:
+		tm = startOfLocalHour(tm, tm.Hour()-tm.Hour()%n, tz)
+	}
+	return tm.In(time.UTC)
+}
+
+// WallClockBucketStart returns the local date and time in tz at which the bucket of an hour multiple that contains tm starts,
+// as a UTC time that holds that wall-clock time.
+// Dialects that step hour multiples on the local clock start their spines from it.
+// It is earlier than the local time of TruncateTime for a bucket that starts in a DST gap, since TruncateTime moves that start past the gap.
+func WallClockBucketStart(tm time.Time, hours int, tz *time.Location) time.Time {
+	tm = tm.In(tz)
+	return time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour()-tm.Hour()%hours, 0, 0, 0, time.UTC)
 }
 
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
-	switch tg {
-	case TimeGrainUnspecified:
+	d := tg.ApproxDuration()
+	if d == 0 {
 		return -1
-	case TimeGrainMillisecond:
-		return int(end.Sub(start) / time.Millisecond)
-	case TimeGrainSecond:
-		return int(end.Sub(start) / time.Second)
-	case TimeGrainMinute:
-		return int(end.Sub(start) / time.Minute)
-	case TimeGrainHour:
-		return int(end.Sub(start) / time.Hour)
-	case TimeGrainDay:
-		return int(end.Sub(start) / (24 * time.Hour))
-	case TimeGrainWeek:
-		return int(end.Sub(start) / (7 * 24 * time.Hour))
-	case TimeGrainMonth:
-		return int(end.Sub(start) / (30 * 24 * time.Hour))
-	case TimeGrainQuarter:
-		return int(end.Sub(start) / (90 * 24 * time.Hour))
-	case TimeGrainYear:
-		return int(end.Sub(start) / (365 * 24 * time.Hour))
 	}
-
-	return -1
+	return int(end.Sub(start) / d)
 }
 
 func OffsetTime(tm time.Time, tg TimeGrain, n int, tz *time.Location) time.Time {
@@ -224,6 +302,17 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int, tz *time.Location) time.Time 
 		maxDays := daysInMonth(offsetFirstDay.Year(), int(offsetFirstDay.Month()))
 		// Take the min of max-days or day from `tm`
 		tm = offsetFirstDay.AddDate(0, 0, min(maxDays-1, tm.Day()-1))
+	default:
+		unit, k := tg.Base()
+		switch unit {
+		case TimeGrainMinute:
+			tm = tm.Add(time.Duration(n*k) * time.Minute)
+		case TimeGrainHour:
+			// Step between bucket starts on the local grid so bins stay aligned to local midnight across DST changes, like TruncateTime.
+			// This returns the start of the n-th bucket from tm's bucket.
+			// Stepping from the grid hour of tm's bucket, not tm's own hour, also covers a bucket start that a DST gap moved later.
+			tm = startOfLocalHour(tm, tm.Hour()-tm.Hour()%k+n*k, tz)
+		}
 	}
 
 	return tm.In(time.UTC)
@@ -240,4 +329,26 @@ func daysInMonth(year, month int) int {
 		return 28
 	}
 	return daysForMonths[month-1]
+}
+
+// startOfLocalHour returns the first instant of the given hour on tm's date in tz; the hour may overflow into adjacent dates.
+// time.Date does not specify which instant it picks around a DST change, so this pins down both cases:
+// an hour that starts in a DST gap resolves to the first instant after the gap, as in DuckDB, ClickHouse, Druid and luxon,
+// and an hour that a fall-back change repeats resolves to its first occurrence, as in ClickHouse and Druid, whose spines are built from it.
+// DuckDB resolves a repeated hour to its second occurrence, but it builds its own spines.
+func startOfLocalHour(tm time.Time, hour int, tz *time.Location) time.Time {
+	t := time.Date(tm.Year(), tm.Month(), tm.Day(), hour, 0, 0, 0, tz)
+	_, offset := t.Zone()
+	if t.Hour() != (hour%24+24)%24 {
+		_, after := t.Add(3 * time.Hour).Zone()
+		return t.Add(time.Duration(after-offset) * time.Second)
+	}
+	_, before := t.Add(-3 * time.Hour).Zone()
+	if before > offset {
+		earlier := t.Add(-time.Duration(before-offset) * time.Second)
+		if earlier.Hour() == t.Hour() && earlier.Minute() == 0 {
+			return earlier
+		}
+	}
+	return t
 }

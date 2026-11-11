@@ -236,6 +236,7 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 		fmoy = 1
 	}
 
+	g := timeutil.TimeGrainFromAPI(q.TimeGranularity)
 	dur := timeGrainToDuration(q.TimeGranularity)
 
 	var start time.Time
@@ -275,18 +276,19 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 			if zeroTime.Equal(start) {
 				if q.TimeStart != nil {
 					start = timeutil.TruncateTime(q.TimeStart.AsTime(), timeutil.TimeGrainFromAPI(q.TimeGranularity), tz, int(fdow), int(fmoy))
-					data = addNulls(data, nullRecords, start, t, dur, tz, nullFillingImplementation == "new")
+					data = addNulls(data, nullRecords, start, t, g, dur, tz, nullFillingImplementation == "new")
 				}
 			} else {
-				data = addNulls(data, nullRecords, start, t, dur, tz, nullFillingImplementation == "new")
+				data = addNulls(data, nullRecords, start, t, g, dur, tz, nullFillingImplementation == "new")
 			}
 		}
 
+		// Buckets are clamped to the range of a protobuf timestamp: truncating a time near 0001-01-01 in a time zone east of UTC lands in year 0.
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(t),
+			Ts:      pbutil.ClampedTimestamp(t),
 			Records: records,
 		})
-		start = addTo(t, dur, tz)
+		start = addTo(t, g, dur, tz)
 	}
 	err := rows.Err()
 	if err != nil {
@@ -299,7 +301,7 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 
 		if nullFillingImplementation == "" || nullFillingImplementation == "new" {
 			if !start.Equal(zeroTime) {
-				data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz, nullFillingImplementation == "new")
+				data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), g, dur, tz, nullFillingImplementation == "new")
 			}
 		}
 	}
@@ -330,9 +332,9 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 	return &nullStruct
 }
 
-func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location, newImplementation bool) []*runtimev1.TimeSeriesValue {
+func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, g timeutil.TimeGrain, d duration.Duration, tz *time.Location, newImplementation bool) []*runtimev1.TimeSeriesValue {
 	if newImplementation {
-		return addNullsNew(data, nullRecords, start, end, d, tz)
+		return addNullsNew(data, nullRecords, start, end, g, d, tz)
 	}
 
 	i := 0
@@ -342,15 +344,20 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 		}
 		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(start),
+			Ts:      pbutil.ClampedTimestamp(start),
 			Records: nullRecords,
 		})
-		start = addTo(start, d, tz)
+		start = addTo(start, g, d, tz)
 	}
 	return data
 }
 
-func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
+func addTo(t time.Time, g timeutil.TimeGrain, d duration.Duration, tz *time.Location) time.Time {
+	// Multiples step on the local wall clock like the SQL buckets,
+	// so a DST change does not add a null bucket between two real ones.
+	if _, n := g.Base(); n > 1 {
+		return timeutil.OffsetTime(t, g, 1, tz)
+	}
 	sd := d.(duration.StandardDuration)
 	if sd.Hour > 0 || sd.Minute > 0 || sd.Second > 0 {
 		return d.Add(t)
@@ -358,7 +365,7 @@ func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 	return d.Add(t.In(tz)).In(time.UTC)
 }
 
-func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
+func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, g timeutil.TimeGrain, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	i := 0
 	for start.Before(end) {
 		if i > 5000 {
@@ -366,10 +373,10 @@ func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct
 		}
 		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(start),
+			Ts:      pbutil.ClampedTimestamp(start),
 			Records: nullRecords,
 		})
-		newStart := addToNew(start, d, tz)
+		newStart := addToNew(start, g, d, tz)
 		// Defensive check: ensure time is progressing forward to prevent infinite loops
 		// This can happen during DST transitions if timezone handling is incorrect
 		if !newStart.After(start) {
@@ -381,7 +388,11 @@ func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct
 	return data
 }
 
-func addToNew(t time.Time, d duration.Duration, tz *time.Location) time.Time {
+func addToNew(t time.Time, g timeutil.TimeGrain, d duration.Duration, tz *time.Location) time.Time {
+	// Multiples step on the local wall clock like the SQL buckets, see addTo.
+	if _, n := g.Base(); n > 1 {
+		return timeutil.OffsetTime(t, g, 1, tz)
+	}
 	sd := d.(duration.StandardDuration)
 	if sd.Hour > 0 || sd.Minute > 0 || sd.Second > 0 {
 		// For hours/minutes/seconds, add in UTC to get elapsed time

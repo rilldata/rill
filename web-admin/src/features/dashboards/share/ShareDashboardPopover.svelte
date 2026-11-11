@@ -19,9 +19,12 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { LayoutBlock } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
-  import ExportDashboardForm from "@rilldata/web-common/features/exports/pdf/ExportDashboardForm.svelte";
+  import CanvasExportForm from "@rilldata/web-common/features/exports/CanvasExportForm.svelte";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
+  import { exportCanvasXlsx } from "@rilldata/web-common/features/exports/xlsx/export-canvas-xlsx";
+  import type { XlsxChartMode } from "@rilldata/web-common/features/exports/xlsx/types";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { readable } from "svelte/store";
@@ -33,20 +36,37 @@
   export let canvasName: string | undefined = undefined;
   export let instanceId: string | undefined = undefined;
 
-  const { hidePublicUrl, reports } = featureFlags;
+  const { hidePublicUrl, reports, canvasExcelExport } = featureFlags;
+  const runtimeClient = useRuntimeClient();
   let isOpen = false;
   let copied = false;
   let showScheduledReportDialog = false;
   let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
+  let runXlsxExport:
+    | ((o: PdfExportRunOptions, chartMode: XlsxChartMode) => Promise<void>)
+    | null = null;
 
   // Bind the (now-narrowed) identifiers in a helper so the returned closure keeps
   // them as `string` rather than `string | undefined`.
   $: runPdfExport =
     canvasName && instanceId ? makeRunPdfExport(canvasName, instanceId) : null;
+  $: runXlsxExport =
+    canvasName && instanceId ? makeRunXlsxExport(canvasName, instanceId) : null;
 
   function makeRunPdfExport(name: string, id: string) {
     return (o: PdfExportRunOptions) =>
       exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
+  }
+
+  function makeRunXlsxExport(name: string, id: string) {
+    return (o: PdfExportRunOptions, chartMode: XlsxChartMode) =>
+      exportCanvasXlsx({
+        canvasName: name,
+        instanceId: id,
+        client: runtimeClient,
+        chartMode,
+        ...o,
+      });
   }
 
   const emptyLayout = readable<LayoutBlock[]>([]);
@@ -94,7 +114,7 @@
           <TabsTrigger value="tab2">{m.avatar_create_public_url()}</TabsTrigger>
         {/if}
         {#if runPdfExport}
-          <TabsTrigger value="pdf">PDF</TabsTrigger>
+          <TabsTrigger value="export">{m.export_tab()}</TabsTrigger>
         {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
@@ -128,25 +148,27 @@
         {/if}
       </TabsContent>
       {#if runPdfExport}
-        <TabsContent value="pdf" class="mt-0 p-4">
-          <div class="flex flex-col gap-y-4">
-            <ExportDashboardForm
-              runExport={runPdfExport}
-              showTabOptions={hasTabGroups}
-              onComplete={() => (isOpen = false)}
-            />
-            {#if $reports}
-              <Button
-                type="secondary"
-                onClick={() => {
-                  showScheduledReportDialog = true;
-                  isOpen = false;
-                }}
-              >
-                {m.report_form_schedule_pdf_button()}
-              </Button>
-            {/if}
-          </div>
+        <TabsContent value="export" class="mt-0 p-4">
+          <CanvasExportForm
+            {runPdfExport}
+            runXlsxExport={$canvasExcelExport ? runXlsxExport : null}
+            showTabOptions={hasTabGroups}
+            onComplete={() => (isOpen = false)}
+          >
+            <svelte:fragment slot="pdf-actions">
+              {#if $reports}
+                <Button
+                  type="secondary"
+                  onClick={() => {
+                    showScheduledReportDialog = true;
+                    isOpen = false;
+                  }}
+                >
+                  {m.report_form_schedule_pdf_button()}
+                </Button>
+              {/if}
+            </svelte:fragment>
+          </CanvasExportForm>
         </TabsContent>
       {/if}
     </Tabs>

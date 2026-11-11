@@ -6,10 +6,10 @@ import {
   getDimensionDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
-import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  getAvailableTimeGrains,
+  translateV1TimeGrain,
+} from "@rilldata/web-common/lib/time/new-grains";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 
@@ -20,7 +20,6 @@ export function getFieldsForExplore(
 ) {
   return derived(useExploreValidSpec(client, exploreName), ($validSpecResp) => {
     const metricsViewSpec = $validSpecResp.data?.metricsView ?? {};
-    const minTimeGrain = metricsViewSpec.smallestTimeGrain;
     const exploreSpec = $validSpecResp.data?.explore ?? {};
 
     // Ephemeral measures have no spec entry; synthesize one so the report form
@@ -39,12 +38,7 @@ export function getFieldsForExplore(
           (exploreDimension) => exploreDimension === dimensionSpec.name,
         ),
       ) ?? [];
-    const allowedTimeGrains = Object.keys(TIME_GRAIN).filter(
-      (grain: V1TimeGrain) =>
-        minTimeGrain === undefined ||
-        minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
-        !isGrainBigger(minTimeGrain, grain),
-    );
+    const allowedTimeGrains = getAvailableTimeGrains(metricsViewSpec);
 
     const displayMap: Record<string, { label: string; type: FieldType }> = {};
     const allowedRows: string[] = [];
@@ -70,7 +64,7 @@ export function getFieldsForExplore(
     allowedTimeGrains.forEach((grain) => {
       const id = `${metricsViewSpec.timeDimension}_rill_${grain}`;
       displayMap[id] = {
-        label: `Time ${V1TimeGrainToDateTimeUnit[grain]}`,
+        label: `Time ${translateV1TimeGrain(grain)}`,
         type: "time",
       };
       allowedRows.push(id);

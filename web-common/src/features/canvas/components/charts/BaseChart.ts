@@ -245,11 +245,10 @@ export abstract class BaseChart<
       namePrefix: positionKeyPrefix(rowsPathOfComponent(this.pathInYAML)),
     });
 
-    const newComponent = createComponent(
-      newResource,
-      this.parent,
-      this.pathInYAML,
-    );
+    const newComponent = createComponent(newResource, this.parent, [
+      ...parentPath,
+      key,
+    ] as ComponentPath);
 
     this.parent.componentsStore.set(newComponent.id, newComponent);
     this.parent.setSelectedComponent(newComponent.id);

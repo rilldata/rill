@@ -34,6 +34,8 @@
   navigationEnabled={false}
   lazy={false}
   idPrefix={`${groupName}-${tab.name}-`}
+  tabGroupName={groupName}
+  tabName={tab.name}
 />
 
 <style lang="postcss">

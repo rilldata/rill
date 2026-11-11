@@ -356,6 +356,9 @@ message MetricsViewSpec {
   // The smallest time grain that can be queried for.
   // This can be useful to set if the time_dimension is not available below a certain granularity.
   TimeGrain smallest_time_grain = 8;
+  // Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+  // Empty means the standard grains at or above smallest_time_grain.
+  repeated TimeGrain time_grains = 38;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
   // Optional rilltime expression describing the time range covered by the base table.

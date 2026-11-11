@@ -2322,6 +2322,11 @@ definitions:
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+          time_grains:
+            type: array
+            description: 'Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.'
+            items:
+              type: string
           first_day_of_week:
             type: integer
             description: Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7

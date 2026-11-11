@@ -6,10 +6,21 @@
   import KPIProvider from "../kpi/KPIProvider.svelte";
   import { canvasExactSurface } from "../exact-measures";
   import { validateKPIGridSchema } from "./selector";
+  import type { KpiExportValue } from "@rilldata/web-common/features/exports/xlsx/payload";
 
   export let component: KPIGridComponent;
 
   let kpis: KPISpec[];
+
+  // The values each KPI reports, by position, for the workbook export; see
+  // BaseCanvasComponent.exportPayload.
+  let kpiValues: (KpiExportValue | undefined)[] = [];
+  function setKpiValue(index: number, value: KpiExportValue | undefined) {
+    if (kpiValues[index] === value) return;
+    const next = kpiValues.slice();
+    next[index] = value;
+    kpiValues = next;
+  }
 
   $: ({
     specStore,
@@ -36,6 +47,15 @@
     time_filters: kpiGridProperties.time_filters,
     dimension_filters: kpiGridProperties.dimension_filters,
   };
+
+  $: component.exportPayload.set(
+    kpis.length && kpis.every((_, i) => kpiValues[i])
+      ? {
+          kind: "kpi",
+          values: kpiValues.slice(0, kpis.length) as KpiExportValue[],
+        }
+      : undefined,
+  );
 
   $: sparkline = kpiGridProperties.sparkline;
 
@@ -76,6 +96,8 @@
               {canvasName}
               visible={$visible}
               surface={canvasExactSurface(component.id)}
+              onValues={(value: KpiExportValue | undefined) =>
+                setKpiValue(i, value)}
             />
           {/if}
         </div>

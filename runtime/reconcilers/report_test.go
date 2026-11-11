@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -717,6 +719,122 @@ annotations:
 	}
 }
 
+func TestReportEmbedOpenLink(t *testing.T) {
+	reportYAML := func(displayName string) string {
+		return fmt.Sprintf(`
+type: report
+display_name: %s
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - creator@other.com
+    - recipient@other.com
+annotations:
+  admin_embed_owner_id: ext_abc
+  web_open_mode: creator
+  explore: e1
+`, displayName)
+	}
+
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{
+			embedAttrs: map[string]map[string]any{
+				"r1": {"email": "creator@other.com"},
+				"r2": {"email": "creator@other.com"},
+			},
+			// The creator of r1 saved their email (in a different case than the recipient), and the creator of r2 didn't.
+			embedOwnerEmails: map[string]string{"r1": "Creator@other.com"},
+		},
+		Files: map[string]string{
+			// Reports created from an embed require the feature flag
+			"rill.yaml": `
+features:
+  reports: true
+embeds:
+  open_url: https://app.example.org/open?tenant=foo
+`,
+			"models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, 'Denmark' AS country
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			"reports/r1.yaml": reportYAML("Report with creator email"),
+			"reports/r2.yaml": reportYAML("Report without creator email"),
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	sender := rt.Email.Sender.(*email.TestSender)
+
+	// Only the creator's email has the open link to the embedder's app
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	emails := sender.Emails
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		require.Len(t, e.Attachments, 1)
+		require.Contains(t, e.Body, "https://example.com/unsubscribe")
+		// No links to Rill Cloud other than the unsubscribe link
+		require.NotContains(t, e.Body, "https://example.com/open")
+		require.NotContains(t, e.Body, "https://example.com/edit")
+		require.NotContains(t, e.Body, "https://example.com/export")
+
+		if e.ToEmail != "creator@other.com" {
+			require.Equal(t, "recipient@other.com", e.ToEmail)
+			require.NotContains(t, e.Body, "https://app.example.org/open")
+			continue
+		}
+		require.Contains(t, e.Body, "is ready to view.")
+		require.Contains(t, e.Body, "https://app.example.org/open?")
+		require.Contains(t, e.Body, "tenant=foo")
+		p := requireEmbedOpenPayload(t, e.Body)
+		require.Equal(t, embedopen.KindReport, p.Kind)
+		require.Equal(t, "r1", p.Name)
+		require.False(t, p.ExecutionTime.IsZero())
+	}
+
+	// Without a saved creator email, no email has the open link
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+	emails = sender.Emails[2:]
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		require.Contains(t, e.Body, "https://example.com/unsubscribe")
+		require.NotContains(t, e.Body, "https://app.example.org/open")
+	}
+}
+
+// requireEmbedOpenPayload extracts and decodes the "rill_open" param of the open link in an email body.
+func requireEmbedOpenPayload(t *testing.T, body string) *embedopen.Payload {
+	m := regexp.MustCompile(`rill_open=([A-Za-z0-9_-]+)`).FindStringSubmatch(body)
+	require.NotNil(t, m, "no open link in email body")
+	p, err := embedopen.Decode(m[1])
+	require.NoError(t, err)
+	return p
+}
+
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
 // every recipient's delivery has the user ID and attributes of the report owner,
 // or for reports created from an embed, the attributes of the embed user marked as an embed user's.
@@ -724,6 +842,7 @@ type creatorModeAdmin struct {
 	drivers.AdminService                                      // Not implemented; calls to methods that are not overridden panic
 	userAttrs            map[string]map[string]any            // User ID -> attributes
 	embedAttrs           map[string]map[string]any            // Report name -> attributes of the embed user who created the report
+	embedOwnerEmails     map[string]string                    // Report name -> saved email of the embed user who created the report
 	resources            map[string][]*runtimev1.ResourceName // Report name -> resources the report's data is restricted to
 }
 
@@ -754,6 +873,7 @@ func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ow
 			UserAttrs:         attrs,
 			RestrictResources: restrict,
 			Resources:         resources,
+			EmbedOwner:        a.embedOwnerEmails[reportName] != "" && strings.EqualFold(recipient, a.embedOwnerEmails[reportName]),
 		}
 	}
 	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil

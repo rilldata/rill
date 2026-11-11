@@ -9,6 +9,7 @@
   import { getBookmarksQueryOptions } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
   import { createRillDefaultExploreUrlParamsV2 } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
+  import { getProjectIdQueryOptions } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQuery } from "@tanstack/svelte-query";
@@ -22,6 +23,11 @@
 
   const orgAndProjectNameStore = writable({ organization, project });
   $: orgAndProjectNameStore.set({ organization, project });
+
+  const projectIdQuery = createQuery(
+    getProjectIdQueryOptions(orgAndProjectNameStore),
+  );
+  $: projectId = $projectIdQuery.data ?? "";
 
   const exploreNameStore = writable(exploreName);
   $: exploreNameStore.set(exploreName);
@@ -68,6 +74,7 @@
 <Bookmarks
   {organization}
   {project}
+  {projectId}
   resource={{ name: exploreName, kind: ResourceKind.Explore }}
   bookmarkData={{
     bookmarks,

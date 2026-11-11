@@ -15,7 +15,6 @@
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createQueryServiceMetricsViewAggregation,
@@ -23,6 +22,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/store";
+  import type { KpiExportValue } from "@rilldata/web-common/features/exports/xlsx/payload";
   import type { KPISpec } from ".";
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
@@ -34,6 +34,11 @@
   export let visible: boolean;
   // The exact-selection surface of the KPI (its component); see `canvasExactSurface`.
   export let surface: string;
+  // Reports the values the KPI shows (undefined while loading) for the
+  // workbook export; see KPIGrid.
+  export let onValues:
+    | ((value: KpiExportValue | undefined) => void)
+    | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -147,8 +152,10 @@
     },
     {
       query: {
+        // Without a comparison interval the query would cover all time.
         enabled:
-          comparisonTimeRange &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end &&
           showComparison &&
           isValid &&
           supportsTotal &&
@@ -168,14 +175,22 @@
       exactMeasureNames: tsExactMeasureNames,
       timeStart: start,
       timeEnd: end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
-        enabled: !!start && !!end && isValid && showSparkline && visible,
+        // The sparkline renders only once the grain is known, so wait for it
+        // instead of querying at a fallback grain.
+        enabled:
+          !!start &&
+          !!end &&
+          !!timeGrain &&
+          isValid &&
+          showSparkline &&
+          visible,
       },
     },
   );
@@ -189,15 +204,18 @@
       exactMeasureNames: tsExactMeasureNames,
       timeStart: comparisonTimeRange?.start,
       timeEnd: comparisonTimeRange?.end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+      timeGranularity: timeGrain,
       timeZone,
       where,
       priority: 10,
     },
     {
       query: {
+        // Wait for the comparison interval and the grain, as the primary sparkline does.
         enabled:
-          comparisonTimeRange &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end &&
+          !!timeGrain &&
           isValid &&
           showSparkline &&
           showComparison &&
@@ -205,6 +223,48 @@
       },
     },
   );
+
+  // Mirrors the totals KPI.svelte displays (without hover), as plain numbers.
+  $: exportValue = (() => {
+    if (!onValues) return undefined;
+    if (!isValid || !supportsTotal || $totalQuery.isFetching) return undefined;
+    const value = ($totalQuery.data?.data?.[0]?.[measureName] ?? null) as
+      | number
+      | null;
+    const comparisonValue =
+      showComparison && !$comparisonTotalQuery.isFetching
+        ? (($comparisonTotalQuery.data?.data?.[0]?.[measureName] ?? null) as
+            | number
+            | null)
+        : null;
+    const delta =
+      value != null && comparisonValue != null ? value - comparisonValue : null;
+    const deltaPercent =
+      value != null && comparisonValue
+        ? (value - comparisonValue) / comparisonValue
+        : null;
+    const trend =
+      showSparkline && !$primarySparklineQuery.isFetching
+        ? ($primarySparklineQuery.data?.data ?? []).map((point) => ({
+            time: point.ts ?? "",
+            value:
+              (point.records?.[measureName] as number | null | undefined) ??
+              null,
+          }))
+        : undefined;
+    return {
+      measure,
+      label: measure?.displayName || measureName,
+      value,
+      comparisonLabel: showComparison ? comparisonLabel : undefined,
+      comparisonValue,
+      delta,
+      deltaPercent,
+      trend,
+      timeGrain,
+    } satisfies KpiExportValue;
+  })();
+  $: onValues?.(exportValue);
 
   $: interval = Interval.fromDateTimes(
     DateTime.fromISO(start ?? "").setZone(timeZone),

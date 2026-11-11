@@ -29,6 +29,7 @@
 
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
+  let selectionIntents = new Map<string, boolean>();
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(
@@ -93,19 +94,36 @@
       : []),
   ];
 
-  $: {
-    localSelectedItems = selectedItems;
+  $: if (!open && selectionIntents.size) selectionIntents = new Map();
+  $: localSelectedItems = applySelectionIntents(
+    selectedItems,
+    selectionIntents,
+  );
+
+  function applySelectionIntents(
+    items: string[],
+    intents: Map<string, boolean>,
+  ) {
+    const selected = new Set(items);
+    for (const [name, included] of intents) {
+      if (included) selected.add(name);
+      else selected.delete(name);
+    }
+    return Array.from(selected);
   }
 
   function handleSelect(name: string) {
     if (allowMultiSelect) {
-      const selectedProxy = new Set(localSelectedItems);
-      if (selectedProxy.has(name)) {
-        selectedProxy.delete(name);
-      } else {
-        selectedProxy.add(name);
-      }
-      localSelectedItems = Array.from(selectedProxy);
+      // Keep this session's toggles when an older reconciled spec is echoed back,
+      // while still accepting external changes to other fields.
+      selectionIntents = new Map(selectionIntents).set(
+        name,
+        !localSelectedItems.includes(name),
+      );
+      localSelectedItems = applySelectionIntents(
+        selectedItems,
+        selectionIntents,
+      );
       onMultiSelect(localSelectedItems);
     } else {
       localSelectedItems = [name];

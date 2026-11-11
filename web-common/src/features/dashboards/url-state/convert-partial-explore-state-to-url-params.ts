@@ -28,7 +28,7 @@ import {
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 import {
   TimeComparisonOption,
   type TimeRange,
@@ -199,9 +199,8 @@ function toTimeRangesUrl(
     "interval" in timeControlsState.selectedTimeRange
   ) {
     const mappedTimeGrain =
-      V1TimeGrainToDateTimeUnit[
-        timeControlsState.selectedTimeRange?.interval ?? ""
-      ] ?? "";
+      V1TimeGrainToToken[timeControlsState.selectedTimeRange?.interval ?? ""] ??
+      "";
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
@@ -407,17 +406,23 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
     return searchParams;
   }
 
-  const mapPivotEntry = (data: PivotChipData) => {
+  // Undefined for a time chip without a known grain. Such a chip is skipped:
+  // an empty name in the url is not a field.
+  const mapPivotEntry = (data: PivotChipData): string | undefined => {
     if (data.type === PivotChipType.Time)
-      return ToURLParamTimeDimensionMap[data.id] as string;
+      return ToURLParamTimeDimensionMap[data.id] as string | undefined;
     return data.id;
   };
 
-  const rows = partialExploreState.pivot.rows.map(mapPivotEntry);
+  const rows = partialExploreState.pivot.rows
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const rowsParams = rows.join(",");
   searchParams.set(ExploreStateURLParams.PivotRows, rowsParams);
 
-  const cols = partialExploreState.pivot.columns.map(mapPivotEntry);
+  const cols = partialExploreState.pivot.columns
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const colsParams = cols.join(",");
 
   searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);

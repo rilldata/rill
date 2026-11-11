@@ -1,6 +1,10 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
+import {
+  type ExploreFieldNames,
+  getExploreFieldNames,
+} from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
@@ -20,30 +24,36 @@ import {
   V1ExploreComparisonMode,
   V1TimeGrain,
   type V1ExploreSpec,
+  type V1MetricsViewSpec,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import {
-  DateTimeUnitToV1TimeGrain,
-  isGrainAllowed,
+  getAvailableTimeGrains,
+  TokenToV1TimeGrain,
 } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getExploreStateFromYAMLConfig(
+  metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  smallestTimeGrain: V1TimeGrain | undefined = undefined,
 ) {
+  // Only fields the metrics view still defines can be queried. See getExploreFieldNames.
+  const exploreFields = getExploreFieldNames(metricsViewSpec, exploreSpec);
+
   // TODO: support all fields from V1ExplorePreset. Not urgent since we do not parse them in backend.
   return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
     ...getExploreTimeStateFromYAMLConfig(
       exploreSpec,
+      exploreFields,
       timeRangeSummary,
-      smallestTimeGrain,
+      metricsViewSpec.smallestTimeGrain,
+      metricsViewSpec.timeGrains,
     ),
-    ...getExploreViewStateFromYAMLConfig(exploreSpec),
+    ...getExploreViewStateFromYAMLConfig(exploreSpec, exploreFields),
   };
 }
 
@@ -66,9 +76,9 @@ export function createUrlForExploreYAMLDefaultState(
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
       const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+        metricsViewSpec,
         exploreSpec,
         timeRangeSummary,
-        metricsViewSpec.smallestTimeGrain,
       );
 
       const timeControlState = getTimeControlState(
@@ -91,8 +101,10 @@ export function createUrlForExploreYAMLDefaultState(
 
 function getExploreTimeStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
+  exploreFields: ExploreFieldNames,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  smallestTimeGrain: V1TimeGrain | undefined = undefined,
+  smallestTimeGrain: V1TimeGrain | undefined,
+  timeGrains: V1TimeGrain[] | undefined,
 ): Partial<ExploreState> {
   const exploreTimeState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset || !timeRangeSummary) {
@@ -107,7 +119,7 @@ function getExploreTimeStateFromYAMLConfig(
 
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
-        DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
+        TokenToV1TimeGrain[defaultPreset.timeGrain];
       exploreTimeState.adaptiveTimeGrain = false;
     } else {
       const grainForRange = getGrainForRange(
@@ -116,9 +128,14 @@ function getExploreTimeStateFromYAMLConfig(
         timeRangeSummary,
       );
 
-      const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
-        ? grainForRange
-        : smallestTimeGrain;
+      const availableTimeGrains = getAvailableTimeGrains({
+        smallestTimeGrain,
+        timeGrains,
+      });
+      const interval =
+        grainForRange && availableTimeGrains.includes(grainForRange)
+          ? grainForRange
+          : (availableTimeGrains[0] ?? smallestTimeGrain);
 
       exploreTimeState.selectedTimeRange.interval = interval;
     }
@@ -148,7 +165,10 @@ function getExploreTimeStateFromYAMLConfig(
 
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
       exploreTimeState.selectedComparisonDimension =
-        defaultPreset.comparisonDimension || exploreSpec.dimensions?.[0];
+        defaultPreset.comparisonDimension &&
+        exploreFields.dimensions.includes(defaultPreset.comparisonDimension)
+          ? defaultPreset.comparisonDimension
+          : exploreFields.dimensions[0];
   }
 
   return exploreTimeState;
@@ -189,28 +209,42 @@ function getDefaultComparisonTimeRangeName(
 
 function getExploreViewStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
+  exploreFields: ExploreFieldNames,
 ): Partial<ExploreState> {
   const exploreViewState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset) return exploreViewState;
   const defaultPreset = exploreSpec.defaultPreset;
+  const measures = new Set(exploreFields.measures);
+  const dimensions = new Set(exploreFields.dimensions);
 
-  if (defaultPreset.measures) {
-    exploreViewState.visibleMeasures = defaultPreset.measures;
+  // Fields are left unset when the defaults name none that still exist,
+  // so that the cascading merge fills them from the next source.
+  const visibleMeasures = defaultPreset.measures?.filter((m) =>
+    measures.has(m),
+  );
+  if (visibleMeasures?.length) {
+    exploreViewState.visibleMeasures = visibleMeasures;
     exploreViewState.allMeasuresVisible = arrayUnorderedEquals(
-      defaultPreset.measures,
-      exploreSpec.measures ?? [],
+      visibleMeasures,
+      exploreFields.measures,
     );
   }
 
-  if (defaultPreset.dimensions) {
-    exploreViewState.visibleDimensions = defaultPreset.dimensions;
+  const visibleDimensions = defaultPreset.dimensions?.filter((d) =>
+    dimensions.has(d),
+  );
+  if (visibleDimensions?.length) {
+    exploreViewState.visibleDimensions = visibleDimensions;
     exploreViewState.allDimensionsVisible = arrayUnorderedEquals(
-      defaultPreset.dimensions,
-      exploreSpec.dimensions ?? [],
+      visibleDimensions,
+      exploreFields.dimensions,
     );
   }
 
-  if (defaultPreset.exploreSortBy) {
+  if (
+    defaultPreset.exploreSortBy &&
+    measures.has(defaultPreset.exploreSortBy)
+  ) {
     exploreViewState.leaderboardSortByMeasureName = defaultPreset.exploreSortBy;
   } else if (exploreViewState.visibleMeasures?.length) {
     exploreViewState.leaderboardSortByMeasureName =
@@ -229,9 +263,11 @@ function getExploreViewStateFromYAMLConfig(
     );
   }
 
-  if (defaultPreset.exploreLeaderboardMeasures?.length) {
-    exploreViewState.leaderboardMeasureNames =
-      defaultPreset.exploreLeaderboardMeasures;
+  const leaderboardMeasures = defaultPreset.exploreLeaderboardMeasures?.filter(
+    (m) => measures.has(m),
+  );
+  if (leaderboardMeasures?.length) {
+    exploreViewState.leaderboardMeasureNames = leaderboardMeasures;
   } else if (exploreViewState.leaderboardSortByMeasureName) {
     exploreViewState.leaderboardMeasureNames = [
       exploreViewState.leaderboardSortByMeasureName,
@@ -243,7 +279,10 @@ function getExploreViewStateFromYAMLConfig(
       defaultPreset.exploreLeaderboardShowContextForAllMeasures;
   }
 
-  if (defaultPreset.exploreExpandedDimension) {
+  if (
+    defaultPreset.exploreExpandedDimension &&
+    dimensions.has(defaultPreset.exploreExpandedDimension)
+  ) {
     exploreViewState.selectedDimensionName =
       defaultPreset.exploreExpandedDimension;
     exploreViewState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
