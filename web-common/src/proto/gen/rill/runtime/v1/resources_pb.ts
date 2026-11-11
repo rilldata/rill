@@ -5631,7 +5631,7 @@ export class CanvasRow extends Message<CanvasRow> {
   heightUnit = "";
 
   /**
-   * Items to render in the row. Empty when the row is a tab group.
+   * Items to render in the row. Empty when the row is a tab group or a container.
    *
    * @generated from field: repeated rill.runtime.v1.CanvasItem items = 3;
    */
@@ -5639,15 +5639,23 @@ export class CanvasRow extends Message<CanvasRow> {
 
   /**
    * If set, this row renders a tab group instead of items.
-   * A row has either items or a tab_group, never both.
+   * A row has exactly one of items, tab_group or container.
    *
    * @generated from field: rill.runtime.v1.CanvasTabGroup tab_group = 4;
    */
   tabGroup?: CanvasTabGroup;
 
   /**
+   * If set, this row is a container of rows instead of items.
+   * A row has exactly one of items, tab_group or container.
+   *
+   * @generated from field: rill.runtime.v1.CanvasContainer container = 6;
+   */
+  container?: CanvasContainer;
+
+  /**
    * Templated boolean expression from the row's `if` property.
-   * The row (or tab group) is only shown to viewers for whom it evaluates to true.
+   * The row (or tab group, or container) is only shown to viewers for whom it evaluates to true.
    *
    * @generated from field: string condition_expression = 5;
    */
@@ -5665,6 +5673,7 @@ export class CanvasRow extends Message<CanvasRow> {
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 4, name: "tab_group", kind: "message", T: CanvasTabGroup },
+    { no: 6, name: "container", kind: "message", T: CanvasContainer },
     { no: 5, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -5682,6 +5691,58 @@ export class CanvasRow extends Message<CanvasRow> {
 
   static equals(a: CanvasRow | PlainMessage<CanvasRow> | undefined, b: CanvasRow | PlainMessage<CanvasRow> | undefined): boolean {
     return proto3.util.equals(CanvasRow, a, b);
+  }
+}
+
+/**
+ * A named block of rows that viewers see as plain rows.
+ * It groups rows so they can be arranged, moved and conditioned together.
+ *
+ * @generated from message rill.runtime.v1.CanvasContainer
+ */
+export class CanvasContainer extends Message<CanvasContainer> {
+  /**
+   * Stable identifier of the container.
+   * Defaults to "container-<index>" if not provided in the canvas YAML.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Rows in the container. These are always plain rows;
+   * a container never holds a tab group or another container.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasRow rows = 2;
+   */
+  rows: CanvasRow[] = [];
+
+  constructor(data?: PartialMessage<CanvasContainer>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasContainer";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasContainer {
+    return new CanvasContainer().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasContainer {
+    return new CanvasContainer().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasContainer {
+    return new CanvasContainer().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasContainer | PlainMessage<CanvasContainer> | undefined, b: CanvasContainer | PlainMessage<CanvasContainer> | undefined): boolean {
+    return proto3.util.equals(CanvasContainer, a, b);
   }
 }
 

@@ -1065,7 +1065,7 @@ message ResolveCanvasResponse {
   map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   map<string, Resource> referenced_metrics_views = 3;
-  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
   // The paths follow the canvas YAML. Only set when include_hidden is true.
   repeated string hidden_paths = 4;
 }

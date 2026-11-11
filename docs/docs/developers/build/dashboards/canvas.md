@@ -52,14 +52,47 @@ A tab group shows several sets of rows in one place, one tab at a time. To add o
 
 You can move or copy a whole tab group in the visual editor:
 
-- **Move:** Drag the grip handle at the left of the tab strip, or an empty part of the strip, and drop the group between two rows. A tab group can't be dropped inside another tab group.
+- **Move:** Drag the grip handle at the left of the tab strip, or an empty part of the strip, and drop the group between two rows. A tab group can't be dropped inside another tab group or a container.
 - **Duplicate:** Open any tab's three-dot menu and select **Duplicate tab group**, or select the tab group and click **Duplicate tab group** in the right-hand panel. The copy, with all its tabs and their rows, is added right below the original and selected.
 
 ![A tab's menu with the Duplicate tab group option](/img/build/dashboard/canvas/tab-menu-duplicate-tab-group.png)
 
 ![The tab group panel with the Duplicate tab group and Delete tab group buttons](/img/build/dashboard/canvas/tab-group-inspector.png)
 
-The copy doesn't keep the original's `name`, so it gets its own deep-link key in the dashboard URL. Rename it in the **Tab group name** field if you want a stable key.
+The copy gets a name of its own, such as `group-2`, which is its deep-link key in the dashboard URL. You can change it in the **Tab group name** field.
+
+### Containers
+
+A container keeps the rows of one story together, so you can move, copy, delete, and show or hide them as one unit. Viewers don't see the container itself: its rows look like any other rows. In the visual editor, a dashed frame with a **Container** label marks it.
+
+In YAML, a container is an entry in `rows` with its own `rows` instead of `items`:
+
+```yaml
+rows:
+  - name: revenue_story # optional; defaults to container-<index>
+    rows:
+      - items:
+          - kpi_grid:
+              metrics_view: orders
+              measures: [revenue, margin]
+      - items:
+          - width: 8
+            line_chart: # ...
+          - width: 4
+            table: # ...
+```
+
+Containers are top-level entries that hold plain rows: they can't be placed inside a tab group or another container, and they can't hold tab groups. See the [`rows`](/reference/project-files/canvas-dashboards#rows) reference.
+
+You can also manage containers in the visual editor:
+
+- **Add:** Choose **Container** in the add menu between rows, or select **Wrap row in container** in a component's menu. These options appear when the `canvas_containers` [feature flag](/developers/build/project-configuration#feature-flags) is on.
+- **Fill:** Drag widgets into the container, or click **Add widget to container** in an empty one. Drag them out the same way.
+- **Move:** Drag the grip handle on the container's label and drop the container between two rows.
+- **Rename:** Click the container's label and change **Container name** in the right-hand panel.
+- **Duplicate, ungroup or delete:** Open the three-dot menu on the label, or select the container and use the right-hand panel. **Ungroup** removes the container and keeps its rows in place.
+
+The visual editor writes a `name` for every tab group and container. A new one gets a name such as `container-2`. When you edit the layout, each unnamed one gets the name it had by default, such as `group-3`, which comes from its position. A block then keeps its name, and a tab group its deep-link key, wherever you move it.
 
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
@@ -90,7 +123,7 @@ For detailed YAML configurations, see the [`defaults`](/reference/project-files/
 
 ## Show Content to Some Viewers Only
 
-Add an `if` condition to a row, tab group, tab or component to show it only to some viewers. One canvas can then serve several audiences, such as finance and sales teams, or the basic and premium tiers of an embedded dashboard.
+Add an `if` condition to a row, tab group, tab, container or component to show it only to some viewers. One canvas can then serve several audiences, such as finance and sales teams, or the basic and premium tiers of an embedded dashboard.
 
 ```yaml
 rows:
@@ -128,21 +161,21 @@ rows:
 
 Conditions use the same templating and [user attributes](/developers/build/metrics-view/security#user-attributes) as security policies. A few things to know:
 
-- An element shows only when its own condition and the conditions of the rows, tabs and groups containing it are all true.
+- An element shows only when its own condition and the conditions of the rows, tabs, tab groups and containers holding it are all true. A container's condition is the simplest way to show or hide a whole story.
 - Conditions can't reference project variables (`.env`), or the full template data (`.` or `$`) that includes them, since they are evaluated for viewers and the variables commonly hold secrets. The same applies to all canvas component properties, such as Markdown content and chart SQL.
 - Built-in attributes (`name`, `email`, `domain`, `groups`, `admin` and `embed`) always resolve, even for an [embedded dashboard](/developers/embed/iframe) that only passes custom attributes. A condition that references a custom attribute the viewer doesn't have is false. To treat a missing attribute as a value instead, use `get`, as in `'{{ ne (get .user "plan") "premium" }}'`.
-- When components are hidden, the rest of the row widens to fill it, and rows and tabs left empty disappear.
+- When components are hidden, the rest of the row widens to fill it, and rows, tabs and containers left empty disappear.
 - Hidden content is removed before the dashboard reaches the viewer, including its components and the conditions themselves. In an embedded dashboard or a public URL that's restricted to the canvas, the viewer also can't query the metrics views that only hidden content uses.
 - Hiding content doesn't restrict data elsewhere: a viewer with access to a metrics view can still query it, for example in an Explore dashboard. To restrict data, add a [security policy](/developers/build/metrics-view/security) to the metrics view.
 - Public URLs and scheduled reports that run as their creator show what the creator can see.
 
 ### Set Conditions in the Visual Editor
 
-To set a component's condition without editing YAML, select the component and fill in **Visible when** at the bottom of the right-hand panel. Leave it empty to show the component to everyone. Conditions on rows, tab groups and tabs are set in YAML.
+To set a component's condition without editing YAML, select the component and fill in **Visible when** at the bottom of the right-hand panel. To set the condition of a tab group or a container, select it and fill in **Visible when** in its panel. Leave a field empty to show the element to everyone. Conditions on rows and tabs are set in YAML.
 
 ![The Visible when field in the component panel, set to an admin-only condition](/img/build/dashboard/canvas/visible-when-field.png)
 
-In the editor, you always see the whole canvas. Components that are only shown to some viewers have a crossed-out eye badge in their bottom-right corner. Hover over it to see the conditions that apply, including those inherited from the component's row, tab or tab group.
+In the editor, you always see the whole canvas. Components that are only shown to some viewers have a crossed-out eye badge in their bottom-right corner. Hover over it to see the conditions that apply, including those inherited from the component's row, tab, tab group or container. A container with a condition shows the same badge on its label.
 
 ![A crossed-out eye badge on a canvas component, with a tooltip showing its partners-only condition](/img/build/dashboard/canvas/visibility-badge.png)
 

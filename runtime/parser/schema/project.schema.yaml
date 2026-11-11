@@ -2629,7 +2629,7 @@ definitions:
             $ref: '#/definitions/ai_prompts_properties'
           rows:
             type: array
-            description: Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
+            description: Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
             items:
               type: object
               properties:
@@ -2680,7 +2680,7 @@ definitions:
                     additionalProperties: true
                 name:
                   type: string
-                  description: Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
+                  description: Stable identifier for a tab group or a container; a tab group also uses it as its deep-link URL key. Defaults to `group-<index>` for a tab group and `container-<index>` for a container if omitted. Names must be unique among the tab groups and containers of the canvas. Only used for tab-group and container entries.
                 tabs:
                   type: array
                   description: Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
@@ -2697,7 +2697,7 @@ definitions:
                         $ref: '#/definitions/canvas_if_condition'
                       rows:
                         type: array
-                        description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
+                        description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
                         items:
                           type: object
                           properties:
@@ -2711,6 +2711,22 @@ definitions:
                               description: List of components to display in the row
                               items: *canvasRowItem
                           additionalProperties: false
+                    additionalProperties: false
+                rows:
+                  type: array
+                  description: Makes this entry a container of rows instead of a plain row. A container keeps related rows together; it has no visual element for viewers, who see its rows as plain rows. The container's `if` applies to everything inside it. Containers hold plain rows (with `items`) and cannot be nested inside a tab or another container.
+                  items:
+                    type: object
+                    properties:
+                      height:
+                        type: string
+                        description: Height of the row in px
+                      if:
+                        $ref: '#/definitions/canvas_if_condition'
+                      items:
+                        type: array
+                        description: List of components to display in the row
+                        items: *canvasRowItem
                     additionalProperties: false
               additionalProperties: false
           max_width:

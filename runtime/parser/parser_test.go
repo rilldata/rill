@@ -3118,6 +3118,207 @@ rows:
 	}
 }
 
+func TestCanvasContainers(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Intro"
+- name: revenue_story
+  if: '{{ has "finance" .user.groups }}'
+  rows:
+  - items:
+    - markdown:
+        content: "Revenue"
+    - component: c1
+  - height: 320px
+    if: '{{ .user.admin }}'
+    items:
+    - width: 8
+      markdown:
+        content: "Margin"
+    - width: 4
+      if: "'{{ .user.domain }}' = 'acme.com'"
+      markdown:
+        content: "Costs"
+- rows:
+  - items:
+    - markdown:
+        content: "Unnamed"
+- name: later
+  rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	res := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}]
+	rows := res.CanvasSpec.Rows
+	require.Len(t, rows, 4)
+
+	// A container keeps its own `if` on its row, like a tab group, and holds plain rows.
+	story := rows[1]
+	require.Equal(t, `{{ has "finance" .user.groups }}`, story.ConditionExpression)
+	require.Empty(t, story.Items)
+	require.Nil(t, story.TabGroup)
+	require.Equal(t, "revenue_story", story.Container.Name)
+	require.Len(t, story.Container.Rows, 2)
+	require.Equal(t, []*runtimev1.CanvasItem{
+		{Component: "d1--component-c1-0-0", DefinedInCanvas: true},
+		{Component: "c1"},
+	}, story.Container.Rows[0].Items)
+	require.Equal(t, uint32(320), story.Container.Rows[1].GetHeight())
+	require.Equal(t, `{{ .user.admin }}`, story.Container.Rows[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, story.Container.Rows[1].Items[1].ConditionExpression)
+
+	// A container's name defaults to "container-<index>", and a container may be empty.
+	require.Equal(t, "container-2", rows[2].Container.Name)
+	require.Equal(t, "d1--component-c2-0-0", rows[2].Container.Rows[0].Items[0].Component)
+	require.Equal(t, "later", rows[3].Container.Name)
+	require.Empty(t, rows[3].Container.Rows)
+
+	// The canvas references the components in its containers.
+	require.Equal(t, []ResourceName{
+		{Kind: ResourceKindComponent, Name: "c1"},
+		{Kind: ResourceKindComponent, Name: "d1--component-0-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-0-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-1-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-1-1"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c2-0-0"},
+	}, res.Refs)
+
+	// Inline components in a container inherit its `if`, along with those of their row and item.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `{{ has "finance" .user.groups }}`, component("d1--component-c1-0-0").ConditionExpression)
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-c1-1-0").ConditionExpression)
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }}) AND ('{{ .user.domain }}' = 'acme.com')`, component("d1--component-c1-1-1").ConditionExpression)
+	require.Equal(t, "", component("d1--component-c2-0-0").ConditionExpression)
+	// Components defined in their own file don't inherit a container's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasContainerErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "container in a container",
+			yaml: `
+type: canvas
+rows:
+- name: outer
+  rows:
+  - name: inner
+    rows: []
+`,
+			wantErr: "containers cannot be nested",
+		},
+		{
+			name: "items and rows together",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+  rows: []
+`,
+			wantErr: "cannot define more than one of 'items', 'tabs' and 'rows'",
+		},
+		{
+			name: "tabs and rows together",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    rows: []
+  rows: []
+`,
+			wantErr: "cannot define more than one of 'items', 'tabs' and 'rows'",
+		},
+		{
+			name: "container in a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    rows:
+    - rows: []
+`,
+			wantErr: "containers cannot be nested",
+		},
+		{
+			name: "tab group in a container",
+			yaml: `
+type: canvas
+rows:
+- rows:
+  - tabs:
+    - label: A
+      rows: []
+`,
+			wantErr: "tab groups cannot be nested",
+		},
+		{
+			name: "duplicate names across a tab group and a container",
+			yaml: `
+type: canvas
+rows:
+- name: story
+  tabs:
+  - label: A
+    rows: []
+- name: story
+  rows: []
+`,
+			wantErr: `duplicate name "story"`,
+		},
+		{
+			name: "invalid if on a container",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  rows: []
+`,
+			wantErr: "invalid 'if' for row 0",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
+		})
+	}
+}
+
 func TestKindBackwardsCompatibility(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml

@@ -1,8 +1,9 @@
 import { isMap, isSeq, type Document } from "yaml";
+import { isBlockRow, unwrapRows } from "./block-edit";
 
-// Pure YAML-document transforms for authoring tab groups in the visual editor.
-// These operate on the parsed YAML Document (the editor's source of truth) and
-// mutate it in place; the caller persists the result via the file artifact.
+// Pure YAML-document transforms for the tabs of a tab group in the visual editor.
+// Operations on whole blocks (tab groups and containers alike: add, move, duplicate,
+// rename, delete, wrap a row) live in block-edit.ts.
 //
 // The YAML shape of a tab group is a top-level rows entry with `tabs` (and an
 // optional `name`), where each tab has a `label` (display), an optional `name`
@@ -18,76 +19,9 @@ import { isMap, isSeq, type Document } from "yaml";
 // This differs from the proto JSON shape (row.tabGroup.tabs); see canvasRowYAML
 // in runtime/parser/parse_canvas.go.
 
-const MAX_ITEMS_PER_ROW = 4;
-
-/**
- * Move a component item between two row containers (top-level rows or a tab's rows),
- * identified by their YAML paths. Used for cross-container drags (e.g. dragging a widget
- * from the free canvas into a tab). The item is removed from the source and inserted into
- * the destination:
- *   - if `dest.col` is a number and `dest.row` points at an existing destination row with
- *     room, the item joins that row at that column (e.g. dropping to the left of a widget);
- *   - otherwise it becomes a new row inserted at `dest.row` (or appended).
- *
- * Node references for both containers are resolved up front, so removing the source row
- * never invalidates the destination even when the source sits above a destination tab group.
- * Returns true if the move was applied.
- */
-export function moveItemAcrossContainers(
-  doc: Document,
-  source: { rowsPath: (string | number)[]; row: number; col: number },
-  dest: { rowsPath: (string | number)[]; row?: number; col: number | null },
-): boolean {
-  const sourceSeq = doc.getIn(source.rowsPath);
-  const destSeq = doc.getIn(dest.rowsPath);
-  if (!isSeq(sourceSeq) || !isSeq(destSeq)) return false;
-
-  const sourceRow = sourceSeq.items[source.row];
-  if (!isMap(sourceRow)) return false;
-  const sourceItems = sourceRow.get("items");
-  if (!isSeq(sourceItems)) return false;
-  const itemNode = sourceItems.items[source.col];
-  if (itemNode === undefined) return false;
-
-  // Decide the destination shape before mutating, so a full row falls back to a new row.
-  const destRowNode =
-    dest.row !== undefined ? destSeq.items[dest.row] : undefined;
-  const destRowItems = isMap(destRowNode)
-    ? destRowNode.get("items")
-    : undefined;
-  const joinExistingRow =
-    dest.col !== null &&
-    isSeq(destRowItems) &&
-    destRowItems.items.length < MAX_ITEMS_PER_ROW;
-
-  // Remove from the source (and drop the row if it is now empty).
-  sourceItems.items.splice(source.col, 1);
-  if (sourceItems.items.length === 0) {
-    sourceSeq.items.splice(source.row, 1);
-  }
-
-  if (joinExistingRow && isSeq(destRowItems)) {
-    const at = Math.min(dest.col as number, destRowItems.items.length);
-    destRowItems.items.splice(at, 0, itemNode);
-  } else {
-    const newRow = doc.createNode({ items: [itemNode] });
-    const at = dest.row ?? destSeq.items.length;
-    destSeq.items.splice(Math.min(at, destSeq.items.length), 0, newRow);
-  }
-
-  return true;
-}
-
-/** Number of top-level entries in the rows sequence. */
-function rowCount(doc: Document): number {
-  const rows = doc.get("rows");
-  return isSeq(rows) ? rows.items.length : 0;
-}
-
 /** True if the top-level rows entry at the given index is a tab group. */
 export function isTabGroupRow(doc: Document, blockIndex: number): boolean {
-  const row = doc.getIn(["rows", blockIndex]);
-  return isMap(row) && row.has("tabs");
+  return isBlockRow(doc, blockIndex, "tab-group");
 }
 
 /** Number of tabs in the tab group at the given top-level index. */
@@ -107,30 +41,6 @@ export function tabHasContent(
 }
 
 /**
- * Append a new tab group (with a single empty "Tab 1") at the end of the canvas.
- * Returns the top-level index of the new group.
- */
-export function addTabGroup(doc: Document): number {
-  return addTabGroupAt(doc, rowCount(doc));
-}
-
-/**
- * Insert a new tab group (with a single empty "Tab 1") at the given top-level index.
- * Returns the index at which it was inserted.
- */
-export function addTabGroupAt(doc: Document, index: number): number {
-  const group = doc.createNode({ tabs: [{ label: "Tab 1", rows: [] }] });
-  const rows = doc.get("rows");
-  if (isSeq(rows)) {
-    const clamped = Math.max(0, Math.min(index, rows.items.length));
-    rows.items.splice(clamped, 0, group);
-    return clamped;
-  }
-  doc.setIn(["rows"], doc.createNode([group]));
-  return 0;
-}
-
-/**
  * Append a new empty tab to the tab group at the given top-level index.
  * Returns the index of the new tab, or -1 if the entry is not a tab group.
  */
@@ -139,24 +49,6 @@ export function addTab(doc: Document, blockIndex: number): number {
   const label = `Tab ${tabCount(doc, blockIndex) + 1}`;
   doc.addIn(["rows", blockIndex, "tabs"], doc.createNode({ label, rows: [] }));
   return tabCount(doc, blockIndex) - 1;
-}
-
-/**
- * Set (or clear) the tab group's `name` at the given top-level index. The name is the
- * group's stable URL key; clearing it lets the parser fall back to `group-<index>`.
- */
-export function renameTabGroup(
-  doc: Document,
-  blockIndex: number,
-  name: string,
-): void {
-  if (!isTabGroupRow(doc, blockIndex)) return;
-  const trimmed = name.trim();
-  if (trimmed) {
-    doc.setIn(["rows", blockIndex, "name"], trimmed);
-  } else {
-    doc.deleteIn(["rows", blockIndex, "name"]);
-  }
 }
 
 /** Set the display label of the tab at [blockIndex, tabIndex]. */
@@ -248,81 +140,11 @@ export function duplicateTab(
 }
 
 /**
- * Duplicate the whole tab group at the given top-level index, inserting the copy immediately
- * after it. Every tab and its rows are copied; the group's `name` is dropped so the copy gets
- * a fresh URL key (tab names are scoped to their group, so they can stay). Inline component
- * definitions are position-keyed, so the parser derives fresh names for the copies.
- * Returns the index of the new group, or -1 if the entry is not a tab group.
- */
-export function duplicateTabGroup(doc: Document, blockIndex: number): number {
-  if (!isTabGroupRow(doc, blockIndex)) return -1;
-  const rows = doc.get("rows");
-  if (!isSeq(rows)) return -1;
-  const original = rows.items[blockIndex];
-  if (!isMap(original)) return -1;
-
-  const { name, ...rest } = original.toJSON() as {
-    name?: string;
-    [key: string]: unknown;
-  };
-  void name;
-  rows.items.splice(blockIndex + 1, 0, doc.createNode(rest));
-  return blockIndex + 1;
-}
-
-/**
- * Move the tab group at top-level index `from` to the insertion index `to` (drag-to-reorder).
- * `to` is a slot in the pre-move list, as a row drop zone reports it: 0 is above the first
- * block and rows.length is below the last. Returns the group's new index, or -1 if nothing
- * moved (not a tab group, out of range, or dropped in one of its own two adjacent slots).
- */
-export function moveTabGroup(doc: Document, from: number, to: number): number {
-  if (!isTabGroupRow(doc, from)) return -1;
-  const rows = doc.get("rows");
-  if (!isSeq(rows)) return -1;
-  if (to < 0 || to > rows.items.length) return -1;
-  if (to === from || to === from + 1) return -1;
-  const [moved] = rows.items.splice(from, 1);
-  const newIndex = to > from ? to - 1 : to;
-  rows.items.splice(newIndex, 0, moved);
-  return newIndex;
-}
-
-/**
- * Delete the entire tab group (and all of its tabs/components) at the given top-level index.
- * Returns true if a tab group was removed.
- */
-export function deleteTabGroup(doc: Document, blockIndex: number): boolean {
-  if (!isTabGroupRow(doc, blockIndex)) return false;
-  const rows = doc.get("rows");
-  if (!isSeq(rows)) return false;
-  rows.items.splice(blockIndex, 1);
-  return true;
-}
-
-/**
- * Wrap the plain row at rowIndex into a new single-tab tab group in place. The row's
- * content becomes "Tab 1"'s only row. Returns true if the conversion happened.
- */
-export function convertRowToTabGroup(doc: Document, rowIndex: number): boolean {
-  const rows = doc.get("rows");
-  if (!isSeq(rows)) return false;
-  const row = doc.getIn(["rows", rowIndex]);
-  if (!isMap(row) || row.has("tabs")) return false;
-
-  const group = doc.createNode({
-    tabs: [{ label: "Tab 1", rows: [row.toJSON()] }],
-  });
-  rows.items.splice(rowIndex, 1, group);
-  return true;
-}
-
-/**
  * Delete the tab at [blockIndex, tabIndex].
  *
  * If it is the group's last remaining tab, the whole group is removed and that
  * tab's rows are unwrapped back into free rows at the group's position, so no
- * layout is lost. Returns the action taken.
+ * layout is lost (see unwrapRows). Returns the action taken.
  */
 export function deleteTab(
   doc: Document,
@@ -337,44 +159,12 @@ export function deleteTab(
   }
 
   // Last tab (only index 0 remains): unwrap its rows into free rows at this position.
-  const rows = doc.get("rows");
-  if (!isSeq(rows)) return "noop";
-
-  const tabRows = doc.getIn(["rows", blockIndex, "tabs", 0, "rows"]);
-  const unwrapped = isSeq(tabRows) ? tabRows.items : [];
-
-  // The unwrapped rows keep the visibility of the group and tab they came from,
-  // so content that was hidden from some viewers stays hidden from them.
-  const groupCondition = doc.getIn(["rows", blockIndex, "if"]);
-  const tabCondition = doc.getIn(["rows", blockIndex, "tabs", 0, "if"]);
-  for (const row of unwrapped) {
-    if (!isMap(row)) continue;
-    const condition = combineConditions(
-      groupCondition,
-      tabCondition,
-      row.get("if"),
-    );
-    if (condition !== undefined) row.set("if", condition);
-  }
-
-  rows.items.splice(blockIndex, 1, ...unwrapped);
-
-  return "unwrapped-group";
-}
-
-/**
- * Combines `if` conditions with AND, skipping empty ones. Returns undefined if none are set.
- * Each condition renders to a boolean expression, so the combination is a valid condition too.
- */
-export function combineConditions(
-  ...conditions: unknown[]
-): string | undefined {
-  const parts = conditions
-    .map((c) =>
-      typeof c === "string" || typeof c === "boolean" ? String(c).trim() : "",
-    )
-    .filter((c) => c !== "");
-  if (parts.length === 0) return undefined;
-  if (parts.length === 1) return parts[0];
-  return parts.map((p) => `(${p})`).join(" AND ");
+  const unwrapped = unwrapRows(doc, blockIndex, [
+    "rows",
+    blockIndex,
+    "tabs",
+    0,
+    "rows",
+  ]);
+  return unwrapped < 0 ? "noop" : "unwrapped-group";
 }

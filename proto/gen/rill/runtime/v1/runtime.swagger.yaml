@@ -4471,10 +4471,15 @@ definitions:
       - NULL_VALUE
     default: NULL_VALUE
     description: |-
-      `NullValue` is a singleton enumeration to represent the null value for the
-      `Value` type union.
+      Represents a JSON `null`.
 
-      The JSON representation for `NullValue` is JSON `null`.
+      `NullValue` is a sentinel, using an enum with only one value to represent
+      the null value for the `Value` type union.
+
+      A field of type `NullValue` with any value other than `0` is considered
+      invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+      set as a JSON `null` regardless of the integer value, and so will round trip
+      to a `0` value.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -4847,6 +4852,25 @@ definitions:
         $ref: '#/definitions/v1CanvasSpec'
       state:
         $ref: '#/definitions/v1CanvasState'
+  v1CanvasContainer:
+    type: object
+    properties:
+      name:
+        type: string
+        description: |-
+          Stable identifier of the container.
+          Defaults to "container-<index>" if not provided in the canvas YAML.
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasRow'
+        description: |-
+          Rows in the container. These are always plain rows;
+          a container never holds a tab group or another container.
+    description: |-
+      A named block of rows that viewers see as plain rows.
+      It groups rows so they can be arranged, moved and conditioned together.
   v1CanvasItem:
     type: object
     properties:
@@ -4913,17 +4937,22 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
-        description: Items to render in the row. Empty when the row is a tab group.
+        description: Items to render in the row. Empty when the row is a tab group or a container.
       tabGroup:
         $ref: '#/definitions/v1CanvasTabGroup'
         description: |-
           If set, this row renders a tab group instead of items.
-          A row has either items or a tab_group, never both.
+          A row has exactly one of items, tab_group or container.
+      container:
+        $ref: '#/definitions/v1CanvasContainer'
+        description: |-
+          If set, this row is a container of rows instead of items.
+          A row has exactly one of items, tab_group or container.
       conditionExpression:
         type: string
         description: |-
           Templated boolean expression from the row's `if` property.
-          The row (or tab group) is only shown to viewers for whom it evaluates to true.
+          The row (or tab group, or container) is only shown to viewers for whom it evaluates to true.
   v1CanvasSpec:
     type: object
     properties:
@@ -8462,7 +8491,7 @@ definitions:
         items:
           type: string
         description: |-
-          Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+          Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
           The paths follow the canvas YAML. Only set when include_hidden is true.
   v1ResolveComponentResponse:
     type: object

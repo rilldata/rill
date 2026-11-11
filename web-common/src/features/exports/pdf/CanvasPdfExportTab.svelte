@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import StaticCanvasRow from "@rilldata/web-common/features/canvas/StaticCanvasRow.svelte";
-  import type { Tab } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import StaticRowsBlock from "@rilldata/web-common/features/canvas/StaticRowsBlock.svelte";
+  import type { RowsBlock } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
 
   // One exported tab: a label band naming the tab (captured as its own block,
   // see captureTargetsIn) followed by the tab's rows. The idPrefix namespaces
@@ -13,12 +13,10 @@
     maxWidth,
   }: {
     groupName: string;
-    tab: Tab;
+    tab: RowsBlock;
     components: Map<string, BaseCanvasComponent>;
     maxWidth: number;
   } = $props();
-
-  const rows = $derived(tab.grid);
 </script>
 
 <section
@@ -29,17 +27,14 @@
   <h2>{tab.displayName}</h2>
 </section>
 
-{#each $rows as row, rowIndex (rowIndex)}
-  <StaticCanvasRow
-    {row}
-    {rowIndex}
-    {components}
-    {maxWidth}
-    navigationEnabled={false}
-    lazy={false}
-    idPrefix={`${groupName}-${tab.name}-`}
-  />
-{/each}
+<StaticRowsBlock
+  block={tab}
+  {components}
+  {maxWidth}
+  navigationEnabled={false}
+  lazy={false}
+  idPrefix={`${groupName}-${tab.name}-`}
+/>
 
 <style lang="postcss">
   /* Mimics the live tab strip: the tab's name underlined in the accent color on
