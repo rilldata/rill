@@ -65,6 +65,10 @@ func (q *ColumnTimeseries) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnTimeseries) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnTimeseries) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,
