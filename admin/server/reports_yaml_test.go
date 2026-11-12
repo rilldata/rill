@@ -7,6 +7,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -234,7 +235,7 @@ func TestEmbedReportResources(t *testing.T) {
 	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{})
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 
-	// Reports are dropped, since the embed user controls their queries; for example, when the embed opens a report
+	// Reports are dropped, since the embed user controls their queries
 	res, err = embedReportResources([]database.ResourceName{r1, e1}, &adminv1.ReportOptions{Explore: "e1"})
 	require.NoError(t, err)
 	require.Equal(t, []database.ResourceName{e1}, res)
@@ -265,4 +266,50 @@ func TestEmbedReportResources(t *testing.T) {
 	data, err = s.yamlForManagedReport(opts, "", "ext_abc", "", nil)
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "admin_embed_resources")
+}
+
+// TestMetricsViewForReportQuery tests that the admin service derives the same metrics view from a report's query as the runtime,
+// since the runtime derives the report's access from it.
+func TestMetricsViewForReportQuery(t *testing.T) {
+	tt := []struct {
+		name string
+		args string
+		want string
+	}{
+		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","dimensions":[{"name":"country"}]}`, want: "mv1"},
+		{name: "MetricsViewAggregation", args: `{"instanceId":"default","metricsView":"mv1","measures":[{"name":"total"}]}`, want: "mv1"},
+		{name: "MetricsViewAggregation", args: `{}`, want: ""},
+		{name: "MetricsViewToplist", args: `{"metrics_view_name":"mv1"}`, want: "mv1"},
+		{name: "MetricsViewRows", args: `{"metricsViewName":"mv1"}`, want: "mv1"},
+		{name: "MetricsViewTimeSeries", args: `{"metrics_view_name":"mv1"}`, want: "mv1"},
+		{name: "MetricsViewComparison", args: `{"metricsViewName":"mv1"}`, want: "mv1"},
+	}
+	for _, tc := range tt {
+		got, err := metricsViewForReportQuery(tc.name, tc.args)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, got)
+		want, err := queries.MetricsViewFromQuery(tc.name, tc.args)
+		require.NoError(t, err)
+		require.Equal(t, want, got)
+	}
+
+	// Queries that the runtime rejects are rejected as well
+	invalid := []struct {
+		name string
+		args string
+	}{
+		{name: "MetricsViewAggregation", args: ``},
+		{name: "MetricsViewAggregation", args: `{"metrics_view":`},
+		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","metricsView":"mv2"}`},
+		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","unknown":true}`},
+		{name: "MetricsViewAggregation", args: `{"metrics_view_name":"mv1"}`},
+		{name: "MetricsViewTimeRange", args: `{"metrics_view_name":"mv1"}`},
+		{name: "", args: `{"metrics_view":"mv1"}`},
+	}
+	for _, tc := range invalid {
+		_, err := metricsViewForReportQuery(tc.name, tc.args)
+		require.Error(t, err, "query %q with args %s", tc.name, tc.args)
+		_, err = queries.MetricsViewFromQuery(tc.name, tc.args)
+		require.Error(t, err, "query %q with args %s", tc.name, tc.args)
+	}
 }

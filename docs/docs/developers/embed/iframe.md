@@ -498,7 +498,7 @@ On the open page:
 }
 ```
 
-You can combine `open` with other parameters such as `navigation`, `theme`, and `theme_mode`. When `navigation` is `false`, the iframe is limited to the report and the dashboard it targets.
+You can combine `open` with other parameters such as `navigation`, `theme`, and `theme_mode`. When `navigation` is `false`, the iframe is limited to the dashboard that the report targets, the same as an iframe with that dashboard as its `resource`.
 
 :::note
 Treat the `rill_open` value as opaque and forward it to Rill unchanged. Its format may change over time.

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -622,6 +623,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
 		}
+		// The name is used to look up the report's virtual file, so it must be a plain name and not a path.
+		// Otherwise, it could resolve to another kind of virtual file, whose content the embed user controls.
+		if strings.ContainsAny(open.Name, `/\`) {
+			return nil, status.Error(codes.InvalidArgument, "invalid open: name can't contain slashes")
+		}
 	}
 
 	if !req.Navigation && req.Resource == "" && open == nil {
@@ -675,7 +681,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// When opening a report, the embed opens the explore dashboard it targets.
-	// If navigation is disabled, limit access to the report and its dashboard.
+	// If navigation is disabled, limit access to that dashboard, same as an iframe for the dashboard itself.
 	if open != nil {
 		// The open payload is not signed, so only allow opening a report created by the embed user.
 		// Otherwise, a user could edit the payload to open another user's report and gain access to its dashboard.
@@ -691,10 +697,17 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		// Reports created from an embed only support explore dashboards (see yamlForManagedReport).
 		req.Type = runtime.ResourceKindExplore
 		if !req.Navigation {
-			overrideResources = []database.ResourceName{
-				{Type: runtime.ResourceKindReport, Name: open.Name},
-				{Type: runtime.ResourceKindExplore, Name: embedInfo.explore},
+			// Without a dashboard, there's nothing to limit access to, and an empty list of resources would not limit access at all.
+			if embedInfo.explore == "" {
+				return nil, status.Errorf(codes.FailedPrecondition, "report %q does not open an explore dashboard", open.Name)
 			}
+			// The report itself is not one of the resources: a report gives transitive access to the resources of its query,
+			// which the embed user writes, so it could give access to a metrics view outside of the dashboard.
+			// The embed doesn't need it either, since the runtime lets the creator of a report read it regardless.
+			overrideResources = []database.ResourceName{{
+				Type: runtime.ResourceKindExplore,
+				Name: embedInfo.explore,
+			}}
 		}
 	}
 
@@ -726,6 +739,21 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		opts.forUserAttributes = forVal.Attributes.AsMap()
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+	}
+
+	// The dashboard of an opened report is chosen by the embed user, unlike req.Resource, which is chosen by the embedder.
+	// Limiting the iframe to it replaces the resource restrictions of the user's identity (see issueRuntimeToken),
+	// so it must be a dashboard that an identity with restricted resources (a project member) can access.
+	if open != nil && len(overrideResources) > 0 {
+		user, err := s.resolveEndUser(ctx, proj, opts.forUserID, opts.forUserEmail, opts.forUserAttributes)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range overrideResources {
+			if user.restrictResources && !slices.Contains(user.resources, r) {
+				return nil, status.Errorf(codes.PermissionDenied, "the user does not have access to the dashboard of report %q", open.Name)
+			}
+		}
 	}
 
 	jwt, err := s.issueRuntimeToken(ctx, opts)
