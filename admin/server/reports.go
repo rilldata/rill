@@ -1273,7 +1273,7 @@ func (s *Server) checkEmbedReportQuery(ctx context.Context, depl *database.Deplo
 	if validSpec == nil {
 		return status.Errorf(codes.FailedPrecondition, "explore %q is not valid", opts.Explore)
 	}
-	if metricsView != validSpec.MetricsView {
+	if !sameResourceName(metricsView, validSpec.MetricsView) {
 		return status.Errorf(codes.PermissionDenied, "reports created from this embed can't query metrics view %q, since it's not the metrics view of explore %q", metricsView, opts.Explore)
 	}
 	return nil
@@ -1309,6 +1309,14 @@ func metricsViewForReportQuery(queryName, queryArgsJSON string) (string, error) 
 		return "", fmt.Errorf("invalid args for query %q: %w", queryName, err)
 	}
 	return metricsView(), nil
+}
+
+// sameResourceName returns true if two names identify the same resource of a kind in the runtime.
+// The runtime identifies resources by their lowercased name (see its catalog cache), so names that only differ in case are the same resource.
+// It doesn't use strings.EqualFold, since that also matches names that the runtime keeps as separate resources (such as "ſ" and "s"),
+// which matters where the comparison decides if a name is within the resources someone can access.
+func sameResourceName(a, b string) bool {
+	return strings.ToLower(a) == strings.ToLower(b) // nolint:gocritic,staticcheck // Not equivalent to strings.EqualFold, see above
 }
 
 // parseEmbedResources parses the "admin_embed_resources" annotation of a report created from an embed.

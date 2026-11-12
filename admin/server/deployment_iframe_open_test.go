@@ -160,6 +160,24 @@ measures:
 		require.Equal(t, want.resources, got.resources)
 	}
 
+	// aggregate queries a metrics view in the runtime with an iframe's runtime JWT, as the embed's UI does.
+	conn, err := grpc.NewClient(strings.TrimPrefix(fix.RuntimeURL(), "http://"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	rt := runtimev1.NewRuntimeServiceClient(conn)
+	queries := runtimev1.NewQueryServiceClient(conn)
+	runtimeCtx := func(f *iframe) context.Context {
+		return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+f.accessToken)
+	}
+	aggregate := func(f *iframe, metricsView string) (*runtimev1.MetricsViewAggregationResponse, error) {
+		return queries.MetricsViewAggregation(runtimeCtx(f), &runtimev1.MetricsViewAggregationRequest{
+			InstanceId:  inst.ID,
+			MetricsView: metricsView,
+			Dimensions:  []*runtimev1.MetricsViewAggregationDimension{{Name: "country"}},
+			Measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "total"}},
+		})
+	}
+
 	// The iframes of an embed user who is limited to the explore e1, and of the same user with navigation.
 	limited, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Resource: "e1"})
 	require.NoError(t, err)
@@ -240,23 +258,10 @@ annotations:
 		// The report's query targets a metrics view outside of the explore that the report opens.
 		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "r2")})
 		require.NoError(t, err)
-		conn, err := grpc.NewClient(strings.TrimPrefix(fix.RuntimeURL(), "http://"), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, conn.Close()) })
-		rt := runtimev1.NewRuntimeServiceClient(conn)
-		queries := runtimev1.NewQueryServiceClient(conn)
-		ctx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+got.accessToken)
-		aggregate := func(metricsView string) (*runtimev1.MetricsViewAggregationResponse, error) {
-			return queries.MetricsViewAggregation(ctx, &runtimev1.MetricsViewAggregationRequest{
-				InstanceId:  inst.ID,
-				MetricsView: metricsView,
-				Dimensions:  []*runtimev1.MetricsViewAggregationDimension{{Name: "country"}},
-				Measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "total"}},
-			})
-		}
+		ctx := runtimeCtx(got)
 
 		// The metrics view of the report's query is not accessible, since it's not the metrics view of the explore.
-		resp, err := aggregate("mv2")
+		resp, err := aggregate(got, "mv2")
 		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
 		_, err = rt.GetExplore(ctx, &runtimev1.GetExploreRequest{InstanceId: inst.ID, Name: "e2"})
 		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
@@ -269,7 +274,7 @@ annotations:
 		require.NoError(t, err)
 		_, err = queries.MetricsViewTimeRange(ctx, &runtimev1.MetricsViewTimeRangeRequest{InstanceId: inst.ID, MetricsViewName: "mv1"})
 		require.NoError(t, err)
-		resp, err = aggregate("mv1")
+		resp, err = aggregate(got, "mv1")
 		require.NoError(t, err)
 		require.Len(t, resp.Data, 1)
 	})
@@ -334,6 +339,20 @@ annotations:
 		require.True(t, proto.Equal(restricted.claims.AdditionalRules[0], got.claims.AdditionalRules[0]))
 		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-e2")})
 		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
+
+		// The runtime identifies resources by their lowercased name, so a report that names the member's dashboard in another case opens as well.
+		// Its iframe is limited to the same dashboard, and a report that names another dashboard in another case still can't be opened.
+		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-case-e1.yaml", reportYAML(restricted.claims.UserID, "mv1", "E1"))
+		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-case-e2.yaml", reportYAML(restricted.claims.UserID, "mv2", "E2"))
+		got, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-case-e1")})
+		require.NoError(t, err)
+		resp, err := aggregate(got, "mv1")
+		require.NoError(t, err)
+		require.Len(t, resp.Data, 1)
+		resp, err = aggregate(got, "mv2")
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
+		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-case-e2")})
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
 	})
 
 	// reportOptions returns the options of a report as the embed's UI creates it.
@@ -385,7 +404,7 @@ annotations:
 		}
 
 		// Queries on a metrics view outside of the explore are rejected, in both JSON forms of the field name.
-		for _, args := range []string{`{"metrics_view":"mv2"}`, `{"metricsView":"mv2"}`} {
+		for _, args := range []string{`{"metrics_view":"mv2"}`, `{"metricsView":"mv2"}`, `{"metricsView":"MV2"}`} {
 			err := create(ctx, embed, reportOptions("Created", "e1", args))
 			require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
 			err = edit(ctx, embed, "r1", reportOptions("Edited", "e1", args))
@@ -412,6 +431,31 @@ annotations:
 		})
 		requireReportSaved(t, "Edited from limited embed", func(ctx context.Context) error {
 			return edit(ctx, embed, "r1", reportOptions("Edited from limited embed", "e1", args))
+		})
+
+		// The runtime identifies resources by their lowercased name, so the explore's metrics view can be named in another case.
+		// The limited iframe can query it under that name, so a report that does is accepted as well.
+		resp, err := aggregate(limited, "MV1")
+		require.NoError(t, err)
+		require.Len(t, resp.Data, 1)
+		resp, err = aggregate(limited, "MV2")
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
+		args = `{"metricsView":"MV1","dimensions":[{"name":"country"}],"measures":[{"name":"total"}]}`
+		requireReportSaved(t, "Created with another case", func(ctx context.Context) error {
+			return create(ctx, embed, reportOptions("Created with another case", "e1", args))
+		})
+		requireReportSaved(t, "Edited with another case", func(ctx context.Context) error {
+			return edit(ctx, embed, "r1", reportOptions("Edited with another case", "e1", args))
+		})
+
+		// An embed that names its explore in another case is limited to the same explore, so its reports are limited to the same metrics view.
+		otherCase, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Resource: "E1"})
+		require.NoError(t, err)
+		embed = fix.NewClient(t, otherCase.adminToken)
+		err = create(ctx, embed, reportOptions("Created", "E1", `{"metricsView":"mv2"}`))
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
+		requireReportSaved(t, "Created from embed with another case", func(ctx context.Context) error {
+			return create(ctx, embed, reportOptions("Created from embed with another case", "E1", args))
 		})
 	})
 

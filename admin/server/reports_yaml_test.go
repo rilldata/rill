@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
@@ -312,4 +313,22 @@ func TestMetricsViewForReportQuery(t *testing.T) {
 		_, err = queries.MetricsViewFromQuery(tc.name, tc.args)
 		require.Error(t, err, "query %q with args %s", tc.name, tc.args)
 	}
+}
+
+// TestSameResourceName tests that resource names are compared the way the runtime identifies resources, which is by their lowercased name.
+func TestSameResourceName(t *testing.T) {
+	require.True(t, sameResourceName("mv1", "mv1"))
+	require.True(t, sameResourceName("MV1", "mv1"))
+	require.True(t, sameResourceName("Mv1", "mV1"))
+	require.False(t, sameResourceName("mv1", "mv2"))
+	require.False(t, sameResourceName("MV1", "mv2"))
+	require.False(t, sameResourceName("mv1", "mv1 "))
+	require.False(t, sameResourceName("mv1", ""))
+
+	// Names that are equal under Unicode case folding, but that the runtime keeps as separate resources, are not the same.
+	// Otherwise, a name could pass for a resource that someone can access while identifying another one.
+	require.True(t, strings.EqualFold("ſales", "sales"))
+	require.False(t, sameResourceName("ſales", "sales"))
+	require.True(t, strings.EqualFold("µ", "μ"))
+	require.False(t, sameResourceName("µ", "μ"))
 }

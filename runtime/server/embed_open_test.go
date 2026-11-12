@@ -162,6 +162,27 @@ annotations:
 		requireForbidden(t, getExplore(ctx, "e2"))
 	})
 
+	t.Run("resource names are matched by their lowercased form", func(t *testing.T) {
+		// The admin service compares resource names the same way when it validates reports and open links for limited embeds.
+		// Naming the explore or its metrics view in another case identifies the same resources, and doesn't give access to other ones.
+		for _, ctx := range []context.Context{
+			embedCtx("ext_owner", e1),
+			embedCtx("ext_owner", &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "E1"}),
+		} {
+			require.NoError(t, getExplore(ctx, "E1"))
+			for _, name := range []string{"mv1", "MV1"} {
+				rows, err := aggregate(ctx, name)
+				require.NoError(t, err)
+				require.Equal(t, 1, rows)
+			}
+			for _, name := range []string{"mv2", "MV2"} {
+				_, err := aggregate(ctx, name)
+				requireForbidden(t, err)
+			}
+			requireForbidden(t, getExplore(ctx, "E2"))
+		}
+	})
+
 	t.Run("only the creator can read a report", func(t *testing.T) {
 		requireForbidden(t, getResource(embedCtx("ext_owner", e1), runtime.ResourceKindReport, "r3"))
 		requireForbidden(t, getResource(embedCtx("ext_other", e1), runtime.ResourceKindReport, "r1"))

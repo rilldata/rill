@@ -750,7 +750,9 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			return nil, err
 		}
 		for _, r := range overrideResources {
-			if user.restrictResources && !slices.Contains(user.resources, r) {
+			if user.restrictResources && !slices.ContainsFunc(user.resources, func(ur database.ResourceName) bool {
+				return ur.Type == r.Type && sameResourceName(ur.Name, r.Name)
+			}) {
 				return nil, status.Errorf(codes.PermissionDenied, "the user does not have access to the dashboard of report %q", open.Name)
 			}
 		}
