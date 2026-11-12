@@ -19,7 +19,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	sf "github.com/snowflakedb/gosnowflake"
+	sf "github.com/snowflakedb/gosnowflake/v2"
+	"github.com/snowflakedb/gosnowflake/v2/arrowbatches"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
@@ -77,7 +78,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	ctx = sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator)
+	ctx = sf.WithArrowAllocator(arrowbatches.WithArrowBatches(ctx), memory.DefaultAllocator)
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -103,7 +104,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	batches, err := rows.(sf.SnowflakeRows).GetArrowBatches()
+	batches, err := arrowbatches.GetArrowBatches(rows.(sf.SnowflakeRows))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ type fileIterator struct {
 	db      *sql.DB
 	conn    *sql.Conn
 	rows    sqld.Rows
-	batches []*sf.ArrowBatch
+	batches []*arrowbatches.ArrowBatch
 	logger  *zap.Logger
 	tempDir string
 	// Computed while iterating
