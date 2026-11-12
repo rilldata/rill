@@ -90,6 +90,48 @@ DATABRICKS_DSN=token:dapi...@dbc-xxxxxxxx-xxxx.cloud.databricks.com:443/sql/1.0/
 
 See the [Databricks SQL Go driver](https://github.com/databricks/databricks-sql-go) documentation for the full list of supported DSN parameters.
 
+## Per-user OAuth (Rill Cloud)
+
+By default, all dashboard queries run with the connector's token. With per-user OAuth, each viewer signs in to Databricks once, and their dashboard queries run with their own Databricks token, so Unity Catalog grants, row filters, and column masks apply per viewer.
+
+**Step 1: Register an app connection in Databricks**
+
+A Databricks account admin does this in the account console:
+
+1. Go to **Settings → App connections** and click **Add connection**.
+2. Set the redirect URL to `https://admin.rilldata.com/connectors/oauth/callback`.
+3. Select the `sql` scope.
+4. Generate a client secret and copy the client ID and secret.
+5. Set the refresh token TTL to 90 days. With the 7-day default, viewers must sign in again weekly.
+
+**Step 2: Configure the connector**
+
+```yaml
+type: connector
+driver: databricks
+
+host: "dbc-xxxxxxxx-xxxx.cloud.databricks.com"
+http_path: "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx"
+token: "{{ .env.DATABRICKS_TOKEN }}"  # service credential
+auth: oauth
+oauth_client_id: "{{ .env.DATABRICKS_OAUTH_CLIENT_ID }}"
+oauth_client_secret: "{{ .env.DATABRICKS_OAUTH_CLIENT_SECRET }}"
+oauth_scopes: [sql, offline_access]  # optional, this is the default
+```
+
+```bash
+DATABRICKS_OAUTH_CLIENT_ID=...
+DATABRICKS_OAUTH_CLIENT_SECRET=dose...
+```
+
+`auth: oauth` requires `host`, `http_path`, `token`, `oauth_client_id`, and `oauth_client_secret`, and cannot be combined with `dsn`. Rill still uses `token` to parse and validate your project, such as reconciling models and metrics views.
+
+Viewers who have not signed in see a prompt to sign in to Databricks in place of the data. Signing in opens a popup; the data loads when it completes, without a page refresh. Viewers sign in separately in each project, and are prompted again if the OAuth settings change or Databricks rejects the token refresh.
+
+:::note Not supported yet
+Alerts, scheduled reports, embedded dashboards, and "View as" do not work with `auth: oauth`; queries from them fail instead of using the service credential. Caching is disabled for this connector.
+:::
+
 ## Create Your First Model
 
 Once your connector is configured, create a model to define what data to pull.
