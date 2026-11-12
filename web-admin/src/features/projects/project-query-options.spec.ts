@@ -9,6 +9,7 @@ import {
   getProjectQueryOptions,
 } from "@rilldata/web-admin/features/projects/project-query-options";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { JWT_REFRESH_TIMEOUT } from "@rilldata/web-common/runtime-client/constants";
 import type { JwtRefresher } from "@rilldata/web-common/runtime-client/v2";
 import { QueryObserver } from "@tanstack/svelte-query";
 import { CanceledError } from "axios";
@@ -134,25 +135,16 @@ describe("createRuntimeJwtRefresher", () => {
       return refresh;
     }
 
-    /** Makes the first GetProject attempt hang until it is aborted, like an axios request on a dead connection. */
-    function stallFirstAttempt(): AbortSignal[] {
+    /** Makes the first GetProject attempts hang until they are aborted, like axios requests on a dead connection. */
+    function stallAttempts(count: number): AbortSignal[] {
       vi.useFakeTimers();
-      // Node runs AbortSignal.timeout on its own timer, out of the fake timers' reach
-      vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
-        const controller = new AbortController();
-        setTimeout(
-          () => controller.abort(new DOMException("Timed out", "TimeoutError")),
-          ms,
-        );
-        return controller.signal;
-      });
       const signals: AbortSignal[] = [];
       getProject
         .mockReset()
         .mockImplementation((_org, _project, _params, signal) => {
           if (!signal) throw new Error("expected the query client's signal");
           signals.push(signal);
-          if (signals.length > 1) return Promise.resolve({ jwt: "fresh" });
+          if (signals.length > count) return Promise.resolve({ jwt: "fresh" });
           // Axios rejects with a CanceledError once the signal aborts
           return new Promise((_, reject) =>
             signal.addEventListener("abort", () => reject(new CanceledError())),
@@ -184,10 +176,10 @@ describe("createRuntimeJwtRefresher", () => {
     });
 
     it("abandons an attempt that stalls and retries it", async () => {
-      const signals = stallFirstAttempt();
+      const signals = stallAttempts(1);
 
       const jwt = userRefresher()();
-      await vi.advanceTimersByTimeAsync(14_000);
+      await vi.advanceTimersByTimeAsync(11_000);
       expect(getProject).toHaveBeenCalledTimes(1);
 
       await vi.advanceTimersByTimeAsync(5_000);
@@ -196,8 +188,34 @@ describe("createRuntimeJwtRefresher", () => {
       expect(getProject).toHaveBeenCalledTimes(2);
     });
 
+    it("aborts the request when its query is cancelled", async () => {
+      const signals = stallAttempts(1);
+
+      const settled = userRefresher()().catch(() => {});
+      await queryClient.cancelQueries({
+        queryKey: getAdminServiceGetProjectQueryKey("org", "proj"),
+      });
+      await settled;
+
+      expect(signals[0].aborted).toBe(true);
+      expect(getProject).toHaveBeenCalledTimes(1);
+    });
+
+    it("gives up on a refresh that keeps stalling before the requests waiting for it do", async () => {
+      stallAttempts(Infinity);
+
+      let failure: unknown;
+      userRefresher()().catch((err: unknown) => {
+        failure = err;
+      });
+      await vi.advanceTimersByTimeAsync(JWT_REFRESH_TIMEOUT - 1);
+
+      expect(failure).toBeInstanceOf(CanceledError);
+      expect(getProject).toHaveBeenCalledTimes(4);
+    });
+
     it("is not held up by a stalled poll that it joins", async () => {
-      const signals = stallFirstAttempt();
+      const signals = stallAttempts(1);
       // The layout's query, e.g. a scheduled poll left hanging by a laptop sleep
       const poll = new QueryObserver(queryClient, {
         queryKey: getAdminServiceGetProjectQueryKey("org", "proj"),
@@ -211,7 +229,7 @@ describe("createRuntimeJwtRefresher", () => {
 
       // The refresh joins the poll's request instead of sending its own
       const jwt = userRefresher()();
-      await vi.advanceTimersByTimeAsync(9_000);
+      await vi.advanceTimersByTimeAsync(6_000);
       expect(getProject).toHaveBeenCalledTimes(1);
 
       await vi.advanceTimersByTimeAsync(5_000);

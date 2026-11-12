@@ -14,6 +14,7 @@ import { waitUntil } from "../../lib/waitUtils";
 import {
   RUNTIME_ACCESS_TOKEN_DEFAULT_TTL,
   JWT_EXPIRY_WARNING_WINDOW,
+  JWT_REFRESH_TIMEOUT,
   CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
 } from "../constants";
 import { createRequestAttributionInterceptor } from "./request-attribution";
@@ -28,9 +29,6 @@ export type AuthContext = "user" | "mock" | "magic" | "embed";
  * is up to the refresher; in Rill Cloud the query client does all three.
  */
 export type JwtRefresher = () => Promise<string | undefined>;
-
-// How long a request waits for a fresh JWT before it fails.
-const JWT_REFRESH_TIMEOUT = 60_000;
 
 export class RuntimeClient {
   readonly host: string;

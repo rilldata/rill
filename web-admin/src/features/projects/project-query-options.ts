@@ -30,7 +30,9 @@ const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; //
 // Retries of a request for a JWT that failed with a network or server error; delays come from the query client's retryDelay.
 const JwtRequestMaxRetries = 3;
 // A request for a JWT still pending after this long is aborted and retried; a stalled request can take minutes to fail.
-const JwtRequestAttemptTimeout = 15_000;
+// Four attempts and the query client's retry delays (1, 2 and 4 seconds) take at most 55 seconds, so a refresh that
+// keeps stalling fails before the requests waiting for it give up (JWT_REFRESH_TIMEOUT).
+const JwtRequestAttemptTimeout = 12_000;
 
 const baseGetProjectQueryOptions: Partial<
   CreateQueryOptions<V1GetProjectResponse, RpcStatus>
@@ -182,13 +184,25 @@ function jwtRequestOptions<TData>(
   fetchData: (signal: AbortSignal) => Promise<TData>,
 ) {
   return {
-    queryFn: ({ signal }: QueryFunctionContext) =>
-      fetchData(
-        AbortSignal.any([
-          signal,
-          AbortSignal.timeout(JwtRequestAttemptTimeout),
-        ]),
-      ),
+    queryFn: async ({ signal }: QueryFunctionContext) => {
+      // Aborts when the query is cancelled or the attempt runs out of time. AbortSignal.any would need Safari 17.4.
+      const attempt = new AbortController();
+      const cancel = () => attempt.abort(signal.reason);
+      signal.addEventListener("abort", cancel);
+      const deadline = setTimeout(
+        () =>
+          attempt.abort(
+            new DOMException("The JWT request timed out", "TimeoutError"),
+          ),
+        JwtRequestAttemptTimeout,
+      );
+      try {
+        return await fetchData(attempt.signal);
+      } finally {
+        clearTimeout(deadline);
+        signal.removeEventListener("abort", cancel);
+      }
+    },
     retry: (failureCount: number, error: RpcStatus) => {
       const status = extractErrorStatusCode(error);
       return (
