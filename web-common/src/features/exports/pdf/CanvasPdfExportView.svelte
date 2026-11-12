@@ -3,6 +3,7 @@
   import StaticCanvasRow from "@rilldata/web-common/features/canvas/StaticCanvasRow.svelte";
   import StaticRowsBlock from "@rilldata/web-common/features/canvas/StaticRowsBlock.svelte";
   import { layoutBlockKey } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
+  import CanvasPdfExportControls from "./CanvasPdfExportControls.svelte";
   import CanvasPdfExportHeader from "./CanvasPdfExportHeader.svelte";
   import CanvasPdfExportTabGroup from "./CanvasPdfExportTabGroup.svelte";
 
@@ -13,16 +14,16 @@
   // state. Tab groups are flattened for print: every exported tab (all tabs, or
   // only each group's active one — see exportAllTabs) renders as a label band
   // followed by its rows, stacked in strip order. Containers render their rows
-  // like free rows, as viewers see them.
+  // like free rows, as viewers see them. Viewer controls render as text: the
+  // canvas's in the header, a container's or tab's in a band above its rows.
   // See captureCanvasBlocks, which reads from #canvas-pdf-export-view.
   export let canvasName: string;
   export let instanceId: string;
   // Render width in px; matches the on-screen content width for fidelity.
   export let width: number;
 
-  $: ({
-    canvasEntity: { componentsStore, _rows, layout, exportAllTabs },
-  } = getCanvasStore(canvasName, instanceId));
+  $: ({ canvasEntity } = getCanvasStore(canvasName, instanceId));
+  $: ({ componentsStore, _rows, layout, exportAllTabs } = canvasEntity);
 
   $: components = $componentsStore;
   $: rows = $_rows;
@@ -45,12 +46,18 @@
     {#each blocks as block (layoutBlockKey(block))}
       {#if block.kind === "tab-group"}
         <CanvasPdfExportTabGroup
+          {canvasEntity}
           group={block.group}
           {components}
           maxWidth={width}
           allTabs={$exportAllTabs}
         />
       {:else if block.kind === "container"}
+        <CanvasPdfExportControls
+          {canvasEntity}
+          scopes={[[block.container.name]]}
+          maxWidth={width}
+        />
         <StaticRowsBlock
           block={block.container}
           {components}

@@ -94,7 +94,7 @@ export abstract class BaseChart<
         : undefined)) as ChartType;
     this.chartType = writable(this.type);
     this.querySpecStore = derived(
-      [this.specStore, parent.exactMeasures, parent.specStore],
+      [this.viewSpecStore, parent.exactMeasures, parent.specStore],
       ([spec]) => this.withExactMeasures(spec),
     );
   }

@@ -260,7 +260,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     this.config = createPivotConfig(
       this.parent,
       this.id,
-      this.specStore,
+      this.viewSpecStore,
       this.pivotState,
       this.timeAndFilterStore,
       this.selfFilteredDimensions,
@@ -268,7 +268,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     this.pivotDataStore = usePivotForCanvas(
       this.parent,
-      derived(this.specStore, ($specStore) => $specStore.metrics_view),
+      derived(this.viewSpecStore, ($specStore) => $specStore.metrics_view),
       this.config,
       this.dataEnabled,
     );

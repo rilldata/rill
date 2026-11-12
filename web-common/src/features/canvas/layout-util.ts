@@ -12,7 +12,7 @@ import { ResourceKind } from "../entity-management/resource-selectors";
 import { buildDefaultArgs, getDeclaredParams } from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
-import { combineConditions } from "./stores/block-edit";
+import { combineConditions, copyName } from "./stores/block-edit";
 
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
@@ -103,6 +103,18 @@ export function rowsGuard(value: unknown): unknown[] {
   } else {
     return value.items;
   }
+}
+
+// Gives a copied item a name of its own, if the original has one.
+function renameCopiedItem(copy: unknown, siblings: unknown[]) {
+  const named = copy as { name?: unknown };
+  if (!named || typeof named.name !== "string" || !named.name) return;
+  const taken = new Set(
+    siblings
+      .map((item) => (item as { name?: unknown } | null)?.name)
+      .filter((name): name is string => typeof name === "string"),
+  );
+  named.name = copyName(named.name, taken);
 }
 
 export function mapGuard(value: unknown[]): Array<YAMLRow> {
@@ -456,6 +468,11 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           if (sourceRow !== destinationRow && itemCarrier) {
             copy = itemCarrier(copy, sourceRow, destinationRow);
           }
+          // An item's name is the URL key of its viewer controls and must stay unique.
+          renameCopiedItem(
+            copy,
+            newArray.flatMap((row) => row.items ?? []),
+          );
           destinationRow?.items?.splice(destination.col, 0, copy);
           touchedRows[rowIndex] = true;
           break;

@@ -12,6 +12,7 @@
   import type { CanvasEntity } from "./stores/canvas-entity";
   import type { RowsBlock } from "./stores/layout-blocks";
   import VisibilityBadge from "./VisibilityBadge.svelte";
+  import LevelControls from "./controls/LevelControls.svelte";
 
   // A container in the editor: the shared block region in its dashed variant, with a chip
   // in the header band that names the container and holds its grip, visibility badge and
@@ -114,6 +115,8 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
+      <!-- The container's viewer controls, which viewers see above its rows. -->
+      <LevelControls canvasEntity={canvas} scopes={[[container.name]]} />
     </div>
   {/snippet}
 </EditableBlockRegion>
@@ -121,7 +124,7 @@
 <style lang="postcss">
   /* The band above the rows that holds the chip; px-2.5 lines the chip up with the cards. */
   .header {
-    @apply flex h-7 w-full flex-none items-center px-2.5;
+    @apply flex min-h-7 w-full flex-none items-center px-2.5;
   }
 
   .chip {

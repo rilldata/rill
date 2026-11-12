@@ -76,6 +76,9 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of the canvas editor's options that create containers (add a container, wrap a row in one);
 	// containers already in the YAML render and can be managed regardless
 	"canvas_containers": "false",
+	// Controls visibility of viewer controls on canvas dashboards (the control bars and the editor's options for them);
+	// with the flag off, controls in the YAML still parse and their defaults apply
+	"canvas_controls": "false",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
 	// Controls visibility of standalone custom viz components (creation, canvas references, extraction, examples gallery)

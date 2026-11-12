@@ -2842,6 +2842,17 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   themeMode = "";
 
   /**
+   * Values to fix for viewer controls of canvas dashboards, keyed by the control's URL key without the `c.` prefix
+   * (e.g. `publisher` for a canvas control, `deep_dive.publisher` for a control of the container `deep_dive`).
+   * Values use the format of the control's URL param: several values are comma-separated, each URI-encoded.
+   * A locked control applies its value and is hidden from the viewer.
+   * It is a presentation setting, not an access restriction: use `attributes` and security policies to restrict data.
+   *
+   * @generated from field: map<string, string> locked_controls = 21;
+   */
+  lockedControls: { [key: string]: string } = {};
+
+  /**
    * Navigation denotes whether navigation between different resources should be enabled in the embed.
    *
    * @generated from field: bool navigation = 13;
@@ -2900,6 +2911,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "locked_controls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "hide_navigation_bar", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },

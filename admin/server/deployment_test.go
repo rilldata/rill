@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"encoding/json"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -177,6 +178,31 @@ func TestDeploymentJWTs(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Empty(t, decodeJWT(t, iframe.AccessToken).Subject)
+	})
+
+	t.Run("iframe passes locked controls to the UI", func(t *testing.T) {
+		iframe, err := u1Client.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:            "jwt-test",
+			Project:        "jwt-project",
+			Type:           "canvas",
+			Resource:       "bids_canvas",
+			LockedControls: map[string]string{"deep_dive.publisher": "Acme,Globex%20Inc"},
+		})
+		require.NoError(t, err)
+		src, err := url.Parse(iframe.IframeSrc)
+		require.NoError(t, err)
+		require.JSONEq(t, `{"deep_dive.publisher":"Acme,Globex%20Inc"}`, src.Query().Get("locked_controls"))
+
+		// Without locked controls, the param is left out.
+		iframe, err = u1Client.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:        "jwt-test",
+			Project:    "jwt-project",
+			Navigation: true,
+		})
+		require.NoError(t, err)
+		src, err = url.Parse(iframe.IframeSrc)
+		require.NoError(t, err)
+		require.False(t, src.Query().Has("locked_controls"))
 	})
 }
 

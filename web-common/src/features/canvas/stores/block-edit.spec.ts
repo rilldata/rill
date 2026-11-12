@@ -717,3 +717,30 @@ describe("combineConditions", () => {
     expect(combineConditions(false, "a")).toBe("(false) AND (a)");
   });
 });
+
+describe("duplicateBlock with named items", () => {
+  it("gives the copied items names of their own", () => {
+    const doc = parseDocument(`rows:
+  - items:
+      - name: chart_copy
+        markdown: { content: a }
+  - name: section
+    controls:
+      - filter: publisher
+    rows:
+      - items:
+          - name: chart
+            controls:
+              - filter: domain
+            markdown: { content: b }
+`);
+    duplicateBlock(doc, 1);
+    const rows = doc.toJSON().rows;
+    expect(rows[1].rows[0].items[0].name).toBe("chart");
+    // "chart_copy" is taken by another item, so the copy is numbered.
+    expect(rows[2].rows[0].items[0].name).toBe("chart_copy2");
+    expect(rows[2].controls).toEqual([{ filter: "publisher" }]);
+    expect(rows[2].rows[0].items[0].controls).toEqual([{ filter: "domain" }]);
+    expect(rows[2].name).not.toBe("section");
+  });
+});

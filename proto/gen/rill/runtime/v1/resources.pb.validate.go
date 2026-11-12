@@ -11231,6 +11231,40 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetControls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasSpecValidationError{
+					field:  fmt.Sprintf("Controls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
 	}
@@ -11722,6 +11756,40 @@ func (m *CanvasContainer) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetControls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasContainerValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasContainerValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasContainerValidationError{
+					field:  fmt.Sprintf("Controls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return CanvasContainerMultiError(errors)
 	}
@@ -11850,6 +11918,40 @@ func (m *CanvasTabGroup) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return CanvasTabGroupValidationError{
 					field:  fmt.Sprintf("Tabs[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetControls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasTabGroupValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasTabGroupValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasTabGroupValidationError{
+					field:  fmt.Sprintf("Controls[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -11998,6 +12100,40 @@ func (m *CanvasTab) validate(all bool) error {
 
 	// no validation rules for ConditionExpression
 
+	for idx, item := range m.GetControls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasTabValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasTabValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasTabValidationError{
+					field:  fmt.Sprintf("Controls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return CanvasTabMultiError(errors)
 	}
@@ -12134,6 +12270,44 @@ func (m *CanvasItem) validate(all bool) error {
 
 	// no validation rules for ConditionExpression
 
+	// no validation rules for Name
+
+	for idx, item := range m.GetControls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  fmt.Sprintf("Controls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasItemValidationError{
+					field:  fmt.Sprintf("Controls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for IgnoreAllControls
+
 	if m.Width != nil {
 		// no validation rules for Width
 	}
@@ -12214,6 +12388,120 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CanvasItemValidationError{}
+
+// Validate checks the field values on CanvasControl with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CanvasControl) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasControl with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CanvasControlMultiError, or
+// nil if none found.
+func (m *CanvasControl) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasControl) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Kind
+
+	// no validation rules for Target
+
+	// no validation rules for Label
+
+	// no validation rules for Multiple
+
+	// no validation rules for Display
+
+	// no validation rules for Fields
+
+	if len(errors) > 0 {
+		return CanvasControlMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasControlMultiError is an error wrapping multiple validation errors
+// returned by CanvasControl.ValidateAll() if the designated constraints
+// aren't met.
+type CanvasControlMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasControlMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasControlMultiError) AllErrors() []error { return m }
+
+// CanvasControlValidationError is the validation error returned by
+// CanvasControl.Validate if the designated constraints aren't met.
+type CanvasControlValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasControlValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasControlValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasControlValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasControlValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasControlValidationError) ErrorName() string { return "CanvasControlValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CanvasControlValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasControl.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasControlValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasControlValidationError{}
 
 // Validate checks the field values on CanvasPreset with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

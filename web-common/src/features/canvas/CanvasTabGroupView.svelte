@@ -5,6 +5,8 @@
   import RowWrapper from "./RowWrapper.svelte";
   import StaticRowsBlock from "./StaticRowsBlock.svelte";
   import type { TabGroup } from "./stores/tab-group";
+  import LevelControls from "./controls/LevelControls.svelte";
+  import type { CanvasEntity } from "./stores/canvas-entity";
 
   export let group: TabGroup;
   export let maxWidth: number;
@@ -13,6 +15,8 @@
   export let navigationEnabled: boolean = true;
   export let activeComponentId: string | null = null;
   export let onSelect: ((tabName: string) => void) | undefined = undefined;
+  // Set to show the viewer controls of the group and of its active tab.
+  export let canvasEntity: CanvasEntity | undefined = undefined;
 
   $: tabs = group.tabs;
   $: activeTabIndex = group.activeTabIndex;
@@ -31,6 +35,15 @@
   <ItemWrapper fitContent zIndex={0}>
     <div class="tab-group-region">
       <CanvasTabStrip {group} {maxWidth} {onSelect} />
+      {#if canvasEntity}
+        <LevelControls
+          {canvasEntity}
+          scopes={[
+            [group.name],
+            ...(activeTab ? [[group.name, activeTab.name]] : []),
+          ]}
+        />
+      {/if}
 
       {#if activeTab && activeRows}
         <StaticRowsBlock

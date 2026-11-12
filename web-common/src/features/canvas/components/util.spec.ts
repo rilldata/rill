@@ -91,6 +91,10 @@ function viewerCanvasEntity(): CanvasEntity {
     exactMeasures: store(),
     exportMode: writable(false),
     currentExactMeasures: () => [],
+    controls: { forPath: () => writable([]) },
+    metricsView: {
+      getMetricsViewFromName: () => writable({ metricsView: undefined }),
+    },
     timeManager: {
       createLocalTimeState: () => localTimeControls,
       largestMinTimeGrain: store(),

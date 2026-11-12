@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -804,6 +805,15 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.State != "" {
 		iframeQuery["state"] = req.State
+	}
+
+	// The UI applies locked controls and hides them from the viewer.
+	if len(req.LockedControls) > 0 {
+		lockedControls, err := json.Marshal(req.LockedControls)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		iframeQuery["locked_controls"] = string(lockedControls)
 	}
 
 	if req.ExternalUserId != "" {

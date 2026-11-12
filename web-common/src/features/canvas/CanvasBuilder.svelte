@@ -20,6 +20,8 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import EditableCanvasContainer from "./EditableCanvasContainer.svelte";
+  import ChangedControls from "./controls/ChangedControls.svelte";
+  import LevelControls from "./controls/LevelControls.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
@@ -959,10 +961,13 @@
   builder
   bind:clientWidth
 >
+  <ChangedControls {canvasEntity} {maxWidth} />
+  <LevelControls {canvasEntity} scopes={[[]]} {maxWidth} />
   {#each blocks as block, blockIndex (layoutBlockKey(block))}
     {#if block.kind === "tab-group"}
       <EditableCanvasTabGroup
         group={block.group}
+        canvas={canvasEntity}
         blockIndex={block.rowIndex}
         zIndex={blocks.length - blockIndex}
         isLastBlock={blockIndex === blocks.length - 1}

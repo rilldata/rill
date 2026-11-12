@@ -3,6 +3,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import CanvasPdfExportControls from "./CanvasPdfExportControls.svelte";
 
   // Off-screen, read-only render of the canvas's active time range and filters.
   // It mirrors the explore "Download as PNG" summary so the PDF capture shows a
@@ -13,6 +14,8 @@
     instanceId,
     maxWidth,
   }: { canvasName: string; instanceId: string; maxWidth: number } = $props();
+
+  let { canvasEntity } = $derived(getCanvasStore(canvasName, instanceId));
 
   let {
     canvasEntity: {
@@ -62,4 +65,7 @@
       ariaLabel={undefined}
     />
   {/if}
+
+  <!-- The canvas's viewer controls, as text. -->
+  <CanvasPdfExportControls {canvasEntity} scopes={[[]]} inline />
 </div>

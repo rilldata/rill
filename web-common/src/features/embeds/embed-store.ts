@@ -27,6 +27,11 @@ export class EmbedStore {
   public readonly theme: string | null;
   public readonly themeMode: string | null;
   public readonly externalUserId: string | null;
+  /**
+   * Canvas viewer controls the embedding page fixed (`locked_controls` in the iframe request):
+   * control key to value, in the format of the `c.` URL params. Viewers don't see these controls.
+   */
+  public readonly lockedControls: Record<string, string>;
   public readonly embedId: string;
 
   /**
@@ -63,6 +68,9 @@ export class EmbedStore {
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
     this.externalUserId = url.searchParams.get("external_user_id");
+    this.lockedControls = parseLockedControls(
+      url.searchParams.get("locked_controls"),
+    );
     this.embedId = `embed-${guidGenerator()}`;
 
     if (!this.instanceId) {
@@ -76,5 +84,25 @@ export class EmbedStore {
     }
 
     dynamicHeight.set(url.searchParams.get("dynamic_height") === "true");
+  }
+}
+
+/** Parses the `locked_controls` iframe param: a JSON object of control key to value. */
+export function parseLockedControls(
+  raw: string | null,
+): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+  } catch {
+    return {};
   }
 }

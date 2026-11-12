@@ -7,6 +7,8 @@
   import { unwrapRows } from "../stores/block-edit";
   import type { CanvasEntity } from "../stores/canvas-entity";
   import type { RowsBlock } from "../stores/layout-blocks";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ViewerControlsEditor from "../controls/editor/ViewerControlsEditor.svelte";
   import BlockEditor, { applyCanvasEdit } from "./BlockEditor.svelte";
 
   // The inspector of a container: the shared block inspector, plus Ungroup.
@@ -23,6 +25,8 @@
     fileArtifact: FileArtifact;
     autoSave: boolean;
   } = $props();
+
+  const { canvasControls } = featureFlags;
 
   // Replace the container with its rows, which keep its condition (see unwrapRows).
   async function ungroup() {
@@ -42,6 +46,13 @@
   {fileArtifact}
   {autoSave}
 >
+  {#if $canvasControls}
+    <ViewerControlsEditor
+      {canvas}
+      path={["rows", blockIndex]}
+      hint={m.canvas_viewer_controls_hint_container()}
+    />
+  {/if}
   {#snippet actions()}
     <Button type="secondary" onClick={ungroup}>
       <Ungroup size="14px" />

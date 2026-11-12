@@ -220,6 +220,48 @@ function setInMapBeforeContent(
  * copied; inline component definitions are position-keyed, so the parser derives fresh names
  * for the copies. Returns the copy's name, or undefined if the entry is not a block.
  */
+/** The name for a copy of a named item: `<name>_copy`, numbered if that is taken. */
+export function copyName(name: string, taken: Set<string>): string {
+  let candidate = `${name}_copy`;
+  for (let n = 2; taken.has(candidate); n++) candidate = `${name}_copy${n}`;
+  return candidate;
+}
+
+// The names of all items under a canvas (or block) JSON value.
+function itemNames(value: unknown, names = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    value.forEach((v) => itemNames(v, names));
+  } else if (value && typeof value === "object") {
+    const entry = value as Record<string, unknown>;
+    for (const item of Array.isArray(entry.items) ? entry.items : []) {
+      const name = (item as { name?: unknown } | null)?.name;
+      if (typeof name === "string" && name) names.add(name);
+    }
+    itemNames(entry.rows, names);
+    itemNames(entry.tabs, names);
+  }
+  return names;
+}
+
+// Renames the named items in a block's JSON so they don't clash with the taken names.
+function renameItemsInCopy<T>(value: T, taken: Set<string>): T {
+  if (Array.isArray(value)) {
+    value.forEach((v) => renameItemsInCopy(v, taken));
+  } else if (value && typeof value === "object") {
+    const entry = value as Record<string, unknown>;
+    for (const item of Array.isArray(entry.items) ? entry.items : []) {
+      const named = item as { name?: unknown } | null;
+      if (named && typeof named.name === "string" && named.name) {
+        named.name = copyName(named.name, taken);
+        taken.add(named.name as string);
+      }
+    }
+    renameItemsInCopy(entry.rows, taken);
+    renameItemsInCopy(entry.tabs, taken);
+  }
+  return value;
+}
+
 export function duplicateBlock(
   doc: Document,
   index: number,
@@ -231,7 +273,11 @@ export function duplicateBlock(
   if (!isMap(original)) return undefined;
 
   const name = newBlockName(doc, kind);
-  const copy = doc.createNode(original.toJSON());
+  // Items in the copy get names of their own: an item's name is the URL key of its viewer
+  // controls and must be unique on the canvas.
+  const copy = doc.createNode(
+    renameItemsInCopy(original.toJSON(), itemNames(doc.toJSON())),
+  );
   if (!isMap(copy)) return undefined;
   setInMapBeforeContent(doc, copy, "name", name);
   rows.items.splice(index + 1, 0, copy);

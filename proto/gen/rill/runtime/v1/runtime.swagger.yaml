@@ -4868,9 +4868,58 @@ definitions:
         description: |-
           Rows in the container. These are always plain rows;
           a container never holds a tab group or another container.
+      controls:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasControl'
+        description: Viewer controls that apply to every item in the container.
     description: |-
       A named block of rows that viewers see as plain rows.
       It groups rows so they can be arranged, moved and conditioned together.
+  v1CanvasControl:
+    type: object
+    properties:
+      name:
+        type: string
+        description: URL key of the control; unique within the list it is declared in.
+      kind:
+        type: string
+        description: 'Kind of control. One of: "measure", "dimension", "slot", "filter", "time_range", "time_grain".'
+      target:
+        type: string
+        description: |-
+          The swapped field name (measure, dimension), the renderer property path (slot), or the dimension name (filter).
+          Empty for time controls.
+      label:
+        type: string
+        description: Label shown next to the control.
+      options:
+        type: array
+        items:
+          type: string
+        description: |-
+          Allowed values. For field kinds: field names. For time kinds: time ranges or grains.
+          For filters: an optional fixed list; empty means the dimension's values are queried.
+      default:
+        type: array
+        items:
+          type: string
+        description: 'Default values. Empty means: no filter (filter), or inherit from the canvas (time).'
+      multiple:
+        type: boolean
+        description: Whether several values can be selected.
+      display:
+        type: string
+        description: 'How the control is displayed. One of: "dropdown", "buttons". Empty means it is chosen automatically.'
+      fields:
+        type: object
+        additionalProperties:
+          type: string
+        description: 'For filters: the dimension''s name per metrics view, when it differs from the target.'
+    description: |-
+      CanvasControl is a viewer-adjustable setting declared on a canvas, container, tab group, tab or item.
+      It applies to the item it is declared on, or to every item nested under the level it is declared on.
   v1CanvasItem:
     type: object
     properties:
@@ -4897,6 +4946,23 @@ definitions:
         description: |-
           Templated boolean expression from the item's `if` property.
           The item is only shown to viewers for whom it evaluates to true.
+      name:
+        type: string
+        description: Stable identifier of the item, used for URL state. Required when the item declares controls.
+      controls:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasControl'
+        description: Viewer controls that apply to this item only.
+      ignoreAllControls:
+        type: boolean
+        description: If true, the item ignores every control declared on an enclosing container, tab, tab group or canvas.
+      ignoreControls:
+        type: array
+        items:
+          type: string
+        description: Names of enclosing controls the item ignores.
   v1CanvasPreset:
     type: object
     properties:
@@ -5047,6 +5113,12 @@ definitions:
           type: object
           $ref: '#/definitions/v1AIPrompt'
         description: Suggested prompts configured by the project author, shown as starters in the AI chat.
+      controls:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasControl'
+        description: Viewer controls that apply to every item on the canvas.
   v1CanvasState:
     type: object
     properties:
@@ -5081,6 +5153,12 @@ definitions:
         description: |-
           Templated boolean expression from the tab's `if` property.
           The tab is only shown to viewers for whom it evaluates to true.
+      controls:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasControl'
+        description: Viewer controls that apply to every item in the tab.
   v1CanvasTabGroup:
     type: object
     properties:
@@ -5095,6 +5173,12 @@ definitions:
           type: object
           $ref: '#/definitions/v1CanvasTab'
         description: Tabs in the group. A group always has at least one tab.
+      controls:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasControl'
+        description: Viewer controls that apply to every item in every tab of the group.
   v1CategoricalSummary:
     type: object
     properties:

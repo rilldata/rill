@@ -44,6 +44,7 @@ type CanvasYAML struct {
 		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables   []*ComponentVariableYAML `yaml:"variables"`
+	Controls    []*canvasControlYAML     `yaml:"controls"` // Viewer controls that apply to every item
 	Rows        []*canvasRowYAML         `yaml:"rows"`
 	Security    *SecurityPolicyYAML      `yaml:"security"`
 	Annotations map[string]string        `yaml:"annotations"`
@@ -63,6 +64,8 @@ type canvasRowYAML struct {
 	Rows []*canvasRowYAML `yaml:"rows"`
 	// If is a templated condition; the row (or tab group, or container) is only shown to viewers for whom it's true.
 	If string `yaml:"if"`
+	// Controls are viewer controls that apply to every item in the tab group or container. Only used for those entries.
+	Controls []*canvasControlYAML `yaml:"controls"`
 }
 
 // canvasTabYAML is a single tab within a tab group. `label` is the display name shown on the
@@ -73,6 +76,8 @@ type canvasTabYAML struct {
 	Rows  []*canvasRowYAML `yaml:"rows"`
 	// If is a templated condition; the tab is only shown to viewers for whom it's true.
 	If string `yaml:"if"`
+	// Controls are viewer controls that apply to every item in the tab.
+	Controls []*canvasControlYAML `yaml:"controls"`
 }
 
 // canvasItemYAML is a single item within a row.
@@ -81,8 +86,31 @@ type canvasItemYAML struct {
 	Component string         `yaml:"component"` // Name of an externally defined component
 	Params    map[string]any `yaml:"params"`    // Values bound to the referenced component's declared params
 	// If is a templated condition; the item is only shown to viewers for whom it's true.
-	If              string               `yaml:"if"`
+	If string `yaml:"if"`
+	// Name is the stable identifier of the item, used for URL state. Required when the item declares controls.
+	Name string `yaml:"name"`
+	// Controls are viewer controls that apply to this item only.
+	Controls []*canvasControlYAML `yaml:"controls"`
+	// IgnoreControls is `true` to ignore every control of the enclosing levels, or a list of their names.
+	IgnoreControls  yaml.Node            `yaml:"ignore_controls"`
 	InlineComponent map[string]yaml.Node `yaml:",inline"` // Any other properties are considered an inline component definition
+}
+
+// canvasControlYAML is a viewer control: a setting viewers can change for the level it is declared on.
+// Exactly one of Measure, Dimension, Slot, Filter and Time must be set.
+type canvasControlYAML struct {
+	Measure   string            `yaml:"measure"`   // Measure that viewers can swap for one of the options
+	Dimension string            `yaml:"dimension"` // Dimension that viewers can swap for one of the options
+	Slot      string            `yaml:"slot"`      // Renderer property whose field(s) viewers pick; items only
+	Filter    string            `yaml:"filter"`    // Dimension that viewers can filter
+	Time      string            `yaml:"time"`      // "range" or "grain"
+	Name      string            `yaml:"name"`
+	Label     string            `yaml:"label"`
+	Options   []string          `yaml:"options"`
+	Default   yaml.Node         `yaml:"default"` // Scalar or list
+	Multiple  bool              `yaml:"multiple"`
+	Display   string            `yaml:"display"`
+	Fields    map[string]string `yaml:"fields"` // For filters: dimension name by metrics view
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -169,8 +197,15 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Parse rows and items.
 	// Each row entry is a plain row (items), a tab group (tabs) or a container (rows); tab groups and containers are only allowed at the top level.
 	var inlineComponentDefs []*componentDef // Track inline component definitions so we can insert them after we have validated all components
+	controls, err := parseCanvasControls(tmp.Controls, false)
+	if err != nil {
+		return fmt.Errorf("invalid canvas controls: %w", err)
+	}
 	rows, err := p.parseCanvasRows(node, tmp.Rows, true, "", nil, &inlineComponentDefs)
 	if err != nil {
+		return err
+	}
+	if err := validateCanvasControlScopes(&runtimev1.CanvasSpec{Controls: controls, Rows: rows}); err != nil {
 		return err
 	}
 
@@ -253,6 +288,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.EmbeddedTheme = themeSpec
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Rows = rows
+	r.CanvasSpec.Controls = controls
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
@@ -326,6 +362,10 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowBlocks 
 
 		var height *uint32
 		var heightUnit string
+		if len(row.Controls) > 0 {
+			return nil, fmt.Errorf("row %d cannot declare 'controls': declare them on a container, a tab group, a tab or an item", i)
+		}
+
 		if row.Height != nil {
 			v, u, err := parseItemSize(*row.Height)
 			if err != nil {
@@ -361,6 +401,22 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowBlocks 
 			itemCondition, err := parseCondition(item.If)
 			if err != nil {
 				return nil, fmt.Errorf("invalid 'if' for item %d in row %d: %w", j, i, err)
+			}
+
+			// Parse the item's name and viewer controls. The name is a segment of its controls' URL keys.
+			if item.Name != "" && !canvasControlNameRegex.MatchString(item.Name) {
+				return nil, fmt.Errorf("invalid name %q for item %d in row %d: must be a valid identifier", item.Name, j, i)
+			}
+			itemControls, err := parseCanvasControls(item.Controls, true)
+			if err != nil {
+				return nil, fmt.Errorf("invalid controls for item %d in row %d: %w", j, i, err)
+			}
+			if len(itemControls) > 0 && item.Name == "" {
+				return nil, fmt.Errorf("item %d in row %d declares controls and needs a 'name'", j, i)
+			}
+			ignoreAll, ignoreNames, err := parseIgnoreControls(&item.IgnoreControls)
+			if err != nil {
+				return nil, fmt.Errorf("invalid item %d in row %d: %w", j, i, err)
 			}
 
 			// Validate that exactly one of Component and InlineComponent are set
@@ -421,6 +477,10 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowBlocks 
 				Width:               width,
 				WidthUnit:           widthUnit,
 				ConditionExpression: itemCondition,
+				Name:                item.Name,
+				Controls:            itemControls,
+				IgnoreAllControls:   ignoreAll,
+				IgnoreControls:      ignoreNames,
 			})
 
 			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: item.Component})
@@ -479,7 +539,13 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 			return nil, fmt.Errorf("invalid tab %q in tab group at row %d: %w", tab.Label, rowIdx, err)
 		}
 
+		tabControls, err := parseCanvasControls(tab.Controls, false)
+		if err != nil {
+			return nil, fmt.Errorf("invalid controls for tab %q in tab group at row %d: %w", tab.Label, rowIdx, err)
+		}
+
 		tabs = append(tabs, &runtimev1.CanvasTab{
+			Controls:            tabControls,
 			Name:                tabName,
 			DisplayName:         tab.Label,
 			Rows:                tabRows,
@@ -487,9 +553,15 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 		})
 	}
 
+	controls, err := parseCanvasControls(row.Controls, false)
+	if err != nil {
+		return nil, fmt.Errorf("invalid controls for tab group at row %d: %w", rowIdx, err)
+	}
+
 	return &runtimev1.CanvasTabGroup{
-		Name: groupName,
-		Tabs: tabs,
+		Name:     groupName,
+		Tabs:     tabs,
+		Controls: controls,
 	}, nil
 }
 
@@ -506,9 +578,15 @@ func (p *Parser) parseCanvasContainer(node *Node, row *canvasRowYAML, rowIdx int
 		return nil, fmt.Errorf("invalid container %q at row %d: %w", name, rowIdx, err)
 	}
 
+	controls, err := parseCanvasControls(row.Controls, false)
+	if err != nil {
+		return nil, fmt.Errorf("invalid controls for container %q at row %d: %w", name, rowIdx, err)
+	}
+
 	return &runtimev1.CanvasContainer{
-		Name: name,
-		Rows: rows,
+		Name:     name,
+		Rows:     rows,
+		Controls: controls,
 	}, nil
 }
 

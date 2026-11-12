@@ -123,6 +123,19 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if validateErr == nil {
 		validateErr = r.validateDefaultFilters(c.Spec, metricsViews)
 	}
+	if validateErr == nil {
+		componentSpecs := make(map[string]*runtimev1.ComponentSpec, len(components))
+		for name, res := range components {
+			if res != nil {
+				componentSpecs[name] = res.GetComponent().Spec
+			}
+		}
+		mvSpecs := make(map[string]*runtimev1.MetricsViewSpec, len(metricsViews))
+		for name, res := range metricsViews {
+			mvSpecs[name] = res.GetMetricsView().State.ValidSpec
+		}
+		validateErr = canvas.ValidateControls(c.Spec, componentSpecs, mvSpecs)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
