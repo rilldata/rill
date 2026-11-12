@@ -589,6 +589,247 @@ heatmap:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a measure")
 }
 
+func TestValidateMap(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: a regions layer without a geo dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: countries
+    key: iso_a2
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: points and regions together.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  geo_dimension:
+    field: bar
+  color:
+    measure: z
+  regions:
+    dimension: foo
+    boundaries: us_states
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: neither layer.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  color:
+    measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'geo_dimension.field' property or a 'regions' property")
+
+	// Invalid: unknown boundary set.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: dmas
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.boundaries' must be one of")
+
+	// Valid: custom boundaries from a file.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+      id: dma_code
+      name: dma_name
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: custom boundaries without an id.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'id' property")
+
+	// Invalid: custom boundaries without a file.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      id: dma_code
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'file' property")
+
+	// Invalid: key with custom boundaries.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+      id: dma_code
+    key: name
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.key' is not supported with custom boundaries")
+
+	// Invalid: key from another boundary set.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: countries
+    key: postal
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `"regions.key" must be one of`)
+
+	// Valid: states of a country.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    country: DE
+    key: code
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: states without a country.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'country' property")
+
+	// Invalid: states with a country that is not an alpha-2 code.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    country: DEU
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be an ISO 3166-1 alpha-2 code")
+
+	// Invalid: country with boundaries other than states.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: countries
+    country: DE
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.country' is only supported with 'boundaries: states'")
+
+	// Invalid: region color is a dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: countries
+    color:
+      measure: bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a measure")
+}
+
 func TestValidateComboChart(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),

@@ -32,12 +32,7 @@ export type ComponentExportPayload =
   | { kind: "table"; state: PivotDataState; config: PivotDataStoreConfig }
   | { kind: "leaderboard"; tables: LeaderboardExportTable[] }
   | { kind: "customChart"; results: CustomChartExportResult[] }
-  | {
-      kind: "map";
-      rows: V1MetricsViewAggregationResponseDataItem[];
-      dimensions: MetricsViewSpecDimension[];
-      measures: MetricsViewSpecMeasure[];
-    }
+  | { kind: "map"; layers: MapExportLayer[] }
   | { kind: "text"; text: string }
   | { kind: "imageUrl"; url: string }
   | { kind: "error"; message: string };
@@ -58,6 +53,14 @@ export interface KpiExportValue {
 export interface KpiTrendPoint {
   time: string;
   value: number | null;
+}
+
+// The rows behind one layer of a map (its regions or its points).
+export interface MapExportLayer {
+  name: string;
+  rows: V1MetricsViewAggregationResponseDataItem[];
+  dimensions: MetricsViewSpecDimension[];
+  measures: MetricsViewSpecMeasure[];
 }
 
 export interface LeaderboardExportTable {
