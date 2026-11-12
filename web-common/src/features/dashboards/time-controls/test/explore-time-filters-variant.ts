@@ -139,7 +139,7 @@ export function useExploreTimeFiltersVariant(
       getComparisonEnabled: () => exploreState()?.showTimeComparison ?? false,
     },
 
-    render: async ({ initUrlSearch, timeGrains } = {}) => {
+    render: async ({ initUrlSearch, initTimeRangeLabel, timeGrains } = {}) => {
       if (timeGrains) mockMetricsViewAndExplore(timeGrains);
       // Make sure to populate the url with the initial states.
       pageMock.gotoSearch(PageURLForInitialState);
@@ -161,7 +161,7 @@ export function useExploreTimeFiltersVariant(
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       // Resolving the interval of the initial range is a network call, so the picker is only ready
       // for interaction once it shows the range the dashboard loaded with.
-      await waitForTimeRangeLabel(DefaultTimeRangeLabel);
+      await waitForTimeRangeLabel(initTimeRangeLabel ?? DefaultTimeRangeLabel);
     },
   };
 }

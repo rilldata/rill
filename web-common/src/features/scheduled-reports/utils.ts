@@ -20,10 +20,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
-import {
-  mapV1TimeRangeToComparisonTimeOption,
-  mapV1TimeRangeToRillTime,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
@@ -274,22 +271,11 @@ export function getFilterParamsFromAggregationRequest(
   const timeRange = (aggregationRequest.timeRange as V1TimeRange) ?? {
     isoDuration: TimeRangePreset.ALL_TIME,
   };
-  const timeRangeParam = mapV1TimeRangeToRillTime(timeRange);
-  if (timeRangeParam)
-    params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
-  if (timeRange.timeZone) {
-    params.set(ExploreStateURLParams.TimeZone, timeRange.timeZone);
-  }
-
-  if (aggregationRequest.comparisonTimeRange) {
-    const comparisonParam = mapV1TimeRangeToComparisonTimeOption(
-      timeRange,
-      aggregationRequest.comparisonTimeRange,
-    );
-    if (comparisonParam) {
-      params.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
-    }
-  }
+  setTimeFilterParamsFromV1TimeRanges(
+    params,
+    timeRange,
+    aggregationRequest.comparisonTimeRange,
+  );
 
   return params;
 }

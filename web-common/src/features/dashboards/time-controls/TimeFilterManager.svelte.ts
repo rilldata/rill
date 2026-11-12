@@ -24,11 +24,11 @@ import { createQueries } from "@tanstack/svelte-query";
 import { untrack } from "svelte";
 import {
   allowedGrainsForInterval,
-  DateTimeUnitToV1TimeGrain,
+  TokenToV1TimeGrain,
   getGrainOrder,
   MinSupportedDateTimeUnit,
   MinSupportedGrain,
-  V1TimeGrainToDateTimeUnit,
+  V1TimeGrainToToken,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
@@ -153,6 +153,18 @@ export class TimeFilterManager implements UrlParamsStore {
    * Whether the comparison is shown: the parent's while the comparison range is inherited, otherwise `ownShowComparison`.
    */
   public showComparison: boolean;
+  /**
+   * Whether the time range follows the parent's, i.e. `urlTimeRange` is `inherit`.
+   */
+  public inheritsTimeRange: boolean;
+  /**
+   * Whether the comparison follows the parent's, i.e. `urlComparisonTimeRange` is `inherit`.
+   */
+  public inheritsComparison: boolean;
+  /**
+   * Whether a child sets a grain of its own instead of following the parent's.
+   */
+  public hasOwnTimeGrain: boolean;
   public lastDefinedScrubInterval = $state<Interval<true> | undefined>(
     undefined,
   );
@@ -236,22 +248,23 @@ export class TimeFilterManager implements UrlParamsStore {
 
     // An inherited range, zone and comparison follow the parent through these derived inputs,
     // so a change on the parent re-resolves the child's interval through its own query.
-    const inheritsTimeRange = $derived(
+    this.inheritsTimeRange = $derived(
       !!this.parent && this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS,
     );
-    const inheritsComparison = $derived(
+    this.inheritsComparison = $derived(
       !!this.parent && this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS,
     );
+    this.hasOwnTimeGrain = $derived(!!this.parent && !!this.urlTimeGrain);
     this.requestedTimeRange = $derived(
-      inheritsTimeRange ? this.parent?.timeRange : this.urlTimeRange,
+      this.inheritsTimeRange ? this.parent?.timeRange : this.urlTimeRange,
     );
     this.timeZone = $derived(
-      inheritsTimeRange && this.parent
+      this.inheritsTimeRange && this.parent
         ? this.parent.timeZone
         : this.ownTimeZone,
     );
     this.showComparison = $derived(
-      inheritsComparison && this.parent
+      this.inheritsComparison && this.parent
         ? this.parent.showComparison
         : this.ownShowComparison,
     );
@@ -307,7 +320,7 @@ export class TimeFilterManager implements UrlParamsStore {
       // Without a grain of its own, a child on an inherited range follows the parent's grain.
       const requestedGrain =
         this.urlTimeGrain ??
-        (inheritsTimeRange ? this.parent?.timeGrain : undefined);
+        (this.inheritsTimeRange ? this.parent?.timeGrain : undefined);
       if (!this.interval) return requestedGrain ?? MinSupportedGrain;
 
       const largestMinTimeGrain =
@@ -511,9 +524,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
     if (!this.config.skipTimeGrain) {
       const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
-      this.urlTimeGrain = urlGrain
-        ? DateTimeUnitToV1TimeGrain[urlGrain]
-        : undefined;
+      this.urlTimeGrain = urlGrain ? TokenToV1TimeGrain[urlGrain] : undefined;
     }
 
     this.ownTimeZone =
@@ -588,7 +599,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
     if (!this.config.skipTimeGrain) {
       const mappedGrain = this.urlTimeGrain
-        ? V1TimeGrainToDateTimeUnit[this.urlTimeGrain]
+        ? V1TimeGrainToToken[this.urlTimeGrain]
         : undefined;
       if (mappedGrain) {
         urlParams.set(ExploreStateURLParams.TimeGrain, mappedGrain);

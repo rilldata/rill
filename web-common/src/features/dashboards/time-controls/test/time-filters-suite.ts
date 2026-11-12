@@ -38,6 +38,8 @@ export interface TimeFilterManagerAccessor {
 export interface TimeFiltersRenderOptions {
   /** Url search to load the dashboard with, on top of the initial one. */
   initUrlSearch?: string;
+  /** The label of the range `initUrlSearch` loads with; the label of the yaml default when omitted. */
+  initTimeRangeLabel?: RegExp;
   /** The `time_grains` the metrics view declares; the standard grains when omitted. */
   timeGrains?: V1TimeGrain[];
 }
@@ -445,6 +447,62 @@ export function testTimeGrainSelector(variant: TimeFiltersVariant) {
       );
       await waitForTimeGrainLabel("hour", true);
       expect(await getTimeGrainOptions()).toEqual(["hour"]);
+    });
+
+    it("Should select a multiple of a grain the metrics view declares", async () => {
+      await variant.render({
+        timeGrains: [
+          V1TimeGrain.TIME_GRAIN_10_MINUTE,
+          V1TimeGrain.TIME_GRAIN_HOUR,
+          V1TimeGrain.TIME_GRAIN_DAY,
+          V1TimeGrain.TIME_GRAIN_WEEK,
+        ],
+      });
+
+      await selectTimeRange(/Last 24 hours/);
+
+      // The declared grains that fit 24 hours: 10 minutes is offered in place of minute,
+      // and a week is longer than the range.
+      const hoursTimeRange = "24h as of latest/h+1h";
+      expect(await getTimeGrainOptions()).toEqual([
+        "10 minutes",
+        "hour",
+        "day",
+      ]);
+
+      await selectTimeGrain("10 minutes");
+
+      await assertTimeRangeAndGrain(
+        hoursTimeRange,
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      );
+      // The multiple rides in the url in its rilltime form.
+      assertUrlSearch(
+        urlSearchWithTimeParams({ tr: hoursTimeRange, grain: "10m" }),
+      );
+    });
+
+    it("Should restore a multiple of a grain from the url", async () => {
+      await variant.render({
+        timeGrains: [
+          V1TimeGrain.TIME_GRAIN_10_MINUTE,
+          V1TimeGrain.TIME_GRAIN_HOUR,
+          V1TimeGrain.TIME_GRAIN_DAY,
+          V1TimeGrain.TIME_GRAIN_WEEK,
+        ],
+        // 10 minutes is too fine for the 7 day default, so the url asks for a range it fits.
+        initUrlSearch: urlSearchWithTimeParams({
+          tr: "24h as of latest/h+1h",
+          grain: "10m",
+        }),
+        initTimeRangeLabel: /Last 24 hours/,
+      });
+
+      await assertTimeRangeAndGrain(
+        "24h as of latest/h+1h",
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      );
+      await waitForTimeGrainLabel("10 minutes", false);
     });
   });
 }

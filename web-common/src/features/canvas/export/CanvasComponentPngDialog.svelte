@@ -4,7 +4,7 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { hideBorder } from "@rilldata/web-common/features/canvas/layout-util";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { buildExportFilename } from "@rilldata/web-common/features/exports/filename";
@@ -145,7 +145,7 @@
                 </header>
 
                 {#if expressionFilterManager.hasSomeFilter}
-                  <ReadonlyExpressionFilters
+                  <ReadonlyFilters
                     {expressionFilterManager}
                     ariaLabel={undefined}
                   />

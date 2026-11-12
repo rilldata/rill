@@ -1,58 +1,12 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
 
   let { component }: { component: BaseCanvasComponent } = $props();
 
   let { specStore, localExpressionFilters, localTimeFilterManager } =
     $derived(component);
-
-  let {
-    urlTimeRange,
-    urlTimeGrain,
-    urlComparisonTimeRange,
-    timeRange,
-    timeGrain,
-    timeZone,
-    interval,
-    showComparison,
-    comparisonTimeRange,
-    comparisonInterval,
-  } = $derived(localTimeFilterManager);
-
-  // Only a range, comparison or grain the component sets itself counts as a local filter.
-  let hasLocalTimeRange = $derived(
-    !!urlTimeRange && urlTimeRange !== INHERIT_TIME_RANGE_ALIAS,
-  );
-  let hasLocalComparison = $derived(
-    !!urlComparisonTimeRange &&
-      urlComparisonTimeRange !== INHERIT_TIME_RANGE_ALIAS,
-  );
-
-  let displayTimeRange = $derived<V1TimeRange | undefined>(
-    hasLocalTimeRange && interval
-      ? {
-          start: interval.start.toUTC().toISO(),
-          end: interval.end.toUTC().toISO(),
-          timeZone,
-          isoDuration: timeRange,
-        }
-      : undefined,
-  );
-
-  let displayComparisonTimeRange = $derived<V1TimeRange | undefined>(
-    hasLocalComparison && showComparison && comparisonInterval
-      ? <V1TimeRange>{
-          name: comparisonTimeRange,
-          start: comparisonInterval.start.toUTC().toISO(),
-          end: comparisonInterval.end.toUTC().toISO(),
-          interval: timeGrain,
-        }
-      : undefined,
-  );
 </script>
 
 {#if "metrics_view" in $specStore}
@@ -61,13 +15,10 @@
   >
     <Filter size="16px" className="text-fg-secondary" />
 
-    <ReadonlyExpressionFilters
+    <!-- The time filter chips only show the range, comparison or grain the component sets itself. -->
+    <ReadonlyFilters
       expressionFilterManager={localExpressionFilters}
-      {displayTimeRange}
-      {displayComparisonTimeRange}
-      displayTimeGrain={urlTimeGrain ? timeGrain : undefined}
-      queryTimeStart={interval?.start.toUTC().toISO()}
-      queryTimeEnd={interval?.end.toUTC().toISO()}
+      timeFilterManager={localTimeFilterManager}
       hasBoldTimeRange={false}
       chipLayout="scroll"
     />

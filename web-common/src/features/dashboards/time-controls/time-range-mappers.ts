@@ -16,6 +16,7 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -323,6 +324,36 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
       break;
   }
   return comparisonTimeRange;
+}
+
+/**
+ * Sets the time filter url params a {@link TimeFilterManager} is seeded with from API time ranges,
+ * e.g. those saved in a report's or an alert's aggregation request.
+ */
+export function setTimeFilterParamsFromV1TimeRanges(
+  params: URLSearchParams,
+  timeRange: V1TimeRange | undefined,
+  comparisonTimeRange: V1TimeRange | undefined,
+) {
+  if (!timeRange) return;
+
+  const timeRangeParam = mapV1TimeRangeToRillTime(timeRange);
+  if (!timeRangeParam) return;
+  params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+
+  if (timeRange.timeZone) {
+    params.set(ExploreStateURLParams.TimeZone, timeRange.timeZone);
+  }
+
+  if (comparisonTimeRange) {
+    const comparisonParam = mapV1TimeRangeToComparisonTimeOption(
+      timeRange,
+      comparisonTimeRange,
+    );
+    if (comparisonParam) {
+      params.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
+    }
+  }
 }
 
 export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {

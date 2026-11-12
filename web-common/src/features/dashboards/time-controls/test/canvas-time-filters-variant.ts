@@ -144,7 +144,7 @@ export function useCanvasTimeFiltersVariant(
       getComparisonEnabled: () => canvasTimeFilterManager().showComparison,
     },
 
-    render: async ({ initUrlSearch, timeGrains } = {}) => {
+    render: async ({ initUrlSearch, initTimeRangeLabel, timeGrains } = {}) => {
       if (timeGrains) mockMetricsViewAndCanvas(timeGrains);
       // A canvas with url params loads on them rather than redirecting to its default preset.
       pageMock.gotoSearch(initUrlSearch ?? PageURLForInitialState);
@@ -168,7 +168,7 @@ export function useCanvasTimeFiltersVariant(
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       // Resolving the interval of the initial range is a network call, so the picker is only ready
       // for interaction once it shows the range the dashboard loaded with.
-      await waitForTimeRangeLabel(DefaultTimeRangeLabel);
+      await waitForTimeRangeLabel(initTimeRangeLabel ?? DefaultTimeRangeLabel);
     },
   };
 }

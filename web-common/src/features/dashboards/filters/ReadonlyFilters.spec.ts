@@ -1,4 +1,4 @@
-import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
 import { mockResizeObserverForComponentTesting } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import {
   AD_BIDS_DOMAIN_DIMENSION,
@@ -17,7 +17,7 @@ import { render } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { beforeEach, describe, expect, it } from "vitest";
 
-describe("ReadonlyExpressionFilters", () => {
+describe("ReadonlyFilters", () => {
   mockAnimationsForComponentTesting();
   mockResizeObserverForComponentTesting();
   const getFilterManager = useTestFilterManager({
@@ -29,7 +29,7 @@ describe("ReadonlyExpressionFilters", () => {
   function renderFilters(
     expressionFilterManager: ReturnType<typeof getFilterManager>,
   ) {
-    return render(ReadonlyExpressionFilters, {
+    return render(ReadonlyFilters, {
       props: { expressionFilterManager },
       context: new Map<string | symbol, unknown>([
         ["$$_queryClient", queryClient],

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   // Off-screen, read-only render of the canvas's active time range and filters.
@@ -48,9 +48,6 @@
   {/if}
 
   {#if expressionFilterManager.hasSomeFilter}
-    <ReadonlyExpressionFilters
-      {expressionFilterManager}
-      ariaLabel={undefined}
-    />
+    <ReadonlyFilters {expressionFilterManager} ariaLabel={undefined} />
   {/if}
 </div>

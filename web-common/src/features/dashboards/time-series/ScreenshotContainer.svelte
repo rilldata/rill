@@ -13,7 +13,7 @@
   import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
@@ -154,7 +154,7 @@
           </div>
         </header>
 
-        <ReadonlyExpressionFilters {expressionFilterManager} />
+        <ReadonlyFilters {expressionFilterManager} />
 
         <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
           {#if timeGrain}

@@ -31,13 +31,14 @@
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
   import {
     CanvasDashboardConfigProvider,
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
 
@@ -67,10 +68,17 @@
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
+  // Time filters are not locked, so they are only used to scope dimension filter searches.
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
 
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
+  timeFilterManager.storeSync.setUrlParams(page.url.searchParams);
 
   // A public URL shows a canvas the way its creator sees it, so point out content that only some viewers see.
   const canvasQuery = useCanvas(runtimeClient, dashboardName, {
@@ -91,13 +99,9 @@
     dashboardKind,
     expressionFilterManager,
   );
-  let {
-    fields,
-    sanitizedState,
-    droppedEphemeralMeasures,
-    queryTimeStart,
-    queryTimeEnd,
-  } = $derived($sanitisedFilterState);
+  let { fields, sanitizedState, droppedEphemeralMeasures } = $derived(
+    $sanitisedFilterState,
+  );
 
   const formId = "create-public-url-form";
 
@@ -184,6 +188,7 @@
 
   onDestroy(() => {
     dashboardConfigProvider.cleanup?.();
+    timeFilterManager.cleanup();
   });
 </script>
 
@@ -257,10 +262,10 @@
           {m.public_url_filters_locked_hidden()}
         </p>
         <div class="flex flex-col gap-2 my-2">
-          <ReadonlyExpressionFilters
+          <ReadonlyFilters
             {expressionFilterManager}
-            {queryTimeStart}
-            {queryTimeEnd}
+            {timeFilterManager}
+            hideTimePills
           />
         </div>
       </div>
