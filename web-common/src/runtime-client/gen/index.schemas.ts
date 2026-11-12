@@ -478,16 +478,26 @@ Defaults to "group-<index>" if not provided in the canvas YAML. */
   tabs?: V1CanvasTab[];
 }
 
+export interface V1CanvasContainer {
+  /** Stable identifier of the container.
+Defaults to "container-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Rows in the container. These are always plain rows;
+a container never holds a tab group or another container. */
+  rows?: V1CanvasRow[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. Empty when the row is a tab group. */
+  /** Items to render in the row. Empty when the row is a tab group or a container. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  container?: V1CanvasContainer;
   /** Templated boolean expression from the row's `if` property.
-The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+The row (or tab group, or container) is only shown to viewers for whom it evaluates to true. */
   conditionExpression?: string;
 }
 

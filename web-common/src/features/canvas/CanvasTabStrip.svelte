@@ -8,12 +8,13 @@
     ChevronLeft,
     ChevronRight,
     Copy,
-    GripVertical,
     Pencil,
     Plus,
     Trash2,
   } from "lucide-svelte";
   import { onMount, tick } from "svelte";
+  import BlockGrip from "./BlockGrip.svelte";
+  import BlockMenuItems from "./BlockMenuItems.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { TabGroup } from "./stores/tab-group";
 
@@ -169,14 +170,12 @@
   on:mousedown={handleStripMouseDown}
 >
   {#if editable && onGroupMouseDown}
-    <div
-      bind:this={grip}
-      class="grip"
-      title="Drag to move this tab group"
-      role="presentation"
-    >
-      <GripVertical size="14px" />
-    </div>
+    <!-- Shares the strip's bottom border and baseline. -->
+    <BlockGrip
+      kind="tab-group"
+      class="pb-2 pr-1 border-b border-gray-200"
+      bind:element={grip}
+    />
   {/if}
 
   {#if canScrollToStart}
@@ -304,13 +303,10 @@
                   </DropdownMenu.Item>
                   {#if onDuplicateGroup}
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item
-                      class="flex flex-row gap-x-2 text-fg-primary"
-                      onclick={() => onDuplicateGroup?.()}
-                    >
-                      <Copy size="14px" />
-                      Duplicate tab group
-                    </DropdownMenu.Item>
+                    <BlockMenuItems
+                      kind="tab-group"
+                      onDuplicate={onDuplicateGroup}
+                    />
                   {/if}
                   <DropdownMenu.Separator />
                   <DropdownMenu.Item
@@ -354,12 +350,6 @@
 
   .tab-strip-shell.draggable {
     @apply cursor-grab active:cursor-grabbing;
-  }
-
-  /* Drag handle for moving the whole group; shares the strip's bottom border and baseline. */
-  .grip {
-    @apply flex flex-none items-center pb-2 pr-1 border-b border-gray-200;
-    @apply text-fg-secondary hover:text-fg-primary;
   }
 
   .tab-strip-wrapper {

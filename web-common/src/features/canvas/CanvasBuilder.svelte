@@ -15,9 +15,11 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
+  import BlockDeleteDialog from "./BlockDeleteDialog.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import EditableCanvasContainer from "./EditableCanvasContainer.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
@@ -27,13 +29,18 @@
     DEFAULT_DASHBOARD_WIDTH,
     canvasItemInstanceId,
     componentNameFromInstanceId,
+    containerRowsPath,
     generateNewAssets,
+    isBlockSpecRow,
     mapGuard,
     mousePosition,
+    positionKeyPrefix,
     rowsGuard,
-    tabNamePrefix,
+    rowsPathOf,
+    sameTarget,
+    specRowsAt,
     tabRowsPath,
-    tabTargetFromPath,
+    targetOfComponent,
     type AddableItem,
     type EditTarget,
   } from "./layout-util";
@@ -44,19 +51,25 @@
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
+  import {
+    addBlockAt,
+    blockHasContent,
+    deleteBlock,
+    duplicateBlock,
+    moveBlock,
+    moveItemAcrossContainers,
+    nameBlocks,
+    unwrapRows,
+    wrapRow,
+    type BlockKind,
+  } from "./stores/block-edit";
   import { rowColFromPath } from "./stores/canvas-entity";
-  import { rowIndexAfterMove } from "./stores/tab-group";
+  import { layoutBlockKey } from "./stores/layout-blocks";
   import {
     addTab,
-    addTabGroup,
-    addTabGroupAt,
-    convertRowToTabGroup,
     deleteTab,
     duplicateTab,
-    duplicateTabGroup,
-    moveItemAcrossContainers,
     moveTab,
-    moveTabGroup,
     renameTab,
     tabHasContent,
   } from "./stores/tab-edit";
@@ -71,9 +84,9 @@
   const runtimeClient = useRuntimeClient();
 
   const MIN_DRAG_DISTANCE = 8;
-  // A tab group ghost follows the pointer like a component ghost, but only shows the strip
-  // and a slice of the body: dragging a full-height copy of a many-row group would cover
-  // the drop zones the author is aiming for.
+  // A block ghost follows the pointer like a component ghost, but only shows the block's
+  // header and a slice of the body: dragging a full-height copy of a many-row block would
+  // cover the drop zones the author is aiming for.
   const MAX_BLOCK_GHOST_HEIGHT = 200;
 
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -81,7 +94,7 @@
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
   let pendingDragComponent: BaseCanvasComponent | null = null;
-  // Whole-block drags: the top-level index of the tab group being moved.
+  // Whole-block drags: the top-level index of the tab group or container being moved.
   let dragBlockIndex: number | null = null;
   let pendingDragBlockIndex: number | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -92,22 +105,23 @@
   let pendingComponentDelete: string | undefined = undefined;
   let pendingTabDelete: { blockIndex: number; tabIndex: number } | undefined =
     undefined;
+  // Top-level index of a container waiting for its delete to be confirmed.
+  let pendingBlockDelete: number | undefined = undefined;
 
+  $: ({ canvasEntity } = getCanvasStore(canvasName, instanceId));
   $: ({
-    canvasEntity: {
-      setActiveTabInURL,
-      setSelectedComponent,
-      setSelectedTabGroup,
-      rekeyTabGroups,
-      selectedComponent,
-      componentsStore,
-      processRows,
-      specStore,
-      _rows,
-      layout,
-      firstLoad,
-    },
-  } = getCanvasStore(canvasName, instanceId));
+    setActiveTabInURL,
+    setSelectedComponent,
+    setSelectedBlock,
+    selectedComponent,
+    selectedBlock,
+    componentsStore,
+    processRows,
+    specStore,
+    _rows,
+    layout,
+    firstLoad,
+  } = canvasEntity);
 
   $: layoutRows = $_rows;
   $: blocks = $layout;
@@ -136,7 +150,8 @@
   );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
-  $: contents = parseDocument($editorContent ?? "");
+  // Blocks are named before any edit, so an edit that shifts rows keeps their keys (see nameBlocks).
+  $: contents = nameBlocks(parseDocument($editorContent ?? ""));
 
   $: resolvedComponents = canvasData?.components;
 
@@ -182,23 +197,20 @@
 
   $: activelyDragging = !!dragComponent || dragBlockIndex !== null;
 
-  // The tabs of the tab group being dragged, for its ghost (null when no group is dragged).
+  // The block being dragged, for its ghost (undefined when no block is dragged), and the
+  // tabs of a dragged tab group, whose labels the ghost shows.
   $: dragBlock = dragBlockIndex !== null ? blocks[dragBlockIndex] : undefined;
   $: dragGroupTabs =
     dragBlock?.kind === "tab-group" ? dragBlock.group.tabs : null;
 
   // Resolve the YAML rows path, name prefix, and current spec rows for an edit target.
-  // undefined target => the top-level rows; a tab target => one tab's rows.
+  // undefined target => the top-level rows; otherwise the rows of one tab or container.
   function resolveTarget(target: EditTarget | undefined) {
-    if (!target) {
-      return { rowsPath: ["rows"], namePrefix: "", specRows: specCanvasRows };
-    }
+    const rowsPath = rowsPathOf(target);
     return {
-      rowsPath: tabRowsPath(target.blockIndex, target.tabIndex),
-      namePrefix: tabNamePrefix(target.blockIndex, target.tabIndex),
-      specRows:
-        specCanvasRows[target.blockIndex]?.tabGroup?.tabs?.[target.tabIndex]
-          ?.rows ?? [],
+      rowsPath,
+      namePrefix: positionKeyPrefix(rowsPath),
+      specRows: specRowsAt(specCanvasRows, rowsPath) ?? [],
     };
   }
 
@@ -257,7 +269,7 @@
   }
 
   function handleBlockDragStart(blockIndex: number) {
-    const element = document.getElementById(`tab-group-region-${blockIndex}`);
+    const element = document.getElementById(`block-region-${blockIndex}`);
     if (!element) return;
 
     dragBlockIndex = blockIndex;
@@ -350,9 +362,9 @@
     updateAssets(specRowsClone, yamlRowsClone, undefined, target);
   }
 
-  // Apply the result of an edit. specRows/yamlRows are the rows of the targeted
-  // container (top-level or a single tab). For a tab target, the container's rows
-  // are spliced back into the full spec before reprocessing so the whole tree stays valid.
+  // Apply the result of an edit. specRows/yamlRows are the rows of the targeted rows
+  // list (the top level, a tab or a container). For a nested target, the list's rows are
+  // spliced back into the full spec before reprocessing so the whole tree stays valid.
   function updateAssets(
     specRows: V1CanvasRow[],
     yamlRows: YAMLRow[],
@@ -365,9 +377,8 @@
       specCanvasRows = specRows;
     } else {
       const full = structuredClone(specCanvasRows);
-      const tabGroup = full[target.blockIndex]?.tabGroup;
-      const tab = tabGroup?.tabs?.[target.tabIndex];
-      if (tab) tab.rows = specRows;
+      const rows = specRowsAt(full, rowsPath, true);
+      rows?.splice(0, rows.length, ...specRows);
       specCanvasRows = full;
     }
 
@@ -416,11 +427,14 @@
       if (selectedId) {
         // Selection ids are per-position instance ids (which for items that
         // reference an external component differ from the item's component name).
+        // Block rows get no items, so the empty-row cleanup keeps them (see generateNewAssets).
         const idsAtPositions = specRows.map((row, rowIdx) => {
           return {
-            items: row.items?.map((item, colIdx) =>
-              canvasItemInstanceId(item, rowIdx, colIdx, namePrefix),
-            ),
+            items: isBlockSpecRow(row)
+              ? undefined
+              : row.items?.map((item, colIdx) =>
+                  canvasItemInstanceId(item, rowIdx, colIdx, namePrefix),
+                ),
           };
         });
 
@@ -512,17 +526,16 @@
     }
   }
 
-  // Tab group authoring. These mutate the YAML document directly (see stores/tab-edit)
-  // and persist via updateContents; the spec round-trip rebuilds the layout.
-  function addTabGroupAction() {
-    addTabGroup(contents);
+  // Block and tab authoring. These mutate the YAML document directly (see stores/block-edit
+  // and stores/tab-edit) and persist via updateContents; the spec round-trip rebuilds the layout.
+  function addBlockAtAction(kind: BlockKind, index: number) {
+    addBlockAt(contents, index, kind);
     updateContents();
-    setTimeout(() => scrollToBottom(), 200);
   }
 
-  function addTabGroupAtAction(index: number) {
-    addTabGroupAt(contents, index);
-    updateContents();
+  function appendBlockAction(kind: BlockKind) {
+    addBlockAtAction(kind, specCanvasRows.length);
+    setTimeout(() => scrollToBottom(), 200);
   }
 
   function addTabAction(blockIndex: number) {
@@ -583,40 +596,59 @@
     updateContents();
   }
 
-  function selectTabGroup(name: string) {
-    setSelectedTabGroup(name);
+  function selectBlock(name: string) {
+    setSelectedBlock(name);
     openSidebar();
   }
 
-  function duplicateTabGroupAction(blockIndex: number) {
-    const newIndex = duplicateTabGroup(contents, blockIndex);
-    if (newIndex < 0) return;
-    // The copy pushes every block after the original down one row.
-    rekeyTabGroups((rowIndex) =>
-      rowIndex > blockIndex ? rowIndex + 1 : rowIndex,
-    );
+  // Duplicate a block and select the copy.
+  function duplicateBlockAt(blockIndex: number) {
+    const copy = duplicateBlock(contents, blockIndex);
+    if (!copy) return;
+    setSelectedBlock(copy);
     updateContents();
-    // The copy has no name, so it is keyed by its index; select it like a duplicated tab.
-    selectTabGroup(`group-${newIndex}`);
+    openSidebar();
   }
 
-  function convertRowToTabGroupAction(rowIndex: number) {
-    if (convertRowToTabGroup(contents, rowIndex)) updateContents();
+  function wrapRowAt(rowIndex: number, kind: BlockKind) {
+    if (wrapRow(contents, rowIndex, kind)) updateContents();
   }
 
-  // Drop the dragged tab group into the top-level slot `to` (a row drop zone index).
-  function dropTabGroup(from: number, to: number) {
+  // Replace a container with its rows, which keep its condition (see unwrapRows).
+  function ungroupContainerAt(blockIndex: number) {
+    if (unwrapRows(contents, blockIndex, containerRowsPath(blockIndex)) < 0) {
+      return;
+    }
+    setSelectedBlock(null);
+    updateContents();
+  }
+
+  // Delete a block, asking first when it has content.
+  function requestDeleteBlock(blockIndex: number) {
+    if (blockHasContent(contents, blockIndex)) {
+      pendingBlockDelete = blockIndex;
+      return;
+    }
+    deleteBlockAt(blockIndex);
+  }
+
+  function deleteBlockAt(blockIndex: number) {
+    if (!deleteBlock(contents, blockIndex)) return;
+    setSelectedBlock(null);
+    updateContents();
+  }
+
+  // Drop the dragged block into the top-level slot `to` (a row drop zone index).
+  function dropBlock(from: number, to: number) {
     const block = blocks[from];
-    if (block?.kind !== "tab-group") return;
+    if (!block || block.kind === "row") return;
 
-    const newIndex = moveTabGroup(contents, from, to);
+    const newIndex = moveBlock(contents, from, to);
     if (newIndex < 0) return;
-
-    // Index-keyed groups (the moved one and any it slid past) follow their rows.
-    rekeyTabGroups(rowIndexAfterMove(from, newIndex));
 
     // Mirror the move in the optimistic spec and reprocess, so the canvas reorders now
-    // rather than on the next reconcile (component names are re-derived then).
+    // rather than on the next reconcile (component names are re-derived then). The spec's
+    // block names are the ones in the document, so each block keeps its instance.
     const full = structuredClone(specCanvasRows);
     const [moved] = full.splice(from, 1);
     full.splice(newIndex, 0, moved);
@@ -629,7 +661,7 @@
     updateContents();
   }
 
-  function handleTabGroupMouseDown(blockIndex: number, event: MouseEvent) {
+  function handleBlockMouseDown(blockIndex: number, event: MouseEvent) {
     if (event.button !== 0) return;
     if (event.shiftKey) return;
 
@@ -678,30 +710,24 @@
     openSidebar();
   }
 
-  function sameTarget(a: EditTarget | undefined, b: EditTarget | undefined) {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    return a.blockIndex === b.blockIndex && a.tabIndex === b.tabIndex;
-  }
-
   function onDrop(row: number, column: number | null, target?: EditTarget) {
     if (!$dropZone) return;
     dropZone.clear();
 
-    // A dragged tab group only lands in top-level row slots (never inside a tab or a row).
+    // A dragged block only lands in top-level row slots (never inside a block or a row).
     if (dragBlockIndex !== null) {
-      if (!target && column === null) dropTabGroup(dragBlockIndex, row);
+      if (!target && column === null) dropBlock(dragBlockIndex, row);
       return;
     }
 
     if (!dragComponent) return;
 
-    const sourceTarget = tabTargetFromPath(dragComponent.pathInYAML);
+    const sourceTarget = targetOfComponent(dragComponent.pathInYAML);
     const { row: fromRow, col: fromCol } = rowColFromPath(
       dragComponent.pathInYAML,
     );
 
-    // Cross-container move (between top-level and a tab, or between tabs).
+    // Cross-container move (between the top level, tabs and containers).
     if (!sameTarget(sourceTarget, target)) {
       moveComponentToTarget(dragComponent, target, { row, col: column });
       return;
@@ -735,7 +761,7 @@
 
   function resetSelection() {
     setSelectedComponent(null);
-    setSelectedTabGroup(null);
+    setSelectedBlock(null);
   }
 
   function scrollToBottom() {
@@ -747,7 +773,7 @@
 
   function deleteComponent(component: BaseCanvasComponent) {
     const { row, col } = rowColFromPath(component.pathInYAML);
-    const target = tabTargetFromPath(component.pathInYAML);
+    const target = targetOfComponent(component.pathInYAML);
 
     if (component.id === $selectedComponent) {
       resetSelection();
@@ -770,8 +796,8 @@
     );
   }
 
-  // Move a component out of its current container into another (top-level <-> tab, or
-  // between tabs). Used for drag-across-tabs and dropping onto a tab strip. The YAML edit
+  // Move a component out of its current rows list into another (between the top level, tabs
+  // and containers). Used for drags across blocks and dropping onto a tab strip. The YAML edit
   // and the optimistic spec are updated in lockstep, then the spec is reprocessed so the
   // moved component's path is refreshed immediately; skipping the reprocess leaves stale
   // paths that corrupt the document on the next edit.
@@ -780,7 +806,7 @@
     destTarget: EditTarget | undefined,
     destPos?: { row: number; col: number | null },
   ) {
-    const sourceTarget = tabTargetFromPath(component.pathInYAML);
+    const sourceTarget = targetOfComponent(component.pathInYAML);
     const { row: fromRow, col: fromCol } = rowColFromPath(component.pathInYAML);
 
     const sourcePath = resolveTarget(sourceTarget).rowsPath;
@@ -796,10 +822,9 @@
     // Mirror the same move in the optimistic spec (proto shape) and reprocess so grids and
     // component paths update now rather than only on the next reconcile.
     const full = structuredClone(specCanvasRows);
-    const containerRows = (t: EditTarget | undefined) =>
-      t ? full[t.blockIndex]?.tabGroup?.tabs?.[t.tabIndex]?.rows : full;
-    const srcRows = containerRows(sourceTarget);
-    const dstRows = containerRows(destTarget);
+    const srcRows = specRowsAt(full, rowsPathOf(sourceTarget));
+    // An empty block's rows are missing from the spec (proto JSON omits empty lists).
+    const dstRows = specRowsAt(full, rowsPathOf(destTarget), true);
     const specItem = srcRows?.[fromRow]?.items?.[fromCol];
 
     if (srcRows && dstRows && specItem) {
@@ -831,11 +856,11 @@
   // Drop the currently-dragged component onto a tab (appends a new row in that tab).
   function dropComponentOnTab(blockIndex: number, tabIndex: number) {
     if (!dragComponent) return;
-    const target = { blockIndex, tabIndex };
+    const target = { rowsPath: tabRowsPath(blockIndex, tabIndex) };
     // Releasing over the label of the tab the component already lives in has no positional
     // intent, so skip it: otherwise the move would pull the item from its row and re-append
     // it as a new last row, reshaping the tab for a harmless release.
-    if (sameTarget(tabTargetFromPath(dragComponent.pathInYAML), target)) return;
+    if (sameTarget(targetOfComponent(dragComponent.pathInYAML), target)) return;
     moveComponentToTarget(dragComponent, target);
   }
 
@@ -934,7 +959,7 @@
   builder
   bind:clientWidth
 >
-  {#each blocks as block, blockIndex (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
+  {#each blocks as block, blockIndex (layoutBlockKey(block))}
     {#if block.kind === "tab-group"}
       <EditableCanvasTabGroup
         group={block.group}
@@ -957,17 +982,48 @@
         onComponentMouseDown={handleComponentMouseDown}
         onDuplicate={duplicateComponent}
         onDelete={({ component }) => deleteComponent(component)}
+        onAddBlock={addBlockAtAction}
+        onSelectBlock={selectBlock}
+        onBlockMouseDown={handleBlockMouseDown}
+        onDuplicateBlock={duplicateBlockAt}
         onAddTab={addTabAction}
         onRenameTab={renameTabAction}
         onDeleteTab={deleteTabAction}
         onMoveTab={moveTabAction}
         onDuplicateTab={duplicateTabAction}
         onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
-        onSelectGroup={() => selectTabGroup(block.group.name)}
-        onGroupMouseDown={handleTabGroupMouseDown}
-        onDuplicateGroup={duplicateTabGroupAction}
         onDropOnTab={dropComponentOnTab}
-        onAddTabGroup={addTabGroupAtAction}
+      />
+    {:else if block.kind === "container"}
+      <EditableCanvasContainer
+        container={block.container}
+        canvas={canvasEntity}
+        selected={$selectedBlock === block.container.name}
+        blockIndex={block.rowIndex}
+        zIndex={blocks.length - blockIndex}
+        isLastBlock={blockIndex === blocks.length - 1}
+        {maxWidth}
+        {columnWidth}
+        {components}
+        {dragComponent}
+        {dragBlockIndex}
+        {selectedComponent}
+        hasValidMetrics={!!defaultMetrics}
+        {onDrop}
+        {addItems}
+        {spreadEvenly}
+        {initializeRow}
+        {updateRowHeight}
+        {updateComponentWidths}
+        onComponentMouseDown={handleComponentMouseDown}
+        onDuplicate={duplicateComponent}
+        onDelete={({ component }) => deleteComponent(component)}
+        onAddBlock={addBlockAtAction}
+        onSelectBlock={selectBlock}
+        onBlockMouseDown={handleBlockMouseDown}
+        onDuplicateBlock={duplicateBlockAt}
+        onUngroup={ungroupContainerAt}
+        onDeleteBlock={requestDeleteBlock}
       />
     {:else if layoutRows[block.freeRowIndex]}
       {@const rowIndex = block.rowIndex}
@@ -992,8 +1048,8 @@
         }}
         onDuplicate={({ columnIndex }) =>
           duplicateComponent(rowIndex, columnIndex)}
-        onConvertToTabGroup={() => convertRowToTabGroupAction(rowIndex)}
-        onAddTabGroup={addTabGroupAtAction}
+        onWrapRow={(kind) => wrapRowAt(rowIndex, kind)}
+        onAddBlock={addBlockAtAction}
         onComponentMouseDown={handleComponentMouseDown}
       />
     {/if}
@@ -1022,7 +1078,7 @@
               onAddComponentRef={(componentName) => {
                 initializeRow(specCanvasRows.length, { componentName });
               }}
-              onAddTabGroup={addTabGroupAction}
+              onAddBlock={appendBlockAction}
             />
           {:else if canvasData}
             <ComponentError error={m.canvas_no_valid_metrics_view()} />
@@ -1045,7 +1101,7 @@
       initializeRow(specCanvasRows.length, { componentName });
       setTimeout(() => scrollToBottom(), 500);
     }}
-    onAddTabGroup={addTabGroupAction}
+    onAddBlock={appendBlockAction}
   />
 {/if}
 
@@ -1068,7 +1124,7 @@
   </div>
 {/if}
 
-{#if dragGroupTabs}
+{#if dragBlock && dragBlock.kind !== "row"}
   <div
     use:portal
     class="absolute pointer-events-none drag-container"
@@ -1078,11 +1134,15 @@
     style:width="{dragItemDimensions.width}px"
     style:height="{dragItemDimensions.height}px"
   >
-    <div class="tab-group-ghost">
-      <div class="tab-group-ghost-strip">
-        {#each $dragGroupTabs ?? [] as tab (tab.name)}
-          <span>{tab.displayName}</span>
-        {/each}
+    <div class="block-ghost" class:dashed={dragBlock.kind === "container"}>
+      <div class="block-ghost-header">
+        {#if dragGroupTabs}
+          {#each $dragGroupTabs ?? [] as tab (tab.name)}
+            <span>{tab.displayName}</span>
+          {/each}
+        {:else}
+          <span>{m.canvas_container()}</span>
+        {/if}
       </div>
     </div>
   </div>
@@ -1190,19 +1250,35 @@
   </AlertDialog.Root>
 {/if}
 
+{#if pendingBlockDelete !== undefined}
+  <BlockDeleteDialog
+    kind="container"
+    onConfirm={() => {
+      if (pendingBlockDelete !== undefined) deleteBlockAt(pendingBlockDelete);
+      pendingBlockDelete = undefined;
+    }}
+    onCancel={() => (pendingBlockDelete = undefined)}
+  />
+{/if}
+
 <style lang="postcss">
   .drag-container {
     container-type: inline-size;
     container-name: component-container;
   }
 
-  /* Ghost of a tab group being dragged: the strip's labels over a faded body. */
-  .tab-group-ghost {
+  /* Ghost of a block being dragged: its header (a tab group's labels, or the container's
+     name) over a faded body. */
+  .block-ghost {
     @apply size-full overflow-hidden rounded-md border border-primary-400 px-3 py-2;
     @apply bg-surface-subtle/80 opacity-80 shadow-md;
   }
 
-  .tab-group-ghost-strip {
+  .block-ghost.dashed {
+    @apply border-dashed;
+  }
+
+  .block-ghost-header {
     @apply flex h-9 items-end gap-x-4 border-b border-gray-200 pb-2;
     @apply text-sm font-medium text-fg-secondary;
   }

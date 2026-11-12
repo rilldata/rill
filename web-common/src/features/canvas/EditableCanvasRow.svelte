@@ -19,6 +19,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import VisibilityBadge from "./VisibilityBadge.svelte";
+  import type { BlockKind } from "./stores/block-edit";
   import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
@@ -31,9 +32,9 @@
   export let columnWidth: number;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
-  // True while a whole tab group is being dragged. Top-level rows (zoneScope "canvas") then
-  // expose their row drop zones as landing slots for the group; rows inside a tab do not, and
-  // all rows suspend component interaction for the duration of the drag.
+  // True while a whole block (a tab group or a container) is being dragged. Top-level rows
+  // (zoneScope "canvas") then expose their row drop zones as landing slots for the block; rows
+  // inside a block do not, and all rows suspend component interaction for the duration of the drag.
   export let blockDragging = false;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
@@ -47,10 +48,12 @@
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
   export let onDelete: (params: { component: BaseCanvasComponent }) => void;
-  // Optional: convert this row into a tab group (top-level rows only).
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
-  // Optional: insert a tab group at a given top-level index (top-level rows only).
-  export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
+  // Optional: wrap this row into a new block of the kind (top-level rows only).
+  export let onWrapRow: ((kind: BlockKind) => void) | undefined = undefined;
+  // Optional: insert a block of the kind at a given top-level index (top-level rows only).
+  export let onAddBlock:
+    | ((kind: BlockKind, index: number) => void)
+    | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -58,7 +61,7 @@
     index: number,
     newWidths: number[],
   ) => void;
-  // Disambiguates row DOM ids across tab containers so height-resize querySelectors
+  // Disambiguates row DOM ids across tabs and containers so height-resize querySelectors
   // don't collide with same-index rows elsewhere on the canvas.
   export let idPrefix: string = "";
   export let zoneScope = "canvas";
@@ -265,11 +268,12 @@
           onDelete={() => {
             onDelete({ component });
           }}
-          onConvertToTabGroup={onConvertToTabGroup
-            ? () => onConvertToTabGroup?.()
-            : undefined}
+          {onWrapRow}
         />
-        <VisibilityBadge {component} />
+        <VisibilityBadge
+          canvas={component.parent}
+          path={component.pathInYAML.slice(0, -1)}
+        />
       {:else}
         <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
@@ -285,8 +289,8 @@
     addItem={(type) => {
       initializeRow(rowIndex + 1, type);
     }}
-    onAddTabGroup={onAddTabGroup
-      ? () => onAddTabGroup?.(rowIndex + 1)
+    onAddBlock={onAddBlock
+      ? (kind) => onAddBlock?.(kind, rowIndex + 1)
       : undefined}
   />
 
@@ -299,7 +303,7 @@
       addItem={(type) => {
         initializeRow(rowIndex, type);
       }}
-      onAddTabGroup={onAddTabGroup ? () => onAddTabGroup?.(0) : undefined}
+      onAddBlock={onAddBlock ? (kind) => onAddBlock?.(kind, 0) : undefined}
     />
   {/if}
 </RowWrapper>

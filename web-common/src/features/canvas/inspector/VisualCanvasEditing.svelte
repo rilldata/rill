@@ -1,8 +1,11 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
   import ComponentsEditor from "@rilldata/web-common/features/canvas/inspector/ComponentsEditor.svelte";
+  import ContainerEditor from "@rilldata/web-common/features/canvas/inspector/ContainerEditor.svelte";
   import PageEditor from "@rilldata/web-common/features/canvas/inspector/PageEditor.svelte";
   import TabGroupEditor from "@rilldata/web-common/features/canvas/inspector/TabGroupEditor.svelte";
+  import { blockIndexOf } from "@rilldata/web-common/features/canvas/stores/block-edit";
+  import { layoutBlockName } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
@@ -17,31 +20,27 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: ({
-    canvasEntity: {
-      selectedComponent,
-      componentsStore,
-      selectedTabGroup,
-      setSelectedTabGroup,
-      rekeyTabGroups,
-      layout,
-    },
-  } = getCanvasStore(canvasName, instanceId));
+  $: ({ canvasEntity } = getCanvasStore(canvasName, instanceId));
+  $: ({ selectedComponent, componentsStore, selectedBlock, layout } =
+    canvasEntity);
 
-  // Resolve the selected tab group to its layout block (for the active group + block index).
-  $: tabGroupBlock =
-    $selectedTabGroup != null
-      ? $layout.find(
-          (block) =>
-            block.kind === "tab-group" &&
-            block.group.name === $selectedTabGroup,
-        )
+  // Resolve the selected block (a tab group or a container) to its layout block, for its
+  // instance.
+  $: block =
+    $selectedBlock != null
+      ? $layout.find((b) => layoutBlockName(b) === $selectedBlock)
       : undefined;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? "");
+
+  // The selected block's top-level index, looked up by name in the latest YAML. The layout
+  // catches up with an edit only once the spec is reconciled, so until then its index can
+  // belong to another block, and the inspector's edits would go to that block.
+  $: blockIndex =
+    $selectedBlock != null ? blockIndexOf(parsedDocument, $selectedBlock) : -1;
 
   $: components = $componentsStore;
   $: component = components.get($selectedComponent ?? "");
@@ -91,15 +90,21 @@
 >
   {#if component}
     <ComponentsEditor {component} />
-  {:else if tabGroupBlock && tabGroupBlock.kind === "tab-group"}
+  {:else if block?.kind === "tab-group" && blockIndex >= 0}
     <TabGroupEditor
-      group={tabGroupBlock.group}
-      blockIndex={tabGroupBlock.rowIndex}
+      group={block.group}
+      {blockIndex}
+      canvas={canvasEntity}
       {fileArtifact}
       {autoSave}
-      onClose={() => setSelectedTabGroup(null)}
-      onSelectGroup={(name) => setSelectedTabGroup(name)}
-      {rekeyTabGroups}
+    />
+  {:else if block?.kind === "container" && blockIndex >= 0}
+    <ContainerEditor
+      container={block.container}
+      {blockIndex}
+      canvas={canvasEntity}
+      {fileArtifact}
+      {autoSave}
     />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />

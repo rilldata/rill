@@ -2,11 +2,15 @@ import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
 import { parseDocument } from "yaml";
 import {
+  forEachRowsList,
   generateNewAssets,
   getItemPropertiesExcept,
   isHiddenPath,
   mapGuard,
+  positionKeyPrefix,
   rowsGuard,
+  specRowsAt,
+  targetOfComponent,
 } from "./layout-util";
 
 // A canvas with one free row followed by a tab group that contains a widget.
@@ -50,6 +54,261 @@ rows:
     expect(rows[1].items).toBeUndefined();
     expect(rows[1].name).toBe("deep_dive");
     expect(rows[1].tabs).toBeDefined();
+  });
+});
+
+describe("mapGuard with containers", () => {
+  it("preserves containers and unknown blocks, but cleans up empty plain rows", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - name: story
+    if: '{{ .user.admin }}'
+    rows:
+      - items:
+          - component: a
+  - future_block:
+      key: value
+  - height: 40px
+`);
+    const rows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+
+    expect(rows[0]).toEqual({
+      name: "story",
+      if: "{{ .user.admin }}",
+      rows: [{ items: [{ component: "a" }] }],
+    });
+    // A kind of block this editor doesn't know is passed through verbatim too.
+    expect(rows[1]).toEqual({ future_block: { key: "value" } });
+    // A plain row without items is still coerced, so the empty-row cleanup removes it.
+    expect(rows[2]).toEqual({ height: "40px", items: [] });
+  });
+
+  it("keeps blocks written with an empty items list next to their content", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items: []
+    rows:
+      - items:
+          - component: a
+  - items: []
+    tabs:
+      - label: A
+        rows: []
+  - items:
+      - component: b
+`);
+    const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+    // The empty items are dropped, so the empty-row cleanup leaves the blocks alone.
+    expect(yamlRows[0]).toEqual({ rows: [{ items: [{ component: "a" }] }] });
+    expect(yamlRows[1]).toEqual({ tabs: [{ label: "A", rows: [] }] });
+
+    const { newYamlRows } = generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "add",
+            insertRow: true,
+            componentType: "markdown",
+            destination: { row: 3, col: 0 },
+          },
+        ],
+      },
+      yamlRows,
+      specRows: [
+        {
+          items: [],
+          container: {
+            name: "container-0",
+            rows: [{ items: [{ component: "a" }] }],
+          },
+        },
+        { items: [], tabGroup: { name: "group-1", tabs: [] } },
+        { items: [{ component: "b", definedInCanvas: false }] },
+      ],
+      resolvedComponents: {},
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "foo", metricsViewSpec: undefined },
+    });
+    expect(newYamlRows).toHaveLength(4);
+    expect(newYamlRows[0].rows).toEqual([{ items: [{ component: "a" }] }]);
+    expect(newYamlRows[1].tabs).toEqual([{ label: "A", rows: [] }]);
+  });
+
+  it("keeps a container when a top-level row is added before it", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: header
+  - rows:
+      - items:
+          - component: d1--component-c1-0-0
+`);
+    const { newYamlRows, newSpecRows } = generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "add",
+            insertRow: true,
+            componentType: "markdown",
+            destination: { row: 1, col: 0 },
+          },
+        ],
+      },
+      yamlRows: mapGuard(rowsGuard(doc.getIn(["rows"]))),
+      specRows: [
+        { items: [{ component: "header" }] },
+        {
+          container: {
+            name: "container-1",
+            rows: [{ items: [{ component: "d1--component-c1-0-0" }] }],
+          },
+        },
+      ],
+      resolvedComponents: {},
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "foo", metricsViewSpec: undefined },
+    });
+
+    expect(newYamlRows).toHaveLength(3);
+    expect(newYamlRows[2].rows).toEqual([
+      { items: [{ component: "d1--component-c1-0-0" }] },
+    ]);
+    expect(newSpecRows[2].container?.rows?.[0]?.items?.[0]?.component).toBe(
+      "d1--component-c1-0-0",
+    );
+  });
+});
+
+describe("generateNewAssets with blocks as the spec JSON has them", () => {
+  it("keeps tab groups and containers, which come with empty items, aligned through a row edit", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: a
+  - tabs:
+      - label: Overview
+        rows: []
+  - rows:
+      - items:
+          - component: d1--component-c2-0-0
+  - items:
+      - component: b
+`);
+    const { newYamlRows, newSpecRows } = generateNewAssets({
+      // Delete the first row's only widget, which removes the row.
+      transaction: {
+        operations: [{ type: "delete", target: { row: 0, col: 0 } }],
+      },
+      yamlRows: mapGuard(rowsGuard(doc.getIn(["rows"]))),
+      specRows: [
+        { items: [{ component: "a", definedInCanvas: false }] },
+        {
+          items: [],
+          tabGroup: { name: "group-1", tabs: [{ name: "overview" }] },
+        },
+        {
+          items: [],
+          container: {
+            name: "container-2",
+            rows: [{ items: [{ component: "d1--component-c2-0-0" }] }],
+          },
+        },
+        { items: [{ component: "b", definedInCanvas: false }] },
+      ],
+      resolvedComponents: {},
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "foo", metricsViewSpec: undefined },
+    });
+
+    expect(newYamlRows.map((row) => Object.keys(row)[0])).toEqual([
+      "tabs",
+      "rows",
+      "items",
+    ]);
+    expect(newSpecRows.map((row) => !!row.tabGroup)).toEqual([
+      true,
+      false,
+      false,
+    ]);
+    expect(newSpecRows[1].container?.name).toBe("container-2");
+    expect(newSpecRows[2].items?.[0]?.component).toBe("b");
+  });
+});
+
+describe("rows paths", () => {
+  const spec = [
+    { items: [{ component: "a" }] },
+    {
+      tabGroup: {
+        name: "g",
+        tabs: [
+          { name: "t0", rows: [{ items: [{ component: "b" }] }] },
+          { name: "t1", rows: [{ items: [{ component: "c" }] }] },
+        ],
+      },
+    },
+    { container: { name: "story", rows: [{ items: [{ component: "d" }] }] } },
+    { container: { name: "empty" } },
+  ];
+
+  it("derives the parser's position key prefix from a rows path", () => {
+    expect(positionKeyPrefix(["rows"])).toBe("");
+    expect(positionKeyPrefix(["rows", 2, "tabs", 0, "rows"])).toBe("g2-t0-");
+    expect(positionKeyPrefix(["rows", 1, "rows"])).toBe("c1-");
+  });
+
+  it("finds the spec rows at a YAML rows path", () => {
+    expect(specRowsAt(spec, ["rows"])).toBe(spec);
+    expect(specRowsAt(spec, ["rows", 1, "tabs", 1, "rows"])).toBe(
+      spec[1].tabGroup?.tabs?.[1].rows,
+    );
+    expect(specRowsAt(spec, ["rows", 2, "rows"])).toBe(spec[2].container?.rows);
+    expect(specRowsAt(spec, ["rows", 0, "rows"])).toBeUndefined();
+    expect(specRowsAt(spec, ["rows", 5, "tabs", 0, "rows"])).toBeUndefined();
+  });
+
+  it("creates the missing rows list of an empty block on request", () => {
+    const rows = structuredClone(spec);
+    expect(specRowsAt(rows, ["rows", 3, "rows"])).toBeUndefined();
+    const created = specRowsAt(rows, ["rows", 3, "rows"], true);
+    expect(created).toEqual([]);
+    expect(rows[3].container?.rows).toBe(created);
+  });
+
+  it("visits every rows list with its YAML path", () => {
+    const visited: string[] = [];
+    forEachRowsList(spec, (rows, rowsPath) =>
+      visited.push(`${rowsPath.join(".")}:${rows.length}`),
+    );
+    expect(visited).toEqual([
+      "rows:4",
+      "rows.1.tabs.0.rows:1",
+      "rows.1.tabs.1.rows:1",
+      "rows.2.rows:1",
+      "rows.3.rows:0",
+    ]);
+  });
+
+  it("finds the edit target a component path lives in", () => {
+    expect(
+      targetOfComponent(["rows", 0, "items", 1, "markdown"]),
+    ).toBeUndefined();
+    expect(
+      targetOfComponent(["rows", 2, "rows", 0, "items", 1, "markdown"]),
+    ).toEqual({ rowsPath: ["rows", 2, "rows"] });
+    expect(
+      targetOfComponent([
+        "rows",
+        1,
+        "tabs",
+        0,
+        "rows",
+        0,
+        "items",
+        0,
+        "markdown",
+      ]),
+    ).toEqual({ rowsPath: ["rows", 1, "tabs", 0, "rows"] });
   });
 });
 
@@ -173,7 +432,20 @@ rows:
 });
 
 describe("isHiddenPath", () => {
-  const hiddenPaths = new Set(["rows.1", "rows.3.tabs.0.rows.0.items.1"]);
+  const hiddenPaths = new Set([
+    "rows.1",
+    "rows.3.tabs.0.rows.0.items.1",
+    "rows.4.rows.1",
+  ]);
+
+  it("hides the rows of a container that is hidden or whose row is hidden", () => {
+    expect(isHiddenPath(hiddenPaths, ["rows", 4, "rows", 1, "items", 0])).toBe(
+      true,
+    );
+    expect(isHiddenPath(hiddenPaths, ["rows", 4, "rows", 0, "items", 0])).toBe(
+      false,
+    );
+  });
 
   it("hides an element whose own path or an ancestor's path is hidden", () => {
     expect(isHiddenPath(hiddenPaths, ["rows", 1, "items", 0])).toBe(true);

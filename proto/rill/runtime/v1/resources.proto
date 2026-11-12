@@ -990,14 +990,28 @@ message CanvasRow {
   optional uint32 height = 1;
   // Unit of the height. Current possible values: "px", empty string.
   string height_unit = 2;
-  // Items to render in the row. Empty when the row is a tab group.
+  // Items to render in the row. Empty when the row is a tab group or a container.
   repeated CanvasItem items = 3;
   // If set, this row renders a tab group instead of items.
-  // A row has either items or a tab_group, never both.
+  // A row has exactly one of items, tab_group or container.
   CanvasTabGroup tab_group = 4;
+  // If set, this row is a container of rows instead of items.
+  // A row has exactly one of items, tab_group or container.
+  CanvasContainer container = 6;
   // Templated boolean expression from the row's `if` property.
-  // The row (or tab group) is only shown to viewers for whom it evaluates to true.
+  // The row (or tab group, or container) is only shown to viewers for whom it evaluates to true.
   string condition_expression = 5;
+}
+
+// A named block of rows that viewers see as plain rows.
+// It groups rows so they can be arranged, moved and conditioned together.
+message CanvasContainer {
+  // Stable identifier of the container.
+  // Defaults to "container-<index>" if not provided in the canvas YAML.
+  string name = 1;
+  // Rows in the container. These are always plain rows;
+  // a container never holds a tab group or another container.
+  repeated CanvasRow rows = 2;
 }
 
 message CanvasTabGroup {

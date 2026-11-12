@@ -1,70 +1,50 @@
 <script lang="ts">
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { Copy, Trash2 } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { get } from "svelte/store";
   import { parseDocument, type Document } from "yaml";
-  import TabListItem from "./TabListItem.svelte";
-  import type { TabGroup } from "../stores/tab-group";
+  import type { CanvasEntity } from "../stores/canvas-entity";
   import {
     deleteTab,
-    deleteTabGroup,
     duplicateTab,
-    duplicateTabGroup,
     moveTab,
     renameTab,
-    renameTabGroup,
     setTabName,
     tabHasContent,
   } from "../stores/tab-edit";
+  import type { TabGroup } from "../stores/tab-group";
+  import BlockEditor, { applyCanvasEdit } from "./BlockEditor.svelte";
+  import TabListItem from "./TabListItem.svelte";
 
-  export let group: TabGroup;
-  export let blockIndex: number;
-  export let fileArtifact: FileArtifact;
-  export let autoSave: boolean;
-  // Clear the tab-group selection (e.g. after deleting the whole group).
-  export let onClose: () => void;
-  // Re-point the selection at a group by name: after a rename, so the inspector stays open on
-  // it (the group is re-keyed by name when the spec reprocesses), or at a freshly made copy.
-  export let onSelectGroup: (name: string) => void;
-  // Re-key index-named groups ahead of an edit that shifts top-level rows (see
-  // CanvasEntity.rekeyTabGroups).
-  export let rekeyTabGroups: (newIndexOf: (rowIndex: number) => number) => void;
+  // The inspector of a tab group: the shared block inspector with the group's tabs.
+  let {
+    group,
+    blockIndex,
+    canvas,
+    fileArtifact,
+    autoSave,
+  }: {
+    group: TabGroup;
+    blockIndex: number;
+    canvas: CanvasEntity;
+    fileArtifact: FileArtifact;
+    autoSave: boolean;
+  } = $props();
 
-  $: ({ editorContent, updateEditorContent, saveLocalContent } = fileArtifact);
-
-  $: tabs = group.tabs;
-  $: activeTabIndex = group.activeTabIndex;
-  $: tabCount = $tabs.length;
-
-  // Local copy of the group name. The `group` prop is a fresh object only when the group is
-  // re-keyed (i.e. renamed), so syncing on group.name keeps typing from being clobbered.
-  let groupName = "";
-  let lastGroupName = "";
-  $: if (group.name !== lastGroupName) {
-    groupName = group.name;
-    lastGroupName = group.name;
-  }
+  const tabs = $derived(group.tabs);
+  const activeTabIndex = $derived(group.activeTabIndex);
+  const tabCount = $derived($tabs.length);
 
   // Index pending a delete confirmation, or null when no dialog is open.
-  let pendingTabDelete: number | null = null;
-  let pendingGroupDelete = false;
+  let pendingTabDelete = $state<number | null>(null);
 
-  async function applyEdit(mutate: (doc: Document) => void) {
-    const doc = parseDocument($editorContent ?? "");
-    mutate(doc);
-    updateEditorContent(doc.toString(), false, autoSave);
-    await saveLocalContent();
+  function currentDoc() {
+    return parseDocument(get(fileArtifact.editorContent) ?? "");
   }
 
-  async function commitGroupRename() {
-    const trimmed = groupName.trim();
-    if (trimmed === group.name) return;
-    await applyEdit((doc) => renameTabGroup(doc, blockIndex, trimmed));
-    // Follow the group to its new key (an empty name defaults to `group-<index>`).
-    onSelectGroup(trimmed || `group-${blockIndex}`);
+  function applyEdit(mutate: (doc: Document) => void) {
+    return applyCanvasEdit(fileArtifact, autoSave, mutate);
   }
 
   async function commitLabel(index: number, value: string) {
@@ -73,7 +53,7 @@
     // Compare against the persisted YAML, not $tabs[index].displayName: the live typing
     // optimistically updates the latter (so the strip reflects edits), which would make a
     // naive guard think nothing changed and skip the save, losing the edit on refresh.
-    const persisted = parseDocument($editorContent ?? "").getIn([
+    const persisted = currentDoc().getIn([
       "rows",
       blockIndex,
       "tabs",
@@ -103,7 +83,7 @@
   }
 
   function requestDeleteTab(index: number) {
-    if (tabHasContent(parseDocument($editorContent ?? ""), blockIndex, index)) {
+    if (tabHasContent(currentDoc(), blockIndex, index)) {
       pendingTabDelete = index;
     } else {
       void confirmDeleteTab(index);
@@ -115,57 +95,22 @@
     const wasLastTab = tabCount <= 1;
     await applyEdit((doc) => deleteTab(doc, blockIndex, index));
     // Deleting the last tab unwraps the group, so the group no longer exists.
-    if (wasLastTab) onClose();
-  }
-
-  async function duplicateGroup() {
-    // The copy pushes every block after the original down one row.
-    rekeyTabGroups((rowIndex) =>
-      rowIndex > blockIndex ? rowIndex + 1 : rowIndex,
-    );
-    await applyEdit((doc) => {
-      duplicateTabGroup(doc, blockIndex);
-    });
-    // The copy sits right after the original and has no name, so it is keyed by its index.
-    onSelectGroup(`group-${blockIndex + 1}`);
-  }
-
-  function requestDeleteGroup() {
-    const doc = parseDocument($editorContent ?? "");
-    const hasContent = $tabs.some((_, i) => tabHasContent(doc, blockIndex, i));
-    if (hasContent) {
-      pendingGroupDelete = true;
-    } else {
-      void confirmDeleteGroup();
-    }
-  }
-
-  async function confirmDeleteGroup() {
-    pendingGroupDelete = false;
-    await applyEdit((doc) => {
-      deleteTabGroup(doc, blockIndex);
-    });
-    onClose();
+    if (wasLastTab) canvas.setSelectedBlock(null);
   }
 </script>
 
-<SidebarWrapper type="secondary" disableHorizontalPadding title="Tab group">
-  <div class="param">
-    <Input
-      capitalizeLabel={false}
-      textClass="text-sm"
-      size="sm"
-      labelGap={2}
-      label="Tab group name"
-      hint="Stable identifier used as the group's deep-link URL key"
-      bind:value={groupName}
-      onBlur={commitGroupRename}
-      onEnter={commitGroupRename}
-    />
-  </div>
-
+<BlockEditor
+  kind="tab-group"
+  name={group.name}
+  {blockIndex}
+  {canvas}
+  {fileArtifact}
+  {autoSave}
+>
   <div class="param flex flex-col gap-y-2">
-    <span class="text-xs font-medium text-fg-secondary">Tabs</span>
+    <span class="text-xs font-medium text-fg-secondary">
+      {m.canvas_tabs()}
+    </span>
     <ul class="flex flex-col gap-y-2">
       {#each $tabs as tab, index (index)}
         <TabListItem
@@ -185,39 +130,20 @@
       {/each}
     </ul>
   </div>
-
-  <div class="param flex flex-col gap-y-2">
-    <Button type="secondary" onClick={duplicateGroup}>
-      <Copy size="14px" />
-      Duplicate tab group
-    </Button>
-    <Button type="secondary-destructive" onClick={requestDeleteGroup}>
-      <Trash2 size="14px" />
-      Delete tab group
-    </Button>
-  </div>
-</SidebarWrapper>
+</BlockEditor>
 
 <AlertDialog.Confirmation
   open={pendingTabDelete !== null}
-  onOpenChange={(open) => !open && (pendingTabDelete = null)}
-  title="Delete tab?"
-  description="This tab and all of its widgets will be permanently removed."
-  confirmLabel="Delete"
+  onOpenChange={(open) => {
+    if (!open) pendingTabDelete = null;
+  }}
+  title={m.canvas_delete_tab()}
+  description={m.canvas_delete_tab_description()}
+  confirmLabel={m.common_delete()}
   confirmType="destructive"
   onConfirm={() => {
     if (pendingTabDelete !== null) void confirmDeleteTab(pendingTabDelete);
   }}
-/>
-
-<AlertDialog.Confirmation
-  open={pendingGroupDelete}
-  onOpenChange={(open) => (pendingGroupDelete = open)}
-  title="Delete tab group?"
-  description="This tab group and all of its tabs and widgets will be permanently removed."
-  confirmLabel="Delete"
-  confirmType="destructive"
-  onConfirm={confirmDeleteGroup}
 />
 
 <style lang="postcss">

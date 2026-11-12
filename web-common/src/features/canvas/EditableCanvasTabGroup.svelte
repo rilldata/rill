@@ -1,274 +1,80 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { Writable } from "svelte/store";
-  import ComponentError from "../components/ComponentError.svelte";
-  import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasTabStrip from "./CanvasTabStrip.svelte";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import EditableCanvasRow from "./EditableCanvasRow.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import type { AddableItem, EditTarget } from "./layout-util";
-  import RowDropZone from "./RowDropZone.svelte";
-  import RowWrapper from "./RowWrapper.svelte";
+  import EditableBlockRegion, {
+    type BlockBuilderProps,
+  } from "./EditableBlockRegion.svelte";
+  import { tabRowsPath } from "./layout-util";
   import type { TabGroup } from "./stores/tab-group";
-  import { dropZone } from "./stores/ui-stores";
 
-  export let group: TabGroup;
-  export let blockIndex: number;
-  export let maxWidth: number;
-  export let columnWidth: number;
-  // Block-level stacking order, matching the value top-level rows receive. The region
-  // establishes its own stacking context (isolation: isolate) so the tab's rows and their
-  // drop zones are hit-tested as a self-contained layer; without this, neighboring blocks
-  // overlap the tab's drop zones and dragging components within a tab silently fails.
-  export let zIndex: number;
-  // Whether this is the last block on the canvas. When true, an explicit "add outside the
-  // tab" affordance is shown after the group so authors can append free rows below it.
-  export let isLastBlock: boolean = false;
-  export let components: Map<string, BaseCanvasComponent>;
-  export let dragComponent: BaseCanvasComponent | null;
-  // Top-level index of the tab group currently being dragged, or null when none is. While a
-  // group is dragged, the row drop zones around this block become landing slots (except the
-  // dragged group's own two, which would be no-ops) and the dragged group renders as a ghost.
-  export let dragBlockIndex: number | null = null;
-  export let selectedComponent: Writable<string | null>;
-  export let hasValidMetrics: boolean;
+  // A tab group in the editor: the shared block region with the tab strip as its header,
+  // editing the active tab's rows.
+  // svelte-ignore custom_element_props_identifier
+  let {
+    group,
+    onAddTab,
+    onRenameTab,
+    onDeleteTab,
+    onMoveTab,
+    onDuplicateTab,
+    onSelect,
+    onDropOnTab,
+    onSelectBlock,
+    onBlockMouseDown,
+    onDuplicateBlock,
+    ...builder
+  }: BlockBuilderProps & {
+    group: TabGroup;
+    onAddTab: (blockIndex: number) => void;
+    onRenameTab: (blockIndex: number, tabIndex: number, label: string) => void;
+    onDeleteTab: (blockIndex: number, tabIndex: number) => void;
+    onMoveTab: (
+      blockIndex: number,
+      tabIndex: number,
+      direction: -1 | 1,
+    ) => void;
+    onDuplicateTab: (blockIndex: number, tabIndex: number) => void;
+    // Called with the selected tab's stable name so the parent can sync URL state.
+    onSelect?: (tabName: string) => void;
+    // Drop a dragged component onto a tab (cross-container move).
+    onDropOnTab: (blockIndex: number, tabIndex: number) => void;
+  } = $props();
 
-  // Builder primitives, all target-aware.
-  export let onDrop: (
-    row: number,
-    column: number | null,
-    target?: EditTarget,
-  ) => void;
-  export let addItems: (
-    position: { row: number; column: number },
-    items: AddableItem[],
-    target?: EditTarget,
-  ) => void;
-  export let spreadEvenly: (index: number, target?: EditTarget) => void;
-  export let initializeRow: (
-    row: number,
-    type: AddableItem,
-    target?: EditTarget,
-  ) => void;
-  export let updateRowHeight: (
-    newHeight: number,
-    index: number,
-    target?: EditTarget,
-  ) => void;
-  export let updateComponentWidths: (
-    index: number,
-    newWidths: number[],
-    target?: EditTarget,
-  ) => void;
-  export let onComponentMouseDown: (params: {
-    id: string;
-    event: MouseEvent;
-  }) => void;
-  export let onDuplicate: (
-    rowIndex: number,
-    columnIndex: number,
-    target: EditTarget,
-  ) => void;
-  export let onDelete: (params: { component: BaseCanvasComponent }) => void;
-
-  // Tab management.
-  export let onAddTab: (blockIndex: number) => void;
-  export let onRenameTab: (
-    blockIndex: number,
-    tabIndex: number,
-    label: string,
-  ) => void;
-  export let onDeleteTab: (blockIndex: number, tabIndex: number) => void;
-  export let onMoveTab: (
-    blockIndex: number,
-    tabIndex: number,
-    direction: -1 | 1,
-  ) => void;
-  export let onDuplicateTab: (blockIndex: number, tabIndex: number) => void;
-  export let onSelect: ((tabName: string) => void) | undefined = undefined;
-  // Select this tab group for editing (opens the tab-group inspector panel).
-  export let onSelectGroup: (() => void) | undefined = undefined;
-  // Start dragging this tab group to another position on the canvas.
-  export let onGroupMouseDown: (blockIndex: number, event: MouseEvent) => void;
-  // Duplicate this whole tab group (the copy is inserted right after it).
-  export let onDuplicateGroup: (blockIndex: number) => void;
-  // Drop a dragged component onto a tab (cross-container move).
-  export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
-  // Insert a new tab group at a given top-level index (for the "add outside" affordance).
-  export let onAddTabGroup: (index: number) => void;
-
-  $: tabs = group.tabs;
-  $: activeTabIndex = group.activeTabIndex;
-  $: activeTab = $tabs[$activeTabIndex];
-  $: grid = activeTab?.grid;
-  $: target = { blockIndex, tabIndex: $activeTabIndex } satisfies EditTarget;
-  // Build row DOM ids from indices, not user-controlled group/tab names: names allow spaces
-  // and punctuation, which break the `#${id}` querySelector used for height resizing.
-  $: idPrefix = `${blockIndex}-${$activeTabIndex}-`;
-  $: tabZoneScope = `tab:${group.name}:${activeTab?.name ?? $activeTabIndex}`;
-  $: blockDragging = dragBlockIndex !== null;
-  $: isDragSource = dragBlockIndex === blockIndex;
-  $: allowBlockDrop = blockDragging && !isDragSource;
+  const blockIndex = $derived(builder.blockIndex);
+  const tabs = $derived(group.tabs);
+  const activeTabIndex = $derived(group.activeTabIndex);
+  const activeTab = $derived($tabs[$activeTabIndex]);
 </script>
 
-<RowWrapper
-  gridTemplate="12fr"
-  {zIndex}
-  {maxWidth}
-  id={`tab-group-row-${group.name}`}
+<EditableBlockRegion
+  {...builder}
+  variant="solid"
+  grid={activeTab?.grid}
+  target={{ rowsPath: tabRowsPath(blockIndex, $activeTabIndex) }}
+  idPrefix={`${blockIndex}-${$activeTabIndex}-`}
+  zoneScope={`tab:${group.name}:${activeTab?.name ?? $activeTabIndex}`}
+  rowKey={activeTab?.name ?? String($activeTabIndex)}
+  emptyLabel={m.canvas_add_widget_to_tab()}
+  afterLabel={m.canvas_add_widget_below_tabs()}
 >
-  <ItemWrapper fitContent zIndex={0}>
-    <div
-      id={`tab-group-region-${blockIndex}`}
-      class="tab-group-region"
-      class:opacity-20={isDragSource}
-    >
-      <CanvasTabStrip
-        {group}
-        {maxWidth}
-        editable
-        {dragComponent}
-        {onSelect}
-        onGroupMouseDown={(event) => onGroupMouseDown(blockIndex, event)}
-        onDuplicateGroup={() => onDuplicateGroup(blockIndex)}
-        onAddTab={() => onAddTab(blockIndex)}
-        onRenameTab={(tabIndex, label) =>
-          onRenameTab(blockIndex, tabIndex, label)}
-        onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
-        onMoveTab={(tabIndex, direction) =>
-          onMoveTab(blockIndex, tabIndex, direction)}
-        onDuplicateTab={(tabIndex) => onDuplicateTab(blockIndex, tabIndex)}
-        {onSelectGroup}
-        onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
-      />
-
-      {#if activeTab && grid}
-        {#each $grid as row, rowIndex (`${activeTab.name}-${rowIndex}`)}
-          <EditableCanvasRow
-            {row}
-            {maxWidth}
-            {rowIndex}
-            {idPrefix}
-            zoneScope={tabZoneScope}
-            {components}
-            {columnWidth}
-            {dragComponent}
-            {blockDragging}
-            {selectedComponent}
-            zIndex={$grid.length - rowIndex + 1}
-            onDrop={(r, c) => onDrop(r, c, target)}
-            addItems={(pos, items) => addItems(pos, items, target)}
-            spreadEvenly={(index) => spreadEvenly(index, target)}
-            initializeRow={(r, type) => initializeRow(r, type, target)}
-            updateRowHeight={(h, index) => updateRowHeight(h, index, target)}
-            updateComponentWidths={(index, widths) =>
-              updateComponentWidths(index, widths, target)}
-            {onComponentMouseDown}
-            onDuplicate={({ columnIndex }) =>
-              onDuplicate(rowIndex, columnIndex, target)}
-            {onDelete}
-          />
-        {/each}
-
-        {#if $grid.length === 0}
-          <RowWrapper
-            gridTemplate="12fr"
-            zIndex={0}
-            {maxWidth}
-            id={`tab-add-${group.name}`}
-          >
-            <ItemWrapper fitContent zIndex={0}>
-              {#if hasValidMetrics}
-                <!-- The empty-tab body doubles as a drop target so a dragged widget can be
-                     dropped straight into an empty tab (which has no rows/drop zones yet). -->
-                <div
-                  role="presentation"
-                  class="w-full"
-                  on:mouseenter={() => {
-                    if (dragComponent) dropZone.set(tabZoneScope);
-                  }}
-                  on:mouseleave={() => {
-                    if (dragComponent) dropZone.clear();
-                  }}
-                  on:mouseup={() => {
-                    if (dragComponent) onDrop(0, null, target);
-                  }}
-                >
-                  <!-- While dragging, let the drop pass through to the wrapper instead of
-                       opening the add menu. -->
-                  <div class:pointer-events-none={!!dragComponent}>
-                    <AddComponentDropdown
-                      componentForm
-                      label={m.canvas_add_widget_to_tab()}
-                      onItemClick={(type) =>
-                        initializeRow($grid.length, type, target)}
-                      onAddComponentRef={(componentName) =>
-                        initializeRow($grid.length, { componentName }, target)}
-                    />
-                  </div>
-                </div>
-              {:else}
-                <ComponentError error="No valid metrics view in project" />
-              {/if}
-            </ItemWrapper>
-          </RowWrapper>
-        {/if}
-      {/if}
-    </div>
-  </ItemWrapper>
-
-  <RowDropZone
-    allowDrop={!!dragComponent || allowBlockDrop}
-    dropIndex={blockIndex}
-    position="top"
-    {onDrop}
-    addItem={(type) => {
-      initializeRow(blockIndex, type);
-    }}
-    onAddTabGroup={() => onAddTabGroup(blockIndex)}
-  />
-
-  <RowDropZone
-    allowDrop={!!dragComponent || allowBlockDrop}
-    dropIndex={blockIndex + 1}
-    position="bottom"
-    {onDrop}
-    addItem={(type) => {
-      initializeRow(blockIndex + 1, type);
-    }}
-    onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
-  />
-</RowWrapper>
-
-{#if isLastBlock && hasValidMetrics}
-  <!-- Add a widget (or another tab group) on the free canvas, after this tab group. -->
-  <RowWrapper
-    gridTemplate="12fr"
-    zIndex={0}
-    {maxWidth}
-    id={`after-tab-${group.name}`}
-  >
-    <ItemWrapper type="table" zIndex={0}>
-      <AddComponentDropdown
-        componentForm
-        label={m.canvas_add_widget_below_tabs()}
-        onItemClick={(type) => initializeRow(blockIndex + 1, type)}
-        onAddComponentRef={(componentName) =>
-          initializeRow(blockIndex + 1, { componentName })}
-        onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
-      />
-    </ItemWrapper>
-  </RowWrapper>
-{/if}
-
-<style lang="postcss">
-  /* A self-contained stacking context for the tab group: keeps the tab's rows and
-     their drop zones hit-testable as one layer, and gives authors a visible boundary
-     showing which widgets belong to the tab versus the free canvas. */
-  .tab-group-region {
-    @apply pointer-events-auto relative flex w-full min-w-0 flex-col items-center gap-y-2.5;
-    @apply rounded-md border border-gray-200 bg-surface-subtle/40 px-3 py-2;
-    isolation: isolate;
-  }
-</style>
+  {#snippet header()}
+    <CanvasTabStrip
+      {group}
+      maxWidth={builder.maxWidth}
+      editable
+      dragComponent={builder.dragComponent}
+      {onSelect}
+      onGroupMouseDown={(event) => onBlockMouseDown(blockIndex, event)}
+      onDuplicateGroup={() => onDuplicateBlock(blockIndex)}
+      onAddTab={() => onAddTab(blockIndex)}
+      onRenameTab={(tabIndex, label) =>
+        onRenameTab(blockIndex, tabIndex, label)}
+      onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
+      onMoveTab={(tabIndex, direction) =>
+        onMoveTab(blockIndex, tabIndex, direction)}
+      onDuplicateTab={(tabIndex) => onDuplicateTab(blockIndex, tabIndex)}
+      onSelectGroup={() => onSelectBlock(group.name)}
+      onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
+    />
+  {/snippet}
+</EditableBlockRegion>

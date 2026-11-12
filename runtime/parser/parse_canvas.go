@@ -50,16 +50,18 @@ type CanvasYAML struct {
 	AIPrompts   []AIPromptYAML           `yaml:"ai_prompts"`
 }
 
-// canvasRowYAML is a single entry in a canvas's (or tab's) rows list.
-// It is either a plain row (items) or a tab group (tabs), never both.
+// canvasRowYAML is a single entry in a canvas's (or tab's, or container's) rows list.
+// It is a plain row (items), a tab group (tabs) or a container (rows), never more than one of them.
 type canvasRowYAML struct {
 	Height *string           `yaml:"height"`
 	Items  []*canvasItemYAML `yaml:"items"`
-	// Name is the stable identifier of a tab group. Only used for tab-group entries.
+	// Name is the stable identifier of a tab group or container. Only used for those entries.
 	Name string `yaml:"name"`
 	// Tabs, when set, makes this entry a tab group instead of a plain row.
 	Tabs []*canvasTabYAML `yaml:"tabs"`
-	// If is a templated condition; the row (or tab group) is only shown to viewers for whom it's true.
+	// Rows, when set, makes this entry a container of rows instead of a plain row, like tabs makes it a tab group.
+	Rows []*canvasRowYAML `yaml:"rows"`
+	// If is a templated condition; the row (or tab group, or container) is only shown to viewers for whom it's true.
 	If string `yaml:"if"`
 }
 
@@ -165,7 +167,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 
 	// Parse rows and items.
-	// Each row entry is either a plain row (items) or a tab group (tabs); tab groups are only allowed at the top level.
+	// Each row entry is a plain row (items), a tab group (tabs) or a container (rows); tab groups and containers are only allowed at the top level.
 	var inlineComponentDefs []*componentDef // Track inline component definitions so we can insert them after we have validated all components
 	rows, err := p.parseCanvasRows(node, tmp.Rows, true, "", nil, &inlineComponentDefs)
 	if err != nil {
@@ -272,14 +274,17 @@ func (p *Parser) parseCanvas(node *Node) error {
 	return nil
 }
 
-// parseCanvasRows parses a list of canvas row entries. Each entry is either a plain row (items)
-// or a tab group (tabs). Tab groups are only allowed when allowTabs is true (the top level);
-// a tab's own rows are always plain. posPrefix disambiguates inline component names across tabs.
-// conditions are the `if` conditions of the enclosing tab group and tab, which inline components inherit.
-func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bool, posPrefix string, conditions []string, inlineComponentDefs *[]*componentDef) ([]*runtimev1.CanvasRow, error) {
+// parseCanvasRows parses a list of canvas row entries.
+// Each entry is a plain row (items), a tab group (tabs) or a container (rows).
+// Tab groups and containers are only allowed when allowBlocks is true (the top level);
+// the rows of a tab or a container are always plain.
+// posPrefix disambiguates inline component names across tabs and containers.
+// conditions are the `if` conditions of the enclosing tab group and tab, or container, which inline components inherit.
+func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowBlocks bool, posPrefix string, conditions []string, inlineComponentDefs *[]*componentDef) ([]*runtimev1.CanvasRow, error) {
 	var out []*runtimev1.CanvasRow
-	// seenGroupNames tracks tab group names so each group has a unique URL key. Only populated at the top level.
-	seenGroupNames := make(map[string]bool)
+	// seenBlockNames tracks the names of tab groups and containers, which must be unique; a tab group's name is also its URL key.
+	// Only populated at the top level.
+	seenBlockNames := make(map[string]bool)
 	for i, row := range rows {
 		if row == nil {
 			return nil, fmt.Errorf("row at index %d is empty", i)
@@ -291,20 +296,31 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 		}
 		rowConditions := appendCondition(conditions, rowCondition)
 
-		// Dispatch on whether this entry is a tab group. Presence of the `tabs:` key (even if empty)
-		// marks an entry as a group, so an empty `tabs: []` is rejected rather than silently treated as a row.
+		// Dispatch on the kind of entry. Presence of the `tabs:` or `rows:` key (even if empty) decides it:
+		// an empty `tabs: []` is rejected rather than silently treated as a row, while `rows: []` is an empty container.
+		if (len(row.Items) > 0 && (row.Tabs != nil || row.Rows != nil)) || (row.Tabs != nil && row.Rows != nil) {
+			return nil, fmt.Errorf("row %d cannot define more than one of 'items', 'tabs' and 'rows'", i)
+		}
 		if row.Tabs != nil {
-			if len(row.Items) > 0 {
-				return nil, fmt.Errorf("row %d cannot define both 'items' and 'tabs'", i)
+			if !allowBlocks {
+				return nil, fmt.Errorf("tab groups cannot be nested inside a tab or a container (row %d)", i)
 			}
-			if !allowTabs {
-				return nil, fmt.Errorf("tab groups cannot be nested inside a tab (row %d)", i)
-			}
-			group, err := p.parseCanvasTabGroup(node, row, i, posPrefix, rowConditions, seenGroupNames, inlineComponentDefs)
+			group, err := p.parseCanvasTabGroup(node, row, i, posPrefix, rowConditions, seenBlockNames, inlineComponentDefs)
 			if err != nil {
 				return nil, err
 			}
 			out = append(out, &runtimev1.CanvasRow{TabGroup: group, ConditionExpression: rowCondition})
+			continue
+		}
+		if row.Rows != nil {
+			if !allowBlocks {
+				return nil, fmt.Errorf("containers cannot be nested inside a tab or another container (row %d)", i)
+			}
+			container, err := p.parseCanvasContainer(node, row, i, posPrefix, rowConditions, seenBlockNames, inlineComponentDefs)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, &runtimev1.CanvasRow{Container: container, ConditionExpression: rowCondition})
 			continue
 		}
 
@@ -423,19 +439,15 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 
 // parseCanvasTabGroup parses a single tab group entry (a row with tabs).
 // conditions are the `if` conditions of the group and its ancestors, which inline components inherit.
-func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int, posPrefix string, conditions []string, seenGroupNames map[string]bool, inlineComponentDefs *[]*componentDef) (*runtimev1.CanvasTabGroup, error) {
+func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int, posPrefix string, conditions []string, seenBlockNames map[string]bool, inlineComponentDefs *[]*componentDef) (*runtimev1.CanvasTabGroup, error) {
 	if len(row.Tabs) == 0 {
 		return nil, fmt.Errorf("tab group at row %d must have at least one tab", rowIdx)
 	}
 
-	groupName := row.Name
-	if groupName == "" {
-		groupName = fmt.Sprintf("group-%d", rowIdx)
+	groupName, err := blockName(row.Name, "group", rowIdx, seenBlockNames)
+	if err != nil {
+		return nil, err
 	}
-	if seenGroupNames[groupName] {
-		return nil, fmt.Errorf("duplicate tab group name %q at row %d", groupName, rowIdx)
-	}
-	seenGroupNames[groupName] = true
 
 	var tabs []*runtimev1.CanvasTab
 	seenNames := make(map[string]bool, len(row.Tabs))
@@ -479,6 +491,38 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 		Name: groupName,
 		Tabs: tabs,
 	}, nil
+}
+
+// parseCanvasContainer parses a single container entry (a row with rows).
+// conditions are the `if` conditions of the container and its ancestors, which the rows inside and their inline components inherit.
+func (p *Parser) parseCanvasContainer(node *Node, row *canvasRowYAML, rowIdx int, posPrefix string, conditions []string, seenBlockNames map[string]bool, inlineComponentDefs *[]*componentDef) (*runtimev1.CanvasContainer, error) {
+	name, err := blockName(row.Name, "container", rowIdx, seenBlockNames)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := p.parseCanvasRows(node, row.Rows, false, fmt.Sprintf("%sc%d-", posPrefix, rowIdx), conditions, inlineComponentDefs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid container %q at row %d: %w", name, rowIdx, err)
+	}
+
+	return &runtimev1.CanvasContainer{
+		Name: name,
+		Rows: rows,
+	}, nil
+}
+
+// blockName returns the name of the tab group or container at the given row index: its name from the YAML, or "<kind>-<rowIdx>" by default.
+// Tab groups and containers share seen, so a name is unique across both kinds.
+func blockName(name, kind string, rowIdx int, seen map[string]bool) (string, error) {
+	if name == "" {
+		name = fmt.Sprintf("%s-%d", kind, rowIdx)
+	}
+	if seen[name] {
+		return "", fmt.Errorf("duplicate name %q at row %d: tab groups and containers must have unique names", name, rowIdx)
+	}
+	seen[name] = true
+	return name, nil
 }
 
 // uniqueName returns name if it is non-empty and unused, otherwise it derives a unique
@@ -547,7 +591,7 @@ func combineConditions(conditions []string) string {
 }
 
 // parseCanvasInlineComponent parses an inline component definition in a canvas item.
-// posKey uniquely identifies the item's position in the canvas (including any tab path).
+// posKey uniquely identifies the item's position in the canvas (including any tab or container path).
 func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map[string]yaml.Node) (string, *componentDef, error) {
 	var n yaml.Node
 	err := n.Encode(props)

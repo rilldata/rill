@@ -46,8 +46,10 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
+import { defaultBlockName } from "./block-edit";
 import { Grid } from "./grid";
-import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
+import { RowsBlock, type LayoutBlock } from "./layout-blocks";
+import { TabGroup } from "./tab-group";
 import { getDefaultComparisonRange } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
@@ -55,8 +57,11 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import {
   canvasItemInstanceId,
+  containerRowsPath,
   DEFAULT_DASHBOARD_WIDTH,
-  namePrefixFromPath,
+  forEachRowsList,
+  positionKeyPrefix,
+  rowsPathOfComponent,
 } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -99,11 +104,14 @@ const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
-  // Ordered list of top-level layout blocks (plain rows and tab groups).
-  // For untabbed canvases this mirrors _rows one-to-one; tab groups are rendered from here.
+  // Ordered list of top-level layout blocks (plain rows, tab groups and containers).
+  // For canvases without blocks this mirrors _rows one-to-one; blocks are rendered from here.
   layout = writable<LayoutBlock[]>([]);
-  // Tab groups keyed by their stable name, reused across spec updates so active-tab state survives.
-  private tabGroups = new Map<string, TabGroup>();
+  // Tab groups and containers keyed by their name, which is unique across both kinds.
+  // They are reused across spec updates so their state survives: a group's active tab, a
+  // container's grid. The editor names every block before an edit (see nameBlocks), so an
+  // edit that moves blocks keeps their keys.
+  private readonly blocks = new Map<string, TabGroup | RowsBlock>();
 
   // Time state controls
   timeManager: TimeManager;
@@ -119,9 +127,9 @@ export class CanvasEntity {
 
   selectedComponent = writable<string | null>(null);
   activeComponent = writable<string | null>(null);
-  // Name of the tab group currently selected for editing (drives the tab-group inspector
-  // panel). Mutually exclusive with selectedComponent.
-  selectedTabGroup = writable<string | null>(null);
+  // Name of the block (tab group or container) currently selected for editing, which drives
+  // the block inspector panel. Mutually exclusive with selectedComponent.
+  selectedBlock = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
@@ -729,8 +737,8 @@ export class CanvasEntity {
     if (!component) return;
     const { pathInYAML, type, resource } = component;
     const { row: rowIndex, col: columnIndex } = rowColFromPath(pathInYAML);
-    // Preserve any tab/group prefix so the duplicate lands in the same container.
-    const prefix = pathInYAML.slice(0, -4);
+    // Preserve the rows path so the duplicate lands in the same tab or container.
+    const prefix = rowsPathOfComponent(pathInYAML);
     const path = constructPath(rowIndex, columnIndex, type, prefix);
 
     const existingResource = get(resource);
@@ -756,7 +764,7 @@ export class CanvasEntity {
       column: columnIndex,
       metricsViewName,
       metricsViewSpec,
-      namePrefix: namePrefixFromPath(pathInYAML),
+      namePrefix: positionKeyPrefix(prefix),
     });
 
     const newComponent = createComponent(newResource, this, path);
@@ -775,28 +783,11 @@ export class CanvasEntity {
     let createdNewComponent = false;
     const isFirstLoad = get(this.firstLoad);
 
-    // Create/update component instances for a list of rows, descending into tab groups.
-    // The prefix is the YAML path at which the rows live (top level is ["rows"]).
-    const processRowItems = (
-      rowList: V1CanvasRow[],
-      prefix: (string | number)[],
-    ) => {
+    // Create/update component instances for every rows list: the top-level rows and those
+    // nested in tabs and containers. The prefix is the YAML path at which the rows live
+    // (top level is ["rows"]); the spec's proto shape differs from it (see forEachRowsList).
+    forEachRowsList(rows, (rowList, prefix) => {
       rowList.forEach((row, rowIndex) => {
-        if (row.tabGroup) {
-          // The spec uses the proto shape (row.tabGroup.tabs), but the YAML path
-          // omits the tab_group wrapper (row.tabs[t].rows) — see parser canvasRowYAML.
-          row.tabGroup.tabs?.forEach((tab, tabIndex) => {
-            processRowItems(tab.rows ?? [], [
-              ...prefix,
-              rowIndex,
-              "tabs",
-              tabIndex,
-              "rows",
-            ]);
-          });
-          return;
-        }
-
         const items = row.items ?? [];
         items.forEach((item, columnIndex) => {
           const componentName = item.component;
@@ -809,7 +800,7 @@ export class CanvasEntity {
             item,
             rowIndex,
             columnIndex,
-            namePrefixFromPath(prefix),
+            positionKeyPrefix(prefix),
           );
           set.add(instanceId);
 
@@ -841,9 +832,7 @@ export class CanvasEntity {
           }
         });
       });
-    };
-
-    processRowItems(rows, ["rows"]);
+    });
 
     const didUpdateRowCount = this.processLayout(rows);
 
@@ -865,38 +854,61 @@ export class CanvasEntity {
     this.selectedComponent.update(($) => $);
   };
 
-  // Build the ordered list of layout blocks (plain rows and tab groups) from the spec,
-  // and sync the underlying grids: _rows holds the top-level plain rows (in order),
-  // while each tab group owns a grid per tab.
+  // Build the ordered list of layout blocks (plain rows, tab groups and containers) from
+  // the spec, and sync the underlying grids: _rows holds the top-level plain rows (in order),
+  // while each tab group owns a grid per tab and each container owns one grid.
   private processLayout = (rows: V1CanvasRow[]): boolean => {
     const freeRows: V1CanvasRow[] = [];
     // The spec row index of each free row, so instance ids match the ones computed
-    // in processRows (which walks the full spec, including tab groups).
+    // in processRows (which walks the full spec, including tabs and containers).
     const freeRowSpecIndices: number[] = [];
-    const blocks: LayoutBlock[] = [];
-    const seenGroupNames = new Set<string>();
+    const layout: LayoutBlock[] = [];
+    const seenBlockNames = new Set<string>();
+
+    // The block instance under the name, reused so its state survives the update. A new one
+    // is made when there is none, or when the name now belongs to a block of the other kind.
+    const reuse = <T extends TabGroup | RowsBlock>(
+      name: string,
+      type: abstract new (...args: never[]) => T,
+      create: () => T,
+    ): T => {
+      seenBlockNames.add(name);
+      const existing = this.blocks.get(name);
+      if (existing instanceof type) return existing;
+      const created = create();
+      this.blocks.set(name, created);
+      return created;
+    };
 
     rows.forEach((row, rowIndex) => {
       if (row.tabGroup) {
-        const name = row.tabGroup.name ?? `group-${rowIndex}`;
-        let group = this.tabGroups.get(name);
-        if (!group) {
-          group = new TabGroup(this, name);
-          this.tabGroups.set(name, group);
-        }
+        const name =
+          row.tabGroup.name ?? defaultBlockName("tab-group", rowIndex);
+        const group = reuse(name, TabGroup, () => new TabGroup(this, name));
         group.updateFromSpec(name, row.tabGroup.tabs ?? [], rowIndex);
-        seenGroupNames.add(name);
-        blocks.push({ kind: "tab-group", rowIndex, group });
+        layout.push({ kind: "tab-group", rowIndex, group });
+      } else if (row.container) {
+        const name =
+          row.container.name ?? defaultBlockName("container", rowIndex);
+        const rowsPath = containerRowsPath(rowIndex);
+        const container = reuse(
+          name,
+          RowsBlock,
+          () => new RowsBlock(this, name, "", rowsPath),
+        );
+        container.name = name;
+        container.updateRows(row.container.rows ?? [], rowsPath);
+        layout.push({ kind: "container", rowIndex, container });
       } else {
-        blocks.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
+        layout.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
         freeRowSpecIndices.push(rowIndex);
         freeRows.push(row);
       }
     });
 
-    // Drop tab groups that no longer exist in the spec.
-    for (const name of [...this.tabGroups.keys()]) {
-      if (!seenGroupNames.has(name)) this.tabGroups.delete(name);
+    // Drop blocks that no longer exist in the spec.
+    for (const name of [...this.blocks.keys()]) {
+      if (!seenBlockNames.has(name)) this.blocks.delete(name);
     }
 
     const didUpdateRowCount = this._rows.updateFromCanvasRows(
@@ -908,7 +920,7 @@ export class CanvasEntity {
           columnIndex,
         ),
     );
-    this.layout.set(blocks);
+    this.layout.set(layout);
 
     // In view mode, spec updates follow the URL. In the editor, URL changes are
     // applied in onUrlChange so spec churn from YAML edits does not reset local tab state.
@@ -942,7 +954,7 @@ export class CanvasEntity {
       }
     }
 
-    this.tabGroups.forEach((group, name) => {
+    this.forEachTabGroup((group, name) => {
       const tabName = active.get(name);
       // In view mode, a group absent from the param is reset to its first tab so back/forward
       // restores state symmetrically. So is a group whose tab in the param isn't on the canvas,
@@ -957,13 +969,13 @@ export class CanvasEntity {
   // Select a tab in a group and reflect every group's active tab in the URL.
   // Groups left on their first tab are omitted to keep the URL short.
   setActiveTabInURL = (groupName: string, tabName: string) => {
-    const group = this.tabGroups.get(groupName);
-    if (group) group.setActiveByName(tabName);
+    const group = this.blocks.get(groupName);
+    if (group instanceof TabGroup) group.setActiveByName(tabName);
 
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const pairs: string[] = [];
-    this.tabGroups.forEach((g, name) => {
+    this.forEachTabGroup((g, name) => {
       const index = get(g.activeTabIndex);
       const tab = get(g.tabs)[index];
       // Reference the active tab as `tabgroup_name.tab_name`, encoding each part.
@@ -978,9 +990,15 @@ export class CanvasEntity {
     goto(`?${params.toString()}`, { replaceState: true }).catch(console.error);
   };
 
-  // namePrefix disambiguates components nested in tabs (e.g. "g2-t0-") so they don't collide
-  // with top-level components at the same row/col. It mirrors layout-util's generateId and the
-  // parser's position key (see parse_canvas.go).
+  private forEachTabGroup = (fn: (group: TabGroup, name: string) => void) => {
+    this.blocks.forEach((block, name) => {
+      if (block instanceof TabGroup) fn(block, name);
+    });
+  };
+
+  // namePrefix disambiguates components nested in tabs and containers (e.g. "g2-t0-" or "c1-")
+  // so they don't collide with top-level components at the same row/col. It mirrors
+  // layout-util's generateId and the parser's position key (see positionKeyPrefix).
   generateId = (
     row: number | undefined,
     column: number | undefined,
@@ -1052,40 +1070,29 @@ export class CanvasEntity {
 
   setSelectedComponent = (id: string | null) => {
     if (id !== get(this.selectedComponent)) this.commitPendingInspectorEdit();
-    // Selecting a component takes over the inspector from any selected tab group.
-    if (id) this.selectedTabGroup.set(null);
+    // Selecting a component takes over the inspector from any selected block.
+    if (id) this.selectedBlock.set(null);
     this.selectedComponent.set(id);
   };
 
-  // Select a tab group for editing (opens the tab-group inspector panel). Clears any
+  // Select a tab group or container for editing (opens the block inspector panel). Clears any
   // selected component so the two never fight over the inspector.
-  setSelectedTabGroup = (name: string | null) => {
-    if (name !== get(this.selectedTabGroup)) this.commitPendingInspectorEdit();
+  setSelectedBlock = (name: string | null) => {
+    if (name !== get(this.selectedBlock)) this.commitPendingInspectorEdit();
     if (name) this.selectedComponent.set(null);
-    this.selectedTabGroup.set(name);
+    this.selectedBlock.set(name);
   };
 
-  // Look up a tab group by its stable name (for the inspector panel).
-  getTabGroup = (name: string) => this.tabGroups.get(name);
-
-  // Re-key tab groups ahead of a top-level row edit (move, insert or delete of a block), so
-  // each index-keyed group's instance, with its active tab, follows the group to its new row.
-  // Without this the next layout pass would hand a shifted group its neighbour's instance,
-  // and a selection on it would silently point at a different group. `newIndexOf` maps a
-  // row index before the edit to the index after it, or -1 if that row is removed.
-  rekeyTabGroups = (newIndexOf: (rowIndex: number) => number) => {
-    const pairs = rekeyedTabGroupNames(get(this.layout), newIndexOf);
-    const remapped = new Map<string, TabGroup>();
-    for (const [from, to] of pairs) {
-      const group = this.tabGroups.get(from);
-      if (group) remapped.set(to, group);
+  // Move a block's instance to its new key ahead of a rename, so its state (a group's active
+  // tab) survives the next layout pass; a selection on the block follows it.
+  renameBlockKey = (from: string, to: string) => {
+    if (from === to) return;
+    const block = this.blocks.get(from);
+    if (block) {
+      this.blocks.delete(from);
+      this.blocks.set(to, block);
     }
-    this.tabGroups = remapped;
-
-    const selected = get(this.selectedTabGroup);
-    const renamed = pairs.find(([from]) => from === selected);
-    if (renamed && renamed[1] !== selected)
-      this.selectedTabGroup.set(renamed[1]);
+    if (get(this.selectedBlock) === from) this.selectedBlock.set(to);
   };
 
   setActiveComponent = (id: string) => {
@@ -1103,10 +1110,10 @@ export class CanvasEntity {
 }
 
 // A YAML path to a component's renderer block. For a top-level row it looks like
-// ["rows", row, "items", col, type]; for a row nested in a tab it is prefixed, e.g.
-// ["rows", b, "tabs", t, "rows", row, "items", col, type] (the YAML omits the proto's
-// tab_group wrapper). The path always ends with [..., "rows", row, "items", col, type],
-// so row/col are read from the end.
+// ["rows", row, "items", col, type]; for a row nested in a tab or a container it is prefixed,
+// e.g. ["rows", b, "tabs", t, "rows", row, "items", col, type] (the YAML omits the proto's
+// tab_group wrapper) or ["rows", b, "rows", row, "items", col, type]. The path always ends
+// with [..., "rows", row, "items", col, type], so row/col are read from the end.
 export type ComponentPath = (string | number)[];
 
 function constructPath(
@@ -1118,7 +1125,7 @@ function constructPath(
   return [...prefix, row, "items", column, type];
 }
 
-/** Extract the row and column indices from a component path, regardless of any tab prefix. */
+/** Extract the row and column indices from a component path, regardless of any tab or container prefix. */
 export function rowColFromPath(path: ComponentPath): {
   row: number;
   col: number;

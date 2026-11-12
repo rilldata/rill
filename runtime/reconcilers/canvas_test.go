@@ -303,12 +303,15 @@ func TestCanvasResolveTransitiveAccess(t *testing.T) {
 		Files: map[string]string{"rill.yaml": ""},
 	})
 
-	// Create three models, three metrics views, and a canvas with components using metrics_view, metrics_sql, and markdown.
+	// Create models, metrics views, and a canvas with components using metrics_view, metrics_sql, and markdown,
+	// plus a container, and a container whose `if` hides it from the claims below.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
 		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
 		"m3.sql": `SELECT 'baz' as baz, 3 as z`,
 		"m4.sql": `SELECT 'qux' as qux, 4 as w`,
+		"m5.sql": `SELECT 'quux' as quux, 5 as v`,
+		"m6.sql": `SELECT 'corge' as corge, 6 as u`,
 		"mv1.yaml": `
 version: 1
 type: metrics_view
@@ -349,6 +352,26 @@ measures:
 - name: w
   expression: sum(w)
 `,
+		"mv5.yaml": `
+version: 1
+type: metrics_view
+model: m5
+dimensions:
+- column: quux
+measures:
+- name: v
+  expression: sum(v)
+`,
+		"mv6.yaml": `
+version: 1
+type: metrics_view
+model: m6
+dimensions:
+- column: corge
+measures:
+- name: u
+  expression: sum(u)
+`,
 		"c1.yaml": `
 type: canvas
 rows:
@@ -368,10 +391,23 @@ rows:
   - items:
       - markdown:
           content: 'Total z: {{ metrics_sql "SELECT z FROM mv3" }}'
+  - name: story
+    rows:
+      - items:
+          - kpi:
+              metrics_view: mv5
+              measure: v
+  - name: admin_story
+    if: '{{ .user.admin }}'
+    rows:
+      - items:
+          - kpi:
+              metrics_view: mv6
+              measure: u
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 14, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 20, 0, 0)
 
 	// Build claims with a transitive access rule on the canvas
 	ctx := t.Context()
@@ -413,6 +449,18 @@ rows:
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv4)
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv5 (referenced in a container); should be accessible
+	mv5 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv5")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv5)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv6 (only referenced in a container whose `if` the claims don't meet); should not be accessible
+	mv6 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv6")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv6)
+	require.NoError(t, err)
+	require.False(t, sec.CanAccess())
 }
 
 func TestCanvasItemParamBindings(t *testing.T) {

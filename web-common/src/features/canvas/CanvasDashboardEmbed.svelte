@@ -2,7 +2,9 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
+  import StaticRowsBlock from "./StaticRowsBlock.svelte";
   import CanvasTabGroupView from "./CanvasTabGroupView.svelte";
+  import { layoutBlockKey } from "./stores/layout-blocks";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Spinner from "../entity-management/Spinner.svelte";
@@ -74,7 +76,7 @@
 
 {#if canvasName}
   <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
-    {#each blocks as block (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
+    {#each blocks as block (layoutBlockKey(block))}
       {#if block.kind === "tab-group"}
         <CanvasTabGroupView
           group={block.group}
@@ -84,6 +86,16 @@
           {activeComponentId}
           onSelect={(tabName) =>
             canvasEntity.setActiveTabInURL(block.group.name, tabName)}
+        />
+      {:else if block.kind === "container"}
+        <!-- A container has no visual element for viewers: its rows render like free rows. -->
+        <StaticRowsBlock
+          block={block.container}
+          {components}
+          {maxWidth}
+          {navigationEnabled}
+          {activeComponentId}
+          idPrefix={`${block.container.name}-`}
         />
       {:else if rows[block.freeRowIndex]}
         <StaticCanvasRow

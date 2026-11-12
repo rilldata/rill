@@ -5399,7 +5399,7 @@ type ResolveCanvasResponse struct {
 	ResolvedComponents map[string]*Resource `protobuf:"bytes,2,rep,name=resolved_components,json=resolvedComponents,proto3" json:"resolved_components,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
 	ReferencedMetricsViews map[string]*Resource `protobuf:"bytes,3,rep,name=referenced_metrics_views,json=referencedMetricsViews,proto3" json:"referenced_metrics_views,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+	// Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
 	// The paths follow the canvas YAML. Only set when include_hidden is true.
 	HiddenPaths []string `protobuf:"bytes,4,rep,name=hidden_paths,json=hiddenPaths,proto3" json:"hidden_paths,omitempty"`
 }
