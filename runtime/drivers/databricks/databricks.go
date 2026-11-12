@@ -159,6 +159,10 @@ func (c *configProperties) validate() error {
 	if c.Auth == authOAuth && (c.DSN != "" || c.OAuthClientID == "" || c.OAuthClientSecret == "") {
 		return errors.New("databricks: 'auth: oauth' requires 'host', 'oauth_client_id' and 'oauth_client_secret', and can't be used with 'dsn'")
 	}
+	// Otherwise queries would silently use the service token for every viewer.
+	if c.Auth != authOAuth && (c.OAuthClientID != "" || c.OAuthClientSecret != "" || len(c.OAuthScopes) > 0) {
+		return errors.New("databricks: 'oauth_client_id', 'oauth_client_secret' and 'oauth_scopes' require 'auth: oauth'")
+	}
 	return nil
 }
 

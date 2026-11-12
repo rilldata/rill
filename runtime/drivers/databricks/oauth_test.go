@@ -262,6 +262,15 @@ func TestOAuthConfigValidation(t *testing.T) {
 
 	c = &configProperties{DSN: "token:t@h:443/p", Auth: "oauth", OAuthClientID: "id", OAuthClientSecret: "s"}
 	require.Error(t, c.validate())
+
+	// OAuth properties without 'auth: oauth' would silently use the service token
+	for _, c := range []*configProperties{
+		{Host: "h", HTTPPath: "/p", Token: "t", OAuthClientID: "id"},
+		{Host: "h", HTTPPath: "/p", Token: "t", OAuthClientSecret: "s"},
+		{Host: "h", HTTPPath: "/p", Token: "t", OAuthScopes: []string{"sql"}},
+	} {
+		require.Error(t, c.validate())
+	}
 }
 
 func TestOAuthConfigHash(t *testing.T) {
