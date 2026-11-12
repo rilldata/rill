@@ -158,6 +158,9 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		return res, nil
 	}
 
+	// Live queries have no caller and their results are discarded, so they use the service credential.
+	ctx = drivers.WithServiceCredential(ctx)
+
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
 
 	// check OLAP error
