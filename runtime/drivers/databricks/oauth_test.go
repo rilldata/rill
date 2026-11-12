@@ -49,21 +49,12 @@ func TestGetDBCredentialSelection(t *testing.T) {
 	service, err := c.getServiceDB(ctx)
 	require.NoError(t, err)
 
-	// System work uses the service credential
-	db, err := c.getDB(drivers.WithServiceCredential(ctx))
-	require.NoError(t, err)
-	require.Same(t, service, db)
-
-	// No caller and no system marker fails closed
+	// No caller fails closed
 	_, err = c.getDB(ctx)
 	require.ErrorIs(t, err, drivers.ErrOAuthUserRequired)
 
-	// Work on behalf of a user inside system work fails closed without a caller
-	_, err = c.getDB(drivers.WithoutServiceCredential(drivers.WithServiceCredential(ctx)))
-	require.ErrorIs(t, err, drivers.ErrOAuthUserRequired)
-
 	// Rill Developer uses the service credential
-	db, err = c.getDB(drivers.WithOAuthCaller(ctx, fakeCaller{err: drivers.ErrNotImplemented}))
+	db, err := c.getDB(drivers.WithOAuthCaller(ctx, fakeCaller{err: drivers.ErrNotImplemented}))
 	require.NoError(t, err)
 	require.Same(t, service, db)
 
@@ -240,27 +231,57 @@ func TestRejectionTransport(t *testing.T) {
 	require.Equal(t, int32(1), caller.forced.Load())
 	require.Equal(t, []string{"Bearer a1", "Bearer a1", "Bearer a2"}, auths)
 
-	// Metadata operations refresh the rejected token too
-	for name, fn := range map[string]func() error{
-		"Ping": func() error { return c.Ping(ctx) },
-		"ListDatabaseSchemas": func() error {
-			_, _, err := c.ListDatabaseSchemas(ctx, 0, "")
-			return err
-		},
-		"ListTables": func() error {
-			_, _, err := c.ListTables(ctx, "", "s", 0, "")
-			return err
-		},
-		"Lookup": func() error {
-			_, err := c.Lookup(ctx, "", "s", "t")
-			return err
-		},
-		"LoadDDL": func() error { return c.LoadDDL(ctx, &drivers.OlapTable{Name: "t"}) },
-	} {
-		forced := caller.forced.Load()
-		require.ErrorAs(t, fn(), &target, name)
-		require.Equal(t, forced+1, caller.forced.Load(), name)
+	// Query runs as the caller and refreshes the rejected token
+	auths = nil
+	_, err = c.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.ErrorAs(t, err, &target)
+	require.Equal(t, int32(2), caller.forced.Load())
+	require.Equal(t, []string{"Bearer a1", "Bearer a2"}, auths)
+
+	// Without a caller, Query fails closed
+	_, err = c.Query(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+	require.ErrorIs(t, err, drivers.ErrOAuthUserRequired)
+
+	// Other operations use the service credential, with or without a caller.
+	// The service pool connects to c.config.DSN; route it to srv over HTTP.
+	c.config.DSN = "http://token:service@" + srv.Listener.Addr().String() + "/sql/1.0/warehouses/abc"
+	for _, ctx := range []context.Context{ctx, context.Background()} {
+		for name, fn := range map[string]func() error{
+			"Ping": func() error { return c.Ping(ctx) },
+			"Exec": func() error { return c.Exec(ctx, &drivers.Statement{Query: "SELECT 1"}) },
+			"ExecDryRun": func() error {
+				return c.Exec(ctx, &drivers.Statement{Query: "SELECT 1", DryRun: true})
+			},
+			"QuerySchema": func() error {
+				_, err := c.QuerySchema(ctx, "SELECT 1", nil)
+				return err
+			},
+			"ListDatabaseSchemas": func() error {
+				_, _, err := c.ListDatabaseSchemas(ctx, 0, "")
+				return err
+			},
+			"ListTables": func() error {
+				_, _, err := c.ListTables(ctx, "", "s", 0, "")
+				return err
+			},
+			"Lookup": func() error {
+				_, err := c.Lookup(ctx, "", "s", "t")
+				return err
+			},
+			"LoadDDL": func() error { return c.LoadDDL(ctx, &drivers.OlapTable{Name: "t"}) },
+		} {
+			auths = nil
+			err := fn()
+			require.Error(t, err, name)
+			require.NotErrorIs(t, err, drivers.ErrOAuthUserRequired, name)
+			require.False(t, errors.As(err, &target), name)
+			require.NotEmpty(t, auths, name)
+			for _, a := range auths {
+				require.Equal(t, "Bearer service", a, name)
+			}
+		}
 	}
+	require.Equal(t, int32(2), caller.forced.Load())
 }
 
 func TestOAuthConfigValidation(t *testing.T) {

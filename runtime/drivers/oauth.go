@@ -69,23 +69,3 @@ func OAuthCallerFromContext(ctx context.Context) OAuthCaller {
 	c, _ := ctx.Value(oauthCallerKey{}).(OAuthCaller)
 	return c
 }
-
-type serviceCredentialKey struct{}
-
-// WithServiceCredential marks a context as system work with no caller (such as reconciling resources),
-// which uses the connector's own credentials even if the connector uses per-user OAuth.
-func WithServiceCredential(ctx context.Context) context.Context {
-	return context.WithValue(ctx, serviceCredentialKey{}, true)
-}
-
-// WithoutServiceCredential clears the mark set by WithServiceCredential,
-// for work done on behalf of a user inside system work.
-func WithoutServiceCredential(ctx context.Context) context.Context {
-	return context.WithValue(ctx, serviceCredentialKey{}, false)
-}
-
-// UsesServiceCredential reports whether the context was marked with WithServiceCredential.
-func UsesServiceCredential(ctx context.Context) bool {
-	v, _ := ctx.Value(serviceCredentialKey{}).(bool)
-	return v
-}

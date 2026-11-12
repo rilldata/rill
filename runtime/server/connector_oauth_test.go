@@ -341,14 +341,12 @@ type oauthTestOLAP struct {
 }
 
 func (o oauthTestOLAP) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	if !drivers.UsesServiceCredential(ctx) {
-		caller := drivers.OAuthCallerFromContext(ctx)
-		if caller == nil {
-			return nil, drivers.ErrOAuthUserRequired
-		}
-		if _, err := caller.Token(ctx, o.instanceID, "dbx", "hash", false); err != nil {
-			return nil, err
-		}
+	caller := drivers.OAuthCallerFromContext(ctx)
+	if caller == nil {
+		return nil, drivers.ErrOAuthUserRequired
+	}
+	if _, err := caller.Token(ctx, o.instanceID, "dbx", "hash", false); err != nil {
+		return nil, err
 	}
 	return o.OLAPStore.Query(ctx, stmt)
 }

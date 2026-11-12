@@ -56,11 +56,12 @@ func newOAuthConfig(conf *configProperties) *drivers.OAuthConfig {
 	return cfg
 }
 
-// getDB returns the connection pool for the context's caller.
-// Without per-user OAuth, and for system work marked with drivers.WithServiceCredential, it is the service credential's pool.
+// getDB returns the connection pool for the context's caller, used to query data.
+// Without per-user OAuth, it is the service credential's pool.
 // Otherwise it is the caller's own pool; it never falls back to the service credential for a caller.
+// Operations that return no table data (Ping, Exec, QuerySchema, the information schema) and model builds always use the service credential.
 func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
-	if c.oauthConfig == nil || drivers.UsesServiceCredential(ctx) {
+	if c.oauthConfig == nil {
 		return c.getServiceDB(ctx)
 	}
 	caller := drivers.OAuthCallerFromContext(ctx)

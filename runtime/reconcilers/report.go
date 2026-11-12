@@ -473,8 +473,6 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
 	// Tag as report execution so the metrics queries it runs (e.g. via the AI resolver) are attributed to the "report" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceReport)
-	// Alerts and reports run on behalf of users, so connectors with per-user OAuth must not use their service credential.
-	ctx = drivers.WithoutServiceCredential(ctx)
 
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{

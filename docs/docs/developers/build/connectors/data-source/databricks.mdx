@@ -124,7 +124,7 @@ DATABRICKS_OAUTH_CLIENT_ID=...
 DATABRICKS_OAUTH_CLIENT_SECRET=dose...
 ```
 
-`auth: oauth` requires `host`, `http_path`, `token`, `oauth_client_id`, and `oauth_client_secret`, and cannot be combined with `dsn`. Rill still uses `token` to parse and validate your project, such as reconciling models and metrics views. Models that read from this connector are built with the service `token`, so their output is visible to all viewers, and Unity Catalog rules for viewers do not apply to it.
+`auth: oauth` requires `host`, `http_path`, `token`, `oauth_client_id`, and `oauth_client_secret`, and cannot be combined with `dsn`. Only dashboard data queries run as the viewer; Rill uses `token` for everything else, such as validating metrics views, reading table metadata, and building models. Models that read from this connector are therefore visible to all viewers, and Unity Catalog rules for viewers do not apply to them.
 
 Viewers who have not signed in see a prompt to sign in to Databricks in place of the data. Signing in opens a popup; the data loads when it completes, without a page refresh. Viewers sign in separately in each project, and are prompted again if the OAuth settings change or Databricks rejects the token refresh.
 
