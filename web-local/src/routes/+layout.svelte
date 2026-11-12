@@ -11,7 +11,10 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    onQueryError,
+    queryClient,
+  } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     errorEventHandler,
     initMetrics,
@@ -20,9 +23,8 @@
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
-  import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { LayoutData } from "./$types";
   import PreviewModeNav from "../features/preview/PreviewModeNav.svelte";
@@ -37,8 +39,10 @@
 
   const { deploy } = featureFlags;
 
-  queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
-    errorEventHandler?.requestErrorEventHandler(error, query);
+  const removeQueryErrorListener = onQueryError((error, query) =>
+    errorEventHandler?.requestErrorEventHandler(error, query),
+  );
+  onDestroy(removeQueryErrorListener);
   initPylonWidget();
 
   // Preview mode store sync:

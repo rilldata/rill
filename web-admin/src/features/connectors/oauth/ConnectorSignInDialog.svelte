@@ -3,7 +3,7 @@
   Rendered once per project, so one prompt covers every dashboard surface.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { openMcpConnectPopup } from "@rilldata/web-common/features/chat/connect/mcp-servers";
@@ -29,7 +29,13 @@
   let failure = $state<string | null>(null);
 
   onMount(() => watchConnectorSignInErrors());
-  onDestroy(dismiss);
+
+  // Reset on project change, so the button never starts a flow for another project with the old connector.
+  $effect(() => {
+    void organization;
+    void project;
+    return dismiss;
+  });
 
   function dismiss() {
     connectorSignInRequired.set(null);
@@ -48,7 +54,9 @@
     signingIn = false;
     if (result.status === "connected") {
       dismiss();
-      void queryClient.invalidateQueries();
+      void queryClient.refetchQueries({
+        predicate: (q) => q.state.status === "error",
+      });
     } else if (result.status === "error") {
       failure = m.connector_sign_in_failed({ error: result.error ?? "" });
     }

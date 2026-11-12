@@ -1,15 +1,18 @@
-import { QueryCache, QueryClient } from "@tanstack/svelte-query";
+import { type Query, QueryCache, QueryClient } from "@tanstack/svelte-query";
 import { isNetworkError } from "../errors";
 
 const MaxNetworkErrorRetries = 2;
 
-const queryErrorListeners = new Set<(error: unknown) => void>();
+type QueryErrorListener = (error: unknown, query: Query) => void;
+
+const queryErrorListeners = new Set<QueryErrorListener>();
 
 /**
  * Calls the listener with the error of every failed query.
+ * Use this instead of assigning the query cache's `onError`, which would replace the other listeners.
  * Returns a function that removes the listener.
  */
-export function onQueryError(listener: (error: unknown) => void): () => void {
+export function onQueryError(listener: QueryErrorListener): () => void {
   queryErrorListeners.add(listener);
   return () => queryErrorListeners.delete(listener);
 }
@@ -17,7 +20,8 @@ export function onQueryError(listener: (error: unknown) => void): () => void {
 export function createQueryClient() {
   return new QueryClient({
     queryCache: new QueryCache({
-      onError: (error) => queryErrorListeners.forEach((l) => l(error)),
+      onError: (error, query) =>
+        queryErrorListeners.forEach((l) => l(error, query as Query)),
     }),
     defaultOptions: {
       queries: {
