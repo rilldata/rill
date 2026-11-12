@@ -210,6 +210,17 @@ func TestConnectorOAuthTokenCache(t *testing.T) {
 		require.Equal(t, 1, admin.callCount())
 	})
 
+	t.Run("probe rejected as invalid is cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: status.Error(codes.InvalidArgument, "invalid user_id")}
+		c := newFakeOAuthCaller(admin)
+		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
+		for range 2 {
+			_, err := c.Token(ctx, "inst", "dbx", "hash", false)
+			require.ErrorIs(t, err, drivers.ErrOAuthUserRequired)
+		}
+		require.Equal(t, 1, admin.callCount())
+	})
+
 	t.Run("transient probe error is not cached", func(t *testing.T) {
 		admin := &fakeOAuthAdmin{err: errors.New("unavailable")}
 		c := newFakeOAuthCaller(admin)

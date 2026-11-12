@@ -13,6 +13,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -92,13 +94,14 @@ func (c *connectorOAuthCaller) nonInteractiveError(ctx context.Context, instance
 	defer release()
 
 	// Probe without a user to tell Rill Developer, where connectors use their service credential, from Rill Cloud.
+	// Rill Cloud rejects the empty user ID as invalid.
 	// Only definitive outcomes are remembered, not transient errors.
 	_, err = admin.GetConnectorOAuthToken(ctx, connector, configHash, "", false)
 	switch {
 	case errors.Is(err, drivers.ErrNotImplemented):
 		c.probes.Store(instanceID, drivers.ErrNotImplemented)
 		return drivers.ErrNotImplemented
-	case err == nil || errors.Is(err, drivers.ErrNotFound):
+	case err == nil || errors.Is(err, drivers.ErrNotFound) || status.Code(err) == codes.InvalidArgument:
 		c.probes.Store(instanceID, drivers.ErrOAuthUserRequired)
 	}
 	return drivers.ErrOAuthUserRequired
