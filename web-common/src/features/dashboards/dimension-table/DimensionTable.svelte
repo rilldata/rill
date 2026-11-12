@@ -17,6 +17,7 @@ TableCells – the cell contents.
   import {
     estimateColumnCharacterWidths,
     estimateColumnSizes,
+    getDimensionTableRowKey,
   } from "./dimension-table-utils";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
@@ -139,8 +140,14 @@ TableCells – the cell contents.
       // blocks are keyed by, so reusing one function would leave stale keys behind after a
       // re-sort. Keying rows by their dimension value lets the virtualizer reuse DOM nodes during
       // fast scrolls instead of remounting them, which avoids blank frames and preserves focus.
-      getItemKey: (index: number) =>
-        String(rows?.[index]?.[dimensionName] ?? index),
+      // Only a row that is not loaded yet is keyed by its index. A null value used to be as well,
+      // and collided with a numeric value equal to that index.
+      getItemKey: (index: number) => {
+        const row = rows?.[index];
+        return row
+          ? getDimensionTableRowKey(row[dimensionName])
+          : `row-${index}`;
+      },
     };
 
     // `setOptions` pushes a new value into the store, so the virtualizer must be read untracked

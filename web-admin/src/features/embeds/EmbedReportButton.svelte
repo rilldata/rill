@@ -13,6 +13,6 @@
     noStroke
     label={m.report_form_go_to_reports()}
   >
-    <ReportIcon className="text-icon-muted" size="14px" />
+    <ReportIcon className="hover:text-fg-accent" size="16px" />
   </Button>
 {/if}

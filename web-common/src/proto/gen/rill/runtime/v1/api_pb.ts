@@ -529,6 +529,13 @@ export class Instance extends Message$1<Instance> {
    */
   theme = "";
 
+  /**
+   * Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
+   *
+   * @generated from field: string embed_open_url = 28;
+   */
+  embedOpenUrl = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -556,6 +563,7 @@ export class Instance extends Message$1<Instance> {
     { no: 27, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "embed_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {

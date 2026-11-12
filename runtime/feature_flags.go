@@ -59,6 +59,8 @@ var defaultFeatureFlags = map[string]string{
 	"developer_chat": "true",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
+	// Controls whether external MCP clients (such as Claude or ChatGPT) get charts; it only applies where chat_charts is on
+	"mcp_charts": "true",
 	// Controls whether the AI chat learns and uses per-user memories (preferences and clarifications remembered across conversations)
 	"chat_memory": "true",
 	// Controls whether to show/hide deploy related actions.
@@ -77,6 +79,8 @@ var defaultFeatureFlags = map[string]string{
 	"custom_components": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
+	// Controls whether embed users (embeds with an external user ID) can create personal bookmarks
+	"embedded_bookmarks": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

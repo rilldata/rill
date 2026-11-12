@@ -4,22 +4,14 @@
   import { extractErrorMessage } from "../../../lib/errors";
   import { useGetTable } from "../selectors";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import type { ConnectorTable } from "../connectors-utils";
 
-  export let connector: string;
-  export let database: string = ""; // The backend interprets an empty string as the default database
-  export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
-  export let table: string;
+  export let table: ConnectorTable;
   export let forcedLeftPadding: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
-  $: newTableQuery = useGetTable(
-    client,
-    connector,
-    database,
-    databaseSchema,
-    table,
-  );
+  $: newTableQuery = useGetTable(client, table);
 
   // New API returns schema as { [columnName]: "type" }
   $: columns = $newTableQuery?.data?.schema
@@ -33,7 +25,8 @@
   $: isError = !!$newTableQuery?.error;
   $: isLoading = $newTableQuery?.isLoading;
 
-  $: leftPadding = forcedLeftPadding ?? (database ? "pl-[78px]" : "pl-[60px]");
+  $: leftPadding =
+    forcedLeftPadding ?? (table.database ? "pl-[78px]" : "pl-[60px]");
 
   function prettyPrintType(type: string) {
     // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"

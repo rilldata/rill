@@ -19,6 +19,7 @@
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
 
   let open = false;
 
@@ -54,6 +55,7 @@
       {manageProjectAdmins}
       {manageOrgAdmins}
       {manageOrgMembers}
+      {readOrgMembers}
       enabled={open}
     />
   </PopoverContent>

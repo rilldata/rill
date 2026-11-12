@@ -402,6 +402,9 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	// Move time bounds in the WHERE into the time range, so rollup selection (and the AST) treat them like any other time range
+	e.rewriteQueryWhereTimeRange(qry)
+
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
 	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
@@ -552,6 +555,9 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if err != nil {
 		return "", err
 	}
+
+	// Move time bounds in the WHERE into the time range, so rollup selection (and the AST) treat them like any other time range
+	e.rewriteQueryWhereTimeRange(qry)
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView

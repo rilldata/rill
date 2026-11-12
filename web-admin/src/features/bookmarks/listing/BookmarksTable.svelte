@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { beforeNavigate } from "$app/navigation";
+  import { onDestroy } from "svelte";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceRemoveBookmark,
@@ -20,7 +22,6 @@
     invalidateBookmarkQueries,
   } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
-  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors.ts";
   import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import { AlertDialogConfirmation } from "@rilldata/web-common/components/alert-dialog";
@@ -70,6 +71,11 @@
     UrlParamsState.createStringParam("q"),
     500,
   );
+  beforeNavigate(({ to }) => {
+    // A delayed search must not navigate back to this table after a bookmark was opened.
+    if (to?.url.pathname !== page.url.pathname) searchTextStore.cancel();
+  });
+  onDestroy(() => searchTextStore.cancel());
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);
@@ -87,7 +93,6 @@
     getProjectBookmarksQueryOptions(orgAndProjectNameStore),
   );
   const dashboardsQuery = useDashboards(runtimeClient);
-  let permissionsQuery = $derived(getProjectPermissions(organization, project));
 
   let { data: userData, isPending: isUserPending } = $derived($user);
   let {
@@ -97,7 +102,6 @@
     error,
   } = $derived($bookmarksQuery);
   let { data: dashboardsData } = $derived($dashboardsQuery);
-  let { data: permissions } = $derived($permissionsQuery);
   let recentlyUsedBookmarks = $derived(
     new RecentlyUsedBookmarks(organization, project),
   );
@@ -112,8 +116,6 @@
       dashboards: dashboardsData ?? [],
       organization,
       project,
-      currentUserId: userData?.user?.id,
-      manageBookmarks: !!permissions?.manageBookmarks,
       recentlyUsed: recentlyUsedBookmarks.recentlyUsed.value,
     }),
   );

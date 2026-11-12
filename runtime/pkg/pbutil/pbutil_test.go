@@ -195,3 +195,20 @@ func intPtr(v uint8) *uint8 {
 func listPtr(v *[]int16) **[]int16 {
 	return &v
 }
+
+func TestClampedTimestamp(t *testing.T) {
+	cases := []struct {
+		Input    time.Time
+		Expected time.Time
+	}{
+		// A day bucket in Asia/Kolkata that starts before 0001-01-01T00:00:00Z.
+		{Input: time.Date(0, time.December, 31, 18, 6, 32, 0, time.UTC), Expected: time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{Input: time.Date(2025, time.May, 15, 10, 32, 36, 0, time.UTC), Expected: time.Date(2025, time.May, 15, 10, 32, 36, 0, time.UTC)},
+		{Input: time.Date(10000, time.June, 1, 0, 0, 0, 0, time.UTC), Expected: time.Date(9999, time.December, 31, 23, 59, 59, 999999999, time.UTC)},
+	}
+	for _, tt := range cases {
+		ts := ClampedTimestamp(tt.Input)
+		require.NoError(t, ts.CheckValid())
+		require.Equal(t, tt.Expected, ts.AsTime())
+	}
+}

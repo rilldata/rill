@@ -1,4 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks.ts";
+import { ComparisonDeltaAbsoluteSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
@@ -288,6 +289,117 @@ describe("getDashboardFromAggregationRequest", () => {
           },
         },
       },
+
+      // Reports sort a time dimension by its name, while the pivot keys its
+      // column by name and grain.
+      {
+        title: "With simple and time dimension, sorted by the time dimension",
+        aggregationRequest: {
+          dimensions: [
+            { name: AD_BIDS_DOMAIN_DIMENSION },
+            {
+              name: AD_BIDS_TIMESTAMP_DIMENSION,
+              timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+            },
+          ],
+          measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+          sort: [{ desc: true, name: AD_BIDS_TIMESTAMP_DIMENSION }],
+        },
+        expectedNonPivotState: {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          selectedDimensionName: AD_BIDS_DOMAIN_DIMENSION,
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_DOMAIN_DIMENSION,
+                title: AD_BIDS_DOMAIN_DIMENSION,
+                type: PivotChipType.Dimension,
+              },
+              {
+                id: V1TimeGrain.TIME_GRAIN_WEEK,
+                title: "week",
+                type: PivotChipType.Time,
+              },
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [
+              {
+                desc: true,
+                id: `${AD_BIDS_TIMESTAMP_DIMENSION}_rill_${V1TimeGrain.TIME_GRAIN_WEEK}`,
+              },
+            ],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
+
+      // The pivot has no column for a measure's previous value, so the sort
+      // cannot carry over.
+      {
+        title: "With a single measure, sorted by its previous value",
+        aggregationRequest: {
+          dimensions: [],
+          measures: [
+            { name: AD_BIDS_BID_PRICE_MEASURE },
+            {
+              name: `${AD_BIDS_BID_PRICE_MEASURE}__previous`,
+              comparisonValue: { measure: AD_BIDS_BID_PRICE_MEASURE },
+            },
+          ],
+          sort: [
+            { desc: true, name: `${AD_BIDS_BID_PRICE_MEASURE}__previous` },
+          ],
+        },
+        expectedNonPivotState: {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          tdd: {
+            expandedMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+            chartType: TDDChart.DEFAULT,
+            pinIndex: -1,
+          },
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
     ];
 
     for (const {
@@ -394,6 +506,59 @@ describe("getDashboardFromAggregationRequest", () => {
         type: PivotChipType.Measure,
       },
     ]);
+  });
+
+  // Alerts with comparison criteria, such as "change vs previous day", have no
+  // dashboard equivalent for the criteria. The mapper runs the saved query itself
+  // to find the matching dimension values and pins them as an `in` filter.
+  it("Converts comparison criteria into a toplist filter", async () => {
+    const deltaMeasure =
+      AD_BIDS_BID_PRICE_MEASURE + ComparisonDeltaAbsoluteSuffix;
+    mocks.mockMetricsViewAggregation(
+      // The saved query is sent under the request's `metricsView` field.
+      // Any other key for it fails the strict proto decode before the request is sent.
+      new RegExp(
+        `(?=[\\s\\S]*"metricsView":"${AD_BIDS_METRICS_NAME}")(?=[\\s\\S]*"having")`,
+      ),
+      {
+        schema: { fields: [{ name: AD_BIDS_DOMAIN_DIMENSION }] },
+        data: [
+          { [AD_BIDS_DOMAIN_DIMENSION]: "yahoo.com" },
+          { [AD_BIDS_DOMAIN_DIMENSION]: "google.com" },
+        ],
+      },
+    );
+
+    const exploreState = await getExploreState(
+      {
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        measures: [
+          { name: AD_BIDS_BID_PRICE_MEASURE },
+          {
+            name: deltaMeasure,
+            comparisonDelta: { measure: AD_BIDS_BID_PRICE_MEASURE },
+          },
+        ],
+        sort: [{ desc: true, name: AD_BIDS_BID_PRICE_MEASURE }],
+        having: createAndExpression([
+          createBinaryExpression(deltaMeasure, V1Operation.OPERATION_GT, 100),
+        ]),
+        timeRange: { isoDuration: "P1D" },
+        comparisonTimeRange: { isoDuration: "P1D", isoOffset: "P1D" },
+      },
+      { forceOpenPivot: false },
+    );
+
+    expect(exploreState.whereFilter).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
+          "yahoo.com",
+          "google.com",
+        ]),
+      ]),
+    );
+    expect(exploreState.selectedDimensionName).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(exploreState.showTimeComparison).toBe(true);
   });
 
   describe("metrics view without a time dimension", () => {
@@ -637,9 +802,16 @@ async function getExploreState(
 
   let mapQueryResp: MapQueryResponse | undefined;
   const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
-  await waitUntil(() => !!mapQueryResp?.data, 1000, 50);
+  await waitUntil(
+    () => !!mapQueryResp?.data || !!mapQueryResp?.error,
+    1000,
+    50,
+  );
   unsub();
 
+  if (mapQueryResp?.error) {
+    throw new Error(`mapQueryStore failed: ${mapQueryResp.error}`);
+  }
   if (!mapQueryResp?.data) {
     throw new Error("mapQueryStore did not return a response");
   }
@@ -734,9 +906,9 @@ async function runTest({
     source.timeRangeSummary,
   );
   const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+    source.metricsView,
     source.explore,
     source.timeRangeSummary,
-    source.metricsView.smallestTimeGrain,
   );
   const expectedExploreState = {
     ...rillDefaultExploreState,

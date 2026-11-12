@@ -7,6 +7,7 @@
  */
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { clampToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   addZoneOffset,
   removeLocalTimezoneOffset,
@@ -35,7 +36,7 @@ import {
   TimeRangePreset,
 } from "../types";
 import { DateTime, type DateTimeUnit } from "luxon";
-import { V1TimeGrainToDateTimeUnit } from "../new-grains";
+import { floorToGrain, plusGrain } from "../new-grains";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -182,19 +183,31 @@ export function getAdjustedFetchTime(
   if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
 
-  const luxonUnit = V1TimeGrainToDateTimeUnit[interval];
-
   // Should only fail if somehow the Luxon unit is invalid
   try {
-    const start = DateTime.fromJSDate(startTime, { zone: zone || "UTC" })
-      .minus({
-        [luxonUnit]: 1,
-      })
-      .startOf(luxonUnit);
+    // The window grows by one grain on each side. Keep it within the bounds of a protobuf timestamp,
+    // which a range starting at a placeholder date such as 0001-01-01 would otherwise cross.
+    const start = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(startTime, { zone: zone || "UTC" }),
+          interval,
+          -1,
+        ),
+        interval,
+      ),
+    );
 
-    const end = DateTime.fromJSDate(endTime, { zone: zone || "UTC" })
-      .plus({ [luxonUnit]: 1 })
-      .startOf(luxonUnit);
+    const end = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(endTime, { zone: zone || "UTC" }),
+          interval,
+          1,
+        ),
+        interval,
+      ),
+    );
 
     return {
       start: start.toUTC().toISO(),

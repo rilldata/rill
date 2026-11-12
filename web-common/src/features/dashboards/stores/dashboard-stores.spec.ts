@@ -1,10 +1,29 @@
-import { getUpdatedPinIndex } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import {
+  type PivotChipData,
+  PivotChipType,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  getUpdatedPinIndex,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { describe, expect, it } from "vitest";
+import {
+  AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_INIT,
+  AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIME_RANGE_SUMMARY,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import { get } from "svelte/store";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const DIMENSION = "publisher";
 
@@ -135,5 +154,198 @@ describe("getUpdatedPinIndex", () => {
         createAndExpression([createLikeExpression(DIMENSION, "%oo%")]),
       ),
     ).toEqual(1);
+  });
+});
+
+describe("pivot field reducers", () => {
+  const dim = (id: string): PivotChipData => ({
+    id,
+    title: id,
+    type: PivotChipType.Dimension,
+  });
+  const measure = (id: string): PivotChipData => ({
+    id,
+    title: id,
+    type: PivotChipType.Measure,
+  });
+  const pivot = () =>
+    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot;
+
+  beforeEach(() => {
+    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT),
+    );
+  });
+
+  it("setPivotRows keeps a repeated field once", () => {
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, [
+      dim("publisher"),
+      dim("domain"),
+      dim("publisher"),
+    ]);
+    expect(pivot().rows).toEqual([dim("publisher"), dim("domain")]);
+  });
+
+  it("setPivotColumns keeps a repeated field once", () => {
+    metricsExplorerStore.setPivotColumns(AD_BIDS_EXPLORE_NAME, [
+      dim("domain"),
+      measure("impressions"),
+      dim("domain"),
+      measure("impressions"),
+    ]);
+    expect(pivot().columns).toEqual([dim("domain"), measure("impressions")]);
+  });
+
+  it("addPivotField ignores a field already placed in either zone", () => {
+    metricsExplorerStore.createPivot(
+      AD_BIDS_EXPLORE_NAME,
+      [dim("publisher")],
+      [measure("impressions")],
+    );
+    metricsExplorerStore.addPivotField(
+      AD_BIDS_EXPLORE_NAME,
+      dim("publisher"),
+      true,
+    );
+    metricsExplorerStore.addPivotField(
+      AD_BIDS_EXPLORE_NAME,
+      dim("publisher"),
+      false,
+    );
+    metricsExplorerStore.addPivotField(
+      AD_BIDS_EXPLORE_NAME,
+      measure("impressions"),
+      false,
+    );
+    expect(pivot().rows).toEqual([dim("publisher")]);
+    expect(pivot().columns).toEqual([measure("impressions")]);
+
+    metricsExplorerStore.addPivotField(
+      AD_BIDS_EXPLORE_NAME,
+      dim("domain"),
+      true,
+    );
+    expect(pivot().rows).toEqual([dim("publisher"), dim("domain")]);
+  });
+
+  it("switching to a flat table keeps a field in both zones once", () => {
+    // The columns a nest to flat switch builds: column dimensions, then row
+    // dimensions, then measures. A dimension in both zones appears twice.
+    metricsExplorerStore.setPivotTableMode(
+      AD_BIDS_EXPLORE_NAME,
+      "flat",
+      [],
+      [dim("publisher"), dim("publisher"), measure("impressions")],
+    );
+    expect(pivot().tableMode).toEqual("flat");
+    expect(pivot().columns).toEqual([dim("publisher"), measure("impressions")]);
+  });
+
+  it("createPivot keeps a repeated field once", () => {
+    metricsExplorerStore.createPivot(
+      AD_BIDS_EXPLORE_NAME,
+      [dim("publisher"), dim("publisher")],
+      [measure("impressions"), measure("impressions")],
+    );
+    expect(pivot().rows).toEqual([dim("publisher")]);
+    expect(pivot().columns).toEqual([measure("impressions")]);
+  });
+});
+
+describe("sync", () => {
+  const measureChip = (id: string) => ({
+    id,
+    title: id,
+    type: PivotChipType.Measure,
+  });
+
+  beforeEach(() => {
+    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY,
+      ),
+    );
+    metricsExplorerStore.createPivot(
+      AD_BIDS_EXPLORE_NAME,
+      [
+        {
+          id: AD_BIDS_PUBLISHER_DIMENSION,
+          title: AD_BIDS_PUBLISHER_DIMENSION,
+          type: PivotChipType.Dimension,
+        },
+      ],
+      [
+        measureChip(AD_BIDS_IMPRESSIONS_MEASURE),
+        measureChip(AD_BIDS_BID_PRICE_MEASURE),
+      ],
+    );
+  });
+
+  function syncWithMeasures(measures: string[]) {
+    metricsExplorerStore.sync(AD_BIDS_EXPLORE_NAME, {
+      ...AD_BIDS_EXPLORE_INIT,
+      measures,
+    });
+    return get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot;
+  }
+
+  function syncWithoutBidPrice() {
+    return syncWithMeasures([AD_BIDS_IMPRESSIONS_MEASURE]);
+  }
+
+  // The editor preview syncs the state with every spec edit; the pivot's
+  // queries fail when the sort names a measure the spec no longer has.
+  it("drops the pivot sort together with its measure", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: AD_BIDS_BID_PRICE_MEASURE, desc: true },
+    ]);
+
+    const pivot = syncWithoutBidPrice();
+    expect(pivot.columns.map((c) => c.id)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+    expect(pivot.sorting).toEqual([]);
+  });
+
+  it("keeps a pivot sort on a measure the spec still has", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+    ]);
+
+    const pivot = syncWithoutBidPrice();
+    expect(pivot.sorting).toEqual([
+      { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+    ]);
+  });
+
+  // A sort on a measure under one column value points at the measure by
+  // position, so it would silently move to another measure once one is
+  // removed: `m0` meant impressions and would mean bid price.
+  it("drops a positional sort once a column chip is removed", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: "m0", desc: true },
+    ]);
+
+    const pivot = syncWithMeasures([AD_BIDS_BID_PRICE_MEASURE]);
+    expect(pivot.columns.map((c) => c.id)).toEqual([AD_BIDS_BID_PRICE_MEASURE]);
+    expect(pivot.sorting).toEqual([]);
+  });
+
+  it("keeps a positional sort while the columns are intact", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: "m0", desc: true },
+    ]);
+
+    const pivot = syncWithMeasures([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      AD_BIDS_BID_PRICE_MEASURE,
+    ]);
+    expect(pivot.sorting).toEqual([{ id: "m0", desc: true }]);
   });
 });

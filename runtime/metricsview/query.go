@@ -116,6 +116,17 @@ func (q *Query) Validate() error {
 		}
 	}
 
+	// A result holds one column per name, so two different computations under one name are ambiguous:
+	// ClickHouse rejects the query, while DuckDB returns both columns and one overwrites the other when the rows are read.
+	// Identical repeats are allowed since they yield the same values, e.g. a chart that uses one dimension for both its axis and its color.
+	seen := make(map[string]Dimension, len(q.Dimensions))
+	for _, d := range q.Dimensions {
+		if prev, ok := seen[d.Name]; ok && !reflect.DeepEqual(prev, d) {
+			return fmt.Errorf("dimension %q is requested more than once with different computations; give each a unique name, for example by aliasing the time floor", d.Name)
+		}
+		seen[d.Name] = d
+	}
+
 	if q.ComparisonTimeRange != nil && !q.ComparisonTimeRange.IsZero() && (q.TimeRange == nil || q.TimeRange.IsZero()) {
 		return fmt.Errorf("comparison_time_range requires time_range to be set")
 	}
@@ -328,14 +339,34 @@ const (
 	TimeGrainMonth       TimeGrain = "month"
 	TimeGrainQuarter     TimeGrain = "quarter"
 	TimeGrainYear        TimeGrain = "year"
+	// Multiples of a base grain.
+	// They only bucket time series; see the TimeGrain enum in the proto for the alignment rules.
+	TimeGrain5Minute  TimeGrain = "5m"
+	TimeGrain10Minute TimeGrain = "10m"
+	TimeGrain15Minute TimeGrain = "15m"
+	TimeGrain30Minute TimeGrain = "30m"
+	TimeGrain2Hour    TimeGrain = "2h"
+	TimeGrain3Hour    TimeGrain = "3h"
+	TimeGrain4Hour    TimeGrain = "4h"
+	TimeGrain6Hour    TimeGrain = "6h"
+	TimeGrain8Hour    TimeGrain = "8h"
+	TimeGrain12Hour   TimeGrain = "12h"
 )
 
 func (t TimeGrain) Valid() bool {
 	switch t {
-	case TimeGrainUnspecified, TimeGrainMillisecond, TimeGrainSecond, TimeGrainMinute, TimeGrainHour, TimeGrainDay, TimeGrainWeek, TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
+	case TimeGrainUnspecified, TimeGrainMillisecond, TimeGrainSecond, TimeGrainMinute, TimeGrainHour, TimeGrainDay, TimeGrainWeek, TimeGrainMonth, TimeGrainQuarter, TimeGrainYear,
+		TimeGrain5Minute, TimeGrain10Minute, TimeGrain15Minute, TimeGrain30Minute, TimeGrain2Hour, TimeGrain3Hour, TimeGrain4Hour, TimeGrain6Hour, TimeGrain8Hour, TimeGrain12Hour:
 		return true
 	}
 	return false
+}
+
+// Base returns the standard grain a grain is a multiple of and the multiple.
+// Standard grains return themselves and 1.
+func (t TimeGrain) Base() (TimeGrain, int) {
+	unit, n := t.ToTimeutil().Base()
+	return TimeGrainFromProto(timeutil.TimeGrainToAPI(unit)), n
 }
 
 func (t TimeGrain) ToTimeutil() timeutil.TimeGrain {
@@ -360,6 +391,26 @@ func (t TimeGrain) ToTimeutil() timeutil.TimeGrain {
 		return timeutil.TimeGrainQuarter
 	case TimeGrainYear:
 		return timeutil.TimeGrainYear
+	case TimeGrain5Minute:
+		return timeutil.TimeGrain5Minute
+	case TimeGrain10Minute:
+		return timeutil.TimeGrain10Minute
+	case TimeGrain15Minute:
+		return timeutil.TimeGrain15Minute
+	case TimeGrain30Minute:
+		return timeutil.TimeGrain30Minute
+	case TimeGrain2Hour:
+		return timeutil.TimeGrain2Hour
+	case TimeGrain3Hour:
+		return timeutil.TimeGrain3Hour
+	case TimeGrain4Hour:
+		return timeutil.TimeGrain4Hour
+	case TimeGrain6Hour:
+		return timeutil.TimeGrain6Hour
+	case TimeGrain8Hour:
+		return timeutil.TimeGrain8Hour
+	case TimeGrain12Hour:
+		return timeutil.TimeGrain12Hour
 	default:
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}
@@ -387,6 +438,26 @@ func (t TimeGrain) ToProto() runtimev1.TimeGrain {
 		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
 	case TimeGrainYear:
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	case TimeGrain5Minute:
+		return runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE
+	case TimeGrain10Minute:
+		return runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE
+	case TimeGrain15Minute:
+		return runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE
+	case TimeGrain30Minute:
+		return runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE
+	case TimeGrain2Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_2_HOUR
+	case TimeGrain3Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_3_HOUR
+	case TimeGrain4Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_4_HOUR
+	case TimeGrain6Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_6_HOUR
+	case TimeGrain8Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_8_HOUR
+	case TimeGrain12Hour:
+		return runtimev1.TimeGrain_TIME_GRAIN_12_HOUR
 	default:
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}
@@ -414,6 +485,26 @@ func TimeGrainFromProto(t runtimev1.TimeGrain) TimeGrain {
 		return TimeGrainQuarter
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return TimeGrainYear
+	case runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE:
+		return TimeGrain5Minute
+	case runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE:
+		return TimeGrain10Minute
+	case runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE:
+		return TimeGrain15Minute
+	case runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE:
+		return TimeGrain30Minute
+	case runtimev1.TimeGrain_TIME_GRAIN_2_HOUR:
+		return TimeGrain2Hour
+	case runtimev1.TimeGrain_TIME_GRAIN_3_HOUR:
+		return TimeGrain3Hour
+	case runtimev1.TimeGrain_TIME_GRAIN_4_HOUR:
+		return TimeGrain4Hour
+	case runtimev1.TimeGrain_TIME_GRAIN_6_HOUR:
+		return TimeGrain6Hour
+	case runtimev1.TimeGrain_TIME_GRAIN_8_HOUR:
+		return TimeGrain8Hour
+	case runtimev1.TimeGrain_TIME_GRAIN_12_HOUR:
+		return TimeGrain12Hour
 	default:
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}

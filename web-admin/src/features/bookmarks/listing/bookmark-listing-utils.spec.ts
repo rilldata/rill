@@ -35,7 +35,6 @@ function bookmark(overrides: Partial<V1Bookmark>): V1Bookmark {
 
 function rowsFor(
   bookmarks: V1Bookmark[],
-  manageBookmarks = false,
   recentlyUsed: Record<string, number> = {},
 ) {
   return buildBookmarkRows({
@@ -43,8 +42,6 @@ function rowsFor(
     dashboards,
     organization: "org",
     project: "proj",
-    currentUserId: "u1",
-    manageBookmarks,
     recentlyUsed,
   });
 }
@@ -131,19 +128,13 @@ describe("buildBookmarkRows", () => {
     expect(rows.map((r) => r.bookmark.id)).toEqual(["personal"]);
   });
 
-  it("lets owners manage personal bookmarks and admins manage shared ones", () => {
-    const viewerRows = rowsFor([
-      bookmark({ id: "mine" }),
+  it("uses the server-computed manage permission", () => {
+    const rows = rowsFor([
+      bookmark({ id: "mine", canManage: true }),
       bookmark({ id: "theirs", userId: "u2" }),
-      bookmark({ id: "managed", shared: true, userId: "u2" }),
+      bookmark({ id: "managed", shared: true, canManage: true }),
     ]);
-    expect(viewerRows.map((r) => r.canManage)).toEqual([true, false, false]);
-
-    const adminRows = rowsFor(
-      [bookmark({ id: "managed", shared: true, userId: "u2" })],
-      true,
-    );
-    expect(adminRows.map((r) => r.canManage)).toEqual([true]);
+    expect(rows.map((r) => r.canManage)).toEqual([true, false, true]);
   });
 });
 
@@ -151,7 +142,6 @@ describe("buildBookmarkRows last used", () => {
   it("reads the last used time by bookmark id and defaults to zero", () => {
     const rows = rowsFor(
       [bookmark({ id: "opened" }), bookmark({ id: "never" })],
-      false,
       { opened: 1700000000000 },
     );
     expect(rows.map((r) => r.lastUsed)).toEqual([1700000000000, 0]);

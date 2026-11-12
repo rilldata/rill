@@ -303,6 +303,7 @@ The API accepts the following parameters:
 | attributes       | Raw attributes about the end user. Used to populate attributes for use in security policies.                                                                                    | No (only one of `user_email` or `attributes` should be passed in) |
 | external_user_id | A stable identifier for an external end user. Enables per-user state.                                                                                                           | No                                                                |
 | ttl_seconds      | The time to live for the iframe URL                                                                                                                                             | No (Default: 86400)                                               |
+| open             | The `rill_open` query parameter from a report email link. Opens the dashboard in the state captured by the report. See [Open links in report emails](#open-links-in-report-emails). | No (requires `external_user_id`; cannot be combined with `resource`) |
 
 
 The response of the POST request will then contain an `iframeSrc` value that can be used to embed the dashboard or set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs to be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
@@ -326,7 +327,7 @@ The `user_email`, `attributes` and `external_user_id` parameters serve two purpo
 Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
-- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history and [scheduled reports](#scheduled-reports-in-embeds).
+- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history, [scheduled reports](#scheduled-reports-in-embeds) and [bookmarks](#bookmarks-in-embeds).
 
 :::warning Use one `external_user_id` per security context
 Rill stores per-user state, such as AI chat history and the identity that scheduled reports run as, by `external_user_id`. So the ID must identify one security context, not just one person. If the same person can open your app in several tenants, and the `user_email` or `attributes` you pass vary by tenant, include the tenant in the ID, for example `<tenant id>:<user id>`. Use a separator that can't appear in either part; otherwise IDs collide (user `a_b` in tenant `c` and user `a` in tenant `b_c` both become `a_b_c`).
@@ -343,9 +344,41 @@ Embed users can schedule email reports of the explore dashboards they can see. R
 Reports created from an embed work as follows:
 - **They require `external_user_id`.** Each report is owned by the external user who created it, so iframes without an `external_user_id` don't show the option to create reports.
 - **They run as the owner's latest identity.** Every time you request an iframe for an external user, Rill saves the `user_email` or `attributes` you passed. All of the user's reports run with the saved identity; for example, if you change a user's `attributes`, their reports use the new attributes from their next run onwards. If the iframe a report was created from was limited to one dashboard, the report is limited to that dashboard too. Otherwise, if the saved `user_email` belongs to a project member who can only access some dashboards, the report has the same restriction.
-- **They are sent by email with the export attached.** Recipients can be any email address; if you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see. The emails don't link back to Rill, so the export is always attached (up to 10 MB). Every recipient also gets a link to unsubscribe.
+- **They are sent by email with the export attached.** Recipients can be any email address; if you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see. The emails don't link back to Rill, so the export is always attached (up to 10 MB). Every recipient also gets a link to unsubscribe, and the owner can get a link to open the report in your application (see [Open links in report emails](#open-links-in-report-emails)); in that case, the owner always gets the report and can't unsubscribe from it, so they stop it by deleting the report.
 - **They pause after 90 days of inactivity.** If you don't request an iframe for the owner for 90 days, their reports stop running. They resume the next time you request an iframe for the owner. To stop a user's reports right away, for example when you remove the user from your app, delete the reports in Rill Cloud.
 - **Only the owner can manage them in the embed.** Embed users whose attributes include `admin: true` can also see other users' reports, but can't edit them. Project admins can manage all reports in Rill Cloud, where reports created from an embed are shown with the owner's `external_user_id`.
+
+## Personal canvases in embeds
+
+Embed users can create, edit and delete their own canvas dashboards, called personal canvases. Personal canvases are disabled by default; enable them with the `personal_canvases` [feature flag](/reference/project-files/rill-yaml#features). Feature flags can be templated with user attributes, so you can enable personal canvases for embed users only:
+
+```yaml
+features:
+  personal_canvases: '{{ .user.embed }}'
+```
+
+Personal canvases created from an embed work as follows:
+- **They require `external_user_id` and `navigation: true`.** Each personal canvas is owned by the external user who created it, so iframes without an `external_user_id`, or limited to a single dashboard, don't show personal canvases.
+- **They are listed in the embed.** The navigation bar has a menu to open, create and delete personal canvases, and the project home page lists them above the other dashboards.
+- **Only the owner can see them.** Personal canvases created from an embed can't be shared, so other embed users and project members can't see them. Rill project admins can also access them.
+- **They respect security policies.** Like any dashboard, a personal canvas only shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
+
+## Bookmarks in embeds
+
+Embed users can save the current state of a dashboard, such as its filters and time range, as a bookmark, and reopen it later. Bookmarks in embeds are disabled by default; enable them with the `embedded_bookmarks` [feature flag](/reference/project-files/rill-yaml#features). Feature flags can be templated with user attributes, so you can enable bookmarks for embed users only:
+
+```yaml
+features:
+  embedded_bookmarks: '{{ .user.embed }}'
+```
+
+Bookmarks created from an embed work as follows:
+- **They require `external_user_id`.** Each bookmark is owned by the external user who created it, so iframes without an `external_user_id` don't show bookmarks. Bookmarks are stored by `external_user_id`, so follow the [guidance on choosing it](#user-identity-in-embeds): a user who has several IDs has separate bookmarks for each, and users who share an ID share their bookmarks.
+- **They are managed from the bookmarks menu.** The bookmarks menu is in the navigation bar when it is visible. When the bar is hidden, the menu appears in the top-right corner of the active dashboard.
+- **Only the owner can see them.** Bookmarks created from an embed can't be shared, so other embed users and project members can't see them. Likewise, embed users don't see the shared and home bookmarks that project admins create in Rill Cloud.
+- **They follow the iframe's dashboards.** If the iframe is limited to one dashboard with `resource`, the embed user can only create and see bookmarks for that dashboard.
+- **They respect security policies.** A bookmark only stores the dashboard state; opening it shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
+- **They are limited to 100 per external user** in a project.
 
 ## Embedding the project vs embedding an individual dashboard
 
@@ -406,10 +439,70 @@ While it is possible to create the iframeSrc URL via the CLI or code to _test_ y
 ## Frontend: Embed the dashboard
 Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html
-<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
+<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" allow="clipboard-write" />
 ```
 
+The `allow="clipboard-write"` attribute lets the dashboard copy values to the clipboard, for example when users Shift+Click a cell. Chrome and Edge block the Clipboard API in cross-origin iframes that are not granted this permission.
+
 Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
+
+## Open links in report emails
+
+Emails from [scheduled reports created in an embed](#scheduled-reports-in-embeds) don't include edit or download links, since their recipients may not have access to Rill Cloud.
+
+Since the embedded dashboard lives in your application, Rill can't link to it on its own.
+To include an **Open** link in these emails, give Rill the URL of a page in your application that runs your embed integration, such as `https://app.ezcommerce.com/analytics/open`.
+When the user clicks the link, they land on that page, which renders the embedded dashboard in the state captured by the report.
+
+Only the user who created the report gets the open link, since the link opens the dashboard with their access.
+Other recipients get the report without it.
+Rill sends the link to the creator's email address, which comes from:
+- the `user_email` of the iframe the report was created or last edited in, if you passed one;
+- otherwise, the email the creator entered when creating the report. If they left it empty, no recipient gets an open link.
+
+The creator's email always gets the report, and it has no unsubscribe link, so the creator stops the report by deleting it.
+
+If no open URL is configured, the emails have no open link. Reports still attach the exported file.
+
+### Configure the open URL
+
+Set the open URL for the project with the `embeds.open_url` property in `rill.yaml`:
+
+```yaml
+embeds:
+  open_url: https://app.ezcommerce.com/analytics/open
+```
+
+The open URL must be an absolute `http` or `https` URL. It can include its own query parameters; Rill keeps the URL as-is and appends a `rill_open` parameter to the end of its query string, for example:
+
+```
+https://app.ezcommerce.com/analytics/open?tenant=acme&rill_open=<value>
+```
+
+The `rill_open` parameter is always added to the query string, before any `#` fragment.
+If your application routes with the fragment, such as `https://app.ezcommerce.com/#/analytics/open`, the link is `https://app.ezcommerce.com/?rill_open=<value>#/analytics/open`, so read the parameter from `window.location.search` rather than from your router.
+
+### Handle the open page
+
+On the open page:
+1. Authenticate the user with your own auth, as you do for other embedded dashboards.
+2. Read the `rill_open` query parameter from the URL, and pass it to your backend.
+3. On your backend, request an iframe URL with `open` set to the `rill_open` value. Pass the `external_user_id` of the logged-in user, not the ID of the report's creator. The report can only be opened by its creator, so the request fails for other users. Do not pass `resource`, since Rill resolves the dashboard from `open`.
+4. Render the returned `iframeSrc` in an iframe [as usual](#frontend-embed-the-dashboard).
+
+```json
+{
+  "external_user_id": "acme:john",
+  "user_email": "john@example.com",
+  "open": "<rill_open value>"
+}
+```
+
+You can combine `open` with other parameters such as `navigation`, `theme`, and `theme_mode`. When `navigation` is `false`, the iframe is limited to the report and the dashboard it targets.
+
+:::note
+Treat the `rill_open` value as opaque and forward it to Rill unchanged. Its format may change over time.
+:::
 
 ## Appendix
 
@@ -456,6 +549,7 @@ export default function RillDashboard() {
       src={iframeSrc}
       width="100%"
       height="1000"
+      allow="clipboard-write"
     />
   );
 };

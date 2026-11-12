@@ -9,6 +9,7 @@ import {
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import {
   createAndExpression,
   createInExpression,
@@ -32,7 +33,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
-  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
@@ -44,7 +44,11 @@ import {
 } from "@tanstack/svelte-query";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { dimensionSearchText } from "../stores/dashboard-stores";
-import { prepareTimeSeries, transformAggregateDimensionData } from "./utils";
+import {
+  getTimeDimensionForComparison,
+  prepareTimeSeries,
+  transformAggregateDimensionData,
+} from "./utils";
 import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 const MAX_TDD_VALUES_LENGTH = 250;
@@ -140,27 +144,38 @@ export function getDimensionValuesForComparison(
           sortBy = dimensionName;
         }
 
+        // The top list groups only by the comparison dimension.
+        // Measures it cannot query are left out, which leaves their per-value totals unavailable;
+        // the time-grouped queries that follow still request them.
+        const { measures: tddMeasures, sort } =
+          getDimensionQueryMeasuresAndSort(
+            dashboardStore,
+            validSpec?.data?.metricsView ?? {},
+            applyExactMeasures(
+              mapEphemeralMeasuresForRequest(
+                measures.map((measure) => ({ name: measure })),
+                dashboardStore.ephemeralMeasures,
+              ),
+              requestExactNames(
+                measures,
+                exactMeasureContextFor(
+                  {
+                    dashboard: dashboardStore,
+                    validMetricsView: validSpec?.data?.metricsView,
+                  },
+                  exactSurface,
+                ),
+              ),
+            ),
+            dimensionName,
+            sortBy,
+          );
+
         // Request the URI measure so dimension values can be rendered as links.
+        // Added after filtering since it is not a spec measure.
         const hasUri = !!validSpec?.data?.metricsView?.dimensions?.find(
           (d) => d.name === dimensionName,
         )?.uri;
-        const tddMeasures: V1MetricsViewAggregationMeasure[] =
-          applyExactMeasures(
-            mapEphemeralMeasuresForRequest(
-              measures.map((measure) => ({ name: measure })),
-              dashboardStore.ephemeralMeasures,
-            ),
-            requestExactNames(
-              measures,
-              exactMeasureContextFor(
-                {
-                  dashboard: dashboardStore,
-                  validMetricsView: validSpec?.data?.metricsView,
-                },
-                exactSurface,
-              ),
-            ),
-          );
         if (hasUri) {
           tddMeasures.push(getURIRequestMeasure(dimensionName));
         }
@@ -181,13 +196,7 @@ export function getDimensionValuesForComparison(
                 end: timeControls.timeEnd,
                 timeDimension: dashboardStore.selectedTimeDimension,
               },
-              sort: [
-                {
-                  desc:
-                    dashboardStore.sortDirection === SortDirection.DESCENDING,
-                  name: sortBy,
-                },
-              ],
+              sort,
               limit: MAX_TDD_VALUES_LENGTH.toString(),
               offset: "0",
             },
@@ -298,7 +307,15 @@ function getAggregationQueryForTopList(
         dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const topListValues = dimensionValues?.values || [];
 
-      if (!topListValues.length || !dimensionName) return;
+      if (!topListValues.length || !dimensionName || !timeDimension) return;
+
+      const { dimension: timeDimensionRequest, field: timeField } =
+        getTimeDimensionForComparison(
+          dimensionName,
+          timeDimension,
+          timeGrain,
+          timeZone,
+        );
 
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
@@ -330,10 +347,7 @@ function getAggregationQueryForTopList(
             ),
             requestExactNames(measures, exactContext(exactSurface)),
           ),
-          dimensions: [
-            { name: dimensionName },
-            { name: timeDimension, timeGrain, timeZone },
-          ],
+          dimensions: [{ name: dimensionName }, timeDimensionRequest],
           where: sanitiseExpression(updatedFilter, undefined),
           timeRange,
           sort: [
@@ -341,7 +355,7 @@ function getAggregationQueryForTopList(
               desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
               name: measures[0],
             },
-            { desc: false, name: timeDimension },
+            { desc: false, name: timeField },
           ],
           limit: "10000",
           offset: "0",
@@ -410,6 +424,13 @@ export function getDimensionValueTimeSeries(
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
+      const { field: timeField } = getTimeDimensionForComparison(
+        dimensionName,
+        timeDimension,
+        timeGrain,
+        timeZone,
+      );
+
       const { batchedTopList, batchedQueries } = batchAggregationQueries(
         ctx,
         measures,
@@ -423,7 +444,7 @@ export function getDimensionValueTimeSeries(
         for (let i = 0; i < batchedTopList.length; i++) {
           transformedData = transformedData.concat(
             transformAggregateDimensionData(
-              timeDimension,
+              timeField,
               dimensionName,
               measures,
               batchedTopList[i],
@@ -438,7 +459,7 @@ export function getDimensionValueTimeSeries(
         if (includeTimeComparisonForDimension) {
           {
             comparisonData = transformAggregateDimensionData(
-              timeDimension,
+              timeField,
               dimensionName,
               measures,
               // For chart surface, we only have 1 batch

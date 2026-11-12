@@ -37,6 +37,9 @@ export interface GetReportMetaResponseDeliveryMeta {
 Set for reports created from an embed that was limited to specific resources. */
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+  /** If true, the recipient is the embed user who created the report.
+Only set for reports created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -301,6 +304,8 @@ export interface V1Bookmark {
   userId?: string;
   default?: boolean;
   shared?: boolean;
+  /** Whether the caller can update and remove the bookmark. */
+  canManage?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -373,6 +378,7 @@ export interface V1CreateBookmarkRequest {
   urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
+  /** ID of the project. Optional for embed users, where it defaults to the embed's project. */
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -1414,6 +1420,11 @@ export interface V1ReportOptions {
   /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
   exportAttach?: boolean;
   emailRecipients?: string[];
+  /** Email of the embed user who creates the report; only used for reports created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the report.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -2245,6 +2256,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
+  /** The `rill_open` query param of an open link from an email sent by a report created from an embed.
+If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report. */
+  open?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
@@ -2628,6 +2643,9 @@ This is only allowed for superusers. */
 };
 
 export type AdminServiceListBookmarksParams = {
+  /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   */
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").

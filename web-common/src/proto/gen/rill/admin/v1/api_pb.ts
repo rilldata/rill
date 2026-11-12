@@ -2819,6 +2819,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   resource = "";
 
   /**
+   * The `rill_open` query param of an open link from an email sent by a report created from an embed.
+   * If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
+
+  /**
    * Theme to use for the embedded resource.
    *
    * @generated from field: string theme = 12;
@@ -2888,6 +2897,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -10620,11 +10630,14 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 /**
  * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
  * the caller's own bookmarks plus shared and default bookmarks.
+ * Embed users only see their own personal bookmarks.
  *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
@@ -10815,6 +10828,8 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   resourceName = "";
 
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 6;
    */
   projectId = "";
@@ -13826,6 +13841,14 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
    */
   resources: ResourceName[] = [];
 
+  /**
+   * If true, the recipient is the embed user who created the report.
+   * Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 9;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_DeliveryMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13842,6 +13865,7 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
     { no: 6, name: "user_attrs", kind: "message", T: Struct },
     { no: 7, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 9, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_DeliveryMeta {
@@ -18533,6 +18557,13 @@ export class Bookmark extends Message<Bookmark> {
   shared = false;
 
   /**
+   * Whether the caller can update and remove the bookmark.
+   *
+   * @generated from field: bool can_manage = 14;
+   */
+  canManage = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
    */
   createdOn?: Timestamp;
@@ -18561,6 +18592,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "can_manage", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -19002,6 +19034,16 @@ export class ReportOptions extends Message<ReportOptions> {
   emailRecipients: string[] = [];
 
   /**
+   * Email of the embed user who creates the report; only used for reports created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the report.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 25;
+   */
+  embedOwnerEmail = "";
+
+  /**
    * @generated from field: repeated string slack_users = 10;
    */
   slackUsers: string[] = [];
@@ -19081,6 +19123,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

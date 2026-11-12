@@ -1851,6 +1851,12 @@ paths:
               resource:
                 type: string
                 description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
+              open:
+                type: string
+                description: |-
+                  The `rill_open` query param of an open link from an email sent by a report created from an embed.
+                  If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+                  Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
@@ -4757,7 +4763,9 @@ paths:
                 description: Flag for superusers to override normal access checks.
   /v1/users/bookmarks:
     get:
-      summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+      summary: |-
+        ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+        Embed users only see their own personal bookmarks.
       operationId: AdminService_ListBookmarks
       responses:
         "200":
@@ -4770,6 +4778,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: ID of the project. Optional for embed users, where it defaults to the embed's project.
           in: query
           required: false
           type: string
@@ -4959,6 +4968,11 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
+      embedOwner:
+        type: boolean
+        description: |-
+          If true, the recipient is the embed user who created the report.
+          Only set for reports created from an embed, for the recipient that matches the creator's saved email.
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -5310,6 +5324,9 @@ definitions:
         type: boolean
       shared:
         type: boolean
+      canManage:
+        type: boolean
+        description: Whether the caller can update and remove the bookmark.
       createdOn:
         type: string
         format: date-time
@@ -5435,6 +5452,7 @@ definitions:
         type: string
       projectId:
         type: string
+        description: ID of the project. Optional for embed users, where it defaults to the embed's project.
       default:
         type: boolean
       shared:
@@ -6946,6 +6964,13 @@ definitions:
         type: array
         items:
           type: string
+      embedOwnerEmail:
+        type: string
+        description: |-
+          Email of the embed user who creates the report; only used for reports created from an embed.
+          Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+          It's always added to `email_recipients`, and it can't unsubscribe from the report.
+          If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
       slackUsers:
         type: array
         items:

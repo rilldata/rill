@@ -6615,6 +6615,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Resource
 
+	// no validation rules for Open
+
 	// no validation rules for Theme
 
 	if m.GetThemeMode() != "" {
@@ -48727,6 +48729,8 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for Shared
 
+	// no validation rules for CanManage
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -49775,6 +49779,8 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for ExportIncludeHeader
 
 	// no validation rules for ExportAttach
+
+	// no validation rules for EmbedOwnerEmail
 
 	// no validation rules for WebOpenPath
 
@@ -53090,6 +53096,8 @@ func (m *GetReportMetaResponse_DeliveryMeta) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for EmbedOwner
 
 	if len(errors) > 0 {
 		return GetReportMetaResponse_DeliveryMetaMultiError(errors)

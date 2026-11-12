@@ -180,9 +180,9 @@ export function mapQueryToDashboard(
         timeRangeSummary.data?.timeRangeSummary,
       );
       const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
-        validSpecResp.data.explore,
+        metricsView,
+        explore,
         timeRangeSummary.data?.timeRangeSummary,
-        metricsView.smallestTimeGrain,
       );
       const defaultExploreState = {
         ...rillDefaultExploreState,

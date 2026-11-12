@@ -1095,6 +1095,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Theme
 
+	// no validation rules for EmbedOpenUrl
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}

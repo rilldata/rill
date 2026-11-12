@@ -19,7 +19,7 @@ export type BookmarkListRow = {
   dashboardTitle: string;
   // Opens the bookmark on its dashboard. Undefined when the dashboard kind is unknown.
   href: string | undefined;
-  // The owner may manage personal bookmarks; managed bookmarks need the manage bookmarks permission.
+  // Whether the caller can update and remove the bookmark, as computed by the server.
   canManage: boolean;
   // Epoch milliseconds of the last time the bookmark was opened in this browser. Zero when never opened.
   lastUsed: number;
@@ -35,16 +35,12 @@ export function buildBookmarkRows({
   dashboards,
   organization,
   project,
-  currentUserId,
-  manageBookmarks,
   recentlyUsed,
 }: {
   bookmarks: V1Bookmark[];
   dashboards: V1Resource[];
   organization: string;
   project: string;
-  currentUserId: string | undefined;
-  manageBookmarks: boolean;
   // Bookmark id to epoch milliseconds, see RecentlyUsedBookmarks.
   recentlyUsed: Record<string, number>;
 }): BookmarkListRow[] {
@@ -80,10 +76,7 @@ export function buildBookmarkRows({
       href: slug
         ? `/${organization}/${project}/${slug}/${name}${urlSearch}`
         : undefined,
-      canManage:
-        category === "personal"
-          ? !!currentUserId && bookmark.userId === currentUserId
-          : manageBookmarks,
+      canManage: !!bookmark.canManage,
       lastUsed: bookmark.id ? (recentlyUsed[bookmark.id] ?? 0) : 0,
     };
   });
