@@ -960,6 +960,9 @@ function setFromTimeManager(
     end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
     interval: timeFilterManager.timeGrain,
   } as any;
+  // Without an explicit grain the manager derives it from the time range,
+  // so explore has to keep it out of the url as well.
+  exploreState.adaptiveTimeGrain = !timeFilterManager.urlTimeGrain;
   exploreState.showTimeComparison = timeFilterManager.showComparison;
   exploreState.selectedComparisonTimeRange = {
     name: timeFilterManager.comparisonTimeRange,

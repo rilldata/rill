@@ -5,6 +5,7 @@
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   /**
    * Test component that renders the filter bar on its own, the way canvas does: the filter manager
@@ -25,18 +26,18 @@
     ) => void;
   } = $props();
 
-  // The props are fixed for the lifetime of a test, so reading them once at init is enough.
-  // svelte-ignore state_referenced_locally
-  const metricsViewsProvider = new MetricsViewsProvider(
+  const dashboardConfigProvider = new DashboardConfigProvider(
     useRuntimeClient(),
-    metricsViewNames,
   );
-  const expressionFilterManager = new ExpressionFilterManager(
-    metricsViewsProvider,
-    new YAMLConfigProvider(),
-  );
+  const { metricsViewsProvider, yamlConfigProvider } = dashboardConfigProvider;
+  // The props are fixed for the lifetime of a test, so setting metricsViewNames once is enough.
   // svelte-ignore state_referenced_locally
   metricsViewsProvider.setMetricsViewNames(metricsViewNames);
+
+  const expressionFilterManager = new ExpressionFilterManager(
+    metricsViewsProvider,
+    yamlConfigProvider,
+  );
   // svelte-ignore state_referenced_locally
   onManagerCreated?.(expressionFilterManager);
 
@@ -50,6 +51,7 @@
 <Tooltip.Provider>
   <ExpressionFilters
     {expressionFilterManager}
+    {dashboardConfigProvider}
     timeStart={undefined}
     timeEnd={undefined}
     timeControlsReady

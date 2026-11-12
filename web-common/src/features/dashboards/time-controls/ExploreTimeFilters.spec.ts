@@ -2,6 +2,7 @@ import type { HoistedPageForComponentTests } from "@rilldata/web-common/features
 import { useExploreTimeFiltersVariant } from "@rilldata/web-common/features/dashboards/time-controls/test/explore-time-filters-variant";
 import {
   testComparisonTimeRangeFilters,
+  testTimeGrainSelector,
   testTimeRangeFilters,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
 import type { ActionResult } from "@sveltejs/kit";
@@ -71,4 +72,5 @@ describe("ExploreTimeFilters", () => {
 
   testTimeRangeFilters(variant);
   testComparisonTimeRangeFilters(variant);
+  testTimeGrainSelector(variant);
 });

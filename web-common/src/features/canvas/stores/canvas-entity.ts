@@ -65,6 +65,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -114,6 +115,9 @@ export class CanvasEntity {
 
   // Expression filter manager
   expressionFilterManager: ExpressionFilterManager;
+
+  // Time filter manager
+  timeFilterManager: TimeFilterManager;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -225,8 +229,6 @@ export class CanvasEntity {
       this.client,
     );
 
-    this.timeManager = new TimeManager(searchParamsStore, this);
-
     // Let the embed layer (CanvasDashboardEmbed) drive themeName;
     // initialise with no override here so createResolvedThemeStore falls
     // back to the dashboard's own theme from the spec unless an embed
@@ -257,6 +259,13 @@ export class CanvasEntity {
       this.clearActiveComponent();
     });
     this.expressionFilterManager.storeSync.syncToUrl("clear=true");
+
+    this.timeFilterManager = new TimeFilterManager(
+      this.client,
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
+    );
+    this.timeFilterManager.storeSync.syncToUrl("clear=true");
 
     this.processSpec(this.spec);
   }
@@ -350,8 +359,6 @@ export class CanvasEntity {
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
 
-    this.timeManager.onSpecChange(response);
-
     this.titleStore.set(validSpec.displayName ?? "");
     this.checkAndSetHiddenPaths(response.hiddenPaths);
 
@@ -382,8 +389,8 @@ export class CanvasEntity {
     const requiredNames = requiredFilters
       .map((f) => f.split("::").pop())
       .filter(Boolean) as string[];
-    const timeRange = get(this.timeManager.state.rangeStore);
-    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
+    const timeRange = this.timeFilterManager.timeRange;
+    const comparisonOn = this.timeFilterManager.showComparison;
 
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
@@ -540,7 +547,7 @@ export class CanvasEntity {
       this.saveSnapshot(searchParams.toString());
     }
     this.expressionFilterManager.storeSync.setUrlParams(searchParams);
-    this.timeManager.state.onUrlChange(searchParams);
+    this.timeFilterManager.storeSync.setUrlParams(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 
@@ -642,6 +649,7 @@ export class CanvasEntity {
     this.unsubscriber = undefined;
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
+    this.timeFilterManager.cleanup();
     this.dashboardProvider.cleanup?.();
   };
 

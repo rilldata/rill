@@ -8,12 +8,16 @@ import {
   resolvedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/rill-time-mocks";
 import {
+  getTimeGrainOptions,
+  selectAdaptiveTimeGrain,
   selectComparisonTimeRange,
   selectSnapRefOrGrain,
+  selectTimeGrain,
   selectTimeRange,
   snapOffsetToggleIsDisabled,
   toggleComparison,
   toggleSnapOffset,
+  waitForTimeGrainLabel,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filter-test-utils";
 import { describe, expect, it } from "vitest";
 import { waitFor } from "@testing-library/svelte";
@@ -31,6 +35,13 @@ export interface TimeFilterManagerAccessor {
   getComparisonEnabled(): boolean;
 }
 
+export interface TimeFiltersRenderOptions {
+  /** Url search to load the dashboard with, on top of the initial one. */
+  initUrlSearch?: string;
+  /** The `time_grains` the metrics view declares; the standard grains when omitted. */
+  timeGrains?: V1TimeGrain[];
+}
+
 /**
  * One way of rendering the filter bar.
  * The tests in this file drive the UI identically for every variant,
@@ -38,14 +49,19 @@ export interface TimeFilterManagerAccessor {
  */
 export interface TimeFiltersVariant {
   /** Renders the filter bar and resolves once it is ready for interaction. */
-  render(initUrlSearch?: string): Promise<void>;
+  render(options?: TimeFiltersRenderOptions): Promise<void>;
   timeFilterManager: TimeFilterManagerAccessor;
   /** Url search of the dashboard before any filter is applied. */
   initialUrlSearch: string;
   /** Url searches the dashboard goes through before the first filter is applied. */
   initialUrlSearchHistory: string[];
-  /** Url search once `timeParams`, the time params of the filter bar, are applied. */
-  urlSearchWithTimeParams(timeParams: Record<string, string>): string;
+  /**
+   * Url search once `timeParams`, the time params of the filter bar, are applied.
+   * An `undefined` value removes the param.
+   */
+  urlSearchWithTimeParams(
+    timeParams: Record<string, string | undefined>,
+  ): string;
   /** A method rather than a field, since the page mock is rebuilt for every test. */
   pageMock(): PageMockForComponentTests;
   /** If true, the url search assertions will be no-op. */
@@ -59,7 +75,7 @@ export interface TimeFiltersVariant {
 function variantAssertions(variant: TimeFiltersVariant) {
   return {
     initialUrlSearch: variant.initialUrlSearch,
-    urlSearchWithTimeParams: (timeParams: Record<string, string>) =>
+    urlSearchWithTimeParams: (timeParams: Record<string, string | undefined>) =>
       variant.urlSearchWithTimeParams(timeParams),
 
     assertTimeRange: (expected: V1ResolvedTimeRange) =>
@@ -292,6 +308,137 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
         previousWeekComparisonUrl,
         last24PreviousWeekComparisonUrl,
       );
+    });
+  });
+}
+
+export function testTimeGrainSelector(variant: TimeFiltersVariant) {
+  const {
+    urlSearchWithTimeParams,
+    assertTimeRange,
+    assertTimeGrain,
+    assertUrlSearch,
+    assertUrlSearchHistory,
+  } = variantAssertions(variant);
+
+  /** Asserts both the time range and the grain the dashboard aggregates it by. */
+  async function assertTimeRangeAndGrain(
+    timeRange: string,
+    grain: V1TimeGrain,
+  ) {
+    await assertTimeRange({ ...resolvedTimeRange(timeRange), grain });
+    assertTimeGrain(grain);
+  }
+
+  describe("Time grain selector", () => {
+    it("Should select a grain from the ones the time range allows", async () => {
+      await variant.render();
+
+      // The url the dashboard loads with fixes the grain, so it is not adaptive.
+      await assertTimeRangeAndGrain(
+        DEFAULT_TIME_RANGE,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      );
+      await waitForTimeGrainLabel("day", false);
+
+      // 7 days is too many minutes and too few months, so only hour, day and week are offered.
+      expect(await getTimeGrainOptions()).toEqual(["hour", "day", "week"]);
+
+      await selectTimeGrain("hour");
+
+      // Changing the grain keeps the time range.
+      await assertTimeRangeAndGrain(
+        DEFAULT_TIME_RANGE,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      const hourUrlSearch = urlSearchWithTimeParams({ grain: "hour" });
+      assertUrlSearch(hourUrlSearch);
+      // Applying the grain should add a single entry to history.
+      assertUrlSearchHistory(hourUrlSearch);
+    });
+
+    it("Should follow the time range in auto mode", async () => {
+      await variant.render();
+
+      // A fixed grain carries over to a range that still allows it.
+      await selectTimeGrain("hour");
+      await selectTimeRange(/Last 4 weeks/);
+
+      const weeksTimeRange = "4W as of latest/D+1D";
+      await assertTimeRangeAndGrain(
+        weeksTimeRange,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      await waitForTimeGrainLabel("hour", false);
+      assertUrlSearch(
+        urlSearchWithTimeParams({ tr: weeksTimeRange, grain: "hour" }),
+      );
+
+      // Switching to auto picks the grain that reads best for the range:
+      // 4 weekly points are too few, so 28 daily points win over 672 hourly ones.
+      await selectAdaptiveTimeGrain();
+
+      await assertTimeRangeAndGrain(weeksTimeRange, V1TimeGrain.TIME_GRAIN_DAY);
+      await waitForTimeGrainLabel("day", true);
+      // The grain is derived from the range, so it is left out of the url.
+      assertUrlSearch(
+        urlSearchWithTimeParams({ tr: weeksTimeRange, grain: undefined }),
+      );
+
+      // In auto mode the grain keeps following the range.
+      await selectTimeRange(/Last 12 hours/);
+
+      const hoursTimeRange = "12h as of latest/h+1h";
+      await assertTimeRangeAndGrain(
+        hoursTimeRange,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      await waitForTimeGrainLabel("hour", true);
+      assertUrlSearch(
+        urlSearchWithTimeParams({ tr: hoursTimeRange, grain: undefined }),
+      );
+    });
+
+    it("Should only use the grains the metrics view declares", async () => {
+      await variant.render({
+        timeGrains: [V1TimeGrain.TIME_GRAIN_HOUR, V1TimeGrain.TIME_GRAIN_WEEK],
+      });
+
+      // The url asks for day, which is not declared, so the finest declared grain is used instead.
+      await assertTimeRangeAndGrain(
+        DEFAULT_TIME_RANGE,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      expect(await getTimeGrainOptions()).toEqual(["hour", "week"]);
+
+      // Auto would pick day for 7 days, so it settles on the closest declared grain:
+      // 168 hourly points are nearer the ideal than a single weekly one.
+      await selectAdaptiveTimeGrain();
+      await assertTimeRangeAndGrain(
+        DEFAULT_TIME_RANGE,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      await waitForTimeGrainLabel("hour", true);
+
+      // Auto would pick day for 4 weeks, so it settles on week instead.
+      await selectTimeRange(/Last 4 weeks/);
+
+      await assertTimeRangeAndGrain(
+        "4W as of latest/D+1D",
+        V1TimeGrain.TIME_GRAIN_WEEK,
+      );
+      await waitForTimeGrainLabel("week", true);
+      expect(await getTimeGrainOptions()).toEqual(["hour", "week"]);
+
+      // Minute fits 12 hours but is not declared, and a week is longer than the range.
+      await selectTimeRange(/Last 12 hours/);
+
+      await assertTimeRangeAndGrain(
+        "12h as of latest/h+1h",
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      );
+      await waitForTimeGrainLabel("hour", true);
+      expect(await getTimeGrainOptions()).toEqual(["hour"]);
     });
   });
 }

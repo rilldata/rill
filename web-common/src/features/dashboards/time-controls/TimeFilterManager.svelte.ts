@@ -4,15 +4,24 @@ import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboard
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 import {
   V1TimeGrain,
+  type V1MetricsViewTimeRangesResponse,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
 import {
   constructAsOfString,
   constructNewString,
-  deriveInterval,
   INHERIT_TIME_RANGE_ALIAS,
 } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+import {
+  type DerivedInterval,
+  getTimeRangesQueryOptions,
+  toDerivedInterval,
+} from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
+import { createQueries } from "@tanstack/svelte-query";
+import { untrack } from "svelte";
 import {
   allowedGrainsForInterval,
   DateTimeUnitToV1TimeGrain,
@@ -30,7 +39,7 @@ import {
 import {
   RillIsoInterval,
   RillPeriodToGrainInterval,
-  RillTime,
+  type RillTime,
   RillTimeLabel,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { DateTime, Interval } from "luxon";
@@ -108,9 +117,15 @@ export class TimeFilterManager implements UrlParamsStore {
    */
   public urlTimeRange = $state<string | undefined>(undefined);
   /**
-   * Resolved time range, taking into account the parent time range when `inherit` is set.
+   * Time range whose interval is being resolved, after `inherit` is replaced with the parent's range.
+   * `timeRange` catches up with it once the interval resolves.
    */
-  public timeRange = $state<string | undefined>(undefined);
+  public requestedTimeRange = $state<string | undefined>(undefined);
+  /**
+   * Resolved time range, taking into account the parent time range when `inherit` is set.
+   * Follows `requestedTimeRange` once its interval has resolved.
+   */
+  public timeRange: string | undefined;
   /**
    * Exact value of time grain as set from setUrlParams.
    */
@@ -118,7 +133,7 @@ export class TimeFilterManager implements UrlParamsStore {
   /**
    * Resolved time grain. Always has a value, if url param is undefined, it is based on time range's interval.
    */
-  public timeGrain = $state<V1TimeGrain>(MinSupportedGrain);
+  public timeGrain: V1TimeGrain;
   public timeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeDimension = $state<string | undefined>(undefined);
   /**
@@ -126,9 +141,9 @@ export class TimeFilterManager implements UrlParamsStore {
    */
   public urlComparisonTimeRange = $state<string | undefined>(undefined);
   /**
-   * Resolved comparison time range, taking into account the parent time range when `inherit` is set.
+   * Resolved comparison time range, taking into account the parent comparison time range when `inherit` is set.
    */
-  public comparisonTimeRange = $state<string | undefined>(undefined);
+  public comparisonTimeRange: string | undefined;
   public showComparison = $state<boolean>(false);
   public lastDefinedScrubInterval = $state<Interval<true> | undefined>(
     undefined,
@@ -142,12 +157,10 @@ export class TimeFilterManager implements UrlParamsStore {
   // Computed values
   public minDate: DateTime<true> | undefined;
   public maxDate: DateTime<true> | undefined;
-  public interval = $state<Interval<true> | undefined>(undefined);
-  public adjustedInterval = $state<Interval<true> | undefined>(undefined);
-  public comparisonInterval = $state<Interval<true> | undefined>(undefined);
-  public adjustedComparisonInterval = $state<Interval<true> | undefined>(
-    undefined,
-  );
+  public interval: Interval<true> | undefined;
+  public adjustedInterval: Interval<true> | undefined;
+  public comparisonInterval: Interval<true> | undefined;
+  public adjustedComparisonInterval: Interval<true> | undefined;
   public canPanLeft: boolean;
   public canPanRight: boolean;
   // For convenience
@@ -180,6 +193,24 @@ export class TimeFilterManager implements UrlParamsStore {
   public paramKeys = TimeFilterParams;
   public readonly storeSync: UrlParamsChangeTracker;
 
+  /** Unsubscribes from the time ranges queries. */
+  public readonly cleanup: () => void;
+  // Responses behind the current interval, used to skip notifications that bring no new data.
+  private committedResponses: V1MetricsViewTimeRangesResponse[] = [];
+  // Intervals last resolved by the runtime, one per metrics view.
+  // `timeRange`, `interval`, `adjustedInterval` and `timeGrain` derive from it,
+  // so they keep their values while the next range is being resolved, and on error.
+  private resolved = $state.raw<
+    | {
+        timeRange: string;
+        timeZone: string;
+        intervals: DerivedInterval[];
+      }
+    | undefined
+  >(undefined);
+  // Set when the range being resolved came from the controls rather than the url.
+  private notifyChangeOnCommit = false;
+
   public constructor(
     private readonly runtimeClient: RuntimeClient,
     private readonly metricsViewsProvider: MetricsViewsProvider,
@@ -189,24 +220,96 @@ export class TimeFilterManager implements UrlParamsStore {
   ) {
     this.storeSync = new UrlParamsChangeTracker(this);
 
+    // Subscribing keeps the intervals in sync with the cache:
+    // an input change fetches, and invalidating a metrics view (when it reconciles) refetches.
+    const timeRangesQuery = createQueries(
+      { queries: toStore(() => this.getTimeRangesQueryOptions()) },
+      queryClient,
+    );
+    this.cleanup = timeRangesQuery.subscribe(() =>
+      this.commitResolvedIntervals(false),
+    );
+
     this.ready = metricsViewsProvider.ready;
     metricsViewsProvider.on("time-specs-loaded", () => {
       this.ready = true;
       this.events.emit("ready");
     });
     // Replay `inherit` time range when parent changed.
+    // An inherited comparison range is derived from the parent, so it needs no replay.
     parent?.storeSync.on("change", () => {
-      const timeRangeIsInherited =
-        this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS;
-      const comparisonTimeRangeIsInherited =
-        this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS;
-      if (timeRangeIsInherited) {
-        // If comparison is inherited it will be reapplied from applyTimeRange
-        void this.applyTimeRange(this.urlTimeRange!, this.timeZone, false);
-      } else if (comparisonTimeRangeIsInherited) {
-        this.applyComparisonRange(this.urlComparisonTimeRange!);
+      if (this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS) {
+        this.applyTimeRange(this.urlTimeRange, false);
       }
     });
+
+    this.timeRange = $derived(this.resolved?.timeRange);
+    // The latest interval across the metrics views, and the smallest grain their ranges hint at.
+    const latest = $derived.by(() => {
+      let interval: Interval<true> | undefined = undefined;
+      let smallestGrain: V1TimeGrain | undefined = undefined;
+      this.resolved?.intervals.forEach(({ interval: candidate, grain }) => {
+        if (
+          candidate?.isValid &&
+          candidate.end &&
+          (!interval || interval.end < candidate.end)
+        ) {
+          interval = candidate;
+        }
+
+        if (
+          grain &&
+          (!smallestGrain ||
+            V1TimeGrainToOrder[grain] < V1TimeGrainToOrder[smallestGrain])
+        ) {
+          smallestGrain = grain;
+        }
+      });
+      return { interval, smallestGrain } as {
+        interval: Interval<true> | undefined;
+        smallestGrain: V1TimeGrain | undefined;
+      };
+    });
+    this.interval = $derived(latest.interval);
+    // TODO: clarify the intended grain when the url grain is not allowed for the new interval (UX follow up).
+    //       Today it falls back to the smallest grain the range hints at, then to the smallest allowed grain,
+    //       while without a url grain it is validated against the range instead.
+    this.timeGrain = $derived.by(() => {
+      if (!this.interval) return this.urlTimeGrain ?? MinSupportedGrain;
+
+      const largestMinTimeGrain =
+        this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain;
+      if (!this.urlTimeGrain) {
+        return (
+          getValidatedTimeGrain(
+            this.interval,
+            largestMinTimeGrain,
+            undefined,
+            this.parsedTime,
+            this.yamlConfigProvider.timeGrains,
+          ) ?? MinSupportedGrain
+        );
+      }
+
+      const allowedGrains = allowedGrainsForInterval(
+        this.interval,
+        largestMinTimeGrain,
+        this.yamlConfigProvider.timeGrains,
+      );
+      if (allowedGrains.includes(this.urlTimeGrain)) return this.urlTimeGrain;
+      if (latest.smallestGrain && allowedGrains.includes(latest.smallestGrain))
+        return latest.smallestGrain;
+      return allowedGrains[0];
+    });
+    this.adjustedInterval = $derived(
+      this.interval && this.resolved
+        ? getAdjustedInterval(
+            this.interval,
+            this.timeGrain,
+            this.resolved.timeZone,
+          )
+        : undefined,
+    );
 
     this.minDate = $derived.by(() => {
       const minDate = this.metricsViewsProvider.timeRangeSummary?.min
@@ -290,19 +393,60 @@ export class TimeFilterManager implements UrlParamsStore {
         : !!this.parsedTime?.asOfLabel?.offset,
     );
 
+    // The comparison range as selected, with `inherit` replaced by the parent's comparison range.
+    const selectedComparisonTimeRange = $derived(
+      this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS
+        ? this.parent?.comparisonTimeRange
+        : this.urlComparisonTimeRange,
+    );
     this.parsedComparisonTime = $derived.by(() => {
-      if (!this.comparisonTimeRange) return undefined;
+      if (!selectedComparisonTimeRange) return undefined;
       try {
-        return parseRillTime(this.comparisonTimeRange);
+        return parseRillTime(selectedComparisonTimeRange);
       } catch {
         return undefined;
       }
     });
+    this.comparisonTimeRange = $derived.by(() => {
+      // An absolute primary time range has no relative comparison other than the contiguous one,
+      // so mark the comparison as contiguous. An absolute comparison window is left as-is:
+      // it already names the exact period to compare against.
+      if (
+        this.parsedTime?.interval instanceof RillIsoInterval &&
+        !(this.parsedComparisonTime?.interval instanceof RillIsoInterval)
+      ) {
+        return TimeComparisonOption.CONTIGUOUS;
+      }
+      return selectedComparisonTimeRange;
+    });
+    this.comparisonInterval = $derived.by(() => {
+      if (!this.interval || !this.resolved || !selectedComparisonTimeRange)
+        return undefined;
+      try {
+        return getComparisonInterval(
+          this.interval,
+          selectedComparisonTimeRange,
+          this.resolved.timeZone,
+        );
+      } catch {
+        return undefined;
+      }
+    });
+    this.adjustedComparisonInterval = $derived(
+      this.comparisonInterval && this.resolved
+        ? getAdjustedInterval(
+            this.comparisonInterval,
+            this.timeGrain,
+            this.resolved.timeZone,
+          )
+        : undefined,
+    );
 
     this.aggregationOptions = $derived(
       allowedGrainsForInterval(
         this.interval,
         this.metricsViewsProvider.largestMinTimeGrain,
+        this.yamlConfigProvider.timeGrains,
       ),
     );
     this.comparisonTimeRangeOptions = $derived(
@@ -349,15 +493,14 @@ export class TimeFilterManager implements UrlParamsStore {
     this.showComparison = urlParams.has(
       ExploreStateURLParams.ComparisonTimeRange,
     );
-    this.applyComparisonRange(
-      urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ?? "rill-PP",
-    );
+    this.urlComparisonTimeRange =
+      urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ??
+      TimeComparisonOption.CONTIGUOUS;
 
     // Apply time range last so that params are taken from url
     if (urlParams.has(ExploreStateURLParams.TimeRange)) {
-      void this.applyTimeRange(
+      this.applyTimeRange(
         urlParams.get(ExploreStateURLParams.TimeRange)!,
-        this.timeZone,
         false,
       );
     } else {
@@ -369,11 +512,11 @@ export class TimeFilterManager implements UrlParamsStore {
         );
       }
       if (defaultTimeRange && !this.config.skipDefaultTimeRange) {
-        void this.applyTimeRange(defaultTimeRange, this.timeZone, false);
+        this.applyTimeRange(defaultTimeRange, false);
       } else {
         this.urlTimeRange = undefined;
-        this.timeRange = undefined;
-        this.interval = undefined;
+        this.requestedTimeRange = undefined;
+        this.resolved = undefined;
       }
     }
 
@@ -463,7 +606,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
   public onSelectRange(range: string, ignoreSnap?: boolean) {
     if (range === INHERIT_TIME_RANGE_ALIAS) {
-      return this.applyTimeRange(range, this.timeZone);
+      return this.applyTimeRange(range);
     }
 
     try {
@@ -506,7 +649,7 @@ export class TimeFilterManager implements UrlParamsStore {
         overrideRillTimeRef(parsed, newAsOfString);
       }
 
-      return this.applyTimeRange(parsed.toString(), this.timeZone);
+      return this.applyTimeRange(parsed.toString());
     } catch {
       // This function is called in a controlled manner and should not throw
     }
@@ -527,7 +670,7 @@ export class TimeFilterManager implements UrlParamsStore {
       [direction === "left" ? "plus" : "minus"](panAmount)
       .toISO();
 
-    void this.applyTimeRange(`${newStart} to ${newEnd}`, this.timeZone);
+    this.applyTimeRange(`${newStart} to ${newEnd}`);
   }
 
   public onSelectGrainEnding(grain: V1TimeGrain | undefined) {
@@ -540,18 +683,11 @@ export class TimeFilterManager implements UrlParamsStore {
       ref: this.ref,
     });
 
-    return this.applyTimeRange(newString, this.timeZone);
+    return this.applyTimeRange(newString);
   }
 
   public onSelectGrain(grain: V1TimeGrain | undefined) {
     this.urlTimeGrain = grain;
-    this.timeGrain =
-      getValidatedTimeGrain(
-        this.interval,
-        this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
-        grain,
-        this.parsedTime,
-      ) ?? MinSupportedGrain;
     this.storeSync.stateChanged();
   }
 
@@ -562,7 +698,7 @@ export class TimeFilterManager implements UrlParamsStore {
     if (this.parsedTime.interval instanceof RillIsoInterval) {
       // TODO
     } else {
-      void this.applyTimeRange(this.timeRange, tz);
+      this.applyTimeRange(this.timeRange);
     }
   }
 
@@ -578,17 +714,17 @@ export class TimeFilterManager implements UrlParamsStore {
       ref,
     });
 
-    return this.applyTimeRange(newString, this.timeZone);
+    return this.applyTimeRange(newString);
   }
 
   public onSelectTimeDimension(timeDimension: string) {
     this.timeDimension = timeDimension;
-    if (this.timeRange) void this.applyTimeRange(this.timeRange, this.timeZone);
+    if (this.timeRange) this.applyTimeRange(this.timeRange);
     else this.storeSync.stateChanged();
   }
 
   public onSelectComparisonRange(range: string) {
-    this.applyComparisonRange(range);
+    this.urlComparisonTimeRange = range;
     this.showComparison = true;
     this.storeSync.stateChanged();
   }
@@ -643,28 +779,23 @@ export class TimeFilterManager implements UrlParamsStore {
     }));
   }
 
+  /**
+   * Anchors relative ranges at `executionTime`.
+   * It is a query input, so a range that has already resolved re-resolves against it.
+   */
   public setExecutionTime(executionTime: string | undefined) {
     this.executionTime = executionTime;
   }
 
-  private async applyTimeRange(
-    newTimeRange: string,
-    tz: string,
-    notifyChange = true,
-  ) {
+  private applyTimeRange(newTimeRange: string, notifyChange = true) {
     this.urlTimeRange = newTimeRange;
     if (newTimeRange === INHERIT_TIME_RANGE_ALIAS) {
-      if (!this.parent?.timeRange) return;
-      newTimeRange = this.parent.timeRange;
+      if (!this.parent?.requestedTimeRange) return;
+      newTimeRange = this.parent.requestedTimeRange;
     }
 
     measureSelection.clear();
     this.resetScrubRange(false);
-
-    // The runtime resolves the range against the metrics views, so their names are all this needs.
-    // The time range summary can still be loading at this point;
-    // waiting for it here would drop the range the dashboard loaded with.
-    if (!this.metricsViewsProvider.metricsViewNames.length) return;
 
     // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = newTimeRange.includes("tz");
@@ -675,129 +806,89 @@ export class TimeFilterManager implements UrlParamsStore {
       if (timeZone) this.timeZone = timeZone;
     }
 
-    const promises = this.metricsViewsProvider.metricsViewNames.map(
-      (mvName) => {
-        return deriveInterval(
-          newTimeRange,
-          this.runtimeClient,
-          mvName,
-          tz ?? "UTC",
-          this.timeDimension,
-          this.executionTime,
-        );
-      },
-    );
-    const intervals = await Promise.all(promises);
-    let latestInterval: Interval<true> | undefined = undefined;
-    let smallestGrain: V1TimeGrain | undefined = undefined;
-    intervals.forEach(({ interval, grain }) => {
-      if (
-        interval?.isValid &&
-        interval.end &&
-        (!latestInterval || latestInterval.end < interval.end)
-      ) {
-        latestInterval = interval;
-      }
+    this.requestedTimeRange = newTimeRange;
 
-      if (
-        grain &&
-        (!smallestGrain ||
-          V1TimeGrainToOrder[grain] < V1TimeGrainToOrder[smallestGrain])
-      ) {
-        smallestGrain = grain;
-      }
-    });
-    if (!latestInterval) {
-      return;
+    // A range anchored at `now` resolves differently every time,
+    // so re-selecting it has to refetch even though the query key is unchanged.
+    if (newTimeRange.includes("now")) {
+      this.getTimeRangesQueryOptions().forEach(({ queryKey }) => {
+        void queryClient.invalidateQueries({ queryKey, refetchType: "all" });
+      });
     }
 
-    const allowedGrains = allowedGrainsForInterval(
-      latestInterval,
-      this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
-    );
-
-    let finalGrain: V1TimeGrain = allowedGrains[0];
-    if (this.urlTimeGrain) {
-      // If url time grain is explicitly set, use it if it is still valid in new interval.
-      finalGrain = allowedGrains.includes(this.urlTimeGrain)
-        ? this.urlTimeGrain
-        : smallestGrain && allowedGrains.includes(smallestGrain)
-          ? smallestGrain
-          : finalGrain;
-    } else {
-      // Else get the valid time grain for the new interval.
-      finalGrain =
-        getValidatedTimeGrain(
-          latestInterval,
-          this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
-          undefined,
-          parseRillTime(newTimeRange),
-        ) ?? MinSupportedGrain;
-    }
-
-    this.interval = latestInterval;
-    this.adjustedInterval = getAdjustedInterval(
-      latestInterval,
-      finalGrain,
-      this.timeZone,
-    );
-    this.timeRange = newTimeRange;
-    this.timeGrain = finalGrain;
-
-    // Recalc comparison time range internal.
-    if (this.urlComparisonTimeRange)
-      this.applyComparisonRange(this.urlComparisonTimeRange);
-
-    if (this.config.log)
-      console.log(
-        "TimeFilterManager::applyTimeRange::dataUpdated",
-        newTimeRange,
-      );
-    if (!notifyChange) return;
-    this.storeSync.stateChanged();
-    this.events.emit("rangeResolved");
+    // Change listeners read the resolved interval (explore copies it into its state),
+    // so the change is reported from the commit rather than here.
+    this.notifyChangeOnCommit = notifyChange;
+    // Commit right away when the intervals are cached,
+    // otherwise the subscription commits once they resolve.
+    this.commitResolvedIntervals(true);
   }
 
-  private applyComparisonRange(newComparisonTimeRange: string) {
-    this.urlComparisonTimeRange = newComparisonTimeRange;
-    if (newComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS) {
-      if (!this.parent?.timeRange) return;
-      newComparisonTimeRange = this.parent.timeRange;
-    }
-    this.comparisonTimeRange = newComparisonTimeRange;
-    if (!this.timeRange) return;
+  private getTimeRangesQueryOptions() {
+    const expression = this.requestedTimeRange;
+    if (!expression) return [];
+    return this.metricsViewsProvider.metricsViewNames.map((metricsViewName) =>
+      getTimeRangesQueryOptions(this.runtimeClient, {
+        metricsViewName,
+        expressions: [expression],
+        timeZone: this.timeZone,
+        timeDimension: this.timeDimension,
+        executionTime: this.executionTime,
+      }),
+    );
+  }
 
-    try {
-      const parsed = parseRillTime(this.timeRange);
-      // An absolute primary time range has no relative comparison other than the contiguous one,
-      // so mark the comparison as contiguous. An absolute comparison window is left as-is:
-      // it already names the exact period to compare against.
-      if (
-        parsed.interval instanceof RillIsoInterval &&
-        !(this.parsedComparisonTime?.interval instanceof RillIsoInterval)
-      ) {
-        this.comparisonTimeRange = TimeComparisonOption.CONTIGUOUS;
-      }
-      if (this.timeRange === TimeRangePreset.ALL_TIME) {
-        this.showComparison = false;
-      }
+  /**
+   * Commits the intervals for the current inputs once every metrics view has resolved them.
+   * Reads the cache for the current query keys instead of the subscription's results,
+   * so a response for earlier inputs is never committed for the current ones.
+   * Unless `force` is set, it skips responses it has already committed,
+   * since the subscription also notifies on changes that do not touch the data.
+   */
+  private commitResolvedIntervals(force: boolean) {
+    // The subscription can call this from inside an effect; reading state here must not make it a dependency.
+    untrack(() => {
+      const expression = this.requestedTimeRange;
+      const queryOptions = this.getTimeRangesQueryOptions();
+      if (!expression || !queryOptions.length) return;
 
-      this.comparisonInterval = getComparisonInterval(
-        this.interval,
-        newComparisonTimeRange,
-        this.timeZone,
+      const responses: V1MetricsViewTimeRangesResponse[] = [];
+      for (const { queryKey } of queryOptions) {
+        const state =
+          queryClient.getQueryState<V1MetricsViewTimeRangesResponse>(queryKey);
+        // On error the previous interval is kept.
+        if (state?.status !== "success" || state.fetchStatus !== "idle") return;
+        responses.push(state.data!);
+      }
+      if (!force && arrayOrderedEquals(responses, this.committedResponses))
+        return;
+      this.committedResponses = responses;
+
+      const intervals = responses.map((response) =>
+        toDerivedInterval(response, expression, this.timeZone),
       );
-      this.adjustedComparisonInterval = this.comparisonInterval
-        ? getAdjustedInterval(
-            this.comparisonInterval,
-            this.timeGrain,
-            this.timeZone,
-          )
-        : undefined;
+      // Keep the previous interval when none of the metrics views resolved the range.
+      if (!intervals.some(({ interval }) => interval.isValid)) return;
+      this.resolved = {
+        timeRange: expression,
+        timeZone: this.timeZone,
+        intervals,
+      };
+
+      // All time has nothing before it to compare against.
+      if (expression === TimeRangePreset.ALL_TIME) this.showComparison = false;
+
+      if (this.config.log)
+        console.log(
+          "TimeFilterManager::commitResolvedIntervals::dataUpdated",
+          expression,
+        );
+      if (this.notifyChangeOnCommit) {
+        this.notifyChangeOnCommit = false;
+        this.storeSync.stateChanged();
+      }
       this.events.emit("rangeResolved");
-    } catch {
-      // no-op
-    }
+    });
   }
 
   private getComparisonTimeRangeOptions() {

@@ -106,3 +106,74 @@ export function getToggleComparisonPicker() {
 export async function toggleComparison() {
   await act(() => getToggleComparisonPicker().click());
 }
+
+export function getTimeGrainPicker() {
+  return screen.getByLabelText("Select aggregation grain");
+}
+
+function getAdaptiveTimeGrainOption() {
+  return screen.getByRole("menuitemcheckbox", { name: /Adaptive/ });
+}
+
+export async function openTimeGrainPicker() {
+  await act(() => getTimeGrainPicker().click());
+  await waitFor(() => expect(getAdaptiveTimeGrainOption()).toBeVisible());
+}
+
+/** Closes the time grain dropdown if it is still open after a selection. */
+async function closeTimeGrainPicker() {
+  if (!screen.queryByRole("menuitemcheckbox", { name: /Adaptive/ })) return;
+  await act(() => getTimeGrainPicker().click());
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("menuitemcheckbox", { name: /Adaptive/ }),
+    ).toBeNull(),
+  );
+}
+
+/**
+ * The grains listed in the time grain dropdown, as the user reads them.
+ * The adaptive option is left out since it is listed regardless of the time range.
+ */
+export async function getTimeGrainOptions() {
+  await openTimeGrainPicker();
+  const options = screen
+    .getAllByRole("menuitemcheckbox")
+    .map((option) => option.textContent?.trim() ?? "")
+    .filter((label) => !label.startsWith("Adaptive"));
+  await closeTimeGrainPicker();
+  return options;
+}
+
+/** Picks a fixed grain, e.g. `hour`, and waits for the trigger to show it. */
+export async function selectTimeGrain(grainLabel: string) {
+  await openTimeGrainPicker();
+  await act(() =>
+    screen.getByRole("menuitemcheckbox", { name: grainLabel }).click(),
+  );
+  await closeTimeGrainPicker();
+  await waitForTimeGrainLabel(grainLabel, false);
+}
+
+/** Picks the adaptive option, which lets the grain follow the time range. */
+export async function selectAdaptiveTimeGrain() {
+  await openTimeGrainPicker();
+  await act(() => getAdaptiveTimeGrainOption().click());
+  await closeTimeGrainPicker();
+  await waitFor(() => expect(getTimeGrainPicker()).toHaveTextContent(/auto/));
+}
+
+/**
+ * Waits for the trigger to show `grainLabel`,
+ * followed by the `auto` hint when the grain is adaptive.
+ */
+export async function waitForTimeGrainLabel(
+  grainLabel: string,
+  adaptive: boolean,
+) {
+  await waitFor(() =>
+    expect(getTimeGrainPicker().textContent?.replace(/\s+/g, " ").trim()).toBe(
+      `by ${grainLabel}${adaptive ? " auto" : ""}`,
+    ),
+  );
+}

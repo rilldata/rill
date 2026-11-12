@@ -241,6 +241,7 @@ export function createStateManagers({
     timeFilterManager,
     cleanup: () => {
       dashboardConfigProvider.cleanup?.();
+      timeFilterManager.cleanup();
     },
   };
 }

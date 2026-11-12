@@ -4,6 +4,7 @@
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { AD_BIDS_METRICS_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+  import ExploreTimeGrainSelectorTest from "@rilldata/web-common/features/dashboards/time-controls/test/ExploreTimeGrainSelectorTest.svelte";
 
   /**
    * Test component that renders the filter bar the way the explore dashboard does, so that tests
@@ -22,6 +23,8 @@
         metricsViewName={AD_BIDS_METRICS_NAME}
         {hasTimeSeries}
       />
+      <!-- Explore renders the grain selector in the chart toolbar rather than the filter bar. -->
+      <ExploreTimeGrainSelectorTest />
       <div>Dashboard loaded!</div>
     </DashboardStateManager>
   </StateManagersProvider>

@@ -35,7 +35,10 @@ import {
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { afterAll, beforeEach, expect } from "vitest";
-import type { V1ResolvedTimeRange } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ResolvedTimeRange,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 
 // Url params for the dashboard before any time filter is applied, coming from the yaml preset.
 // A rilltime expression carries characters the url escapes, and the url search history holds the
@@ -72,23 +75,28 @@ export function useExploreTimeFiltersVariant(
   const mocks = useDashboardFetchMocksForComponentTests();
   let pageMock!: PageMockForComponentTests;
 
+  function mockMetricsViewAndExplore(timeGrains?: V1TimeGrain[]) {
+    // TODO: always doing { ...AD_BIDS_METRICS_INIT_WITH_TIME, timeGrains } stops dashboard from loading.
+    //       might be a symptom of larger issue if timeGrains is present but undefined.
+    const metricsView = timeGrains
+      ? { ...AD_BIDS_METRICS_INIT_WITH_TIME, timeGrains }
+      : AD_BIDS_METRICS_INIT_WITH_TIME;
+    mocks.mockMetricsView(AD_BIDS_METRICS_NAME, metricsView);
+    mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, metricsView, {
+      ...AD_BIDS_EXPLORE_INIT,
+      timeRanges: YAML_TIME_RANGES,
+      timeZones: YAML_TIME_ZONES,
+      defaultPreset: {
+        ...AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
+        timeRange: DEFAULT_TIME_RANGE,
+      },
+    });
+  }
+
   beforeEach(() => {
     pageMock = new PageMockForComponentTests(hoistedPage);
 
-    mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT_WITH_TIME);
-    mocks.mockMetricsExplore(
-      AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_INIT_WITH_TIME,
-      {
-        ...AD_BIDS_EXPLORE_INIT,
-        timeRanges: YAML_TIME_RANGES,
-        timeZones: YAML_TIME_ZONES,
-        defaultPreset: {
-          ...AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
-          timeRange: DEFAULT_TIME_RANGE,
-        },
-      },
-    );
+    mockMetricsViewAndExplore();
     mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, TIME_RANGE_SUMMARY);
     mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, RESOLVED_RILL_TIMES);
 
@@ -108,13 +116,16 @@ export function useExploreTimeFiltersVariant(
       PageURLForInitialState,
     ],
 
-    urlSearchWithTimeParams: (timeParams: Record<string, string>) => {
+    urlSearchWithTimeParams: (
+      timeParams: Record<string, string | undefined>,
+    ) => {
       // Overriding the params of the initial url keeps them in the order the dashboard writes them,
       // which is the order the url search assertions compare against.
       const urlSearch = new URLSearchParams(PageURLForInitialState);
-      Object.entries(timeParams).forEach(([key, value]) =>
-        urlSearch.set(key, value),
-      );
+      Object.entries(timeParams).forEach(([key, value]) => {
+        if (value === undefined) urlSearch.delete(key);
+        else urlSearch.set(key, value);
+      });
       return urlSearch.toString();
     },
 
@@ -128,7 +139,8 @@ export function useExploreTimeFiltersVariant(
       getComparisonEnabled: () => exploreState()?.showTimeComparison ?? false,
     },
 
-    render: async (initUrlSearch?: string) => {
+    render: async ({ initUrlSearch, timeGrains } = {}) => {
+      if (timeGrains) mockMetricsViewAndExplore(timeGrains);
       // Make sure to populate the url with the initial states.
       pageMock.gotoSearch(PageURLForInitialState);
       if (initUrlSearch) pageMock.gotoSearch(initUrlSearch);

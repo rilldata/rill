@@ -1,6 +1,6 @@
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import {
-  aggregationGrainOrder,
+  AggregationGrainOrder,
   getAvailableTimeGrains,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -75,7 +75,7 @@ export class TimeManager {
         );
         if (common.length) return common;
         // Never offer a grain that no view declares, so `time_grains` keeps replacing the default list.
-        return aggregationGrainOrder.filter((grain) =>
+        return AggregationGrainOrder.filter((grain) =>
           lists.some((list) => list.includes(grain)),
         );
       },

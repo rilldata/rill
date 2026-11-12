@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { getResolveCanvasRequest } from "@rilldata/web-common/features/canvas/selector";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains.ts";
 
 /**
  * Metrics view name and other yaml config provider based on dashboard type.
@@ -54,6 +55,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
         timeRanges: exploreSpec.timeRanges,
         allowCustomTimeRange: exploreSpec.allowCustomTimeRange,
+        timeGrains: getAvailableTimeGrains(metricsViewSpec),
         defaultTimeZone: exploreSpec.defaultPreset?.timezone,
         timeZones: exploreSpec.timeZones,
       });
