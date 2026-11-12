@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -347,4 +348,36 @@ func TestMetricsSQLWithAdditionalTimeGrain(t *testing.T) {
 		Claims:             &runtime.SecurityClaims{},
 	})
 	require.Error(t, err, "should error for an invalid time grain")
+}
+
+func TestCompileMetricsSQLExecutionTime(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	executionTime := time.Date(2022, 2, 15, 10, 0, 0, 0, time.UTC)
+
+	// An alert passes its execution time as a time.Time; an API caller as a string.
+	for _, arg := range []any{executionTime, executionTime.Format(time.RFC3339)} {
+		q, err := CompileMetricsSQL(t.Context(), &runtime.ResolverOptions{
+			Runtime:    rt,
+			InstanceID: instanceID,
+			Args:       map[string]any{"execution_time": arg},
+			Claims:     &runtime.SecurityClaims{},
+		}, "select pub from ad_bids_metrics where timestamp < now()")
+		require.NoError(t, err)
+		require.Equal(t, "ad_bids_metrics", q.MetricsView)
+		require.Equal(t, "2022-02-15T10:00:00Z", q.Where.Condition.Expressions[1].Value)
+	}
+}
+
+func TestCompileMetricsSQLForbidden(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	// Claims that can't access the metrics view can't learn its compiled query either.
+	_, err := CompileMetricsSQL(t.Context(), &runtime.ResolverOptions{
+		Runtime:    rt,
+		InstanceID: instanceID,
+		Claims: &runtime.SecurityClaims{AdditionalRules: []*runtimev1.SecurityRule{
+			{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Allow: false}}},
+		}},
+	}, "select pub from ad_bids_metrics")
+	require.ErrorIs(t, err, runtime.ErrForbidden)
 }

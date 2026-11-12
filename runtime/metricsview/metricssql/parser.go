@@ -39,6 +39,10 @@ type CompilerOptions struct {
 	// It is optional, but if not provided, queries that use rilltime expressions will error.
 	// TODO: Ideally we should replace this with support for rilltime expressions in *metricsview.Expression itself, so evaluation can be delayed until query execution.
 	GetTimestamps func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error)
+	// Now is the time that now() and rilltime expressions are evaluated against.
+	// It is optional and defaults to the current time;
+	// set it to compile a query as it was evaluated at an earlier time, such as an alert's execution time.
+	Now time.Time
 }
 
 // New creates a new Compiler.

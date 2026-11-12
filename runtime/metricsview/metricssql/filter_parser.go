@@ -479,7 +479,7 @@ func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, context 
 	case "now":
 		// Use UTC: some OLAP engines (e.g. DuckDB with a TIMESTAMP column) ignore the offset in timestamp strings
 		return &metricsview.Expression{
-			Value: time.Now().UTC().Format(time.RFC3339),
+			Value: q.now().UTC().Format(time.RFC3339),
 		}, nil
 	case "date_add", "date_sub": // ex : date_add(time, INTERVAL x UNIT)
 		val, err := parseFilter(ctx, node.Args[0], nil, q) // handling of time

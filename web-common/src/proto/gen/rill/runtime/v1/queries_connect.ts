@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
+import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ConvertMetricsSQLToQueryRequest, ConvertMetricsSQLToQueryResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -222,6 +222,19 @@ export const QueryService = {
       name: "ConvertExpressionToMetricsSQL",
       I: ConvertExpressionToMetricsSQLRequest,
       O: ConvertExpressionToMetricsSQLResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ConvertMetricsSQLToQuery compiles metrics SQL into the metrics view query it runs as,
+     * in the format of the "metrics" resolver.
+     * It is used to open a dashboard that shows what an alert or report written in metrics SQL saw.
+     *
+     * @generated from rpc rill.runtime.v1.QueryService.ConvertMetricsSQLToQuery
+     */
+    convertMetricsSQLToQuery: {
+      name: "ConvertMetricsSQLToQuery",
+      I: ConvertMetricsSQLToQueryRequest,
+      O: ConvertMetricsSQLToQueryResponse,
       kind: MethodKind.Unary,
     },
     /**
