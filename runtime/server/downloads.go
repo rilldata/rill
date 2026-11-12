@@ -193,7 +193,8 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	queryAttrs := append(s.runtime.GetInstanceAttributes(req.Context(), request.InstanceId), attribute.String("source", string(runtime.RequestSourceFromContext(req.Context()))))
 	s.activity.RecordMetric(req.Context(), "query", 1, queryAttrs...)
 
-	err = q.Export(req.Context(), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
+	// The browser opens the download URL without credentials, so run it as the user who issued the token.
+	err = q.Export(auth.WithClaims(req.Context(), claims), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
 		Format: request.Format,
 		PreWriteHook: func(filename string) error {
 			// Add timestamp to filename
