@@ -5,7 +5,11 @@
   import { SlidersHorizontal } from "lucide-svelte";
   import { controlLabel, controlSummary } from "./control-labels";
   import { controlKindLabel } from "./editor/labels";
-  import { ControlKind, type AppliedControl } from "./controls";
+  import {
+    ControlKind,
+    filterValueViews,
+    type AppliedControl,
+  } from "./controls";
   import ControlInput from "./ControlInput.svelte";
 
   // The viewer controls declared on one level (an item, a container, a tab group or the canvas).
@@ -56,8 +60,13 @@
   function metricsViewsFor(control: AppliedControl): string[] {
     if (control.control.kind !== ControlKind.Filter) return [];
     if (metricsViewName) return [metricsViewName];
-    return canvasEntity.metricsView.getMetricsViewNamesForDimension(
-      control.control.target ?? "",
+    return filterValueViews(
+      control.control,
+      Object.keys($metricsViews),
+      (view, dimension) =>
+        !!$metricsViews[view]?.state?.validSpec?.dimensions?.some(
+          (d) => d.name === dimension,
+        ),
     );
   }
 

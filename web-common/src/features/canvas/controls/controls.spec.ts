@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectControls,
   controlsForPath,
+  filterValueViews,
   controlUrlKey,
   parseControlValue,
   serializeControlValue,
@@ -138,5 +139,52 @@ describe("URL keys and values", () => {
     expect(parseControlValue(metric, "spend,impressions").valid).toBe(false);
     expect(parseControlValue(metric, "").valid).toBe(false);
     expect(serializeControlValue(metric, ["spend"])).toBeUndefined();
+  });
+});
+
+describe("filterValueViews", () => {
+  const dims: Record<string, string[]> = {
+    bids: ["publisher", "country"],
+    sales: ["billing_country"],
+    visits: ["geo"],
+  };
+  const views = Object.keys(dims);
+  const hasDimension = (view: string, dimension: string) =>
+    dims[view].includes(dimension);
+
+  it("reads values from the views that have the target dimension", () => {
+    expect(
+      filterValueViews({ target: "publisher" }, views, hasDimension),
+    ).toEqual(["bids"]);
+    expect(
+      filterValueViews(
+        { target: "country", fields: { sales: "billing_country" } },
+        views,
+        hasDimension,
+      ),
+    ).toEqual(["bids"]);
+  });
+
+  it("falls back to mapped views when no view has the target itself", () => {
+    expect(
+      filterValueViews(
+        {
+          target: "region",
+          fields: { sales: "billing_country", visits: "geo" },
+        },
+        views,
+        hasDimension,
+      ),
+    ).toEqual(["sales"]);
+  });
+
+  it("returns nothing when no view has the dimension", () => {
+    expect(
+      filterValueViews(
+        { target: "region", fields: { sales: "missing" } },
+        views,
+        hasDimension,
+      ),
+    ).toEqual([]);
   });
 });

@@ -243,6 +243,14 @@ function itemNames(value: unknown, names = new Set<string>()): Set<string> {
   return names;
 }
 
+/**
+ * Gives the named items in a copied block's or tab's JSON names of their own. An item's name
+ * is the URL key of its viewer controls and must be unique on the canvas.
+ */
+export function renameCopiedItems<T>(doc: Document, copy: T): T {
+  return renameItemsInCopy(copy, itemNames(doc.toJSON()));
+}
+
 // Renames the named items in a block's JSON so they don't clash with the taken names.
 function renameItemsInCopy<T>(value: T, taken: Set<string>): T {
   if (Array.isArray(value)) {
@@ -273,11 +281,7 @@ export function duplicateBlock(
   if (!isMap(original)) return undefined;
 
   const name = newBlockName(doc, kind);
-  // Items in the copy get names of their own: an item's name is the URL key of its viewer
-  // controls and must be unique on the canvas.
-  const copy = doc.createNode(
-    renameItemsInCopy(original.toJSON(), itemNames(doc.toJSON())),
-  );
+  const copy = doc.createNode(renameCopiedItems(doc, original.toJSON()));
   if (!isMap(copy)) return undefined;
   setInMapBeforeContent(doc, copy, "name", name);
   rows.items.splice(index + 1, 0, copy);

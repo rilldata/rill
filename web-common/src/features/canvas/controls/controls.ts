@@ -267,3 +267,23 @@ export function serializeControlValue(
   }
   return values.map(encodeURIComponent).join(",");
 }
+
+/**
+ * The metrics views to read a filter control's values from. A control filters its target
+ * dimension, or the dimension its `fields` maps a metrics view to. Values come from the views
+ * that have the target itself if any do, otherwise from the mapped ones; either way only from
+ * views that agree on the dimension's name, since one query set reads one dimension.
+ */
+export function filterValueViews(
+  control: V1CanvasControl,
+  views: string[],
+  hasDimension: (view: string, dimension: string) => boolean,
+): string[] {
+  const dimensionFor = (view: string) =>
+    control.fields?.[view] ?? control.target ?? "";
+  const candidates = views.filter((v) => hasDimension(v, dimensionFor(v)));
+  const pick =
+    candidates.find((v) => dimensionFor(v) === control.target) ?? candidates[0];
+  if (pick === undefined) return [];
+  return candidates.filter((v) => dimensionFor(v) === dimensionFor(pick));
+}
