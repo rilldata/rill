@@ -239,6 +239,28 @@ func TestRejectionTransport(t *testing.T) {
 	require.ErrorAs(t, err, &target)
 	require.Equal(t, int32(1), caller.forced.Load())
 	require.Equal(t, []string{"Bearer a1", "Bearer a1", "Bearer a2"}, auths)
+
+	// Metadata operations refresh the rejected token too
+	for name, fn := range map[string]func() error{
+		"Ping": func() error { return c.Ping(ctx) },
+		"ListDatabaseSchemas": func() error {
+			_, _, err := c.ListDatabaseSchemas(ctx, 0, "")
+			return err
+		},
+		"ListTables": func() error {
+			_, _, err := c.ListTables(ctx, "", "s", 0, "")
+			return err
+		},
+		"Lookup": func() error {
+			_, err := c.Lookup(ctx, "", "s", "t")
+			return err
+		},
+		"LoadDDL": func() error { return c.LoadDDL(ctx, &drivers.OlapTable{Name: "t"}) },
+	} {
+		forced := caller.forced.Load()
+		require.ErrorAs(t, fn(), &target, name)
+		require.Equal(t, forced+1, caller.forced.Load(), name)
+	}
 }
 
 func TestOAuthConfigValidation(t *testing.T) {

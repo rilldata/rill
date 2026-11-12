@@ -252,11 +252,10 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB(ctx)
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		return db.PingContext(ctx)
+	})
 	if err != nil {
-		return fmt.Errorf("failed to open databricks connection: %w", err)
-	}
-	if err := db.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to open databricks connection: %w", err)
 	}
 	return nil

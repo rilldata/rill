@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
@@ -51,29 +52,28 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	`
 	args = append(args, limit+1)
 
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-
-	rows, err := db.QueryContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
 	var res []*drivers.DatabaseSchemaInfo
-	var catalog, schema string
-	for rows.Next() {
-		if err := rows.Scan(&catalog, &schema); err != nil {
-			return nil, "", err
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		rows, err := db.QueryContext(ctx, q, args...)
+		if err != nil {
+			return err
 		}
-		res = append(res, &drivers.DatabaseSchemaInfo{
-			Database:       catalog,
-			DatabaseSchema: schema,
-		})
-	}
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+
+		res = nil
+		var catalog, schema string
+		for rows.Next() {
+			if err := rows.Scan(&catalog, &schema); err != nil {
+				return err
+			}
+			res = append(res, &drivers.DatabaseSchemaInfo{
+				Database:       catalog,
+				DatabaseSchema: schema,
+			})
+		}
+		return rows.Err()
+	})
+	if err != nil {
 		return nil, "", err
 	}
 
@@ -120,30 +120,29 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-
-	rows, err := db.QueryContext(ctx, q, args...)
-	if err != nil {
-		return nil, "", err
-	}
-	defer rows.Close()
-
 	var res []*drivers.TableInfo
-	var name string
-	var isView bool
-	for rows.Next() {
-		if err := rows.Scan(&name, &isView); err != nil {
-			return nil, "", err
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		rows, err := db.QueryContext(ctx, q, args...)
+		if err != nil {
+			return err
 		}
-		res = append(res, &drivers.TableInfo{
-			Name: name,
-			View: isView,
-		})
-	}
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+
+		res = nil
+		var name string
+		var isView bool
+		for rows.Next() {
+			if err := rows.Scan(&name, &isView); err != nil {
+				return err
+			}
+			res = append(res, &drivers.TableInfo{
+				Name: name,
+				View: isView,
+			})
+		}
+		return rows.Err()
+	})
+	if err != nil {
 		return nil, "", err
 	}
 
@@ -156,11 +155,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
-	conn, err := c.getDB(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Use system.information_schema filtered by table_catalog (see ListTables), and query
 	// tables/columns separately rather than JOINing them: RT's Photon rejects the join's
 	// shuffle with PHOTON_INTERNAL_ERROR. Equivalent on DBSQL.
@@ -168,38 +162,42 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 	args = append(args, databaseSchema, name)
 
 	var tableType string
-	err = conn.QueryRowContext(ctx,
-		fmt.Sprintf("SELECT table_type FROM system.information_schema.tables WHERE %s AND table_schema = ? AND table_name = ?", catPred),
-		args...,
-	).Scan(&tableType)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, drivers.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := conn.QueryContext(ctx,
-		fmt.Sprintf("SELECT column_name, data_type FROM system.information_schema.columns WHERE %s AND table_schema = ? AND table_name = ? ORDER BY ordinal_position", catPred),
-		args...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var fields []*runtimev1.StructType_Field
-	var colName, colType string
-	for rows.Next() {
-		if err := rows.Scan(&colName, &colType); err != nil {
-			return nil, err
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		err := db.QueryRowContext(ctx,
+			fmt.Sprintf("SELECT table_type FROM system.information_schema.tables WHERE %s AND table_schema = ? AND table_name = ?", catPred),
+			args...,
+		).Scan(&tableType)
+		if errors.Is(err, sql.ErrNoRows) {
+			return drivers.ErrNotFound
 		}
-		fields = append(fields, &runtimev1.StructType_Field{
-			Name: colName,
-			Type: databaseTypeToPB(colType),
-		})
-	}
-	if err := rows.Err(); err != nil {
+		if err != nil {
+			return err
+		}
+
+		rows, err := db.QueryContext(ctx,
+			fmt.Sprintf("SELECT column_name, data_type FROM system.information_schema.columns WHERE %s AND table_schema = ? AND table_name = ? ORDER BY ordinal_position", catPred),
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		fields = nil
+		var colName, colType string
+		for rows.Next() {
+			if err := rows.Scan(&colName, &colType); err != nil {
+				return err
+			}
+			fields = append(fields, &runtimev1.StructType_Field{
+				Name: colName,
+				Type: databaseTypeToPB(colType),
+			})
+		}
+		return rows.Err()
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -224,11 +222,6 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 
 // LoadDDL implements drivers.OLAPInformationSchema.
 func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return err
-	}
-
 	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
 
 	objectType := "TABLE"
@@ -237,7 +230,9 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 
 	var ddl string
-	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		return db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
+	})
 	if err != nil {
 		return err
 	}
