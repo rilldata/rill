@@ -274,7 +274,7 @@ func (c *Client) Exchange(ctx context.Context, code, verifier string, hc *http.C
 	return tok, nil
 }
 
-// Refresh obtains a new token using the refresh token, sending the resource indicator (RFC 8707).
+// Refresh obtains a new token using the refresh token, sending the resource indicator (RFC 8707) if set.
 // If the server rotates the refresh token, the new one is returned; otherwise the old one is kept.
 func (c *Client) Refresh(ctx context.Context, tok *oauth2.Token, hc *http.Client) (*oauth2.Token, error) {
 	if tok.RefreshToken == "" {
