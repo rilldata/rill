@@ -247,6 +247,16 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		return fmt.Errorf("right expression is nil")
 	}
 
+	if op == OperatorEq || op == OperatorNeq {
+		if typ := reflect.TypeOf(right.Value); typ != nil && typ.Kind() == reflect.Slice {
+			in := OperatorIn
+			if op == OperatorNeq {
+				in = OperatorNin
+			}
+			return fmt.Errorf("%q takes a single value, got a list; use %q for a list of values", op, in)
+		}
+	}
+
 	// Check there isn't an unnest on the right side
 	if right.Name != "" {
 		_, unnest, _, err := b.sqlForName(right.Name)

@@ -246,6 +246,18 @@ explore:
 			},
 			wantErr: `"eq" condition has 1`,
 		},
+		{
+			name: "eq condition with a list value",
+			args: ai.QueryMetricsViewArgs{
+				"dimensions": []map[string]any{{"name": "country"}},
+				"measures":   []map[string]any{{"name": "total_revenue"}},
+				"where": map[string]any{"cond": map[string]any{"op": "eq", "exprs": []any{
+					map[string]any{"name": "country"},
+					map[string]any{"val": []any{"US", "CA"}},
+				}}},
+			},
+			wantErr: `"eq" takes a single value, got a list; use "in" for a list of values`,
+		},
 	}
 
 	for _, tt := range tests {
