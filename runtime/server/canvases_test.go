@@ -2244,6 +2244,160 @@ rows:
 	require.False(t, access(link, "member-canvas--component-0-0"))
 }
 
+func TestPersonalCanvasComponentAccessAfterFailedReparse(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// An ordinary project canvas with an inline component and a component defined in its own file.
+			"team.yaml": `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Team notes"
+  - component: shared_note
+`,
+			"shared_note.yaml": `
+type: component
+markdown:
+  content: "Shared note"
+`,
+			// A personal canvas owned by an embed user.
+			"personal/embed-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: ext_a
+rows:
+- items:
+  - markdown:
+      content: "Embed user's private note"
+`,
+			// A personal canvas owned by a project member.
+			"personal/member-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: u_owner
+rows:
+- items:
+  - markdown:
+      content: "Member's private note"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
+
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, instanceID)
+	require.NoError(t, err)
+	openComponents := []string{"team--component-0-0", "shared_note"}
+	personalComponents := []string{"embed-canvas--component-0-0", "member-canvas--component-0-0"}
+
+	// Break the project, so it can't be parsed when the runtime restarts.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{"rill.yaml": "[broken"})
+
+	// Remove the annotations from the personal canvases' components and persist them, like a catalog written by a version that didn't add them.
+	for _, name := range personalComponents {
+		resourceName := &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}
+		cmp, err := ctrl.Get(ctx, resourceName, true)
+		require.NoError(t, err)
+		cmp.GetComponent().Spec.CanvasAnnotations = nil
+		require.NoError(t, ctrl.UpdateSpec(ctx, resourceName, cmp))
+	}
+	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+	for _, name := range personalComponents {
+		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
+		require.NoError(t, err)
+		require.Empty(t, cmp.GetComponent().Spec.CanvasAnnotations)
+		require.Empty(t, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
+	}
+	require.NoError(t, ctrl.Flush(ctx))
+
+	// Restart the controller, which loads the catalog again and fails to parse the project.
+	inst, err := rt.Instance(ctx, instanceID)
+	require.NoError(t, err)
+	require.NoError(t, rt.EditInstance(ctx, inst, true))
+	var restarted *runtime.Controller
+	require.Eventually(t, func() bool {
+		c, err := rt.Controller(ctx, instanceID)
+		if err != nil || c == ctrl {
+			return false
+		}
+		restarted = c
+		return true
+	}, 10*time.Second, 10*time.Millisecond)
+	require.NoError(t, restarted.WaitUntilIdle(ctx, false))
+	parser, err := restarted.Get(ctx, runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+	require.NotEmpty(t, parser.GetProjectParser().State.ParseErrors)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	callers := []struct {
+		name   string
+		userID string
+		attrs  map[string]any
+		// components are the personal canvases' components the caller can access.
+		components []string
+	}{
+		{"embed owner", "ext_a", map[string]any{"embed": true}, []string{"embed-canvas--component-0-0"}},
+		{"member owner", "u_owner", map[string]any{"id": "u_owner", "admin": false}, []string{"member-canvas--component-0-0"}},
+		{"other embed user", "ext_b", map[string]any{"embed": true}, nil},
+		{"viewer", "u_viewer", map[string]any{"id": "u_viewer", "admin": false}, nil},
+		{"admin", "u_admin", map[string]any{"id": "u_admin", "admin": true}, personalComponents},
+	}
+	for _, c := range callers {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+				UserID:         c.userID,
+				UserAttributes: c.attrs,
+				Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadAPI},
+			})
+			want := append(slices.Clone(openComponents), c.components...)
+
+			list, err := srv.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID, Kind: runtime.ResourceKindComponent})
+			require.NoError(t, err)
+			var listed []string
+			for _, r := range list.Resources {
+				listed = append(listed, r.Meta.Name.Name)
+			}
+			require.ElementsMatch(t, want, listed)
+
+			for _, name := range append(slices.Clone(openComponents), personalComponents...) {
+				_, err := srv.GetResource(ctx, &runtimev1.GetResourceRequest{InstanceId: instanceID, Name: &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}})
+				if slices.Contains(want, name) {
+					require.NoError(t, err, name)
+				} else {
+					require.Equal(t, codes.PermissionDenied, status.Code(err), name)
+				}
+			}
+		})
+	}
+
+	// The components got the annotations the parser adds, so parsing the repaired project doesn't change them again.
+	component := func(name string) *runtimev1.Resource {
+		cmp, err := restarted.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, true)
+		require.NoError(t, err)
+		return cmp
+	}
+	loaded := map[string]*runtimev1.Resource{}
+	for _, name := range personalComponents {
+		loaded[name] = component(name)
+	}
+	require.Equal(t, map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_a"}, loaded["embed-canvas--component-0-0"].GetComponent().Spec.CanvasAnnotations)
+	require.Equal(t, map[string]string{"admin_managed": "true", "admin_owner_user_id": "u_owner"}, loaded["member-canvas--component-0-0"].GetComponent().Spec.CanvasAnnotations)
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{"rill.yaml": ""})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
+	for _, name := range personalComponents {
+		cmp := component(name)
+		require.Equal(t, loaded[name].Meta.SpecVersion, cmp.Meta.SpecVersion, name)
+		require.Equal(t, loaded[name].GetComponent().Spec.CanvasAnnotations, cmp.GetComponent().Spec.CanvasAnnotations, name)
+	}
+}
+
 func TestProjectCanvasComponentAccess(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{

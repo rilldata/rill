@@ -1,13 +1,16 @@
 package reconcilers_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -473,6 +476,120 @@ rows:
 	require.Equal(t, want, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
 	require.True(t, canAccess("ext_owner"))
 	require.False(t, canAccess("ext_other"))
+}
+
+func TestCanvasComponentAccessAnnotationsOnCatalogLoad(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"c1.yaml": `
+type: component
+markdown:
+  content: "Shared"
+`,
+			// A canvas that isn't admin-managed.
+			"d1.yaml": `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Public"
+`,
+			// Admin-managed canvases, such as personal canvases.
+			"personal/p1.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: ext_owner
+  admin_nonce: "2026-01-01T00:00:00Z"
+rows:
+- items:
+  - markdown:
+      content: "Private"
+  - component: c1
+- tabs:
+  - label: Details
+    rows:
+    - items:
+      - markdown:
+          content: "Private tab"
+`,
+			"personal/p2.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: u1
+rows:
+- items:
+  - markdown:
+      content: "Private"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 9, 0, 0)
+
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+	component := func(c *runtime.Controller, name string) *runtimev1.Resource {
+		cmp, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, true)
+		require.NoError(t, err)
+		return cmp
+	}
+
+	// Remove the annotations from p1's components and persist them, like a catalog written by a version that didn't add them.
+	// One of them has no valid spec, and p2's component keeps its annotations.
+	for _, name := range []string{"p1--component-0-0", "p1--component-g1-t0-0-0"} {
+		cmp := component(ctrl, name)
+		cmp.GetComponent().Spec.CanvasAnnotations = nil
+		require.NoError(t, ctrl.UpdateSpec(ctx, cmp.Meta.Name, cmp))
+	}
+	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+	for _, name := range []string{"p1--component-0-0", "p1--component-g1-t0-0-0"} {
+		cmp := component(ctrl, name)
+		require.Empty(t, cmp.GetComponent().Spec.CanvasAnnotations)
+		require.Empty(t, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
+	}
+	require.NoError(t, ctrl.Flush(ctx))
+
+	// Load the catalog in a controller that isn't run, so nothing is parsed or reconciled.
+	// That's the state in which a restarted runtime starts serving requests.
+	loaded, err := runtime.NewController(ctx, rt, id, zap.NewNop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		// Running the controller with a cancelled context closes it.
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_ = loaded.Run(ctx)
+	})
+	canAccess := func(name string, claims *runtime.SecurityClaims) bool {
+		sec, err := rt.ResolveSecurity(ctx, id, claims, component(loaded, name))
+		require.NoError(t, err)
+		return sec.CanAccess()
+	}
+	owner := &runtime.SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}}
+	other := &runtime.SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}}
+
+	// The components of the admin-managed canvas were loaded with its access annotations, without its nonce, so only its owner can access them.
+	want := map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}
+	for _, name := range []string{"p1--component-0-0", "p1--component-g1-t0-0-0"} {
+		cmp := component(loaded, name)
+		require.Equal(t, want, cmp.GetComponent().Spec.CanvasAnnotations, name)
+		require.Equal(t, want, cmp.GetComponent().State.ValidSpec.CanvasAnnotations, name)
+		require.True(t, canAccess(name, owner), name)
+		require.False(t, canAccess(name, other), name)
+	}
+
+	// The other components were loaded as they were persisted:
+	// the component defined in its own file, the inline component of the canvas that isn't admin-managed, and the component that had its annotations.
+	for _, name := range []string{"c1", "d1--component-0-0"} {
+		cmp := component(loaded, name)
+		require.Empty(t, cmp.GetComponent().Spec.CanvasAnnotations, name)
+		require.Empty(t, cmp.GetComponent().State.ValidSpec.CanvasAnnotations, name)
+		require.True(t, canAccess(name, other), name)
+	}
+	require.Equal(t, map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}, component(loaded, "p2--component-0-0").GetComponent().Spec.CanvasAnnotations)
+	require.False(t, canAccess("p2--component-0-0", other))
 }
 
 func TestCanvasItemParamBindings(t *testing.T) {

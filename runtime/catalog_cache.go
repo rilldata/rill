@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -43,6 +45,7 @@ type catalogCache struct {
 
 // newCatalogCache initializes and warms a new catalog cache.
 // It resets ephemeral fields to the following defaults: reconcile_status=idle, renamed_from=nil, reconcile_on=nil.
+// It also adds the access annotations of admin-managed canvases to their inline components that were stored without them (see inheritCanvasAccessAnnotations).
 func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (*catalogCache, error) {
 	store, release, err := ctrl.Runtime.Catalog(ctx, instanceID)
 	if err != nil {
@@ -79,8 +82,63 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 		c.link(r2)
 		c.stored[nameStr(r2.Meta.Name)] = true
 	}
+	c.inheritCanvasAccessAnnotations()
 
 	return c, nil
+}
+
+// inheritCanvasAccessAnnotations adds the access annotations of admin-managed canvases (e.g. personal canvases) to their inline components that lack them.
+// The parser adds them to the components it parses, but components stored by an earlier version don't have them,
+// and they would stay accessible to everyone until the project is parsed successfully.
+// Adding them when the catalog is loaded restricts those components before the controller serves a request, also if the project can't be parsed.
+// A canvas's inline components are found by their file path, since they're defined in the canvas's file.
+func (c *catalogCache) inheritCanvasAccessAnnotations() {
+	// Find the access annotations of the admin-managed canvases by file path.
+	// A canvas counts as admin-managed if either its spec or its valid spec says so.
+	annotations := make(map[string]map[string]string)
+	for _, r := range c.resources[ResourceKindCanvas] {
+		a := parser.CanvasAccessAnnotations(r.GetCanvas().GetSpec().GetAnnotations())
+		if a == nil {
+			a = parser.CanvasAccessAnnotations(r.GetCanvas().GetState().GetValidSpec().GetAnnotations())
+		}
+		if a == nil {
+			continue
+		}
+		for _, path := range r.Meta.FilePaths {
+			annotations[path] = a
+		}
+	}
+
+	for _, r := range c.resources[ResourceKindComponent] {
+		var a map[string]string
+		for _, path := range r.Meta.FilePaths {
+			if a = annotations[path]; a != nil {
+				break
+			}
+		}
+		if a == nil {
+			continue
+		}
+
+		// The versions and timestamps are updated as for any other change to a spec or state; cached security decisions are keyed by the timestamps.
+		var changed bool
+		if spec := r.GetComponent().GetSpec(); spec != nil && len(spec.CanvasAnnotations) == 0 {
+			spec.CanvasAnnotations = maps.Clone(a)
+			r.Meta.SpecVersion++
+			r.Meta.SpecUpdatedOn = timestamppb.Now()
+			changed = true
+		}
+		if spec := r.GetComponent().GetState().GetValidSpec(); spec != nil && len(spec.CanvasAnnotations) == 0 {
+			spec.CanvasAnnotations = maps.Clone(a)
+			r.Meta.StateVersion++
+			r.Meta.StateUpdatedOn = timestamppb.Now()
+			changed = true
+		}
+		if changed {
+			r.Meta.Version++
+			c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
+		}
+	}
 }
 
 // close closes the catalog cache, flushing any changes to the underlying store.

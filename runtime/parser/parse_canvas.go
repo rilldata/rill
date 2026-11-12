@@ -257,18 +257,9 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Annotations = tmp.Annotations
 	r.CanvasSpec.AiPrompts = aiPrompts
 
-	// The inline components of an admin-managed canvas (such as a personal canvas) inherit the annotations that determine who can access it,
+	// The inline components of an admin-managed canvas inherit the annotations that determine who can access it,
 	// so they can't be read by those who can't access the canvas.
-	// These are the annotations set by the admin service; its nonce is left out, since it changes on every write and would reconcile every component.
-	var accessAnnotations map[string]string
-	if managed, _ := strconv.ParseBool(tmp.Annotations["admin_managed"]); managed {
-		accessAnnotations = make(map[string]string)
-		for k, v := range tmp.Annotations {
-			if strings.HasPrefix(k, "admin_") && k != "admin_nonce" {
-				accessAnnotations[k] = v
-			}
-		}
-	}
+	accessAnnotations := CanvasAccessAnnotations(tmp.Annotations)
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
@@ -284,6 +275,22 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 
 	return nil
+}
+
+// CanvasAccessAnnotations returns the annotations of an admin-managed canvas (such as a personal canvas) that determine who can access it.
+// These are the annotations set by the admin service; its nonce is left out, since it changes on every write and would reconcile every inline component.
+// It returns nil if the canvas isn't admin-managed.
+func CanvasAccessAnnotations(annotations map[string]string) map[string]string {
+	if managed, _ := strconv.ParseBool(annotations["admin_managed"]); !managed {
+		return nil
+	}
+	res := make(map[string]string)
+	for k, v := range annotations {
+		if strings.HasPrefix(k, "admin_") && k != "admin_nonce" {
+			res[k] = v
+		}
+	}
+	return res
 }
 
 // parseCanvasRows parses a list of canvas row entries. Each entry is either a plain row (items)
