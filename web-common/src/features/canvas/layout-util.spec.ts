@@ -166,6 +166,34 @@ rows:
     });
   });
 
+  it("names a copied item clear of names elsewhere on the canvas", () => {
+    // "chart_copy" is taken by an item in a container, outside the rows being edited.
+    const rearrange = generateArrayRearrangeFunction(
+      {
+        operations: [
+          {
+            type: "copy",
+            insertRow: true,
+            source: { row: 0, col: 0 },
+            destination: { row: 1, col: 0 },
+          },
+        ],
+      },
+      new Set(["chart", "chart_copy"]),
+    );
+    const rows = [{ items: [{ name: "chart" }] }];
+    const apply = () =>
+      rearrange(
+        rows,
+        () => ({ name: "" }),
+        (row) => row,
+      ).flatMap((row) => row.items.map((item) => item.name));
+
+    expect(apply()).toEqual(["chart", "chart_copy2"]);
+    // The transaction is applied to the YAML rows and the spec rows: same name both times.
+    expect(apply()).toEqual(["chart", "chart_copy2"]);
+  });
+
   it("keeps a container when a top-level row is added before it", () => {
     const doc = parseDocument(`type: canvas
 rows:

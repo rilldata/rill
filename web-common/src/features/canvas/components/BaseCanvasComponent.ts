@@ -1,5 +1,6 @@
 import { applyFieldControls } from "@rilldata/web-common/features/canvas/controls/apply-fields";
 import {
+  andControlFilters,
   applyTimeControls,
   controlFiltersExpression,
 } from "@rilldata/web-common/features/canvas/controls/apply-filters";
@@ -456,8 +457,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             !!metricsView.metricsView?.dimensions?.some((d) => d.name === name),
         );
         if (controlWhere) {
-          fullWhere = mergeFilters(fullWhere, controlWhere);
-          dimensionOnlyWhere = mergeFilters(dimensionOnlyWhere, controlWhere);
+          fullWhere = andControlFilters(fullWhere, controlWhere);
+          dimensionOnlyWhere = andControlFilters(
+            dimensionOnlyWhere,
+            controlWhere,
+          );
         }
 
         return {

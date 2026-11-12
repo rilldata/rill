@@ -122,6 +122,24 @@ describe("URL keys and values", () => {
     expect(parseControlValue(withDefault, "").values).toEqual([]);
   });
 
+  it("tells an empty-string value from a cleared control", () => {
+    // A dimension's blank value is a value: selecting it must not read as "show everything".
+    expect(serializeControlValue(filter, [""])).toBe('""');
+    expect(parseControlValue(filter, '""')).toEqual({
+      values: [""],
+      valid: true,
+    });
+    expect(serializeControlValue(filter, ["Acme", ""])).toBe('Acme,""');
+    expect(parseControlValue(filter, 'Acme,""').values).toEqual(["Acme", ""]);
+    // A value that is literally two quotes is encoded like any other.
+    expect(serializeControlValue(filter, ['""'])).toBe("%22%22");
+    expect(parseControlValue(filter, "%22%22").values).toEqual(['""']);
+    // Cleared stays an empty param.
+    const withDefault = { ...filter, default: ["Acme"] };
+    expect(serializeControlValue(withDefault, [])).toBe("");
+    expect(parseControlValue(withDefault, "").values).toEqual([]);
+  });
+
   it("falls back to the default for a value that isn't allowed", () => {
     const metric = {
       kind: "measure",

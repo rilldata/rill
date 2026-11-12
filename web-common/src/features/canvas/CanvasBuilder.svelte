@@ -57,6 +57,7 @@
     addBlockAt,
     blockHasContent,
     deleteBlock,
+    canvasItemNames,
     duplicateBlock,
     moveBlock,
     moveItemAcrossContainers,
@@ -424,6 +425,7 @@
           resolvedComponents,
           transaction,
           componentResources: componentResourceMap,
+          takenItemNames: canvasItemNames(contents),
         });
 
       if (selectedId) {

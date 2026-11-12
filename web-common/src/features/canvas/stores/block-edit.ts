@@ -227,6 +227,11 @@ export function copyName(name: string, taken: Set<string>): string {
   return candidate;
 }
 
+/** The names of all named items on the canvas. */
+export function canvasItemNames(doc: Document): Set<string> {
+  return itemNames(doc.toJSON());
+}
+
 // The names of all items under a canvas (or block) JSON value.
 function itemNames(value: unknown, names = new Set<string>()): Set<string> {
   if (Array.isArray(value)) {

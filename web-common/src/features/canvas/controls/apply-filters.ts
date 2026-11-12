@@ -3,7 +3,10 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  V1Operation,
+  type V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { TIME_FILTER_INHERIT } from "../components/time-filters";
 import { ControlKind, type AppliedControl } from "./controls";
 
@@ -26,6 +29,23 @@ export function controlFiltersExpression(
     exprs.push(createInExpression(dimension, values));
   }
   return exprs.length ? createAndExpression(exprs) : undefined;
+}
+
+/**
+ * `where` narrowed by a control filter. Every predicate of both is kept: unlike mergeFilters,
+ * which rebuilds the expression from the kinds of predicate it understands, this only adds
+ * the control's predicates to the conjunction.
+ */
+export function andControlFilters(
+  where: V1Expression | undefined,
+  controlWhere: V1Expression,
+): V1Expression {
+  if (!where) return controlWhere;
+  const controlExprs = controlWhere.cond?.exprs ?? [];
+  if (where.cond?.op === V1Operation.OPERATION_AND) {
+    return createAndExpression([...(where.cond.exprs ?? []), ...controlExprs]);
+  }
+  return createAndExpression([where, ...controlExprs]);
 }
 
 /**

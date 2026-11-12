@@ -221,8 +221,16 @@ export function defaultControlValues(
 }
 
 /**
+ * How an empty-string value is written in a control's URL value, e.g. a dimension's blank
+ * value. An empty param already means "cleared", so the empty string needs its own token:
+ * two double quotes, which encodeURIComponent never produces for another value.
+ */
+const EMPTY_VALUE_TOKEN = '""';
+
+/**
  * Parses a control's URL value. A missing param (null) means the default; an empty param means
- * the viewer cleared the control. Several values are comma-separated, each URI-encoded.
+ * the viewer cleared the control. Several values are comma-separated, each URI-encoded, with
+ * the empty string written as `""`.
  * A value that the control doesn't allow is invalid, and the default applies instead.
  */
 export function parseControlValue(
@@ -234,7 +242,12 @@ export function parseControlValue(
 
   let values: string[];
   try {
-    values = raw === "" ? [] : raw.split(",").map(decodeURIComponent);
+    values =
+      raw === ""
+        ? []
+        : raw
+            .split(",")
+            .map((v) => (v === EMPTY_VALUE_TOKEN ? "" : decodeURIComponent(v)));
   } catch {
     return { values: defaultControlValues(control), valid: false };
   }
@@ -265,7 +278,9 @@ export function serializeControlValue(
   ) {
     return undefined;
   }
-  return values.map(encodeURIComponent).join(",");
+  return values
+    .map((v) => (v === "" ? EMPTY_VALUE_TOKEN : encodeURIComponent(v)))
+    .join(",");
 }
 
 /**
