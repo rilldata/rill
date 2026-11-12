@@ -128,8 +128,10 @@ DATABRICKS_OAUTH_CLIENT_SECRET=dose...
 
 Viewers who have not signed in see a prompt to sign in to Databricks in place of the data. Signing in opens a popup; the data loads when it completes, without a page refresh. Viewers sign in separately in each project, and are prompted again if the OAuth settings change or Databricks rejects the token refresh.
 
+"View as" queries Databricks with the viewed user's connection. Project admins (and their service tokens) can run queries as any viewer who has connected Databricks, for example through "View as" or embeds issued for a user.
+
 :::note Not supported yet
-Alerts, scheduled reports, embedded dashboards, and "View as" do not work with `auth: oauth`; queries from them fail instead of using the service credential. Caching is disabled for this connector.
+Embedded dashboards work only when issued for a Rill user ID. Embeds for external users, alerts, and scheduled reports do not work with `auth: oauth`; queries from them fail instead of using the service credential. Caching is disabled for this connector.
 :::
 
 ## Create Your First Model

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -62,6 +63,13 @@ func TestConnectorOAuthToken(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "access-1", res.AccessToken)
 		require.NotNil(t, res.ExpiresOn)
+	})
+
+	t.Run("subjects that are not Rill users are rejected", func(t *testing.T) {
+		for _, id := range []string{uuid.NewString(), "ext_abc"} {
+			_, err := deplClient.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: id})
+			require.Equal(t, codes.InvalidArgument, status.Code(err), id)
+		}
 	})
 
 	t.Run("no token for another configuration", func(t *testing.T) {

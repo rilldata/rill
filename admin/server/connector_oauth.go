@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -79,6 +80,19 @@ func (s *Server) GetConnectorOAuthToken(ctx context.Context, req *adminv1.GetCon
 	if err != nil {
 		return nil, err
 	}
+	// Only Rill users can authorize a connector; the runtime treats InvalidArgument as "requires a signed-in user".
+	// Other subjects, such as service accounts, magic tokens and external embed users, must not be asked to sign in.
+	if uuid.Validate(req.UserId) != nil {
+		return nil, status.Error(codes.InvalidArgument, "user_id is not a Rill user")
+	}
+	_, err = s.admin.DB.FindUser(ctx, req.UserId)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user_id is not a Rill user")
+		}
+		return nil, err
+	}
+
 	// The client is bound to the connector's OAuth configuration.
 	clientRow, err := s.admin.DB.FindConnectorOAuthClient(ctx, depl.ProjectID, req.Connector, req.ConfigHash)
 	if err != nil {

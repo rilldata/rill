@@ -204,8 +204,12 @@ func (h *Handle) GetConnectorOAuthToken(ctx context.Context, connector, configHa
 		ForceRefresh: forceRefresh,
 	})
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
+		switch status.Code(err) {
+		case codes.NotFound:
 			return nil, drivers.ErrNotFound
+		case codes.InvalidArgument:
+			// The user ID is not a Rill user, such as a service account or an external embed user.
+			return nil, drivers.ErrOAuthUserRequired
 		}
 		return nil, err
 	}

@@ -42,29 +42,6 @@ func TestTokens(t *testing.T) {
 		require.False(t, claims.Can(runtime.ReadOLAP))
 	})
 
-	t.Run("InteractiveUser", func(t *testing.T) {
-		for _, tc := range []struct {
-			name string
-			opts TokenOptions
-			want bool
-		}{
-			{"set", TokenOptions{Subject: "alice", InteractiveUser: true}, true},
-			{"set with SkipChecks", TokenOptions{Subject: "alice", InteractiveUser: true, SystemPermissions: []runtime.Permission{runtime.ManageInstances}}, true},
-			{"omitted", TokenOptions{Subject: "alice"}, false},
-		} {
-			t.Run(tc.name, func(t *testing.T) {
-				tc.opts.AudienceURL = aud.audienceURL
-				tc.opts.TTL = time.Hour
-				token, err := iss.NewToken(tc.opts)
-				require.NoError(t, err)
-
-				cp, err := aud.ParseAndValidate(token)
-				require.NoError(t, err)
-				require.Equal(t, tc.want, cp.Claims("").InteractiveUser)
-			})
-		}
-	})
-
 	t.Run("Expired", func(t *testing.T) {
 		token, err := iss.NewToken(TokenOptions{
 			AudienceURL:         aud.audienceURL,

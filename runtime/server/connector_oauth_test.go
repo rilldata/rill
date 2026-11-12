@@ -37,26 +37,33 @@ func TestConnectorOAuthCaller(t *testing.T) {
 		wantAuthz bool
 	}{
 		{
-			name:     "interactive user",
-			claims:   &runtime.SecurityClaims{UserID: "u", InteractiveUser: true},
+			name:     "user",
+			claims:   &runtime.SecurityClaims{UserID: "u"},
 			adminTok: "t",
 			wantTok:  &drivers.OAuthToken{UserID: "u", AccessToken: "t", ExpiresOn: fakeOAuthExpiresOn},
 		},
 		{
-			name:      "interactive user without authorization",
-			claims:    &runtime.SecurityClaims{UserID: "u", InteractiveUser: true},
+			name:      "user without authorization",
+			claims:    &runtime.SecurityClaims{UserID: "u"},
 			adminErr:  drivers.ErrNotFound,
 			wantAuthz: true,
 		},
 		{
-			name:     "view as",
-			claims:   &runtime.SecurityClaims{UserID: "mocked", InteractiveUser: false},
+			name:     "view as gets the viewed user's token",
+			claims:   &runtime.SecurityClaims{UserID: "viewed", SkipChecks: true},
 			adminTok: "t",
+			wantTok:  &drivers.OAuthToken{UserID: "viewed", AccessToken: "t", ExpiresOn: fakeOAuthExpiresOn},
+		},
+		{
+			// Admin rejects subjects that are not Rill users, such as service accounts and external embed users.
+			name:     "not a rill user",
+			claims:   &runtime.SecurityClaims{UserID: "ext_abc"},
+			adminErr: drivers.ErrOAuthUserRequired,
 			wantErr:  drivers.ErrOAuthUserRequired,
 		},
 		{
-			name:     "service",
-			claims:   &runtime.SecurityClaims{UserID: "svc", SkipChecks: true},
+			name:     "no user",
+			claims:   &runtime.SecurityClaims{SkipChecks: true},
 			adminTok: "t",
 			wantErr:  drivers.ErrOAuthUserRequired,
 		},
@@ -86,9 +93,7 @@ func TestConnectorOAuthCaller(t *testing.T) {
 				require.Equal(t, tt.wantTok, tok)
 			}
 
-			if tt.claims.UserID != "" && !tt.claims.InteractiveUser {
-				require.NotContains(t, admin.userIDs, tt.claims.UserID)
-			}
+			require.Equal(t, []string{tt.claims.UserID}, admin.userIDs)
 		})
 	}
 }
@@ -109,7 +114,7 @@ func TestMapGRPCErrorOAuth(t *testing.T) {
 
 func TestConnectorOAuthTokenCache(t *testing.T) {
 	ctxFor := func(user string) context.Context {
-		return auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserID: user, InteractiveUser: true})
+		return auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserID: user})
 	}
 
 	t.Run("concurrent calls collapse", func(t *testing.T) {
@@ -199,7 +204,7 @@ func TestConnectorOAuthTokenCache(t *testing.T) {
 		require.Equal(t, 2, admin.callCount())
 	})
 
-	t.Run("non-interactive probe is cached per instance", func(t *testing.T) {
+	t.Run("probe without a user is cached per instance", func(t *testing.T) {
 		admin := &fakeOAuthAdmin{err: drivers.ErrNotImplemented}
 		c := newFakeOAuthCaller(admin)
 		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
@@ -210,8 +215,8 @@ func TestConnectorOAuthTokenCache(t *testing.T) {
 		require.Equal(t, 1, admin.callCount())
 	})
 
-	t.Run("probe rejected as invalid is cached", func(t *testing.T) {
-		admin := &fakeOAuthAdmin{err: status.Error(codes.InvalidArgument, "invalid user_id")}
+	t.Run("probe rejected as not a user is cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: drivers.ErrOAuthUserRequired}
 		c := newFakeOAuthCaller(admin)
 		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
 		for range 2 {
@@ -289,16 +294,17 @@ explore:
 		return rec
 	}
 
-	rec := download(&runtime.SecurityClaims{UserID: "u", InteractiveUser: true, SkipChecks: true})
+	rec := download(&runtime.SecurityClaims{UserID: "u", SkipChecks: true})
 	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 	require.Contains(t, rec.Body.String(), "US")
 	require.Equal(t, []string{"u"}, admin.userIDs)
 
+	// A token without a subject fails closed.
 	admin.userIDs = nil
-	rec = download(&runtime.SecurityClaims{UserID: "u", SkipChecks: true})
+	rec = download(&runtime.SecurityClaims{SkipChecks: true})
 	require.Equal(t, http.StatusInternalServerError, rec.Code)
 	require.Contains(t, rec.Body.String(), drivers.ErrOAuthUserRequired.Error())
-	require.NotContains(t, admin.userIDs, "u")
+	require.Equal(t, []string{""}, admin.userIDs)
 }
 
 func init() {

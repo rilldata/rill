@@ -13,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -47,10 +45,10 @@ func newConnectorOAuthCaller(admin func(ctx context.Context, instanceID string) 
 
 // Token implements drivers.OAuthCaller.
 func (c *connectorOAuthCaller) Token(ctx context.Context, instanceID, connector, configHash string, forceRefresh bool) (*drivers.OAuthToken, error) {
-	// Only a user's own session gets a personal token; "View as", magic tokens, embeds and service accounts also carry a UserID.
+	// The token is that of the user the claims' subject names, which may be another user's, such as for "View as" and embeds issued for a user.
 	claims := auth.GetClaims(ctx, instanceID)
-	if claims == nil || !claims.InteractiveUser || claims.UserID == "" {
-		return nil, c.nonInteractiveError(ctx, instanceID, connector, configHash)
+	if claims == nil || claims.UserID == "" {
+		return nil, c.noUserError(ctx, instanceID, connector, configHash)
 	}
 
 	key := instanceID + "\x00" + connector + "\x00" + configHash + "\x00" + claims.UserID
@@ -81,8 +79,8 @@ func (c *connectorOAuthCaller) Token(ctx context.Context, instanceID, connector,
 	})
 }
 
-// nonInteractiveError returns the error for a caller without a personal session.
-func (c *connectorOAuthCaller) nonInteractiveError(ctx context.Context, instanceID, connector, configHash string) error {
+// noUserError returns the error for a caller without a user.
+func (c *connectorOAuthCaller) noUserError(ctx context.Context, instanceID, connector, configHash string) error {
 	if err, ok := c.probes.Load(instanceID); ok {
 		return err.(error)
 	}
@@ -94,14 +92,14 @@ func (c *connectorOAuthCaller) nonInteractiveError(ctx context.Context, instance
 	defer release()
 
 	// Probe without a user to tell Rill Developer, where connectors use their service credential, from Rill Cloud.
-	// Rill Cloud rejects the empty user ID as invalid.
+	// Rill Cloud rejects the empty user ID as not a user.
 	// Only definitive outcomes are remembered, not transient errors.
 	_, err = admin.GetConnectorOAuthToken(ctx, connector, configHash, "", false)
 	switch {
 	case errors.Is(err, drivers.ErrNotImplemented):
 		c.probes.Store(instanceID, drivers.ErrNotImplemented)
 		return drivers.ErrNotImplemented
-	case err == nil || errors.Is(err, drivers.ErrNotFound) || status.Code(err) == codes.InvalidArgument:
+	case err == nil || errors.Is(err, drivers.ErrNotFound) || errors.Is(err, drivers.ErrOAuthUserRequired):
 		c.probes.Store(instanceID, drivers.ErrOAuthUserRequired)
 	}
 	return drivers.ErrOAuthUserRequired

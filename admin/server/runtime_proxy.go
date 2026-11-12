@@ -211,7 +211,6 @@ func (s *Server) issueEphemeralRuntimeToken(ctx context.Context, proj *database.
 		deployment:         depl,
 		projectPermissions: permissions,
 		forOwner:           true,
-		interactiveUser:    true,
 		ttl:                ttl,
 	})
 }

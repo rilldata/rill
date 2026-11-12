@@ -125,7 +125,6 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	downloadClaims := &runtime.SecurityClaims{
 		UserID:          claims.UserID,
-		InteractiveUser: claims.InteractiveUser,
 		UserAttributes:  claims.UserAttributes,
 		Permissions:     claims.Permissions,
 		AdditionalRules: nil, // Will be populated below
