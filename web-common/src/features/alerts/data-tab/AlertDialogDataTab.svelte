@@ -93,6 +93,7 @@
         errors={$errors["notifyRowsLimit"]}
         id="notifyRowsLimit"
         label={m.alert_form_data_rows_limit()}
+        capitalizeLabel={false}
         hint={m.alert_form_data_rows_limit_hint()}
       />
     {/if}
