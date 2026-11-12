@@ -83,80 +83,79 @@
   {/if}
 {/snippet}
 
+{#snippet switcher()}
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <button
+          {...props}
+          class={["trigger", { "whole-crumb": isWholeCrumbTrigger }]}
+          aria-current={isWholeCrumbTrigger ? "page" : undefined}
+          aria-label={isWholeCrumbTrigger ? undefined : "Breadcrumb dropdown"}
+        >
+          {#if isWholeCrumbTrigger && selected}
+            <span class="current">{selected.label}</span>
+            {@render pill(selected)}
+          {/if}
+          <CaretDownIcon size="14px" />
+        </button>
+      {/snippet}
+    </DropdownMenu.Trigger>
+
+    {#if content}
+      {@render content({
+        options,
+        current: currentId,
+        currentPath,
+        depth,
+        onSelect,
+        linkMaker,
+      })}
+    {:else}
+      <DropdownMenu.Content
+        align="start"
+        class="min-w-44 max-h-96 overflow-y-auto"
+      >
+        {#each options as [id, option] (id)}
+          <BreadcrumbDropdownItem
+            {id}
+            {option}
+            current={currentId}
+            {currentPath}
+            {depth}
+            {onSelect}
+            {linkMaker}
+          />
+        {/each}
+      </DropdownMenu.Content>
+    {/if}
+  </DropdownMenu.Root>
+{/snippet}
+
 <li class="flex items-center gap-x-2 px-2">
   <div
     class="flex flex-row gap-x-1 items-center"
     aria-label="Breadcrumb navigation, level {depth}"
   >
-    {#if selected && !isWholeCrumbTrigger}
-      {#if isCurrentPage}
-        <span class="current" aria-current="page">{selected.label}</span>
-      {:else}
-        <a
-          href={linkMaker(currentPath, depth, currentId, selected, "")}
-          class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
-        >
-          <span>{selected.label}</span>
-        </a>
-      {/if}
-      {@render pill(selected)}
-    {/if}
-    {#if hasDropdown}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            {#if isWholeCrumbTrigger}
-              <button
-                {...props}
-                class="trigger whole-crumb"
-                aria-current="page"
-              >
-                {#if selected}
-                  <span class="current">{selected.label}</span>
-                  {@render pill(selected)}
-                {/if}
-                <CaretDownIcon size="14px" />
-              </button>
-            {:else}
-              <button
-                {...props}
-                class="trigger"
-                aria-label="Breadcrumb dropdown"
-              >
-                <CaretDownIcon size="14px" />
-              </button>
-            {/if}
-          {/snippet}
-        </DropdownMenu.Trigger>
-
-        {#if content}
-          {@render content({
-            options,
-            current: currentId,
-            currentPath,
-            depth,
-            onSelect,
-            linkMaker,
-          })}
+    {#if isWholeCrumbTrigger}
+      {@render switcher()}
+    {:else}
+      {#if selected}
+        {#if isCurrentPage}
+          <span class="current" aria-current="page">{selected.label}</span>
         {:else}
-          <DropdownMenu.Content
-            align="start"
-            class="min-w-44 max-h-96 overflow-y-auto"
+          <a
+            href={linkMaker(currentPath, depth, currentId, selected, "")}
+            class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
           >
-            {#each options as [id, option] (id)}
-              <BreadcrumbDropdownItem
-                {id}
-                {option}
-                current={currentId}
-                {currentPath}
-                {depth}
-                {onSelect}
-                {linkMaker}
-              />
-            {/each}
-          </DropdownMenu.Content>
+            <span>{selected.label}</span>
+          </a>
         {/if}
-      </DropdownMenu.Root>
+        {@render pill(selected)}
+      {/if}
+      {#if hasDropdown}
+        {@render switcher()}
+      {/if}
     {/if}
   </div>
 </li>
