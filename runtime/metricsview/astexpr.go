@@ -194,6 +194,9 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 		if i > 0 {
 			b.writeString(joiner)
 		}
+		if e != nil && e.Value != nil && reflect.TypeOf(e.Value).Kind() == reflect.Slice {
+			return fmt.Errorf("invalid operand for %q: expected a condition, got a list value", strings.ToLower(strings.TrimSpace(joiner)))
+		}
 		err := b.writeExpression(e)
 		if err != nil {
 			return err
@@ -231,7 +234,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	}
 
 	if len(exprs) != 2 {
-		return fmt.Errorf("binary condition must have exactly 2 expressions")
+		return fmt.Errorf("binary condition must have exactly 2 expressions: %q condition has %d", op, len(exprs))
 	}
 
 	left := exprs[0]
@@ -242,6 +245,16 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	right := exprs[1]
 	if right == nil {
 		return fmt.Errorf("right expression is nil")
+	}
+
+	if op == OperatorEq || op == OperatorNeq {
+		if typ := reflect.TypeOf(right.Value); typ != nil && typ.Kind() == reflect.Slice {
+			in := OperatorIn
+			if op == OperatorNeq {
+				in = OperatorNin
+			}
+			return fmt.Errorf("%q takes a single value, got a list; use %q for a list of values", op, in)
+		}
 	}
 
 	// Check there isn't an unnest on the right side
