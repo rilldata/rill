@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strings"
 	"testing"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -10,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// TestGetIFrameValidation tests the validation of GetIFrame's open param, which happens before any database access.
+// TestGetIFrameValidation tests the validation of GetIFrame's open and external_user_id params, which happens before any database access.
 func TestGetIFrameValidation(t *testing.T) {
 	open, err := embedopen.Encode(&embedopen.Payload{Kind: embedopen.KindReport, Name: "r1"})
 	require.NoError(t, err)
@@ -39,6 +40,11 @@ func TestGetIFrameValidation(t *testing.T) {
 			name:    "no resource without navigation",
 			req:     &adminv1.GetIFrameRequest{Org: "o", Project: "p"},
 			wantErr: "resource must be provided",
+		},
+		{
+			name:    "external user ID too long",
+			req:     &adminv1.GetIFrameRequest{Org: "o", Project: "p", Resource: "e1", ExternalUserId: strings.Repeat("u", maxExternalUserIDBytes+1)},
+			wantErr: "external_user_id must be at most 2048 bytes",
 		},
 	}
 	for _, tc := range tt {

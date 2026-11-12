@@ -3058,6 +3058,7 @@ func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertE
 	}
 
 	// We don't use INSERT ... ON CONFLICT DO UPDATE ... WHERE, since it locks the existing row even when the WHERE clause is false.
+	// Instead, we update the row if it exists and changed, and otherwise insert it if it doesn't exist.
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE embed_users SET email=$2, attributes=$3::JSONB, last_seen_on=now(), updated_on=now()
 		WHERE id=$1 AND (email IS DISTINCT FROM $2 OR attributes IS DISTINCT FROM $3::JSONB OR last_seen_on < now() - INTERVAL '1 day')
@@ -3073,10 +3074,15 @@ func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertE
 		return nil
 	}
 
+	// The insert names no conflict target, so it does nothing on a conflict with any unique index.
+	// Concurrent calls for the same new user conflict on both the primary key and the (project_id, external_user_id) index;
+	// with only one of them as the target, a conflict on the other one fails with a unique violation.
+	// If those calls carry different identities, the first insert wins and the others are dropped, as if they ran just before it.
+	// So the row still has the identity of one of the concurrent iframes, until the user's next iframe updates it.
 	_, err = c.getDB(ctx).ExecContext(ctx, `
 		INSERT INTO embed_users (id, project_id, external_user_id, email, attributes)
 		VALUES ($1, $2, $3, $4, $5::JSONB)
-		ON CONFLICT (id) DO NOTHING
+		ON CONFLICT DO NOTHING
 	`, opts.ID, opts.ProjectID, opts.ExternalUserID, opts.Email, attrs)
 	if err != nil {
 		return parseErr("embed user", err)

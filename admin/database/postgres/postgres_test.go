@@ -3,10 +3,12 @@ package postgres
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,6 +47,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestConnectorOAuth", func(t *testing.T) { testConnectorOAuth(t, db) })
 	t.Run("TestEmbedUsers", func(t *testing.T) { testEmbedUsers(t, db) })
+	t.Run("TestEmbedUsersConcurrentUpsert", func(t *testing.T) { testEmbedUsersConcurrentUpsert(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
@@ -719,6 +722,84 @@ func testEmbedUsers(t *testing.T, db database.DB) {
 	require.Nil(t, vf.EmbedOwnerID)
 	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
 	require.NoError(t, err)
+
+	// An external user ID of the maximum size that GetIFrame accepts (2048 bytes) fits in the unique index on it.
+	// The ID is random, since Postgres compresses large index entries and only rejects those that are still too large.
+	longID := make([]byte, 1536)
+	_, err = rand.Read(longID)
+	require.NoError(t, err)
+	externalUserID := base64.RawURLEncoding.EncodeToString(longID)
+	require.Len(t, externalUserID, 2048)
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_2",
+		ProjectID:      projectID,
+		ExternalUserID: externalUserID,
+	})
+	require.NoError(t, err)
+	u, err = db.FindEmbedUser(ctx, "ext_2")
+	require.NoError(t, err)
+	require.Equal(t, externalUserID, u.ExternalUserID)
+}
+
+// testEmbedUsersConcurrentUpsert tests that concurrent first upserts of the same embed user all succeed and store one row.
+// It covers a host page that loads several iframes in parallel for an external user that isn't stored yet.
+func testEmbedUsersConcurrentUpsert(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	conn := db.(*connection)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "embed-users-concurrent"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteOrganization(ctx, org.Name)) }()
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "embed-users-concurrent"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteProject(ctx, proj.ID)) }()
+
+	// The race window is narrow, so it takes many new users to hit it reliably.
+	// Two calls per user keep the test fast, since database/sql only keeps two idle connections by default.
+	const users = 200
+	const callsPerUser = 2
+	for i := range users {
+		// Every other user gets calls with different identities, in which case the identity of any one call may be stored.
+		identities := make([]map[string]any, callsPerUser)
+		for j := range callsPerUser {
+			identities[j] = map[string]any{"tenant": "t1"}
+			if i%2 == 1 {
+				identities[j]["call"] = float64(j)
+			}
+		}
+
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		errs := make([]error, callsPerUser)
+		for j := range callsPerUser {
+			wg.Go(func() {
+				<-start
+				errs[j] = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+					ID:             fmt.Sprintf("ext_concurrent_%d", i),
+					ProjectID:      proj.ID,
+					ExternalUserID: fmt.Sprintf("user%d", i),
+					Attributes:     identities[j],
+				})
+			})
+		}
+		close(start)
+		wg.Wait()
+		for _, err := range errs {
+			require.NoError(t, err)
+		}
+
+		u, err := db.FindEmbedUser(ctx, fmt.Sprintf("ext_concurrent_%d", i))
+		require.NoError(t, err)
+		require.Equal(t, proj.ID, u.ProjectID)
+		require.Equal(t, fmt.Sprintf("user%d", i), u.ExternalUserID)
+		require.Nil(t, u.Email)
+		require.Contains(t, identities, u.Attributes)
+	}
+
+	var count int
+	err = conn.db.QueryRowxContext(ctx, "SELECT count(*) FROM embed_users WHERE project_id = $1", proj.ID).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, users, count)
 }
 
 func testUpsertProjectVariable(t *testing.T, db database.DB) {
