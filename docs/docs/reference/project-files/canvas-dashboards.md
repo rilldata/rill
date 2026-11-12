@@ -42,6 +42,42 @@ _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this
   prompt: Which publishers have a click-through rate far above or below the average?
 ```
 
+### `controls`
+
+_[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
+or to every item nested in the container, tab group, tab or canvas it is declared on.
+When several levels declare a control for the same target, the nearest one wins.
+On a row entry, `controls` is only valid for a tab group or a container.
+
+
+  - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+
+  - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+
+  - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+
+  - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
+
+  - **`time`** - _[string]_ - Lets viewers pick the time range or the time grain of the affected items.
+
+  - **`name`** - _[string]_ - Identifier of the control, used in its URL key. Defaults to the target (for example the dimension name), `time_range` or `time_grain`.
+
+  - **`label`** - _[string]_ - Label shown next to the control.
+
+  - **`options`** - _[array of string]_ - Values viewers can choose from. Required for `measure`, `dimension`, `slot` and `time`. For `filter`, an optional fixed list; by default the dimension's values are offered.
+
+  - **`default`** - _[oneOf]_ - Default value or values. Only for `filter` and `time`.
+
+    - **option 1** - _[string]_ - (no description)
+
+    - **option 2** - _[array of string]_ - (no description)
+
+  - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+
+  - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
+
+  - **`fields`** - _[object]_ - For `filter`, the name of the dimension in other metrics views, keyed by metrics view name.
+
 ### `rows`
 
 _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
@@ -79,6 +115,82 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
 
 
+    - **`name`** - _[string]_ - Stable identifier of the item, used in the URL keys of its controls. Required when the item declares `controls`. Must be unique among the items, tab groups and containers of the canvas.
+
+    - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
+    or to every item nested in the container, tab group, tab or canvas it is declared on.
+    When several levels declare a control for the same target, the nearest one wins.
+    On a row entry, `controls` is only valid for a tab group or a container.
+
+
+      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+
+      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+
+      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+
+      - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
+
+      - **`time`** - _[string]_ - Lets viewers pick the time range or the time grain of the affected items.
+
+      - **`name`** - _[string]_ - Identifier of the control, used in its URL key. Defaults to the target (for example the dimension name), `time_range` or `time_grain`.
+
+      - **`label`** - _[string]_ - Label shown next to the control.
+
+      - **`options`** - _[array of string]_ - Values viewers can choose from. Required for `measure`, `dimension`, `slot` and `time`. For `filter`, an optional fixed list; by default the dimension's values are offered.
+
+      - **`default`** - _[oneOf]_ - Default value or values. Only for `filter` and `time`.
+
+        - **option 1** - _[string]_ - (no description)
+
+        - **option 2** - _[array of string]_ - (no description)
+
+      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+
+      - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
+
+      - **`fields`** - _[object]_ - For `filter`, the name of the dimension in other metrics views, keyed by metrics view name.
+
+    - **`ignore_controls`** - _[oneOf]_ - Set to `true` to keep this item unaffected by every control declared on an enclosing container, tab, tab group or the canvas, or list the names of the controls to ignore. The item's own controls always apply.
+
+      - **option 1** - _[boolean]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+  - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
+  or to every item nested in the container, tab group, tab or canvas it is declared on.
+  When several levels declare a control for the same target, the nearest one wins.
+  On a row entry, `controls` is only valid for a tab group or a container.
+
+
+    - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+
+    - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+
+    - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+
+    - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
+
+    - **`time`** - _[string]_ - Lets viewers pick the time range or the time grain of the affected items.
+
+    - **`name`** - _[string]_ - Identifier of the control, used in its URL key. Defaults to the target (for example the dimension name), `time_range` or `time_grain`.
+
+    - **`label`** - _[string]_ - Label shown next to the control.
+
+    - **`options`** - _[array of string]_ - Values viewers can choose from. Required for `measure`, `dimension`, `slot` and `time`. For `filter`, an optional fixed list; by default the dimension's values are offered.
+
+    - **`default`** - _[oneOf]_ - Default value or values. Only for `filter` and `time`.
+
+      - **option 1** - _[string]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+    - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+
+    - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
+
+    - **`fields`** - _[object]_ - For `filter`, the name of the dimension in other metrics views, keyed by metrics view name.
+
   - **`name`** - _[string]_ - Stable identifier for a tab group or a container; a tab group also uses it as its deep-link URL key. Defaults to `group-<index>` for a tab group and `container-<index>` for a container if omitted. Names must be unique among the tab groups and containers of the canvas. Only used for tab-group and container entries.
 
   - **`tabs`** - _[array of object]_ - Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
@@ -90,6 +202,40 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
     The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
 
+
+    - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
+    or to every item nested in the container, tab group, tab or canvas it is declared on.
+    When several levels declare a control for the same target, the nearest one wins.
+    On a row entry, `controls` is only valid for a tab group or a container.
+
+
+      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+
+      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+
+      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+
+      - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
+
+      - **`time`** - _[string]_ - Lets viewers pick the time range or the time grain of the affected items.
+
+      - **`name`** - _[string]_ - Identifier of the control, used in its URL key. Defaults to the target (for example the dimension name), `time_range` or `time_grain`.
+
+      - **`label`** - _[string]_ - Label shown next to the control.
+
+      - **`options`** - _[array of string]_ - Values viewers can choose from. Required for `measure`, `dimension`, `slot` and `time`. For `filter`, an optional fixed list; by default the dimension's values are offered.
+
+      - **`default`** - _[oneOf]_ - Default value or values. Only for `filter` and `time`.
+
+        - **option 1** - _[string]_ - (no description)
+
+        - **option 2** - _[array of string]_ - (no description)
+
+      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+
+      - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
+
+      - **`fields`** - _[object]_ - For `filter`, the name of the dimension in other metrics views, keyed by metrics view name.
 
     - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
 

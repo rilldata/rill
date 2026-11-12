@@ -56,10 +56,15 @@ export interface ProtobufAny {
 }
 
 /**
- * `NullValue` is a singleton enumeration to represent the null value for the
-`Value` type union.
+ * Represents a JSON `null`.
 
-The JSON representation for `NullValue` is JSON `null`.
+`NullValue` is a sentinel, using an enum with only one value to represent
+the null value for the `Value` type union.
+
+A field of type `NullValue` with any value other than `0` is considered
+invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+set as a JSON `null` regardless of the integer value, and so will round trip
+to a `0` value.
 
  - NULL_VALUE: Null value.
  */
@@ -2229,6 +2234,15 @@ export type AdminServiceHibernateProjectParams = {
 export type AdminServiceGetIFrameBodyAttributes = { [key: string]: unknown };
 
 /**
+ * Values to fix for viewer controls of canvas dashboards, keyed by the control's URL key without the `c.` prefix
+(e.g. `publisher` for a canvas control, `deep_dive.publisher` for a control of the container `deep_dive`).
+Values use the format of the control's URL param: several values are comma-separated, each URI-encoded.
+A locked control applies its value and is hidden from the viewer.
+It is a presentation setting, not an access restriction: use `attributes` and security policies to restrict data.
+ */
+export type AdminServiceGetIFrameBodyLockedControls = { [key: string]: string };
+
+/**
  * DEPRECATED: Additional parameters to set outright in the generated URL query.
  */
 export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
@@ -2264,6 +2278,12 @@ Cannot be combined with `resource`, and requires the `external_user_id` of the e
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
   themeMode?: string;
+  /** Values to fix for viewer controls of canvas dashboards, keyed by the control's URL key without the `c.` prefix
+(e.g. `publisher` for a canvas control, `deep_dive.publisher` for a control of the container `deep_dive`).
+Values use the format of the control's URL param: several values are comma-separated, each URI-encoded.
+A locked control applies its value and is hidden from the viewer.
+It is a presentation setting, not an access restriction: use `attributes` and security policies to restrict data. */
+  lockedControls?: AdminServiceGetIFrameBodyLockedControls;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.

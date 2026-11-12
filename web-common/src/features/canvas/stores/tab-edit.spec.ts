@@ -47,6 +47,39 @@ rows:
     expect(tabs[2].label).toBe("Detail");
   });
 
+  it("duplicateTab gives named items in the copy names of their own", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - name: chart_copy
+        component: a
+  - tabs:
+      - label: Overview
+        controls:
+          - filter: publisher
+        rows:
+          - items:
+              - name: chart
+                controls:
+                  - measure: total_bids
+                    options: [total_bids, spend]
+                component: b
+              - component: c
+`);
+    duplicateTab(doc, 1, 0);
+
+    const [original, copy] = doc.toJSON().rows[1].tabs;
+    expect(original.rows[0].items[0].name).toBe("chart");
+    // "chart_copy" is taken by an item outside the group.
+    expect(copy.rows[0].items[0].name).toBe("chart_copy2");
+    expect(copy.rows[0].items[0].controls).toEqual(
+      original.rows[0].items[0].controls,
+    );
+    expect(copy.rows[0].items[1].name).toBeUndefined();
+    // The tab's own controls are carried over.
+    expect(copy.controls).toEqual([{ filter: "publisher" }]);
+  });
+
   it("addTab appends a labeled empty tab", () => {
     const doc = parseDocument(BASE);
     addBlockAt(doc, 1, "tab-group");

@@ -12,7 +12,7 @@ import { ResourceKind } from "../entity-management/resource-selectors";
 import { buildDefaultArgs, getDeclaredParams } from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
-import { combineConditions } from "./stores/block-edit";
+import { combineConditions, copyName } from "./stores/block-edit";
 
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
@@ -103,6 +103,25 @@ export function rowsGuard(value: unknown): unknown[] {
   } else {
     return value.items;
   }
+}
+
+// Gives a copied item a name of its own, if the original has one. The name must be free on
+// the whole canvas: `takenNames` are the names outside the rows being edited.
+function renameCopiedItem(
+  copy: unknown,
+  siblings: unknown[],
+  takenNames: ReadonlySet<string>,
+) {
+  const named = copy as { name?: unknown };
+  if (!named || typeof named.name !== "string" || !named.name) return;
+  // A new set each time: the same transaction is applied to the YAML rows and the spec rows,
+  // and both must arrive at the same name.
+  const taken = new Set(takenNames);
+  for (const item of siblings) {
+    const name = (item as { name?: unknown } | null)?.name;
+    if (typeof name === "string") taken.add(name);
+  }
+  named.name = copyName(named.name, taken);
 }
 
 export function mapGuard(value: unknown[]): Array<YAMLRow> {
@@ -356,7 +375,11 @@ export interface Transaction {
   operations: TransactionOperation[];
 }
 
-export function generateArrayRearrangeFunction(transaction: Transaction) {
+export function generateArrayRearrangeFunction(
+  transaction: Transaction,
+  // Names of the canvas's named items, so a copied item gets a name that is free everywhere.
+  takenItemNames: ReadonlySet<string> = new Set(),
+) {
   return <I, R extends { items?: I[] }>(
     array: R[],
     newItemGenerator: (
@@ -456,6 +479,12 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           if (sourceRow !== destinationRow && itemCarrier) {
             copy = itemCarrier(copy, sourceRow, destinationRow);
           }
+          // An item's name is the URL key of its viewer controls and must stay unique.
+          renameCopiedItem(
+            copy,
+            newArray.flatMap((row) => row.items ?? []),
+            takenItemNames,
+          );
           destinationRow?.items?.splice(destination.col, 0, copy);
           touchedRows[rowIndex] = true;
           break;
@@ -556,6 +585,8 @@ export function generateNewAssets(params: {
   // Project component resources by name; used to compute default param bindings
   // and optimistic resources for added component references.
   componentResources?: Record<string, V1Resource | undefined>;
+  // Names of the canvas's named items (see canvasItemNames), so a copy's name is unique.
+  takenItemNames?: ReadonlySet<string>;
 }) {
   const {
     yamlRows,
@@ -566,9 +597,10 @@ export function generateNewAssets(params: {
     resolvedComponents,
     transaction,
     componentResources,
+    takenItemNames,
   } = params;
 
-  const mover = generateArrayRearrangeFunction(transaction);
+  const mover = generateArrayRearrangeFunction(transaction, takenItemNames);
   const addedComponentSpecs = transaction.operations.map((op) => {
     if (op.type !== "add" || op.componentName) return undefined;
 

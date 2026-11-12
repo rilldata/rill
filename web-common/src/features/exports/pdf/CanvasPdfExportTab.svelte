@@ -1,17 +1,21 @@
 <script lang="ts">
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+  import CanvasPdfExportControls from "./CanvasPdfExportControls.svelte";
   import StaticRowsBlock from "@rilldata/web-common/features/canvas/StaticRowsBlock.svelte";
+  import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
   import type { RowsBlock } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
 
   // One exported tab: a label band naming the tab (captured as its own block,
   // see captureTargetsIn) followed by the tab's rows. The idPrefix namespaces
   // the row ids so the same rowIndex in different tabs stays unique.
   let {
+    canvasEntity,
     groupName,
     tab,
     components,
     maxWidth,
   }: {
+    canvasEntity: CanvasEntity;
     groupName: string;
     tab: RowsBlock;
     components: Map<string, BaseCanvasComponent>;
@@ -26,6 +30,13 @@
 >
   <h2>{tab.displayName}</h2>
 </section>
+
+<!-- The viewer controls of the tab group and of this tab, as text. -->
+<CanvasPdfExportControls
+  {canvasEntity}
+  scopes={[[groupName], [groupName, tab.name]]}
+  {maxWidth}
+/>
 
 <StaticRowsBlock
   block={tab}

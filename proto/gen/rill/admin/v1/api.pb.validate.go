@@ -6634,6 +6634,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for LockedControls
+
 	// no validation rules for Navigation
 
 	// no validation rules for HideNavigationBar

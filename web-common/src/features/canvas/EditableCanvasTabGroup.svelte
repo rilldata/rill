@@ -6,12 +6,15 @@
   } from "./EditableBlockRegion.svelte";
   import { tabRowsPath } from "./layout-util";
   import type { TabGroup } from "./stores/tab-group";
+  import LevelControls from "./controls/LevelControls.svelte";
+  import type { CanvasEntity } from "./stores/canvas-entity";
 
   // A tab group in the editor: the shared block region with the tab strip as its header,
   // editing the active tab's rows.
   // svelte-ignore custom_element_props_identifier
   let {
     group,
+    canvas,
     onAddTab,
     onRenameTab,
     onDeleteTab,
@@ -25,6 +28,7 @@
     ...builder
   }: BlockBuilderProps & {
     group: TabGroup;
+    canvas: CanvasEntity;
     onAddTab: (blockIndex: number) => void;
     onRenameTab: (blockIndex: number, tabIndex: number, label: string) => void;
     onDeleteTab: (blockIndex: number, tabIndex: number) => void;
@@ -75,6 +79,14 @@
       onDuplicateTab={(tabIndex) => onDuplicateTab(blockIndex, tabIndex)}
       onSelectGroup={() => onSelectBlock(group.name)}
       onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
+    />
+    <!-- The viewer controls of the group and of its active tab. -->
+    <LevelControls
+      canvasEntity={canvas}
+      scopes={[
+        [group.name],
+        ...(activeTab ? [[group.name, activeTab.name]] : []),
+      ]}
     />
   {/snippet}
 </EditableBlockRegion>

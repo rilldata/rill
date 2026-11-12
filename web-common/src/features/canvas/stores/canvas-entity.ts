@@ -1,3 +1,6 @@
+import { ControlsManager } from "@rilldata/web-common/features/canvas/controls/controls-manager";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { goto } from "$app/navigation";
 import {
   selectedInSurface,
@@ -115,6 +118,9 @@ export class CanvasEntity {
 
   // Time state controls
   timeManager: TimeManager;
+
+  // Viewer controls (see features/canvas/controls) and their values, which live in the URL
+  controls: ControlsManager;
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
@@ -234,6 +240,13 @@ export class CanvasEntity {
     );
 
     this.timeManager = new TimeManager(searchParamsStore, this);
+    this.controls = new ControlsManager(
+      derived(this.specStore, ($spec) => $spec.data?.canvas),
+      this.searchParams,
+      featureFlags.canvasControls,
+      (search) => this.saveSnapshot(search),
+      EmbedStore.getInstance()?.lockedControls,
+    );
 
     // Let the embed layer (CanvasDashboardEmbed) drive themeName;
     // initialise with no override here so createResolvedThemeStore falls

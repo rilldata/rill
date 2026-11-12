@@ -43,6 +43,8 @@
 
   import { goto } from "$app/navigation";
   import DefaultFilterDisplay from "./DefaultFilterDisplay.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ViewerControlsEditor from "../controls/editor/ViewerControlsEditor.svelte";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -53,9 +55,10 @@
 
   const client = useRuntimeClient();
 
-  $: ({
-    canvasEntity: { filtersEnabledStore, _embeddedTheme },
-  } = getCanvasStore(canvasName, client.instanceId));
+  const { canvasControls } = featureFlags;
+
+  $: ({ canvasEntity } = getCanvasStore(canvasName, client.instanceId));
+  $: ({ filtersEnabledStore, _embeddedTheme } = canvasEntity);
 
   $: parsedDocument = getParsedDocument(fileArtifact);
 
@@ -308,6 +311,13 @@
         }}
       />
     </div>
+    {#if $canvasControls}
+      <ViewerControlsEditor
+        canvas={canvasEntity}
+        path={[]}
+        hint={m.canvas_viewer_controls_hint_canvas()}
+      />
+    {/if}
   {:else if currentTab === "defaults"}
     <DefaultFilterDisplay {canvasName} />
   {/if}

@@ -14,6 +14,8 @@
     tabHasContent,
   } from "../stores/tab-edit";
   import type { TabGroup } from "../stores/tab-group";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ViewerControlsEditor from "../controls/editor/ViewerControlsEditor.svelte";
   import BlockEditor, { applyCanvasEdit } from "./BlockEditor.svelte";
   import TabListItem from "./TabListItem.svelte";
 
@@ -31,6 +33,8 @@
     fileArtifact: FileArtifact;
     autoSave: boolean;
   } = $props();
+
+  const { canvasControls } = featureFlags;
 
   const tabs = $derived(group.tabs);
   const activeTabIndex = $derived(group.activeTabIndex);
@@ -130,6 +134,24 @@
       {/each}
     </ul>
   </div>
+  {#if $canvasControls}
+    <ViewerControlsEditor
+      {canvas}
+      path={["rows", blockIndex]}
+      hint={m.canvas_viewer_controls_hint_group()}
+    />
+    {#if $tabs[$activeTabIndex]}
+      {#key $activeTabIndex}
+        <ViewerControlsEditor
+          {canvas}
+          path={["rows", blockIndex, "tabs", $activeTabIndex]}
+          hint={m.canvas_viewer_controls_hint_tab({
+            name: $tabs[$activeTabIndex].displayName,
+          })}
+        />
+      {/key}
+    {/if}
+  {/if}
 </BlockEditor>
 
 <AlertDialog.Confirmation

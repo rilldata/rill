@@ -19,6 +19,9 @@
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
   import VisibilityInput from "./VisibilityInput.svelte";
+  import { controlLevelsForItem } from "../controls/control-edit";
+  import ViewerControlsEditor from "../controls/editor/ViewerControlsEditor.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { hasComponentFilters } from "./util";
 
   export let component: BaseCanvasComponent;
@@ -26,7 +29,9 @@
   let currentTab: string;
 
   $: ({ specStore, type, resource } = component);
-  $: ({ _metricsViews } = component.parent);
+  $: ({ _metricsViews, parsedContent } = component.parent);
+
+  const { canvasControls } = featureFlags;
 
   $: rendererProperties = $specStore;
 
@@ -115,6 +120,18 @@
           hint={m.canvas_visibility_hint()}
           dataNote={visibilityDataNote}
         />
+        {#if $canvasControls && !isRef}
+          <ViewerControlsEditor
+            canvas={component.parent}
+            path={component.pathInYAML.slice(0, -1)}
+            hint={m.canvas_viewer_controls_hint_item()}
+            levels={controlLevelsForItem(
+              $parsedContent,
+              component.pathInYAML.slice(0, -1),
+            )}
+            {metricsViewName}
+          />
+        {/if}
       {/key}
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />

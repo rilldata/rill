@@ -6,6 +6,7 @@ import {
   generateNewAssets,
   getItemPropertiesExcept,
   isHiddenPath,
+  generateArrayRearrangeFunction,
   mapGuard,
   positionKeyPrefix,
   rowsGuard,
@@ -132,6 +133,65 @@ rows:
     expect(newYamlRows).toHaveLength(4);
     expect(newYamlRows[0].rows).toEqual([{ items: [{ component: "a" }] }]);
     expect(newYamlRows[1].tabs).toEqual([{ label: "A", rows: [] }]);
+  });
+
+  it("gives a copied item a name of its own, since names key viewer controls", () => {
+    const rearrange = generateArrayRearrangeFunction({
+      operations: [
+        {
+          type: "copy",
+          insertRow: true,
+          source: { row: 0, col: 0 },
+          destination: { row: 1, col: 0 },
+        },
+      ],
+    });
+    const rows = [
+      {
+        items: [
+          { name: "chart", controls: [{ filter: "publisher" }] },
+          { name: "chart_copy" },
+        ],
+      },
+    ];
+    const result = rearrange(
+      rows,
+      () => ({ name: "" }),
+      (row) => row,
+    );
+    const names = result.flatMap((row) => row.items.map((item) => item.name));
+    expect(names).toEqual(["chart", "chart_copy", "chart_copy2"]);
+    expect(result[1].items[0]).toMatchObject({
+      controls: [{ filter: "publisher" }],
+    });
+  });
+
+  it("names a copied item clear of names elsewhere on the canvas", () => {
+    // "chart_copy" is taken by an item in a container, outside the rows being edited.
+    const rearrange = generateArrayRearrangeFunction(
+      {
+        operations: [
+          {
+            type: "copy",
+            insertRow: true,
+            source: { row: 0, col: 0 },
+            destination: { row: 1, col: 0 },
+          },
+        ],
+      },
+      new Set(["chart", "chart_copy"]),
+    );
+    const rows = [{ items: [{ name: "chart" }] }];
+    const apply = () =>
+      rearrange(
+        rows,
+        () => ({ name: "" }),
+        (row) => row,
+      ).flatMap((row) => row.items.map((item) => item.name));
+
+    expect(apply()).toEqual(["chart", "chart_copy2"]);
+    // The transaction is applied to the YAML rows and the spec rows: same name both times.
+    expect(apply()).toEqual(["chart", "chart_copy2"]);
   });
 
   it("keeps a container when a top-level row is added before it", () => {

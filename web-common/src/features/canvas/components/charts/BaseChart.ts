@@ -94,7 +94,7 @@ export abstract class BaseChart<
         : undefined)) as ChartType;
     this.chartType = writable(this.type);
     this.querySpecStore = derived(
-      [this.specStore, parent.exactMeasures, parent.specStore],
+      [this.viewSpecStore, parent.exactMeasures, parent.specStore],
       ([spec]) => this.withExactMeasures(spec),
     );
   }
@@ -171,7 +171,8 @@ export abstract class BaseChart<
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const spec = get(this.specStore);
+    // The spec as viewers see it, with their field controls applied.
+    const spec = get(this.viewSpecStore);
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);

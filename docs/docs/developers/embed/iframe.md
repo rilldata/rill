@@ -297,6 +297,7 @@ The API accepts the following parameters:
 | type             | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                               | No (defaults to `explore`)                                        |
 | navigation       | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` only shows the dashboard in `resource`; `true` allows navigation) | No (defaults to `false`)                                          |
 | hide_navigation_bar | Boolean whether to hide the navigation bar (the home link and dashboard breadcrumbs) while keeping navigation enabled. Only meaningful when `navigation` is `true`; the bar is always hidden when `navigation` is `false`. In-dashboard navigation, such as the drill-through from a Canvas component to an Explore dashboard, remains available. | No (defaults to `false`)                                          |
+| locked_controls  | For Canvas dashboards: a map of [viewer control](#locking-viewer-controls) keys to values to fix. A locked control applies its value and is hidden from the viewer. It is a presentation setting, not an access restriction. | No |
 | theme            | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                            | No (set to the name of the theme)                                 |
 | theme_mode       | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.        | No (defaults to `light`)                                          |
 | user_email       | Email of the end user accessing the embed. Used to populate attributes for use in security policies.                                                                            | No (only one of `user_email` or `attributes` should be passed in) |
@@ -416,6 +417,23 @@ If you wish to allow navigation _but hide the navigation bar_ — for example to
 ```
 
 Note that in this mode there is no in-iframe affordance for returning from a dashboard the user drilled into. Your application should listen for the [`navigation` notification](/developers/embed/postmessage) — still emitted when the navigation bar is hidden — and provide its own way back.
+
+#### Locking viewer controls
+
+A Canvas dashboard can declare viewer controls (`controls:` in its YAML) that let viewers pick a measure, a dimension, a filter value or a time range. To fix a control for an embed, pass `locked_controls`. Each key is the control's URL key without the `c.` prefix: the control's name for a canvas-level control, or `<container, tab group or component name>.<control name>` for a control declared further down. Each value uses the format of the control's URL parameter: several values are comma-separated, each URI-encoded. Write an empty-string value as `""`; an empty value means the filter is cleared.
+
+```json
+{
+  "type": "canvas",
+  "resource": "dashboardName",
+  "locked_controls": {
+    "total_bids": "spend",
+    "deep_dive.publisher": "Acme,Globex%20Inc"
+  }
+}
+```
+
+Locked controls don't restrict data access: a locked filter narrows what the dashboard shows, but use `attributes` with [security policies](/developers/build/metrics-view/security) to restrict what a user can query.
 
 Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can simply omit the `resource` and appropriately set `navigation` in your payload:
 ```json

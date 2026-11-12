@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+  import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
   import type { TabGroup } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import CanvasPdfExportTab from "./CanvasPdfExportTab.svelte";
 
@@ -9,11 +10,13 @@
   // one tab below the previous in strip order. When allTabs is false only the
   // group's active tab is rendered, so the PDF matches what the user sees.
   let {
+    canvasEntity,
     group,
     components,
     maxWidth,
     allTabs,
   }: {
+    canvasEntity: CanvasEntity;
     group: TabGroup;
     components: Map<string, BaseCanvasComponent>;
     maxWidth: number;
@@ -28,5 +31,11 @@
 </script>
 
 {#each exportTabs as tab (tab.name)}
-  <CanvasPdfExportTab groupName={group.name} {tab} {components} {maxWidth} />
+  <CanvasPdfExportTab
+    {canvasEntity}
+    groupName={group.name}
+    {tab}
+    {components}
+    {maxWidth}
+  />
 {/each}

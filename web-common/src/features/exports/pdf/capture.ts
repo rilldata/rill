@@ -188,12 +188,13 @@ export async function captureCanvasBlocks(
 // The units to rasterize, in document order: every component card (top-level
 // rows and exported tab rows alike, since the export view flattens tab groups
 // into plain rows) plus the label band above each exported tab (see
-// CanvasPdfExportTab). Capturing the bands keeps it visible in the PDF which
-// tab the rows below belong to.
+// CanvasPdfExportTab) and the band of each level's viewer controls (see
+// CanvasPdfExportControls). Capturing the bands keeps it visible in the PDF which
+// tab the rows below belong to, and which choices their charts reflect.
 export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
   return Array.from(
     rowContainer.querySelectorAll<HTMLElement>(
-      "article.component-card, section.pdf-tab-label-row",
+      "article.component-card, section.pdf-tab-label-row, section.pdf-controls-row",
     ),
   );
 }
@@ -204,15 +205,20 @@ export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
 // that follows it, so the label and the tab's first row paginate as one unit
 // and the label can never be stranded alone at the bottom of a page (paginate
 // sizes a row by the vertical extent of its blocks). A label with no following
-// row (an empty tab) keeps its own index.
+// row (an empty tab) keeps its own index. The band of a level's viewer controls
+// (see CanvasPdfExportControls) attaches to the row below it the same way.
 export function rowIndexFor(
   target: HTMLElement,
   rowContainer: HTMLElement,
 ): number {
   let section: Element | null = target.closest("section");
   if (!section) return 0;
-  if (section.classList.contains("pdf-tab-label-row")) {
-    const next = section.nextElementSibling;
+  if (isBand(section)) {
+    // A tab's label can be followed by its controls band; both belong to the row after them.
+    let next = section.nextElementSibling;
+    while (next?.classList.contains("pdf-controls-row")) {
+      next = next.nextElementSibling;
+    }
     if (
       next?.tagName === "SECTION" &&
       !next.classList.contains("pdf-tab-label-row")
@@ -225,4 +231,13 @@ export function rowIndexFor(
   );
   const index = sections.indexOf(section);
   return index === -1 ? 0 : index;
+}
+
+// A band is a section that labels the rows below it instead of holding components:
+// a tab's name (CanvasPdfExportTab) or a level's viewer controls (CanvasPdfExportControls).
+function isBand(section: Element): boolean {
+  return (
+    section.classList.contains("pdf-tab-label-row") ||
+    section.classList.contains("pdf-controls-row")
+  );
 }

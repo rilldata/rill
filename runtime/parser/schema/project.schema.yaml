@@ -2632,6 +2632,8 @@ definitions:
             description: Refers to the custom banner displayed in the header of a Canvas dashboard.
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
+          controls:
+            $ref: '#/definitions/canvas_controls'
           rows:
             type: array
             description: Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
@@ -2682,7 +2684,21 @@ definitions:
                         description: Width of the component (can be a number or string with unit)
                       if:
                         $ref: '#/definitions/canvas_if_condition'
+                      name:
+                        type: string
+                        description: Stable identifier of the item, used in the URL keys of its controls. Required when the item declares `controls`. Must be unique among the items, tab groups and containers of the canvas.
+                      controls:
+                        $ref: '#/definitions/canvas_controls'
+                      ignore_controls:
+                        description: Set to `true` to keep this item unaffected by every control declared on an enclosing container, tab, tab group or the canvas, or list the names of the controls to ignore. The item's own controls always apply.
+                        oneOf:
+                          - type: boolean
+                          - type: array
+                            items:
+                              type: string
                     additionalProperties: true
+                controls:
+                  $ref: '#/definitions/canvas_controls'
                 name:
                   type: string
                   description: Stable identifier for a tab group or a container; a tab group also uses it as its deep-link URL key. Defaults to `group-<index>` for a tab group and `container-<index>` for a container if omitted. Names must be unique among the tab groups and containers of the canvas. Only used for tab-group and container entries.
@@ -2700,6 +2716,8 @@ definitions:
                         description: Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
                       if:
                         $ref: '#/definitions/canvas_if_condition'
+                      controls:
+                        $ref: '#/definitions/canvas_controls'
                       rows:
                         type: array
                         description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
@@ -4541,6 +4559,64 @@ definitions:
                 expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
+  canvas_controls:
+    type: array
+    description: |
+      Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
+      or to every item nested in the container, tab group, tab or canvas it is declared on.
+      When several levels declare a control for the same target, the nearest one wins.
+      On a row entry, `controls` is only valid for a tab group or a container.
+    items:
+      type: object
+      description: Set exactly one of `measure`, `dimension`, `slot`, `filter` and `time`.
+      properties:
+        measure:
+          type: string
+          description: A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+        dimension:
+          type: string
+          description: A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+        slot:
+          type: string
+          description: A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+        filter:
+          type: string
+          description: A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
+        time:
+          type: string
+          enum: [range, grain]
+          description: Lets viewers pick the time range or the time grain of the affected items.
+        name:
+          type: string
+          description: Identifier of the control, used in its URL key. Defaults to the target (for example the dimension name), `time_range` or `time_grain`.
+        label:
+          type: string
+          description: Label shown next to the control.
+        options:
+          type: array
+          description: Values viewers can choose from. Required for `measure`, `dimension`, `slot` and `time`. For `filter`, an optional fixed list; by default the dimension's values are offered.
+          items:
+            type: string
+        default:
+          description: Default value or values. Only for `filter` and `time`.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        multiple:
+          type: boolean
+          description: Lets viewers select several values. Only for `filter` and `slot`.
+        display:
+          type: string
+          enum: [dropdown, buttons]
+          description: How the control is shown. Chosen automatically if omitted.
+        fields:
+          type: object
+          description: For `filter`, the name of the dimension in other metrics views, keyed by metrics view name.
+          additionalProperties:
+            type: string
+      additionalProperties: false
   canvas_if_condition:
     type:
       - string

@@ -84,6 +84,9 @@ class FeatureFlags {
   // Gates the visual editor's options that create canvas containers (add one, wrap a
   // row in one). Containers already in the YAML render and can be managed regardless.
   canvasContainers = new FeatureFlag("user", false);
+  // Gates viewer controls on canvases: the control bars and the editor's options for them.
+  // With the flag off, controls in the YAML stay on their defaults.
+  canvasControls = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
   customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);

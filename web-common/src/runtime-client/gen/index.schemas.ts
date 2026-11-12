@@ -440,6 +440,34 @@ Only set for items that reference an externally defined component. */
   /** Templated boolean expression from the item's `if` property.
 The item is only shown to viewers for whom it evaluates to true. */
   conditionExpression?: string;
+  /** Stable identifier of the item, used for URL state. Required when the item declares controls. */
+  name?: string;
+  /** Viewer controls declared on this level. */
+  controls?: V1CanvasControl[];
+  /** If true, the item ignores every control declared on an enclosing level. */
+  ignoreAllControls?: boolean;
+  /** Names of enclosing controls the item ignores. */
+  ignoreControls?: string[];
+}
+
+export type V1CanvasControlFields = { [key: string]: string };
+
+/** A viewer-adjustable setting declared on a canvas, container, tab group, tab or item. */
+export interface V1CanvasControl {
+  /** URL key of the control; unique within the list it is declared in. */
+  name?: string;
+  /** One of: "measure", "dimension", "slot", "filter", "time_range", "time_grain". */
+  kind?: string;
+  /** The swapped field name, the renderer property path (slot), or the dimension name (filter). */
+  target?: string;
+  label?: string;
+  options?: string[];
+  default?: string[];
+  multiple?: boolean;
+  /** One of: "dropdown", "buttons". Empty means it is chosen automatically. */
+  display?: string;
+  /** For filters: the dimension's name per metrics view, when it differs from the target. */
+  fields?: V1CanvasControlFields;
 }
 
 export type V1CanvasPresetFilterExpr = {
@@ -468,6 +496,8 @@ a tab's rows never contain a nested tab_group. */
   /** Templated boolean expression from the tab's `if` property.
 The tab is only shown to viewers for whom it evaluates to true. */
   conditionExpression?: string;
+  /** Viewer controls declared on this level. */
+  controls?: V1CanvasControl[];
 }
 
 export interface V1CanvasTabGroup {
@@ -476,6 +506,8 @@ Defaults to "group-<index>" if not provided in the canvas YAML. */
   name?: string;
   /** Tabs in the group. A group always has at least one tab. */
   tabs?: V1CanvasTab[];
+  /** Viewer controls declared on this level. */
+  controls?: V1CanvasControl[];
 }
 
 export interface V1CanvasContainer {
@@ -485,6 +517,8 @@ Defaults to "container-<index>" if not provided in the canvas YAML. */
   /** Rows in the container. These are always plain rows;
 a container never holds a tab group or another container. */
   rows?: V1CanvasRow[];
+  /** Viewer controls declared on this level. */
+  controls?: V1CanvasControl[];
 }
 
 export interface V1CanvasRow {
@@ -537,6 +571,8 @@ The values should be valid IANA location identifiers. */
   annotations?: Record<string, string>;
   /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
   aiPrompts?: V1AIPrompt[];
+  /** Viewer controls declared on this level. */
+  controls?: V1CanvasControl[];
 }
 
 export interface V1CanvasState {
