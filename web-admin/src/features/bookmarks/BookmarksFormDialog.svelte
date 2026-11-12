@@ -2,9 +2,9 @@
   import { page } from "$app/state";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
-    createAdminServiceCreateBookmark,
-    createAdminServiceUpdateBookmark,
-  } from "@rilldata/web-admin/client";
+    bookmarkCreateMutationFactory,
+    bookmarkUpdateMutationFactory,
+  } from "@rilldata/web-admin/features/bookmarks/bookmark-client.ts";
   import { invalidateBookmarkQueries } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
@@ -20,6 +20,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { InfoIcon } from "lucide-svelte";
@@ -45,6 +46,7 @@
     bookmark,
     defaultUrlParams,
     showFiltersOnly = true,
+    showSharedBookmarks = true,
     onClose,
   }: {
     organization: string;
@@ -54,6 +56,8 @@
     bookmark: BookmarkEntry | null;
     defaultUrlParams: URLSearchParams | undefined;
     showFiltersOnly?: boolean;
+    // Whether the bookmark can be shared. Embeds only support personal bookmarks.
+    showSharedBookmarks?: boolean;
     onClose: () => void;
   } = $props();
 
@@ -90,8 +94,12 @@
 
   let curUrlParams = $derived(page.url.searchParams);
 
-  const bookmarkCreator = createAdminServiceCreateBookmark();
-  const bookmarkUpdater = createAdminServiceUpdateBookmark();
+  const bookmarkCreator = createMutationFromFactory(
+    bookmarkCreateMutationFactory,
+  );
+  const bookmarkUpdater = createMutationFromFactory(
+    bookmarkUpdateMutationFactory,
+  );
 
   // svelte-ignore state_referenced_locally
   const initialValues = {
@@ -154,12 +162,12 @@
           });
           reset();
         }
+        // Capture before `onClose`, since the parent resets `bookmark` to null when the dialog closes.
+        const message = bookmark ? m.bookmark_updated() : m.bookmark_created();
         onClose();
 
         await invalidateBookmarkQueries();
-        eventBus.emit("notification", {
-          message: bookmark ? m.bookmark_updated() : m.bookmark_created(),
-        });
+        eventBus.emit("notification", { message });
       },
     },
   );
@@ -218,19 +226,21 @@
         </Label>
         <ReadonlyFilters {expressionFilterManager} {timeFilterManager} />
       </div>
-      <ProjectAccessControls {organization} {project}>
-        <Select
-          bind:value={$form["shared"]}
-          id="shared"
-          label={m.bookmark_category()}
-          options={[
-            { value: "false", label: m.bookmark_your_bookmarks() },
-            { value: "true", label: m.bookmark_managed_bookmarks() },
-          ]}
-          slot="manage-project"
-          tooltip={m.bookmark_category_tooltip()}
-        />
-      </ProjectAccessControls>
+      {#if showSharedBookmarks}
+        <ProjectAccessControls {organization} {project}>
+          <Select
+            bind:value={$form["shared"]}
+            id="shared"
+            label={m.bookmark_category()}
+            options={[
+              { value: "false", label: m.bookmark_your_bookmarks() },
+              { value: "true", label: m.bookmark_managed_bookmarks() },
+            ]}
+            slot="manage-project"
+            tooltip={m.bookmark_category_tooltip()}
+          />
+        </ProjectAccessControls>
+      {/if}
       {#if showFiltersOnly}
         <div class="flex items-center space-x-2">
           <Switch

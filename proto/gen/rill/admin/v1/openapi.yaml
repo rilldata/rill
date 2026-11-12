@@ -372,6 +372,9 @@ components:
             type: string
         v1Bookmark:
             properties:
+                canManage:
+                    description: Whether the caller can update and remove the bookmark.
+                    type: boolean
                 createdOn:
                     format: date-time
                     type: string
@@ -510,6 +513,7 @@ components:
                 displayName:
                     type: string
                 projectId:
+                    description: ID of the project. Optional for embed users, where it defaults to the embed's project.
                     type: string
                 resourceKind:
                     type: string
@@ -8429,7 +8433,8 @@ paths:
         get:
             operationId: AdminService_ListBookmarks
             parameters:
-                - in: query
+                - description: ID of the project. Optional for embed users, where it defaults to the embed's project.
+                  in: query
                   name: projectId
                   schema:
                     type: string
@@ -8458,7 +8463,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+            summary: |-
+                ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+                Embed users only see their own personal bookmarks.
         post:
             operationId: AdminService_CreateBookmark
             requestBody:

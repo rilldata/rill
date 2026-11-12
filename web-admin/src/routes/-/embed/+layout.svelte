@@ -7,6 +7,7 @@
   } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import EmbedHeader from "@rilldata/web-admin/features/embeds/EmbedHeader.svelte";
+  import EmbedDashboardHeader from "@rilldata/web-admin/features/embeds/EmbedDashboardHeader.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -148,16 +149,18 @@
     jwt={accessToken}
     authContext="embed"
   >
-    {#if showTopBar}
-      <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+    <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+      {#if showTopBar}
         <div
           class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
           class:border-b={!onProjectPage}
         >
           <EmbedHeader {activeResource} {navigationBarEnabled} />
         </div>
-      </ThemeProvider>
-    {/if}
+      {:else}
+        <EmbedDashboardHeader />
+      {/if}
+    </ThemeProvider>
 
     <div class="flex h-full overflow-hidden">
       <div class="flex-1 overflow-hidden">
