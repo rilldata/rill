@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -774,6 +775,18 @@ func CanAccessComponentCanvas(claims *SecurityClaims, res *runtimev1.Resource) b
 		}
 	}
 	return true
+}
+
+// unsharedCanvasAnnotations returns a copy of the access annotations of an admin-managed canvas without the sharing they may grant,
+// so that only the canvas's owner and admins meet them.
+// It returns nil if the annotations are nil.
+func unsharedCanvasAnnotations(annotations map[string]string) map[string]string {
+	if annotations == nil {
+		return nil
+	}
+	res := maps.Clone(annotations)
+	delete(res, "admin_shared")
+	return res
 }
 
 func adminOwnerCanAccess(claims *SecurityClaims, annotations map[string]string, skipShared bool) bool {

@@ -2,15 +2,20 @@ package reconcilers_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -537,8 +542,8 @@ rows:
 		return cmp
 	}
 
-	// Remove the annotations from p1's components and persist them, like a catalog written by a version that didn't add them.
-	// One of them has no valid spec, and p2's component keeps its annotations.
+	// Remove the annotations from the spec and valid spec of p1's components and persist them, like a catalog written by a version that didn't add them.
+	// The component of p2 keeps its annotations.
 	for _, name := range []string{"p1--component-0-0", "p1--component-g1-t0-0-0"} {
 		cmp := component(ctrl, name)
 		cmp.GetComponent().Spec.CanvasAnnotations = nil
@@ -590,6 +595,243 @@ rows:
 	}
 	require.Equal(t, map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}, component(loaded, "p2--component-0-0").GetComponent().Spec.CanvasAnnotations)
 	require.False(t, canAccess("p2--component-0-0", other))
+}
+
+func TestCanvasComponentAccessAnnotationsOnCatalogLoadOfLegacyStates(t *testing.T) {
+	private := map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}
+	shared := map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1", "admin_shared": "true"}
+	embedOwned := map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}
+	owner := &runtime.SecurityClaims{UserID: "u1", UserAttributes: map[string]any{"id": "u1", "admin": false}}
+	other := &runtime.SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "admin": false}}
+	embedOwner := &runtime.SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}}
+
+	// canvasSpec returns a canvas spec with the given annotations and one item per component; the names of inline components end in a position.
+	canvasSpec := func(annotations map[string]string, components ...string) *runtimev1.CanvasSpec {
+		row := &runtimev1.CanvasRow{}
+		for _, name := range components {
+			row.Items = append(row.Items, &runtimev1.CanvasItem{Component: name, DefinedInCanvas: strings.Contains(name, "--component-")})
+		}
+		return &runtimev1.CanvasSpec{Annotations: annotations, Rows: []*runtimev1.CanvasRow{row}}
+	}
+	componentSpec := func(content string, inline bool) *runtimev1.ComponentSpec {
+		props, err := structpb.NewStruct(map[string]any{"content": content})
+		require.NoError(t, err)
+		return &runtimev1.ComponentSpec{Renderer: "markdown", RendererProperties: props, DefinedInCanvas: inline}
+	}
+	meta := func(kind, name, path string) *runtimev1.ResourceMeta {
+		return &runtimev1.ResourceMeta{
+			Name:           &runtimev1.ResourceName{Kind: kind, Name: name},
+			Owner:          runtime.GlobalProjectParserName,
+			FilePaths:      []string{path},
+			CreatedOn:      timestamppb.Now(),
+			SpecUpdatedOn:  timestamppb.Now(),
+			StateUpdatedOn: timestamppb.Now(),
+		}
+	}
+	canvas := func(name, path string, spec, validSpec *runtimev1.CanvasSpec) *runtimev1.Resource {
+		return &runtimev1.Resource{
+			Meta:     meta(runtime.ResourceKindCanvas, name, path),
+			Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: spec, State: &runtimev1.CanvasState{ValidSpec: validSpec}}},
+		}
+	}
+	deleted := func(r *runtimev1.Resource) *runtimev1.Resource {
+		r.Meta.DeletedOn = timestamppb.Now()
+		return r
+	}
+	// component returns a component with the given contents in its spec and valid spec; an empty valid content omits the valid spec.
+	component := func(name, path, content, validContent string) *runtimev1.Resource {
+		inline := strings.Contains(name, "--component-")
+		state := &runtimev1.ComponentState{}
+		if validContent != "" {
+			state.ValidSpec = componentSpec(validContent, inline)
+		}
+		return &runtimev1.Resource{
+			Meta:     meta(runtime.ResourceKindComponent, name, path),
+			Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: componentSpec(content, inline), State: state}},
+		}
+	}
+
+	// want describes a component after the catalog is loaded:
+	// the annotations in its spec and valid spec, and whether someone other than the canvas's owner can access it.
+	type want struct {
+		spec, validSpec map[string]string
+		other           bool
+	}
+	tests := []struct {
+		name      string
+		resources []*runtimev1.Resource
+		owner     *runtime.SecurityClaims
+		want      map[string]want
+	}{
+		{
+			// The owner shared the canvas and edited it, and the catalog was stored before the canvas and its component were reconciled.
+			// The component's valid spec is from before the canvas was shared.
+			name: "canvas shared in its spec but not in its valid spec",
+			resources: []*runtimev1.Resource{
+				canvas("p1", "/personal/p1.yaml", canvasSpec(shared, "p1--component-0-0"), canvasSpec(private, "p1--component-0-0")),
+				component("p1--component-0-0", "/personal/p1.yaml", "Shared", "Private"),
+			},
+			want: map[string]want{"p1--component-0-0": {spec: shared, validSpec: private, other: false}},
+		},
+		{
+			name: "canvas shared in its valid spec but not in its spec",
+			resources: []*runtimev1.Resource{
+				canvas("p1", "/personal/p1.yaml", canvasSpec(private, "p1--component-0-0"), canvasSpec(shared, "p1--component-0-0")),
+				component("p1--component-0-0", "/personal/p1.yaml", "Private", "Shared"),
+			},
+			want: map[string]want{"p1--component-0-0": {spec: private, validSpec: shared, other: false}},
+		},
+		{
+			// There's no valid version of the canvas to tell under which annotations the component's valid spec was defined.
+			name: "shared canvas without a valid spec",
+			resources: []*runtimev1.Resource{
+				canvas("p1", "/personal/p1.yaml", canvasSpec(shared, "p1--component-0-0", "p1--component-0-1"), nil),
+				component("p1--component-0-0", "/personal/p1.yaml", "Shared", "Private"),
+				component("p1--component-0-1", "/personal/p1.yaml", "Shared", ""),
+			},
+			want: map[string]want{
+				"p1--component-0-0": {spec: shared, validSpec: private, other: false},
+				"p1--component-0-1": {spec: shared, other: true},
+			},
+		},
+		{
+			// The canvas's file was moved, and only the canvas was stored with its new path.
+			name: "canvas and component stored with different paths",
+			resources: []*runtimev1.Resource{
+				canvas("p1", "/archive/p1.yaml", canvasSpec(embedOwned, "p1--component-0-0"), canvasSpec(embedOwned, "p1--component-0-0")),
+				component("p1--component-0-0", "/personal/p1.yaml", "Private", "Private"),
+			},
+			owner: embedOwner,
+			want:  map[string]want{"p1--component-0-0": {spec: embedOwned, validSpec: embedOwned, other: false}},
+		},
+		{
+			// A file that defined an admin-managed canvas now defines a component, and the canvas and its inline component are still being deleted.
+			name: "component defined in the file of a deleted canvas",
+			resources: []*runtimev1.Resource{
+				deleted(canvas("x", "/x.yaml", canvasSpec(private, "x--component-0-0"), canvasSpec(private, "x--component-0-0"))),
+				component("x--component-0-0", "/x.yaml", "Private", "Private"),
+				component("x", "/x.yaml", "Public", "Public"),
+			},
+			want: map[string]want{
+				"x--component-0-0": {spec: private, validSpec: private, other: false},
+				"x":                {other: true},
+			},
+		},
+		{
+			// The canvas's second item was removed from its spec; its component is listed by the canvas's valid spec only.
+			// The third item was removed earlier, and its component was stored although no version of the canvas lists it any more.
+			name: "components the canvas no longer lists",
+			resources: []*runtimev1.Resource{
+				canvas("p1", "/personal/p1.yaml", canvasSpec(shared, "p1--component-0-0"), canvasSpec(shared, "p1--component-0-0", "p1--component-0-1")),
+				component("p1--component-0-0", "/personal/p1.yaml", "Shared", "Shared"),
+				component("p1--component-0-1", "/personal/p1.yaml", "Removed", "Removed"),
+				component("p1--component-0-2", "/personal/p1.yaml", "Removed earlier", "Removed earlier"),
+			},
+			want: map[string]want{
+				"p1--component-0-0": {spec: shared, validSpec: shared, other: true},
+				"p1--component-0-1": {spec: private, validSpec: shared, other: false},
+				"p1--component-0-2": {spec: private, validSpec: private, other: false},
+			},
+		},
+		{
+			// A canvas that isn't admin-managed, with a component that no version of it lists any more,
+			// and an admin-managed canvas that references a component defined in its own file.
+			name: "ordinary canvases and components defined in their own file",
+			resources: []*runtimev1.Resource{
+				canvas("d1", "/d1.yaml", canvasSpec(nil, "d1--component-0-0", "c1"), canvasSpec(nil, "d1--component-0-0", "c1")),
+				component("d1--component-0-0", "/d1.yaml", "Public", "Public"),
+				component("d1--component-0-1", "/d1.yaml", "Removed", "Removed"),
+				component("c1", "/c1.yaml", "Public", "Public"),
+				canvas("p1", "/personal/p1.yaml", canvasSpec(private, "p1--component-0-0", "c1"), canvasSpec(private, "p1--component-0-0", "c1")),
+				component("p1--component-0-0", "/personal/p1.yaml", "Private", ""),
+			},
+			want: map[string]want{
+				"d1--component-0-0": {other: true},
+				"d1--component-0-1": {other: true},
+				"c1":                {other: true},
+				"p1--component-0-0": {spec: private, other: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{"rill.yaml": ""}})
+			testruntime.RequireReconcileState(t, rt, id, 1, 0, 0)
+			ctx := t.Context()
+
+			// Store the resources in the catalog, like a version that didn't add the annotations.
+			// The instance's controller has nothing left to write, so taking over its catalog doesn't interfere with it.
+			ctrl, err := rt.Controller(ctx, id)
+			require.NoError(t, err)
+			require.NoError(t, ctrl.Flush(ctx))
+			store, release, err := rt.Catalog(ctx, id)
+			require.NoError(t, err)
+			defer release()
+			version, err := store.NextControllerVersion(ctx)
+			require.NoError(t, err)
+			for _, r := range tt.resources {
+				data, err := proto.Marshal(r)
+				require.NoError(t, err)
+				require.NoError(t, store.CreateResource(ctx, version, drivers.Resource{Kind: r.Meta.Name.Kind, Name: r.Meta.Name.Name, Data: data}))
+			}
+
+			// Load the catalog in a controller that isn't run, so nothing is parsed or reconciled.
+			loaded, err := runtime.NewController(ctx, rt, id, zap.NewNop(), activity.NewNoopClient())
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				// Running the controller with a cancelled context closes it.
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				_ = loaded.Run(ctx)
+			})
+			canAccess := func(r *runtimev1.Resource, claims *runtime.SecurityClaims) bool {
+				sec, err := rt.ResolveSecurity(ctx, id, claims, r)
+				require.NoError(t, err)
+				return sec.CanAccess()
+			}
+
+			if tt.owner == nil {
+				tt.owner = owner
+			}
+			for name, want := range tt.want {
+				cmp, err := loaded.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
+				require.NoError(t, err)
+				if len(want.spec) == 0 {
+					require.Empty(t, cmp.GetComponent().Spec.CanvasAnnotations, name)
+				} else {
+					require.Equal(t, want.spec, cmp.GetComponent().Spec.CanvasAnnotations, name)
+				}
+				if len(want.validSpec) == 0 {
+					require.Empty(t, cmp.GetComponent().State.ValidSpec.GetCanvasAnnotations(), name)
+				} else {
+					require.Equal(t, want.validSpec, cmp.GetComponent().State.ValidSpec.GetCanvasAnnotations(), name)
+				}
+				require.True(t, canAccess(cmp, tt.owner), name)
+				require.Equal(t, want.other, canAccess(cmp, other), name)
+			}
+
+			// A component is never accessible to someone who can't access any of the canvases that list it as an inline component.
+			canvases, err := loaded.List(ctx, runtime.ResourceKindCanvas, "", false)
+			require.NoError(t, err)
+			for _, c := range canvases {
+				if canAccess(c, other) {
+					continue
+				}
+				for _, spec := range []*runtimev1.CanvasSpec{c.GetCanvas().Spec, c.GetCanvas().State.ValidSpec} {
+					var items []*runtimev1.CanvasItem
+					runtime.CollectCanvasItems(spec.GetRows(), &items)
+					for _, item := range items {
+						if !item.DefinedInCanvas {
+							continue
+						}
+						cmp, err := loaded.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, false)
+						require.NoError(t, err)
+						require.False(t, canAccess(cmp, other), "%s is accessible, but canvas %s isn't", item.Component, c.Meta.Name.Name)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestCanvasItemParamBindings(t *testing.T) {

@@ -91,47 +91,102 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 // The parser adds them to the components it parses, but components stored by an earlier version don't have them,
 // and they would stay accessible to everyone until the project is parsed successfully.
 // Adding them when the catalog is loaded restricts those components before the controller serves a request, also if the project can't be parsed.
-// A canvas's inline components are found by their file path, since they're defined in the canvas's file.
+//
+// The spec and valid spec of a component are handled separately, since they can stem from different versions of its canvas:
+// each takes the annotations of the matching version of the canvas (spec or valid spec) that lists the component as one of its inline items.
+// The catalog isn't stored atomically, so a version of a component may have no such match.
+// If there's other evidence that it belongs to an admin-managed canvas, it's restricted to the canvas's owner and admins,
+// since it can't be told whether it was defined before the canvas was shared.
+// Components that aren't defined inline in a canvas, and the inline components of other canvases, are left as they are.
 func (c *catalogCache) inheritCanvasAccessAnnotations() {
-	// Find the access annotations of the admin-managed canvases by file path.
-	// A canvas counts as admin-managed if either its spec or its valid spec says so.
-	annotations := make(map[string]map[string]string)
+	// Find what the canvases say about their inline components.
+	// Index 0 is for a canvas's spec, and index 1 for its valid spec, as for the components below.
+	type listing struct {
+		// listed is whether that version of the canvas lists the component as an inline item.
+		listed [2]bool
+		// annotations are that version's access annotations; nil if it isn't admin-managed.
+		annotations [2]map[string]string
+	}
+	listings := make(map[string]*listing)
+	// managedFiles has the access annotations of the admin-managed canvases by file path.
+	// Deleted canvases are left out, since another resource may have been defined in their file since.
+	managedFiles := make(map[string]map[string]string)
 	for _, r := range c.resources[ResourceKindCanvas] {
-		a := parser.CanvasAccessAnnotations(r.GetCanvas().GetSpec().GetAnnotations())
-		if a == nil {
-			a = parser.CanvasAccessAnnotations(r.GetCanvas().GetState().GetValidSpec().GetAnnotations())
-		}
-		if a == nil {
-			continue
-		}
-		for _, path := range r.Meta.FilePaths {
-			annotations[path] = a
+		for i, spec := range []*runtimev1.CanvasSpec{r.GetCanvas().GetSpec(), r.GetCanvas().GetState().GetValidSpec()} {
+			if spec == nil {
+				continue
+			}
+			annotations := parser.CanvasAccessAnnotations(spec.Annotations)
+
+			var items []*runtimev1.CanvasItem
+			CollectCanvasItems(spec.Rows, &items)
+			for _, item := range items {
+				if !item.DefinedInCanvas {
+					continue
+				}
+				name := strings.ToLower(item.Component)
+				if listings[name] == nil {
+					listings[name] = &listing{}
+				}
+				listings[name].listed[i] = true
+				listings[name].annotations[i] = annotations
+			}
+
+			if annotations == nil || r.Meta.DeletedOn != nil {
+				continue
+			}
+			for _, path := range r.Meta.FilePaths {
+				if managedFiles[path] == nil { // The spec's annotations take precedence over the valid spec's.
+					managedFiles[path] = annotations
+				}
+			}
 		}
 	}
 
-	for _, r := range c.resources[ResourceKindComponent] {
-		var a map[string]string
-		for _, path := range r.Meta.FilePaths {
-			if a = annotations[path]; a != nil {
-				break
-			}
-		}
-		if a == nil {
-			continue
+	for name, r := range c.resources[ResourceKindComponent] {
+		l := listings[name]
+		if l == nil {
+			l = &listing{}
 		}
 
-		// The versions and timestamps are updated as for any other change to a spec or state; cached security decisions are keyed by the timestamps.
 		var changed bool
-		if spec := r.GetComponent().GetSpec(); spec != nil && len(spec.CanvasAnnotations) == 0 {
-			spec.CanvasAnnotations = maps.Clone(a)
-			r.Meta.SpecVersion++
-			r.Meta.SpecUpdatedOn = timestamppb.Now()
-			changed = true
-		}
-		if spec := r.GetComponent().GetState().GetValidSpec(); spec != nil && len(spec.CanvasAnnotations) == 0 {
-			spec.CanvasAnnotations = maps.Clone(a)
-			r.Meta.StateVersion++
-			r.Meta.StateUpdatedOn = timestamppb.Now()
+		for i, spec := range []*runtimev1.ComponentSpec{r.GetComponent().GetSpec(), r.GetComponent().GetState().GetValidSpec()} {
+			// Only versions that were defined inline in a canvas and lack the annotations are considered.
+			if !spec.GetDefinedInCanvas() || len(spec.CanvasAnnotations) != 0 {
+				continue
+			}
+
+			var annotations map[string]string
+			switch {
+			case l.listed[i]:
+				// The matching version of the canvas lists the component: it's restricted like that version, if it's admin-managed.
+				annotations = maps.Clone(l.annotations[i])
+			case l.listed[1-i]:
+				// Only the other version of the canvas lists the component, for example because the canvas has no valid spec.
+				annotations = unsharedCanvasAnnotations(l.annotations[1-i])
+			default:
+				// No canvas lists the component, for example because it was removed from its canvas and its deletion wasn't stored.
+				// It still belongs to the canvas that is defined in its file.
+				for _, path := range r.Meta.FilePaths {
+					if managedFiles[path] != nil {
+						annotations = unsharedCanvasAnnotations(managedFiles[path])
+						break
+					}
+				}
+			}
+			if annotations == nil {
+				continue
+			}
+			spec.CanvasAnnotations = annotations
+
+			// The versions and timestamps are updated as for any other change to a spec or state; cached security decisions are keyed by the timestamps.
+			if i == 0 {
+				r.Meta.SpecVersion++
+				r.Meta.SpecUpdatedOn = timestamppb.Now()
+			} else {
+				r.Meta.StateVersion++
+				r.Meta.StateUpdatedOn = timestamppb.Now()
+			}
 			changed = true
 		}
 		if changed {
