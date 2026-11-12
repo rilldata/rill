@@ -349,7 +349,7 @@
                being propped open by the chart's intrinsic size (see the chart cell below) -->
           <div class="relative min-w-0">
             <MeasureChartXAxis {interval} timeGranularity={timeGrain} />
-            <ChartInteractions {exploreName} {showComparison} {timeGrain} />
+            <ChartInteractions />
           </div>
         </div>
       {/if}

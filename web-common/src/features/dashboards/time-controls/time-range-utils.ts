@@ -10,11 +10,15 @@ import {
 import {
   type MetricsViewSpecDimension,
   MetricsViewSpecDimensionType,
+  type V1ExploreTimeRange,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { TimeRangeName_DEPRECATE } from "./time-control-types";
 
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  TIME_COMPARISON,
+  TIME_GRAIN,
+} from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import {
@@ -274,6 +278,29 @@ export function getTimeDimensionOptions(
       description: timeDim.description,
     };
   });
+}
+
+/**
+ * The comparison a canvas opens with when its default comparison mode is time.
+ * A range in `time_ranges` can declare its comparisons with `comparison_offsets`;
+ * the first one the canvas URL state understands (a `rill-P*` alias) wins.
+ * Without `defaults.time_range`, the canvas opens on the first `time_ranges` entry,
+ * so that entry's comparisons apply.
+ * Without a declared comparison, it is derived from the range's grain.
+ */
+export function getDefaultComparisonRange(
+  range: string | undefined,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+): string {
+  const openingRange = range ?? timeRanges?.[0]?.range;
+  const declared = timeRanges
+    ?.find((tr) => tr.range === openingRange)
+    ?.comparisonTimeRanges?.find(
+      (comparison) =>
+        !!comparison.offset && comparison.offset in TIME_COMPARISON,
+    )?.offset;
+
+  return declared ?? getComparisonTypeFromRangeString(range);
 }
 
 export function getComparisonTypeFromRangeString(

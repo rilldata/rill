@@ -17,6 +17,8 @@ import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 import { writable } from "svelte/store";
 import {
+  AggregationGrainOrder,
+  getAvailableTimeGrains,
   MinSupportedGrain,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
@@ -76,6 +78,12 @@ export class MetricsViewsProvider {
   /** Largest `smallest_time_grain` across the metrics views. */
   public largestMinTimeGrain: V1TimeGrain | undefined;
   public largestMinGrainOrder: number;
+  /**
+   * The aggregation grains every metrics view with a time dimension offers, see `getAvailableTimeGrains`.
+   * When they share none, the grains any of them offers,
+   * so a grain no metrics view declares is never offered and `time_grains` keeps replacing the default list.
+   */
+  public availableTimeGrains: V1TimeGrain[];
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
   public specsReady = $state(false);
   public ready: boolean;
@@ -163,6 +171,39 @@ export class MetricsViewsProvider {
       return smallestMillis === Infinity
         ? undefined
         : Duration.fromMillis(smallestMillis);
+    });
+
+    this.availableTimeGrains = $derived.by(() => {
+      const specs = this.metricsViewNames
+        .map((metricsViewName) => this.specs[metricsViewName])
+        .filter(Boolean);
+      const grainLists = specs
+        .filter((spec) => spec.timeDimension)
+        .map((spec) => getAvailableTimeGrains(spec));
+      if (!grainLists.length) {
+        let largestMinTimeGrain: V1TimeGrain | undefined;
+        specs.forEach(({ smallestTimeGrain }) => {
+          if (
+            smallestTimeGrain &&
+            (!largestMinTimeGrain ||
+              V1TimeGrainToOrder[smallestTimeGrain] >
+                V1TimeGrainToOrder[largestMinTimeGrain])
+          ) {
+            largestMinTimeGrain = smallestTimeGrain;
+          }
+        });
+        return getAvailableTimeGrains({
+          smallestTimeGrain: largestMinTimeGrain,
+        });
+      }
+
+      const common = grainLists[0].filter((grain) =>
+        grainLists.every((grains) => grains.includes(grain)),
+      );
+      if (common.length) return common;
+      return AggregationGrainOrder.filter((grain) =>
+        grainLists.some((grains) => grains.includes(grain)),
+      );
     });
 
     this.ready = $derived(

@@ -346,11 +346,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return exprs.length === 0 ? undefined : createAndExpression(exprs);
   }
 
-  public createLocalFilterStore(metricsViewName: string) {
+  /**
+   * A manager scoped to the metrics views of `metricsViewsProvider`, sharing this manager's yaml config.
+   * The caller owns the provider, and cleans it up.
+   */
+  public createLocalFilterStore(metricsViewsProvider: MetricsViewsProvider) {
     return new ExpressionFilterManager(
-      new MetricsViewsProvider(this.metricsViewsProvider.runtimeClient, [
-        metricsViewName,
-      ]),
+      metricsViewsProvider,
       this.yamlConfigProvider,
     );
   }

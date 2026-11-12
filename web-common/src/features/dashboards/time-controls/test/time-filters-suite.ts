@@ -66,6 +66,12 @@ export interface TimeFiltersVariant {
   pageMock(): PageMockForComponentTests;
   /** If true, the url search assertions will be no-op. */
   noUrlSync?: boolean;
+  /**
+   * If true, the url keeps a fixed grain that a new range does not allow,
+   * rather than the grain in effect for that range.
+   * TODO: remove once the grain rule for a disallowed url grain is settled (see `TimeFilterManager.timeGrain`).
+   */
+  urlKeepsDisallowedGrain?: boolean;
 }
 
 /**
@@ -152,7 +158,7 @@ export function testTimeRangeFilters(variant: TimeFiltersVariant) {
       assertTimeGrain(V1TimeGrain.TIME_GRAIN_HOUR);
       const hoursUrlSearch = urlSearchWithTimeParams({
         tr: hoursTimeRange,
-        grain: "hour",
+        grain: variant.urlKeepsDisallowedGrain ? "day" : "hour",
       });
       assertUrlSearch(hoursUrlSearch);
       assertUrlSearchHistory(weeksUrlSearch, hoursUrlSearch);

@@ -42,20 +42,10 @@
   // image should not carry Rill branding there.
   const isEmbedded = EmbedStore.isEmbedded();
 
-  let {
-    theme,
-    titleStore,
-    expressionFilterManager,
-    timeManager: {
-      state: {
-        interval: intervalStore,
-        grainStore,
-        timeZoneStore,
-        comparisonIntervalStore,
-        showTimeComparisonStore,
-      },
-    },
-  } = $derived(component.parent);
+  let { theme, titleStore, expressionFilterManager, timeFilterManager } =
+    $derived(component.parent);
+  let { interval, timeGrain, timeZone, showComparison, comparisonInterval } =
+    $derived(timeFilterManager);
   let spec = $derived(component.specStore);
 
   let includeHeader = $state(true);
@@ -72,11 +62,11 @@
 
   // Exact, resolved range (e.g. "Jan 1 – Jan 7, 2024"), never the relative alias.
   let formattedTimeRange = $derived(
-    $intervalStore ? prettyFormatTimeRange($intervalStore, $grainStore) : "",
+    interval ? prettyFormatTimeRange(interval, timeGrain) : "",
   );
   let formattedComparisonRange = $derived(
-    $showTimeComparisonStore && $comparisonIntervalStore
-      ? prettyFormatTimeRange($comparisonIntervalStore, $grainStore)
+    showComparison && comparisonInterval
+      ? prettyFormatTimeRange(comparisonInterval, timeGrain)
       : "",
   );
   // A component reference's spec carries its param bindings, so `title` may be any scalar.
@@ -149,7 +139,7 @@
                       {#if formattedComparisonRange}
                         <span>{m.time_vs()} {formattedComparisonRange}</span>
                       {/if}
-                      <span class="text-fg-muted">· {$timeZoneStore}</span>
+                      <span class="text-fg-muted">· {timeZone}</span>
                     </div>
                   {/if}
                 </header>

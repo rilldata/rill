@@ -1964,7 +1964,6 @@
   "report_form_email_recurring": "수신자에게 반복 내보내기를 이메일로 전송합니다.",
   "report_form_filters": "필터",
   "report_form_filters_aria": "필터 폼",
-  "report_form_filters_readonly_hint": "필터는 읽기 전용입니다. 리포트는 생성 당시 대시보드의 필터를 사용합니다. 필터를 바꾸려면 대시보드에서 필터를 조정한 뒤 리포트를 새로 만드세요.",
   "report_form_format": "형식",
   "report_form_format_csv": "CSV",
   "report_form_format_parquet": "Parquet",

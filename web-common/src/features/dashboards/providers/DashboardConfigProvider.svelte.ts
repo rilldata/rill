@@ -6,7 +6,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { getResolveCanvasRequest } from "@rilldata/web-common/features/canvas/selector";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+import { Settings } from "luxon";
 
 /**
  * Metrics view name and other yaml config provider based on dashboard type.
@@ -55,7 +56,6 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
         timeRanges: exploreSpec.timeRanges,
         allowCustomTimeRange: exploreSpec.allowCustomTimeRange,
-        timeGrains: getAvailableTimeGrains(metricsViewSpec),
         defaultTimeZone: exploreSpec.defaultPreset?.timezone,
         timeZones: exploreSpec.timeZones,
       });
@@ -83,6 +83,25 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
       runtimeClient,
       getResolveCanvasRequest(canvasName, allowUnvalidatedSpec),
     );
+    // TODO: figure out a better way of handling this property
+    //       when it's not consistent across all metrics views.
+    const specsLoadedUnsub = this.metricsViewsProvider.on(
+      "specs-loaded",
+      () => {
+        const firstSpecWithTimeSeries =
+          this.metricsViewsProvider.metricsViewNames
+            .map((name) => this.metricsViewsProvider.specs[name])
+            .find((spec) => spec?.timeDimension);
+        if (!firstSpecWithTimeSeries) return;
+
+        Settings.defaultWeekSettings = {
+          firstDay: normalizeWeekday(firstSpecWithTimeSeries.firstDayOfWeek),
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+      },
+    );
+
     const resolveCanvasUnsub = resolveCanvasQuery.subscribe(
       (resolveCanvasResp) => {
         const canvasSpec =
@@ -102,7 +121,10 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
           pinnedFilters: canvasSpec.pinnedFilters,
           requiredFilters: canvasSpec.requiredFilters,
 
-          defaultTimeRange: canvasSpec.defaultPreset?.timeRange,
+          // Without `defaults.time_range`, a canvas opens on the first `time_ranges` entry.
+          defaultTimeRange:
+            canvasSpec.defaultPreset?.timeRange ??
+            canvasSpec.timeRanges?.[0]?.range,
           timeRanges: canvasSpec.timeRanges,
           allowCustomTimeRange: canvasSpec.allowCustomTimeRange,
           timeZones: canvasSpec.timeZones,
@@ -111,6 +133,7 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
     );
 
     this.cleanup = () => {
+      specsLoadedUnsub();
       resolveCanvasUnsub();
       this.metricsViewsProvider.cleanup();
       this.yamlConfigProvider.cleanup?.();

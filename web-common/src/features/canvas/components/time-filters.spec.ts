@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeTimeFilters,
   resolveTimeFilters,
-  stripInheritedTimeFilters,
+  timeFiltersToParams,
 } from "./time-filters";
 
 describe("resolveTimeFilters", () => {
@@ -60,17 +60,15 @@ describe("normalizeTimeFilters", () => {
   });
 });
 
-describe("stripInheritedTimeFilters", () => {
-  it("drops the inherit sentinels and keeps real values", () => {
-    expect(
-      stripInheritedTimeFilters(
-        new URLSearchParams("tr=inherit&compare_tr=rill-PP"),
-      ).toString(),
-    ).toBe("compare_tr=rill-PP");
-    expect(
-      stripInheritedTimeFilters(
-        new URLSearchParams("tr=P7D&compare_tr=inherit&grain=day"),
-      ).toString(),
-    ).toBe("tr=P7D&grain=day");
+describe("timeFiltersToParams", () => {
+  it.each([
+    [undefined, "compare_tr=inherit&tr=inherit"],
+    ["", "compare_tr=inherit&tr=inherit"],
+    ["grain=week", "grain=week&compare_tr=inherit&tr=inherit"],
+    ["compare_tr=rill-PW", "compare_tr=rill-PW&tr=inherit"],
+    ["tr=inherit", "tr=inherit"],
+    ["tr=P7D&compare_tr=inherit", "tr=P7D&compare_tr=inherit"],
+  ])("%s", (input, expected) => {
+    expect(timeFiltersToParams(input).toString()).toBe(expected);
   });
 });

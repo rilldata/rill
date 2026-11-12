@@ -273,9 +273,20 @@ export class DashboardStateSync {
 
     this.updating = true;
 
-    // Merge the partial state from url into the stores
-    this.expressionFilterParamsTracker.setUrlParams(urlSearchParams);
-    this.timeFilterParamsTracker.setUrlParams(urlSearchParams);
+    // Merge the partial state from url into the store.
+    // The partial can carry state the url does not, like filters restored from session storage,
+    // so the filter managers are fed the redirect url below rather than the page url.
+    metricsExplorerStore.mergePartialExplorerEntity(
+      this.exploreName,
+      partialExplore,
+    );
+
+    // Get the updated URL, this could be different from the page url if we added extra state.
+    // The extra state could come from session storage, home bookmark or yaml defaults
+    const redirectUrl = this.getUrlForExploreState(partialExplore);
+    this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
+    this.timeFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
+    // Pull the state the managers derive, like the inlist dimensions and the resolved time range, back into the store.
     metricsExplorerStore.mergePartialExplorerEntity(
       this.exploreName,
       partialExplore,
@@ -285,9 +296,6 @@ export class DashboardStateSync {
 
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
-    // Get the updated URL, this could be different from the page url if we added extra state.
-    // The extra state could come from session storage, home bookmark or yaml defaults
-    const redirectUrl = this.getUrlForExploreState(partialExplore);
 
     // Get the full updated state and save to session storage
     const updatedExploreState =

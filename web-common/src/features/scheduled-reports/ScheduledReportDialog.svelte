@@ -28,17 +28,17 @@
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
   } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import {
     getDashboardNameFromReport,
+    applyReportFiltersToParams,
+    createReportFilterManagers,
     getExistingReportInitialFormValues,
-    getFiltersAndTimeControlsFromAggregationRequest,
+    getFilterParamsFromAggregationRequest,
     getNewCanvasReportInitialFormValues,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
-    parseMetricsViewFiltersAnnotation,
     stripInternalReportParams,
     ReportRunAs,
     type ReportValues,
@@ -68,8 +68,10 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import {
+    CanvasDashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { untrack } from "svelte";
   import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import {
@@ -136,31 +138,20 @@
     hasSavedEmbedOwnerEmail || (isEmbedded && !!$embedOpenUrlQuery.data),
   );
 
-  const exploreName = $derived(
-    isCanvasReport
-      ? ""
-      : props.mode === "create"
-        ? props.exploreName
-        : props.mode === "edit"
-          ? getDashboardNameFromReport(props.reportSpec)
-          : "",
-  );
+  // svelte-ignore state_referenced_locally
+  const exploreName = isCanvasReport
+    ? ""
+    : props.mode === "create"
+      ? props.exploreName
+      : props.mode === "edit"
+        ? getDashboardNameFromReport(props.reportSpec)
+        : "";
 
   const validExploreSpec = $derived(
     useExploreValidSpec(runtimeClient, exploreName),
   );
   const exploreSpec = $derived($validExploreSpec.data?.explore ?? {});
   const exploreStateStore = $derived(useExploreState(exploreName));
-  const metricsViewName = $derived(exploreSpec.metricsView ?? "");
-
-  const allTimeRangeResp = $derived(
-    useMetricsViewTimeRange(
-      runtimeClient,
-      metricsViewName,
-      undefined,
-      queryClient,
-    ),
-  );
 
   const queryName = $derived(
     props.mode === "create"
@@ -187,28 +178,57 @@
       : $exploreStateStore?.ephemeralMeasures,
   );
 
-  const {
-    filters,
-    timeControls,
-    cleanup,
-  }: {
-    filters: ExpressionFilterManager | undefined;
-    timeControls: TimeControls | undefined;
-    cleanup: (() => void) | undefined;
-  } = $derived(
-    isCanvasReport
-      ? { filters: undefined, timeControls: undefined, cleanup: undefined }
-      : getFiltersAndTimeControlsFromAggregationRequest(
-          runtimeClient,
-          metricsViewName,
-          exploreName,
-          aggregationRequest,
-          $allTimeRangeResp.data?.timeRangeSummary,
+  // Canvas state is URL-param based. In create mode, the canvas page's current URL is the
+  // state to save. In edit mode, it is the report's stored state: the dialog is on the
+  // report page, whose URL carries no canvas state.
+  // svelte-ignore state_referenced_locally
+  const canvasBaseParams = isCanvasReport
+    ? stripInternalReportParams(
+        new URLSearchParams(
+          props.mode === "edit"
+            ? props.reportSpec.annotations?.web_open_state
+            : window.location.search,
         ),
+      )
+    : undefined;
+
+  // Filters are edited in memory and only saved with the report, so the dashboard is left untouched.
+  const dashboardConfigProvider = isCanvasReport
+    ? new CanvasDashboardConfigProvider(runtimeClient, canvasName)
+    : new ExploreDashboardConfigProvider(runtimeClient, exploreName);
+  const {
+    expressionFilterManager,
+    timeFilterManager,
+    cleanup: cleanupFilterManagers,
+  } = createReportFilterManagers(
+    runtimeClient,
+    dashboardConfigProvider,
+    // Explore urls carry the singular `f` param, canvas urls one per metrics view.
+    !isCanvasReport,
+    untrack(getInitialFilterParams),
   );
-  // Release the previous filters and time controls whenever they are rebuilt, and on destroy.
-  $effect(() => cleanup);
-  $effect(() => () => provider.cleanup());
+  $effect(() => () => {
+    cleanupFilterManagers();
+    dashboardConfigProvider.cleanup?.();
+    provider.cleanup();
+  });
+
+  function getInitialFilterParams() {
+    if (!canvasBaseParams) {
+      return getFilterParamsFromAggregationRequest(aggregationRequest);
+    }
+    if (props.mode === "edit") return canvasBaseParams;
+
+    // The canvas page's filter managers already have the defaults applied for an empty URL.
+    const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
+    if (!canvasStore) return canvasBaseParams;
+    const params = new URLSearchParams();
+    canvasStore.canvasEntity.expressionFilterManager.applyFilterToParams(
+      params,
+    );
+    canvasStore.canvasEntity.timeFilterManager.applyFilterToParams(params);
+    return params;
+  }
 
   let currentProtobufState: string | undefined = undefined;
   // svelte-ignore state_referenced_locally
@@ -217,18 +237,6 @@
     const { dashboardStore } = stateManagers;
     currentProtobufState = get(dashboardStore).proto;
   }
-
-  // Canvas state is URL-param based. In create mode, the canvas page's current URL is the
-  // state to display and save. In edit mode, the report's stored state is applied to the
-  // form's canvas store directly (via urlStateOverride), never through the page URL: the
-  // dialog is on the report page, whose URL must not be rewritten.
-  // svelte-ignore state_referenced_locally
-  const canvasStateOverride =
-    props.mode === "edit" && isCanvasReport
-      ? stripInternalReportParams(
-          new URLSearchParams(props.reportSpec.annotations?.web_open_state),
-        ).toString()
-      : undefined;
 
   const schema = yup(
     object({
@@ -363,64 +371,51 @@
           : undefined,
     };
 
-    if (isCanvasReport) {
+    // Until the specs load, the managers hold no filters, so the report would silently drop them.
+    if (!expressionFilterManager.ready || !timeFilterManager.ready) {
+      throw new Error(m.report_form_canvas_loading());
+    }
+
+    if (isCanvasReport && canvasBaseParams) {
       // The canvas state (filters, time range, tabs) the report will render with,
       // plus the PDF rendering options, which the export page reads back from this state.
-      // Create mode captures the canvas page's URL; edit mode reuses the report's stored
-      // state (the dialog is on the report page, whose URL carries no canvas state).
-      const stateParams = new URLSearchParams(
-        props.mode === "edit"
-          ? (props.reportSpec.annotations?.web_open_state ?? "")
-          : window.location.search,
+      const stateParams = applyReportFiltersToParams(
+        canvasBaseParams,
+        expressionFilterManager,
+        timeFilterManager,
       );
       stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
       stateParams.set("pdf_all_tabs", String(values.pdfAllTabs));
-
-      // The selected filters are also baked into the report's security rules,
-      // so magic-token recipients cannot query data beyond them.
-      // The filter capture must not silently fail open: if the canvas store is
-      // not available, fall back to the report's stored filters in edit mode,
-      // and refuse to submit in create mode.
-      const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
-      let metricsViewFilters = canvasStore
-        ? getCanvasFilters(canvasStore.canvasEntity)
-        : undefined;
-      if (!canvasStore) {
-        if (props.mode === "edit") {
-          metricsViewFilters = parseMetricsViewFiltersAnnotation(
-            props.reportSpec.annotations?.metrics_view_filters,
-          );
-        } else {
-          throw new Error(m.report_form_canvas_loading());
-        }
-      }
 
       return {
         ...commonOptions,
         canvas: canvasName,
         exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
         webOpenState: stateParams.toString(),
-        metricsViewFilters,
+        // The selected filters are also baked into the report's security rules,
+        // so magic-token recipients cannot query data beyond them.
+        metricsViewFilters: getCanvasFilters(expressionFilterManager),
       };
     }
 
-    const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
-        aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
+        aggregationRequestWithTimeRange(timeFilterManager),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
           columns: values.columns,
-          showTimeComparison: timeControlsState.showTimeComparison,
-          selectedTimezone: timeControlsState.selectedTimezone,
+          showTimeComparison: timeFilterManager.showComparison,
+          selectedTimezone: timeFilterManager.timeZone,
           ephemeralMeasures,
         }),
       ],
     );
     updatedAggregationRequest.where =
-      filters?.topLevelJoiner.expr[metricsViewName];
+      expressionFilterManager.topLevelJoiner.expr[
+        dashboardConfigProvider.metricsViewsProvider.metricsViewNames[0]
+      ];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -515,12 +510,11 @@
       {errors}
       {submit}
       {enhance}
-      metricsViewName={metricsViewName ?? ""}
-      exploreName={exploreName ?? ""}
+      {exploreName}
       {canvasName}
-      {canvasStateOverride}
-      {filters}
-      {timeControls}
+      {dashboardConfigProvider}
+      {expressionFilterManager}
+      {timeFilterManager}
       {ephemeralMeasures}
       {showEmbedOwnerEmail}
       {provider}

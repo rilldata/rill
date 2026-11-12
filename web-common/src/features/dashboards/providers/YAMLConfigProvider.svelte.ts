@@ -1,14 +1,9 @@
 import {
   type V1ExploreTimeRange,
   type V1Expression,
-  type V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
-import {
-  DEFAULT_TIMEZONE,
-  DEFAULT_TIMEZONES,
-} from "@rilldata/web-common/lib/time/config.ts";
-import { AllowedAggregationGrains } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
 
 type YAMLConfigProviderEvents = {
   /** Fired after `update` has applied the config from a spec. */
@@ -32,7 +27,6 @@ export class YAMLConfigProvider {
   public defaultTimeRange = $state<string | undefined>(undefined);
   public timeRanges = $state<V1ExploreTimeRange[]>([]);
   public allowCustomTimeRange = $state(false);
-  public timeGrains = $state<V1TimeGrain[]>(AllowedAggregationGrains);
   public defaultTimeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeZones = $state<string[]>([]);
 
@@ -57,7 +51,6 @@ export class YAMLConfigProvider {
     defaultTimeRange,
     timeRanges,
     allowCustomTimeRange,
-    timeGrains,
     defaultTimeZone,
     timeZones,
   }: {
@@ -71,7 +64,6 @@ export class YAMLConfigProvider {
 
     defaultTimeRange?: YAMLConfigProvider["defaultTimeRange"];
     timeRanges?: YAMLConfigProvider["timeRanges"];
-    timeGrains?: YAMLConfigProvider["timeGrains"];
     allowCustomTimeRange?: YAMLConfigProvider["allowCustomTimeRange"];
     defaultTimeZone?: YAMLConfigProvider["defaultTimeZone"];
     timeZones?: YAMLConfigProvider["timeZones"];
@@ -97,7 +89,6 @@ export class YAMLConfigProvider {
     this.defaultTimeRange = defaultTimeRange;
     this.timeRanges = timeRanges ?? [];
     this.allowCustomTimeRange = allowCustomTimeRange ?? false;
-    this.timeGrains = timeGrains ?? AllowedAggregationGrains;
     this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
 

@@ -97,6 +97,8 @@ export type TimeControlState = {
 
   comparisonTimeRange: string | undefined;
   showComparison: boolean;
+  // Only set while the comparison is shown.
+  comparisonInterval: Interval<true> | undefined;
   apiComparisonTimeRange: V1TimeRange | undefined;
 
   // Undefined until the metrics view specs resolve. Consumers that gate queries on a time range
@@ -117,10 +119,10 @@ export class TimeFilterManager implements UrlParamsStore {
    */
   public urlTimeRange = $state<string | undefined>(undefined);
   /**
-   * Time range whose interval is being resolved, after `inherit` is replaced with the parent's range.
+   * Time range whose interval is being resolved, after `inherit` is replaced with the parent's resolved range.
    * `timeRange` catches up with it once the interval resolves.
    */
-  public requestedTimeRange = $state<string | undefined>(undefined);
+  public requestedTimeRange: string | undefined;
   /**
    * Resolved time range, taking into account the parent time range when `inherit` is set.
    * Follows `requestedTimeRange` once its interval has resolved.
@@ -134,7 +136,10 @@ export class TimeFilterManager implements UrlParamsStore {
    * Resolved time grain. Always has a value, if url param is undefined, it is based on time range's interval.
    */
   public timeGrain: V1TimeGrain;
-  public timeZone = $state<string>(DEFAULT_TIMEZONE);
+  /**
+   * Time zone in effect: the parent's while the time range is inherited, otherwise `ownTimeZone`.
+   */
+  public timeZone: string;
   public timeDimension = $state<string | undefined>(undefined);
   /**
    * Exact value of comparison time range as set from setUrlParams. It can have values like `inherit`.
@@ -144,14 +149,23 @@ export class TimeFilterManager implements UrlParamsStore {
    * Resolved comparison time range, taking into account the parent comparison time range when `inherit` is set.
    */
   public comparisonTimeRange: string | undefined;
-  public showComparison = $state<boolean>(false);
+  /**
+   * Whether the comparison is shown: the parent's while the comparison range is inherited, otherwise `ownShowComparison`.
+   */
+  public showComparison: boolean;
   public lastDefinedScrubInterval = $state<Interval<true> | undefined>(
     undefined,
   );
   public scrubInterval = $state<ScrubRange | undefined>(undefined);
 
+  // Selected on this instance, from the url or the controls.
+  // A child following its parent reads the parent's values instead, see `timeZone` and `showComparison`.
+  private ownTimeZone = $state<string>(DEFAULT_TIMEZONE);
+  private ownShowComparison = $state<boolean>(false);
+
   // When set, relative time ranges are anchored at this time instead of now/latest.
   // Used by scheduled report exports to render data as of the report's execution time.
+  // A child always uses its parent's.
   private executionTime = $state<string | undefined>(undefined);
 
   // Computed values
@@ -220,6 +234,28 @@ export class TimeFilterManager implements UrlParamsStore {
   ) {
     this.storeSync = new UrlParamsChangeTracker(this);
 
+    // An inherited range, zone and comparison follow the parent through these derived inputs,
+    // so a change on the parent re-resolves the child's interval through its own query.
+    const inheritsTimeRange = $derived(
+      !!this.parent && this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS,
+    );
+    const inheritsComparison = $derived(
+      !!this.parent && this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS,
+    );
+    this.requestedTimeRange = $derived(
+      inheritsTimeRange ? this.parent?.timeRange : this.urlTimeRange,
+    );
+    this.timeZone = $derived(
+      inheritsTimeRange && this.parent
+        ? this.parent.timeZone
+        : this.ownTimeZone,
+    );
+    this.showComparison = $derived(
+      inheritsComparison && this.parent
+        ? this.parent.showComparison
+        : this.ownShowComparison,
+    );
+
     // Subscribing keeps the intervals in sync with the cache:
     // an input change fetches, and invalidating a metrics view (when it reconciles) refetches.
     const timeRangesQuery = createQueries(
@@ -234,13 +270,6 @@ export class TimeFilterManager implements UrlParamsStore {
     metricsViewsProvider.on("time-specs-loaded", () => {
       this.ready = true;
       this.events.emit("ready");
-    });
-    // Replay `inherit` time range when parent changed.
-    // An inherited comparison range is derived from the parent, so it needs no replay.
-    parent?.storeSync.on("change", () => {
-      if (this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS) {
-        this.applyTimeRange(this.urlTimeRange, false);
-      }
     });
 
     this.timeRange = $derived(this.resolved?.timeRange);
@@ -275,18 +304,22 @@ export class TimeFilterManager implements UrlParamsStore {
     //       Today it falls back to the smallest grain the range hints at, then to the smallest allowed grain,
     //       while without a url grain it is validated against the range instead.
     this.timeGrain = $derived.by(() => {
-      if (!this.interval) return this.urlTimeGrain ?? MinSupportedGrain;
+      // Without a grain of its own, a child on an inherited range follows the parent's grain.
+      const requestedGrain =
+        this.urlTimeGrain ??
+        (inheritsTimeRange ? this.parent?.timeGrain : undefined);
+      if (!this.interval) return requestedGrain ?? MinSupportedGrain;
 
       const largestMinTimeGrain =
         this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain;
-      if (!this.urlTimeGrain) {
+      if (!requestedGrain) {
         return (
           getValidatedTimeGrain(
             this.interval,
             largestMinTimeGrain,
             undefined,
             this.parsedTime,
-            this.yamlConfigProvider.timeGrains,
+            this.metricsViewsProvider.availableTimeGrains,
           ) ?? MinSupportedGrain
         );
       }
@@ -294,9 +327,9 @@ export class TimeFilterManager implements UrlParamsStore {
       const allowedGrains = allowedGrainsForInterval(
         this.interval,
         largestMinTimeGrain,
-        this.yamlConfigProvider.timeGrains,
+        this.metricsViewsProvider.availableTimeGrains,
       );
-      if (allowedGrains.includes(this.urlTimeGrain)) return this.urlTimeGrain;
+      if (allowedGrains.includes(requestedGrain)) return requestedGrain;
       if (latest.smallestGrain && allowedGrains.includes(latest.smallestGrain))
         return latest.smallestGrain;
       return allowedGrains[0];
@@ -446,7 +479,7 @@ export class TimeFilterManager implements UrlParamsStore {
       allowedGrainsForInterval(
         this.interval,
         this.metricsViewsProvider.largestMinTimeGrain,
-        this.yamlConfigProvider.timeGrains,
+        this.metricsViewsProvider.availableTimeGrains,
       ),
     );
     this.comparisonTimeRangeOptions = $derived(
@@ -483,14 +516,14 @@ export class TimeFilterManager implements UrlParamsStore {
         : undefined;
     }
 
-    this.timeZone =
+    this.ownTimeZone =
       urlParams.get(ExploreStateURLParams.TimeZone) ??
       this.yamlConfigProvider.defaultTimeZone;
 
     this.timeDimension =
       urlParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
 
-    this.showComparison = urlParams.has(
+    this.ownShowComparison = urlParams.has(
       ExploreStateURLParams.ComparisonTimeRange,
     );
     this.urlComparisonTimeRange =
@@ -515,7 +548,6 @@ export class TimeFilterManager implements UrlParamsStore {
         this.applyTimeRange(defaultTimeRange, false);
       } else {
         this.urlTimeRange = undefined;
-        this.requestedTimeRange = undefined;
         this.resolved = undefined;
       }
     }
@@ -565,8 +597,8 @@ export class TimeFilterManager implements UrlParamsStore {
       }
     }
 
-    if (this.timeZone !== DEFAULT_TIMEZONE) {
-      urlParams.set(ExploreStateURLParams.TimeZone, this.timeZone);
+    if (this.ownTimeZone !== DEFAULT_TIMEZONE) {
+      urlParams.set(ExploreStateURLParams.TimeZone, this.ownTimeZone);
     } else {
       urlParams.delete(ExploreStateURLParams.TimeZone);
     }
@@ -577,7 +609,11 @@ export class TimeFilterManager implements UrlParamsStore {
       urlParams.delete(ExploreStateURLParams.TimeDimension);
     }
 
-    if (this.showComparison && this.urlComparisonTimeRange) {
+    // An inherited comparison is kept whether or not the parent currently shows it.
+    if (
+      this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS ||
+      (this.ownShowComparison && this.urlComparisonTimeRange)
+    ) {
       urlParams.set(
         ExploreStateURLParams.ComparisonTimeRange,
         this.urlComparisonTimeRange,
@@ -692,13 +728,14 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   public onSelectZone(tz: string) {
-    this.timeZone = tz;
-    if (!this.timeRange || !this.parsedTime) return;
+    this.ownTimeZone = tz;
+    if (!this.urlTimeRange || !this.parsedTime) return;
 
     if (this.parsedTime.interval instanceof RillIsoInterval) {
       // TODO
     } else {
-      this.applyTimeRange(this.timeRange);
+      // Applies the url range rather than the resolved one, so an inherited range stays inherited.
+      this.applyTimeRange(this.urlTimeRange);
     }
   }
 
@@ -719,23 +756,28 @@ export class TimeFilterManager implements UrlParamsStore {
 
   public onSelectTimeDimension(timeDimension: string) {
     this.timeDimension = timeDimension;
-    if (this.timeRange) this.applyTimeRange(this.timeRange);
+    if (this.urlTimeRange) this.applyTimeRange(this.urlTimeRange);
     else this.storeSync.stateChanged();
   }
 
   public onSelectComparisonRange(range: string) {
     this.urlComparisonTimeRange = range;
-    this.showComparison = true;
+    this.ownShowComparison = true;
     this.storeSync.stateChanged();
   }
 
   public setShowComparison(showComparison: boolean) {
-    this.showComparison = showComparison;
+    // Turning an inherited comparison on or off stops following the parent,
+    // keeping the comparison range it currently resolves to.
+    if (this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS) {
+      this.urlComparisonTimeRange =
+        this.comparisonTimeRange ?? TimeComparisonOption.CONTIGUOUS;
+    }
+    this.ownShowComparison = showComparison;
     this.storeSync.stateChanged();
   }
   public onToggleShowComparison() {
-    this.showComparison = !this.showComparison;
-    this.storeSync.stateChanged();
+    this.setShowComparison(!this.showComparison);
   }
 
   public onScrubRange({ start, end, isScrubbing }: ScrubRange) {
@@ -770,6 +812,9 @@ export class TimeFilterManager implements UrlParamsStore {
 
       comparisonTimeRange: this.comparisonTimeRange,
       showComparison: this.showComparison,
+      comparisonInterval: this.showComparison
+        ? this.comparisonInterval
+        : undefined,
       apiComparisonTimeRange: this.showComparison
         ? this.apiComparisonTimeRange
         : undefined,
@@ -788,11 +833,8 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   private applyTimeRange(newTimeRange: string, notifyChange = true) {
+    // `requestedTimeRange` follows from this, with `inherit` replaced by the parent's range.
     this.urlTimeRange = newTimeRange;
-    if (newTimeRange === INHERIT_TIME_RANGE_ALIAS) {
-      if (!this.parent?.requestedTimeRange) return;
-      newTimeRange = this.parent.requestedTimeRange;
-    }
 
     measureSelection.clear();
     this.resetScrubRange(false);
@@ -803,14 +845,12 @@ export class TimeFilterManager implements UrlParamsStore {
     if (includesTimeZoneOffset) {
       const timeZone = newTimeRange.match(/tz (.*)/)?.[1];
 
-      if (timeZone) this.timeZone = timeZone;
+      if (timeZone) this.ownTimeZone = timeZone;
     }
-
-    this.requestedTimeRange = newTimeRange;
 
     // A range anchored at `now` resolves differently every time,
     // so re-selecting it has to refetch even though the query key is unchanged.
-    if (newTimeRange.includes("now")) {
+    if (this.requestedTimeRange?.includes("now")) {
       this.getTimeRangesQueryOptions().forEach(({ queryKey }) => {
         void queryClient.invalidateQueries({ queryKey, refetchType: "all" });
       });
@@ -833,7 +873,9 @@ export class TimeFilterManager implements UrlParamsStore {
         expressions: [expression],
         timeZone: this.timeZone,
         timeDimension: this.timeDimension,
-        executionTime: this.executionTime,
+        executionTime: this.parent
+          ? this.parent.executionTime
+          : this.executionTime,
       }),
     );
   }
@@ -876,7 +918,8 @@ export class TimeFilterManager implements UrlParamsStore {
       };
 
       // All time has nothing before it to compare against.
-      if (expression === TimeRangePreset.ALL_TIME) this.showComparison = false;
+      if (expression === TimeRangePreset.ALL_TIME)
+        this.ownShowComparison = false;
 
       if (this.config.log)
         console.log(

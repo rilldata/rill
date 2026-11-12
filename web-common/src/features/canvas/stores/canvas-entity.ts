@@ -5,7 +5,6 @@ import {
   toggleSurfaceInSelection,
   type ExactSelection,
 } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
-import { page } from "$app/stores";
 import {
   useCanvas,
   type CanvasResponse,
@@ -48,8 +47,7 @@ import {
 } from "../components/util";
 import { Grid } from "./grid";
 import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
-import { getDefaultComparisonRange } from "./time-state";
-import { TimeManager } from "./time-manager";
+import { getDefaultComparisonRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
@@ -83,17 +81,6 @@ function encodeTabKey(name: string): string {
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
 // Set returns a boolean indicating whether the value was set
-export type SearchParamsStore = {
-  subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (
-    map: Map<string, string | undefined>,
-    checkIfSet?: boolean,
-    replaceState?: boolean,
-    prefixes?: string[],
-  ) => boolean;
-  clearAll: () => void;
-};
-
 // An exact selection with nothing selected; see `CanvasEntity.exactMeasures`.
 const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
 
@@ -105,9 +92,6 @@ export class CanvasEntity {
   layout = writable<LayoutBlock[]>([]);
   // Tab groups keyed by their stable name, reused across spec updates so active-tab state survives.
   private tabGroups = new Map<string, TabGroup>();
-
-  // Time state controls
-  timeManager: TimeManager;
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
@@ -185,43 +169,6 @@ export class CanvasEntity {
       queryClient,
       allowUnvalidatedSpec,
     );
-
-    // This will be deprecated soon - bgh
-    const searchParamsStore: SearchParamsStore = (() => {
-      return {
-        subscribe: this.searchParams.subscribe,
-        set: (
-          map: Map<string, string>,
-          checkIfSet = false,
-          replaceState = false,
-        ) => {
-          const existingParams = new URLSearchParams(window.location.search);
-
-          map.forEach((value, key) => {
-            if (checkIfSet && existingParams.has(key)) return false;
-
-            if (value === undefined || value === null || value === "") {
-              existingParams.delete(key);
-            } else {
-              existingParams.set(key, value);
-            }
-          });
-
-          goto(`?${existingParams.toString()}`, { replaceState }).catch(
-            console.error,
-          );
-          return true;
-        },
-        clearAll: () => {
-          const url = get(page).url;
-          url.searchParams.forEach((_, effectiveKey) => {
-            url.searchParams.delete(effectiveKey);
-          });
-
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-        },
-      };
-    })();
 
     this.theme = createResolvedThemeStore(
       this.themeName,

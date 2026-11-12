@@ -5,7 +5,11 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ExploreComparisonMode,
+    type V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
+  import { getDefaultComparisonRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 
   let { canvasName }: { canvasName: string } = $props();
 
@@ -15,31 +19,33 @@
     canvasEntity: {
       specStore,
       clearDefaultFilters,
-      timeManager: {
-        state: { interval: _interval },
-        defaultTimeRangeStore,
-        defaultComparisonRangeStore,
-      },
+      timeFilterManager,
       dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
-  let interval = $derived($_interval);
+  let { interval } = $derived(timeFilterManager);
+  let { yamlConfigProvider } = $derived(dashboardProvider);
 
   let defaultTimeRange: V1TimeRange | undefined = $derived(
-    $defaultTimeRangeStore
-      ? {
-          expression: $defaultTimeRangeStore,
-        }
+    yamlConfigProvider.defaultTimeRange
+      ? { expression: yamlConfigProvider.defaultTimeRange }
       : undefined,
   );
-  let defaultComparisonRange: V1TimeRange | undefined = $derived(
-    $defaultComparisonRangeStore
-      ? {
-          expression: $defaultComparisonRangeStore,
-        }
-      : undefined,
-  );
+  let defaultComparisonRange: V1TimeRange | undefined = $derived.by(() => {
+    const defaultPreset = $specStore.data?.canvas?.defaultPreset;
+    if (
+      defaultPreset?.comparisonMode !==
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    )
+      return undefined;
+    return {
+      expression: getDefaultComparisonRange(
+        defaultPreset.timeRange,
+        $specStore.data?.canvas?.timeRanges,
+      ),
+    };
+  });
 
   let defaultFiltersManager = $derived(
     new ExpressionFilterManager(

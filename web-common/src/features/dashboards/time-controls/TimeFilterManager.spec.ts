@@ -21,6 +21,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { waitFor } from "@testing-library/svelte";
+import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const NOW_TIME_RANGE = "7D as of now/D+1D";
@@ -84,10 +85,12 @@ describe("TimeFilterManager", () => {
     manager: TimeFilterManager,
     { start, end }: { start?: string; end?: string },
   ) {
-    expect(manager.interval?.start.toISO()).toEqual(
+    expect(manager.interval?.start.toUTC().toISO()).toEqual(
       new Date(start!).toISOString(),
     );
-    expect(manager.interval?.end.toISO()).toEqual(new Date(end!).toISOString());
+    expect(manager.interval?.end.toUTC().toISO()).toEqual(
+      new Date(end!).toISOString(),
+    );
   }
 
   function countTimeRangesRequests(fetchSpy: ReturnType<typeof vi.spyOn>) {
@@ -239,5 +242,167 @@ describe("TimeFilterManager", () => {
 
     parent.onSelectComparisonRange(TimeComparisonOption.MONTH);
     expect(child.comparisonTimeRange).toEqual(TimeComparisonOption.MONTH);
+  });
+
+  describe("child following its parent", () => {
+    async function createResolvedParent(params: string[][] = []) {
+      const { manager: parent } = createManager();
+      parent.storeSync.setUrlParams(
+        new URLSearchParams([
+          [ExploreStateURLParams.TimeRange, DEFAULT_TIME_RANGE],
+          ...params,
+        ]),
+      );
+      await waitFor(() =>
+        expectInterval(parent, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+      );
+      return parent;
+    }
+
+    function createChild(parent: TimeFilterManager, params: string) {
+      const { manager: child } = createManager(parent);
+      child.storeSync.setUrlParams(new URLSearchParams(params));
+      return child;
+    }
+
+    it("follows the parent's range, also when it changes after the child resolved", async () => {
+      const parent = await createResolvedParent();
+      const child = createChild(parent, "tr=inherit&compare_tr=inherit");
+      await waitFor(() =>
+        expectInterval(child, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+      );
+      expect(child.timeRange).toEqual(DEFAULT_TIME_RANGE);
+
+      applyUrlTimeRange(parent, OTHER_TIME_RANGE);
+
+      await waitFor(() =>
+        expectInterval(child, RESOLVED_RILL_TIMES[OTHER_TIME_RANGE]),
+      );
+      expect(child.timeRange).toEqual(OTHER_TIME_RANGE);
+      expect(child.urlTimeRange).toEqual(INHERIT_TIME_RANGE_ALIAS);
+    });
+
+    it("keeps its own range", async () => {
+      const parent = await createResolvedParent();
+      const child = createChild(parent, `tr=${OTHER_TIME_RANGE}`);
+      await waitFor(() =>
+        expectInterval(child, RESOLVED_RILL_TIMES[OTHER_TIME_RANGE]),
+      );
+
+      applyUrlTimeRange(parent, NOW_TIME_RANGE);
+      await waitFor(() =>
+        expectInterval(parent, RESOLVED_RILL_TIMES[NOW_TIME_RANGE]),
+      );
+      expect(child.timeRange).toEqual(OTHER_TIME_RANGE);
+    });
+
+    it("follows the parent's comparison, whether it is shown or not", async () => {
+      const parent = await createResolvedParent();
+      const child = createChild(parent, "tr=inherit&compare_tr=inherit");
+      await waitFor(() => expect(child.timeRange).toEqual(DEFAULT_TIME_RANGE));
+      // An inherited comparison does not turn comparison on by itself.
+      expect(child.showComparison).toBe(false);
+      expect(get(child.getTimeControlStore()).comparisonInterval).toBe(
+        undefined,
+      );
+
+      parent.onSelectComparisonRange(TimeComparisonOption.WEEK);
+      expect(child.showComparison).toBe(true);
+      expect(child.comparisonTimeRange).toEqual(TimeComparisonOption.WEEK);
+      // Computed against the child's own interval.
+      expect(
+        get(child.getTimeControlStore()).comparisonInterval?.start.toISO(),
+      ).toEqual("2024-03-18T00:00:00.000Z");
+
+      parent.setShowComparison(false);
+      expect(child.showComparison).toBe(false);
+    });
+
+    it("keeps its comparison off when the range is inherited without one", async () => {
+      const parent = await createResolvedParent([
+        [ExploreStateURLParams.ComparisonTimeRange, TimeComparisonOption.WEEK],
+      ]);
+      expect(parent.showComparison).toBe(true);
+
+      const child = createChild(parent, "tr=inherit");
+      await waitFor(() => expect(child.timeRange).toEqual(DEFAULT_TIME_RANGE));
+      expect(child.showComparison).toBe(false);
+    });
+
+    it("follows the parent's zone only while the range is inherited", async () => {
+      const parent = await createResolvedParent([
+        [ExploreStateURLParams.TimeZone, "Asia/Kathmandu"],
+      ]);
+      const inheriting = createChild(parent, "tr=inherit&compare_tr=inherit");
+      const local = createChild(parent, `tr=${OTHER_TIME_RANGE}`);
+      await waitFor(() =>
+        expect(inheriting.timeRange).toEqual(DEFAULT_TIME_RANGE),
+      );
+      await waitFor(() => expect(local.timeRange).toEqual(OTHER_TIME_RANGE));
+
+      expect(inheriting.timeZone).toEqual("Asia/Kathmandu");
+      expect(local.timeZone).toEqual("UTC");
+    });
+
+    it("applies its own grain on an inherited range", async () => {
+      const parent = await createResolvedParent();
+      const withGrain = createChild(parent, "tr=inherit&grain=hour");
+      const withoutGrain = createChild(parent, "tr=inherit");
+      await waitFor(() =>
+        expect(withGrain.timeRange).toEqual(DEFAULT_TIME_RANGE),
+      );
+      await waitFor(() =>
+        expect(withoutGrain.timeRange).toEqual(DEFAULT_TIME_RANGE),
+      );
+
+      expect(parent.timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_DAY);
+      expect(withGrain.timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_HOUR);
+      expect(withoutGrain.timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_DAY);
+    });
+
+    it("resolves against the parent's execution time", async () => {
+      const parent = await createResolvedParent();
+      const child = createChild(parent, "tr=inherit&compare_tr=inherit");
+      await waitFor(() =>
+        expectInterval(child, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+      );
+
+      // The mock ignores the execution time, so change what it serves to tell the requests apart.
+      const asOfExecutionTime = {
+        start: "2024-02-01T00:00:00.000Z",
+        end: "2024-02-08T00:00:00.000Z",
+      };
+      mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, {
+        ...RESOLVED_RILL_TIMES,
+        [DEFAULT_TIME_RANGE]: asOfExecutionTime,
+      });
+      parent.setExecutionTime("2024-02-08T00:00:00.000Z");
+
+      await waitFor(() => expectInterval(child, asOfExecutionTime));
+    });
+
+    it("writes inherit back for the parts it follows", async () => {
+      const parent = await createResolvedParent();
+      const child = createChild(parent, "tr=inherit&compare_tr=inherit");
+      await waitFor(() => expect(child.timeRange).toEqual(DEFAULT_TIME_RANGE));
+      const changes: string[] = [];
+      child.storeSync.on("internal-change", (params) =>
+        changes.push(params.toString()),
+      );
+
+      child.onSelectRange(OTHER_TIME_RANGE);
+
+      await waitFor(() =>
+        expect(changes).toEqual([
+          new URLSearchParams([
+            [ExploreStateURLParams.TimeRange, OTHER_TIME_RANGE],
+            [
+              ExploreStateURLParams.ComparisonTimeRange,
+              INHERIT_TIME_RANGE_ALIAS,
+            ],
+          ]).toString(),
+        ]),
+      );
+    });
   });
 });

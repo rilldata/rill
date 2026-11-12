@@ -11,18 +11,13 @@
    * can drive filters through the UI and assert on the explore state and the url they produce.
    */
   export let exploreName: string;
-  export let hasTimeSeries: boolean = false;
 </script>
 
 <!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
 <Tooltip.Provider>
   <StateManagersProvider metricsViewName={AD_BIDS_METRICS_NAME} {exploreName}>
     <DashboardStateManager {exploreName}>
-      <Filters
-        timeRanges={[]}
-        metricsViewName={AD_BIDS_METRICS_NAME}
-        {hasTimeSeries}
-      />
+      <Filters />
       <!-- Explore renders the grain selector in the chart toolbar rather than the filter bar. -->
       <ExploreTimeGrainSelectorTest />
       <div>Dashboard loaded!</div>
