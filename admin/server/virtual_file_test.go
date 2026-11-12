@@ -38,6 +38,20 @@ func TestEmbedPersonalFiles(t *testing.T) {
 	res = owner.Run(t, "project", "deploy", "--interactive=false", "--org=personal-test", "--project=personal-project", "--path="+projectDir)
 	require.Equal(t, 0, res.ExitCode, res.Output)
 
+	// Reconcile the deployment so it has a runtime host and instance (background jobs don't run in the test fixture).
+	// Personal files are parsed by the runtime, so they can't be created or edited without one.
+	depl := adm.TriggerDeployment(t, "personal-test", "personal-project")
+	require.NotEmpty(t, depl.RuntimeInstanceID)
+
+	// awaitRuntime waits until the runtime has finished parsing and reconciling the project.
+	// Creating or editing a personal file waits for its canvas to change in the runtime.
+	// If a parser run that is already in flight picks up the write first, that change is never observed and the call times out.
+	// So we wait after the calls that trigger the parser without awaiting it: the initial deployment and deletes.
+	awaitRuntime := func(t *testing.T) {
+		require.NoError(t, adm.Runtime.WaitUntilIdle(t.Context(), depl.RuntimeInstanceID, false))
+	}
+	awaitRuntime(t)
+
 	// embedClient calls GetIFrame with navigation enabled and returns a client using the iframe's admin token.
 	embedClient := func(t *testing.T, externalUserID string) *client.Client {
 		resp, err := u1Client.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
@@ -77,6 +91,9 @@ func TestEmbedPersonalFiles(t *testing.T) {
 
 	del := func(t *testing.T, c *client.Client, name string) error {
 		_, err := c.DeletePersonalFile(t.Context(), &adminv1.DeletePersonalFileRequest{Org: "personal-test", Project: "personal-project", Name: name})
+		if err == nil {
+			awaitRuntime(t)
+		}
 		return err
 	}
 
