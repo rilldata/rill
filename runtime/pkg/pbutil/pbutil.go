@@ -17,6 +17,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/clickhouseutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ToValue converts any value to a google.protobuf.Value. It's similar to
@@ -471,4 +472,23 @@ func ToSliceString(a any) []string {
 		s[i] = v.(string)
 	}
 	return s
+}
+
+// The range of times that a protobuf timestamp can represent.
+var (
+	minTimestamp = time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)
+	maxTimestamp = time.Date(9999, time.December, 31, 23, 59, 59, 999999999, time.UTC)
+)
+
+// ClampedTimestamp converts t to a protobuf timestamp, clamping it to the range that a protobuf timestamp can represent.
+// Times derived from data with placeholder dates such as 0001-01-01 or 9999-12-31 can fall outside that range,
+// for example a time bucket truncated in a time zone east of UTC or a relative range computed from such a date,
+// and marshaling such a timestamp would otherwise fail the whole response with "seconds out of range".
+func ClampedTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.Before(minTimestamp) {
+		t = minTimestamp
+	} else if t.After(maxTimestamp) {
+		t = maxTimestamp
+	}
+	return timestamppb.New(t)
 }
