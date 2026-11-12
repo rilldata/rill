@@ -221,6 +221,14 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	var items []*runtimev1.CanvasItem
 	runtime.CollectCanvasItems(rows, &items)
 
+	// Track the canvas's own inline components, which the access to the canvas covers.
+	inlineComponents := make(map[string]bool)
+	for _, item := range items {
+		if item.DefinedInCanvas {
+			inlineComponents[item.Component] = true
+		}
+	}
+
 	// Process each item
 	seenComponents := make(map[string]bool, len(items))
 	for _, item := range items {
@@ -252,6 +260,11 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		// Skip a component whose own `if` conditions hide it from these claims,
 		// such as an inline component of another canvas referenced by name.
 		if !visibility.ComponentMet(componentRes) {
+			continue
+		}
+
+		// Skip a component that belongs to another canvas, which is admin-managed (e.g. a personal canvas) and which these claims can't access.
+		if !inlineComponents[item.Component] && !runtime.CanAccessComponentCanvas(claims, componentRes) {
 			continue
 		}
 

@@ -5118,6 +5118,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   conditionExpression = "";
 
+  /**
+   * For components defined inline in an admin-managed canvas (such as a personal canvas), the canvas's annotations that determine who can access it.
+   * Only those who can access the canvas can access the component.
+   *
+   * @generated from field: map<string, string> canvas_annotations = 12;
+   */
+  canvasAnnotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5135,6 +5143,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "canvas_annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {

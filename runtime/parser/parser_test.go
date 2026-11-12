@@ -3089,6 +3089,67 @@ rows:
 	require.Equal(t, "", component("c1").ConditionExpression)
 }
 
+func TestCanvasAccessAnnotations(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+markdown:
+  content: "Shared"
+`,
+		// An admin-managed canvas, such as a personal canvas.
+		`personal/p1.yaml`: `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: u1
+  admin_shared: "false"
+  admin_nonce: "2026-01-01T00:00:00Z"
+  custom: value
+rows:
+- items:
+  - markdown:
+      content: "Private"
+  - component: c1
+- tabs:
+  - label: Details
+    rows:
+    - items:
+      - markdown:
+          content: "Private tab"
+`,
+		// A canvas that isn't admin-managed.
+		`canvases/d1.yaml`: `
+type: canvas
+annotations:
+  admin_owner_user_id: u1
+  custom: value
+rows:
+- items:
+  - markdown:
+      content: "Public"
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+
+	// The inline components of an admin-managed canvas inherit the annotations set by the admin service, except its nonce.
+	want := map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1", "admin_shared": "false"}
+	require.Equal(t, want, component("p1--component-0-0").CanvasAnnotations)
+	require.Equal(t, want, component("p1--component-g1-t0-0-0").CanvasAnnotations)
+	// Components defined in their own file can be shared by canvases, so they don't inherit a canvas's annotations.
+	require.Empty(t, component("c1").CanvasAnnotations)
+	// Nor do the inline components of a canvas that isn't admin-managed.
+	require.Empty(t, component("d1--component-0-0").CanvasAnnotations)
+}
+
 func TestCanvasConditionErrors(t *testing.T) {
 	ctx := context.Background()
 

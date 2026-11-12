@@ -142,6 +142,25 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		}
 	}
 
+	// Track the components that belong to another canvas, which is admin-managed (e.g. a personal canvas) and which the claims can't access.
+	// The canvas can name such a component, but that doesn't grant it: not even the editor gets it, only the path of the item.
+	// The canvas's own inline components are covered by the access to the canvas, which was checked above.
+	var items []*runtimev1.CanvasItem
+	CollectCanvasItems(spec.Rows, &items)
+	inlineComponents := make(map[string]bool)
+	for _, item := range items {
+		if item.DefinedInCanvas {
+			inlineComponents[item.Component] = true
+		}
+	}
+	privateComponents := make(map[string]bool)
+	for componentName, cmp := range components {
+		if !inlineComponents[componentName] && !CanAccessComponentCanvas(claims, cmp) {
+			forbiddenComponents[componentName] = true
+			privateComponents[componentName] = true
+		}
+	}
+
 	// Resolve each metrics view and its security once.
 	// Resolving security expands the claims' transitive access rules on every call, even when its result is cached.
 	type resolvedMetricsView struct {
@@ -175,7 +194,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	var unknownReferences bool
 	for componentName, cmp := range components {
 		// Viewers don't get the metrics views of components hidden from them.
-		if forbiddenComponents[componentName] && !includeHidden {
+		if forbiddenComponents[componentName] && (!includeHidden || privateComponents[componentName]) {
 			continue
 		}
 
@@ -270,8 +289,6 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	}
 
 	// Extract metrics views bound to component params by canvas items.
-	var items []*runtimev1.CanvasItem
-	CollectCanvasItems(spec.Rows, &items)
 	for _, item := range items {
 		cmp := components[item.Component]
 		if cmp == nil {
@@ -331,6 +348,10 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		}
 		_, hiddenPaths := canvas.PruneRows(spec.Rows, keep)
 		for name, cmp := range components {
+			if privateComponents[name] {
+				delete(components, name)
+				continue
+			}
 			components[name] = stripComponentCondition(cmp)
 		}
 		return &ResolveCanvasResult{

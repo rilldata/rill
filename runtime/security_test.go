@@ -843,6 +843,85 @@ func TestResolveEmbedCanvasSecurity(t *testing.T) {
 	}
 }
 
+func TestResolveComponentSecurity(t *testing.T) {
+	// component returns a component with the given canvas annotations on its spec and valid spec; nil omits the valid spec.
+	component := func(spec map[string]string, validSpec *map[string]string) *runtimev1.Resource {
+		state := &runtimev1.ComponentState{}
+		if validSpec != nil {
+			state.ValidSpec = &runtimev1.ComponentSpec{DefinedInCanvas: true, CanvasAnnotations: *validSpec}
+		}
+		return &runtimev1.Resource{
+			Meta: &runtimev1.ResourceMeta{
+				Name:           &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: "c1--component-0-0"},
+				StateUpdatedOn: timestamppb.Now(),
+			},
+			Resource: &runtimev1.Resource_Component{
+				Component: &runtimev1.Component{
+					Spec:  &runtimev1.ComponentSpec{DefinedInCanvas: true, CanvasAnnotations: spec},
+					State: state,
+				},
+			},
+		}
+	}
+	embedOwned := map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}
+	sharedEmbedOwned := map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner", "admin_shared": "true"}
+	userOwned := map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}
+	sharedUserOwned := map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1", "admin_shared": "true"}
+
+	embedOwner := &SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}}
+	otherEmbed := &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}}
+	userOwner := &SecurityClaims{UserID: "u1", UserAttributes: map[string]any{"id": "u1"}}
+	otherUser := &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2"}}
+	admin := &SecurityClaims{UserID: "u3", UserAttributes: map[string]any{"id": "u3", "admin": true}}
+
+	tests := []struct {
+		name      string
+		component *runtimev1.Resource
+		claims    *SecurityClaims
+		want      bool
+	}{
+		{"anyone can access a component of an ordinary canvas", component(nil, nil), otherUser, true},
+		{"anonymous user can access a component of an ordinary canvas", component(nil, nil), &SecurityClaims{}, true},
+		{"embed owner can access a component of their canvas", component(embedOwned, &embedOwned), embedOwner, true},
+		{"other embed user can't access a component of an embed canvas", component(embedOwned, &embedOwned), otherEmbed, false},
+		{"embed user without an ID can't access a component of an embed canvas", component(embedOwned, &embedOwned), &SecurityClaims{UserAttributes: map[string]any{"embed": true}}, false},
+		{"matching id attribute without matching subject can't access a component of an embed canvas", component(embedOwned, &embedOwned), &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"id": "ext_owner", "embed": true}}, false},
+		{"project member can't access a component of an embed canvas", component(embedOwned, &embedOwned), otherUser, false},
+		{"shared annotation doesn't grant access to a component of an embed canvas", component(sharedEmbedOwned, &sharedEmbedOwned), otherUser, false},
+		{"admin can access a component of an embed canvas", component(embedOwned, &embedOwned), admin, true},
+		{"owner can access a component of their canvas", component(userOwned, &userOwned), userOwner, true},
+		{"other user can't access a component of a user canvas", component(userOwned, &userOwned), otherUser, false},
+		{"embed user can't access a component of a user canvas", component(userOwned, &userOwned), otherEmbed, false},
+		{"anonymous user can't access a component of a user canvas", component(userOwned, &userOwned), &SecurityClaims{}, false},
+		{"admin can access a component of a user canvas", component(userOwned, &userOwned), admin, true},
+		{"other user can access a component of a shared user canvas", component(sharedUserOwned, &sharedUserOwned), otherUser, true},
+		{"component without a valid spec is restricted by its spec", component(userOwned, nil), otherUser, false},
+		{"component whose valid spec predates the annotations is restricted by its spec", component(userOwned, &map[string]string{}), otherUser, false},
+		{"component that was just shared stays restricted until its valid spec is shared", component(sharedUserOwned, &userOwned), otherUser, false},
+		{"component that was just unshared is restricted by its spec", component(userOwned, &sharedUserOwned), otherUser, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, tt.claims, tt.component)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got.CanAccess())
+			require.Equal(t, tt.want, CanAccessComponentCanvas(tt.claims, tt.component))
+		})
+	}
+
+	// Claims that are explicitly granted the component can access it without owning its canvas, like claims that are granted the canvas.
+	granted := &SecurityClaims{AdditionalRules: []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+		ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindComponent, Name: "c1--component-0-0"}},
+		Allow:              true,
+		Exclusive:          true,
+	}}}}}
+	p := newSecurityEngine(10, zap.NewNop(), nil)
+	got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, granted, component(embedOwned, &embedOwned))
+	require.NoError(t, err)
+	require.True(t, got.CanAccess())
+}
+
 func TestResolveAPI(t *testing.T) {
 	tests := []struct {
 		name       string

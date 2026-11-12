@@ -685,6 +685,9 @@ export interface V1ComponentSpec {
   /** For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
 Only viewers for whom it evaluates to true can access the component. */
   conditionExpression?: string;
+  /** For components defined inline in an admin-managed canvas (such as a personal canvas), the canvas's annotations that determine who can access it.
+Only those who can access the canvas can access the component. */
+  canvasAnnotations?: { [key: string]: string };
 }
 
 /** ComponentParam declares a typed, validated parameter of a component. */

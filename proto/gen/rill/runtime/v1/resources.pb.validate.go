@@ -10263,6 +10263,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for ConditionExpression
 
+	// no validation rules for CanvasAnnotations
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}

@@ -257,6 +257,19 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Annotations = tmp.Annotations
 	r.CanvasSpec.AiPrompts = aiPrompts
 
+	// The inline components of an admin-managed canvas (such as a personal canvas) inherit the annotations that determine who can access it,
+	// so they can't be read by those who can't access the canvas.
+	// These are the annotations set by the admin service; its nonce is left out, since it changes on every write and would reconcile every component.
+	var accessAnnotations map[string]string
+	if managed, _ := strconv.ParseBool(tmp.Annotations["admin_managed"]); managed {
+		accessAnnotations = make(map[string]string)
+		for k, v := range tmp.Annotations {
+			if strings.HasPrefix(k, "admin_") && k != "admin_nonce" {
+				accessAnnotations[k] = v
+			}
+		}
+	}
+
 	// Track inline components
 	for _, def := range inlineComponentDefs {
 		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, nil, nil, def.refs...)
@@ -266,6 +279,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 			// So let's panic.
 			panic(err)
 		}
+		def.spec.CanvasAnnotations = maps.Clone(accessAnnotations)
 		r.ComponentSpec = def.spec
 	}
 

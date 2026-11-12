@@ -485,9 +485,12 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		} else {
 			rules = append(rules, spec.SecurityRules...)
 		}
-	// Everyone can access a component.
+	// Everyone can access a component, unless it's defined inline in an admin-managed canvas (e.g. a personal canvas),
+	// in which case only the canvas's owner and admins can access it, like the canvas itself.
 	case ResourceKindComponent:
-		rules = append(rules, allowAccessRule)
+		if CanAccessComponentCanvas(claims, r) {
+			rules = append(rules, allowAccessRule)
+		}
 	// Determine access using the canvas' security rules. If there are none, then everyone can access it,
 	// unless the canvas is admin-managed (e.g. a personal canvas) in which case only the owner and admins can access it.
 	case ResourceKindCanvas:
@@ -752,6 +755,25 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 	}
 
 	return nil
+}
+
+// CanAccessComponentCanvas reports whether the claims meet the ownership rule that a component inherits from its canvas.
+// The inline components of an admin-managed canvas (e.g. a personal canvas) carry the annotations that determine who can access the canvas.
+// Like the canvas, they're only accessible to its owner and admins, or to everyone if the owner has shared the canvas.
+// Every other component meets the rule.
+// Both the spec and the valid spec are checked, since a caller gets the contents of both, and they can stem from different versions of the canvas.
+func CanAccessComponentCanvas(claims *SecurityClaims, res *runtimev1.Resource) bool {
+	if claims.SkipChecks || claims.Admin() {
+		return true
+	}
+	c := res.GetComponent()
+	for _, spec := range []*runtimev1.ComponentSpec{c.GetSpec(), c.GetState().GetValidSpec()} {
+		annotations := spec.GetCanvasAnnotations()
+		if isAdminManagedAnnotations(annotations) && !adminOwnerCanAccess(claims, annotations, false) {
+			return false
+		}
+	}
+	return true
 }
 
 func adminOwnerCanAccess(claims *SecurityClaims, annotations map[string]string, skipShared bool) bool {

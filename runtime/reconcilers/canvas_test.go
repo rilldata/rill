@@ -415,6 +415,66 @@ rows:
 	require.True(t, sec.CanAccess())
 }
 
+func TestCanvasComponentAccessAnnotationsAfterReparse(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// An admin-managed canvas, such as a personal canvas.
+			"personal/p1.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: ext_owner
+rows:
+- items:
+  - markdown:
+      content: "Private"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+	name := &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: "p1--component-0-0"}
+	want := map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}
+	canAccess := func(userID string) bool {
+		cmp, err := ctrl.Get(ctx, name, false)
+		require.NoError(t, err)
+		sec, err := rt.ResolveSecurity(ctx, id, &runtime.SecurityClaims{UserID: userID, UserAttributes: map[string]any{"embed": true}}, cmp)
+		require.NoError(t, err)
+		return sec.CanAccess()
+	}
+
+	// The inline component inherits the canvas's access annotations, so only the canvas's owner can access it.
+	cmp, err := ctrl.Get(ctx, name, true)
+	require.NoError(t, err)
+	require.Equal(t, want, cmp.GetComponent().Spec.CanvasAnnotations)
+	require.Equal(t, want, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
+	require.True(t, canAccess("ext_owner"))
+	require.False(t, canAccess("ext_other"))
+
+	// Remove the annotations from the component, like a component that was parsed by a version that didn't add them.
+	cmp.GetComponent().Spec.CanvasAnnotations = nil
+	require.NoError(t, ctrl.UpdateSpec(ctx, name, cmp))
+	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+	cmp, err = ctrl.Get(ctx, name, false)
+	require.NoError(t, err)
+	require.Empty(t, cmp.GetComponent().Spec.CanvasAnnotations)
+	require.Empty(t, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
+
+	// Parsing the project again, which also happens when the runtime restarts, adds them without a change to the canvas's file.
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	cmp, err = ctrl.Get(ctx, name, false)
+	require.NoError(t, err)
+	require.Equal(t, want, cmp.GetComponent().Spec.CanvasAnnotations)
+	require.Equal(t, want, cmp.GetComponent().State.ValidSpec.CanvasAnnotations)
+	require.True(t, canAccess("ext_owner"))
+	require.False(t, canAccess("ext_other"))
+}
+
 func TestCanvasItemParamBindings(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{"rill.yaml": ""},

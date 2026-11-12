@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -17,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -1931,4 +1935,402 @@ rows:
 	res = resolve(false, []runtime.Permission{runtime.ReadAPI, runtime.EditRepo}, true)
 	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows[0].Items, 3)
 	require.Equal(t, []string{"rows.0.items.1", "rows.0.items.2"}, res.HiddenPaths)
+}
+
+// watchStream is a fake WatchResources stream that records the events sent to it.
+type watchStream struct {
+	grpc.ServerStream
+	ctx    context.Context
+	mu     sync.Mutex
+	events []*runtimev1.WatchResourcesResponse
+}
+
+func (s *watchStream) Context() context.Context {
+	return s.ctx
+}
+
+func (s *watchStream) Send(e *runtimev1.WatchResourcesResponse) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.events = append(s.events, e)
+	return nil
+}
+
+// names returns the names of the resources of the given kind that were sent to the stream, with duplicates.
+func (s *watchStream) names(kind string) []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var names []string
+	for _, e := range s.events {
+		if e.Resource != nil && e.Resource.Meta.Name.Kind == kind {
+			names = append(names, e.Resource.Meta.Name.Name)
+		}
+	}
+	return names
+}
+
+func TestPersonalCanvasComponentAccess(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS region, 10 AS revenue`,
+			"orders.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: region
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+`,
+			// An ordinary project canvas with an inline component and a component defined in its own file.
+			"team.yaml": `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Team notes"
+  - component: shared_note
+`,
+			"shared_note.yaml": `
+type: component
+markdown:
+  content: "Shared note"
+`,
+			// A personal canvas owned by a project member.
+			"personal/member-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: u_owner
+rows:
+- items:
+  - markdown:
+      content: "Member's private note"
+  - kpi:
+      metrics_view: orders
+      measure: total_revenue
+`,
+			// A personal canvas that its owner has shared with the project.
+			"personal/shared-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: u_owner
+  admin_shared: "true"
+rows:
+- items:
+  - markdown:
+      content: "Member's shared note"
+`,
+			// A personal canvas owned by an embed user.
+			"personal/embed-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: ext_a
+rows:
+- items:
+  - markdown:
+      content: "Embed user's private note"
+- tabs:
+  - label: Details
+    rows:
+    - items:
+      - markdown:
+          content: "Embed user's private tab"
+`,
+			// A personal canvas owned by another embed user, which names the first embed user's component.
+			"personal/other-canvas.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: ext_b
+rows:
+- items:
+  - component: embed-canvas--component-0-0
+  - markdown:
+      content: "Other embed user's note"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 16, 0, 0)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+
+	// The components that everyone can access, and the components of each owner-only personal canvas.
+	openComponents := []string{"team--component-0-0", "shared_note", "shared-canvas--component-0-0"}
+	personalComponents := map[string][]string{
+		"member-canvas": {"member-canvas--component-0-0", "member-canvas--component-0-1"},
+		"embed-canvas":  {"embed-canvas--component-0-0", "embed-canvas--component-g1-t0-0-0"},
+		"other-canvas":  {"other-canvas--component-0-1"},
+	}
+	allComponents := slices.Clone(openComponents)
+	for _, names := range personalComponents {
+		allComponents = append(allComponents, names...)
+	}
+
+	claims := func(userID string, attrs map[string]any, rules ...*runtimev1.SecurityRule) *runtime.SecurityClaims {
+		return &runtime.SecurityClaims{
+			UserID:          userID,
+			UserAttributes:  attrs,
+			Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadAPI},
+			AdditionalRules: rules,
+		}
+	}
+	memberOwner := claims("u_owner", map[string]any{"id": "u_owner", "admin": false})
+	embedOwner := claims("ext_a", map[string]any{"embed": true})
+	otherEmbed := claims("ext_b", map[string]any{"embed": true})
+	admin := claims("u_admin", map[string]any{"id": "u_admin", "admin": true})
+	callers := []struct {
+		name   string
+		claims *runtime.SecurityClaims
+		// canvases are the owner-only personal canvases the caller can access.
+		canvases []string
+	}{
+		{"member owner", memberOwner, []string{"member-canvas"}},
+		{"embed owner", embedOwner, []string{"embed-canvas"}},
+		{"other embed user", otherEmbed, []string{"other-canvas"}},
+		{"embed without an external ID", claims("", map[string]any{"embed": true}), nil},
+		{"viewer", claims("u_viewer", map[string]any{"id": "u_viewer", "admin": false}), nil},
+		{"admin", admin, []string{"member-canvas", "embed-canvas", "other-canvas"}},
+	}
+
+	for _, c := range callers {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := auth.WithClaims(t.Context(), c.claims)
+			want := slices.Clone(openComponents)
+			for _, name := range c.canvases {
+				want = append(want, personalComponents[name]...)
+			}
+
+			// Listing only returns the components the caller can access.
+			list, err := srv.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID, Kind: runtime.ResourceKindComponent})
+			require.NoError(t, err)
+			var listed []string
+			for _, r := range list.Resources {
+				listed = append(listed, r.Meta.Name.Name)
+			}
+			require.ElementsMatch(t, want, listed)
+
+			// Watching replays the same components.
+			// The replay has finished once the stream gets a second event for a resource, which is triggered until it arrives.
+			watchCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			stream := &watchStream{ctx: watchCtx}
+			watchErr := make(chan error, 1)
+			go func() {
+				watchErr <- srv.WatchResources(&runtimev1.WatchResourcesRequest{InstanceId: instanceID, Replay: true}, stream)
+			}()
+			sentinel := &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: "shared_note"}
+			require.Eventually(t, func() bool {
+				if err := ctrl.Reconcile(t.Context(), sentinel); err != nil {
+					return false
+				}
+				var n int
+				for _, name := range stream.names(runtime.ResourceKindComponent) {
+					if name == sentinel.Name {
+						n++
+					}
+				}
+				return n >= 2
+			}, 10*time.Second, 20*time.Millisecond)
+			cancel()
+			require.ErrorIs(t, <-watchErr, context.Canceled)
+			watched := stream.names(runtime.ResourceKindComponent)
+			slices.Sort(watched)
+			require.ElementsMatch(t, want, slices.Compact(watched))
+
+			// Reading or resolving a component directly is only allowed for the components the caller can access.
+			for _, name := range allComponents {
+				allowed := slices.Contains(want, name)
+				resourceName := &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}
+
+				_, err := srv.GetResource(ctx, &runtimev1.GetResourceRequest{InstanceId: instanceID, Name: resourceName})
+				if allowed {
+					require.NoError(t, err, name)
+				} else {
+					require.Equal(t, codes.PermissionDenied, status.Code(err), name)
+				}
+
+				_, err = srv.ResolveComponent(ctx, &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: name})
+				if allowed {
+					require.NoError(t, err, name)
+				} else {
+					require.Equal(t, codes.PermissionDenied, status.Code(err), name)
+				}
+
+				cmp, err := ctrl.Get(ctx, resourceName, false)
+				require.NoError(t, err)
+				_, access, err := rt.ApplySecurityPolicy(ctx, instanceID, c.claims, cmp)
+				require.NoError(t, err)
+				require.Equal(t, allowed, access, name)
+			}
+
+			// Resolving a personal canvas is only allowed for those who can access it, and returns its components.
+			for name, components := range personalComponents {
+				res, err := srv.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: name})
+				if !slices.Contains(c.canvases, name) {
+					require.Error(t, err, name)
+					continue
+				}
+				require.NoError(t, err, name)
+				for _, component := range components {
+					require.Contains(t, res.ResolvedComponents, component)
+				}
+			}
+		})
+	}
+
+	itemComponents := func(res *runtimev1.ResolveCanvasResponse) []string {
+		var names []string
+		for _, row := range res.Canvas.GetCanvas().State.ValidSpec.Rows {
+			for _, item := range row.Items {
+				names = append(names, item.Component)
+			}
+		}
+		return names
+	}
+
+	// A personal canvas that names a component of someone else's personal canvas doesn't expose it to its owner.
+	otherCtx := auth.WithClaims(t.Context(), otherEmbed)
+	res, err := srv.ResolveCanvas(otherCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "other-canvas"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"other-canvas--component-0-1"}, itemComponents(res))
+	require.Len(t, res.ResolvedComponents, 1)
+	require.Contains(t, res.ResolvedComponents, "other-canvas--component-0-1")
+
+	// The same holds for the canvas editor, which gets the path of the item it can't show instead.
+	res, err = srv.ResolveCanvas(otherCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "other-canvas", IncludeHidden: true})
+	require.NoError(t, err)
+	require.Len(t, res.ResolvedComponents, 1)
+	require.Contains(t, res.ResolvedComponents, "other-canvas--component-0-1")
+	require.Equal(t, []string{"rows.0.items.0"}, res.HiddenPaths)
+
+	// An admin can access both canvases, so they get both components.
+	res, err = srv.ResolveCanvas(auth.WithClaims(t.Context(), admin), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "other-canvas"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"embed-canvas--component-0-0", "other-canvas--component-0-1"}, itemComponents(res))
+	require.Len(t, res.ResolvedComponents, 2)
+
+	// Claims that are limited to a canvas get that canvas's components, but not those of another personal canvas, even if the canvas names one.
+	access := func(c *runtime.SecurityClaims, component string) bool {
+		cmp, err := ctrl.Get(t.Context(), &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: component}, false)
+		require.NoError(t, err)
+		_, access, err := rt.ApplySecurityPolicy(t.Context(), instanceID, c, cmp)
+		require.NoError(t, err)
+		return access
+	}
+	limitedTo := func(canvas string) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+			Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas},
+		}}}
+	}
+	link := claims("ext_b", map[string]any{"embed": true}, limitedTo("other-canvas"))
+	require.True(t, access(link, "other-canvas--component-0-1"))
+	require.False(t, access(link, "embed-canvas--component-0-0"))
+	require.False(t, access(link, "member-canvas--component-0-0"))
+	link = claims("", map[string]any{}, limitedTo("embed-canvas"))
+	require.True(t, access(link, "embed-canvas--component-0-0"))
+	require.True(t, access(link, "embed-canvas--component-g1-t0-0-0"))
+	require.False(t, access(link, "member-canvas--component-0-0"))
+	link = claims("u_viewer", map[string]any{"id": "u_viewer", "admin": false}, limitedTo("team"))
+	require.True(t, access(link, "team--component-0-0"))
+	require.True(t, access(link, "shared_note"))
+	require.False(t, access(link, "member-canvas--component-0-0"))
+}
+
+func TestProjectCanvasComponentAccess(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// A canvas without security rules.
+			"open.yaml": `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Open note"
+  - component: note
+- tabs:
+  - label: Details
+    rows:
+    - items:
+      - markdown:
+          content: "Open tab"
+`,
+			// A canvas that only admins can access.
+			"restricted.yaml": `
+type: canvas
+security:
+  access: "{{ .user.admin }}"
+rows:
+- items:
+  - markdown:
+      content: "Restricted note"
+`,
+			// A component defined in its own file.
+			"note.yaml": `
+type: component
+markdown:
+  content: "Note"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	viewer := &runtime.SecurityClaims{
+		UserID:         "u_viewer",
+		UserAttributes: map[string]any{"id": "u_viewer", "admin": false},
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadAPI},
+	}
+	ctx := auth.WithClaims(t.Context(), viewer)
+
+	// A viewer can list and read every component, including those of a canvas whose security rules deny them the canvas.
+	all := []string{"open--component-0-0", "open--component-g1-t0-0-0", "restricted--component-0-0", "note"}
+	list, err := srv.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID, Kind: runtime.ResourceKindComponent})
+	require.NoError(t, err)
+	var listed []string
+	for _, r := range list.Resources {
+		listed = append(listed, r.Meta.Name.Name)
+	}
+	require.ElementsMatch(t, all, listed)
+	for _, name := range all {
+		_, err := srv.GetResource(ctx, &runtimev1.GetResourceRequest{InstanceId: instanceID, Name: &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}})
+		require.NoError(t, err, name)
+		_, err = srv.ResolveComponent(ctx, &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: name})
+		require.NoError(t, err, name)
+	}
+	_, err = srv.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "restricted"})
+	require.Error(t, err)
+	res, err := srv.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "open"})
+	require.NoError(t, err)
+	require.Len(t, res.ResolvedComponents, 3)
+
+	// Claims that are limited to the canvas reach its components, and nothing else.
+	limited := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"embed": true},
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadAPI},
+		AdditionalRules: []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+			Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "open"},
+		}}}},
+	}
+	ctx = auth.WithClaims(t.Context(), limited)
+	list, err = srv.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID, Kind: runtime.ResourceKindComponent})
+	require.NoError(t, err)
+	listed = nil
+	for _, r := range list.Resources {
+		listed = append(listed, r.Meta.Name.Name)
+	}
+	require.ElementsMatch(t, []string{"open--component-0-0", "open--component-g1-t0-0-0", "note"}, listed)
+	res, err = srv.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "open"})
+	require.NoError(t, err)
+	require.Len(t, res.ResolvedComponents, 3)
 }
