@@ -4,6 +4,7 @@ import {
   isMap,
   isScalar,
   isSeq,
+  visit,
   type Document,
   type YAMLMap,
 } from "yaml";
@@ -164,7 +165,8 @@ export function addBlockAt(
 
 /**
  * Set the `name` of the block at the top-level index. Returns true if it was set. An empty
- * name is ignored, since every block the editor writes has a name.
+ * name is ignored, since every block the editor writes has a name, and so is a name another
+ * block has, since the parser rejects a canvas whose tab groups and containers share one.
  */
 export function renameBlock(
   doc: Document,
@@ -173,6 +175,8 @@ export function renameBlock(
 ): boolean {
   const trimmed = name.trim();
   if (!trimmed || !isBlockRow(doc, index)) return false;
+  const holder = blockIndexOf(doc, trimmed);
+  if (holder !== -1 && holder !== index) return false;
   setKeyBeforeContent(doc, ["rows", index], "name", trimmed);
   return true;
 }
@@ -389,10 +393,11 @@ export function unwrapRows(
   const unwrapped = isSeq(inner) ? inner.items : [];
 
   const conditions = ancestorConditions(doc, rowsPath);
-  for (const row of unwrapped) {
-    if (!isMap(row)) continue;
-    const condition = combineConditions(...conditions, row.get("if"));
-    if (condition !== undefined) {
+  if (combineConditions(...conditions) !== undefined) {
+    for (let i = 0; i < unwrapped.length; i++) {
+      const row = ownMapAt(doc, unwrapped, i);
+      if (!row) continue;
+      const condition = combineConditions(...conditions, row.get("if"));
       setInMapBeforeContent(doc, row, "if", condition);
     }
   }
@@ -447,7 +452,7 @@ export function moveItemAcrossContainers(
   if (!isMap(sourceRow)) return false;
   const sourceItems = sourceRow.get("items");
   if (!isSeq(sourceItems)) return false;
-  const itemNode = sourceItems.items[source.col];
+  let itemNode = sourceItems.items[source.col];
   if (itemNode === undefined) return false;
 
   // Decide the destination shape before mutating, so a full row falls back to a new row.
@@ -472,11 +477,12 @@ export function moveItemAcrossContainers(
     const text = conditionText(condition);
     return text !== "" && !destConditions.includes(text);
   });
-  if (carried.length > 0 && isMap(itemNode)) {
-    const condition = combineConditions(...carried, itemNode.get("if"));
-    if (condition !== undefined) {
-      setInMapBeforeContent(doc, itemNode, "if", condition);
-    }
+  const item =
+    carried.length > 0 && ownMapAt(doc, sourceItems.items, source.col);
+  if (item) {
+    itemNode = item;
+    const condition = combineConditions(...carried, item.get("if"));
+    setInMapBeforeContent(doc, item, "if", condition);
   }
 
   // Remove from the source (and drop the row if it is now empty).
@@ -498,6 +504,51 @@ export function moveItemAcrossContainers(
   }
 
   return true;
+}
+
+/**
+ * The map at the index of a list, made the list's own so that a condition written into it
+ * reaches nothing else: an alias is replaced with a copy of the map it stands for, and the
+ * aliases of an anchored map are replaced with copies of it. Writing into a shared map would
+ * hide its other copies too, and skipping an alias would show its content to viewers it
+ * should be hidden from. Undefined if the entry is not a map.
+ */
+function ownMapAt(
+  doc: Document,
+  list: unknown[],
+  index: number,
+): YAMLMap | undefined {
+  const entry = list[index];
+  if (isAlias(entry)) {
+    const source = entry.resolve(doc);
+    if (!isMap(source)) return undefined;
+    const copy = copyWithoutAnchors(source);
+    list[index] = copy;
+    return copy;
+  }
+  if (!isMap(entry)) return undefined;
+  if (entry.anchor !== undefined) {
+    visit(doc, {
+      Alias: (_, alias) =>
+        alias.resolve(doc) === entry ? copyWithoutAnchors(entry) : undefined,
+    });
+    entry.anchor = undefined;
+  }
+  return entry;
+}
+
+/** A deep copy of the map with no anchors, which stay on the original alone. */
+function copyWithoutAnchors(map: YAMLMap): YAMLMap {
+  const copy = map.clone() as YAMLMap;
+  visit(copy, {
+    Collection: (_, node) => {
+      node.anchor = undefined;
+    },
+    Scalar: (_, node) => {
+      node.anchor = undefined;
+    },
+  });
+  return copy;
 }
 
 /**

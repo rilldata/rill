@@ -414,6 +414,7 @@
   "canvas_block_name_hint_container": "Stable identifier of the container in the dashboard's YAML",
   "canvas_block_name_hint_tab_group": "Stable identifier used as the group's deep-link URL key",
   "canvas_block_name_tab_group": "Tab group name",
+  "canvas_block_name_taken": "Another tab group or container is already named \"{name}\".",
   "canvas_blues": "Blues",
   "canvas_breakdown_by_label": "Breakdown by",
   "canvas_cancel": "Cancel",

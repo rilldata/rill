@@ -7,7 +7,6 @@
   import EditableBlockRegion, {
     type BlockBuilderProps,
   } from "./EditableBlockRegion.svelte";
-  import { containerRowsPath } from "./layout-util";
   import { isGeneratedBlockName } from "./stores/block-edit";
   import type { CanvasEntity } from "./stores/canvas-entity";
   import type { RowsBlock } from "./stores/layout-blocks";
@@ -65,7 +64,7 @@
   {...builder}
   variant="dashed"
   grid={container.grid}
-  target={{ rowsPath: containerRowsPath(blockIndex) }}
+  target={{ rowsPath: container.rowsPath }}
   idPrefix={`c${blockIndex}-`}
   zoneScope={`container:${container.name}`}
   rowKey={container.name}
