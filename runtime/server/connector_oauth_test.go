@@ -55,13 +55,6 @@ func TestConnectorOAuthCaller(t *testing.T) {
 			wantTok:  &drivers.OAuthToken{UserID: "viewed", AccessToken: "t", ExpiresOn: fakeOAuthExpiresOn},
 		},
 		{
-			// Admin rejects subjects that are not Rill users, such as service accounts and external embed users.
-			name:     "not a rill user",
-			claims:   &runtime.SecurityClaims{UserID: "ext_abc"},
-			adminErr: drivers.ErrOAuthUserRequired,
-			wantErr:  drivers.ErrOAuthUserRequired,
-		},
-		{
 			name:     "no user",
 			claims:   &runtime.SecurityClaims{SkipChecks: true},
 			adminTok: "t",
@@ -215,8 +208,8 @@ func TestConnectorOAuthTokenCache(t *testing.T) {
 		require.Equal(t, 1, admin.callCount())
 	})
 
-	t.Run("probe rejected as not a user is cached", func(t *testing.T) {
-		admin := &fakeOAuthAdmin{err: drivers.ErrOAuthUserRequired}
+	t.Run("probe rejected as invalid is cached", func(t *testing.T) {
+		admin := &fakeOAuthAdmin{err: status.Error(codes.InvalidArgument, "invalid user_id")}
 		c := newFakeOAuthCaller(admin)
 		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{})
 		for range 2 {
