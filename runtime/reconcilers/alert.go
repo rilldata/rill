@@ -869,11 +869,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				break
 			}
 
-			if failRows == nil {
-				// Failed checks come with their rows, but fall back to the row stored in the execution just in case.
-				failRows = newAlertFailRows(nil, []map[string]any{current.Result.FailRow.AsMap()}, 1)
-			}
-
 			msg = &drivers.AlertStatus{
 				DisplayName:       a.Spec.DisplayName,
 				ExecutionTime:     executionTime,
@@ -1193,8 +1188,8 @@ type alertFailRows struct {
 }
 
 // newAlertFailRows formats rows that matched an alert's criteria for inclusion in notifications.
-// It orders the columns like the schema's fields,
-// or by name if the schema doesn't describe the rows (for example for legacy comparison queries, which have no schema).
+// It orders the columns like the schema's fields if the schema has a field for every key of the first row,
+// and otherwise by name; a row that lacks a column shows it as null.
 // If there are more than limit rows, it keeps the first limit rows and marks the result as truncated.
 func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit int) *alertFailRows {
 	res := &alertFailRows{}
@@ -1206,14 +1201,22 @@ func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit
 		return res
 	}
 
+	fieldNames := make(map[string]bool, len(schema.GetFields()))
 	for _, f := range schema.GetFields() {
-		if _, ok := rows[0][f.Name]; !ok {
+		fieldNames[f.Name] = true
+	}
+	describesRows := len(fieldNames) > 0
+	for k := range rows[0] {
+		if !fieldNames[k] {
+			describesRows = false
 			break
 		}
-		res.columns = append(res.columns, f.Name)
 	}
-	if len(res.columns) != len(rows[0]) {
-		res.columns = make([]string, 0, len(rows[0]))
+	if describesRows {
+		for _, f := range schema.GetFields() {
+			res.columns = append(res.columns, f.Name)
+		}
+	} else {
 		for k := range rows[0] {
 			res.columns = append(res.columns, k)
 		}

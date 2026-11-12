@@ -134,7 +134,8 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 			for i, c := range s.FailColumns {
 				data.FailFields = append(data.FailFields, AlertFailField{Name: slackText(c), Value: slackText(s.FailRows[0][i])})
 			}
-		} else {
+		} else if len(s.FailRows) > 1 {
+			data.FailRowsLeadColumn = slackText(s.FailColumns[0])
 			for _, row := range s.FailRows {
 				data.FailRowLines = append(data.FailRowLines, slackFailRowLine(s.FailColumns, row))
 			}
@@ -294,6 +295,7 @@ type AlertFailData struct {
 	ExecutionTimeString string           // Will be inferred from ExecutionTime
 	FailFields          []AlertFailField // The fields of the row that matched the alert criteria, if only one row is listed
 	FailRowLines        []string         // One line per row that matched the alert criteria, if several rows are listed
+	FailRowsLeadColumn  string           // The column whose value leads each of FailRowLines
 	FailRowsTruncated   bool             // True if more rows matched the alert criteria than are listed
 	OpenLink            htemplate.URL
 	EditLink            htemplate.URL
@@ -306,6 +308,7 @@ type AlertFailField struct {
 
 // slackFailRowLine formats a row that matched an alert's criteria as a single line led by its first value,
 // which is the dimension value for alerts split by a dimension.
+// The message names the first column once, above the lines.
 // For example: "*US*: Orders 12.3k, Orders (Δ%) -8%".
 func slackFailRowLine(columns, row []string) string {
 	var b strings.Builder

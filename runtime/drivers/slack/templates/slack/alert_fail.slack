@@ -8,7 +8,7 @@ The first row that matched your alert criteria is:
 • *{{ .Name }}*: {{ .Value }}
 {{- end }}
 {{- else -}}
-{{ if .FailRowsTruncated }}The first {{ len .FailRowLines }} rows{{ else }}The rows{{ end }} that matched your alert criteria are:
+{{ if .FailRowsTruncated }}The first {{ len .FailRowLines }} rows{{ else }}The rows{{ end }} that matched your alert criteria are listed by *{{ .FailRowsLeadColumn }}*:
 {{ range .FailRowLines }}
 • {{ . }}
 {{- end }}

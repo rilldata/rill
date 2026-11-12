@@ -472,6 +472,125 @@ notify:
 	}
 }
 
+func TestAlertNotifyRowsColumns(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'EU', 'south'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'EU', 'south')
+) AS t(__time, region, zone)
+`,
+			// The region dimension and the measure share a display name
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- name: region
+  display_name: Orders
+  column: region
+- column: zone
+measures:
+- name: order_count
+  display_name: Orders
+  expression: count(*)
+`,
+			"alerts/a1.yaml": `
+type: alert
+display_name: Duplicate labels alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: region
+    measures:
+    - name: order_count
+    sort:
+    - name: order_count
+      desc: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Legacy comparison queries have no schema of their own
+			"alerts/a2.yaml": `
+type: alert
+display_name: Comparison alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewComparison
+  args:
+    metrics_view_name: mv1
+    dimension:
+      name: zone
+    measures:
+    - name: order_count
+    sort:
+    - name: order_count
+      sort_type: METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+      desc: true
+    time_range:
+      start: "2024-01-02T00:00:00Z"
+      end: "2024-01-03T00:00:00Z"
+    comparison_time_range:
+      start: "2024-01-01T00:00:00Z"
+      end: "2024-01-02T00:00:00Z"
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	// Both fields keep their values, with the later one disambiguated by its name
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	require.Equal(t, map[string]any{"Orders": "US", "Orders (order_count)": "3"}, a1.State.ExecutionHistory[0].Result.FailRow.AsMap())
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "Duplicate labels alert"):
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			require.Contains(t, e.Body, ">Orders</th>")
+			require.Contains(t, e.Body, ">Orders (order_count)</th>")
+			require.Less(t, strings.Index(e.Body, ">Orders</th>"), strings.Index(e.Body, ">Orders (order_count)</th>"))
+			require.Contains(t, e.Body, ">US</td>")
+			require.Contains(t, e.Body, ">EU</td>")
+		case strings.HasPrefix(e.Subject, "Comparison alert"):
+			// The dimension leads, followed by the measure and its comparison fields
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			headers := []string{">zone</th>", ">Orders</th>", ">Orders (prev)</th>", ">Orders (Δ)</th>", ">Orders (Δ%)</th>"}
+			for i, h := range headers {
+				require.Contains(t, e.Body, h)
+				if i > 0 {
+					require.Less(t, strings.Index(e.Body, headers[i-1]), strings.Index(e.Body, h), h)
+				}
+			}
+			require.Contains(t, e.Body, ">north</td>")
+			require.Contains(t, e.Body, ">south</td>")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+}
+
 func TestAlertDataYAMLSQL(t *testing.T) {
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{

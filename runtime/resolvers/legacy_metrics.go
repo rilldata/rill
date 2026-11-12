@@ -129,8 +129,9 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 	switch q := r.query.(type) {
 	case *queries.MetricsViewAggregation:
 		schema = q.Result.Schema
+		var fields map[string]formattedField
 		if r.args.Format {
-			schema = r.formatMetricsViewAggregationSchema(schema, q, spec)
+			fields, schema = r.formatMetricsViewAggregationFields(schema, q, spec)
 		}
 		if q.Result != nil {
 			for i, row := range q.Result.Data {
@@ -138,13 +139,16 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 					break
 				}
 				if r.args.Format {
-					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), q, spec))
+					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), fields, q, spec))
 					continue
 				}
 				out = append(out, row.AsMap())
 			}
 		}
 	case *queries.MetricsViewComparison:
+		if r.args.Format {
+			schema = r.formatMetricsViewComparisonSchema(q, spec.Measures)
+		}
 		if q.Result != nil {
 			for i, row := range q.Result.Rows {
 				if r.args.Limit > 0 && i >= r.args.Limit {
@@ -232,30 +236,84 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 	return rules, nil
 }
 
-func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, q *queries.MetricsViewAggregation, spec *runtimev1.MetricsViewSpec) map[string]any {
-	res := make(map[string]any)
+// formattedField is the label and formatter for a field of a formatted result.
+type formattedField struct {
+	label     string
+	formatter formatter.Formatter
+}
+
+// formatMetricsViewAggregationResult formats a row with the fields from formatMetricsViewAggregationFields.
+// It labels and formats a field missing from them on its own, without making its label unique.
+func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, fields map[string]formattedField, q *queries.MetricsViewAggregation, spec *runtimev1.MetricsViewSpec) map[string]any {
+	res := make(map[string]any, len(row))
 	for k, v := range row {
-		label, f := r.getAggregationFieldLabelAndFormatter(k, q, spec)
-		res[label] = r.formatValue(f, v)
+		f, ok := fields[k]
+		if !ok {
+			f.label, f.formatter = r.getAggregationFieldLabelAndFormatter(k, q, spec)
+		}
+		res[f.label] = r.formatValue(f.formatter, v)
 	}
 	return res
 }
 
-// formatMetricsViewAggregationSchema renames the schema's fields to the labels used by formatMetricsViewAggregationResult.
-// This keeps the schema consistent with the formatted rows, which lets callers list the formatted values in the query's column order.
-// Fields whose values are formatted become nullable strings.
-func (r *legacyMetricsResolver) formatMetricsViewAggregationSchema(schema *runtimev1.StructType, q *queries.MetricsViewAggregation, spec *runtimev1.MetricsViewSpec) *runtimev1.StructType {
+// formatMetricsViewAggregationFields gets the label and formatter for each field of a MetricsViewAggregation result, keyed by field name.
+// It also returns the schema of the formatted rows, which uses the labels as field names and keeps the query's field order,
+// so callers can list the formatted values in that order.
+// Display names need not be unique, so it keeps the labels unique:
+// a field whose label an earlier field already uses gets its name appended, for example "Orders (order_count)".
+// Fields whose values are formatted become nullable strings in the schema.
+func (r *legacyMetricsResolver) formatMetricsViewAggregationFields(schema *runtimev1.StructType, q *queries.MetricsViewAggregation, spec *runtimev1.MetricsViewSpec) (map[string]formattedField, *runtimev1.StructType) {
 	if schema == nil {
-		return nil
+		return nil, nil
 	}
+	fields := make(map[string]formattedField, len(schema.Fields))
+	used := make(map[string]bool, len(schema.Fields))
 	res := &runtimev1.StructType{Fields: make([]*runtimev1.StructType_Field, len(schema.Fields))}
 	for i, f := range schema.Fields {
-		label, fmtr := r.getAggregationFieldLabelAndFormatter(f.Name, q, spec)
+		base, fmtr := r.getAggregationFieldLabelAndFormatter(f.Name, q, spec)
+		label := base
+		if used[label] {
+			label = fmt.Sprintf("%s (%s)", base, f.Name)
+		}
+		for n := 2; used[label]; n++ {
+			label = fmt.Sprintf("%s (%s %d)", base, f.Name, n)
+		}
+		used[label] = true
+		fields[f.Name] = formattedField{label: label, formatter: fmtr}
+
 		typ := f.Type
 		if fmtr != nil {
 			typ = &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}
 		}
 		res.Fields[i] = &runtimev1.StructType_Field{Name: label, Type: typ}
+	}
+	return fields, res
+}
+
+// formatMetricsViewComparisonSchema returns the schema of the rows from formatMetricsViewComparisonResult:
+// the dimension first, then each measure followed by its comparison fields if the query has a comparison time range.
+// The rows are maps, so this lets callers list their values in that order.
+// A row lacks a comparison field whose value is unavailable.
+// Every field is typed as a nullable string, which most formatted values are.
+func (r *legacyMetricsResolver) formatMetricsViewComparisonSchema(q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_Measure) *runtimev1.StructType {
+	names := []string{q.DimensionName}
+	for _, m := range q.Measures {
+		label, _ := r.getMeasureLabelAndFormatter(m.Name, measures)
+		names = append(names, label)
+		if q.ComparisonTimeRange != nil {
+			names = append(names, label+" (prev)", label+" (Δ)", label+" (Δ%)")
+		}
+	}
+
+	res := &runtimev1.StructType{}
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		// Measures with the same display name share a key in the rows, so they also share a field.
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		res.Fields = append(res.Fields, &runtimev1.StructType_Field{Name: name, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}})
 	}
 	return res
 }

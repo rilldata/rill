@@ -48,7 +48,7 @@ func TestSendAlertFail(t *testing.T) {
 	status.FailRows = [][]string{{"US", "12.3k", "-8%"}, {"<!channel>", "4.5k", "-12%"}}
 	require.NoError(t, n.SendAlertStatus(status))
 	require.Len(t, texts, 2)
-	require.Contains(t, texts[1], "The rows that matched your alert criteria are:\n\n• *US*: Orders 12.3k, Orders (Δ%) -8%\n• *&lt;!channel&gt;*: Orders 4.5k, Orders (Δ%) -12%\n")
+	require.Contains(t, texts[1], "The rows that matched your alert criteria are listed by *country*:\n\n• *US*: Orders 12.3k, Orders (Δ%) -8%\n• *&lt;!channel&gt;*: Orders 4.5k, Orders (Δ%) -12%\n")
 	require.NotContains(t, texts[1], "<!channel>")
 	require.NotContains(t, texts[1], "More rows matched")
 
@@ -56,7 +56,7 @@ func TestSendAlertFail(t *testing.T) {
 	status.FailRowsTruncated = true
 	require.NoError(t, n.SendAlertStatus(status))
 	require.Len(t, texts, 3)
-	require.Contains(t, texts[2], "The first 2 rows that matched your alert criteria are:")
+	require.Contains(t, texts[2], "The first 2 rows that matched your alert criteria are listed by *country*:")
 	require.Contains(t, texts[2], "More rows matched your alert criteria.")
 }
 
