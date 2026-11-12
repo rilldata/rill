@@ -753,6 +753,7 @@ message AlertSpec {
   bool notify_on_recover = 15;
   bool notify_on_fail = 16;
   bool notify_on_error = 17;
+  uint32 notify_rows_limit = 28; // Maximum number of rows that matched the alert criteria to include in notifications for failed checks. If 0, a default limit is used.
   bool renotify = 18;
   uint32 renotify_after_seconds = 19;
   repeated Notifier notifiers = 21;

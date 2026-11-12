@@ -2106,6 +2106,67 @@ notify:
 	})
 }
 
+func TestAlertNotifyRowsLimit(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Limits the rows listed in notifications
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 10
+  slack:
+    channels:
+      - alerts
+`,
+		// The limit can't exceed the maximum
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 51
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 10,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{}, "channels": []any{"alerts"}, "webhooks": []any{}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `invalid value 51 for property "notify.rows_limit": must be at most 50`,
+			FilePath: "/alerts/a2.yaml",
+		},
+	})
+}
+
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"sort"
+	"strconv"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -31,6 +33,9 @@ const alertExecutionHistoryLimit = 25
 const alertDefaultIntervalsLimit = 25
 
 const alertQueryPriority = 1
+
+// alertNotifyRowsLimitDefault is the number of rows that matched the alert criteria to include in notifications when the alert doesn't set a limit.
+const alertNotifyRowsLimitDefault = 5
 
 const alertCheckDefaultTimeout = 5 * time.Minute
 
@@ -581,7 +586,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ErrorMessage: executeErr.Error(),
 	}
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, a, adminMeta)
+	err = r.popCurrentExecution(ctx, self, a, adminMeta, nil)
 	if err != nil {
 		return err
 	}
@@ -661,7 +666,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	}
 
 	// Check the alert and get the result
-	res, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
+	res, failRows, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
 
 	// If the error is a cancellation/timeout, return (will be retried)
 	if errors.Is(executeErr, context.Canceled) || errors.Is(executeErr, context.DeadlineExceeded) {
@@ -681,20 +686,26 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	// Finalize and pop current execution.
 	a.State.CurrentExecution.Result = res
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, a, adminMeta)
+	err = r.popCurrentExecution(ctx, self, a, adminMeta, failRows)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// checkAlert runs the alert query and returns the result.
-func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
+// executeSingleWrapped runs the alert query and returns the result.
+// For a failed check, it also returns the rows that matched the alert criteria (up to the alert's rows limit) for inclusion in notifications.
+func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, *alertFailRows, error) {
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
-		return nil, fmt.Errorf("alert has no resolver")
+		return nil, nil, fmt.Errorf("alert has no resolver")
+	}
+
+	rowsLimit := int(a.Spec.NotifyRowsLimit)
+	if rowsLimit == 0 {
+		rowsLimit = alertNotifyRowsLimitDefault
 	}
 
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
@@ -709,12 +720,12 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
 			"format":         true,
-			"limit":          1,
+			"limit":          rowsLimit + 1, // The extra row tells whether more rows matched than the notifications include.
 		},
 		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve alert: %w", err)
+		return nil, nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
 
@@ -723,32 +734,41 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		warnings = info.Warnings
 	}
 
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
+	var rows []map[string]any
+	for len(rows) <= rowsLimit {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 		}
-		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+		rows = append(rows, row)
+	}
+
+	if len(rows) == 0 {
+		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil, nil
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
-	// Return fail row
-	failRow, err := structpb.NewStruct(row)
+	// Return the first row as the fail row, which is stored in the execution history
+	failRow, err := structpb.NewStruct(rows[0])
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		return nil, nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
 	return &runtimev1.AssertionResult{
 		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 		FailRow:  failRow,
 		Warnings: warnings,
-	}, nil
+	}, newAlertFailRows(res.Schema(), rows, rowsLimit), nil
 }
 
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
 // At a certain limit, it trims old executions from the history to prevent it from growing unboundedly.
-func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata) error {
+// For a failed check, failRows are the rows to include in notifications.
+func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, failRows *alertFailRows) error {
 	if a.State.CurrentExecution == nil {
 		panic(fmt.Errorf("attempting to pop current execution when there is none"))
 	}
@@ -849,11 +869,18 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				break
 			}
 
+			if failRows == nil {
+				// Failed checks come with their rows, but fall back to the row stored in the execution just in case.
+				failRows = newAlertFailRows(nil, []map[string]any{current.Result.FailRow.AsMap()}, 1)
+			}
+
 			msg = &drivers.AlertStatus{
-				DisplayName:   a.Spec.DisplayName,
-				ExecutionTime: executionTime,
-				Status:        current.Result.Status,
-				FailRow:       current.Result.FailRow.AsMap(),
+				DisplayName:       a.Spec.DisplayName,
+				ExecutionTime:     executionTime,
+				Status:            current.Result.Status,
+				FailColumns:       failRows.columns,
+				FailRows:          failRows.rows,
+				FailRowsTruncated: failRows.truncated,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {
@@ -908,7 +935,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						ExecutionTime:      msg.ExecutionTime,
 						Status:             msg.Status,
 						IsRecover:          msg.IsRecover,
-						FailRow:            msg.FailRow,
+						FailColumns:        msg.FailColumns,
+						FailRows:           msg.FailRows,
+						FailRowsTruncated:  msg.FailRowsTruncated,
 						ExecutionError:     msg.ExecutionError,
 						Attachment:         attachment,
 						AttachmentTooLarge: attachmentTooLarge,
@@ -1154,6 +1183,64 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// alertFailRows are the rows that matched an alert's criteria, formatted for inclusion in notifications.
+type alertFailRows struct {
+	columns   []string
+	rows      [][]string
+	truncated bool
+}
+
+// newAlertFailRows formats rows that matched an alert's criteria for inclusion in notifications.
+// It orders the columns like the schema's fields,
+// or by name if the schema doesn't describe the rows (for example for legacy comparison queries, which have no schema).
+// If there are more than limit rows, it keeps the first limit rows and marks the result as truncated.
+func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit int) *alertFailRows {
+	res := &alertFailRows{}
+	if len(rows) > limit {
+		rows = rows[:limit]
+		res.truncated = true
+	}
+	if len(rows) == 0 {
+		return res
+	}
+
+	for _, f := range schema.GetFields() {
+		if _, ok := rows[0][f.Name]; !ok {
+			break
+		}
+		res.columns = append(res.columns, f.Name)
+	}
+	if len(res.columns) != len(rows[0]) {
+		res.columns = make([]string, 0, len(rows[0]))
+		for k := range rows[0] {
+			res.columns = append(res.columns, k)
+		}
+		sort.Strings(res.columns)
+	}
+
+	res.rows = make([][]string, len(rows))
+	for i, row := range rows {
+		res.rows[i] = make([]string, len(res.columns))
+		for j, c := range res.columns {
+			res.rows[i][j] = alertValueString(row[c])
+		}
+	}
+	return res
+}
+
+// alertValueString formats a value of a row that matched an alert's criteria for display in notifications.
+func alertValueString(v any) string {
+	switch v := v.(type) {
+	case nil:
+		return "null"
+	case float64:
+		// Avoid the exponent notation that fmt uses for large numbers, which is common for numbers decoded from JSON.
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 // alertQueryForAttributes returns the user attributes that the alert's query runs with.

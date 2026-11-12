@@ -2,12 +2,20 @@
 
 Your alert triggered for {{ .ExecutionTimeString }}.
 
+{{ if .FailFields -}}
 The first row that matched your alert criteria is:
-
-{{ range $key, $value := .FailRow }}
-• *{{ $key }}*: {{ $value }}
+{{ range .FailFields }}
+• *{{ .Name }}*: {{ .Value }}
+{{- end }}
+{{- else -}}
+{{ if .FailRowsTruncated }}The first {{ len .FailRowLines }} rows{{ else }}The rows{{ end }} that matched your alert criteria are:
+{{ range .FailRowLines }}
+• {{ . }}
+{{- end }}
+{{- end }}
+{{ if .FailRowsTruncated }}
+More rows matched your alert criteria.
 {{ end }}
-
 <{{ .OpenLink }}|Open in browser>
 
 To edit or unsubscribe from this alert, <{{ .EditLink }}|click here>.

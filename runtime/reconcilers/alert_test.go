@@ -162,7 +162,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 			Result: &runtimev1.AssertionResult{
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
-					"country":   "Denmark",
+					"Country":   "Denmark",
 					"Measure 0": "4",
 				})),
 			},
@@ -320,7 +320,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 			Result: &runtimev1.AssertionResult{
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
-					"country":   "Denmark",
+					"Country":   "Denmark",
 					"Measure 0": "4",
 				})),
 			},
@@ -335,6 +335,141 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 	require.Len(t, emails, 1)
 	require.Equal(t, emails[0].ToEmail, "somebody@example.com")
 	require.Contains(t, emails[0].Body, "Denmark")
+}
+
+func TestAlertNotifyRows(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Sweden'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Finland')
+) AS t(__time, country)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			// Every country matches, but the notification lists only the two largest
+			"alerts/a1.yaml": `
+type: alert
+display_name: Limited alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    sort:
+    - name: total
+      desc: true
+notify:
+  rows_limit: 2
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Two countries match, which is within the default limit
+			"alerts/a2.yaml": `
+type: alert
+display_name: Default alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    sort:
+    - name: total
+      desc: true
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: total
+        - val: 2
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Not split by a dimension, so there is a single row
+			"alerts/a3.yaml": `
+type: alert
+display_name: Total alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    measures:
+    - name: total
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Equal(t, uint32(2), a1.Spec.NotifyRowsLimit)
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	// The execution history stores the first row only
+	require.Equal(t, map[string]any{"Country": "Denmark", "Total": "3"}, a1.State.ExecutionHistory[0].Result.FailRow.AsMap())
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 3)
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "Limited alert"):
+			require.Contains(t, e.Body, "The first 2 rows that matched your alert criteria are:")
+			// The columns are in the query's order, with the dimension first, and use display names like the alert preview
+			require.Less(t, strings.Index(e.Body, ">Country</th>"), strings.Index(e.Body, ">Total</th>"))
+			require.Contains(t, e.Body, ">Denmark</td>")
+			require.Contains(t, e.Body, ">Norway</td>")
+			require.NotContains(t, e.Body, "Sweden")
+			require.NotContains(t, e.Body, "Finland")
+			require.Contains(t, e.Body, "More rows matched your alert criteria.")
+		case strings.HasPrefix(e.Subject, "Default alert"):
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			require.Contains(t, e.Body, ">Denmark</td>")
+			require.Contains(t, e.Body, ">Norway</td>")
+			require.NotContains(t, e.Body, "More rows matched")
+		case strings.HasPrefix(e.Subject, "Total alert"):
+			require.Contains(t, e.Body, "The first row that matched your alert criteria is:")
+			require.Contains(t, e.Body, "<b>Total</b>: 7")
+			require.NotContains(t, e.Body, "More rows matched")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
 }
 
 func TestAlertDataYAMLSQL(t *testing.T) {

@@ -7,6 +7,7 @@
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
+  import Input from "../../../components/forms/Input.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
@@ -19,7 +20,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ form } = superFormInstance);
+  $: ({ form, errors } = superFormInstance);
 
   // memoise to avoid rerenders
   $: metricsViewName = $form["metricsViewName"];
@@ -86,6 +87,15 @@
       options={dimensionOptions}
       placeholder={m.alert_form_data_split_placeholder()}
     />
+    {#if $form["splitByDimension"]}
+      <Input
+        bind:value={$form["notifyRowsLimit"]}
+        errors={$errors["notifyRowsLimit"]}
+        id="notifyRowsLimit"
+        label={m.alert_form_data_rows_limit()}
+        hint={m.alert_form_data_rows_limit_hint()}
+      />
+    {/if}
   </FormSection>
   <FormSection
     title={m.alert_form_data_preview()}

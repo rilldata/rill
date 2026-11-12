@@ -5082,6 +5082,10 @@ definitions:
       exportLimit:
         type: string
         format: uint64
+      notifyRowsLimit:
+        type: integer
+        format: int64
+        description: Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
       metricsViewName:
         type: string
       renotify:

@@ -3904,6 +3904,7 @@ message AlertOptions {
   rill.runtime.v1.ExportFormat export_format = 19;
   bool export_include_header = 20;
   uint64 export_limit = 21;
+  uint32 notify_rows_limit = 22 [(validate.rules).uint32.lte = 50]; // Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;
