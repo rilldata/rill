@@ -114,7 +114,8 @@
       {disabled}
       {value}
       onValueChange={(newValue) => {
-        if (!newValue) return;
+        // "" is a real choice when an option has an empty value (e.g. "None");
+        // bits-ui only emits it for such an option since `allowDeselect` is off.
         value = newValue;
         onChange(newValue);
       }}

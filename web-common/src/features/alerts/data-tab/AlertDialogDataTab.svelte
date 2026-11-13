@@ -11,6 +11,7 @@
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
   import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
 
@@ -86,6 +87,14 @@
       optional
       options={dimensionOptions}
       placeholder={m.alert_form_data_split_placeholder()}
+      onChange={(dimension) => {
+        // Percent-of-total criteria compare each dimension value's share of the measure,
+        // so they only make sense with a split; drop them when the split is removed.
+        if (dimension) return;
+        $form["criteria"] = $form["criteria"].filter(
+          (c) => c.type !== MeasureFilterType.PercentOfTotal,
+        );
+      }}
     />
     {#if $form["splitByDimension"]}
       <Input
