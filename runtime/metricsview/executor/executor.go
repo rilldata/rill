@@ -24,6 +24,8 @@ const (
 	defaultInteractiveTimeout = time.Minute * 3
 	defaultExportTimeout      = time.Minute * 5
 	defaultPivotExportTimeout = time.Minute * 5
+	// heavyQueryMaxWait is how long a heavy query waits for a slot before failing (see InstanceConfig.MetricsHeavyQueryConcurrency).
+	heavyQueryMaxWait = time.Minute
 )
 
 // Executor is capable of executing queries and other operations against a metrics view.
@@ -34,6 +36,8 @@ type Executor struct {
 	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
+	// userID identifies the caller for per-user query limits. It is empty for internal callers.
+	userID string
 
 	olap            drivers.OLAPStore
 	olapRelease     func()
@@ -82,6 +86,9 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		}
 	}
 
+	// The "id" user attribute holds the user (or service account) ID for JWT-authenticated callers; see runtime/server/auth/claims.go.
+	userID, _ := userAttrs["id"].(string)
+
 	return &Executor{
 		rt:              rt,
 		instanceID:      instanceID,
@@ -89,6 +96,7 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		streaming:       streaming,
 		security:        sec,
 		priority:        priority,
+		userID:          userID,
 		olap:            olap,
 		olapRelease:     release,
 		instanceCfg:     instanceCfg,
@@ -347,7 +355,59 @@ func (e *Executor) schema(ctx context.Context, exact bool) (*runtimev1.StructTyp
 }
 
 // Query executes the provided query against the metrics view.
+// Heavy queries (see InstanceConfig.MetricsHeavyQueryRowThreshold) hold a concurrency slot until the returned result is closed.
 func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*drivers.Result, error) {
+	release, err := e.acquireHeavyQuerySlot(ctx, qry)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := e.query(ctx, qry, executionTime)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	res.SetCleanupFunc(func() error {
+		release()
+		return nil
+	})
+	return res, nil
+}
+
+// acquireHeavyQuerySlot waits for a concurrency slot if the query reads past the instance's heavy query row threshold.
+// Such queries usually come from paginating deep into a large result (for example, an agent extracting data page by page),
+// and each one makes the OLAP compute and sort every row before the offset.
+// It returns a no-op release function for other queries.
+func (e *Executor) acquireHeavyQuerySlot(ctx context.Context, qry *metricsview.Query) (func(), error) {
+	threshold := e.instanceCfg.MetricsHeavyQueryRowThreshold
+	if threshold <= 0 {
+		return func() {}, nil
+	}
+
+	var offset, limit int64
+	if qry.Offset != nil {
+		offset = max(*qry.Offset, 0)
+	}
+	if qry.Limit != nil {
+		limit = max(*qry.Limit, 0)
+	}
+	// Checks offset+limit <= threshold without overflowing, so a huge offset can't skip the limit.
+	if offset <= threshold && limit <= threshold-offset {
+		return func() {}, nil
+	}
+
+	release, err := e.rt.AcquireHeavyQuerySlot(ctx, e.instanceID, e.userID, e.instanceCfg.MetricsHeavyQueryConcurrency, e.instanceCfg.MetricsHeavyQueryConcurrencyPerUser, heavyQueryMaxWait)
+	if err != nil {
+		if errors.Is(err, runtime.ErrTooManyConcurrentQueries) {
+			return nil, fmt.Errorf("%w; queries that read more than %d rows (offset plus limit) are limited to protect the project, so reduce parallelism or, for large extracts, use an export instead of paginating", err, threshold)
+		}
+		return nil, err
+	}
+	return release, nil
+}
+
+// query implements Query.
+func (e *Executor) query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}

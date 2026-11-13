@@ -130,6 +130,16 @@ type InstanceConfig struct {
 	// so a pivot producing too many columns fails with an opaque error. This is a conservative safety cap
 	// that lets us return a clear error first. If set to 0, there is no limit.
 	MetricsPivotExportColumnLimit int64 `mapstructure:"rill.metrics.pivot_export_column_limit"`
+	// MetricsHeavyQueryRowThreshold is the number of rows (offset plus limit) above which an interactive metrics query counts as heavy.
+	// Queries that page this deep into a result make the OLAP compute and sort every row before the offset, so they are much more expensive than the rows they return.
+	// Heavy queries are subject to MetricsHeavyQueryConcurrency and MetricsHeavyQueryConcurrencyPerUser. If set to 0, no query counts as heavy.
+	MetricsHeavyQueryRowThreshold int64 `mapstructure:"rill.metrics.heavy_query_row_threshold"`
+	// MetricsHeavyQueryConcurrency caps the number of heavy metrics queries that run concurrently on the instance.
+	// Excess queries wait for a slot and fail with a "too many concurrent queries" error if none frees up within a minute. If set to 0, there is no limit.
+	MetricsHeavyQueryConcurrency int `mapstructure:"rill.metrics.heavy_query_concurrency"`
+	// MetricsHeavyQueryConcurrencyPerUser caps the number of heavy metrics queries that one user (or service account) runs concurrently on the instance.
+	// It keeps one caller from taking every slot of MetricsHeavyQueryConcurrency. If set to 0, there is no per-user limit.
+	MetricsHeavyQueryConcurrencyPerUser int `mapstructure:"rill.metrics.heavy_query_concurrency_per_user"`
 	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
@@ -236,6 +246,9 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsDruidMVDFilteredSearch:        false,
 		MetricsNullFillingImplementation:     "pushdown",
 		MetricsPivotExportColumnLimit:        15000,
+		MetricsHeavyQueryRowThreshold:        10_000,
+		MetricsHeavyQueryConcurrency:         4,
+		MetricsHeavyQueryConcurrencyPerUser:  2,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes

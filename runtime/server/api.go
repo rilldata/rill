@@ -92,6 +92,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		if errors.Is(err, runtime.ErrForbidden) {
 			return httputil.Error(http.StatusForbidden, err)
 		}
+		if errors.Is(err, runtime.ErrTooManyConcurrentQueries) {
+			return httputil.Error(http.StatusTooManyRequests, err)
+		}
 		return httputil.Error(http.StatusBadRequest, err)
 	}
 	defer res.Close()

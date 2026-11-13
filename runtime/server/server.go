@@ -359,6 +359,8 @@ func mapGRPCError(err error) error {
 			err = status.Error(codes.FailedPrecondition, err.Error())
 		} else if errors.Is(err, runtime.ErrControllerClosed) {
 			err = status.Error(codes.Unavailable, err.Error())
+		} else if errors.Is(err, runtime.ErrTooManyConcurrentQueries) {
+			err = status.Error(codes.ResourceExhausted, err.Error())
 		}
 	}
 
