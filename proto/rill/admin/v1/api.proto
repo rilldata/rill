@@ -1175,7 +1175,8 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+  // Embed users only see their own personal bookmarks.
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -2773,7 +2774,9 @@ message RevokeCurrentAuthTokenResponse {
 
 // ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
 // the caller's own bookmarks plus shared and default bookmarks.
+// Embed users only see their own personal bookmarks.
 message ListBookmarksRequest {
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 1;
   // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
   // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
@@ -2800,6 +2803,7 @@ message CreateBookmarkRequest {
   string url_search = 9;
   string resource_kind = 4;
   string resource_name = 5;
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 6;
   bool default = 7;
   bool shared = 8;
@@ -2885,7 +2889,7 @@ message IssueMagicAuthTokenRequest {
   // list of resources to grant access to.
   repeated ResourceName resources = 11;
   // Optional password that recipients must enter before the token grants access.
-  // Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced.
+  // Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
   string password = 13;
   reserved 5;
 }
@@ -2931,7 +2935,7 @@ message UpdateMagicAuthTokenRequest {
   string token_id = 1;
   // New display name. Unchanged if not set.
   optional string display_name = 2;
-  // New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+  // New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
   optional string password = 3;
   // Removes the password. Can't be combined with password.
   bool remove_password = 4;
@@ -3840,6 +3844,8 @@ message Bookmark {
   string user_id = 6;
   bool default = 11;
   bool shared = 12;
+  // Whether the caller can update and remove the bookmark.
+  bool can_manage = 14;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }

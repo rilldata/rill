@@ -17074,7 +17074,8 @@ export const createAdminServiceIssueUserAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+Embed users only see their own personal bookmarks.
  */
 export const adminServiceListBookmarks = (
   params?: AdminServiceListBookmarksParams,
@@ -17131,7 +17132,8 @@ export type AdminServiceListBookmarksQueryResult = NonNullable<
 export type AdminServiceListBookmarksQueryError = RpcStatus;
 
 /**
- * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+Embed users only see their own personal bookmarks.
  */
 
 export function createAdminServiceListBookmarks<

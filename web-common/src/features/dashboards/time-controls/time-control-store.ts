@@ -32,6 +32,7 @@ import {
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { clampDateToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   type DashboardTimeControls,
   type ScrubRange,
@@ -398,8 +399,8 @@ export function calculateTimeRangePartial(
       lastDefinedScrubRange.start,
       lastDefinedScrubRange.end,
     );
-    timeStart = start;
-    timeEnd = end;
+    timeStart = clampDateToTimestampBounds(start);
+    timeEnd = clampDateToTimestampBounds(end);
   }
 
   return {
@@ -475,6 +476,14 @@ export function calculateComparisonTimeRangePartial(
     comparisonTimeEnd = comparisonRange.end;
   }
 
+  // A custom comparison range, or one shifted along with a scrub, can reach past the bounds of a protobuf timestamp.
+  if (comparisonTimeStart) {
+    comparisonTimeStart = clampDateToTimestampBounds(comparisonTimeStart);
+  }
+  if (comparisonTimeEnd) {
+    comparisonTimeEnd = clampDateToTimestampBounds(comparisonTimeEnd);
+  }
+
   return {
     showTimeComparison: showTimeComparison,
     selectedComparisonTimeRange:
@@ -542,6 +551,11 @@ export function getTimeRange(
       end: defaultTimeRange.end,
     };
   }
+
+  // Presets resolved locally against the dataset bounds can reach past the range of a protobuf timestamp
+  // when the data has placeholder dates such as 0001-01-01. Clamp before anything is derived from the range.
+  timeRange.start = clampDateToTimestampBounds(timeRange.start);
+  timeRange.end = clampDateToTimestampBounds(timeRange.end);
 
   return timeRange;
 }

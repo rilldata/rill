@@ -496,7 +496,8 @@ type AdminServiceClient interface {
 	UnlockMagicAuthToken(ctx context.Context, in *UnlockMagicAuthTokenRequest, opts ...grpc.CallOption) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+	// Embed users only see their own personal bookmarks.
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
@@ -2625,7 +2626,8 @@ type AdminServiceServer interface {
 	UnlockMagicAuthToken(context.Context, *UnlockMagicAuthTokenRequest) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+	// Embed users only see their own personal bookmarks.
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)

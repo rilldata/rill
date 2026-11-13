@@ -49219,6 +49219,8 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for Shared
 
+	// no validation rules for CanManage
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

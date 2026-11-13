@@ -427,7 +427,7 @@ paths:
                 description: New display name. Unchanged if not set.
               password:
                 type: string
-                description: New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+                description: New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
               removePassword:
                 type: boolean
                 description: Removes the password. Can't be combined with password.
@@ -2752,7 +2752,7 @@ paths:
                 type: string
                 description: |-
                   Optional password that recipients must enter before the token grants access.
-                  Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced.
+                  Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
   /v1/orgs/{org}/projects/{project}/usergroups:
     get:
       summary: ListProjectMemberUsergroups lists the user groups assigned to a project
@@ -4822,7 +4822,9 @@ paths:
                 description: Flag for superusers to override normal access checks.
   /v1/users/bookmarks:
     get:
-      summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+      summary: |-
+        ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+        Embed users only see their own personal bookmarks.
       operationId: AdminService_ListBookmarks
       responses:
         "200":
@@ -4835,6 +4837,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: ID of the project. Optional for embed users, where it defaults to the embed's project.
           in: query
           required: false
           type: string
@@ -5380,6 +5383,9 @@ definitions:
         type: boolean
       shared:
         type: boolean
+      canManage:
+        type: boolean
+        description: Whether the caller can update and remove the bookmark.
       createdOn:
         type: string
         format: date-time
@@ -5505,6 +5511,7 @@ definitions:
         type: string
       projectId:
         type: string
+        description: ID of the project. Optional for embed users, where it defaults to the embed's project.
       default:
         type: boolean
       shared:

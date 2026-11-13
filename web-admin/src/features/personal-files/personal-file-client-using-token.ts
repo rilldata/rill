@@ -4,22 +4,17 @@
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
- * - Query and mutation creators: The token is bound when creating them; query keys and mutation variables match the generated code,
- *   so cache invalidation is shared between the two variants.
+ * - Query creators: The token is bound when creating them; query keys match the generated code, so cache invalidation is shared between the two variants.
+ * - Mutation creators: They delegate to the generated creators, overriding only `mutationFn`, so mutation keys and variables match the generated code.
  */
 
+import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import {
-  createMutation,
-  createQuery,
-  type CreateMutationOptions,
-  type CreateMutationResult,
-  type QueryClient,
-} from "@tanstack/svelte-query";
-import {
+  createAdminServiceCreatePersonalFile,
+  createAdminServiceDeletePersonalFile,
   getAdminServiceListPersonalFilesQueryKey,
   type AdminServiceCreatePersonalFileBody,
   type AdminServiceEditPersonalFileBody,
-  type RpcStatus,
   type V1CreatePersonalFileResponse,
   type V1DeletePersonalFileResponse,
   type V1EditPersonalFileResponse,
@@ -84,40 +79,19 @@ export const adminServiceCreatePersonalFileUsingToken = (
   });
 };
 
-export const createAdminServiceCreatePersonalFileUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceCreatePersonalFileUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreatePersonalFileUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        data: AdminServiceCreatePersonalFileBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreatePersonalFileUsingToken>>,
-  TError,
-  { org: string; project: string; data: AdminServiceCreatePersonalFileBody },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceCreatePersonalFile(
     {
-      mutationKey: ["adminServiceCreatePersonalFile"],
-      mutationFn: ({ org, project, data }) =>
-        adminServiceCreatePersonalFileUsingToken(org, project, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, data }) =>
+          adminServiceCreatePersonalFileUsingToken(org, project, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceGetPersonalFileUsingToken = (
   org: string,
@@ -178,33 +152,16 @@ export const adminServiceDeletePersonalFileUsingToken = (
   });
 };
 
-export const createAdminServiceDeletePersonalFileUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceDeletePersonalFileUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceDeletePersonalFileUsingToken>>,
-      TError,
-      { org: string; project: string; name: string },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceDeletePersonalFileUsingToken>>,
-  TError,
-  { org: string; project: string; name: string },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceDeletePersonalFile(
     {
-      mutationKey: ["adminServiceDeletePersonalFile"],
-      mutationFn: ({ org, project, name }) =>
-        adminServiceDeletePersonalFileUsingToken(org, project, name, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name }) =>
+          adminServiceDeletePersonalFileUsingToken(org, project, name, token),
+      },
     },
     queryClient,
   );
-};

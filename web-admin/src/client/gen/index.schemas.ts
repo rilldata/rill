@@ -304,6 +304,8 @@ export interface V1Bookmark {
   userId?: string;
   default?: boolean;
   shared?: boolean;
+  /** Whether the caller can update and remove the bookmark. */
+  canManage?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -376,6 +378,7 @@ export interface V1CreateBookmarkRequest {
   urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
+  /** ID of the project. Optional for embed users, where it defaults to the embed's project. */
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -1990,7 +1993,7 @@ export type AdminServiceGetGithubRepoStatusParams = {
 export type AdminServiceUpdateMagicAuthTokenBody = {
   /** New display name. Unchanged if not set. */
   displayName?: string;
-  /** New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set. */
+  /** New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set. */
   password?: string;
   /** Removes the password. Can't be combined with password. */
   removePassword?: boolean;
@@ -2391,7 +2394,7 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   /** list of resources to grant access to. */
   resources?: V1ResourceName[];
   /** Optional password that recipients must enter before the token grants access.
-Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced. */
+Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced. */
   password?: string;
 };
 
@@ -2671,6 +2674,9 @@ This is only allowed for superusers. */
 };
 
 export type AdminServiceListBookmarksParams = {
+  /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   */
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").

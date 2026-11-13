@@ -10,5 +10,6 @@ features:
   chat: false
   # Enabled for embed users only, so web-admin/tests/embedded-personal-canvases.spec.ts can manage personal canvases from an embed.
   personal_canvases: "{{ .user.embed }}"
+  embedded_bookmarks: "{{ .user.embed }}"
   # Overrides the default of `{{ not .user.embed }}`, so web-admin/tests/embedded-reports.spec.ts can create reports from an embed.
   reports: true

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 )
 
 const httpShutdownTimeout = 5 * time.Second
@@ -32,19 +31,14 @@ func ServeHTTP(ctx context.Context, handler http.Handler, opts ServeOptions) err
 	useDedicatedGRPC := opts.GRPCPort != 0 && opts.Port != opts.GRPCPort
 	servers := map[int]*http.Server{}
 	if useTLS {
-		// If TLS options are passed, configure a single HTTP/2 server.
+		// If TLS options are passed, configure a single server; net/http enables HTTP/2 over TLS by default.
 		if useDedicatedGRPC {
 			return errors.New("cannot combine TLS options with a dedicated gRPC port")
 		}
-		s := &http.Server{
+		servers[opts.Port] = &http.Server{
 			Addr:    fmt.Sprintf(":%d", opts.Port),
 			Handler: handler,
 		}
-		err := http2.ConfigureServer(s, &http2.Server{})
-		if err != nil {
-			return err
-		}
-		servers[opts.Port] = s
 	} else if useDedicatedGRPC {
 		// Use h2c on the gRPC port and normal HTTP on the main port.
 		servers[opts.Port] = &http.Server{

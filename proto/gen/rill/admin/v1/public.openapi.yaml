@@ -372,6 +372,9 @@ components:
             type: string
         v1Bookmark:
             properties:
+                canManage:
+                    description: Whether the caller can update and remove the bookmark.
+                    type: boolean
                 createdOn:
                     format: date-time
                     type: string
@@ -510,6 +513,7 @@ components:
                 displayName:
                     type: string
                 projectId:
+                    description: ID of the project. Optional for embed users, where it defaults to the embed's project.
                     type: string
                 resourceKind:
                     type: string

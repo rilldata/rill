@@ -15,14 +15,15 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: alert = $page.params.alert;
-  $: token = $page.url.searchParams.get("token");
   $: email = $page.url.searchParams.get("email");
   $: slackUser = $page.url.searchParams.get("slack_user");
 
   // using this instead of alertUnsubscriber to avoid a flicker before alertUnsubscriber is triggered
   let loading = true;
 
-  const alertUnsubscriber = createAdminServiceUnsubscribeAlertUsingToken();
+  const alertUnsubscriber = createAdminServiceUnsubscribeAlertUsingToken(
+    $page.url.searchParams.get("token") ?? "",
+  );
 
   $: error =
     ($alertUnsubscriber.error as unknown as AxiosError<RpcStatus>)?.response
@@ -34,11 +35,10 @@
     if (slackUser) data.slackUser = slackUser;
 
     await $alertUnsubscriber.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: alert,
       data,
-      token,
     });
     loading = false;
   }

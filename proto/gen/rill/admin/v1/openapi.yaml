@@ -372,6 +372,9 @@ components:
             type: string
         v1Bookmark:
             properties:
+                canManage:
+                    description: Whether the caller can update and remove the bookmark.
+                    type: boolean
                 createdOn:
                     format: date-time
                     type: string
@@ -510,6 +513,7 @@ components:
                 displayName:
                     type: string
                 projectId:
+                    description: ID of the project. Optional for embed users, where it defaults to the embed's project.
                     type: string
                 resourceKind:
                     type: string
@@ -3176,7 +3180,7 @@ paths:
                                     description: New display name. Unchanged if not set.
                                     type: string
                                 password:
-                                    description: New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+                                    description: New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
                                     type: string
                                 removePassword:
                                     description: Removes the password. Can't be combined with password.
@@ -5967,7 +5971,7 @@ paths:
                                 password:
                                     description: |-
                                         Optional password that recipients must enter before the token grants access.
-                                        Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced.
+                                        Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
                                     type: string
                                 resourceName:
                                     description: Name of the resource to grant access to.
@@ -8527,7 +8531,8 @@ paths:
         get:
             operationId: AdminService_ListBookmarks
             parameters:
-                - in: query
+                - description: ID of the project. Optional for embed users, where it defaults to the embed's project.
+                  in: query
                   name: projectId
                   schema:
                     type: string
@@ -8556,7 +8561,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+            summary: |-
+                ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+                Embed users only see their own personal bookmarks.
         post:
             operationId: AdminService_CreateBookmark
             requestBody:

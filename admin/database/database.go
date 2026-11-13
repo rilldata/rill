@@ -312,6 +312,12 @@ type DB interface {
 	// FindBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
 	// resourceKind and resourceName are optional filters; when both are empty, all bookmarks in the project are returned.
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
+	// FindBookmarksByEmbedOwner returns the bookmarks in a project owned by the embed user.
+	// Unlike FindBookmarks, it never returns shared or default bookmarks.
+	// resourceKind and resourceName are optional filters; when both are empty, all of the embed user's bookmarks in the project are returned.
+	FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*Bookmark, error)
+	// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
+	CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
@@ -321,6 +327,10 @@ type DB interface {
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// LockEmbedUser locks the embed user's row until the current transaction ends.
+	// It must be called within a transaction started with NewTx.
+	// It serializes quota checks for an embed user across all admin processes, such as counting their bookmarks before inserting one.
+	LockEmbedUser(ctx context.Context, id string) error
 	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
 	// It doesn't write anything otherwise, since it's called on every embed load.
 	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error
@@ -1266,6 +1276,8 @@ type InsertProjectAccessRequestOptions struct {
 	ProjectID string `validate:"required"`
 }
 
+// Bookmark is a saved dashboard state.
+// Exactly one of UserID and EmbedOwnerID is set.
 type Bookmark struct {
 	ID           string
 	DisplayName  string    `db:"display_name"`
@@ -1275,7 +1287,8 @@ type Bookmark struct {
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
-	UserID       string    `db:"user_id"`
+	UserID       *string   `db:"user_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
 	Default      bool      `db:"default"`
 	Shared       bool      `db:"shared"`
 	CreatedOn    time.Time `db:"created_on"`
@@ -1284,15 +1297,16 @@ type Bookmark struct {
 
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName  string `json:"display_name"`
-	URLSearch    string `json:"url_search"`
-	ResourceKind string `json:"resource_kind"`
-	ResourceName string `json:"resource_name"`
-	Description  string `json:"description"`
-	ProjectID    string `json:"project_id"`
-	UserID       string `json:"user_id"`
-	Default      bool   `json:"default"`
-	Shared       bool   `json:"shared"`
+	DisplayName  string  `json:"display_name"`
+	URLSearch    string  `json:"url_search"`
+	ResourceKind string  `json:"resource_kind"`
+	ResourceName string  `json:"resource_name"`
+	Description  string  `json:"description"`
+	ProjectID    string  `json:"project_id"`
+	UserID       *string `json:"user_id"`
+	EmbedOwnerID *string `json:"embed_owner_id"`
+	Default      bool    `json:"default"`
+	Shared       bool    `json:"shared"`
 }
 
 // UpdateBookmarkOptions defines options for updating an existing bookmark

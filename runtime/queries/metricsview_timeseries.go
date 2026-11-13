@@ -283,8 +283,9 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 			}
 		}
 
+		// Buckets are clamped to the range of a protobuf timestamp: truncating a time near 0001-01-01 in a time zone east of UTC lands in year 0.
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(t),
+			Ts:      pbutil.ClampedTimestamp(t),
 			Records: records,
 		})
 		start = addTo(t, g, dur, tz)
@@ -343,7 +344,7 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 		}
 		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(start),
+			Ts:      pbutil.ClampedTimestamp(start),
 			Records: nullRecords,
 		})
 		start = addTo(start, g, d, tz)
@@ -372,7 +373,7 @@ func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct
 		}
 		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(start),
+			Ts:      pbutil.ClampedTimestamp(start),
 			Records: nullRecords,
 		})
 		newStart := addToNew(start, g, d, tz)
