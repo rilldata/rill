@@ -14,6 +14,10 @@ import (
 func TestGetIFrameValidation(t *testing.T) {
 	open, err := embedopen.Encode(&embedopen.Payload{Kind: embedopen.KindReport, Name: "r1"})
 	require.NoError(t, err)
+	openPath, err := embedopen.Encode(&embedopen.Payload{Kind: embedopen.KindReport, Name: "../personal/c1"})
+	require.NoError(t, err)
+	openBackslash, err := embedopen.Encode(&embedopen.Payload{Kind: embedopen.KindReport, Name: `..\personal\c1`})
+	require.NoError(t, err)
 
 	tt := []struct {
 		name    string
@@ -29,6 +33,16 @@ func TestGetIFrameValidation(t *testing.T) {
 			name:    "invalid open",
 			req:     &adminv1.GetIFrameRequest{Org: "o", Project: "p", Open: "not-valid", ExternalUserId: "u1"},
 			wantErr: "invalid open",
+		},
+		{
+			name:    "open with a path as name",
+			req:     &adminv1.GetIFrameRequest{Org: "o", Project: "p", Open: openPath, ExternalUserId: "u1"},
+			wantErr: "name can't contain slashes",
+		},
+		{
+			name:    "open with a backslash in name",
+			req:     &adminv1.GetIFrameRequest{Org: "o", Project: "p", Open: openBackslash, ExternalUserId: "u1"},
+			wantErr: "name can't contain slashes",
 		},
 		{
 			name:    "open without external user ID",

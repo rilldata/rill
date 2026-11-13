@@ -622,6 +622,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
 		}
+		// The name is used to look up the report's virtual file, so it must be a plain name and not a path.
+		// Otherwise, it could resolve to another kind of virtual file, whose content the embed user controls.
+		if strings.ContainsAny(open.Name, `/\`) {
+			return nil, status.Error(codes.InvalidArgument, "invalid open: name can't contain slashes")
+		}
 	}
 
 	if !req.Navigation && req.Resource == "" && open == nil {
@@ -675,7 +680,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// When opening a report, the embed opens the explore dashboard it targets.
-	// If navigation is disabled, limit access to the report and its dashboard.
+	// If navigation is disabled, limit access the same way as when the report runs (see getEmbedReportMeta).
 	if open != nil {
 		// The open payload is not signed, so only allow opening a report created by the embed user.
 		// Otherwise, a user could edit the payload to open another user's report and gain access to its dashboard.
@@ -691,10 +696,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		// Reports created from an embed only support explore dashboards (see yamlForManagedReport).
 		req.Type = runtime.ResourceKindExplore
 		if !req.Navigation {
-			overrideResources = []database.ResourceName{
-				{Type: runtime.ResourceKindReport, Name: open.Name},
-				{Type: runtime.ResourceKindExplore, Name: embedInfo.explore},
-			}
+			// Limit the iframe to the resources the report is limited to, which are those of the embed it was created from.
+			// If the report is not limited, there is no override, so the resource restrictions of the user's identity apply.
+			// The report itself is not one of the resources: a report gives transitive access to the resources of its query,
+			// which the embed user writes, so it could give access to a metrics view outside of those resources.
+			// The embed doesn't need it either, since the runtime lets the creator of a report read it regardless.
+			overrideResources = embedInfo.resources
 		}
 	}
 
