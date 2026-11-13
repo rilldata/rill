@@ -30,6 +30,8 @@ func TestValidity(t *testing.T) {
 	valid := []string{
 		"rill_usr_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 		"rill_svc_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
+		"rill_mgc_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
+		"rill_mgs_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 	}
 	for _, tt := range valid {
 		_, err := FromString(tt)

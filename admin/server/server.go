@@ -367,6 +367,18 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	if strings.HasPrefix(method, "/rill.admin.v1.AIService") {
 		limit = ratelimit.Sensitive
 	}
+	// Throttle password guesses for password-protected magic tokens.
+	// Each client gets its own strict limit for a token, so one client's wrong guesses can't lock the other recipients of the link out.
+	// The token-wide default limit (the key for a magic token is its ID) still applies below, which bounds guessing from many clients at once.
+	if method == adminv1.AdminService_UnlockMagicAuthToken_FullMethodName {
+		clientKey := ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID()+":"+observability.GrpcPeer(ctx))
+		if err := s.limiter.Limit(ctx, clientKey, ratelimit.Sensitive); err != nil {
+			if errors.As(err, &ratelimit.QuotaExceededError{}) {
+				return ctx, status.Error(codes.ResourceExhausted, err.Error())
+			}
+			return ctx, err
+		}
+	}
 
 	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {

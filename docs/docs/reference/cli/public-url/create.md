@@ -18,6 +18,7 @@ rill public-url create [<project-name>] <explore> [flags]
       --ttl-minutes int   Duration until the token expires (use 0 for no expiry)
       --filter string     Limit access to the provided filter (json)
       --fields strings    Limit access to the provided fields
+      --password          Require recipients to enter a password (at least 8 characters, at most 72 UTF-8 bytes); it is prompted for, or read from stdin when not interactive
 ```
 
 ### Global flags

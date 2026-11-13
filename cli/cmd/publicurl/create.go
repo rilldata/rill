@@ -1,8 +1,11 @@
 package publicurl
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -19,6 +22,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var ttlMinutes int
 	var filter string
 	var fields []string
+	var password bool
 
 	createCmd := &cobra.Command{
 		Use:   "create [<project-name>] <explore>",
@@ -59,12 +63,34 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				mvFilterExpr[mv] = filterExpr
 			}
 
+			// The password is not accepted as a flag value, since that would leave it in the shell history and the process list.
+			// It is prompted for instead; non-interactive callers pass it on stdin.
+			var passwordValue string
+			if password {
+				if ch.Interactive {
+					passwordValue, err = cmdutil.PasswordPrompt("Password for the public URL")
+					if err != nil {
+						return err
+					}
+				} else {
+					line, err := bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
+					if err != nil && !errors.Is(err, io.EOF) {
+						return fmt.Errorf("failed to read the password from stdin: %w", err)
+					}
+					passwordValue = strings.TrimRight(line, "\r\n")
+					if passwordValue == "" {
+						return errors.New("--password requires the password on stdin when not running interactively")
+					}
+				}
+			}
+
 			res, err := client.IssueMagicAuthToken(cmd.Context(), &adminv1.IssueMagicAuthTokenRequest{
 				Org:                ch.Org,
 				Project:            project,
 				TtlMinutes:         int64(ttlMinutes),
 				MetricsViewFilters: mvFilterExpr,
 				Fields:             fields,
+				Password:           passwordValue,
 				Resources: []*adminv1.ResourceName{
 					{
 						Type: runtime.ResourceKindExplore,
@@ -87,6 +113,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 0, "Duration until the token expires (use 0 for no expiry)")
 	createCmd.Flags().StringVar(&filter, "filter", "", "Limit access to the provided filter (json)")
 	createCmd.Flags().StringSliceVar(&fields, "fields", nil, "Limit access to the provided fields")
+	createCmd.Flags().BoolVar(&password, "password", false, "Require recipients to enter a password (at least 8 characters, at most 72 UTF-8 bytes); it is prompted for, or read from stdin when not interactive")
 
 	return createCmd
 }
