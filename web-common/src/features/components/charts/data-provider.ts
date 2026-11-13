@@ -18,7 +18,11 @@ import type {
   TimeDimensionDefinition,
 } from "./types";
 import { resolveEphemeralMeasureSpec } from "./ephemeral-measures";
-import { adjustDataForTimeZone, getFieldsByType } from "./util";
+import {
+  adjustDataForTimeZone,
+  getFieldsByType,
+  mergeComparisonRowsAcrossDST,
+} from "./util";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
@@ -111,17 +115,23 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
       );
 
       let data = chartData?.data?.data;
+      const hasComparison = $timeAndFilterStore.showTimeComparison;
+      const timeZone = $timeAndFilterStore.timeRange.timeZone || "UTC";
 
       if (timeDimensions?.length && $timeAndFilterStore.timeGrain) {
-        data = adjustDataForTimeZone(
-          data,
-          timeDimensions,
-          $timeAndFilterStore.timeRange.timeZone || "UTC",
-        );
+        if (hasComparison) {
+          data = mergeComparisonRowsAcrossDST(
+            data,
+            timeDimensions,
+            dimensions,
+            timeZone,
+            $timeAndFilterStore.timeGrain,
+          );
+        }
+        data = adjustDataForTimeZone(data, timeDimensions, timeZone);
       }
 
       const domainValues = getDomainValues();
-      const hasComparison = $timeAndFilterStore.showTimeComparison;
       const waitingForTimeState =
         $timeAndFilterStore.hasTimeSeries === undefined ||
         ($timeAndFilterStore.hasTimeSeries === true &&

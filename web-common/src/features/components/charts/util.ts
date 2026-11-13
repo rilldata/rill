@@ -1,10 +1,15 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
+import { DateTime } from "luxon";
 import type { Config } from "vega-lite";
 import { getChroma } from "../../themes/theme-utils";
 import { OTHER_VALUE } from "./circular/constants";
@@ -139,6 +144,72 @@ export function adjustDataForTimeZone(
     });
     return adjustedDatum;
   });
+}
+
+/**
+ * Merges rows that the comparison join split apart across a DST transition.
+ *
+ * The backend aligns comparison buckets by shifting them a fixed number of days in UTC,
+ * so a local-midnight bucket on one side of a DST change lands an hour off from the base bucket
+ * (e.g. `07:00Z` holding only `*_prev` next to `08:00Z` holding only the base value).
+ * For grains of a day or larger every bucket starts at local midnight,
+ * so rounding each timestamp to the nearest local midnight recovers the bucket both rows belong to.
+ */
+export function mergeComparisonRowsAcrossDST(
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  timeFields: string[],
+  dimensionFields: string[],
+  timeZone: string,
+  timeGrain: V1TimeGrain | undefined,
+) {
+  if (
+    !data?.length ||
+    !timeFields.length ||
+    !timeGrain ||
+    V1TimeGrainToOrder[timeGrain] <
+      V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]
+  ) {
+    return data;
+  }
+
+  const merged = new Map<string, V1MetricsViewAggregationResponseDataItem>();
+  for (const datum of data) {
+    const row = { ...datum };
+    const keyParts: unknown[] = [];
+    for (const timeField of timeFields) {
+      const value = row[timeField];
+      if (typeof value !== "string") {
+        keyParts.push(value);
+        continue;
+      }
+      const bucket = DateTime.fromISO(value, { zone: timeZone })
+        .plus({ hours: 12 })
+        .startOf("day");
+      if (!bucket.isValid) {
+        keyParts.push(value);
+        continue;
+      }
+      row[timeField] = bucket.toUTC().toISO({ suppressMilliseconds: true });
+      keyParts.push(row[timeField]);
+    }
+    for (const dimensionField of dimensionFields) {
+      keyParts.push(row[dimensionField]);
+    }
+    const key = JSON.stringify(keyParts);
+
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, row);
+      continue;
+    }
+    for (const field in row) {
+      if (existing[field] === null || existing[field] === undefined) {
+        existing[field] = row[field];
+      }
+    }
+  }
+
+  return Array.from(merged.values());
 }
 
 export function resolveColor(
