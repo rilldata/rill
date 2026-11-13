@@ -37,6 +37,10 @@
             info.row.original.alert.state.executionHistory[0]?.startedOn,
           ownerId:
             info.row.original.alert.spec.annotations["admin_owner_user_id"],
+          embedOwnerId:
+            info.row.original.alert?.spec?.annotations?.[
+              "admin_embed_owner_id"
+            ],
           lastTriggerErrorMessage:
             info.row.original.alert.state.executionHistory[0]?.result
               .errorMessage,

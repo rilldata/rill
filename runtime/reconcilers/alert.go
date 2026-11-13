@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -545,12 +546,35 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ownerID = a.Spec.Annotations["admin_owner_user_id"]
 	}
 	adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
-		return fmt.Errorf("failed to get alert metadata: %w", err)
+	var executeErr error
+	if err != nil {
+		switch {
+		case isEmbedCreatedAlert(a):
+			// Alerts created from an embed run as the identity that the admin service resolves for the embed user.
+			// Without it, they would run without any identity, so they fail instead (e.g. if the embed user is missing or inactive).
+			// The failure is added to the execution history, so the owner sees why the alert didn't run.
+			executeErr = fmt.Errorf("failed to get alert metadata: %w", err)
+		case !errors.Is(err, drivers.ErrNotImplemented):
+			return fmt.Errorf("failed to get alert metadata: %w", err)
+		}
+	}
+
+	// Embed users can only use alerts if the project enables the "alerts" feature flag for them (it's disabled for embeds by default).
+	// The UI hides alerts otherwise, but this check also covers alerts created directly through the API.
+	if executeErr == nil && isEmbedCreatedAlert(a) {
+		flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)})
+		if err != nil {
+			return fmt.Errorf("failed to resolve feature flags: %w", err)
+		}
+		if !flags["alerts"] {
+			executeErr = errors.New(`alerts created from an embed require the "alerts" feature flag to be enabled for embed users`)
+		}
 	}
 
 	// Run alert queries and send notifications
-	executeErr := r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
+	if executeErr == nil {
+		executeErr = r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
+	}
 	if executeErr == nil {
 		return nil
 	}
@@ -716,7 +740,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"format":         true,
 			"limit":          rowsLimit + 1, // The extra row tells whether more rows matched than the notifications include.
 		},
-		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
+		Claims: alertQueryClaims(a, adminMeta, nil),
 	})
 	if err != nil {
 		return nil, alertFailRows{}, fmt.Errorf("failed to resolve alert: %w", err)
@@ -887,6 +911,31 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 	}
 
+	// Alerts created from an embed don't notify without admin metadata,
+	// since it's only missing if their owner couldn't be resolved (see executeAll), and the alert is effectively paused.
+	embedCreated := isEmbedCreatedAlert(a)
+	if embedCreated && adminMeta == nil {
+		msg = nil
+	}
+
+	// Alerts created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no edit link; they have an unsubscribe link,
+	// and the creator's notification has an open link to the embedder's app if rill.yaml configures `embeds.open_url`.
+	// The open link only works for the embed user who created the alert, since the embedder's app opens it with their external user ID.
+	var embedLink string
+	if msg != nil && embedCreated {
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+		if err != nil {
+			return err
+		}
+		if inst.EmbedOpenURL != "" {
+			embedLink, err = embedopen.Link(inst.EmbedOpenURL, &embedopen.Payload{Kind: embedopen.KindAlert, Name: self.Meta.Name.Name, ExecutionTime: executionTime})
+			if err != nil {
+				return fmt.Errorf("failed to build open link: %w", err)
+			}
+		}
+	}
+
 	// Send a notification (if applicable)
 	var notificationErr error
 	var sentNotifications bool
@@ -935,7 +984,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					// Set recipient-specific URLs if available from admin metadata.
 					// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
-						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
+						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok && embedCreated {
+							if recipientURLs.EmbedOwner {
+								opts.OpenLink = embedLink
+							}
+							opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
+						} else if ok {
 							// Use recipient-specific URLs (with magic token)
 							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
 							if err != nil {
@@ -1041,14 +1095,11 @@ func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
 		Annotations:        a.Spec.Annotations,
 		ExecutionTime:      executionTime,
-		Claims: &runtime.SecurityClaims{
-			UserAttributes: alertQueryForAttributes(a, adminMeta),
-			Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
-		},
-		Format:        a.Spec.ExportFormat,
-		IncludeHeader: a.Spec.ExportIncludeHeader,
-		Limit:         a.Spec.ExportLimit,
-		Priority:      alertQueryPriority,
+		Claims:             alertQueryClaims(a, adminMeta, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics}),
+		Format:             a.Spec.ExportFormat,
+		IncludeHeader:      a.Spec.ExportIncludeHeader,
+		Limit:              a.Spec.ExportLimit,
+		Priority:           alertQueryPriority,
 	})
 	if errors.Is(err, context.Canceled) {
 		return nil, false, err
@@ -1172,6 +1223,26 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// alertQueryClaims returns the security claims that the alert's queries run with.
+// For alerts created from an embed, the claims also include the user ID and resource restrictions that the admin service resolved for the embed user.
+func alertQueryClaims(a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, perms []runtime.Permission) *runtime.SecurityClaims {
+	claims := &runtime.SecurityClaims{
+		UserAttributes: alertQueryForAttributes(a, adminMeta),
+		Permissions:    perms,
+	}
+	if adminMeta != nil {
+		claims.UserID = adminMeta.QueryForUserID
+		claims.AdditionalRules = runtime.SecurityRulesForResources(adminMeta.RestrictResources, adminMeta.Resources)
+	}
+	return claims
+}
+
+// isEmbedCreatedAlert returns true if the alert was created from an embed.
+// The embed owner annotation is only set by the admin service for alerts created from an embed.
+func isEmbedCreatedAlert(a *runtimev1.Alert) bool {
+	return a.Spec.Annotations["admin_embed_owner_id"] != ""
 }
 
 // alertFailRows are the rows that matched an alert's criteria, formatted for inclusion in notifications.

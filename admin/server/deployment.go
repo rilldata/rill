@@ -611,13 +611,13 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.open", req.Open),
 	)
 
-	// Decode the "rill_open" param of an open link from an email sent by a report created from an embed.
+	// Decode the "rill_open" param of an open link from an email sent by a report or alert created from an embed.
 	var open *embedopen.Payload
 	if req.Open != "" {
 		if req.Resource != "" {
 			return nil, status.Error(codes.InvalidArgument, "open can't be combined with resource")
 		}
-		// Only reports created from an embed can be opened, and they are owned by the embed user's external user ID.
+		// Only reports and alerts created from an embed can be opened, and they are owned by the embed user's external user ID.
 		if req.ExternalUserId == "" {
 			return nil, status.Error(codes.InvalidArgument, "open requires external_user_id")
 		}
@@ -626,7 +626,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
 		}
-		// The name is used to look up the report's virtual file, so it must be a plain name and not a path.
+		// The name is used to look up the virtual file of the report or alert, so it must be a plain name and not a path.
 		// Otherwise, it could resolve to another kind of virtual file, whose content the embed user controls.
 		if strings.ContainsAny(open.Name, `/\`) {
 			return nil, status.Error(codes.InvalidArgument, "invalid open: name can't contain slashes")
@@ -687,28 +687,38 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}}
 	}
 
-	// When opening a report, the embed opens the explore dashboard it targets.
-	// If navigation is disabled, limit access the same way as when the report runs (see getEmbedReportMeta).
+	// When opening a report or alert, the embed opens the explore dashboard it targets.
+	// If navigation is disabled, limit access the same way as when the report or alert runs (see resolveEmbedOwnerIdentity).
 	if open != nil {
-		// The open payload is not signed, so only allow opening a report created by the embed user.
-		// Otherwise, a user could edit the payload to open another user's report and gain access to its dashboard.
+		var vfPath string
+		switch open.Kind {
+		case embedopen.KindReport:
+			vfPath = virtualFilePathForManagedReport(open.Name)
+		case embedopen.KindAlert:
+			vfPath = virtualFilePathForManagedAlert(open.Name)
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid open: unsupported kind %q", open.Kind)
+		}
+
+		// The open payload is not signed, so only allow opening a report or alert created by the embed user.
+		// Otherwise, a user could edit the payload to open another user's report or alert and gain access to its dashboard.
 		// Embed users are identified by their external user ID, and the virtual file's embed owner is the source of truth for ownership.
-		embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, open.Name)
+		embedInfo, err := s.embedCreatedInfo(ctx, proj.ID, vfPath)
 		if err != nil {
 			return nil, err
 		}
 		if embedInfo == nil || embedInfo.ownerID == "" || embedInfo.ownerID != subjectForExternalUser(req.ExternalUserId, proj.ID) {
-			return nil, status.Errorf(codes.PermissionDenied, "report %q was not created by the provided external_user_id", open.Name)
+			return nil, status.Errorf(codes.PermissionDenied, "%s %q was not created by the provided external_user_id", open.Kind, open.Name)
 		}
 
-		// Reports created from an embed only support explore dashboards (see yamlForManagedReport).
+		// Reports and alerts created from an embed only support explore dashboards (see yamlForManagedReport and yamlForManagedAlert).
 		req.Type = runtime.ResourceKindExplore
 		if !req.Navigation {
-			// Limit the iframe to the resources the report is limited to, which are those of the embed it was created from.
-			// If the report is not limited, there is no override, so the resource restrictions of the user's identity apply.
-			// The report itself is not one of the resources: a report gives transitive access to the resources of its query,
+			// Limit the iframe to the resources the report or alert is limited to, which are those of the embed it was created from.
+			// If it is not limited, there is no override, so the resource restrictions of the user's identity apply.
+			// The report or alert itself is not one of the resources: it gives transitive access to the resources of its query,
 			// which the embed user writes, so it could give access to a metrics view outside of those resources.
-			// The embed doesn't need it either, since the runtime lets the creator of a report read it regardless.
+			// The embed doesn't need it either, since the runtime lets the creator of a report or alert read it regardless.
 			overrideResources = embedInfo.resources
 		}
 	}
@@ -748,7 +758,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, err
 	}
 
-	// Embed users with an external user ID can create reports, which run as the identity of their latest iframe.
+	// Embed users with an external user ID can create reports and alerts, which run as the identity of their latest iframe.
 	// So we store the identity, and issue an admin token that identifies the embed user.
 	// This happens after issuing the runtime token, so invalid combinations of "for" and external user ID don't write anything.
 	var adminToken string
@@ -769,7 +779,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			return nil, err
 		}
 
-		// Pass the final overrideResources so reports created from the embed are limited to the same resources as the iframe.
+		// Pass the final overrideResources so reports and alerts created from the embed are limited to the same resources as the iframe.
 		adminToken, err = s.admin.IssueEmbedToken(proj.ID, embedUserID, overrideResources, ttlDuration)
 		if err != nil {
 			return nil, err
@@ -795,7 +805,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	// Pass the decoded open payload, so the iframe doesn't need to decode it again.
 	if open != nil {
-		iframeQuery["open_report"] = open.Name
+		iframeQuery["open_kind"] = string(open.Kind)
+		iframeQuery["open_name"] = open.Name
 		if !open.ExecutionTime.IsZero() {
 			iframeQuery["open_execution_time"] = open.ExecutionTime.UTC().Format(time.RFC3339)
 		}

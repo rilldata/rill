@@ -765,6 +765,102 @@ func TestResolveEmbedReportSecurity(t *testing.T) {
 	}
 }
 
+func TestResolveEmbedAlertSecurity(t *testing.T) {
+	alert := func(annotations map[string]string, notifiers ...*runtimev1.Notifier) *runtimev1.Resource {
+		return &runtimev1.Resource{
+			Meta: &runtimev1.ResourceMeta{
+				Name:           &runtimev1.ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+				StateUpdatedOn: timestamppb.Now(),
+			},
+			Resource: &runtimev1.Resource_Alert{
+				Alert: &runtimev1.Alert{
+					Spec: &runtimev1.AlertSpec{
+						Notifiers:   notifiers,
+						Annotations: annotations,
+					},
+					State: &runtimev1.AlertState{},
+				},
+			},
+		}
+	}
+	emailProps, err := structpb.NewStruct(map[string]any{"recipients": []any{"recipient@example.com"}})
+	require.NoError(t, err)
+	email := &runtimev1.Notifier{Connector: "email", Properties: emailProps}
+	slackProps, err := structpb.NewStruct(map[string]any{"channels": []any{"general"}})
+	require.NoError(t, err)
+	slack := &runtimev1.Notifier{Connector: "slack", Properties: slackProps}
+
+	embedAlert := alert(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}, email)
+	// Embed alerts can't have Slack notifiers, but the Slack channel allowance must not apply to them if they did.
+	embedSlackAlert := alert(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}, slack)
+	userAlert := alert(map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}, email)
+	codeAlert := alert(map[string]string{"team": "growth"}, email)
+
+	tests := []struct {
+		name   string
+		alert  *runtimev1.Resource
+		claims *SecurityClaims
+		want   bool
+	}{
+		{
+			name:   "embed owner can access embed alert",
+			alert:  embedAlert,
+			claims: &SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}},
+			want:   true,
+		},
+		{
+			name:   "other embed user can't access embed alert",
+			alert:  embedAlert,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}},
+			want:   false,
+		},
+		{
+			name:   "recipient can't access embed alert",
+			alert:  embedAlert,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "recipient@example.com"}},
+			want:   false,
+		},
+		{
+			name:   "slack channel doesn't grant access to embed alert",
+			alert:  embedSlackAlert,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "other@example.com"}},
+			want:   false,
+		},
+		{
+			name:   "admin can access embed alert",
+			alert:  embedAlert,
+			claims: &SecurityClaims{UserID: "u3", UserAttributes: map[string]any{"id": "u3", "email": "admin@example.com", "admin": true}},
+			want:   true,
+		},
+		{
+			name:   "recipient can access user alert",
+			alert:  userAlert,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "recipient@example.com"}},
+			want:   true,
+		},
+		{
+			name:   "user without an ID isn't the owner of an alert without an owner",
+			alert:  codeAlert,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}},
+			want:   false,
+		},
+		{
+			name:   "embed owner can access embed alert outside of the embed's resources",
+			alert:  embedAlert,
+			claims: &SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}, AdditionalRules: []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Allow: true, Exclusive: true, ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindExplore, Name: "e1"}}}}}}},
+			want:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, tt.claims, tt.alert)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got.CanAccess())
+		})
+	}
+}
+
 func TestResolveEmbedCanvasSecurity(t *testing.T) {
 	canvas := func(annotations map[string]string) *runtimev1.Resource {
 		return &runtimev1.Resource{

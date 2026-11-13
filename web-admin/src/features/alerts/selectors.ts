@@ -104,7 +104,8 @@ export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.alert.spec.annotations["admin_owner_user_id"],
+          !data.resource?.alert?.spec?.annotations?.["admin_owner_user_id"] &&
+          !data.resource?.alert?.spec?.annotations?.["admin_embed_owner_id"],
       },
     },
   );

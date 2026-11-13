@@ -6441,7 +6441,7 @@ definitions:
         type: string
       embedOpenUrl:
         type: string
-        description: Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
+        description: Base URL for open links in emails from reports and alerts created from an embed (`embeds.open_url` in rill.yaml).
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related

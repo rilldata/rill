@@ -57,11 +57,21 @@ type AlertURLs struct {
 	OpenURL        string
 	EditURL        string
 	UnsubscribeURL string
+	// EmbedOwner is true if the recipient is the embed user who created the alert.
+	// Only that recipient gets an open link to the embedder's app.
+	EmbedOwner bool
 }
 
 type AlertMetadata struct {
 	RecipientURLs      map[string]AlertURLs
 	QueryForAttributes map[string]any
+	// QueryForUserID is the user ID to run the alert's queries as.
+	// It is only set for alerts created from an embed, whose identity is resolved by the admin service.
+	QueryForUserID string
+	// RestrictResources is true if the alert's data must only be accessed through Resources.
+	// It is set for alerts created from an embed that was limited to specific resources.
+	RestrictResources bool
+	Resources         []*runtimev1.ResourceName
 }
 
 // Config holds configuration returned by the admin service for the runtime instance.
