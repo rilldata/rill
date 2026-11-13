@@ -7557,6 +7557,8 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for NotifyOnError
 
+	// no validation rules for NotifyRowsLimit
+
 	// no validation rules for Renotify
 
 	// no validation rules for RenotifyAfterSeconds

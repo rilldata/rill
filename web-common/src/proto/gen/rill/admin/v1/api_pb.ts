@@ -19224,6 +19224,13 @@ export class AlertOptions extends Message<AlertOptions> {
   exportLimit = protoInt64.zero;
 
   /**
+   * Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+   *
+   * @generated from field: uint32 notify_rows_limit = 22;
+   */
+  notifyRowsLimit = 0;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -19292,6 +19299,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 22, name: "notify_rows_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },

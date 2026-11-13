@@ -207,6 +207,8 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
 
+  - **`rows_limit`** - _[integer]_ - Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
+
 ### `annotations`
 
 _[object]_ - Key-value pairs used for annotations.

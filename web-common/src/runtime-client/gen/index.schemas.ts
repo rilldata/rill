@@ -304,6 +304,8 @@ export interface V1AlertSpec {
   notifyOnRecover?: boolean;
   notifyOnFail?: boolean;
   notifyOnError?: boolean;
+  /** Maximum number of rows that matched the alert criteria to include in notifications for failed checks. */
+  notifyRowsLimit?: number;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   notifiers?: V1Notifier[];
