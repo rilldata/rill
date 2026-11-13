@@ -3,8 +3,6 @@ import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
-import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
-import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import {
   V1ExportFormat,
@@ -16,6 +14,7 @@ import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-view
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { page } from "$app/stores";
 import { get } from "svelte/store";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -72,34 +71,28 @@ export function getNewAlertInitialFormValues(
 export function getNewAlertInitialFiltersFormValues(
   client: RuntimeClient,
   metricsViewName: string,
-  exploreName: string,
-  exploreState: Partial<ExploreState>,
 ) {
-  const metricsViewMetadata = new ExploreMetricsViewMetadata(
-    client,
-    metricsViewName,
-    exploreName,
-  );
-
   const metricsViewProvider = new MetricsViewsProvider(client, [
     metricsViewName,
   ]);
   const yamlConfigProvider = new YAMLConfigProvider();
-  const filters = new ExpressionFilterManager(
+
+  const expressionFilterManager = new ExpressionFilterManager(
     metricsViewProvider,
     yamlConfigProvider,
   );
-  filters.storeSync.setUrlParams(get(page).url.searchParams);
+  expressionFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
 
-  const timeControls = new TimeControls(metricsViewMetadata, {
-    selectedTimeRange: exploreState.selectedTimeRange,
-    selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
-    showTimeComparison: exploreState.showTimeComparison ?? false,
-    selectedTimezone: exploreState.selectedTimezone ?? "UTC",
-  });
+  const timeFilterManager = new TimeFilterManager(
+    client,
+    metricsViewProvider,
+    yamlConfigProvider,
+  );
+  timeFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
+
   return {
-    filters,
-    timeControls,
+    expressionFilterManager,
+    timeFilterManager,
     cleanup: () => {
       metricsViewProvider.cleanup();
       yamlConfigProvider.cleanup?.();

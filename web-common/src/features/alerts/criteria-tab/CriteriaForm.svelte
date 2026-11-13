@@ -8,67 +8,75 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { slide } from "svelte/transition";
   import type { SuperForm } from "sveltekit-superforms/client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
-  export let superFormInstance: SuperForm<AlertFormValues>;
-  export let timeControls: TimeControls;
-  export let index: number;
+  let {
+    superFormInstance,
+    timeFilterManager,
+    index,
+  }: {
+    superFormInstance: SuperForm<AlertFormValues>;
+    timeFilterManager: TimeFilterManager;
+    index: number;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ form, errors, validate } = superFormInstance);
-  $: ({ selectedComparisonTimeRange } = timeControls);
+  let { form, errors, validate } = $derived(superFormInstance);
 
-  $: metricsView = useMetricsViewValidSpec(
-    runtimeClient,
-    $form["metricsViewName"],
+  let metricsView = $derived(
+    useMetricsViewValidSpec(runtimeClient, $form["metricsViewName"]),
   );
 
   // Ephemeral measures have no spec entry; synthesize one so their display
   // name and criteria options resolve like any other measure.
-  $: allMeasures = [
+  let allMeasures = $derived([
     ...($metricsView.data?.measures ?? []),
     ...($form["ephemeralMeasures"] ?? []).map(ephemeralMeasureToSpecMeasure),
-  ];
+  ]);
 
-  $: measure = allMeasures.find((m) => m.name === $form["measure"]);
-  $: measureOptions = [
+  let measure = $derived(allMeasures.find((m) => m.name === $form["measure"]));
+  let measureOptions = $derived([
     {
       value: $form["measure"],
       label: measure?.displayName?.length
         ? measure.displayName
         : (measure?.expression ?? $form["measure"]),
     },
-  ];
-  $: selectedMeasure = allMeasures.find(
-    (m) => m.name === $form["criteria"][index].measure,
+  ]);
+  let selectedMeasure = $derived(
+    allMeasures.find((m) => m.name === $form["criteria"][index].measure),
   );
 
-  $: typeOptions = getTypeOptions(
-    $form,
-    $selectedComparisonTimeRange,
-    selectedMeasure,
+  let typeOptions = $derived(
+    getTypeOptions(
+      $form,
+      timeFilterManager.comparisonTimeRange,
+      selectedMeasure,
+    ),
   );
 
   // Debounce the update of value. This avoids constant refetches
-  let value: string = "0";
+  let value = $state("0");
   const valueUpdater = debounce(() => {
     if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
     void validate(`criteria[${index}].value1`);
   }, 500);
 
   // memoize `type` to avoid unnecessary calls to `validateField("criteria")`
-  $: type = $form["criteria"][index].type;
+  let type = $derived($form["criteria"][index].type);
   // changing type should re-trigger `criteria` validation,
   // especially when changed to/from a percent type
-  $: if (type) void validate(`criteria[${index}].value1`);
+  $effect(() => {
+    if (type) void untrack(() => validate(`criteria[${index}].value1`));
+  });
 
-  $: groupErr = parseCriteriaError($errors?.criteria?.[index]);
+  let groupErr = $derived(parseCriteriaError($errors?.criteria?.[index]));
 
   onMount(() => {
     value = $form["criteria"][index].value1;

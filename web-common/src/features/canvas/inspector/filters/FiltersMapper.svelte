@@ -15,13 +15,8 @@
 
   export let component: BaseCanvasComponent;
 
-  $: ({
-    specStore,
-    type,
-    localExpressionFilters,
-    parent: { name: canvasName },
-    timeAndFilterStore,
-  } = component);
+  $: ({ specStore, type, localExpressionFilters, timeAndFilterStore } =
+    component);
 
   $: localParamValues = $specStore;
 
@@ -70,9 +65,7 @@
       {#if config.type === "time_filters"}
         {#if hasTimeSeries}
           <TimeFiltersInput
-            {canvasName}
             id={key}
-            {metricsView}
             {component}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}

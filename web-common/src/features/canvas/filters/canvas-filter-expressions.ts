@@ -1,14 +1,14 @@
-import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 /**
- * Extracts filters from a canvas entity, scoped per metrics view.
+ * Extracts the filters of a canvas filter manager, scoped per metrics view.
  * Returns a map of metrics view name to filter expression.
  */
 export function getCanvasFilters(
-  canvasEntity: CanvasEntity,
+  expressionFilterManager: ExpressionFilterManager,
 ): Record<string, V1Expression> | undefined {
-  const exprByMv = canvasEntity.expressionFilterManager.topLevelJoiner.expr;
+  const exprByMv = expressionFilterManager.topLevelJoiner.expr;
 
   // Check if there are any non-empty filters
   const hasFilters = Object.values(exprByMv).some(

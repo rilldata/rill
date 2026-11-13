@@ -1,5 +1,9 @@
-import { type V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ExploreTimeRange,
+  type V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
 
 type YAMLConfigProviderEvents = {
   /** Fired after `update` has applied the config from a spec. */
@@ -15,6 +19,17 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<Record<string, boolean>>({});
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
+
+  public restrictedDimensions = $state<string[] | undefined>(undefined);
+  public primaryTimeDimension = $state<string | undefined>(undefined);
+  public restrictedMeasures = $state<string[] | undefined>(undefined);
+
+  public defaultTimeRange = $state<string | undefined>(undefined);
+  public timeRanges = $state<V1ExploreTimeRange[]>([]);
+  public allowCustomTimeRange = $state(false);
+  public defaultTimeZone = $state<string>(DEFAULT_TIMEZONE);
+  public timeZones = $state<string[]>([]);
+
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
@@ -24,24 +39,58 @@ export class YAMLConfigProvider {
     this.events,
   ) as typeof this.events.on;
 
-  public update(
-    defaultFilters: Record<string, V1Expression | undefined>,
-    pinnedFilters: string[],
-    requiredFilters: string[],
-  ) {
-    this.defaultFilters = defaultFilters;
+  public update({
+    defaultFilters,
+    pinnedFilters,
+    requiredFilters,
+
+    restrictedDimensions,
+    primaryTimeDimension,
+    restrictedMeasures,
+
+    defaultTimeRange,
+    timeRanges,
+    allowCustomTimeRange,
+    defaultTimeZone,
+    timeZones,
+  }: {
+    defaultFilters?: YAMLConfigProvider["defaultFilters"];
+    pinnedFilters?: string[];
+    requiredFilters?: string[];
+
+    restrictedDimensions?: YAMLConfigProvider["restrictedDimensions"];
+    primaryTimeDimension?: YAMLConfigProvider["primaryTimeDimension"];
+    restrictedMeasures?: YAMLConfigProvider["restrictedMeasures"];
+
+    defaultTimeRange?: YAMLConfigProvider["defaultTimeRange"];
+    timeRanges?: YAMLConfigProvider["timeRanges"];
+    allowCustomTimeRange?: YAMLConfigProvider["allowCustomTimeRange"];
+    defaultTimeZone?: YAMLConfigProvider["defaultTimeZone"];
+    timeZones?: YAMLConfigProvider["timeZones"];
+  }) {
+    this.defaultFilters = defaultFilters ?? {};
 
     const pinnedFiltersRec = Object.fromEntries(
-      pinnedFilters.map((filter) => [filter, true]),
+      pinnedFilters?.map((filter) => [filter, true]) ?? [],
     );
     this.pinnedFilters = { ...pinnedFiltersRec };
     this.specPinnedFilters = { ...pinnedFiltersRec };
 
     const requiredFiltersRec = Object.fromEntries(
-      requiredFilters.map((filter) => [filter, true]),
+      requiredFilters?.map((filter) => [filter, true]) ?? [],
     );
     this.requiredFilters = { ...requiredFiltersRec };
     this.specRequiredFilters = { ...requiredFiltersRec };
+
+    this.restrictedDimensions = restrictedDimensions;
+    this.primaryTimeDimension = primaryTimeDimension;
+    this.restrictedMeasures = restrictedMeasures;
+
+    this.defaultTimeRange = defaultTimeRange;
+    this.timeRanges = timeRanges ?? [];
+    this.allowCustomTimeRange = allowCustomTimeRange ?? false;
+    this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
+    this.timeZones = timeZones ?? [];
 
     this.events.emit("update");
   }

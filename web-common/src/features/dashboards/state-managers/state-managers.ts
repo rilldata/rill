@@ -34,7 +34,11 @@ import {
   type ContextColWidths,
 } from "../leaderboard-context-column";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import {
+  DashboardConfigProvider,
+  ExploreDashboardConfigProvider,
+} from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -68,6 +72,8 @@ export type StateManagers = {
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
   expressionFilterManager: ExpressionFilterManager;
+  dashboardConfigProvider: DashboardConfigProvider;
+  timeFilterManager: TimeFilterManager;
   cleanup: () => void;
 };
 
@@ -167,14 +173,14 @@ export function createStateManagers({
     },
   );
 
-  const dashboardProvider = new ExploreDashboardConfigProvider(
+  const dashboardConfigProvider = new ExploreDashboardConfigProvider(
     runtimeClient,
     exploreName,
   );
   // Explore urls only carry the singular `f` param, so per metrics view params are ignored here.
   const expressionFilterManager = new ExpressionFilterManager(
-    dashboardProvider.metricsViewsProvider,
-    dashboardProvider.yamlConfigProvider,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
     true,
   );
   expressionFilterManager.storeSync.on("internal-change", () => {
@@ -182,6 +188,24 @@ export function createStateManagers({
       exploreName,
       expressionFilterManager,
     );
+  });
+
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+    {
+      allowCustomTimeRange: true,
+      skipDefaultTimeRange: false,
+      skipTimeGrain: false,
+      log: true,
+    },
+  );
+  timeFilterManager.storeSync.on("change", () => {
+    metricsExplorerStore.syncTimeFilters(exploreName, timeFilterManager);
+  });
+  timeFilterManager.on("rangeResolved", () => {
+    metricsExplorerStore.syncTimeFilters(exploreName, timeFilterManager);
   });
 
   return {
@@ -213,8 +237,11 @@ export function createStateManagers({
     contextColumnWidths,
     defaultExploreState,
     expressionFilterManager,
+    dashboardConfigProvider,
+    timeFilterManager,
     cleanup: () => {
-      dashboardProvider.cleanup?.();
+      dashboardConfigProvider.cleanup?.();
+      timeFilterManager.cleanup();
     },
   };
 }

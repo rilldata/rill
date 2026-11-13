@@ -3,10 +3,7 @@ import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors
 import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { isAbsoluteTimeRange } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DateTime, Interval } from "luxon";
 
 export type BookmarkEntry = {
   resource: V1Bookmark;
@@ -93,21 +90,6 @@ export function getBookmarkData({
   }
 
   return "?" + bookmarkUrlParams.toString();
-}
-
-export function formatTimeRange(
-  start: string,
-  end: string,
-  timeGrain: V1TimeGrain | undefined,
-  timezone: string | undefined,
-) {
-  timezone ??= "UTC";
-  timeGrain ??= V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-  const startTime = DateTime.fromISO(start).setZone(timezone);
-  const endTime = DateTime.fromISO(end).setZone(timezone);
-  const interval = Interval.fromDateTimes(startTime, endTime);
-  if (!interval.isValid) return "";
-  return prettyFormatTimeRange(interval, timeGrain);
 }
 
 /**

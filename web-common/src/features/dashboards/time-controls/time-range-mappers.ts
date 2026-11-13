@@ -15,6 +15,8 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -235,4 +237,177 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
+}
+
+export function mapTimeManagerRangeToV1TimeRange(
+  timeFilterManager: TimeFilterManager | undefined,
+): V1TimeRange | undefined {
+  if (!timeFilterManager?.timeRange) return undefined;
+  if (timeFilterManager.parsedTime) {
+    return {
+      expression: timeFilterManager.timeRange,
+      timeZone: timeFilterManager.timeZone,
+    };
+  }
+
+  // Legacy rill-time handling
+  const timeRange: V1TimeRange = {};
+  switch (timeFilterManager.timeRange) {
+    case TimeRangePreset.CUSTOM:
+      timeRange.start = timeFilterManager.timeStart;
+      timeRange.end = timeFilterManager.timeEnd;
+      break;
+
+    default:
+      if (timeFilterManager.timeRange in PreviousCompleteRangeMap) {
+        const prevCompleteTimeRange: V1TimeRange | undefined =
+          PreviousCompleteRangeMap[timeFilterManager.timeRange];
+        // Backend doesn't support previous complete ranges since it has offset built in.
+        // We add the offset manually as a workaround for now
+        timeRange.isoDuration = prevCompleteTimeRange?.isoDuration;
+        timeRange.isoOffset = prevCompleteTimeRange?.isoOffset;
+        timeRange.roundToGrain = prevCompleteTimeRange?.roundToGrain;
+      } else {
+        timeRange.isoDuration = timeFilterManager.timeRange;
+      }
+      break;
+  }
+
+  timeRange.timeZone = timeFilterManager.timeZone;
+
+  return timeRange;
+}
+
+export function mapTimeManagerComparisonRangeToV1TimeRange(
+  timeFilterManager: TimeFilterManager | undefined,
+  timeRange: V1TimeRange | undefined,
+): V1TimeRange | undefined {
+  if (
+    !timeRange ||
+    !timeFilterManager ||
+    !timeFilterManager.showComparison ||
+    !timeFilterManager.comparisonTimeRange
+  ) {
+    return undefined;
+  }
+
+  let isoDuration = timeRange.isoDuration;
+  const name = timeFilterManager.comparisonTimeRange;
+
+  if (timeRange.expression && TIME_COMPARISON[name]?.rillTimeOffset) {
+    const rt = parseRillTime(timeRange.expression);
+    if (!rt.isOldFormat) {
+      return {
+        expression:
+          rt.toString() + " offset " + TIME_COMPARISON[name]?.rillTimeOffset,
+      };
+    } else {
+      // Handle old syntax differently until we have the backend parser updated.
+      isoDuration = timeRange.expression;
+    }
+  }
+
+  const comparisonTimeRange: V1TimeRange = {};
+  switch (name) {
+    default:
+      comparisonTimeRange.isoOffset = name;
+      comparisonTimeRange.isoDuration = isoDuration;
+      break;
+    case TimeComparisonOption.CONTIGUOUS:
+      comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =
+        isoDuration;
+      break;
+
+    case TimeComparisonOption.CUSTOM:
+      comparisonTimeRange.start = timeFilterManager.comparisonTimeStart;
+      comparisonTimeRange.end = timeFilterManager.comparisonTimeEnd;
+      break;
+  }
+  return comparisonTimeRange;
+}
+
+/**
+ * Sets the time filter url params a {@link TimeFilterManager} is seeded with from API time ranges,
+ * e.g. those saved in a report's or an alert's aggregation request.
+ */
+export function setTimeFilterParamsFromV1TimeRanges(
+  params: URLSearchParams,
+  timeRange: V1TimeRange | undefined,
+  comparisonTimeRange: V1TimeRange | undefined,
+) {
+  if (!timeRange) return;
+
+  const timeRangeParam = mapV1TimeRangeToRillTime(timeRange);
+  if (!timeRangeParam) return;
+  params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+
+  if (timeRange.timeZone) {
+    params.set(ExploreStateURLParams.TimeZone, timeRange.timeZone);
+  }
+
+  if (comparisonTimeRange) {
+    const comparisonParam = mapV1TimeRangeToComparisonTimeOption(
+      timeRange,
+      comparisonTimeRange,
+    );
+    if (comparisonParam) {
+      params.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
+    }
+  }
+}
+
+export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {
+  let duration = timeRange.isoDuration;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    return `${timeRange.start} to ${timeRange.end}`;
+  }
+  return duration ?? timeRange.expression;
+}
+
+export function mapV1TimeRangeToComparisonTimeOption(
+  primaryTimeRange: V1TimeRange,
+  timeRange: V1TimeRange,
+) {
+  let duration = timeRange.isoOffset;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    return `${timeRange.start} to ${timeRange.end}`;
+  } else if (
+    timeRange.isoOffset &&
+    timeRange.isoOffset === timeRange.isoDuration
+  ) {
+    return TimeComparisonOption.CONTIGUOUS;
+  } else if (timeRange.expression) {
+    if (
+      primaryTimeRange.expression &&
+      timeRange.expression.startsWith(primaryTimeRange.expression)
+    ) {
+      const offset = timeRange.expression.replace(
+        primaryTimeRange.expression + " offset ",
+        "",
+      );
+      for (const comparisonOption in TIME_COMPARISON) {
+        if (TIME_COMPARISON[comparisonOption].rillTimeOffset === offset) {
+          return comparisonOption;
+        }
+      }
+
+      return timeRange.expression;
+    }
+
+    return timeRange.expression;
+  }
+
+  return duration;
 }

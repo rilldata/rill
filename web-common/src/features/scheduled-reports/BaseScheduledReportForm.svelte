@@ -4,7 +4,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
@@ -26,15 +25,14 @@
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
-  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
-  import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
   import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   let {
     formId,
@@ -42,12 +40,11 @@
     errors,
     submit,
     enhance,
-    metricsViewName,
     exploreName,
     canvasName = "",
-    canvasStateOverride,
-    filters,
-    timeControls,
+    dashboardConfigProvider,
+    expressionFilterManager,
+    timeFilterManager,
     ephemeralMeasures,
     showEmbedOwnerEmail = false,
     provider,
@@ -57,14 +54,11 @@
     errors: SuperFormErrors<ReportValues>;
     submit: () => void;
     enhance: SuperForm<ReportValues>["enhance"];
-    metricsViewName: string;
     exploreName: string;
     canvasName?: string;
-    // Canvas state (URL search string) to display instead of the page URL; set when
-    // editing a report so the filter bar shows the report's captured state.
-    canvasStateOverride?: string;
-    filters?: ExpressionFilterManager;
-    timeControls?: TimeControls;
+    dashboardConfigProvider: DashboardConfigProvider;
+    expressionFilterManager: ExpressionFilterManager;
+    timeFilterManager: TimeFilterManager;
     ephemeralMeasures?: EphemeralMeasureDef[];
     // Shows the field for the email of the embed user who created the report (see ScheduledReportDialog).
     showEmbedOwnerEmail?: boolean;
@@ -119,8 +113,10 @@
   const showTabOptions = $derived(
     specHasTabGroups($canvasQuery.data?.canvas?.state?.validSpec?.rows),
   );
-  const canvasFiltersEnabled = $derived(
-    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true,
+  // A canvas can turn off its filter bar, in which case its reports do not offer filters either.
+  const filtersEnabled = $derived(
+    !canvasName ||
+      ($canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true),
   );
 
   // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
@@ -137,13 +133,25 @@
         : m.canvas_visibility_report_creator_note()
       : "",
   );
-
-  // Keyboard counterpart of the read-only filter bar's pointer-events guard:
-  // its controls remain focusable, so kick focus back out to keep them inoperable.
-  function blurFocusedDescendant(event: FocusEvent) {
-    if (event.target instanceof HTMLElement) event.target.blur();
-  }
 </script>
+
+{#snippet filters()}
+  {#if filtersEnabled}
+    <div class="flex flex-col gap-y-3">
+      <InputLabel
+        label={m.report_form_filters()}
+        id="filters"
+        capitalize={false}
+      />
+      <FiltersForm
+        {expressionFilterManager}
+        {timeFilterManager}
+        {dashboardConfigProvider}
+        timeFiltersConfig={canvasName ? { showGrainPicker: true } : undefined}
+      />
+    </div>
+  {/if}
+{/snippet}
 
 <form
   autocomplete="off"
@@ -218,40 +226,7 @@
           label={m.export_pdf_tabs_all()}
         />
       {/if}
-
-      {#if canvasFiltersEnabled}
-        <div class="flex flex-col gap-y-3">
-          <InputLabel
-            label={m.report_form_filters()}
-            id="filters"
-            capitalize={false}
-            hint={m.report_form_filters_readonly_hint()}
-          />
-          <!-- Read-only display of the canvas filters the report will render with
-               (the dashboard's current filters when creating, the report's captured
-               state when editing; see ScheduledReportDialog). Report forms must not
-               change the underlying dashboard view, so editing is disabled until
-               unified filters support in-memory editing. Pointer events are forced
-               off on all descendants (the time range pill has no read-only mode and
-               the bar re-enables pointer-events internally), which keeps the bar in
-               the accessibility tree, unlike inert; blurring on focus covers keyboard
-               interaction, which pointer-events does not block. -->
-          <CanvasProvider
-            {canvasName}
-            instanceId={runtimeClient.instanceId}
-            isolated
-            urlStateOverride={canvasStateOverride}
-          >
-            <CanvasFilterParamsSync
-              {canvasName}
-              urlStateOverride={canvasStateOverride}
-            />
-            <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
-              <CanvasFilters {canvasName} maxWidth={820} readOnly />
-            </div>
-          </CanvasProvider>
-        </div>
-      {/if}
+      {@render filters()}
     {:else}
       <ExportFileOptions
         bind:format={$data["exportFormat"]}
@@ -277,23 +252,7 @@
           hint={m.report_form_attach_file_hint()}
         />
       {/if}
-
-      {#if filters && timeControls}
-        <div class="flex flex-col gap-y-3">
-          <InputLabel
-            label={m.report_form_filters()}
-            id="filters"
-            capitalize={false}
-          />
-          <FiltersForm
-            {filters}
-            {metricsViewName}
-            {exploreName}
-            {timeControls}
-            side="top"
-          />
-        </div>
-      {/if}
+      {@render filters()}
 
       <RowsAndColumnsForm
         bind:rows={$data["rows"]}
@@ -379,9 +338,3 @@
     {/if}
   </div>
 </form>
-
-<style lang="postcss">
-  .readonly-filter-bar :global(*) {
-    pointer-events: none !important;
-  }
-</style>

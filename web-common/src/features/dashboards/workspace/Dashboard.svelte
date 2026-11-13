@@ -74,7 +74,6 @@
   $: ({ selectedTimeDimension } = $dashboardStore);
   const filterStore =
     expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
-  $: dimensionOnlyFilter = $filterStore?.dimensionOnlyExpr;
   $: whereFilter = $filterStore?.expr;
 
   $: extraLeftPadding = !$navigationOpen;
@@ -133,8 +132,6 @@
       }
     : undefined;
 
-  $: timeRanges = exploreSpec?.timeRanges ?? [];
-
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
   // For non-embedded dashboards, theme can come from URL params.
@@ -179,7 +176,7 @@
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-            <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
+            <Filters />
             <div class="absolute bottom-0 flex flex-col right-0">
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
@@ -219,8 +216,6 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
-                {dimensionOnlyFilter}
-                {whereFilter}
                 hideStartPivotButton={hidePivot}
                 tddChartHeight={$tddChartHeight}
               />

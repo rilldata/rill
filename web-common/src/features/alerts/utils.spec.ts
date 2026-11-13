@@ -2,7 +2,6 @@ import {
   type AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { generateAlertName } from "@rilldata/web-common/features/alerts/utils";
 import { ComparisonPercentOfTotal } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
@@ -96,7 +95,7 @@ describe("generateAlertName", () => {
       expect(
         generateAlertName(
           formValues as AlertFormValues,
-          selectedComparisonTimeRange,
+          selectedComparisonTimeRange?.name,
           MetricsView,
         ),
       ).toEqual(expected);
@@ -129,8 +128,7 @@ describe("getAlertQueryArgsFromFormValues", () => {
     const req = getAlertQueryArgsFromFormValues(
       baseFormValues,
       undefined,
-      {} as TimeControlState,
-      {},
+      undefined,
     );
 
     expect(req.measures).toEqual([
@@ -156,8 +154,7 @@ describe("getAlertQueryArgsFromFormValues", () => {
         ],
       },
       undefined,
-      {} as TimeControlState,
-      {},
+      undefined,
     );
 
     expect(req.measures).toEqual([
@@ -179,8 +176,7 @@ describe("getAlertQueryArgsFromFormValues", () => {
     const req = getAlertQueryArgsFromFormValues(
       { ...baseFormValues, measure: "total_records" },
       undefined,
-      {} as TimeControlState,
-      {},
+      undefined,
     );
 
     expect(req.measures).toEqual([{ name: "total_records" }]);

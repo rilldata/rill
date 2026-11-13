@@ -40,7 +40,7 @@ export function getDefaultExplorePreset(
     timeRange:
       explore.defaultPreset?.timeRange ||
       getDefaultTimeRange(metricsViewSpec.smallestTimeGrain, timeRangeSummary),
-    timezone: getDefaultTimeZone(explore),
+    timezone: getDefaultTimeZone(explore.timeZones),
     // No grain: the default is adaptive, so the grain follows the time range.
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,

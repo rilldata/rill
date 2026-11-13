@@ -44,7 +44,7 @@ test.describe("Bookmarks", () => {
 
         // Assert the selected filters
         await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-          ` Last 6 hours    App Site Name FuboTV  +1 other   `,
+          /Last 6 hours\s+vs Previous period\s+App Site Name FuboTV\s+\+1 other/,
         );
         // Create a personal bookmark
         await enterBookmarkDetails(
@@ -154,7 +154,7 @@ test.describe("Bookmarks", () => {
 
         // Assert the selected filters
         await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-          ` Last 6 hours    App Site Name FuboTV  +1 other   `,
+          /Last 6 hours\s+vs Previous period\s+App Site Name FuboTV\s+\+1 other/,
         );
         // Create a personal bookmark
         await enterBookmarkDetails(
@@ -377,7 +377,7 @@ test.describe("Bookmarks", () => {
 
         // Assert the selected filters
         await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-          ` Last 6 hours    Advertiser Name Instacart  +1 other   `,
+          /Last 6 hours\s+vs Previous period\s+Advertiser Name Instacart\s+\+1 other/,
         );
         // Assert filters applied
         await expect(

@@ -8,7 +8,7 @@ import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
 import {
-  aggregationGrainOrder,
+  AggregationGrainOrder,
   allowedGrainsForInterval,
   grainBucketCount,
 } from "@rilldata/web-common/lib/time/new-grains";
@@ -72,7 +72,7 @@ export function getAllowedTimeGrains(
 const APITimeGrainOrder: V1TimeGrain[] = [
   V1TimeGrain.TIME_GRAIN_MILLISECOND,
   V1TimeGrain.TIME_GRAIN_SECOND,
-  ...aggregationGrainOrder,
+  ...AggregationGrainOrder,
 ];
 
 export function isGrainBigger(
@@ -131,7 +131,7 @@ export function isAvailableTimeGrain(
 }
 
 // Coarse to fine
-const grainOrder = [...aggregationGrainOrder].reverse() as AvailableTimeGrain[];
+const grainOrder = [...AggregationGrainOrder].reverse() as AvailableTimeGrain[];
 
 /**
  * Get the largest grain from available grains

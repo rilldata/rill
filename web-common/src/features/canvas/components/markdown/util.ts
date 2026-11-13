@@ -130,11 +130,11 @@ export function getResolveTemplatedStringQueryOptions(
       return derived(
         [
           component.specStore,
-          component.timeAndFilterStore,
           component.parent?.specStore ?? null,
-          component.parent.timeManager.hasTimeSeriesStore,
+          // A markdown component has no metrics view of its own, so it follows the canvas time filters.
+          component.parent.timeFilterManager.getTimeControlStore(),
         ],
-        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
+        ([spec, parentSpec, { hasTimeSeries, interval, timeZone }]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -144,7 +144,13 @@ export function getResolveTemplatedStringQueryOptions(
           const requestBody = buildRequestBody({
             content,
             applyFormatting,
-            timeRange: timeAndFilters?.timeRange,
+            timeRange: interval
+              ? {
+                  start: interval.start.toUTC().toISO(),
+                  end: interval.end.toUTC().toISO(),
+                  timeZone,
+                }
+              : undefined,
             exprByMetricsView,
             metricsViews,
           });
@@ -154,7 +160,8 @@ export function getResolveTemplatedStringQueryOptions(
             !!content &&
             !!client.instanceId &&
             !!requestBody &&
-            (!hasTimeSeries || !!timeAndFilters?.timeRange);
+            // `hasTimeSeries` is undefined until the specs resolve, which must not fire the query early.
+            (hasTimeSeries === false || !!interval);
 
           const body: QueryServiceResolveTemplatedStringBody =
             !enabled || !requestBody

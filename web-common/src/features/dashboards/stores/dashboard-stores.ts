@@ -42,6 +42,7 @@ import { parseMeasureExpression } from "../ephemeral-measures/expression-parser"
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -279,6 +280,7 @@ const metricsViewReducers = {
     name: string,
     partialExploreState: Partial<ExploreState>,
     expressionFilterManager?: ExpressionFilterManager,
+    timeFilterManager?: TimeFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -298,6 +300,9 @@ const metricsViewReducers = {
             expressionFilterManager.inList;
         }
       }
+
+      if (timeFilterManager)
+        setFromTimeManager(exploreState, timeFilterManager);
 
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
@@ -330,22 +335,28 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       const mvName =
         expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        const newWhereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        // Read before whereFilter is replaced, since the pin moves with the values it points at.
-        exploreState.tdd.pinIndex = getUpdatedPinIndex(
-          exploreState.tdd.pinIndex,
-          exploreState.selectedComparisonDimension,
-          exploreState.whereFilter,
-          newWhereFilter,
-        );
+      if (!mvName) return;
 
-        exploreState.whereFilter = newWhereFilter;
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
-      }
+      const newWhereFilter =
+        expressionFilterManager.topLevelJoiner.expr[mvName] ??
+        createAndExpression([]);
+      // Read before whereFilter is replaced, since the pin moves with the values it points at.
+      exploreState.tdd.pinIndex = getUpdatedPinIndex(
+        exploreState.tdd.pinIndex,
+        exploreState.selectedComparisonDimension,
+        exploreState.whereFilter,
+        newWhereFilter,
+      );
+
+      exploreState.whereFilter = newWhereFilter;
+      exploreState.dimensionsWithInlistFilter = expressionFilterManager.inList;
+    });
+  },
+
+  syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
+    if (!name) return;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      setFromTimeManager(exploreState, timeFilterManager);
     });
   },
 
@@ -659,17 +670,6 @@ const metricsViewReducers = {
     });
   },
 
-  /**
-   * Switches the time grain to adaptive mode: the grain follows the selected time range
-   * until the user fixes one again with `setTimeGrain`.
-   */
-  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.adaptiveTimeGrain = true;
-      correctExploreState(metricsViewSpec, exploreState);
-    });
-  },
-
   remove(name: string) {
     update((state) => {
       delete state.entities[name];
@@ -935,6 +935,49 @@ function setSelectedScrubRange(
   }
 
   exploreState.selectedScrubRange = scrubRange;
+}
+
+function setFromTimeManager(
+  exploreState: ExploreState,
+  timeFilterManager: TimeFilterManager,
+) {
+  if (!timeFilterManager.timeRange) return;
+
+  exploreState.selectedTimeRange = {
+    name: timeFilterManager.timeRange,
+    start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
+    end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
+    interval: timeFilterManager.timeGrain,
+  } as any;
+  // Without an explicit grain the manager derives it from the time range,
+  // so explore has to keep it out of the url as well.
+  exploreState.adaptiveTimeGrain = !timeFilterManager.urlTimeGrain;
+  exploreState.showTimeComparison = timeFilterManager.showComparison;
+  exploreState.selectedComparisonTimeRange = {
+    name: timeFilterManager.comparisonTimeRange,
+    start:
+      timeFilterManager.comparisonInterval?.start?.toJSDate() ?? new Date(),
+    end: timeFilterManager.comparisonInterval?.end?.toJSDate() ?? new Date(),
+  };
+
+  if (timeFilterManager.scrubInterval) {
+    exploreState.selectedScrubRange = {
+      start: timeFilterManager.scrubInterval.start.toJSDate(),
+      end: timeFilterManager.scrubInterval.end.toJSDate(),
+      isScrubbing: timeFilterManager.scrubInterval.isScrubbing,
+    };
+  } else {
+    exploreState.selectedScrubRange = undefined;
+  }
+  if (timeFilterManager.lastDefinedScrubInterval) {
+    exploreState.lastDefinedScrubRange = {
+      start: timeFilterManager.lastDefinedScrubInterval.start.toJSDate(),
+      end: timeFilterManager.lastDefinedScrubInterval.end.toJSDate(),
+      isScrubbing: false,
+    };
+  } else {
+    exploreState.lastDefinedScrubRange = undefined;
+  }
 }
 
 function getPinIndexForDimension(

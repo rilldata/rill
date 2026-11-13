@@ -18,6 +18,7 @@ import {
   isAbsoluteTimeRange,
   isNewRillTimeFormat,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { clampToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 
 export function getComparisonTransform(
@@ -318,6 +319,26 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
           comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "",
         ),
       });
+  }
+}
+
+export function getComparisonLabelFromRange(
+  comparisonTimeRange: string,
+  parsedRillTime: RillTime,
+) {
+  switch (true) {
+    case comparisonTimeRange === TimeRangePreset.ALL_TIME:
+      return m.time_all_time();
+
+    case comparisonTimeRange === TimeComparisonOption.CONTIGUOUS ||
+      comparisonTimeRange.toLowerCase()?.endsWith("offset pp"):
+      return m.time_comparison_previous_period();
+
+    case comparisonTimeRange in TIME_COMPARISON:
+      return TIME_COMPARISON[comparisonTimeRange].label;
+
+    default:
+      return parsedRillTime.toString();
   }
 }
 

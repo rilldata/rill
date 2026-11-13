@@ -8,6 +8,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
   V1ResolveCanvasResponse,
+  V1ResolvedTimeRange,
   V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -192,6 +193,19 @@ export class DashboardFetchMocks {
     );
   }
 
+  public mockResolvedRillTimes(
+    metricsViewName: string,
+    resolvedRillTimes: Record<string, V1ResolvedTimeRange>,
+  ) {
+    this.responses.set(
+      `queries__metrics-views__time-ranges__${metricsViewName}`,
+      Object.entries(resolvedRillTimes).map(([expression, tr]) => ({
+        expression,
+        ...tr,
+      })),
+    );
+  }
+
   private async fetchMock(url: string, body: string | Uint8Array | undefined) {
     const u = new URL(url);
 
@@ -283,6 +297,17 @@ export class DashboardFetchMocks {
       responseData = { resources };
     } else if (service === "QueryService" && method === "ResolveCanvas") {
       responseData = this.responses.get(`canvas__${parsed.canvas}`);
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewTimeRanges"
+    ) {
+      const resolvedTimeRanges =
+        (this.responses.get(
+          `queries__metrics-views__time-ranges__${parsed.metricsViewName}`,
+        ) as V1ResolvedTimeRange[]) ?? [];
+      responseData = {
+        resolvedTimeRanges,
+      };
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"

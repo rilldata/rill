@@ -189,10 +189,8 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
     const name = boundMetricsViewName(this.declaredParams, get(this.specStore));
     if (!name || name === this.metricsViewName) return;
     this.metricsViewName = name;
-    this.localExpressionFilters.metricsViewsProvider.setMetricsViewNames([
-      name,
-    ]);
-    this.localTimeControls.metricsViewName = name;
+    // The local filter and time managers share this provider, so both follow.
+    this.metricsViewsProvider.setMetricsViewNames([name]);
     // Surface the metrics view under the key the shared canvas systems read.
     this.specStore.update((s) => ({ ...s, metrics_view: name }));
   }

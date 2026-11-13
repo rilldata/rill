@@ -1,61 +1,12 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
-  import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
 
-  export let component: BaseCanvasComponent;
+  let { component }: { component: BaseCanvasComponent } = $props();
 
-  $: ({
-    specStore,
-    timeAndFilterStore,
-    localExpressionFilters,
-    localTimeControls,
-  } = component);
-
-  $: ({ interval: intervalStore, rangeStore, grainStore } = localTimeControls);
-
-  $: activeTimeGrain = $grainStore;
-
-  $: interval = $intervalStore;
-  $: selectedRangeAlias = $rangeStore;
-
-  $: selectedTimeRange = interval
-    ? {
-        name: selectedRangeAlias,
-        start: interval?.start.toJSDate(),
-        end: interval?.end.toJSDate(),
-        interval: activeTimeGrain,
-      }
-    : undefined;
-
-  $: ({ showTimeComparison, comparisonTimeRangeState, timeGrain } =
-    $timeAndFilterStore);
-  $: selectedComparisonTimeRange =
-    comparisonTimeRangeState?.selectedComparisonTimeRange;
-
-  // Only a range, comparison or grain the component sets itself counts as a local filter.
-  $: ({ hasLocalTimeRange, comparison, grain } = resolveTimeFilters(
-    ($specStore as ComponentFilterProperties).time_filters,
-  ));
-  $: hasLocalComparison = comparison.mode === "local";
-
-  $: displayComparisonTimeRange =
-    hasLocalComparison && showTimeComparison && selectedComparisonTimeRange
-      ? <V1TimeRange>{
-          name: selectedComparisonTimeRange.name,
-          start: selectedComparisonTimeRange.start.toISOString(),
-          end: selectedComparisonTimeRange.end.toISOString(),
-          interval: timeGrain,
-        }
-      : undefined;
-
-  $: displayTimeRange = {
-    ...$timeAndFilterStore.timeRange,
-    isoDuration: selectedTimeRange?.name,
-  };
+  let { specStore, localExpressionFilters, localTimeFilterManager } =
+    $derived(component);
 </script>
 
 {#if "metrics_view" in $specStore}
@@ -64,13 +15,10 @@
   >
     <Filter size="16px" className="text-fg-secondary" />
 
-    <ReadonlyExpressionFilters
+    <!-- The time filter chips only show the range, comparison or grain the component sets itself. -->
+    <ReadonlyFilters
       expressionFilterManager={localExpressionFilters}
-      displayTimeRange={hasLocalTimeRange ? displayTimeRange : undefined}
-      {displayComparisonTimeRange}
-      displayTimeGrain={grain ? timeGrain : undefined}
-      queryTimeStart={selectedTimeRange?.start?.toISOString()}
-      queryTimeEnd={selectedTimeRange?.end?.toISOString()}
+      timeFilterManager={localTimeFilterManager}
       hasBoldTimeRange={false}
       chipLayout="scroll"
     />

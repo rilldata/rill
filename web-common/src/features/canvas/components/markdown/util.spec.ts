@@ -25,13 +25,15 @@ describe("getResolveTemplatedStringQueryOptions", () => {
 
     const component = {
       specStore: writable({ content: "{{ metrics_sql 'select 1' }}" }),
-      timeAndFilterStore: writable({ timeRange: undefined }),
       parent: {
         specStore: parentSpecStore,
         expressionFilterManager: {
           exprByMetricsViewStore: exprByMetricsView,
         },
-        timeManager: { hasTimeSeriesStore: writable(false) },
+        timeFilterManager: {
+          getTimeControlStore: () =>
+            writable({ hasTimeSeries: false, interval: undefined }),
+        },
       },
     } as unknown as MarkdownCanvasComponent;
 
