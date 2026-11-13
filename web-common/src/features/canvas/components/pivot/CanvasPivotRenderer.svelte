@@ -1,6 +1,7 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import PivotColumnTruncationNotice from "@rilldata/web-common/features/dashboards/pivot/PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
@@ -56,6 +57,8 @@
   $: wrapLines = $spec ? wrapLinesFromSpec($spec) : WRAP_LINES_DEFAULT;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
+
+  $: columnTruncation = $pivotDataStore?.columnTruncation;
 
   $: hasColumnAndNoMeasure =
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
@@ -134,7 +137,7 @@
 </script>
 
 <div
-  class="size-full overflow-hidden"
+  class="size-full overflow-hidden flex flex-col gap-y-1"
   style:max-height="inherit"
   class:p-4={hasHeader}
   class:pt-1={hasHeader}
@@ -152,6 +155,9 @@
         isEmbedded={EmbedStore.isEmbedded()}
       />
     {:else}
+      {#if columnTruncation}
+        <PivotColumnTruncationNotice {columnTruncation} />
+      {/if}
       <PivotTable
         {widthScopeKey}
         border={hasHeader}

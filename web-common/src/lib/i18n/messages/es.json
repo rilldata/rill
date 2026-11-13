@@ -1774,6 +1774,8 @@
   "pivot_auto": "Automático",
   "pivot_chip_aria": "Chip de pivote {title}",
   "pivot_collapse_row": "Contraer fila",
+  "pivot_columns_truncated": "Se muestran las primeras {shown} de {total} columnas. Agrega filtros o acota el rango de tiempo para ver el resto.",
+  "pivot_columns_truncated_unknown_total": "Se muestran las primeras {shown} columnas. Agrega filtros o acota el rango de tiempo para ver el resto.",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1800,6 +1802,10 @@
       }
     }
   ],
+  "pivot_rows_truncated": "Primeras {limit} mostradas",
+  "pivot_rows_truncated_tooltip": "\"{dimension}\" tiene más valores que los {limit} que se muestran aquí. Agrega filtros para acotarlos.",
+  "pivot_show_more": "Mostrar más ...",
+  "pivot_show_more_tooltip": "Aumentar el límite a {limit} en \"{dimension}\"",
   "pivot_tags": "ETIQUETAS",
   "pivot_time_dimension_header": "Tiempo {grain}",
   "pivot_time_prefix": "Tiempo",

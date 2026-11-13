@@ -2,7 +2,10 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { QueryClient } from "@tanstack/svelte-query";
 import { get, readable } from "svelte/store";
 import { describe, expect, it } from "vitest";
-import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import {
   createAndExpression,
   createInExpression,
@@ -123,6 +126,38 @@ describe("pivot expansion", () => {
       publisher: "campaign-1",
       campaign: "campaign-1",
       impressions: 10,
+    });
+  });
+
+  it("ends a group that has more rows past the last limit step", () => {
+    const tableData: PivotDataRow[] = [
+      {
+        publisher: "A",
+        subRows: [{ publisher: LOADING_CELL }],
+      },
+    ];
+
+    addExpandedDataToPivot(
+      getConfig(true),
+      tableData,
+      ["publisher", "campaign"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: "0",
+          rowDimensionValues: ["A"],
+          totals: [{ campaign: "campaign-1", impressions: 10 }],
+          data: [],
+          hasMore: true,
+          effectiveLimit: 100,
+        },
+      ],
+    );
+
+    expect(tableData[0].subRows?.at(-1)).toEqual({
+      publisher: SHOW_MORE_BUTTON,
+      __currentLimit: 100,
     });
   });
 });

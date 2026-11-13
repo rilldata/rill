@@ -26,6 +26,7 @@
   import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
+  import PivotColumnTruncationNotice from "./PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import type { PivotChipData } from "./types";
@@ -78,7 +79,7 @@
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
 
-  $: ({ isFetching, assembled } = $pivotDataStore);
+  $: ({ isFetching, assembled, columnTruncation } = $pivotDataStore);
 
   // Precision chip of a measure column header; undefined when the measure has no exact variant.
   $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
@@ -274,6 +275,9 @@
           {isEmbedded}
         />
       {:else}
+        {#if columnTruncation}
+          <PivotColumnTruncationNotice {columnTruncation} />
+        {/if}
         <PivotTable
           bind:this={pivotTable}
           {widthScopeKey}

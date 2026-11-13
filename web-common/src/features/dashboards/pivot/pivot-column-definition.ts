@@ -3,7 +3,7 @@ import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dash
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import {
-  getNextLimitLabel,
+  getNextRowLimit,
   LOADING_CELL,
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
@@ -520,15 +520,14 @@ function getNestedColumnDef(
 
           // Handle Show More button
           if (value === SHOW_MORE_BUTTON) {
-            const rowData = row.original;
-            const dimensionLabel =
-              rowDimensions?.[row.depth]?.label ||
-              rowDimensions?.[row.depth]?.name;
-            const currentLimit = rowData.__currentLimit as number;
-            const label = `Increase limit to ${getNextLimitLabel(currentLimit)} on "${dimensionLabel}"`;
+            const currentLimit = row.original.__currentLimit as number;
             return cellComponent(PivotShowMoreCell, {
-              value: label,
               row,
+              dimensionLabel:
+                rowDimensions?.[row.depth]?.label ||
+                rowDimensions?.[row.depth]?.name,
+              currentLimit,
+              nextLimit: getNextRowLimit(currentLimit),
               hasNestedDimensions,
             });
           }

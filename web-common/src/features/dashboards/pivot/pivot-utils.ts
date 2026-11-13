@@ -161,6 +161,22 @@ export function getTimeForQuery(
 }
 
 /**
+ * Time filter spanning the given buckets of a time dimension,
+ * from the first bucket through the end of the last one.
+ */
+export function getTimeFilterSpanningValues(
+  dimension: string,
+  values: string[],
+): TimeFilters {
+  const dates = values.map((d) => new Date(d).getTime());
+  return {
+    timeStart: new Date(Math.min(...dates)).toISOString(),
+    timeEnd: new Date(Math.max(...dates)).toISOString(),
+    interval: getTimeGrainFromDimension(dimension),
+  };
+}
+
+/**
  * Returns the intersection of two time ranges
  */
 export function mergeTimeStrings(

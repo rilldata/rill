@@ -14,6 +14,10 @@ import { type Readable, derived, readable } from "svelte/store";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
+  COLUMN_COMBINATIONS_LIMIT,
+  COLUMN_DIMENSION_VALUES_LIMIT,
+} from "./pivot-constants";
+import {
   type PivotDataCache,
   assembleBasePivotData,
   buildFinalPivotStateDetails,
@@ -65,6 +69,7 @@ import {
 } from "./pivot-utils";
 import {
   type PivotAxesData,
+  type PivotColumnTruncation,
   type PivotDashboardContext,
   type PivotDataRow,
   type PivotDataState,
@@ -93,10 +98,13 @@ interface CellDataStageArgs extends RowAxesStageArgs {
   totalsRowData: PivotDataRow;
   limitedRowAxes: LimitedRowAxes;
   totalColumns: number;
+  // Whether the column axes or totals row queries hit their limits.
+  columnQueriesCapped: boolean;
 }
 
 interface ExpandedDataStageArgs extends CellDataStageArgs {
   columnDef: ColumnDef<PivotDataRow>[];
+  columnTruncation: PivotColumnTruncation | undefined;
   pivotData: PivotDataRow[];
   isCellDataEmpty: boolean;
 }
@@ -181,6 +189,8 @@ function createColumnAxesStage(
     measureBody,
     config.whereFilter,
     [],
+    undefined,
+    COLUMN_DIMENSION_VALUES_LIMIT.toString(),
   );
 
   return derivedSwitch(columnAxesQuery, (columnAxesResult) => {
@@ -261,6 +271,7 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
           columnDef: cache.lastPivotColumnDef,
           assembled: false,
           totalColumns: cache.lastTotalColumns,
+          columnTruncation: cache.lastColumnTruncation,
           totalsRowData: plan.displayTotalsRow
             ? getTotalsRowSkeleton(config, columnDimensionAxes)
             : undefined,
@@ -311,6 +322,14 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
         totalsRowData,
         limitedRowAxes,
         totalColumns: getTotalColumnCount(totalsRowData),
+        columnQueriesCapped:
+          colDimensionNames.some(
+            (name) =>
+              (columnDimensionAxes?.[name]?.length ?? 0) >=
+              COLUMN_DIMENSION_VALUES_LIMIT,
+          ) ||
+          (totalsRowResponse?.data?.data?.length ?? 0) >=
+            COLUMN_COMBINATIONS_LIMIT,
       });
     },
   );
@@ -332,6 +351,7 @@ function createCellDataStage(
     totalsRowData,
     limitedRowAxes,
     totalColumns,
+    columnQueriesCapped,
   } = args;
   const { axesRowTotals, rowDimensionValues } = limitedRowAxes;
   const { rowDimensionNames, colDimensionNames, isFlat } = config;
@@ -348,18 +368,28 @@ function createCellDataStage(
 
   let tableCellQuery: AggregationQuery = readable(null);
   let columnDef: ColumnDef<PivotDataRow>[] = [];
+  let columnTruncation: PivotColumnTruncation | undefined;
   if (isFlat || colDimensionNames.length || !rowDimensionNames.length) {
-    const slicedAxesDataForDef = sliceColumnAxesDataForDef(
+    const slicedColumns = sliceColumnAxesDataForDef(
       config,
       columnDimensionAxes,
       totalsRowData,
     );
 
-    columnDef = getColumnDefForPivot(
-      config,
-      slicedAxesDataForDef,
-      totalsRowData,
-    );
+    columnDef = getColumnDefForPivot(config, slicedColumns.axes, totalsRowData);
+
+    // Capped column queries leave columns out even when every column they
+    // returned is shown, as when a time dimension has more buckets than the
+    // axis limit.
+    if (
+      slicedColumns.shownColumns < slicedColumns.totalColumns ||
+      columnQueriesCapped
+    ) {
+      columnTruncation = {
+        shown: slicedColumns.shownColumns,
+        total: columnQueriesCapped ? undefined : slicedColumns.totalColumns,
+      };
+    }
 
     tableCellQuery = createTableCellQuery(
       ctx,
@@ -390,6 +420,7 @@ function createCellDataStage(
           columnDef,
           assembled: false,
           totalColumns,
+          columnTruncation,
           totalsRowData: plan.displayTotalsRow ? totalsRowData : undefined,
         };
       }
@@ -429,6 +460,7 @@ function createCellDataStage(
             columnDef,
             assembled: false,
             totalColumns,
+            columnTruncation,
             totalsRowData: plan.displayTotalsRow ? totalsRowData : undefined,
           };
         }
@@ -450,6 +482,7 @@ function createCellDataStage(
       return createExpandedDataStage({
         ...args,
         columnDef,
+        columnTruncation,
         pivotData,
         isCellDataEmpty,
       });
@@ -474,6 +507,7 @@ function createExpandedDataStage(
     limitedRowAxes,
     totalColumns,
     columnDef,
+    columnTruncation,
     pivotData,
     isCellDataEmpty,
   } = args;
@@ -518,6 +552,7 @@ function createExpandedDataStage(
 
     updatePivotDataCache(cache, {
       columnDef,
+      columnTruncation,
       data,
       rowPage: plan.rowPage,
       totalColumns,
@@ -530,6 +565,7 @@ function createExpandedDataStage(
       assembled: true,
       activeCellFilters,
       totalColumns,
+      columnTruncation,
       reachedEndForRowData,
       totalsRowData: plan.displayTotalsRow ? totalsRowData : undefined,
       columnDimensionAxes,
