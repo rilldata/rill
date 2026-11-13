@@ -1940,6 +1940,7 @@ annotations:
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
+				NotifyRowsLimit:      5,
 				Renotify:             true,
 				RenotifyAfterSeconds: 24 * 60 * 60,
 				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
@@ -2064,6 +2065,7 @@ notify:
 				ExportIncludeHeader: true,
 				ExportLimit:         100,
 				NotifyOnFail:        true,
+				NotifyRowsLimit:     5,
 				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
 			},
 		},
@@ -2078,8 +2080,9 @@ notify:
 					"query_name":      "MetricsViewAggregation",
 					"query_args_json": `{"metrics_view":"mv1"}`,
 				})),
-				NotifyOnFail: true,
-				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 5,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
 			},
 		},
 	}
@@ -2102,6 +2105,67 @@ notify:
 		{
 			Message:  `"export.attach" requires email recipients`,
 			FilePath: "/alerts/a5.yaml",
+		},
+	})
+}
+
+func TestAlertNotifyRowsLimit(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Limits the rows listed in notifications
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 10
+  slack:
+    channels:
+      - alerts
+`,
+		// The limit can't exceed the maximum
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 51
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 10,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{}, "channels": []any{"alerts"}, "webhooks": []any{}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `invalid value 51 for property "notify.rows_limit": must be at most 50`,
+			FilePath: "/alerts/a2.yaml",
 		},
 	})
 }
@@ -2946,6 +3010,97 @@ rows:
 			require.NoError(t, err)
 			require.Len(t, p.Resources, 0)
 			require.Len(t, p.Errors, 1)
+		})
+	}
+}
+
+func TestAdminManagedCanvasComponents(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name  string
+		yaml  string
+		valid bool
+	}{
+		{
+			name: "inline components",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - markdown:
+          content: "y"
+`,
+			valid: true,
+		},
+		{
+			name: "standalone component",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+  - component: c1
+`,
+		},
+		{
+			name: "standalone component in a tab",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - component: c1
+`,
+		},
+		{
+			name: "standalone component in a canvas that is not admin-managed",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - component: c1
+`,
+			valid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: ``,
+				`components/c1.yaml`: `
+type: component
+markdown:
+  content: "z"
+`,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			if tc.valid {
+				require.Empty(t, p.Errors)
+				require.NotNil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+				return
+			}
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, `cannot reference the component "c1"`)
+			require.Nil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
 		})
 	}
 }

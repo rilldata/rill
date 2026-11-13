@@ -22,6 +22,7 @@
     formatRefreshSchedule,
   } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
+  import { AlertNotifyRowsLimitDefault } from "@rilldata/web-common/features/alerts/form-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -219,6 +220,16 @@
             m.alert_none()}
         </MetadataValue>
       </div>
+
+      <!-- Rows in notifications, which only matters when split by a dimension -->
+      {#if metricsViewAggregationRequest?.dimensions?.length}
+        <div class="flex flex-col gap-y-3">
+          <MetadataLabel>{m.alert_rows_in_notifications()}</MetadataLabel>
+          <MetadataValue>
+            {alertSpec.notifyRowsLimit || AlertNotifyRowsLimitDefault}
+          </MetadataValue>
+        </div>
+      {/if}
 
       <!-- Schedule: TODO: change based on non UI settings -->
       <div

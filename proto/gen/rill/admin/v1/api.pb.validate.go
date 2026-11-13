@@ -50027,6 +50027,17 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for ExportLimit
 
+	if m.GetNotifyRowsLimit() > 50 {
+		err := AlertOptionsValidationError{
+			field:  "NotifyRowsLimit",
+			reason: "value must be less than or equal to 50",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	// no validation rules for MetricsViewName
 
 	// no validation rules for Renotify

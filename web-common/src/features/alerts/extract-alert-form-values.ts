@@ -1,5 +1,8 @@
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import {
+  AlertNotifyRowsLimitDefault,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils";
 import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   getEmptyMeasureFilterEntry,
@@ -147,6 +150,10 @@ export function getExistingAlertInitialFormValues(
         ? ""
         : alertSpec.exportLimit,
     exportIncludeHeader: alertSpec.exportIncludeHeader ?? false,
+    // An unset limit (0) means the runtime's default
+    notifyRowsLimit: String(
+      alertSpec.notifyRowsLimit || AlertNotifyRowsLimitDefault,
+    ),
     ...extractAlertFormValues(queryArgsJson),
   };
 }

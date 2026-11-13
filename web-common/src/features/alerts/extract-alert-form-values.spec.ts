@@ -80,4 +80,17 @@ describe("getExistingAlertInitialFormValues", () => {
       expect(values.embedOwnerEmail).toEqual("");
     });
   });
+
+  it("reads the rows limit", () => {
+    const values = getExistingAlertInitialFormValues(
+      getAlertSpec({ notifyRowsLimit: 20 }),
+      "mv1",
+    );
+    expect(values.notifyRowsLimit).toEqual("20");
+  });
+
+  it("defaults the rows limit for alerts without one", () => {
+    const values = getExistingAlertInitialFormValues(getAlertSpec({}), "mv1");
+    expect(values.notifyRowsLimit).toEqual("5");
+  });
 });

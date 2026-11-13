@@ -139,6 +139,8 @@ export interface V1AlertOptions {
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
   exportLimit?: string;
+  /** Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used. */
+  notifyRowsLimit?: number;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;

@@ -1,5 +1,8 @@
 import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
+import {
+  AlertNotifyRowsLimitDefault,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
@@ -43,6 +46,7 @@ export function getNewAlertInitialFormValues(
     name: "",
     measure,
     splitByDimension: dimension,
+    notifyRowsLimit: String(AlertNotifyRowsLimitDefault),
     evaluationInterval: "",
     criteria: [
       {

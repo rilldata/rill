@@ -26,15 +26,43 @@
           {{ .DisplayName }}
         </mj-text>
 
+        <mj-raw>{{ if eq (len .FailRows) 1 }}</mj-raw>
         <mj-text padding-bottom="0px">
           Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          {{ range $key, $value := .FailRow }}
-          • <b>{{ $key }}</b>: {{ $value }}<br />
+          {{ $row := index .FailRows 0 }}
+          {{ range $i, $column := .FailColumns }}
+          • <b>{{ $column }}</b>: {{ index $row $i }}<br />
           {{ end }}
         </mj-text>
+        <mj-raw>{{ else }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .FailRowsTruncated }}The first {{ len .FailRows }} rows{{ else }}The rows{{ end }} that matched your alert criteria are:
+        </mj-text>
+
+        <mj-table padding-bottom="0px" font-size="14px" line-height="1.25">
+          <tr style="border-bottom:1px solid #AAA;text-align:left;">
+            {{ range .FailColumns }}
+            <th style="padding:6px 12px 6px 0;">{{ . }}</th>
+            {{ end }}
+          </tr>
+          {{ range .FailRows }}
+          <tr style="border-bottom:1px solid #EEE;">
+            {{ range . }}
+            <td style="padding:6px 12px 6px 0;">{{ . }}</td>
+            {{ end }}
+          </tr>
+          {{ end }}
+        </mj-table>
+        <mj-raw>{{ end }}</mj-raw>
+
+        <mj-raw>{{ if .FailRowsTruncated }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          More rows matched your alert criteria.
+        </mj-text>
+        <mj-raw>{{ end }}</mj-raw>
 
         <mj-raw>{{ if .Attached }}</mj-raw>
         <mj-text padding-bottom="0px">

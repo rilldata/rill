@@ -106,7 +106,6 @@
                 pathOptions={breadcrumbOptions}
                 current={currentResourceName}
                 isCurrentPage
-                isEmbedded
               />
             {/if}
           {:else if onPersonalCanvasPage}
