@@ -2950,6 +2950,97 @@ rows:
 	}
 }
 
+func TestAdminManagedCanvasComponents(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name  string
+		yaml  string
+		valid bool
+	}{
+		{
+			name: "inline components",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - markdown:
+          content: "y"
+`,
+			valid: true,
+		},
+		{
+			name: "standalone component",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+  - component: c1
+`,
+		},
+		{
+			name: "standalone component in a tab",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - component: c1
+`,
+		},
+		{
+			name: "standalone component in a canvas that is not admin-managed",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - component: c1
+`,
+			valid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: ``,
+				`components/c1.yaml`: `
+type: component
+markdown:
+  content: "z"
+`,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			if tc.valid {
+				require.Empty(t, p.Errors)
+				require.NotNil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+				return
+			}
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, `cannot reference the component "c1"`)
+			require.Nil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+		})
+	}
+}
+
 // TestCanvasTabNameUniqueness verifies that tab names are uniquified when labels slugify
 // to the same value, so each tab keeps a distinct URL key.
 func TestCanvasTabNameUniqueness(t *testing.T) {
