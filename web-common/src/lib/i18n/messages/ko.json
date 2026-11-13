@@ -2101,6 +2101,7 @@
   "route_error_fetching_billing_subscription": "결제 구독 정보를 가져오지 못했습니다",
   "route_error_fetching_organization": "조직 정보를 가져오는 중 오류가 발생했습니다",
   "route_error_fetching_project": "프로젝트 정보를 가져오는 중 오류가 발생했습니다",
+  "route_error_fetching_token": "토큰 정보를 가져오는 중 오류가 발생했습니다",
   "route_error_no_org_permission": "이 조직에 액세스할 권한이 없습니다",
   "route_error_token_not_found": "토큰을 찾을 수 없습니다",
   "route_error_token_resource_not_found": "토큰의 리소스를 찾을 수 없습니다",

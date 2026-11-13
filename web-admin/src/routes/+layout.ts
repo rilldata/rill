@@ -49,29 +49,40 @@ export const load = async ({ params, url, route, depends }) => {
 
   // On a public URL (identified by its route token), a password-protected token grants no access
   // until it has been unlocked with its password. See `resolvePublicURLBearer`.
-  let publicURL: PublicURLBearer | undefined;
-  if (routeToken && !searchParamToken) {
-    publicURL = await resolvePublicURLBearer(routeToken).catch((e) => {
-      console.error(e);
-      throw error(404, m.route_error_token_not_found());
-    });
-    token = publicURL.bearer;
-  }
+  const publicURLPromise: Promise<PublicURLBearer | undefined> =
+    routeToken && !searchParamToken
+      ? resolvePublicURLBearer(routeToken).catch((e) => {
+          console.error(e);
+          // An unknown, expired or revoked token is rejected as unauthenticated.
+          // Other failures (e.g. a rate limit or a server error) are not about the token, so they are reported as they are.
+          const status = isAxiosError<RpcStatus>(e)
+            ? e.response?.status
+            : undefined;
+          if (!status) throw error(500, m.route_error_fetching_token());
+          if (status === 401 || status === 403 || status === 404) {
+            throw error(404, m.route_error_token_not_found());
+          }
+          throw error(status, e.response?.data?.message ?? e.message);
+        })
+      : Promise.resolve(undefined);
 
-  let user: V1User | undefined;
-  try {
-    const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
+  const userPromise: Promise<V1User | undefined> = queryClient
+    .fetchQuery<V1GetCurrentUserResponse>({
       queryKey: getAdminServiceGetCurrentUserQueryKey(),
       queryFn: () => adminServiceGetCurrentUser(),
       staleTime: 5 * 60 * 1000, // 5 minutes; prevents refetches on every navigation/hover
+    })
+    .then((resp) => resp.user)
+    .catch((e) => {
+      // If the user's auth token has expired, we automatically redirect to the login page
+      if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
+        redirectToLogin();
+      }
+      return undefined;
     });
-    user = userQuery.user;
-  } catch (e) {
-    // If the user's auth token has expired, we automatically redirect to the login page
-    if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
-      redirectToLogin();
-    }
-  }
+
+  const [publicURL, user] = await Promise.all([publicURLPromise, userPromise]);
+  if (publicURL) token = publicURL.bearer;
 
   // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
   if (user) await maybeRedirectToWelcomePage(route);

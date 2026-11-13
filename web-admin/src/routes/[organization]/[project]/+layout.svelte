@@ -55,6 +55,7 @@
     createAdminServiceGetProjectWithBearerToken,
   } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { clearPublicURLSession } from "@rilldata/web-admin/features/public-urls/password-session";
+  import { invalidatePublicURLMetadata } from "@rilldata/web-admin/features/public-urls/public-url-bearer";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -263,14 +264,20 @@
 
   // --- Side effects (cache invalidation and telemetry) ---
 
-  // A public URL session that expired or was invalidated (e.g. the password changed) is rejected
-  // with a 401. Drop it and re-run the root layout's loader so the password prompt shows again.
+  // The bearer of a public URL stops working when its password changes. Re-run the root layout's
+  // loader with fresh metadata so the password prompt shows:
+  // - A session that expired or was invalidated (e.g. the password changed) is rejected with a 401.
+  // - The URL's own token is denied with a 403 once a password is added to a URL that had none.
   $effect(() => {
-    if (!onPublicURLPage || !page.params.token || token === page.params.token)
-      return;
-    if (projectError?.statusCode === 401) {
-      clearPublicURLSession(page.params.token);
-      void invalidateAll();
+    const publicURLToken = page.params.token;
+    if (!onPublicURLPage || !publicURLToken) return;
+    const usesSession = token !== publicURLToken;
+    const status = projectError?.statusCode;
+    if (usesSession ? status === 401 : status === 403) {
+      clearPublicURLSession(publicURLToken);
+      void invalidatePublicURLMetadata(publicURLToken).then(() =>
+        invalidateAll(),
+      );
     }
   });
 

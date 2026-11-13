@@ -10,6 +10,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { LockIcon } from "lucide-svelte";
   import { setPublicURLSession } from "./password-session";
+  import { invalidatePublicURLMetadata } from "./public-url-bearer";
   import { adminServiceUnlockMagicAuthToken } from "./unlock-magic-auth-token";
 
   let { token }: { token: string } = $props();
@@ -38,7 +39,12 @@
       await invalidateAll();
     } catch (e) {
       const status = (e as HTTPError).response?.status;
-      if (status === 403) {
+      if (status === 400) {
+        // The password was removed while the prompt was open (a failed precondition): the URL is open now.
+        // Re-run the root layout's loader with fresh metadata, which loads the project with the URL's own token.
+        await invalidatePublicURLMetadata(token);
+        await invalidateAll();
+      } else if (status === 403) {
         error = m.public_url_gate_incorrect();
       } else if (status === 429) {
         error = m.public_url_gate_too_many_attempts();

@@ -66,10 +66,11 @@
   let hasChanges = $derived(
     displayName !== (token.displayName ?? "") || passwordAction !== "keep",
   );
+  // A label can't be cleared, but a URL created without one (e.g. from the CLI) doesn't need one to change its password.
   let canSave = $derived(
     !$updateMagicAuthToken.isPending &&
       hasChanges &&
-      displayName.trim() !== "" &&
+      (displayName.trim() !== "" || !token.displayName) &&
       (passwordAction !== "set" || isValidPublicURLPassword(newPassword)),
   );
 

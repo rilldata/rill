@@ -2101,6 +2101,7 @@
   "route_error_fetching_billing_subscription": "Failed to fetch billing subscription",
   "route_error_fetching_organization": "Error fetching organization",
   "route_error_fetching_project": "Error fetching project",
+  "route_error_fetching_token": "Error fetching token",
   "route_error_no_org_permission": "You do not have permission to access this organization",
   "route_error_token_not_found": "Unable to find token",
   "route_error_token_resource_not_found": "Unable to find the token's resource",

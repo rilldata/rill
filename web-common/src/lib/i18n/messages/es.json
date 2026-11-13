@@ -2110,6 +2110,7 @@
   "route_error_fetching_billing_subscription": "Error al obtener la suscripción de facturación",
   "route_error_fetching_organization": "Error al obtener la organización",
   "route_error_fetching_project": "Error al obtener el proyecto",
+  "route_error_fetching_token": "Error al obtener el token",
   "route_error_no_org_permission": "No tienes permiso para acceder a esta organización",
   "route_error_token_not_found": "No se pudo encontrar el token",
   "route_error_token_resource_not_found": "No se pudo encontrar el recurso del token",

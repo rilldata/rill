@@ -47,10 +47,10 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-function open(passwordProtected: boolean) {
+function open(passwordProtected: boolean, displayName = "Label") {
   render(EditPublicURLDialog, {
     open: true,
-    token: { id: "token", displayName: "Label", passwordProtected },
+    token: { id: "token", displayName, passwordProtected },
   });
 }
 
@@ -98,6 +98,27 @@ it("removes a password and discards a replacement entered earlier", async () => 
     tokenId: "token",
     data: { removePassword: true },
   });
+});
+
+it("changes the password of a URL without a label, but doesn't let a label be cleared", async () => {
+  open(true, "");
+  await fireEvent.click(
+    screen.getByRole("switch", { name: "Remove password" }),
+  );
+  await save();
+  expect(mocks.update).toHaveBeenCalledWith({
+    tokenId: "token",
+    data: { removePassword: true },
+  });
+
+  cleanup();
+  open(true);
+  await fireEvent.input(screen.getByDisplayValue("Label"), {
+    target: { value: "" },
+  });
+  expect(
+    screen.getByRole("button", { name: "Save" }).hasAttribute("disabled"),
+  ).toBe(true);
 });
 
 it("requires a valid password when adding protection, including generated passwords", async () => {
