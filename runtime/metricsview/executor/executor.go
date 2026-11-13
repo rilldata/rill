@@ -24,6 +24,7 @@ const (
 	defaultInteractiveTimeout = time.Minute * 3
 	defaultExportTimeout      = time.Minute * 5
 	defaultPivotExportTimeout = time.Minute * 5
+	defaultTimestampsCacheTTL = 5 * time.Minute
 )
 
 // Executor is capable of executing queries and other operations against a metrics view.
@@ -108,17 +109,10 @@ func (e *Executor) LatestQueryTable() string {
 	return e.latestQueryTable
 }
 
-// UsesPerUserOAuth reports whether the metrics view's connector runs queries with the caller's own credentials.
-// Results then depend on the caller, so they must never be cached or shared across callers.
-func (e *Executor) UsesPerUserOAuth() bool {
-	oc, ok := e.olap.(drivers.OAuthConfigurer)
-	return ok && oc.OAuthConfig() != nil
-}
-
 // CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
 // If ok is false, caching is disabled for the metrics view.
 func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	if e.UsesPerUserOAuth() {
+	if e.usesPerUserOAuth() {
 		return nil, false, nil
 	}
 
@@ -171,6 +165,20 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	return keyBytes, true, nil
+}
+
+// TimestampsTTLCacheKey returns a time-bucketed cache key for timestamps queries.
+// It is a fallback for metrics views with rollups when CacheKey disables caching.
+// If ok is false, timestamps must not be cached.
+func (e *Executor) TimestampsTTLCacheKey() ([]byte, bool) {
+	if e.usesPerUserOAuth() {
+		return nil, false
+	}
+	ttl := defaultTimestampsCacheTTL
+	if e.metricsView.CacheTimestampsTtlSeconds > 0 {
+		ttl = time.Duration(e.metricsView.CacheTimestampsTtlSeconds) * time.Second
+	}
+	return []byte(fmt.Sprintf("ts:%d", time.Now().Truncate(ttl).Unix())), true
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.
@@ -1059,6 +1067,13 @@ END) as __rill_time_grain`)
 	}
 
 	return rows, nil
+}
+
+// usesPerUserOAuth reports whether the metrics view's connector runs queries with the caller's own credentials.
+// Results then depend on the caller, so they must never be cached or shared across callers.
+func (e *Executor) usesPerUserOAuth() bool {
+	oc, ok := e.olap.(drivers.OAuthConfigurer)
+	return ok && oc.OAuthConfig() != nil
 }
 
 func whereExprForSearch(where *metricsview.Expression, dimension, search string) *metricsview.Expression {

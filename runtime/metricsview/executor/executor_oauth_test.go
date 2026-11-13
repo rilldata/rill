@@ -23,14 +23,16 @@ func TestCacheKeyDisabledForPerUserOAuth(t *testing.T) {
 	spec := &runtimev1.MetricsViewSpec{CacheEnabled: &enabled}
 
 	e := &Executor{metricsView: spec, olap: &oauthOLAPStub{cfg: &drivers.OAuthConfig{}}}
-	require.True(t, e.UsesPerUserOAuth())
 	_, ok, err := e.CacheKey(context.Background())
 	require.NoError(t, err)
 	require.False(t, ok)
+	_, ok = e.TimestampsTTLCacheKey()
+	require.False(t, ok)
 
 	e = &Executor{metricsView: spec, olap: &oauthOLAPStub{}}
-	require.False(t, e.UsesPerUserOAuth())
 	_, ok, err = e.CacheKey(context.Background())
 	require.NoError(t, err)
+	require.True(t, ok)
+	_, ok = e.TimestampsTTLCacheKey()
 	require.True(t, ok)
 }
