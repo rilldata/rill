@@ -53,6 +53,8 @@ When creating an alert, it is important to note that any existing filters will _
 1. Add a name for the alert **(required)**
 2. Set what measure to alert on **(required)**, including any dimension splits for the metric _(optional)_ and time grains for analysis _(optional)_
 
+When you split by a dimension, the alert checks its criteria for each dimension value, and its notifications list the rows that matched, one per dimension value. Notifications list up to 5 rows by default. To list more or fewer (up to 50), set **Rows in notifications**. In alert YAML files, this is the [`notify.rows_limit`](/reference/project-files/alerts#notify) property.
+
 Before selecting **Next**, you will have the option to preview the data for which your alert will be created.
 
 :::tip Maximize Your Alert Filters
@@ -99,7 +101,7 @@ Email is the default notification target for alerts and is automatically enabled
 
 #### Attaching the matching rows
 
-Alert emails show the first row that matched the alert criteria. To send every matching row, select **Attach matching rows to emails** and choose a CSV, Excel, or Parquet file. You can also set a row limit and include metadata in the file.
+Alert emails list the rows that matched the alert criteria, up to the alert's **Rows in notifications** limit. To send every matching row, select **Attach matching rows to emails** and choose a CSV, Excel, or Parquet file. You can also set a row limit and include metadata in the file.
 
 - Only emails include the attachment, and only when the alert triggers. Slack notifications and recovery emails do not.
 - Files larger than 10 MB are not attached. The email says so instead.

@@ -101,7 +101,9 @@ type AlertStatus struct {
 	ExecutionTime      time.Time
 	Status             runtimev1.AssertionStatus
 	IsRecover          bool
-	FailRow            map[string]any
+	FailColumns        []string   // Column names of FailRows, in the order of the alert query's result
+	FailRows           [][]string // Display values of the rows that matched the alert criteria
+	FailRowsTruncated  bool       // True if more rows matched the alert criteria than FailRows contains
 	ExecutionError     string
 	OpenLink           string
 	EditLink           string
@@ -126,7 +128,9 @@ func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 		return c.sendAlertFail(opts, &alertFailData{
 			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
-			FailRow:             opts.FailRow,
+			FailColumns:         opts.FailColumns,
+			FailRows:            opts.FailRows,
+			FailRowsTruncated:   opts.FailRowsTruncated,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
@@ -151,7 +155,9 @@ func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 type alertFailData struct {
 	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
-	FailRow             map[string]any
+	FailColumns         []string
+	FailRows            [][]string
+	FailRowsTruncated   bool
 	OpenLink            template.URL
 	EditLink            template.URL
 	UnsubscribeLink     template.URL

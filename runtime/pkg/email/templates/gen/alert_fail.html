@@ -124,6 +124,7 @@
                         <div style="font-family:Helvetica;font-size:20px;font-weight:bold;line-height:1.25;text-align:left;color:#000000;">{{ .DisplayName }}</div>
                       </td>
                     </tr>
+                    {{ if eq (len .FailRows) 1 }}
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
                         <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:</div>
@@ -131,12 +132,43 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">{{ range $key, $value := .FailRow }} • <b>{{ $key }}</b>: {{ $value }}<br />
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">{{ $row := index .FailRows 0 }}
+                          {{ range $i, $column := .FailColumns }} • <b>{{ $column }}</b>: {{ index $row $i }}<br />
                           {{ end }}
                         </div>
                       </td>
                     </tr>
-                    {{ if .Attached }}
+                    {{ else }}
+                    <tr>
+                      <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .FailRowsTruncated }}The first {{ len .FailRows }} rows{{ else }}The rows{{ end }} that matched your alert criteria are:</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
+                        <table cellpadding="0" cellspacing="0" width="100%" border="0" style="color:#000000;font-family:Helvetica;font-size:14px;line-height:1.25;table-layout:auto;width:100%;border:none;">
+                          <tr style="border-bottom:1px solid #AAA;text-align:left;">
+                            {{ range .FailColumns }}
+                            <th style="padding:6px 12px 6px 0;">{{ . }}</th>
+                            {{ end }}
+                          </tr>
+                          {{ range .FailRows }}
+                          <tr style="border-bottom:1px solid #EEE;">
+                            {{ range . }}
+                            <td style="padding:6px 12px 6px 0;">{{ . }}</td>
+                            {{ end }}
+                          </tr>
+                          {{ end }}
+                        </table>
+                      </td>
+                    </tr>
+                    {{ end }}{{ if .FailRowsTruncated }}
+                    <tr>
+                      <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">More rows matched your alert criteria.</div>
+                      </td>
+                    </tr>
+                    {{ end }}{{ if .Attached }}
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
                         <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">The rows that matched your alert criteria are attached.</div>
