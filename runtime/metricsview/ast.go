@@ -672,17 +672,9 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("comparison time measure %q must be based on a computed time dimension in the query", qm.Name)
 		}
 
-		baseStart := a.Query.TimeRange.Start
-		compStart := a.Query.ComparisonTimeRange.Start
-
-		dateDiff, err := a.Dialect.DateDiff(qd.Compute.TimeFloor.Grain.ToProto(), compStart, baseStart)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute date difference for comparison time measure %q: %w", qm.Name, err)
-		}
-
 		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.Dialect.EscapeIdentifier(qd.Name), a.Dialect.EscapeIdentifier(qd.Name))
 
-		expr, err := a.Dialect.IntervalSubtract(baseExpr, dateDiff, qd.Compute.TimeFloor.Grain.ToProto())
+		expr, err := a.sqlForIntervalSubtract(baseExpr, a.Query.ComparisonTimeRange.Start, a.Query.TimeRange.Start, qd.Compute.TimeFloor.Grain)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute comparison time measure %q expression: %w", qm.Name, err)
 		}
@@ -1625,45 +1617,63 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 	// Multiples such as "10m" offset by their base unit and re-truncate below, since DateDiff and IntervalSubtract only take standard grains.
 	_, gn := g.Base()
 
-	var dateDiff string
 	if g == TimeGrainUnspecified {
-		g = TimeGrainMillisecond // todo millis won't work for druid
-		res, err := a.Dialect.DateDiff(g.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
-	} else if g == mg && gn == 1 {
-		res, err := a.Dialect.DateDiff(g.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
-	} else {
-		// larger time grain values can change as well
-		mgUnit, _ := mg.Base()
-		res, err := a.Dialect.DateDiff(mgUnit.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
-
-		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
-		tc := a.Dialect.EscapeIdentifier(timeDim)
-		expr, err := a.Dialect.IntervalSubtract(tc, dateDiff, mgUnit.ToProto())
-		if err != nil {
-			return "", err
-		}
-		dim := &runtimev1.MetricsViewSpec_Dimension{
-			Expression: expr,
-		}
-		expr, err = a.Dialect.DateTruncExpr(dim, g.ToProto(), a.Query.TimeZone, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
-		if err != nil {
-			return "", fmt.Errorf(`failed to compute time floor: %w`, err)
-		}
-		return expr, nil
+		return a.sqlForIntervalSubtract(expr, start1, start2, TimeGrainMillisecond) // todo millis won't work for druid
+	}
+	if g == mg && gn == 1 {
+		return a.sqlForIntervalSubtract(expr, start1, start2, g)
 	}
 
+	// larger time grain values can change as well
+	// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
+	mgUnit, _ := mg.Base()
+	expr, err := a.sqlForIntervalSubtract(a.Dialect.EscapeIdentifier(timeDim), start1, start2, mgUnit)
+	if err != nil {
+		return "", err
+	}
+	dim := &runtimev1.MetricsViewSpec_Dimension{
+		Expression: expr,
+	}
+	expr, err = a.Dialect.DateTruncExpr(dim, g.ToProto(), a.Query.TimeZone, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
+	if err != nil {
+		return "", fmt.Errorf(`failed to compute time floor: %w`, err)
+	}
+	return expr, nil
+}
+
+// sqlForIntervalSubtract returns expr minus the number of grain units from t1 to t2.
+// For day and larger grains in a time zone other than UTC, it counts and subtracts the units on the query time zone's wall clock,
+// so a local midnight stays at local midnight when the interval spans a DST transition.
+func (a *AST) sqlForIntervalSubtract(expr string, t1, t2 time.Time, g TimeGrain) (string, error) {
+	tz := a.Query.TimeZone
+	if tz == "" || tz == "UTC" || tz == "Etc/UTC" || g.ToTimeutil().Compare(timeutil.TimeGrainDay) < 0 {
+		dateDiff, err := a.Dialect.DateDiff(g.ToProto(), t1, t2)
+		if err != nil {
+			return "", err
+		}
+		return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
+	}
+
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
+	}
+
+	// DateDiff counts the unit boundaries between UTC times, so pass it the wall-clock times in the query time zone as if they were UTC.
+	// For example, Europe/London midnights 2026-10-23T00:00:00+01:00 and 2026-11-06T00:00:00Z are 14 days apart, but their UTC dates are 15 days apart.
+	l1, l2 := t1.In(loc), t2.In(loc)
+	dateDiff, err := a.Dialect.DateDiff(
+		g.ToProto(),
+		time.Date(l1.Year(), l1.Month(), l1.Day(), l1.Hour(), l1.Minute(), l1.Second(), l1.Nanosecond(), time.UTC),
+		time.Date(l2.Year(), l2.Month(), l2.Day(), l2.Hour(), l2.Minute(), l2.Second(), l2.Nanosecond(), time.UTC),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	if res, ok := a.Dialect.IntervalSubtractInTimeZone(expr, dateDiff, g.ToProto(), tz); ok {
+		return res, nil
+	}
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
 
