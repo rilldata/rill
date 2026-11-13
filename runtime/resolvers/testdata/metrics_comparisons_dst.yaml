@@ -44,7 +44,9 @@ project_files:
       select parseDateTimeBestEffort('2026-11-01T20:00:00Z') as time, 3 as val union all
       select parseDateTimeBestEffort('2026-11-06T20:00:00Z') as time, 10 as val union all
       select parseDateTimeBestEffort('2026-11-07T20:00:00Z') as time, 20 as val union all
-      select parseDateTimeBestEffort('2026-11-08T20:00:00Z') as time, 30 as val
+      select parseDateTimeBestEffort('2026-11-08T20:00:00Z') as time, 30 as val union all
+      select parseDateTimeBestEffort('2025-10-27T07:30:00Z') as time, 8 as val union all
+      select parseDateTimeBestEffort('2025-11-10T08:30:00Z') as time, 80 as val
   clickhouse_metrics.yaml:
     type: metrics_view
     model: clickhouse_data
@@ -236,3 +238,38 @@ tests:
         sum_prev: 8
         time__day: "2025-11-10T08:00:00Z"
         time__week: "2025-11-10T08:00:00Z"
+  - name: mixed_grains_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+        - name: time__week
+          compute:
+            time_floor:
+              dimension: time
+              grain: week
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2025-11-10T08:00:00Z
+        end: 2025-11-11T08:00:00Z
+      comparison_time_range:
+        start: 2025-10-27T07:00:00Z
+        end: 2025-10-28T07:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 80
+        sum_prev: 8
+        time__day: "2025-11-10T00:00:00-08:00"
+        time__week: "2025-11-10T00:00:00-08:00"

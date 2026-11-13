@@ -187,11 +187,10 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 }
 
-func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, _ string) (string, bool) {
-	// DateTruncExpr returns a DateTime64 in the query time zone, and ClickHouse does interval arithmetic in a value's own time zone.
-	// Converting tsExpr to the query time zone here would instead break Date columns, which ClickHouse treats as UTC midnights.
-	expr, err := d.IntervalSubtract(tsExpr, unitExpr, grain)
-	return expr, err == nil
+func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
+	// ClickHouse does interval arithmetic in a value's own time zone, so cast to tz like DateTruncExpr does.
+	// The cast is a no-op for buckets from DateTruncExpr, and casts Date values to local midnight in tz.
+	return fmt.Sprintf("(%s::DateTime64(6, '%s') - INTERVAL (%s) %s)", tsExpr, tz, unitExpr, d.ConvertToDateTruncSpecifier(grain)), true
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

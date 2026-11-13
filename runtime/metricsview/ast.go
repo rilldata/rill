@@ -1646,33 +1646,32 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 // so a local midnight stays at local midnight when the interval spans a DST transition.
 func (a *AST) sqlForIntervalSubtract(expr string, t1, t2 time.Time, g TimeGrain) (string, error) {
 	tz := a.Query.TimeZone
-	if tz == "" || tz == "UTC" || tz == "Etc/UTC" || g.ToTimeutil().Compare(timeutil.TimeGrainDay) < 0 {
-		dateDiff, err := a.Dialect.DateDiff(g.ToProto(), t1, t2)
+	if tz != "" && tz != "UTC" && tz != "Etc/UTC" && g.ToTimeutil().Compare(timeutil.TimeGrainDay) >= 0 {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
+		}
+
+		// DateDiff counts the unit boundaries between UTC times, so pass it the wall-clock times in the query time zone as if they were UTC.
+		// For example, Europe/London midnights 2026-10-23T00:00:00+01:00 and 2026-11-06T00:00:00Z are 14 days apart, but their UTC dates are 15 days apart.
+		l1, l2 := t1.In(loc), t2.In(loc)
+		dateDiff, err := a.Dialect.DateDiff(
+			g.ToProto(),
+			time.Date(l1.Year(), l1.Month(), l1.Day(), l1.Hour(), l1.Minute(), l1.Second(), l1.Nanosecond(), time.UTC),
+			time.Date(l2.Year(), l2.Month(), l2.Day(), l2.Hour(), l2.Minute(), l2.Second(), l2.Nanosecond(), time.UTC),
+		)
 		if err != nil {
 			return "", err
 		}
-		return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
+		if res, ok := a.Dialect.IntervalSubtractInTimeZone(expr, dateDiff, g.ToProto(), tz); ok {
+			return res, nil
+		}
+		// The dialect subtracts in UTC, so fall through to also count the units between UTC times.
 	}
 
-	loc, err := time.LoadLocation(tz)
-	if err != nil {
-		return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
-	}
-
-	// DateDiff counts the unit boundaries between UTC times, so pass it the wall-clock times in the query time zone as if they were UTC.
-	// For example, Europe/London midnights 2026-10-23T00:00:00+01:00 and 2026-11-06T00:00:00Z are 14 days apart, but their UTC dates are 15 days apart.
-	l1, l2 := t1.In(loc), t2.In(loc)
-	dateDiff, err := a.Dialect.DateDiff(
-		g.ToProto(),
-		time.Date(l1.Year(), l1.Month(), l1.Day(), l1.Hour(), l1.Minute(), l1.Second(), l1.Nanosecond(), time.UTC),
-		time.Date(l2.Year(), l2.Month(), l2.Day(), l2.Hour(), l2.Minute(), l2.Second(), l2.Nanosecond(), time.UTC),
-	)
+	dateDiff, err := a.Dialect.DateDiff(g.ToProto(), t1, t2)
 	if err != nil {
 		return "", err
-	}
-
-	if res, ok := a.Dialect.IntervalSubtractInTimeZone(expr, dateDiff, g.ToProto(), tz); ok {
-		return res, nil
 	}
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
