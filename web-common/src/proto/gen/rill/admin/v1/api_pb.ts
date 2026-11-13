@@ -2792,6 +2792,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   /**
    * Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
    * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   * Must be at most 2048 bytes.
    *
    * @generated from field: string external_user_id = 16;
    */
