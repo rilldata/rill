@@ -48,6 +48,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
+      console.log(exploreSpec);
       this.yamlConfigProvider.update({
         restrictedDimensions: exploreSpec.dimensions,
         primaryTimeDimension: metricsViewSpec.timeDimension,

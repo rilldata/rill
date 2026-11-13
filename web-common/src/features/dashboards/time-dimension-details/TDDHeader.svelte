@@ -16,16 +16,9 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import type {
-    DashboardTimeControls,
-    TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import ExcludeButton from "../toolbars/ExcludeButton.svelte";
   import SearchButton from "../toolbars/SearchButton.svelte";
   import SelectAllButton from "../toolbars/SelectAllButton.svelte";
@@ -33,6 +26,7 @@
   import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
   import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
 
   interface Props {
     exploreName: string;
@@ -71,8 +65,8 @@
       exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
-    validSpecStore,
     expressionFilterManager,
+    timeFilterManager,
   } = stateManagers;
 
   const ephemeralDefsByName = $derived(
@@ -182,62 +176,6 @@
       },
     ]);
   }
-
-  const timeControlsStore = useTimeControlStore(stateManagers);
-
-  const minTimeGrain = $derived($timeControlsStore.minTimeGrain);
-  const availableTimeGrains = $derived($timeControlsStore.availableTimeGrains);
-  const timeStart = $derived($timeControlsStore.timeStart);
-  const timeEnd = $derived($timeControlsStore.timeEnd);
-  const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
-
-  const activeTimeGrain = $derived(selectedTimeRange?.interval);
-  const adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
-
-  const baseTimeRange = $derived(
-    selectedTimeRange?.start &&
-      selectedTimeRange?.end && {
-        name: selectedTimeRange?.name,
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-      },
-  );
-
-  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
-    if (timeGrain === undefined) {
-      metricsExplorerStore.setAdaptiveTimeGrain(
-        exploreName,
-        $validSpecStore.data?.metricsView ?? {},
-      );
-      return;
-    }
-    metricsExplorerStore.setTimeGrain(exploreName, timeGrain);
-    if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
-      );
-    }
-  }
-
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    metricsExplorerStore.selectTimeRange(
-      exploreName,
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-      $validSpecStore.data?.metricsView ?? {},
-    );
-  }
 </script>
 
 <div class="tdd-header bg-surface-background">
@@ -257,17 +195,9 @@
         {m.dashboard_columns()}
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector
-          tdd
-          {activeTimeGrain}
-          {adaptiveTimeGrain}
-          allowAdaptiveTimeGrain
-          {onTimeGrainSelect}
-          {timeStart}
-          {timeEnd}
-          {minTimeGrain}
-          {availableTimeGrains}
-        />
+        {#if timeFilterManager.timeGrain}
+          <AggregationGrainSelector {timeFilterManager} type="tdd" />
+        {/if}
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}

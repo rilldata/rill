@@ -18,6 +18,7 @@
     selectors: {
       dimensions: { allDimensions },
     },
+    timeFilterManager,
   } = getStateManagers();
 
   let dimensions: MetricsViewSpecDimension[] | undefined = [];
@@ -48,10 +49,10 @@
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {
-      metricsExplorerStore.displayTimeComparison(exploreName, true);
+      timeFilterManager.setShowComparison(true);
     } else {
       // Temporary until these are not mutually exclusive
-      metricsExplorerStore.displayTimeComparison(exploreName, false);
+      timeFilterManager.setShowComparison(false);
       metricsExplorerStore.setComparisonDimension(exploreName, name);
     }
   }

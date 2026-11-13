@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { Nudge } from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components";
@@ -88,14 +87,7 @@
   {/if}
 
   {#if showGrainPicker}
-    <AggregationGrainSelector
-      {timeFilterManager}
-      defaultOption={{
-        label: m.time_grain_adaptive(),
-        description: m.time_grain_adaptive_description(),
-        hint: m.time_grain_adaptive_hint(),
-      }}
-    />
+    <AggregationGrainSelector {timeFilterManager} />
   {/if}
 </div>
 

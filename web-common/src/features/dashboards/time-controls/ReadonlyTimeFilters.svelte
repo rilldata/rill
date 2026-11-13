@@ -84,7 +84,7 @@
   <Chip type="time" readOnly>
     <svelte:fragment slot="body">
       <div class="text-fg-primary px-2">
-        {m.explore_by_grain_prefix()}
+        {m.time_grain_by()}
         <span class="font-bold">{translateV1TimeGrain(timeGrain)}</span>
       </div>
     </svelte:fragment>

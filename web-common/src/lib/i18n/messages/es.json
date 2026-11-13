@@ -1055,7 +1055,6 @@
   "dashboard_select_time_axis": "Seleccionar eje de tiempo",
   "dashboard_select_time_comparison_aria": "Seleccionar opción de comparación temporal",
   "dashboard_select_time_dimension": "Seleccionar dimensión de tiempo {label}",
-  "dashboard_select_time_grain": "Seleccionar granularidad temporal",
   "dashboard_select_time_range": "Seleccionar rango de tiempo",
   "dashboard_select_time_range_aria": "Seleccionar rango de tiempo",
   "dashboard_selected": [
@@ -1345,7 +1344,6 @@
   "error_show_details": "Mostrar detalles",
   "explore_all_dimensions": "Todas las dimensiones",
   "explore_all_measures": "Todas las medidas",
-  "explore_by_grain_prefix": "por",
   "explore_check_yaml_errors": "Por favor, revisa el archivo YAML de tu dashboard en busca de errores.",
   "explore_choose_dimensions": "Elegir dimensiones para mostrar",
   "explore_choose_measures": "Elegir medidas para mostrar",
@@ -2391,7 +2389,6 @@
   "time_grain_adaptive_description": "La granularidad sigue el rango de tiempo seleccionado",
   "time_grain_adaptive_hint": "auto",
   "time_grain_by": "por",
-  "time_grain_complete": "completo",
   "time_grain_day": "día",
   "time_grain_days": "días",
   "time_grain_hour": "hora",

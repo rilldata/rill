@@ -1,6 +1,7 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { RillDefaultConfigProvider } from "@rilldata/web-common/features/dashboards/providers/RillDefaultConfigProvider.svelte.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 import {
   V1TimeGrain,
@@ -53,7 +54,6 @@ import {
   getComparisonInterval,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { getDefaultTimeRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
 import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
 import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
@@ -180,6 +180,9 @@ export class TimeFilterManager implements UrlParamsStore {
   // A child always uses its parent's.
   private executionTime = $state<string | undefined>(undefined);
 
+  // Values for the params the url leaves out.
+  private readonly rillDefaultConfigProvider: RillDefaultConfigProvider;
+
   // Computed values
   public minDate: DateTime<true> | undefined;
   public maxDate: DateTime<true> | undefined;
@@ -245,6 +248,10 @@ export class TimeFilterManager implements UrlParamsStore {
     public readonly parent?: TimeFilterManager,
   ) {
     this.storeSync = new UrlParamsChangeTracker(this);
+    this.rillDefaultConfigProvider = new RillDefaultConfigProvider(
+      metricsViewsProvider,
+      yamlConfigProvider,
+    );
 
     // An inherited range, zone and comparison follow the parent through these derived inputs,
     // so a change on the parent re-resolves the child's interval through its own query.
@@ -527,9 +534,11 @@ export class TimeFilterManager implements UrlParamsStore {
       this.urlTimeGrain = urlGrain ? TokenToV1TimeGrain[urlGrain] : undefined;
     }
 
+    // Yaml defaults are applied before the url gets here, so a missing param means the rill default.
+    // See RillDefaultConfigProvider.
     this.ownTimeZone =
       urlParams.get(ExploreStateURLParams.TimeZone) ??
-      this.yamlConfigProvider.defaultTimeZone;
+      this.rillDefaultConfigProvider.defaultTimeZone;
 
     this.timeDimension =
       urlParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
@@ -548,13 +557,7 @@ export class TimeFilterManager implements UrlParamsStore {
         false,
       );
     } else {
-      let defaultTimeRange = this.yamlConfigProvider.defaultTimeRange;
-      if (!defaultTimeRange) {
-        defaultTimeRange = getDefaultTimeRange(
-          this.metricsViewsProvider.largestMinTimeGrain,
-          this.metricsViewsProvider.timeRangeSummary,
-        );
-      }
+      const defaultTimeRange = this.rillDefaultConfigProvider.defaultTimeRange;
       if (defaultTimeRange && !this.config.skipDefaultTimeRange) {
         this.applyTimeRange(defaultTimeRange, false);
       } else {
@@ -608,7 +611,7 @@ export class TimeFilterManager implements UrlParamsStore {
       }
     }
 
-    if (this.ownTimeZone !== DEFAULT_TIMEZONE) {
+    if (this.ownTimeZone !== this.rillDefaultConfigProvider.defaultTimeZone) {
       urlParams.set(ExploreStateURLParams.TimeZone, this.ownTimeZone);
     } else {
       urlParams.delete(ExploreStateURLParams.TimeZone);

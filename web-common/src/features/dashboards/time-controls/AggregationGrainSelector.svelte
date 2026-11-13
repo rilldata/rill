@@ -5,20 +5,13 @@
   import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
-  // The "by Day" aggregation grain dropdown shared by the explore chart toolbar,
-  // the canvas filter bar and the canvas widget inspector.
   let {
     timeFilterManager,
-    defaultOption = undefined,
+    type = "default",
   }: {
     timeFilterManager: TimeFilterManager;
-    // Listed above the grains: "Adaptive" in explore and the canvas filter bar,
-    // "Inherit from canvas" in the widget inspector. `hint` shows next to the trigger while selected.
-    defaultOption?: {
-      label: string;
-      description?: string;
-      hint?: string;
-    };
+    // "tdd" renders the trigger as a pill labelled "Time Day" for the time dimension details header.
+    type?: "tdd" | "default";
   } = $props();
 
   let open = $state(false);
@@ -26,6 +19,7 @@
   let { urlTimeGrain, timeGrain, aggregationOptions } =
     $derived(timeFilterManager);
 
+  let isTdd = $derived(type === "tdd");
   let defaultOptionSelected = $derived(!urlTimeGrain);
 </script>
 
@@ -35,44 +29,55 @@
       <button
         {...props}
         aria-label={m.dashboard_select_aggregation_grain_aria()}
-        class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
+        class={[
+          "flex gap-x-1 items-center",
+          isTdd ? "tdd" : "text-fg-muted hover:text-fg-accent",
+        ]}
       >
-        {m.explore_by_grain_prefix()}
-        <b>
-          {translateV1TimeGrain(timeGrain)}
-        </b>
-        {#if defaultOptionSelected && defaultOption?.hint}
-          <i>{defaultOption?.hint}</i>
+        {#if isTdd}
+          <b>{m.time_grain_time()}</b>
+          <span class="capitalize">{translateV1TimeGrain(timeGrain)}</span>
+        {:else}
+          {m.time_grain_by()}
+          <b>
+            {translateV1TimeGrain(timeGrain)}
+          </b>
         {/if}
-        <span class={["transition-transform", { "-rotate-90": open }]}>
+        {#if defaultOptionSelected}
+          <i class={{ "text-fg-muted": isTdd }}>
+            {m.time_grain_adaptive_hint()}
+          </i>
+        {/if}
+        <span
+          class={[
+            "transition-transform",
+            { "-rotate-90": open && !isTdd, "-rotate-180": open && isTdd },
+          ]}
+        >
           <CaretDownIcon />
         </span>
       </button>
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-48">
-    {#if defaultOption}
-      <DropdownMenu.CheckboxItem
-        checkRight
-        checked={defaultOptionSelected}
-        class="text-xs cursor-pointer"
-        onclick={() => timeFilterManager.onSelectGrain(undefined)}
-      >
-        <div class="flex flex-col">
-          <span>{defaultOption.label}</span>
-          {#if defaultOption.description}
-            <span class="text-fg-muted">{defaultOption.description}</span>
-          {/if}
-        </div>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.Separator />
-    {/if}
+  <DropdownMenu.Content align="start" class={isTdd ? "min-w-52" : "w-48"}>
+    <DropdownMenu.CheckboxItem
+      checkRight
+      checked={defaultOptionSelected}
+      class="text-xs cursor-pointer"
+      onclick={() => timeFilterManager.onSelectGrain(undefined)}
+    >
+      <div class="flex flex-col">
+        <span>{m.time_grain_adaptive()}</span>
+        <span class="text-fg-muted">{m.time_grain_adaptive_description()}</span>
+      </div>
+    </DropdownMenu.CheckboxItem>
+    <DropdownMenu.Separator />
     {#each aggregationOptions as option (option)}
       <DropdownMenu.CheckboxItem
         checkRight
         checked={option === urlTimeGrain}
-        class="text-xs cursor-pointer"
+        class={["text-xs cursor-pointer", { capitalize: isTdd }]}
         onclick={() => timeFilterManager.onSelectGrain(option)}
       >
         {translateV1TimeGrain(option)}
@@ -80,3 +85,13 @@
     {/each}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  .tdd {
+    @apply border h-7 rounded-full px-2 pl-2.5 bg-surface-background text-fg-primary;
+  }
+
+  .tdd:global([data-state="open"]) {
+    @apply border-gray-400;
+  }
+</style>

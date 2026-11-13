@@ -9,8 +9,12 @@ import {
   DEFAULT_TIME_RANGE,
   RESOLVED_RILL_TIMES,
   TIME_RANGE_SUMMARY,
+  YAML_TIME_ZONES,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/rill-time-mocks";
-import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types.ts";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -26,6 +30,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const NOW_TIME_RANGE = "7D as of now/D+1D";
 const OTHER_TIME_RANGE = "7D as of latest/D";
+// What getDefaultTimeRange picks for the 3 months of TIME_RANGE_SUMMARY.
+const RILL_DEFAULT_TIME_RANGE = TimeRangePreset.QUARTER_TO_DATE;
 
 const mocks = useMetricsViewMocks({
   [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -46,7 +52,10 @@ describe("TimeFilterManager", () => {
     vi.restoreAllMocks();
   });
 
-  function createManager(parent?: TimeFilterManager) {
+  function createManager(
+    parent?: TimeFilterManager,
+    yamlConfigProvider = new YAMLConfigProvider(),
+  ) {
     const rendered = renderInRuntimeContext(({ runtimeClient }) => {
       const metricsViewsProvider = new MetricsViewsProvider(runtimeClient, [
         AD_BIDS_METRICS_NAME,
@@ -54,7 +63,7 @@ describe("TimeFilterManager", () => {
       const manager = new TimeFilterManager(
         runtimeClient,
         metricsViewsProvider,
-        new YAMLConfigProvider(),
+        yamlConfigProvider,
         {},
         parent,
       );
@@ -242,6 +251,71 @@ describe("TimeFilterManager", () => {
 
     parent.onSelectComparisonRange(TimeComparisonOption.MONTH);
     expect(child.comparisonTimeRange).toEqual(TimeComparisonOption.MONTH);
+  });
+
+  describe("params missing from the url", () => {
+    // Yaml defaults are applied before the url reaches the manager,
+    // so a missing param means the rill default.
+    function createManagerWithYamlDefaults(timeZones: string[]) {
+      const yamlConfigProvider = new YAMLConfigProvider();
+      yamlConfigProvider.update({
+        defaultTimeRange: OTHER_TIME_RANGE,
+        defaultTimeZone: "Asia/Kathmandu",
+        timeZones,
+      });
+      return createManager(undefined, yamlConfigProvider).manager;
+    }
+
+    it("fall back to the rill defaults rather than the yaml defaults", async () => {
+      const manager = createManagerWithYamlDefaults(YAML_TIME_ZONES);
+
+      manager.storeSync.setUrlParams(
+        new URLSearchParams([
+          [
+            ExploreStateURLParams.ComparisonTimeRange,
+            TimeComparisonOption.WEEK,
+          ],
+        ]),
+      );
+
+      await waitFor(() =>
+        expect(manager.urlTimeRange).toEqual(RILL_DEFAULT_TIME_RANGE),
+      );
+      // The first of the yaml time zones.
+      expect(manager.timeZone).toEqual("UTC");
+    });
+
+    it("leaves out the zone only when it is the rill default", async () => {
+      const manager = createManagerWithYamlDefaults([
+        "America/New_York",
+        "UTC",
+      ]);
+      const changes: string[] = [];
+      manager.storeSync.on("internal-change", (params) =>
+        changes.push(params.toString()),
+      );
+
+      manager.storeSync.setUrlParams(
+        new URLSearchParams([
+          [ExploreStateURLParams.TimeRange, DEFAULT_TIME_RANGE],
+        ]),
+      );
+      await waitFor(() => expect(manager.timeZone).toEqual("America/New_York"));
+
+      manager.onSelectZone("UTC");
+      await waitFor(() =>
+        expect(changes.at(-1)).toContain(
+          `${ExploreStateURLParams.TimeZone}=UTC`,
+        ),
+      );
+
+      manager.onSelectZone("America/New_York");
+      await waitFor(() =>
+        expect(changes.at(-1)).not.toContain(
+          `${ExploreStateURLParams.TimeZone}=`,
+        ),
+      );
+    });
   });
 
   describe("child following its parent", () => {

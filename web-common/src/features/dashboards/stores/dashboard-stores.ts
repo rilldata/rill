@@ -670,17 +670,6 @@ const metricsViewReducers = {
     });
   },
 
-  /**
-   * Switches the time grain to adaptive mode: the grain follows the selected time range
-   * until the user fixes one again with `setTimeGrain`.
-   */
-  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.adaptiveTimeGrain = true;
-      correctExploreState(metricsViewSpec, exploreState);
-    });
-  },
-
   remove(name: string) {
     update((state) => {
       delete state.entities[name];

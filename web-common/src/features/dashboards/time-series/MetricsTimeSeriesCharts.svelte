@@ -297,14 +297,7 @@
       </DashboardMetricsDraggableList>
 
       {#if timeGrain}
-        <AggregationGrainSelector
-          {timeFilterManager}
-          defaultOption={{
-            label: m.time_grain_adaptive(),
-            description: m.time_grain_adaptive_description(),
-            hint: m.time_grain_adaptive_hint(),
-          }}
-        />
+        <AggregationGrainSelector {timeFilterManager} />
       {/if}
 
       <ChartSettingsMenu
