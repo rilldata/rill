@@ -18,10 +18,14 @@ export class VegaLiteTooltipHandler {
   distance = 0;
   pad = 8;
   public valueFormatter: VLTooltipFormatter;
+  // Added to the tooltip so it keeps the dashboard theme once appended to document.body;
+  // see getThemeBoundaryClass.
+  private themeBoundaryClass: string | undefined;
   private mouseLeaveHandler: ((event: Event) => void) | null = null;
 
-  constructor(valueFormatter: VLTooltipFormatter) {
+  constructor(valueFormatter: VLTooltipFormatter, themeBoundaryClass?: string) {
     this.valueFormatter = valueFormatter;
+    this.themeBoundaryClass = themeBoundaryClass;
   }
 
   /**
@@ -56,6 +60,7 @@ export class VegaLiteTooltipHandler {
 
     const el = document.createElement("div");
     el.setAttribute("id", TOOLTIP_ID);
+    if (this.themeBoundaryClass) el.classList.add(this.themeBoundaryClass);
 
     const formattedValue = this.valueFormatter(value);
     el.innerHTML = formattedValue;
