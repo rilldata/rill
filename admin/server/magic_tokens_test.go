@@ -202,4 +202,12 @@ func TestGetCurrentMagicAuthTokenInternal(t *testing.T) {
 	listRes, err := admin.ListMagicAuthTokens(ctx, &adminv1.ListMagicAuthTokensRequest{Org: org.Organization.Name, Project: proj.Project.Name})
 	require.NoError(t, err)
 	require.Empty(t, listRes.Tokens)
+
+	// Internal tokens can't be updated, so the links in emails can't be locked behind a password.
+	password := "correct horse"
+	_, err = admin.UpdateMagicAuthToken(ctx, &adminv1.UpdateMagicAuthTokenRequest{TokenId: tkn.OwnerID(), Password: &password})
+	require.Equal(t, codes.NotFound, status.Code(err))
+	cur, err = internal.GetCurrentMagicAuthToken(ctx, &adminv1.GetCurrentMagicAuthTokenRequest{})
+	require.NoError(t, err)
+	require.False(t, cur.Locked)
 }

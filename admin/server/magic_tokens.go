@@ -79,20 +79,13 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		Fields:      req.Fields,
 		State:       req.State,
 		DisplayName: req.DisplayName,
+		Password:    req.Password,
 		Resources:   resources,
 	}
 
 	if req.TtlMinutes != 0 {
 		ttl := time.Duration(req.TtlMinutes) * time.Minute
 		opts.TTL = &ttl
-	}
-
-	if req.Password != "" {
-		err := validateMagicAuthTokenPassword(req.Password)
-		if err != nil {
-			return nil, err
-		}
-		opts.Password = req.Password
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeUser {
@@ -133,6 +126,9 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
 	if err != nil {
+		if errors.Is(err, admin.ErrMagicAuthTokenPasswordInvalid) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 		return nil, err
 	}
 
@@ -294,6 +290,12 @@ func (s *Server) UpdateMagicAuthToken(ctx context.Context, req *adminv1.UpdateMa
 		return nil, err
 	}
 
+	// Internal tokens back the links in report and alert emails; they are not public URLs and can't be managed as such.
+	// In particular, a password on one would lock every emailed link behind a prompt that no recipient can answer.
+	if tkn.Internal {
+		return nil, status.Error(codes.NotFound, "magic auth token not found")
+	}
+
 	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
 	if err != nil {
 		return nil, err
@@ -314,27 +316,16 @@ func (s *Server) UpdateMagicAuthToken(ctx context.Context, req *adminv1.UpdateMa
 		}
 	}
 
-	opts := &database.UpdateMagicAuthTokenOptions{
-		DisplayName:  tkn.DisplayName,
-		PasswordHash: tkn.PasswordHash,
-	}
-	if req.DisplayName != nil {
-		opts.DisplayName = *req.DisplayName
-	}
-	passwordChanged := false
+	// Hash the new password before the transaction, so the token's row is not locked while bcrypt runs.
+	var newPasswordHash []byte
 	if req.Password != nil {
-		err := validateMagicAuthTokenPassword(*req.Password)
+		newPasswordHash, err = admin.HashMagicAuthTokenPassword(*req.Password)
 		if err != nil {
+			if errors.Is(err, admin.ErrMagicAuthTokenPasswordInvalid) {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
 			return nil, err
 		}
-		opts.PasswordHash, err = admin.HashMagicAuthTokenPassword(*req.Password)
-		if err != nil {
-			return nil, err
-		}
-		passwordChanged = true
-	} else if req.RemovePassword {
-		opts.PasswordHash = nil
-		passwordChanged = len(tkn.PasswordHash) > 0
 	}
 
 	txCtx, tx, err := s.admin.DB.NewTx(ctx, false)
@@ -342,6 +333,28 @@ func (s *Server) UpdateMagicAuthToken(ctx context.Context, req *adminv1.UpdateMa
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	// Fields that the request doesn't change are filled from the locked row, not from the read above:
+	// otherwise a concurrent update of another field would be overwritten with the value read before it committed.
+	cur, err := s.admin.DB.FindMagicAuthTokenForUpdate(txCtx, tkn.ID)
+	if err != nil {
+		return nil, err
+	}
+	opts := &database.UpdateMagicAuthTokenOptions{
+		DisplayName:  cur.DisplayName,
+		PasswordHash: cur.PasswordHash,
+	}
+	if req.DisplayName != nil {
+		opts.DisplayName = *req.DisplayName
+	}
+	passwordChanged := false
+	if req.Password != nil {
+		opts.PasswordHash = newPasswordHash
+		passwordChanged = true
+	} else if req.RemovePassword {
+		opts.PasswordHash = nil
+		passwordChanged = len(cur.PasswordHash) > 0
+	}
 
 	_, err = s.admin.DB.UpdateMagicAuthToken(txCtx, tkn.ID, opts)
 	if err != nil {
@@ -475,12 +488,4 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
 	}
 	return res, nil
-}
-
-// validateMagicAuthTokenPassword checks the length constraints of a password for a magic auth token.
-func validateMagicAuthTokenPassword(password string) error {
-	if err := admin.ValidateMagicAuthTokenPassword(password); err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	return nil
 }

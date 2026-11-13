@@ -28,13 +28,11 @@ func TestMagicAuthTokenPasswordValidation(t *testing.T) {
 		{"maximum emoji", strings.Repeat("😀", 18), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ValidateMagicAuthTokenPassword(tc.password)
+			_, err := HashMagicAuthTokenPassword(tc.password)
 			if tc.valid {
 				require.NoError(t, err)
 			} else {
-				require.Error(t, err)
-				_, err = HashMagicAuthTokenPassword(tc.password)
-				require.Error(t, err)
+				require.ErrorIs(t, err, ErrMagicAuthTokenPasswordInvalid)
 			}
 		})
 	}

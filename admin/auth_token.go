@@ -250,18 +250,14 @@ const (
 	MagicAuthTokenPasswordMaxLength = 72
 )
 
-// ValidateMagicAuthTokenPassword checks the character minimum and bcrypt's byte limit.
-func ValidateMagicAuthTokenPassword(password string) error {
-	if utf8.RuneCountInString(password) < MagicAuthTokenPasswordMinLength || len(password) > MagicAuthTokenPasswordMaxLength {
-		return fmt.Errorf("password must contain at least %d characters and at most %d UTF-8 bytes", MagicAuthTokenPasswordMinLength, MagicAuthTokenPasswordMaxLength)
-	}
-	return nil
-}
+// ErrMagicAuthTokenPasswordInvalid is returned for a password that doesn't meet the length constraints.
+var ErrMagicAuthTokenPasswordInvalid = fmt.Errorf("password must contain at least %d characters and at most %d UTF-8 bytes", MagicAuthTokenPasswordMinLength, MagicAuthTokenPasswordMaxLength)
 
 // HashMagicAuthTokenPassword validates and hashes a password for storage in a magic auth token.
+// It returns ErrMagicAuthTokenPasswordInvalid if the password is shorter than the character minimum or longer than bcrypt's byte limit.
 func HashMagicAuthTokenPassword(password string) ([]byte, error) {
-	if err := ValidateMagicAuthTokenPassword(password); err != nil {
-		return nil, err
+	if utf8.RuneCountInString(password) < MagicAuthTokenPasswordMinLength || len(password) > MagicAuthTokenPasswordMaxLength {
+		return nil, ErrMagicAuthTokenPasswordInvalid
 	}
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
@@ -276,23 +272,17 @@ var (
 // The session grants the same access as the magic auth token (see magicAuthToken);
 // it expires after ttl, or when the magic auth token expires, whichever comes first.
 //
-// The password is checked against the hash currently in the database, never against a token model from the auth cache,
-// and the check and the insert of the session run in one transaction that locks the magic auth token's row.
-// A concurrent password change, which also deletes the token's sessions, therefore either commits before the check,
-// so that the new password is required, or waits until the session has been inserted, so that it deletes the session too.
+// The password is checked against the hash currently in the database, never against a token model from the auth cache.
+// The check itself runs without a lock, since bcrypt is slow by design;
+// the session is then inserted in a transaction that locks the magic auth token's row and confirms the hash is still the one that was checked.
+// A concurrent password change, which also deletes the token's sessions, therefore either commits before the lock is taken,
+// so that the unlock fails, or waits until the session has been inserted, so that it deletes the session too.
 // Either way, a session can't be obtained with an old password and outlive it.
 func (s *Service) UnlockMagicAuthToken(ctx context.Context, id, password string, ttl time.Duration) (*database.MagicAuthTokenSession, *authtoken.Token, error) {
-	ctx, tx, err := s.DB.NewTx(ctx, false)
+	mat, err := s.DB.FindMagicAuthToken(ctx, id, false)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
-
-	mat, err := s.DB.FindMagicAuthTokenForUpdate(ctx, id)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	if len(mat.PasswordHash) == 0 {
 		return nil, nil, ErrMagicAuthTokenNotPasswordProtected
 	}
@@ -300,17 +290,35 @@ func (s *Service) UnlockMagicAuthToken(ctx context.Context, id, password string,
 		return nil, nil, ErrMagicAuthTokenPasswordIncorrect
 	}
 
+	ctx, tx, err := s.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// The password was changed or removed after it was checked.
+	locked, err := s.DB.FindMagicAuthTokenForUpdate(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(locked.PasswordHash) == 0 {
+		return nil, nil, ErrMagicAuthTokenNotPasswordProtected
+	}
+	if !bytes.Equal(locked.PasswordHash, mat.PasswordHash) {
+		return nil, nil, ErrMagicAuthTokenPasswordIncorrect
+	}
+
 	tkn := authtoken.NewRandom(authtoken.TypeMagicSession)
 
 	expiresOn := time.Now().Add(ttl)
-	if mat.ExpiresOn != nil && mat.ExpiresOn.Before(expiresOn) {
-		expiresOn = *mat.ExpiresOn
+	if locked.ExpiresOn != nil && locked.ExpiresOn.Before(expiresOn) {
+		expiresOn = *locked.ExpiresOn
 	}
 
 	sess, err := s.DB.InsertMagicAuthTokenSession(ctx, &database.InsertMagicAuthTokenSessionOptions{
 		ID:               tkn.ID.String(),
 		SecretHash:       tkn.SecretHash(),
-		MagicAuthTokenID: mat.ID,
+		MagicAuthTokenID: locked.ID,
 		ExpiresOn:        expiresOn,
 	})
 	if err != nil {

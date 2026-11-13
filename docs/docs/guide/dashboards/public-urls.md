@@ -96,9 +96,15 @@ Once you have obtained the `id` you can run the following:
 rill public-url delete <id>
 ```
 
-If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.) To require a password, pass it with the `--password` flag:
+If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.) To require a password, add the `--password` flag. The CLI prompts for the password with hidden input, so it is not saved in your shell history:
 
 ```
-rill public-url create <project-name> <explore> --password <password>
+rill public-url create <project-name> <explore> --password
+```
+
+In scripts, where there is no terminal to prompt on, the password is read from standard input:
+
+```
+printenv PUBLIC_URL_PASSWORD | rill public-url create <project-name> <explore> --password
 ```
 
