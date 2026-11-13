@@ -215,6 +215,9 @@ test.describe("pivot ephemeral measures from URL state", () => {
       .getByRole("button", { name: "Total records", exact: true })
       .click();
     await expect(expression.locator(".measure-chip")).toHaveCount(2);
+    // Inserting focuses the editor on the next frame; wait for it, or the
+    // description below can be typed into the expression instead.
+    await expect(expression).toBeFocused();
 
     await page.getByLabel("Description").fill("Twice");
     await page.getByRole("button", { name: "Save" }).click();

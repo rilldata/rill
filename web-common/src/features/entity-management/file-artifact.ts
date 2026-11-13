@@ -206,41 +206,37 @@ export class FileArtifact {
     return fetchedContent;
   };
 
-  /**
-   * Sets the editor content and, with `autoSave`, saves it. Returns the save
-   * of a programmatic edit (not `fromEditor`, which is debounced), resolving to
-   * whether it succeeded, so callers can confirm or report it.
-   */
   updateEditorContent = (
     newContent: string,
     fromEditor = false,
     autoSave = get(this.autoSave),
     firstLoad = false,
-  ): Promise<boolean> | undefined => {
+  ) => {
     this.editorContent.set(newContent);
 
     if (!firstLoad) {
       this.saveState.touch(this.path);
     }
 
-    let saved: Promise<boolean> | undefined;
     if (autoSave) {
       if (fromEditor) {
         this.debounceSave(newContent);
       } else {
-        saved = this.saveContent(newContent);
+        this.saveContent(newContent).catch(console.error);
       }
     }
 
-    if (!fromEditor) this.editorCallback(newContent);
-    return saved;
+    if (fromEditor) return;
+
+    this.editorCallback(newContent);
   };
 
-  saveLocalContent = async (force = false) => {
+  // Resolves to whether the editor content was saved.
+  saveLocalContent = async (force = false): Promise<boolean> => {
     const saveEnabled = get(this.saveEnabled);
 
-    if (!saveEnabled && !force) return;
-    await this.saveContent(get(this.editorContent) ?? "");
+    if (!saveEnabled && !force) return false;
+    return this.saveContent(get(this.editorContent) ?? "");
   };
 
   // Resolves to whether the save completed; a failure is also reported

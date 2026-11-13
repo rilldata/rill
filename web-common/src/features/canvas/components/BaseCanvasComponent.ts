@@ -433,19 +433,18 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   // Resolves to whether the canvas file was saved.
-  private async updateYAML(newSpec: T): Promise<boolean> {
-    if (!this.parent.fileArtifact) return false;
+  private updateYAML(newSpec: T): Promise<boolean> {
+    if (!this.parent.fileArtifact) return Promise.resolve(false);
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent } = this.parent.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    return (
-      (await updateEditorContent(parsedDocument.toString(), false, true)) ??
-      false
-    );
+    // Saved explicitly rather than with auto-save, so the result can be awaited.
+    updateEditorContent(parsedDocument.toString(), false, false);
+    return saveLocalContent(true);
   }
 
   // Resolves to whether the canvas file was saved.

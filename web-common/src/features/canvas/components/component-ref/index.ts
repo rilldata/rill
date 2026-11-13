@@ -168,12 +168,10 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
    * Only the params map is written; the item's other keys (component, width) stay untouched.
    * Resolves to whether the canvas file was saved.
    */
-  private async writeParamsToYAML(
-    params: Record<string, unknown>,
-  ): Promise<boolean> {
-    if (!this.parent.fileArtifact) return false;
+  private writeParamsToYAML(params: Record<string, unknown>): Promise<boolean> {
+    if (!this.parent.fileArtifact) return Promise.resolve(false);
     const parsedDocument = get(this.parent.parsedContent);
-    const { updateEditorContent } = this.parent.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     // pathInYAML ends with the component type segment; the item map is its parent.
     const itemPath = this.pathInYAML.slice(0, -1);
@@ -183,10 +181,9 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
       parsedDocument.deleteIn([...itemPath, "params"]);
     }
 
-    return (
-      (await updateEditorContent(parsedDocument.toString(), false, true)) ??
-      false
-    );
+    // Saved explicitly rather than with auto-save, so the result can be awaited.
+    updateEditorContent(parsedDocument.toString(), false, false);
+    return saveLocalContent(true);
   }
 
   /**
