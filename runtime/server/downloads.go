@@ -16,6 +16,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -192,8 +193,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	queryAttrs := append(s.runtime.GetInstanceAttributes(req.Context(), request.InstanceId), attribute.String("source", string(runtime.RequestSourceFromContext(req.Context()))))
 	s.activity.RecordMetric(req.Context(), "query", 1, queryAttrs...)
 
-	// The browser opens the download URL without credentials, so run it as the user who issued the token.
-	err = q.Export(auth.WithClaims(req.Context(), claims), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
+	// The browser opens the download URL without credentials, so fetch OAuth tokens for the user who issued the token.
+	ctx := drivers.WithOAuthCaller(req.Context(), s.connectorOAuth.forUser(claims.UserID))
+	err = q.Export(ctx, s.runtime, request.InstanceId, w, &runtime.ExportOptions{
 		Format: request.Format,
 		PreWriteHook: func(filename string) error {
 			// Add timestamp to filename

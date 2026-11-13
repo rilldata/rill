@@ -34,8 +34,8 @@ func GetClaims(ctx context.Context, instanceID string) *runtime.SecurityClaims {
 }
 
 // WithClaims wraps a context with the given claims.
-// It mimics the result of parsing a JWT using a middleware.
-// Outside tests, use it only for claims carried by another trusted credential, such as a download token.
+// It mimics the result of parsing a JWT using a middleware. It should only be used in tests.
+// NOTE: We should remove this when the server tests support interceptors.
 func WithClaims(ctx context.Context, claims *runtime.SecurityClaims) context.Context {
 	return withClaimsProvider(ctx, wrappedClaims{claims: claims})
 }

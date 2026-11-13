@@ -48,12 +48,25 @@ func newConnectorOAuthCaller(admin func(ctx context.Context, instanceID string) 
 // Token implements drivers.OAuthCaller.
 func (c *connectorOAuthCaller) Token(ctx context.Context, instanceID, connector, configHash string, forceRefresh bool) (*drivers.OAuthToken, error) {
 	// The token is that of the user the claims' subject names, which may be another user's, such as for "View as" and embeds issued for a user.
-	claims := auth.GetClaims(ctx, instanceID)
-	if claims == nil || claims.UserID == "" {
+	var userID string
+	if claims := auth.GetClaims(ctx, instanceID); claims != nil {
+		userID = claims.UserID
+	}
+	return c.token(ctx, instanceID, connector, configHash, userID, forceRefresh)
+}
+
+// forUser returns a drivers.OAuthCaller for userID, for requests authenticated by other means than the request's claims.
+func (c *connectorOAuthCaller) forUser(userID string) drivers.OAuthCaller {
+	return userOAuthCaller{c: c, userID: userID}
+}
+
+// token returns userID's token for a connector.
+func (c *connectorOAuthCaller) token(ctx context.Context, instanceID, connector, configHash, userID string, forceRefresh bool) (*drivers.OAuthToken, error) {
+	if userID == "" {
 		return nil, c.noUserError(ctx, instanceID, connector, configHash)
 	}
 
-	key := instanceID + "\x00" + connector + "\x00" + configHash + "\x00" + claims.UserID
+	key := instanceID + "\x00" + connector + "\x00" + configHash + "\x00" + userID
 	if !forceRefresh {
 		if tok, ok := c.tokens.get(key); ok {
 			return tok, nil
@@ -68,14 +81,14 @@ func (c *connectorOAuthCaller) Token(ctx context.Context, instanceID, connector,
 		}
 		defer release()
 
-		tok, err := admin.GetConnectorOAuthToken(ctx, connector, configHash, claims.UserID, forceRefresh)
+		tok, err := admin.GetConnectorOAuthToken(ctx, connector, configHash, userID, forceRefresh)
 		if err != nil {
 			if errors.Is(err, drivers.ErrNotFound) {
 				return nil, &drivers.OAuthAuthorizationRequiredError{Connector: connector}
 			}
 			return nil, err
 		}
-		res := &drivers.OAuthToken{UserID: claims.UserID, AccessToken: tok.AccessToken, ExpiresOn: tok.ExpiresOn}
+		res := &drivers.OAuthToken{UserID: userID, AccessToken: tok.AccessToken, ExpiresOn: tok.ExpiresOn}
 		c.tokens.set(key, res)
 		return res, nil
 	})
@@ -105,6 +118,17 @@ func (c *connectorOAuthCaller) noUserError(ctx context.Context, instanceID, conn
 		c.probes.Store(instanceID, drivers.ErrOAuthUserRequired)
 	}
 	return drivers.ErrOAuthUserRequired
+}
+
+// userOAuthCaller implements drivers.OAuthCaller for a fixed user.
+type userOAuthCaller struct {
+	c      *connectorOAuthCaller
+	userID string
+}
+
+// Token implements drivers.OAuthCaller.
+func (u userOAuthCaller) Token(ctx context.Context, instanceID, connector, configHash string, forceRefresh bool) (*drivers.OAuthToken, error) {
+	return u.c.token(ctx, instanceID, connector, configHash, u.userID, forceRefresh)
 }
 
 // connectorOAuthTokenCache holds access tokens briefly.
