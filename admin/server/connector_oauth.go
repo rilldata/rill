@@ -584,6 +584,7 @@ func (s *Server) connectorOAuthClient(ctx context.Context, proj *database.Projec
 	oauthClient, err := oauthclient.Discover(ctx, &oauthclient.DiscoverOptions{
 		ServerURL:           cfg.Config.ResourceUrl,
 		RedirectURL:         redirectURL,
+		Issuer:              cfg.Config.Issuer,
 		ClientID:            cfg.Config.ClientId,
 		ClientSecret:        cfg.Config.ClientSecret,
 		Scopes:              cfg.Config.Scopes,

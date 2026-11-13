@@ -71,7 +71,8 @@
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { Throttler } from "@rilldata/web-common/lib/throttler";
   import { setMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
-  import { mcpConnectUrl } from "@rilldata/web-admin/features/ai/mcp/mcp-connect-url";
+  import { connectorOAuthConnectUrl } from "@rilldata/web-admin/features/connectors/oauth/connect-url";
+  import ConnectorSignInDialog from "@rilldata/web-admin/features/connectors/oauth/ConnectorSignInDialog.svelte";
 
   const PAGE_VIEW_THROTTLE_TIMEOUT = 250;
 
@@ -93,7 +94,7 @@
   // External MCP servers are authorized through the admin service, which stores each user's token.
   setMcpConnectContext({
     connectUrl: (connector) =>
-      mcpConnectUrl(organization, project, connector, activeBranch),
+      connectorOAuthConnectUrl(organization, project, connector, activeBranch),
   });
 
   // Token: from route params, or from search params on report/alert/AI conversation pages
@@ -450,3 +451,5 @@
     {/if}
   {/if}
 {/if}
+
+<ConnectorSignInDialog {organization} {project} branch={activeBranch} />

@@ -28,11 +28,14 @@
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    onQueryError,
+    queryClient,
+  } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { installResizeObserverTracker } from "@rilldata/web-common/metrics/resize-observer-tracker";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import OrgHeader from "../features/organizations/OrgHeader.svelte";
   import "@rilldata/web-common/app.css";
@@ -69,15 +72,13 @@
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
-  queryClient.getQueryCache().config.onError = (
-    error: unknown,
-    query: Query,
-  ) => {
+  const removeQueryErrorListener = onQueryError((error, query) => {
     // Add TanStack Query errors to telemetry
     errorEventHandler?.requestErrorEventHandler(error, query);
 
     handleAdminServerNetworkError(error, query, queryClient);
-  };
+  });
+  onDestroy(removeQueryErrorListener);
 
   queryClient.getQueryCache().config.onSuccess = (
     _data: unknown,

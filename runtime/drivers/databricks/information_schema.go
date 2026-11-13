@@ -51,7 +51,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	`
 	args = append(args, limit+1)
 
-	db, err := c.getDB(ctx)
+	db, err := c.getServiceDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -120,7 +120,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB(ctx)
+	db, err := c.getServiceDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -156,7 +156,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
-	conn, err := c.getDB(ctx)
+	conn, err := c.getServiceDB(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 
 // LoadDDL implements drivers.OLAPInformationSchema.
 func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db, err := c.getDB(ctx)
+	db, err := c.getServiceDB(ctx)
 	if err != nil {
 		return err
 	}

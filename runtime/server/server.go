@@ -63,6 +63,8 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
+
+	connectorOAuth *connectorOAuthCaller
 }
 
 var (
@@ -91,6 +93,8 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		limiter:  limiter,
 		activity: activityClient,
 		ai:       ai.NewRunner(rt, activityClient),
+
+		connectorOAuth: newConnectorOAuthCaller(rt.Admin),
 	}
 
 	if opts.AuthEnable {
@@ -151,6 +155,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 			observability.LoggingStreamServerInterceptor(s.logger),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
+			s.connectorOAuthStreamServerInterceptor(),
 			middleware.ActivityStreamServerInterceptor(s.activity),
 			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
@@ -160,6 +165,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
+			s.connectorOAuthUnaryServerInterceptor(),
 			middleware.ActivityUnaryServerInterceptor(s.activity),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
@@ -191,13 +197,13 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, httputil.Handler(s.healthCheckHandler)))
 
 	// Add HTTP handler for query export downloads
-	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(http.HandlerFunc(s.downloadHandler)))))
+	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.connectorOAuthHTTPMiddleware(middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(http.HandlerFunc(s.downloadHandler))))))
 
 	// Add HTTP handler for canvas workbook (Excel) exports
 	observability.MuxHandle(httpMux, "POST /v1/instances/{instance_id}/exports/workbook", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(httputil.Handler(s.exportWorkbookHandler)))))
 
 	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceAPI)(httputil.Handler(s.apiHandler)))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.connectorOAuthHTTPMiddleware(middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceAPI)(httputil.Handler(s.apiHandler))))))
 
 	// Add handler for combined OpenAPI spec of custom APIs
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/openapi", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.combinedOpenAPISpec))))
@@ -212,7 +218,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/sse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))       // Deprecated: Use /sse?streams=files
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceChat)(http.HandlerFunc(s.CompleteStreamingHandler)))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.connectorOAuthHTTPMiddleware(middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceChat)(http.HandlerFunc(s.CompleteStreamingHandler))))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -221,7 +227,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceMCP)(s.mcpHandler())))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.connectorOAuthHTTPMiddleware(middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceMCP)(s.mcpHandler()))))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
@@ -337,6 +343,8 @@ func mapGRPCError(err error) error {
 	var te *traceError
 	errors.As(err, &te)
 
+	var authzErr *drivers.OAuthAuthorizationRequiredError
+
 	// Map known non-gRPC errors to gRPC status errors
 	if _, ok := status.FromError(err); !ok {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -355,6 +363,11 @@ func mapGRPCError(err error) error {
 			err = status.Error(codes.AlreadyExists, err.Error())
 		} else if errors.Is(err, drivers.ErrNotFound) {
 			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, drivers.ErrOAuthUserRequired) {
+			err = status.Error(codes.FailedPrecondition, drivers.ErrOAuthUserRequired.Error())
+		} else if errors.As(err, &authzErr) {
+			// Only the typed error's message reaches the client, which parses it.
+			err = status.Error(codes.FailedPrecondition, authzErr.Error())
 		} else if errors.Is(err, runtime.ErrAINotConfigured) {
 			err = status.Error(codes.FailedPrecondition, err.Error())
 		} else if errors.Is(err, runtime.ErrControllerClosed) {

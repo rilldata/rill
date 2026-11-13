@@ -81,6 +81,18 @@ func TestDeploymentJWTs(t *testing.T) {
 		requireHasPerms(t, perms, runtime.ReadInstance, runtime.ReadResolvers, runtime.EditTrigger)
 	})
 
+	t.Run("GetDeploymentCredentials for user ID (View as)", func(t *testing.T) {
+		creds, err := u1Client.GetDeploymentCredentials(t.Context(), &adminv1.GetDeploymentCredentialsRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+			For:     &adminv1.GetDeploymentCredentialsRequest_UserId{UserId: u1.ID},
+		})
+		require.NoError(t, err)
+
+		// The runtime uses the subject's personal connector credentials, such as a Databricks OAuth token.
+		require.Equal(t, u1.ID, decodeJWT(t, creds.AccessToken).Subject)
+	})
+
 	t.Run("GetDeployment for non-Rill email", func(t *testing.T) {
 		email := "non-rill@example.com"
 

@@ -33,6 +33,10 @@ func (q *ColumnNullCount) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnNullCount) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnNullCount) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,

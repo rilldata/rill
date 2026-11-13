@@ -4356,6 +4356,14 @@ export class ConnectorOAuthConfig extends Message$1<ConnectorOAuthConfig> {
    */
   authorizationParams: { [key: string]: string } = {};
 
+  /**
+   * Issuer of the authorization server, for resources that serve no protected resource metadata (e.g. Databricks).
+   * If set, discovery skips the resource's metadata and no resource indicator is sent.
+   *
+   * @generated from field: string issuer = 6;
+   */
+  issuer = "";
+
   constructor(data?: PartialMessage<ConnectorOAuthConfig>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4369,6 +4377,7 @@ export class ConnectorOAuthConfig extends Message$1<ConnectorOAuthConfig> {
     { no: 3, name: "client_secret", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "scopes", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "authorization_params", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 6, name: "issuer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorOAuthConfig {

@@ -40,6 +40,10 @@ func (q *ColumnTimeRange) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnTimeRange) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnTimeRange) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,

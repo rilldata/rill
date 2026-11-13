@@ -1,10 +1,10 @@
 import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 
 /**
- * Builds the URL that starts the browser-based authorization flow for an external MCP server.
+ * Builds the URL that starts the browser-based authorization flow for a connector, such as an external MCP server.
  * The flow runs on the admin service, which owns the user's session and stores the resulting token.
  */
-export function mcpConnectUrl(
+export function connectorOAuthConnectUrl(
   organization: string,
   project: string,
   connector: string,

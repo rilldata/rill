@@ -35,6 +35,10 @@ func (q *ColumnNumericHistogram) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnNumericHistogram) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnNumericHistogram) MarshalResult() *runtime.QueryResult {
 	var size int64
 	if len(q.Result) > 0 {

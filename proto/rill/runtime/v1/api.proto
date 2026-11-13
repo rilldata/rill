@@ -1157,6 +1157,9 @@ message ConnectorOAuthConfig {
   repeated string scopes = 4;
   // Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
   map<string, string> authorization_params = 5;
+  // Issuer of the authorization server, for resources that serve no protected resource metadata (e.g. Databricks).
+  // If set, discovery skips the resource's metadata and no resource indicator is sent.
+  string issuer = 6;
 }
 
 // Request message for RuntimeService.ListNotifierConnectors
