@@ -1,0 +1,69 @@
+<script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    type AdminServiceUnsubscribeAlertBodyBody,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
+  import { createAdminServiceUnsubscribeAlertUsingToken } from "@rilldata/web-common/features/alerts/alert-client-using-token.ts";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import type { AxiosError } from "axios";
+  import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
+  /**
+   * Unsubscribe uses just a token with access to only unsub so we do not need to query project or organization details.
+   * The usual route structure of `/<org>/<project>/-/alerts/<alert>` defaults to fetching those details.
+   * So we have a separate route here that takes org and project from url params instead.
+   */
+  $: organization = $page.url.searchParams.get("org") ?? "";
+  $: project = $page.url.searchParams.get("project") ?? "";
+  $: alert = $page.params.alert;
+  $: email = $page.url.searchParams.get("email");
+  $: slackUser = $page.url.searchParams.get("slack_user");
+
+  // using this instead of alertUnsubscriber to avoid a flicker before alertUnsubscriber is triggered
+  let loading = true;
+
+  const alertUnsubscriber = createAdminServiceUnsubscribeAlertUsingToken(
+    $page.url.searchParams.get("token") ?? "",
+  );
+
+  $: error =
+    ($alertUnsubscriber.error as unknown as AxiosError<RpcStatus>)?.response
+      ?.data?.message ?? $alertUnsubscriber.error?.message;
+
+  async function unsubscribe() {
+    const data: AdminServiceUnsubscribeAlertBodyBody = {};
+    if (email) data.email = email;
+    if (slackUser) data.slackUser = slackUser;
+
+    await $alertUnsubscriber.mutateAsync({
+      org: organization,
+      project,
+      name: alert,
+      data,
+    });
+    loading = false;
+  }
+
+  onMount(() => unsubscribe());
+</script>
+
+<CtaLayoutContainer>
+  <CtaContentContainer>
+    <div class="flex flex-col gap-y-2">
+      {#if error}
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribe_failed()}</h2>
+        <CtaMessage>
+          {error}
+        </CtaMessage>
+      {:else if loading}
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribing()}</h2>
+      {:else}
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribed()}</h2>
+      {/if}
+    </div>
+  </CtaContentContainer>
+</CtaLayoutContainer>

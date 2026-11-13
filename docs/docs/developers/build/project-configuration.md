@@ -228,14 +228,14 @@ For detailed instructions and examples on how to configure AI instructions at bo
 
 ## Embed Configuration
 
-If you [embed dashboards](/developers/embed/iframe) in your application, set `embeds.open_url` to the URL of a page in your application that opens links from emails sent by reports created in an embed:
+If you [embed dashboards](/developers/embed/iframe) in your application, set `embeds.open_url` to the URL of a page in your application that opens links from emails sent by reports and alerts created in an embed:
 
 ```yaml
 embeds:
   open_url: https://app.example.com/analytics/open
 ```
 
-Rill appends a `rill_open` query parameter to this URL. For details on handling it, see [Open links in report emails](/developers/embed/iframe#open-links-in-report-emails).
+Rill appends a `rill_open` query parameter to this URL. For details on handling it, see [Open links in report and alert emails](/developers/embed/iframe#open-links-in-report-and-alert-emails).
 
 ## Testing Security
 

@@ -554,7 +554,7 @@ message Instance {
   repeated AIPrompt ai_prompts = 27;
   string frontend_url = 24;
   string theme = 26;
-  // Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
+  // Base URL for open links in emails from reports and alerts created from an embed (`embeds.open_url` in rill.yaml).
   string embed_open_url = 28;
 }
  

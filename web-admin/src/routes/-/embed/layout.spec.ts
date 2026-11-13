@@ -8,9 +8,15 @@ import { load } from "./+layout";
 vi.mock("@rilldata/web-admin/features/embeds/init-embed-public-api.ts", () => ({
   removeEmbedParams: (searchParams: URLSearchParams) => {
     const cleaned = new URLSearchParams(searchParams);
-    ["instance_id", "runtime_host", "access_token", "resource", "type"].forEach(
-      (p) => cleaned.delete(p),
-    );
+    [
+      "instance_id",
+      "runtime_host",
+      "access_token",
+      "resource",
+      "type",
+      "open_kind",
+      "open_name",
+    ].forEach((p) => cleaned.delete(p));
     return cleaned.toString();
   },
 }));
@@ -54,17 +60,30 @@ describe("embed/+layout load on the first load", () => {
   it("redirects to the report open route", async () => {
     await expectRedirect(
       {
-        open_report: "weekly_revenue",
+        open_kind: "report",
+        open_name: "weekly_revenue",
         open_execution_time: "2026-10-20T00:00:00Z",
       },
       "/-/embed/reports/weekly_revenue/open?execution_time=2026-10-20T00%3A00%3A00Z",
     );
   });
 
+  it("redirects to the alert open route", async () => {
+    await expectRedirect(
+      {
+        open_kind: "alert",
+        open_name: "revenue_drop",
+        open_execution_time: "2026-10-20T00:00:00Z",
+      },
+      "/-/embed/alerts/revenue_drop/open?execution_time=2026-10-20T00%3A00%3A00Z",
+    );
+  });
+
   it("drops other params when opening a report", async () => {
     await expectRedirect(
       {
-        open_report: "r",
+        open_kind: "report",
+        open_name: "r",
         navigation: "true",
         tr: "P7D",
       },
@@ -72,8 +91,24 @@ describe("embed/+layout load on the first load", () => {
     );
   });
 
-  it("escapes the report name", async () => {
-    await expectRedirect({ open_report: "a/b" }, "/-/embed/reports/a%2Fb/open");
+  it("escapes the name of the resource to open", async () => {
+    await expectRedirect(
+      { open_kind: "alert", open_name: "a/b" },
+      "/-/embed/alerts/a%2Fb/open",
+    );
+  });
+
+  it("ignores an unknown kind to open", async () => {
+    await expectRedirect(
+      {
+        open_kind: "canvas",
+        open_name: "c",
+        resource: "e",
+        type: "rill.runtime.v1.Explore",
+        tr: "P7D",
+      },
+      "/-/embed/explore/e?tr=P7D",
+    );
   });
 
   it("still redirects to the dashboard without a report to open", async () => {

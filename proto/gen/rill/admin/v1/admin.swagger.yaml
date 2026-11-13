@@ -4934,6 +4934,11 @@ definitions:
         type: string
       unsubscribeUrl:
         type: string
+      embedOwner:
+        type: boolean
+        description: |-
+          If true, the recipient is the embed user who created the alert.
+          Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
   GetGithubPullRequestResponseState:
     type: string
     enum:
@@ -5093,6 +5098,13 @@ definitions:
         type: array
         items:
           type: string
+      embedOwnerEmail:
+        type: string
+        description: |-
+          Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+          Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+          It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+          If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
       slackUsers:
         type: array
         items:
@@ -5660,6 +5672,21 @@ definitions:
           $ref: '#/definitions/GetAlertMetaResponseURLs'
       queryForAttributes:
         type: object
+      queryForUserId:
+        type: string
+        description: |-
+          ID of the user to run the alert's queries as.
+          Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+      restrictResources:
+        type: boolean
+        description: |-
+          If true, the alert's data must only be accessed through the resources listed in `resources`.
+          Set for alerts created from an embed that was limited to specific resources.
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1GetAlertYAMLResponse:
     type: object
     properties:

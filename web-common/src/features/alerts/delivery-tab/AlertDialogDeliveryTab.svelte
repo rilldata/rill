@@ -7,7 +7,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
@@ -15,19 +14,39 @@
   import ExportFileOptions from "@rilldata/web-common/features/exports/ExportFileOptions.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
+  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
-  export let superFormInstance: SuperForm<AlertFormValues>;
-  export let exploreName: string;
+  let {
+    superFormInstance,
+    exploreName,
+    provider,
+    showEmbedOwnerEmail,
+  }: {
+    superFormInstance: SuperForm<AlertFormValues>;
+    exploreName: string;
+    provider: AlertFormMetadataProvider;
+    // True if the form shows the field for the email of the embed user who created the alert (see AlertFormDataWrapper).
+    showEmbedOwnerEmail: boolean;
+  } = $props();
+
+  // Alerts created from an embed run as the creator, and can't be sent to Slack.
+  const isEmbedded = EmbedStore.isEmbedded();
+  // The creator's email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
+  // Outside of an embed, it's always locked, since only the creator can change it.
+  const embedOwnerEmailLocked = $derived(!isEmbedded || !!provider.userEmail);
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ form, errors } = superFormInstance);
-
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  const { form, errors } = $derived(superFormInstance);
 
   // Time zone options from the dashboard's spec
-  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: availableTimeZones = $exploreSpecQuery.data?.explore?.timeZones;
+  const exploreSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
+  );
+  const availableTimeZones = $derived(
+    $exploreSpecQuery.data?.explore?.timeZones,
+  );
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -73,7 +92,9 @@
       options={getSnoozeOptions()}
     />
   </FormSection>
-  {#if $hasSlackNotifier.data}
+  {#if isEmbedded}
+    <!-- Alerts created from an embed can't be sent to Slack. -->
+  {:else if provider.hasSlackNotifier}
     <FormSection
       bind:enabled={$form["enableSlackNotification"]}
       showSectionToggle
@@ -116,12 +137,14 @@
   {/if}
   <FormSection
     bind:enabled={$form["enableEmailNotification"]}
-    description={m.alert_form_email_desc()}
+    description={isEmbedded
+      ? m.alert_form_email_embed_desc()
+      : m.alert_form_email_desc()}
     showSectionToggle
     title={m.alert_form_email_title()}
   >
     <MultiInput
-      id="slackUsers"
+      id="emailRecipients"
       placeholder={m.alert_form_email_placeholder()}
       contentClassName="relative"
       bind:values={$form.emailRecipients}
@@ -130,6 +153,24 @@
       plural="emails"
       preventFocus={true}
     />
+    {#if showEmbedOwnerEmail}
+      <Input
+        bind:value={$form["embedOwnerEmail"]}
+        errors={$errors["embedOwnerEmail"]}
+        id="embedOwnerEmail"
+        label={isEmbedded
+          ? m.report_form_embed_owner_email_label()
+          : m.report_form_embed_creator_email_label()}
+        placeholder={m.alert_form_email_placeholder()}
+        disabled={embedOwnerEmailLocked}
+        optional={!embedOwnerEmailLocked}
+        hint={!isEmbedded
+          ? m.alert_form_embed_creator_email_hint()
+          : embedOwnerEmailLocked
+            ? m.alert_form_embed_owner_email_hint()
+            : m.alert_form_embed_owner_email_optional_hint()}
+      />
+    {/if}
     <Checkbox
       bind:checked={$form["exportAttach"]}
       id="exportAttach"

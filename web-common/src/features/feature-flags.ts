@@ -165,6 +165,16 @@ export const reportsEnabled = derived(
     reports && (adminServer || embedAdminActions),
 );
 
+export const alertsEnabled = derived(
+  [
+    featureFlags.alerts,
+    featureFlags.adminServer,
+    featureFlags.embedAdminActions,
+  ],
+  ([alerts, adminServer, embedAdminActions]) =>
+    alerts && (adminServer || embedAdminActions),
+);
+
 export async function getFeatureFlags(
   client: RuntimeClient,
 ): Promise<V1InstanceFeatureFlags> {

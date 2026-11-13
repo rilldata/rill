@@ -9,6 +9,9 @@ export interface GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
   unsubscribeUrl?: string;
+  /** If true, the recipient is the embed user who created the alert.
+Only set for alerts created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export type GetGithubPullRequestResponseState =
@@ -140,6 +143,11 @@ export interface V1AlertOptions {
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   emailRecipients?: string[];
+  /** Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -578,6 +586,13 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  /** ID of the user to run the alert's queries as.
+Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe. */
+  queryForUserId?: string;
+  /** If true, the alert's data must only be accessed through the resources listed in `resources`.
+Set for alerts created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1GetAlertYAMLResponse {

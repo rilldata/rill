@@ -45,4 +45,39 @@ describe("getExistingAlertInitialFormValues", () => {
     expect(values.exportLimit).toEqual("");
     expect(values.exportIncludeHeader).toBe(false);
   });
+
+  describe("the creator's saved email", () => {
+    const spec = getAlertSpec({
+      notifiers: [
+        {
+          connector: "email",
+          properties: {
+            recipients: ["Creator@example.com", "other@example.com"],
+          },
+        },
+      ],
+      annotations: {
+        web_open_path: "/explore/e1",
+        admin_embed_owner_id: "ext_abc",
+        admin_embed_owner_email: "creator@example.com",
+      },
+    });
+
+    it("is in its own field rather than in the recipients", () => {
+      const values = getExistingAlertInitialFormValues(
+        spec,
+        "mv1",
+        "editor@example.com",
+        true,
+      );
+      expect(values.emailRecipients).toEqual(["other@example.com", ""]);
+      // Outside of an embed, the editor's email doesn't replace the saved email
+      expect(values.embedOwnerEmail).toEqual("creator@example.com");
+    });
+
+    it("is empty when the field isn't shown", () => {
+      const values = getExistingAlertInitialFormValues(spec, "mv1", "", false);
+      expect(values.embedOwnerEmail).toEqual("");
+    });
+  });
 });

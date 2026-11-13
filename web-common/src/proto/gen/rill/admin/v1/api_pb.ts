@@ -13985,6 +13985,27 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
    */
   queryForAttributes?: Struct;
 
+  /**
+   * ID of the user to run the alert's queries as.
+   * Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+   *
+   * @generated from field: string query_for_user_id = 4;
+   */
+  queryForUserId = "";
+
+  /**
+   * If true, the alert's data must only be accessed through the resources listed in `resources`.
+   * Set for alerts created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 5;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<GetAlertMetaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13995,6 +14016,9 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetAlertMetaResponse_URLs} },
     { no: 3, name: "query_for_attributes", kind: "message", T: Struct },
+    { no: 4, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse {
@@ -14033,6 +14057,14 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
    */
   unsubscribeUrl = "";
 
+  /**
+   * If true, the recipient is the embed user who created the alert.
+   * Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 4;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetAlertMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14044,6 +14076,7 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse_URLs {
@@ -19243,6 +19276,16 @@ export class AlertOptions extends Message<AlertOptions> {
   emailRecipients: string[] = [];
 
   /**
+   * Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 22;
+   */
+  embedOwnerEmail = "";
+
+  /**
    * @generated from field: repeated string slack_users = 9;
    */
   slackUsers: string[] = [];
@@ -19295,6 +19338,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 22, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

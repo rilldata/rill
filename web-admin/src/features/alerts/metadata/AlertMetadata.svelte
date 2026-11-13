@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
-  import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
@@ -39,12 +38,17 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { alertDeleteMutationFactory } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
   const runtimeClient = useRuntimeClient();
+  // Embed users have no Rill session, so dashboard links must stay within the embed.
+  const embedded = EmbedStore.isEmbedded();
 
   $: alertQuery = useAlert(runtimeClient, alert);
   $: isAlertCreatedByCode = useIsAlertCreatedByCode(runtimeClient, alert);
@@ -101,12 +105,13 @@
       client: runtimeClient,
       organization,
       project,
+      embedded,
     },
   );
 
   // Actions
   const queryClient = useQueryClient();
-  const deleteAlert = createAdminServiceDeleteAlert();
+  const deleteAlert = createMutationFromFactory(alertDeleteMutationFactory);
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
@@ -120,7 +125,7 @@
       ),
     });
     // goto only after invalidate is complete
-    goto(`/${organization}/${project}/-/alerts`);
+    goto(embedded ? "/-/embed/alerts" : `/${organization}/${project}/-/alerts`);
   }
 </script>
 
@@ -137,6 +142,7 @@
                 {organization}
                 {project}
                 ownerId={alertSpec.annotations["admin_owner_user_id"]}
+                embedOwnerId={alertSpec.annotations?.["admin_embed_owner_id"]}
               />
             {/if}
           </svelte:fragment>

@@ -530,7 +530,7 @@ export class Instance extends Message$1<Instance> {
   theme = "";
 
   /**
-   * Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
+   * Base URL for open links in emails from reports and alerts created from an embed (`embeds.open_url` in rill.yaml).
    *
    * @generated from field: string embed_open_url = 28;
    */

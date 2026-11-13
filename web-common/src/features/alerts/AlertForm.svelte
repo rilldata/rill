@@ -15,10 +15,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceCreateAlert,
-    createAdminServiceEditAlert,
-  } from "@rilldata/web-admin/client";
-  import {
     getAlertDashboardName,
     unwrapQueryData,
     useAlertDashboardState,
@@ -65,15 +61,22 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
+  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
   export let props: CreateAlertProps | EditAlertProps;
+  export let provider: AlertFormMetadataProvider;
   export let initialValues: ReturnType<typeof getNewAlertInitialFormValues>;
+  // True if the form shows the field for the email of the embed user who created the alert (see AlertFormDataWrapper).
+  export let showEmbedOwnerEmail: boolean;
+
+  const isEmbedded = EmbedStore.isEmbedded();
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ organization, project, alert: alertName } = $page.params);
+  $: ({ alert: alertName } = $page.params);
   $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
@@ -102,10 +105,7 @@
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  const mutation =
-    props.mode === "create"
-      ? createAdminServiceCreateAlert()
-      : createAdminServiceEditAlert();
+  const { mutation } = provider;
 
   let filters: ExpressionFilterManager;
   let timeControls: TimeControls;
@@ -184,8 +184,8 @@
     );
 
     await $mutation.mutateAsync({
-      org: organization,
-      project,
+      org: provider.organization,
+      project: provider.project,
       name: alertName,
       data: {
         options: {
@@ -209,6 +209,12 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
+          // Only sent if the field is shown, since the creator can't unsubscribe once their email is saved.
+          // The admin service ignores it unless the creator edits the alert, so other editors keep the saved email.
+          embedOwnerEmail:
+            isEmbedded && showEmbedOwnerEmail
+              ? values.embedOwnerEmail.trim()
+              : undefined,
           // Attachments are only sent with emails, and the export options only apply to attachments
           ...(values.enableEmailNotification && values.exportAttach
             ? {
@@ -245,12 +251,17 @@
     });
     onClose();
     if (isCreateForm) {
+      // In an embed, the alerts page is only reachable when navigation is enabled.
+      const showAlertsLink =
+        !isEmbedded || !!EmbedStore.getInstance()?.navigationEnabled;
       eventBus.emit("notification", {
         message: m.alert_form_created(),
-        link: {
-          href: `/${organization}/${project}/-/alerts`,
-          text: m.alert_form_go_to_alerts(),
-        },
+        link: showAlertsLink
+          ? {
+              href: `${provider.pageBasePath}/alerts`,
+              text: m.alert_form_go_to_alerts(),
+            }
+          : undefined,
       });
     } else {
       eventBus.emit("notification", {
@@ -340,7 +351,12 @@
         <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
+        <AlertDialogDeliveryTab
+          {superFormInstance}
+          {exploreName}
+          {provider}
+          {showEmbedOwnerEmail}
+        />
       </DialogTabs.Content>
     </div>
   </DialogTabs.Root>

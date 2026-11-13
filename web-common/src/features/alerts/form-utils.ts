@@ -40,6 +40,8 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  // Email of the embed user who creates the alert; only shown in an embed if rill.yaml configures `embeds.open_url`.
+  embedOwnerEmail: string;
   // Options for attaching the rows that triggered the alert to emails
   exportAttach: boolean;
   exportFormat: V1ExportFormat;
@@ -166,6 +168,7 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    embedOwnerEmail: string().email("Invalid email"),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
       is: (enableEmailNotification: boolean, exportAttach: boolean) =>
@@ -177,7 +180,7 @@ export const alertFormValidationSchema = yup(
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
   ["criteria", "criteriaOperation"],
-  ["name", "snooze", "slackUsers", "emailRecipients"],
+  ["name", "snooze", "slackUsers", "emailRecipients", "embedOwnerEmail"],
 ];
 
 export function checkIsTabValid(
