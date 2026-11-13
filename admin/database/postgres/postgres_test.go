@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
@@ -50,6 +51,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
 	t.Run("TestOrganizationInviteUsergroups", func(t *testing.T) { testOrganizationInviteUsergroups(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
+	t.Run("TestNilAttributes", func(t *testing.T) { testNilAttributes(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -953,6 +955,70 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	})
 
 	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+// testNilAttributes checks that nil attribute maps are written to NOT NULL JSONB columns as before the move to pgx v5,
+// which encodes a nil map argument as SQL NULL instead of a JSON null.
+func testNilAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "nil-attrs@rilldata.com"})
+	require.NoError(t, err)
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "nil-attrs"})
+	require.NoError(t, err)
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "nil-attrs"})
+	require.NoError(t, err)
+
+	t.Run("InsertOrganizationMemberUser if not exists", func(t *testing.T) {
+		inserted, err := db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, true)
+		require.NoError(t, err)
+		require.True(t, inserted)
+
+		members, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
+		require.NoError(t, err)
+		require.Len(t, members, 1)
+		require.Empty(t, members[0].Attributes)
+	})
+
+	t.Run("InsertMagicAuthToken without attributes", func(t *testing.T) {
+		tkn, err := db.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
+			ID:         uuid.NewString(),
+			SecretHash: []byte("hash"),
+			ProjectID:  proj.ID,
+		})
+		require.NoError(t, err)
+		require.Nil(t, tkn.Attributes)
+		require.Equal(t, []string{}, tkn.Fields)
+
+		tkn, err = db.FindMagicAuthToken(ctx, tkn.ID, false)
+		require.NoError(t, err)
+		require.Nil(t, tkn.Attributes)
+		require.Equal(t, []string{}, tkn.Fields)
+	})
+
+	t.Run("InsertMagicAuthToken with attributes and fields", func(t *testing.T) {
+		attrs := map[string]any{"email": "nil-attrs@rilldata.com"}
+		fields := []string{"a", "b c", "d,e"}
+		tkn, err := db.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
+			ID:         uuid.NewString(),
+			SecretHash: []byte("hash"),
+			ProjectID:  proj.ID,
+			Attributes: attrs,
+			Fields:     fields,
+		})
+		require.NoError(t, err)
+
+		tkn, err = db.FindMagicAuthToken(ctx, tkn.ID, false)
+		require.NoError(t, err)
+		require.Equal(t, attrs, tkn.Attributes)
+		require.Equal(t, fields, tkn.Fields)
+	})
+
+	require.NoError(t, db.DeleteProject(ctx, proj.ID))
 	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }
