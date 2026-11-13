@@ -6,6 +6,8 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardMeasureNamesDropdown.svelte";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 
   export let exploreName: string;
 
@@ -70,6 +72,11 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
+
+  function openEphemeralMeasureEditor(name: string) {
+    const def = exploreState?.ephemeralMeasures?.find((d) => d.name === name);
+    if (def) ephemeralMeasureDialog.set({ def });
+  }
 </script>
 
 <div
@@ -90,6 +97,8 @@
     selectedMeasureNames={$leaderboardMeasureNames}
     {setLeaderboardMeasureNames}
     {setLeaderboardSortByMeasureName}
+    ephemeralNames={ephemeralMeasureNameSet(exploreState?.ephemeralMeasures)}
+    onEditEphemeral={openEphemeralMeasureEditor}
   />
   {#if isMultiSelectEnabled}
     <LeaderboardAdvancedActions

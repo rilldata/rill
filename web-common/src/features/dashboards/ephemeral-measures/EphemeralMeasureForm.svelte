@@ -2,8 +2,8 @@
 The dialog for creating or editing an ephemeral measure definition, shared by
 the explore dashboards (EphemeralMeasureDialog) and the canvas inspector
 (canvas/inspector/fields/EphemeralMeasureEditor). It owns the form state and
-validation; the wrapper supplies the measures the expression may reference and
-persists the definition.
+validation and confirms a save or delete with a toast; the wrapper supplies
+the measures the expression may reference and persists the definition.
 -->
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
@@ -11,17 +11,19 @@ persists the definition.
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type {
     MetricsViewSpecMeasure,
     V1MetricsViewSpec,
   } from "@rilldata/web-common/runtime-client";
-  import { parseMeasureExpression } from "./expression-parser";
+  import { describeExpressionError } from "./expression-feedback";
   import { ephemeralFormatPresetOptions } from "./format-presets";
   import MeasureExpressionInput from "./MeasureExpressionInput.svelte";
   import type { EphemeralMeasureDef } from "./types";
   import {
+    MAX_EPHEMERAL_MEASURES,
     slugifyEphemeralMeasureName,
     validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
@@ -68,15 +70,10 @@ persists the definition.
   ].filter((label): label is string => !!label);
 
   // Live expression feedback (only once the user typed something).
-  $: parsed = parseMeasureExpression(expression);
-  $: unknownRef = parsed.refs.find((ref) => !knownMeasureNames.has(ref));
-  $: expressionError =
-    expression.trim() === ""
-      ? undefined
-      : (parsed.error?.message ??
-        (unknownRef
-          ? `"${unknownRef}" is not a measure in this dashboard`
-          : undefined));
+  $: expressionError = describeExpressionError(
+    expression,
+    referenceableMeasures,
+  );
 
   function save() {
     const def: EphemeralMeasureDef = {
@@ -88,13 +85,35 @@ persists the definition.
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
     };
+    // The entry points block creating past the limit; this catches
+    // definitions added elsewhere (a link, another tab) while the dialog was open.
+    const countError =
+      !editingDef && validateEphemeralMeasureCount(existingDefs.length)
+        ? m.dashboard_pivot_ephemeral_limit_reached({
+            count: String(MAX_EPHEMERAL_MEASURES),
+          })
+        : undefined;
     saveError =
       validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
-      (editingDef
-        ? undefined
-        : validateEphemeralMeasureCount(existingDefs.length));
+      countError;
     if (saveError) return;
+    // Built before the callback: saving closes the dialog, and the props of an
+    // unmounting component may no longer be readable.
+    const message = editingDef
+      ? m.dashboard_pivot_ephemeral_updated({ name: def.displayName })
+      : m.dashboard_pivot_ephemeral_created({ name: def.displayName });
     onSave(def);
+    eventBus.emit("notification", { type: "success", message });
+  }
+
+  function remove() {
+    if (!onRemove || !editingDef) return;
+    // Built before the callback, which closes the dialog (see save).
+    const message = m.dashboard_pivot_ephemeral_deleted({
+      name: editingDef.displayName,
+    });
+    onRemove();
+    eventBus.emit("notification", { type: "success", message });
   }
 </script>
 
@@ -124,14 +143,6 @@ persists the definition.
         claimFocusOnMount
       />
 
-      <MeasureExpressionInput
-        bind:this={expressionInput}
-        bind:value={expression}
-        id="ephemeral-measure-expression"
-        measures={referenceableMeasures}
-        errors={expressionError}
-      />
-
       <Input
         bind:value={description}
         id="ephemeral-measure-description"
@@ -140,29 +151,40 @@ persists the definition.
         optional
       />
 
-      {#if referenceableMeasures.length}
-        <div class="flex flex-col gap-y-1.5">
-          <span class="text-xs text-fg-secondary">
-            {m.dashboard_pivot_ephemeral_insert_measure()}
-          </span>
-          <!-- Cap the chip list so dashboards with hundreds of measures scroll
-               inside the dialog instead of pushing the footer off-screen. -->
-          <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-            {#each referenceableMeasures as mes (mes.name)}
-              <button
-                type="button"
-                on:click={() => expressionInput.insertMeasure(mes)}
-              >
-                <Chip type="measure" label={mes.displayName || mes.name}>
-                  <span slot="body" class="text-xs">
-                    {mes.displayName || mes.name}
-                  </span>
-                </Chip>
-              </button>
-            {/each}
+      <!-- The measure chips sit right below the expression they insert into. -->
+      <div class="flex flex-col gap-y-2">
+        <MeasureExpressionInput
+          bind:this={expressionInput}
+          bind:value={expression}
+          id="ephemeral-measure-expression"
+          measures={referenceableMeasures}
+          errors={expressionError}
+        />
+
+        {#if referenceableMeasures.length}
+          <div class="flex flex-col gap-y-1.5">
+            <span class="text-xs text-fg-secondary">
+              {m.dashboard_pivot_ephemeral_insert_measure()}
+            </span>
+            <!-- Cap the chip list so dashboards with hundreds of measures scroll
+                 inside the dialog instead of pushing the footer off-screen. -->
+            <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+              {#each referenceableMeasures as mes (mes.name)}
+                <button
+                  type="button"
+                  on:click={() => expressionInput.insertMeasure(mes)}
+                >
+                  <Chip type="measure" label={mes.displayName || mes.name}>
+                    <span slot="body" class="text-xs">
+                      {mes.displayName || mes.name}
+                    </span>
+                  </Chip>
+                </button>
+              {/each}
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
 
       <label class="flex flex-col gap-y-1">
         <span class="text-sm font-medium text-fg-primary">
@@ -186,7 +208,7 @@ persists the definition.
     <Dialog.Footer>
       {#if onRemove}
         <div class="mr-auto">
-          <Button type="secondary-destructive" onClick={onRemove}>
+          <Button type="secondary-destructive" onClick={remove}>
             {m.common_delete()}
           </Button>
         </div>

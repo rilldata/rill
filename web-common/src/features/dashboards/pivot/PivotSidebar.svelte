@@ -19,7 +19,8 @@
     PivotSidebarSection,
     PivotState,
   } from "web-common/src/features/dashboards/pivot/types.ts";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import CreateEphemeralMeasureButton from "../ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
@@ -55,11 +56,19 @@
   }
 
   function deleteEphemeralMeasure(id: string) {
+    const def = $dashboardStore.ephemeralMeasures?.find((d) => d.name === id);
     metricsExplorerStore.removeEphemeralMeasure(
       $exploreName,
       id,
       $validSpecStore.data?.explore,
     );
+    // Confirms the delete like the dialog's delete button does.
+    if (def) {
+      eventBus.emit("notification", {
+        type: "success",
+        message: m.dashboard_pivot_ephemeral_deleted({ name: def.displayName }),
+      });
+    }
   }
 
   let sidebarHeight = 0;
@@ -240,16 +249,12 @@
         onEditEphemeralMeasure={editEphemeralMeasure}
         onDeleteEphemeralMeasure={deleteEphemeralMeasure}
       >
-        <button
-          slot="header-action"
-          class="ml-auto text-fg-secondary hover:text-fg-primary"
-          type="button"
-          aria-label={m.dashboard_pivot_ephemeral_create()}
-          title={m.dashboard_pivot_ephemeral_create()}
-          on:click={() => ephemeralMeasureDialog.set({})}
-        >
-          <Add size="14px" />
-        </button>
+        <div slot="header-action" class="ml-auto flex">
+          <CreateEphemeralMeasureButton
+            variant="icon"
+            count={$dashboardStore.ephemeralMeasures?.length ?? 0}
+          />
+        </div>
       </PivotDrag>
       <PivotDrag
         title={DIMENSIONS_ZONE}
