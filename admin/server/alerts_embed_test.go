@@ -77,8 +77,11 @@ func TestEmbedAlerts(t *testing.T) {
 
 	getAlertMeta := func(t *testing.T, name string, recipients ...string) (*adminv1.GetAlertMetaResponse, error) {
 		return u1Client.GetAlertMeta(t.Context(), &adminv1.GetAlertMetaRequest{
-			ProjectId:       proj.ID,
-			Alert:           name,
+			ProjectId: proj.ID,
+			Alert:     name,
+			// The runtime passes the alert's annotations.
+			// GetAlertMeta only checks that the embed owner annotation is set, and reads the owner from the virtual file.
+			Annotations:     map[string]string{"admin_embed_owner_id": "ext_owner"},
 			EmailRecipients: recipients,
 		})
 	}

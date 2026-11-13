@@ -16,7 +16,7 @@ import {
   type V1EditAlertResponse,
   type V1UnsubscribeAlertResponse,
 } from "@rilldata/web-admin/client";
-import httpClient from "@rilldata/web-admin/client/http-client";
+import { httpClientWithToken } from "@rilldata/web-admin/client/http-client.ts";
 
 export const adminServiceCreateAlertUsingToken = (
   org: string,
@@ -24,17 +24,11 @@ export const adminServiceCreateAlertUsingToken = (
   adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
   token: string,
 ) => {
-  return httpClient<V1CreateAlertResponse>({
+  return httpClientWithToken<V1CreateAlertResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/alerts`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAlertBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -59,17 +53,11 @@ export const adminServiceEditAlertUsingToken = (
   adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
   token: string,
 ) => {
-  return httpClient<V1EditAlertResponse>({
+  return httpClientWithToken<V1EditAlertResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/alerts/${name}`,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAlertBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -93,15 +81,9 @@ export const adminServiceDeleteAlertUsingToken = (
   name: string,
   token: string,
 ) => {
-  return httpClient<V1DeleteAlertResponse>({
+  return httpClientWithToken<V1DeleteAlertResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/alerts/${name}`,
     method: "DELETE",
-    headers: {
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -127,17 +109,11 @@ export const adminServiceUnsubscribeAlertUsingToken = (
   adminServiceUnsubscribeAlertBodyBody: AdminServiceUnsubscribeAlertBodyBody,
   token: string,
 ) => {
-  return httpClient<V1UnsubscribeAlertResponse>({
+  return httpClientWithToken<V1UnsubscribeAlertResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/alerts/${name}/unsubscribe`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceUnsubscribeAlertBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 

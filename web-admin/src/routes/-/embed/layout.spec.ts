@@ -79,6 +79,13 @@ describe("embed/+layout load on the first load", () => {
     );
   });
 
+  it("redirects to the report open route with the legacy param", async () => {
+    await expectRedirect(
+      { open_report: "weekly_revenue" },
+      "/-/embed/reports/weekly_revenue/open",
+    );
+  });
+
   it("drops other params when opening a report", async () => {
     await expectRedirect(
       {

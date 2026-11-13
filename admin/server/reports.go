@@ -436,41 +436,13 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	// Preserve the original owner, since the editor may be someone with manage permissions.
-	// If the embed user who created the report no longer exists, editing it would turn it into a report without an owner.
-	// The creator's saved email can only be changed by the creator; other editors keep it, so it stays a recipient.
-	var embedOwnerID, embedOwnerEmail string
-	if embedInfo != nil {
-		if embedInfo.ownerID == "" {
-			return nil, status.Error(codes.FailedPrecondition, "can't edit report because the embed user who created it no longer exists")
-		}
-		embedOwnerID = embedInfo.ownerID
-		embedOwnerEmail = embedInfo.ownerEmail
-		if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && mdl.EmbedUserID == embedOwnerID {
-			embedOwnerEmail, err = s.embedOwnerEmail(ctx, embedOwnerID, req.Options.EmbedOwnerEmail)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// Keep the resources the report was limited to.
-	// An embed editor can't give the report more access than its own embed has, so it can only narrow them.
-	embedResources, err := parseEmbedResources(annotations.AdminEmbedResources)
+	embedOwnerID, embedOwnerEmail, err := s.embedOwnerForEdit(ctx, claims, embedInfo, req.Options.EmbedOwnerEmail, "report")
 	if err != nil {
 		return nil, err
 	}
-	if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && len(mdl.Resources) > 0 {
-		if len(embedResources) == 0 {
-			embedResources = mdl.Resources
-		} else {
-			embedResources = slices.DeleteFunc(embedResources, func(r database.ResourceName) bool {
-				return !slices.Contains(mdl.Resources, r)
-			})
-			if len(embedResources) == 0 {
-				return nil, status.Error(codes.PermissionDenied, "can't edit a report that targets dashboards outside of this embed")
-			}
-		}
+	embedResources, err := narrowEmbedResources(claims, annotations.AdminEmbedResources, "report")
+	if err != nil {
+		return nil, err
 	}
 	embedResources, err = embedReportResources(embedResources, req.Options)
 	if err != nil {
@@ -1221,6 +1193,53 @@ func (s *Server) embedOwnerEmail(ctx context.Context, embedUserID, requested str
 		return *embedUser.Email, nil
 	}
 	return requested, nil
+}
+
+// embedOwnerForEdit returns the embed owner ID and email to save when editing a report or alert,
+// given the embed info of the report or alert (nil if it wasn't created from an embed, in which case both are empty).
+// The original owner is preserved, since the editor may be someone with manage permissions.
+// If the embed user who created it no longer exists, editing fails, since it would turn into a report or alert without an owner.
+// The creator's saved email can only be changed by the creator; other editors keep it, so it stays a recipient.
+func (s *Server) embedOwnerForEdit(ctx context.Context, claims auth.Claims, info *embedOwnerInfo, requestedEmail, kind string) (string, string, error) {
+	if info == nil {
+		return "", "", nil
+	}
+	if info.ownerID == "" {
+		return "", "", status.Errorf(codes.FailedPrecondition, "can't edit %s because the embed user who created it no longer exists", kind)
+	}
+	if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && mdl.EmbedUserID == info.ownerID {
+		email, err := s.embedOwnerEmail(ctx, info.ownerID, requestedEmail)
+		if err != nil {
+			return "", "", err
+		}
+		return info.ownerID, email, nil
+	}
+	return info.ownerID, info.ownerEmail, nil
+}
+
+// narrowEmbedResources returns the resources to limit a report or alert to when it's edited,
+// given its "admin_embed_resources" annotation.
+// It keeps the resources the report or alert was limited to.
+// An embed editor can't give it more access than its own embed has, so it can only narrow them.
+func narrowEmbedResources(claims auth.Claims, annotation, kind string) ([]database.ResourceName, error) {
+	resources, err := parseEmbedResources(annotation)
+	if err != nil {
+		return nil, err
+	}
+	mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken)
+	if !ok || len(mdl.Resources) == 0 {
+		return resources, nil
+	}
+	if len(resources) == 0 {
+		return mdl.Resources, nil
+	}
+	resources = slices.DeleteFunc(resources, func(r database.ResourceName) bool {
+		return !slices.Contains(mdl.Resources, r)
+	})
+	if len(resources) == 0 {
+		return nil, status.Errorf(codes.PermissionDenied, "can't edit the %s because it's limited to dashboards outside of this embed", kind)
+	}
+	return resources, nil
 }
 
 // embedReportResources checks that a report targets a dashboard the embed is limited to,

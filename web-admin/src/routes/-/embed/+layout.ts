@@ -10,8 +10,12 @@ export const load = async ({ url }) => {
 
     // Open links from report and alert emails open the report or alert instead of a dashboard.
     // GetIFrame decodes and validates the link's `rill_open` param, and passes the resource to open as plain params.
-    const openKind = url.searchParams.get("open_kind");
-    const openName = url.searchParams.get("open_name");
+    // `open_report` is the param of earlier versions of GetIFrame, which only supported reports.
+    // It's still accepted, since the admin service and the frontend may be deployed at different times.
+    const legacyOpenReport = url.searchParams.get("open_report");
+    const openKind =
+      url.searchParams.get("open_kind") ?? (legacyOpenReport ? "report" : null);
+    const openName = url.searchParams.get("open_name") ?? legacyOpenReport;
     const openSection =
       openKind === "report" ? "reports" : openKind === "alert" ? "alerts" : "";
     if (openSection && openName) {

@@ -17,6 +17,7 @@
   "alert_context_menu_aria": "Menú contextual de alerta",
   "alert_create_alert": "Crear alerta",
   "alert_created_by": "Creada por {name}",
+  "alert_created_from_embed": "Creada desde un embed",
   "alert_created_through_code": "Creada mediante código",
   "alert_criteria": "Criterios",
   "alert_dashboard": "Dashboard",

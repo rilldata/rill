@@ -50,8 +50,9 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	}
 
 	// Alerts created from an embed run as the embed user, and are handled separately.
-	// They don't have a Rill owner, so the lookup is skipped for alerts that have one.
-	if req.OwnerId == "" {
+	// The lookup is skipped for other alerts (including all alerts defined in code), since only alerts created from an embed have the embed owner annotation.
+	// The lookup still checks the virtual file, so the annotation alone doesn't make an alert run as an embed user.
+	if req.Annotations["admin_embed_owner_id"] != "" {
 		embedInfo, err := s.embedCreatedInfo(ctx, proj.ID, virtualFilePathForManagedAlert(req.Alert))
 		if err != nil {
 			return nil, err
@@ -316,41 +317,13 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	// Preserve the original owner, since the editor may be someone with manage permissions.
-	// If the embed user who created the alert no longer exists, editing it would turn it into an alert without an owner.
-	// The creator's saved email can only be changed by the creator; other editors keep it, so it stays a recipient.
-	var embedOwnerID, embedOwnerEmail string
-	if embedInfo != nil {
-		if embedInfo.ownerID == "" {
-			return nil, status.Error(codes.FailedPrecondition, "can't edit alert because the embed user who created it no longer exists")
-		}
-		embedOwnerID = embedInfo.ownerID
-		embedOwnerEmail = embedInfo.ownerEmail
-		if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && mdl.EmbedUserID == embedOwnerID {
-			embedOwnerEmail, err = s.embedOwnerEmail(ctx, embedOwnerID, req.Options.EmbedOwnerEmail)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// Keep the resources the alert was limited to.
-	// An embed editor can't give the alert more access than its own embed has, so it can only narrow them.
-	embedResources, err := parseEmbedResources(annotations.AdminEmbedResources)
+	embedOwnerID, embedOwnerEmail, err := s.embedOwnerForEdit(ctx, claims, embedInfo, req.Options.EmbedOwnerEmail, "alert")
 	if err != nil {
 		return nil, err
 	}
-	if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && len(mdl.Resources) > 0 {
-		if len(embedResources) == 0 {
-			embedResources = mdl.Resources
-		} else {
-			embedResources = slices.DeleteFunc(embedResources, func(r database.ResourceName) bool {
-				return !slices.Contains(mdl.Resources, r)
-			})
-			if len(embedResources) == 0 {
-				return nil, status.Error(codes.PermissionDenied, "can't edit an alert that is limited to dashboards outside of this embed")
-			}
-		}
+	embedResources, err := narrowEmbedResources(claims, annotations.AdminEmbedResources, "alert")
+	if err != nil {
+		return nil, err
 	}
 	embedResources = embedDashboardResources(embedResources)
 

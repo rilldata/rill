@@ -17,6 +17,7 @@
   "alert_context_menu_aria": "Alert context menu",
   "alert_create_alert": "Create alert",
   "alert_created_by": "Created by {name}",
+  "alert_created_from_embed": "Created from an embed",
   "alert_created_through_code": "Created through code",
   "alert_criteria": "Criteria",
   "alert_dashboard": "Dashboard",

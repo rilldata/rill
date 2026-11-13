@@ -794,6 +794,7 @@ func TestResolveEmbedAlertSecurity(t *testing.T) {
 	// Embed alerts can't have Slack notifiers, but the Slack channel allowance must not apply to them if they did.
 	embedSlackAlert := alert(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"}, slack)
 	userAlert := alert(map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"}, email)
+	codeAlert := alert(map[string]string{"team": "growth"}, email)
 
 	tests := []struct {
 		name   string
@@ -836,6 +837,12 @@ func TestResolveEmbedAlertSecurity(t *testing.T) {
 			alert:  userAlert,
 			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "recipient@example.com"}},
 			want:   true,
+		},
+		{
+			name:   "user without an ID isn't the owner of an alert without an owner",
+			alert:  codeAlert,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}},
+			want:   false,
 		},
 		{
 			name:   "embed owner can access embed alert outside of the embed's resources",

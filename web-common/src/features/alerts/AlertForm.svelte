@@ -73,6 +73,13 @@
   export let showEmbedOwnerEmail: boolean;
 
   const isEmbedded = EmbedStore.isEmbedded();
+  // Alerts created from an embed run as the creator, and can't be sent to Slack,
+  // including when an admin edits one outside of the embed.
+  const slackAllowed =
+    !isEmbedded &&
+    !(
+      props.mode === "edit" && props.alertSpec.annotations?.admin_embed_owner_id
+    );
 
   const runtimeClient = useRuntimeClient();
 
@@ -356,6 +363,7 @@
           {exploreName}
           {provider}
           {showEmbedOwnerEmail}
+          {slackAllowed}
         />
       </DialogTabs.Content>
     </div>

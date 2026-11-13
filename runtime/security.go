@@ -583,7 +583,7 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 		explicitAllow = claims.Admin() || (claims.UserID != "" && claims.UserID == spec.Annotations["admin_embed_owner_id"])
 	} else {
 		// Allow if the owner is accessing the alert
-		if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
+		if spec.Annotations["admin_owner_user_id"] != "" && userID == spec.Annotations["admin_owner_user_id"] {
 			explicitAllow = true
 		}
 

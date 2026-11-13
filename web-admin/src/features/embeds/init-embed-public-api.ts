@@ -280,6 +280,7 @@ const EmbedParams = [
   "external_user_id",
   "open_kind",
   "open_name",
+  "open_report",
   "open_execution_time",
 ];
 export function removeEmbedParams(searchParams: URLSearchParams) {

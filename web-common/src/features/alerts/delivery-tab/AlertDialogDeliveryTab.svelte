@@ -22,15 +22,17 @@
     exploreName,
     provider,
     showEmbedOwnerEmail,
+    slackAllowed,
   }: {
     superFormInstance: SuperForm<AlertFormValues>;
     exploreName: string;
     provider: AlertFormMetadataProvider;
     // True if the form shows the field for the email of the embed user who created the alert (see AlertFormDataWrapper).
     showEmbedOwnerEmail: boolean;
+    // False for alerts created from an embed (see AlertForm).
+    slackAllowed: boolean;
   } = $props();
 
-  // Alerts created from an embed run as the creator, and can't be sent to Slack.
   const isEmbedded = EmbedStore.isEmbedded();
   // The creator's email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
   // Outside of an embed, it's always locked, since only the creator can change it.
@@ -92,7 +94,7 @@
       options={getSnoozeOptions()}
     />
   </FormSection>
-  {#if isEmbedded}
+  {#if !slackAllowed}
     <!-- Alerts created from an embed can't be sent to Slack. -->
   {:else if provider.hasSlackNotifier}
     <FormSection

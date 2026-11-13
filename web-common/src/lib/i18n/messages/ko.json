@@ -17,6 +17,7 @@
   "alert_context_menu_aria": "알림 컨텍스트 메뉴",
   "alert_create_alert": "알림 만들기",
   "alert_created_by": "{name}님이 생성함",
+  "alert_created_from_embed": "임베드에서 생성됨",
   "alert_created_through_code": "코드로 생성됨",
   "alert_criteria": "조건",
   "alert_dashboard": "대시보드",
