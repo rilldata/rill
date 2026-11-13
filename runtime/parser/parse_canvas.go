@@ -172,6 +172,19 @@ func (p *Parser) parseCanvas(node *Node) error {
 		return err
 	}
 
+	// Admin-managed canvases (e.g. personal canvases) can only use inline components for now.
+	if adminManaged, _ := strconv.ParseBool(tmp.Annotations["admin_managed"]); adminManaged {
+		inlineNames := make(map[string]bool, len(inlineComponentDefs))
+		for _, def := range inlineComponentDefs {
+			inlineNames[def.name] = true
+		}
+		for _, ref := range node.Refs {
+			if ref.Kind == ResourceKindComponent && !inlineNames[ref.Name] {
+				return fmt.Errorf("personal canvases cannot reference the component %q: only inline components are supported", ref.Name)
+			}
+		}
+	}
+
 	// Build and validate presets
 	var defaultPreset *runtimev1.CanvasPreset
 	if tmp.Defaults != nil {
