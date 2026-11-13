@@ -1,0 +1,275 @@
+# Tests that comparison values join to the right base rows when the base and comparison time ranges are on different sides of a DST transition.
+# Each scenario uses its own dates, so their time ranges don't overlap.
+connectors:
+  - clickhouse
+project_files:
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      -- America/Los_Angeles fall back on 2026-11-01: comparison days at local noon in PDT and PST, base days at local noon in PST.
+      select '2026-10-30T19:00:00Z'::TIMESTAMP as time, 1 as val union all
+      select '2026-10-31T19:00:00Z'::TIMESTAMP as time, 2 as val union all
+      select '2026-11-01T20:00:00Z'::TIMESTAMP as time, 3 as val union all
+      select '2026-11-06T20:00:00Z'::TIMESTAMP as time, 10 as val union all
+      select '2026-11-07T20:00:00Z'::TIMESTAMP as time, 20 as val union all
+      select '2026-11-08T20:00:00Z'::TIMESTAMP as time, 30 as val union all
+      -- America/Los_Angeles spring forward on 2026-03-08: comparison days at local noon in PST, base days at local noon in PDT.
+      select '2026-03-02T20:00:00Z'::TIMESTAMP as time, 4 as val union all
+      select '2026-03-03T20:00:00Z'::TIMESTAMP as time, 5 as val union all
+      select '2026-03-09T19:00:00Z'::TIMESTAMP as time, 40 as val union all
+      select '2026-03-10T19:00:00Z'::TIMESTAMP as time, 50 as val union all
+      -- Europe/London end of BST on 2025-10-26: comparison days at local noon in BST, base days three weeks later at local noon in GMT.
+      select '2025-10-17T11:00:00Z'::TIMESTAMP as time, 6 as val union all
+      select '2025-10-18T11:00:00Z'::TIMESTAMP as time, 7 as val union all
+      select '2025-11-07T12:00:00Z'::TIMESTAMP as time, 60 as val union all
+      select '2025-11-08T12:00:00Z'::TIMESTAMP as time, 70 as val union all
+      -- America/Los_Angeles fall back on 2025-11-02: events half an hour after local midnight on Mondays two weeks apart.
+      select '2025-10-27T07:30:00Z'::TIMESTAMP as time, 8 as val union all
+      select '2025-11-10T08:30:00Z'::TIMESTAMP as time, 80 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    measures:
+      - name: sum
+        expression: sum(val)
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2026-10-30T19:00:00Z') as time, 1 as val union all
+      select parseDateTimeBestEffort('2026-10-31T19:00:00Z') as time, 2 as val union all
+      select parseDateTimeBestEffort('2026-11-01T20:00:00Z') as time, 3 as val union all
+      select parseDateTimeBestEffort('2026-11-06T20:00:00Z') as time, 10 as val union all
+      select parseDateTimeBestEffort('2026-11-07T20:00:00Z') as time, 20 as val union all
+      select parseDateTimeBestEffort('2026-11-08T20:00:00Z') as time, 30 as val union all
+      select parseDateTimeBestEffort('2025-10-27T07:30:00Z') as time, 8 as val union all
+      select parseDateTimeBestEffort('2025-11-10T08:30:00Z') as time, 80 as val
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    measures:
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: fall_back_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+        - name: time__prev
+          compute:
+            comparison_time:
+              dimension: time
+      time_range:
+        start: 2026-11-06T08:00:00Z
+        end: 2026-11-09T08:00:00Z
+      comparison_time_range:
+        start: 2026-10-30T07:00:00Z
+        end: 2026-11-02T08:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 10
+        sum_prev: 1
+        time__day: "2026-11-06T08:00:00Z"
+        time__prev: "2026-10-30T07:00:00Z"
+      - sum: 20
+        sum_prev: 2
+        time__day: "2026-11-07T08:00:00Z"
+        time__prev: "2026-10-31T07:00:00Z"
+      - sum: 30
+        sum_prev: 3
+        time__day: "2026-11-08T08:00:00Z"
+        time__prev: "2026-11-01T07:00:00Z"
+  - name: fall_back_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+        - name: time__prev
+          compute:
+            comparison_time:
+              dimension: time
+      time_range:
+        start: 2026-11-06T08:00:00Z
+        end: 2026-11-09T08:00:00Z
+      comparison_time_range:
+        start: 2026-10-30T07:00:00Z
+        end: 2026-11-02T08:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 10
+        sum_prev: 1
+        time__day: "2026-11-06T00:00:00-08:00"
+        time__prev: "2026-10-30T00:00:00-07:00"
+      - sum: 20
+        sum_prev: 2
+        time__day: "2026-11-07T00:00:00-08:00"
+        time__prev: "2026-10-31T00:00:00-07:00"
+      - sum: 30
+        sum_prev: 3
+        time__day: "2026-11-08T00:00:00-08:00"
+        time__prev: "2026-11-01T00:00:00-07:00"
+  - name: spring_forward_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2026-03-09T07:00:00Z
+        end: 2026-03-11T07:00:00Z
+      comparison_time_range:
+        start: 2026-03-02T08:00:00Z
+        end: 2026-03-04T08:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 40
+        sum_prev: 4
+        time__day: "2026-03-09T07:00:00Z"
+      - sum: 50
+        sum_prev: 5
+        time__day: "2026-03-10T07:00:00Z"
+  - name: utc_date_boundary_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2025-11-07T00:00:00Z
+        end: 2025-11-09T00:00:00Z
+      comparison_time_range:
+        start: 2025-10-16T23:00:00Z
+        end: 2025-10-18T23:00:00Z
+      time_zone: Europe/London
+      sort:
+        - name: time__day
+    result:
+      - sum: 60
+        sum_prev: 6
+        time__day: "2025-11-07T00:00:00Z"
+      - sum: 70
+        sum_prev: 7
+        time__day: "2025-11-08T00:00:00Z"
+  - name: mixed_grains_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+        - name: time__week
+          compute:
+            time_floor:
+              dimension: time
+              grain: week
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2025-11-10T08:00:00Z
+        end: 2025-11-11T08:00:00Z
+      comparison_time_range:
+        start: 2025-10-27T07:00:00Z
+        end: 2025-10-28T07:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 80
+        sum_prev: 8
+        time__day: "2025-11-10T08:00:00Z"
+        time__week: "2025-11-10T08:00:00Z"
+  - name: mixed_grains_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+        - name: time__week
+          compute:
+            time_floor:
+              dimension: time
+              grain: week
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2025-11-10T08:00:00Z
+        end: 2025-11-11T08:00:00Z
+      comparison_time_range:
+        start: 2025-10-27T07:00:00Z
+        end: 2025-10-28T07:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__day
+    result:
+      - sum: 80
+        sum_prev: 8
+        time__day: "2025-11-10T00:00:00-08:00"
+        time__week: "2025-11-10T00:00:00-08:00"
