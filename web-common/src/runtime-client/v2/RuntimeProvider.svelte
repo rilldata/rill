@@ -8,7 +8,7 @@
     evictRuntimeClient,
     RUNTIME_CONTEXT_KEY,
   } from "./context";
-  import type { AuthContext } from "./runtime-client";
+  import type { AuthContext, JwtRefresher } from "./runtime-client";
   import { createEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
 
   const queryClient = useQueryClient();
@@ -17,6 +17,9 @@
   export let instanceId: string;
   export let jwt: string | undefined = undefined;
   export let authContext: AuthContext = "user";
+  // Fetches a fresh JWT when a request finds the current one expired, e.g. after a laptop sleep
+  // skipped the scheduled refetch. Without it, requests wait for the parent to pass a new `jwt`.
+  export let refreshJwt: JwtRefresher | undefined = undefined;
 
   // Returns a cached instance if a load function already created one for this host+instanceId.
   // If host/instanceId change, the parent's {#key} re-mounts us.
@@ -29,6 +32,7 @@
   // Handle JWT-only changes (15-min refresh, View As with same host)
   $: {
     const authContextChanged = client.updateJwt(jwt, authContext);
+    client.setJwtRefresher(refreshJwt);
     if (authContextChanged)
       void invalidateRuntimeQueries(queryClient, instanceId);
   }
