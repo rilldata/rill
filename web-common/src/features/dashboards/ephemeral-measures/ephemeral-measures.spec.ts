@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { V1MetricsViewAggregationMeasure } from "@rilldata/web-common/runtime-client";
 import { prepareMeasuresForRequest } from "../pivot/pivot-utils";
+import { ephemeralMeasuresFirst } from "./measure-mapping";
 import type { EphemeralMeasureDef } from "./types";
 import {
   MAX_EPHEMERAL_MEASURES,
@@ -171,5 +172,25 @@ describe("validateEphemeralMeasureCount", () => {
     expect(validateEphemeralMeasureCount(MAX_EPHEMERAL_MEASURES)).toContain(
       `at most ${MAX_EPHEMERAL_MEASURES}`,
     );
+  });
+});
+
+describe("ephemeralMeasuresFirst", () => {
+  const byName = (name: string) => name;
+
+  it("puts ephemeral measures first, newest first, and keeps the rest in order", () => {
+    expect(
+      ephemeralMeasuresFirst(
+        ["revenue", "older", "cost", "newer", "orders"],
+        byName,
+        ["older", "newer"],
+      ),
+    ).toEqual(["newer", "older", "revenue", "cost", "orders"]);
+  });
+
+  it("ignores definitions the list does not contain", () => {
+    expect(
+      ephemeralMeasuresFirst(["revenue", "cost"], byName, ["profit"]),
+    ).toEqual(["revenue", "cost"]);
   });
 });

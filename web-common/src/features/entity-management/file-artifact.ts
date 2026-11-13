@@ -231,15 +231,18 @@ export class FileArtifact {
     this.editorCallback(newContent);
   };
 
-  saveLocalContent = async (force = false) => {
+  // Resolves to whether the editor content was saved.
+  saveLocalContent = async (force = false): Promise<boolean> => {
     const saveEnabled = get(this.saveEnabled);
 
-    if (!saveEnabled && !force) return;
-    await this.saveContent(get(this.editorContent) ?? "");
+    if (!saveEnabled && !force) return false;
+    return this.saveContent(get(this.editorContent) ?? "");
   };
 
-  private saveContent = async (blob: string) => {
-    if (!this.client) return;
+  // Resolves to whether the save completed; a failure is also reported
+  // through `saveState`.
+  private saveContent = async (blob: string): Promise<boolean> => {
+    if (!this.client) return false;
 
     try {
       const kind = get(this.resourceName)?.kind;
@@ -248,9 +251,11 @@ export class FileArtifact {
       await this.io.write(this.path, blob, kind);
 
       await fileSavePromise;
+      return true;
     } catch (e) {
       console.error("Error saving file", e);
       this.saveState.reject(new Error("Unable to save file."));
+      return false;
     }
   };
 

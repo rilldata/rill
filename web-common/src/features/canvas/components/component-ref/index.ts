@@ -112,7 +112,7 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
   override updateProperty(
     key: AllKeys<ComponentRefSpec>,
     value: ComponentRefSpec[AllKeys<ComponentRefSpec>],
-  ) {
+  ): Promise<boolean> {
     const currentSpec = get(this.specStore);
     const newSpec = { ...currentSpec, [key]: value };
     if (value === undefined || value === "") {
@@ -139,15 +139,17 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
       previousValue: currentSpec[key],
     });
 
-    this.writeParamsToYAML(this.args(newSpec));
+    const saved = this.writeParamsToYAML(this.args(newSpec));
     this.specStore.set(newSpec);
     this.syncMetricsViewName();
+    return saved;
   }
 
-  override setSpec(newSpec: ComponentRefSpec) {
-    this.writeParamsToYAML(this.args(newSpec));
+  override setSpec(newSpec: ComponentRefSpec): Promise<boolean> {
+    const saved = this.writeParamsToYAML(this.args(newSpec));
     this.specStore.set(newSpec);
     this.syncMetricsViewName();
+    return saved;
   }
 
   static newComponentSpec(): ComponentRefSpec {
@@ -164,11 +166,12 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
   /**
    * Persists the param bindings to the canvas YAML at the item's `params:` key.
    * Only the params map is written; the item's other keys (component, width) stay untouched.
+   * Resolves to whether the canvas file was saved.
    */
-  private writeParamsToYAML(params: Record<string, unknown>) {
-    if (!this.parent.fileArtifact) return;
+  private writeParamsToYAML(params: Record<string, unknown>): Promise<boolean> {
+    if (!this.parent.fileArtifact) return Promise.resolve(false);
     const parsedDocument = get(this.parent.parsedContent);
-    const { updateEditorContent } = this.parent.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     // pathInYAML ends with the component type segment; the item map is its parent.
     const itemPath = this.pathInYAML.slice(0, -1);
@@ -178,7 +181,9 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
       parsedDocument.deleteIn([...itemPath, "params"]);
     }
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    // Saved explicitly rather than with auto-save, so the result can be awaited.
+    updateEditorContent(parsedDocument.toString(), false, false);
+    return saveLocalContent(true);
   }
 
   /**

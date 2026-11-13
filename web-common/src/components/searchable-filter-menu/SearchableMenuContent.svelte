@@ -71,12 +71,16 @@
   {side}
   class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
 >
-  <div class="px-3 pt-3 pb-1">
-    <Search
-      bind:value={searchText}
-      label={m.common_search_list()}
-      showBorderOnFocus={false}
-    />
+  <!-- Wraps so an action's full-width note can sit below the search. -->
+  <div class="flex flex-wrap items-center gap-2 px-3 pt-3 pb-1">
+    <div class="flex-1 min-w-[140px]">
+      <Search
+        bind:value={searchText}
+        label={m.common_search_list()}
+        showBorderOnFocus={false}
+      />
+    </div>
+    <slot name="action" />
   </div>
 
   <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
@@ -209,12 +213,6 @@
         </div>
       {/if}
     </footer>
-  {/if}
-
-  {#if $$slots.action}
-    <div class="flex-none border-t border-border">
-      <slot name="action" />
-    </div>
   {/if}
 </DropdownMenu.Content>
 

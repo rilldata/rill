@@ -4,6 +4,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasuresFirst } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricFieldData } from "../selectors";
@@ -47,18 +48,22 @@
           <SearchableFilterSelectableGroup>{
             name: "measure",
             label: "MEASURES",
-            items: $fieldData.filteredItems
-              .filter((item) => $fieldData.displayMap[item]?.type === "measure")
-              .map((item) => {
-                const def = ephemeralMeasures?.find((d) => d.name === item);
-                return {
-                  name: item,
-                  label: $fieldData.displayMap[item].label,
-                  ...(def
-                    ? { description: def.expression, ephemeral: true }
-                    : {}),
-                };
-              }),
+            items: ephemeralMeasuresFirst(
+              $fieldData.filteredItems.filter(
+                (item) => $fieldData.displayMap[item]?.type === "measure",
+              ),
+              (item) => item,
+              (ephemeralMeasures ?? []).map((def) => def.name),
+            ).map((item) => {
+              const def = ephemeralMeasures?.find((d) => d.name === item);
+              return {
+                name: item,
+                label: $fieldData.displayMap[item].label,
+                ...(def
+                  ? { description: def.expression, ephemeral: true }
+                  : {}),
+              };
+            }),
           },
         ]
       : []),
@@ -157,6 +162,7 @@
     >
       <CreateEphemeralMeasureButton
         slot="action"
+        count={ephemeralMeasures?.length ?? 0}
         onOpen={() => (open = false)}
         onCreate={onCreateEphemeral}
       />

@@ -10,6 +10,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { PencilIcon } from "lucide-svelte";
   import { writable } from "svelte/store";
 
   export let disabled = false;
@@ -19,6 +20,10 @@
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
   export let setLeaderboardSortByMeasureName: (name: string) => void;
+  // Ephemeral measures get an fx marker and, when `onEditEphemeral` is set,
+  // an edit button that closes the menu and invokes it with the measure name.
+  export let ephemeralNames: Set<string> = new Set();
+  export let onEditEphemeral: ((name: string) => void) | undefined = undefined;
 
   let active = false;
   let multiSelect = selectedMeasureNames?.length > 1;
@@ -164,6 +169,7 @@
           <div class="px-1 pb-1 max-h-80 overflow-y-auto">
             {#if filteredMeasures.length}
               {#each filteredMeasures as measure (measure.name)}
+                {@const ephemeral = ephemeralNames.has(measure.name ?? "")}
                 <DropdownMenu.CheckboxItem
                   closeOnSelect={!multiSelect}
                   class="text-[12px]"
@@ -179,7 +185,26 @@
                 >
                   <div class="truncate flex-1 text-left">
                     {measure.displayName || measure.name}
+                    {#if ephemeral}
+                      <span class="text-[10px] font-semibold italic">ƒx</span>
+                    {/if}
                   </div>
+                  {#if ephemeral && onEditEphemeral}
+                    <button
+                      class="flex-none text-fg-secondary hover:text-fg-primary"
+                      type="button"
+                      aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                      onpointerdown={(e) => e.stopPropagation()}
+                      onpointerup={(e) => e.stopPropagation()}
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        active = false;
+                        if (measure.name) onEditEphemeral?.(measure.name);
+                      }}
+                    >
+                      <PencilIcon size="12px" />
+                    </button>
+                  {/if}
                 </DropdownMenu.CheckboxItem>
               {/each}
             {:else}

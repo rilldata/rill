@@ -147,6 +147,35 @@ describe("ephemeral measures URL state integration", () => {
     ]);
   });
 
+  it("shows a new measure first in the explore view", () => {
+    metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    });
+    const state = getCleanMetricsExploreForAssertion();
+    expect(state.visibleMeasures?.[0]).toBe("profit");
+    expect(state.allMeasuresVisible).toBe(false);
+  });
+
+  it("adds a new measure as the first measure column of the pivot", () => {
+    applyUrl(
+      "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=domain,impressions,bid_price",
+    );
+    metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    });
+    const state = getCleanMetricsExploreForAssertion();
+    expect(state.pivot?.columns.map((col) => col.id)).toEqual([
+      "domain",
+      "profit",
+      "impressions",
+      "bid_price",
+    ]);
+  });
+
   it("drops definitions referencing unknown measures, and their columns", () => {
     const errors = applyUrl(
       "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&adhoc_m=profit:Profit:unknown*2",

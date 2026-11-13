@@ -2,8 +2,9 @@
 The dialog for creating or editing an ephemeral measure definition, shared by
 the explore dashboards (EphemeralMeasureDialog) and the canvas inspector
 (canvas/inspector/fields/EphemeralMeasureEditor). It owns the form state and
-validation; the wrapper supplies the measures the expression may reference and
-persists the definition.
+validation; the wrapper supplies the measures the expression may reference,
+persists the definition and confirms the change. While a save is pending the
+dialog stays open, and a failed save keeps it open with an error.
 -->
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
@@ -17,11 +18,12 @@ persists the definition.
     MetricsViewSpecMeasure,
     V1MetricsViewSpec,
   } from "@rilldata/web-common/runtime-client";
-  import { parseMeasureExpression } from "./expression-parser";
+  import { describeExpressionError } from "./expression-feedback";
   import { ephemeralFormatPresetOptions } from "./format-presets";
   import MeasureExpressionInput from "./MeasureExpressionInput.svelte";
   import type { EphemeralMeasureDef } from "./types";
   import {
+    MAX_EPHEMERAL_MEASURES,
     slugifyEphemeralMeasureName,
     validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
@@ -34,9 +36,11 @@ persists the definition.
   export let referenceableMeasures: MetricsViewSpecMeasure[];
   // The definitions that already exist alongside this one.
   export let existingDefs: EphemeralMeasureDef[];
-  export let onSave: (def: EphemeralMeasureDef) => void;
+  // Persist the change and close the dialog. An async persistence resolves to
+  // false when it fails, which keeps the dialog open with an error.
+  export let onSave: (def: EphemeralMeasureDef) => void | Promise<boolean>;
   // Set when editing: shows the delete button.
-  export let onRemove: (() => void) | undefined = undefined;
+  export let onRemove: (() => void | Promise<boolean>) | undefined = undefined;
   export let onClose: () => void;
 
   const FORMAT_PRESETS = ephemeralFormatPresetOptions();
@@ -46,9 +50,15 @@ persists the definition.
   let description = editingDef?.description ?? "";
   let formatPreset: string = editingDef?.formatPreset ?? FormatPreset.HUMANIZE;
   let saveError: string | undefined = undefined;
+  let saving = false;
   let expressionInput: MeasureExpressionInput;
+  // The name a new definition got on its first save attempt. A failed canvas
+  // save can still leave the definition in the component's spec, so a retry
+  // reuses the name instead of adding a second definition.
+  let newName: string | undefined = undefined;
 
-  $: otherDefs = existingDefs.filter((d) => d.name !== editingDef?.name);
+  $: ownName = editingDef?.name ?? newName;
+  $: otherDefs = existingDefs.filter((d) => d.name !== ownName);
   $: knownMeasureNames = new Set(
     referenceableMeasures.map((mes) => mes.name as string),
   );
@@ -68,40 +78,52 @@ persists the definition.
   ].filter((label): label is string => !!label);
 
   // Live expression feedback (only once the user typed something).
-  $: parsed = parseMeasureExpression(expression);
-  $: unknownRef = parsed.refs.find((ref) => !knownMeasureNames.has(ref));
-  $: expressionError =
-    expression.trim() === ""
-      ? undefined
-      : (parsed.error?.message ??
-        (unknownRef
-          ? `"${unknownRef}" is not a measure in this dashboard`
-          : undefined));
+  $: expressionError = describeExpressionError(
+    expression,
+    referenceableMeasures,
+  );
 
-  function save() {
+  async function save() {
     const def: EphemeralMeasureDef = {
-      name:
-        editingDef?.name ??
-        slugifyEphemeralMeasureName(displayName, reservedNames),
+      name: ownName ?? slugifyEphemeralMeasureName(displayName, reservedNames),
       displayName: getName(displayName.trim(), otherDisplayNames),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
     };
+    // The entry points block creating past the limit; this catches
+    // definitions added elsewhere (a link, another tab) while the dialog was open.
+    const countError =
+      !editingDef && validateEphemeralMeasureCount(otherDefs.length)
+        ? m.dashboard_pivot_ephemeral_limit_reached({
+            count: String(MAX_EPHEMERAL_MEASURES),
+          })
+        : undefined;
     saveError =
       validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
-      (editingDef
-        ? undefined
-        : validateEphemeralMeasureCount(existingDefs.length));
+      countError;
     if (saveError) return;
-    onSave(def);
+    if (!editingDef) newName = def.name;
+    saving = true;
+    const saved = (await onSave(def)) !== false;
+    saving = false;
+    if (!saved) saveError = m.dashboard_pivot_ephemeral_save_failed();
+  }
+
+  async function remove() {
+    if (!onRemove) return;
+    saving = true;
+    const removed = (await onRemove()) !== false;
+    saving = false;
+    if (!removed) saveError = m.dashboard_pivot_ephemeral_delete_failed();
   }
 </script>
 
 <Dialog.Root
   open
   onOpenChange={(open) => {
-    if (!open) onClose();
+    // A pending save decides whether the dialog closes.
+    if (!open && !saving) onClose();
   }}
 >
   <Dialog.Content class="w-[480px] max-h-[90vh] flex flex-col">
@@ -124,14 +146,6 @@ persists the definition.
         claimFocusOnMount
       />
 
-      <MeasureExpressionInput
-        bind:this={expressionInput}
-        bind:value={expression}
-        id="ephemeral-measure-expression"
-        measures={referenceableMeasures}
-        errors={expressionError}
-      />
-
       <Input
         bind:value={description}
         id="ephemeral-measure-description"
@@ -140,29 +154,40 @@ persists the definition.
         optional
       />
 
-      {#if referenceableMeasures.length}
-        <div class="flex flex-col gap-y-1.5">
-          <span class="text-xs text-fg-secondary">
-            {m.dashboard_pivot_ephemeral_insert_measure()}
-          </span>
-          <!-- Cap the chip list so dashboards with hundreds of measures scroll
-               inside the dialog instead of pushing the footer off-screen. -->
-          <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-            {#each referenceableMeasures as mes (mes.name)}
-              <button
-                type="button"
-                on:click={() => expressionInput.insertMeasure(mes)}
-              >
-                <Chip type="measure" label={mes.displayName || mes.name}>
-                  <span slot="body" class="text-xs">
-                    {mes.displayName || mes.name}
-                  </span>
-                </Chip>
-              </button>
-            {/each}
+      <!-- The measure chips sit right below the expression they insert into. -->
+      <div class="flex flex-col gap-y-2">
+        <MeasureExpressionInput
+          bind:this={expressionInput}
+          bind:value={expression}
+          id="ephemeral-measure-expression"
+          measures={referenceableMeasures}
+          errors={expressionError}
+        />
+
+        {#if referenceableMeasures.length}
+          <div class="flex flex-col gap-y-1.5">
+            <span class="text-xs text-fg-secondary">
+              {m.dashboard_pivot_ephemeral_insert_measure()}
+            </span>
+            <!-- Cap the chip list so dashboards with hundreds of measures scroll
+                 inside the dialog instead of pushing the footer off-screen. -->
+            <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+              {#each referenceableMeasures as mes (mes.name)}
+                <button
+                  type="button"
+                  on:click={() => expressionInput.insertMeasure(mes)}
+                >
+                  <Chip type="measure" label={mes.displayName || mes.name}>
+                    <span slot="body" class="text-xs">
+                      {mes.displayName || mes.name}
+                    </span>
+                  </Chip>
+                </button>
+              {/each}
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
 
       <label class="flex flex-col gap-y-1">
         <span class="text-sm font-medium text-fg-primary">
@@ -186,17 +211,24 @@ persists the definition.
     <Dialog.Footer>
       {#if onRemove}
         <div class="mr-auto">
-          <Button type="secondary-destructive" onClick={onRemove}>
+          <Button
+            type="secondary-destructive"
+            disabled={saving}
+            onClick={remove}
+          >
             {m.common_delete()}
           </Button>
         </div>
       {/if}
-      <Button type="secondary" onClick={onClose}>
+      <Button type="secondary" disabled={saving} onClick={onClose}>
         {m.common_cancel()}
       </Button>
       <Button
         type="primary"
-        disabled={!displayName.trim() ||
+        loading={saving}
+        loadingCopy={m.dashboard_pivot_ephemeral_save()}
+        disabled={saving ||
+          !displayName.trim() ||
           !expression.trim() ||
           !!expressionError}
         onClick={save}

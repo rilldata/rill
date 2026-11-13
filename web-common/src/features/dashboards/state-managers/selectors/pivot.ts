@@ -40,7 +40,9 @@ export const pivotSelectors = {
         description: def.expression,
       }));
 
-    return [...specChips, ...ephemeralChips];
+    // The sidebar and the "add field" menu offer every unplaced measure, so
+    // ephemeral ones come first, newest first, like in the other measure pickers.
+    return [...ephemeralChips.reverse(), ...specChips];
   },
   dimensions: ({
     validMetricsView,

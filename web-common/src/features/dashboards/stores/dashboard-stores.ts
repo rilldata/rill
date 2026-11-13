@@ -763,19 +763,26 @@ const metricsViewReducers = {
         ...(exploreState.ephemeralMeasures ?? []),
         def,
       ];
+      // The new measure goes first, where the user looks for it: the first
+      // measure column of the pivot, or the first shown measure (and so the
+      // first big number and chart) of the explore view.
       if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
         exploreState.pivot.rowPage = 1;
         exploreState.pivot.activeCell = null;
-        exploreState.pivot.columns.push({
-          id: def.name,
-          title: def.displayName,
-          type: PivotChipType.Measure,
-        });
+        const firstMeasure = exploreState.pivot.columns.findIndex(
+          (col) => col.type === PivotChipType.Measure,
+        );
+        exploreState.pivot.columns.splice(
+          firstMeasure === -1
+            ? exploreState.pivot.columns.length
+            : firstMeasure,
+          0,
+          { id: def.name, title: def.displayName, type: PivotChipType.Measure },
+        );
       } else {
-        // Make the new measure visible in the explore view.
         exploreState.visibleMeasures = [
-          ...exploreState.visibleMeasures,
           def.name,
+          ...exploreState.visibleMeasures,
         ];
         exploreState.allMeasuresVisible = false;
       }

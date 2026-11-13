@@ -202,6 +202,7 @@
     >
       <CreateEphemeralMeasureButton
         slot="action"
+        count={ephemeralDefsByName.size}
         onOpen={() => (open = false)}
       />
     </SearchableMenuContent>

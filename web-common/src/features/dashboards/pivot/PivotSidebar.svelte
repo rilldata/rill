@@ -13,14 +13,14 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { onMount } from "svelte";
   import type {
     PivotSidebarSection,
     PivotState,
   } from "web-common/src/features/dashboards/pivot/types.ts";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import CreateEphemeralMeasureButton from "../ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
+  import { deleteExploreEphemeralMeasure } from "../ephemeral-measures/explore-actions";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
@@ -55,7 +55,7 @@
   }
 
   function deleteEphemeralMeasure(id: string) {
-    metricsExplorerStore.removeEphemeralMeasure(
+    deleteExploreEphemeralMeasure(
       $exploreName,
       id,
       $validSpecStore.data?.explore,
@@ -240,16 +240,12 @@
         onEditEphemeralMeasure={editEphemeralMeasure}
         onDeleteEphemeralMeasure={deleteEphemeralMeasure}
       >
-        <button
-          slot="header-action"
-          class="ml-auto text-fg-secondary hover:text-fg-primary"
-          type="button"
-          aria-label={m.dashboard_pivot_ephemeral_create()}
-          title={m.dashboard_pivot_ephemeral_create()}
-          on:click={() => ephemeralMeasureDialog.set({})}
-        >
-          <Add size="14px" />
-        </button>
+        <div slot="header-action" class="ml-auto flex">
+          <CreateEphemeralMeasureButton
+            variant="icon"
+            count={$dashboardStore.ephemeralMeasures?.length ?? 0}
+          />
+        </div>
       </PivotDrag>
       <PivotDrag
         title={DIMENSIONS_ZONE}
