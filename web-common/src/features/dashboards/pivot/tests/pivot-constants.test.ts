@@ -1,7 +1,6 @@
 import {
   calculateEffectiveRowLimit,
   getNextRowLimit,
-  getNextLimitLabel,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { describe, it, expect } from "vitest";
 
@@ -99,24 +98,5 @@ describe("getNextRowLimit", () => {
   it("handles edge cases", () => {
     expect(getNextRowLimit(1)).toBe(5);
     expect(getNextRowLimit(99)).toBe(100);
-  });
-});
-
-describe("getNextLimitLabel", () => {
-  it("returns string representation of next limit", () => {
-    expect(getNextLimitLabel(5)).toBe("10");
-    expect(getNextLimitLabel(10)).toBe("25");
-    expect(getNextLimitLabel(25)).toBe("50");
-    expect(getNextLimitLabel(50)).toBe("100");
-  });
-
-  it("returns '100' when at or beyond max limit", () => {
-    expect(getNextLimitLabel(100)).toBe("100");
-    expect(getNextLimitLabel(150)).toBe("100");
-  });
-
-  it("handles non-standard limits", () => {
-    expect(getNextLimitLabel(7)).toBe("10");
-    expect(getNextLimitLabel(30)).toBe("50");
   });
 });

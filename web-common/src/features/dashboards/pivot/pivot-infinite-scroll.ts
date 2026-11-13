@@ -6,7 +6,7 @@ import type {
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   extractNumbers,
-  getTimeGrainFromDimension,
+  getTimeFilterSpanningValues,
   isTimeDimension,
   sortAcessors,
 } from "./pivot-utils";
@@ -38,17 +38,35 @@ function getSortedColumnKeys(
 }
 
 /**
+ * Parse a column accessor such as `c0v3_c1v0m2` into the index of each
+ * column dimension and of its value.
+ */
+function getColumnValueIndices(accessor: string) {
+  // Strip the measure string from the accessor
+  const [accessorWithoutMeasure] = accessor.split("m");
+  return accessorWithoutMeasure.split("_").map((part) => extractNumbers(part));
+}
+
+/**
  * Slice column axes data based on page
  * number. This is used for column definition in pivot table.
+ * Also counts the leaf columns the sliced axes render,
+ * out of the leaf columns the totals row has.
  */
 export function sliceColumnAxesDataForDef(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
   totalsRow: PivotDataRow,
-) {
+): {
+  axes: Record<string, string[]>;
+  shownColumns: number;
+  totalColumns: number;
+} {
   const { colDimensionNames } = config;
   const colDimensionPageNumber = config.pivot.columnPage;
-  if (!colDimensionNames.length) return colDimensionAxes;
+  if (!colDimensionNames.length) {
+    return { axes: colDimensionAxes, shownColumns: 0, totalColumns: 0 };
+  }
 
   const totalColumnsToBeDisplayed =
     getColumnsPerPage(config) * colDimensionPageNumber;
@@ -63,10 +81,7 @@ export function sliceColumnAxesDataForDef(
   );
 
   columnKeysForPage.forEach((accessor) => {
-    // Strip the measure string from the accessor
-    const [accessorWithoutMeasure] = accessor.split("m");
-    accessorWithoutMeasure.split("_").forEach((part) => {
-      const { c, v } = extractNumbers(part);
+    getColumnValueIndices(accessor).forEach(({ c, v }) => {
       const columnDimensionName = colDimensionNames[c];
       maxIndexVisible[columnDimensionName] = Math.max(
         maxIndexVisible[columnDimensionName] || 0,
@@ -86,7 +101,19 @@ export function sliceColumnAxesDataForDef(
     }
   });
 
-  return slicedAxesData;
+  // The column definition renders every combination of the sliced values
+  // that the totals row has, which can be a few more than the page holds.
+  const shownColumns = sortedColumnKeys.filter((accessor) =>
+    getColumnValueIndices(accessor).every(
+      ({ c, v }) => v < (slicedAxesData[colDimensionNames[c]]?.length ?? 0),
+    ),
+  ).length;
+
+  return {
+    axes: slicedAxesData,
+    shownColumns,
+    totalColumns: sortedColumnKeys.length,
+  };
 }
 
 /**
@@ -119,10 +146,7 @@ export function getColumnFiltersForPage(
   const maxIndexVisible: Record<string, number> = {};
 
   columnKeysForPage.forEach((accessor) => {
-    // Strip the measure string from the accessor
-    const [accessorWithoutMeasure] = accessor.split("m");
-    accessorWithoutMeasure.split("_").forEach((part) => {
-      const { c, v } = extractNumbers(part);
+    getColumnValueIndices(accessor).forEach(({ c, v }) => {
       const dimension = colDimensionNames[c];
       maxIndexVisible[dimension] = Math.max(
         maxIndexVisible[dimension] || 0,
@@ -148,13 +172,9 @@ export function getColumnFiltersForPage(
   const filters = colDimensionNames
     .filter((dimension) => {
       if (isTimeDimension(dimension, config.time.timeDimension)) {
-        const dates = slicedAxesData[dimension].map((d) =>
-          new Date(d).getTime(),
+        timeFilters.push(
+          getTimeFilterSpanningValues(dimension, slicedAxesData[dimension]),
         );
-        const timeStart = new Date(Math.min(...dates)).toISOString();
-        const timeEnd = new Date(Math.max(...dates)).toISOString();
-        const interval = getTimeGrainFromDimension(dimension);
-        timeFilters.push({ timeStart, timeEnd, interval });
         return false;
       }
       return true;

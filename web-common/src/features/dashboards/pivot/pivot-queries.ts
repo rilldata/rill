@@ -19,10 +19,13 @@ import {
   keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
+import { COLUMN_COMBINATIONS_LIMIT } from "./pivot-constants";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
+  getTimeFilterSpanningValues,
+  getTimeForQuery,
   getTimeGrainFromDimension,
   getUriMeasuresForDimensions,
   isTimeDimension,
@@ -324,6 +327,16 @@ export function getTotalsRowQuery(
       createInExpression(dimension, colDimensionAxes[dimension]),
     );
 
+  // Limit time columns to the buckets on their axis. Otherwise the top
+  // combinations by measure can fall outside the axis when the time range has
+  // more buckets than the axis holds, leaving scattered columns.
+  const timeFilters = colDimensionNames
+    .filter((d) => isTimeDimension(d, time.timeDimension))
+    .filter((d) => colDimensionAxes[d]?.length > 0)
+    .map((dimension) =>
+      getTimeFilterSpanningValues(dimension, colDimensionAxes[dimension]),
+    );
+
   const mergedFilter =
     mergeFilters(createAndExpression(colFilters), config.whereFilter) ??
     createAndExpression([]);
@@ -341,6 +354,8 @@ export function getTotalsRowQuery(
     dimensionBody,
     mergedFilter,
     sortBy,
-    "300",
+    COLUMN_COMBINATIONS_LIMIT.toString(),
+    "0",
+    getTimeForQuery(time, timeFilters),
   );
 }

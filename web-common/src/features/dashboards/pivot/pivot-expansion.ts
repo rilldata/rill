@@ -539,12 +539,9 @@ export function addExpandedDataToPivot(
           return newRow;
         }) || [];
 
-      // Add "Show More" button row if more data is available and we're not at max limit (100)
-      if (
-        expandedRowData.hasMore &&
-        expandedRowData.effectiveLimit &&
-        expandedRowData.effectiveLimit < MAX_ROW_EXPANSION_LIMIT
-      ) {
+      // Add a "Show more" row if more data is available. Past the last
+      // limit step the row only notes that the rest is left out.
+      if (expandedRowData.hasMore && expandedRowData.effectiveLimit) {
         mappedSubRows.push({
           [rowDimensions[0]]: SHOW_MORE_BUTTON,
           __currentLimit: expandedRowData.effectiveLimit,

@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAxisForDimensions,
   getAxisQueryForMeasureTotals,
+  getTotalsRowQuery,
 } from "./pivot-queries";
 import type { PivotDashboardContext, PivotDataStoreConfig } from "./types";
 
@@ -149,5 +150,46 @@ describe("getAxisQueryForMeasureTotals", () => {
     );
 
     expect(requestedMeasures()).toEqual([[{ name: "measure" }, uriMeasure]]);
+  });
+});
+
+describe("getTotalsRowQuery", () => {
+  beforeEach(() => {
+    vi.mocked(createQueryServiceMetricsViewAggregation).mockClear();
+  });
+
+  it("limits a time column to the buckets on its axis", () => {
+    // The axis holds the first 100 hours of a three month range. Without the
+    // time range, the top 300 hours by measure could fall anywhere in the
+    // range and leave only a few scattered columns on the axis.
+    const hourDimension = "timestamp_rill_TIME_GRAIN_HOUR";
+    const axisHours = Array.from({ length: 100 }, (_, i) =>
+      new Date(Date.UTC(2022, 0, 1, i)).toISOString(),
+    );
+
+    get(
+      getTotalsRowQuery(
+        ctx,
+        {
+          ...config,
+          colDimensionNames: [hourDimension],
+          time: {
+            timeStart: "2022-01-01T00:00:00.000Z",
+            timeEnd: "2022-04-01T00:00:00.000Z",
+            timeZone: "UTC",
+            timeDimension: "timestamp",
+          },
+        },
+        { [hourDimension]: axisHours },
+      ),
+    );
+
+    const request = vi.mocked(createQueryServiceMetricsViewAggregation).mock
+      .calls[0][1] as V1MetricsViewAggregationRequest;
+    expect(request.timeRange).toMatchObject({
+      start: "2022-01-01T00:00:00.000Z",
+      end: "2022-01-05T04:00:00.000Z",
+    });
+    expect(request.limit).toBe("300");
   });
 });

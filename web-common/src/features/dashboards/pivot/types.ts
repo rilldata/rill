@@ -29,10 +29,23 @@ export interface PivotDataState {
   columnDef: ColumnDef<PivotDataRow>[];
   assembled: boolean;
   totalColumns: number; // total columns excluding row and group totals columns
+  // Set when the table leaves out columns that the data has.
+  columnTruncation?: PivotColumnTruncation;
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
   columnDimensionAxes?: Record<string, string[]>;
+}
+
+/**
+ * A nested table with column dimensions renders a limited number of leaf
+ * columns (one per measure under each combination of column values).
+ */
+export interface PivotColumnTruncation {
+  shown: number;
+  // Undefined when the column queries hit their own limits,
+  // so the number of columns the data has is unknown.
+  total: number | undefined;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
