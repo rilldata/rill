@@ -29,7 +29,7 @@ import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { object, array, string } from "yup";
 
 // The number of matching rows listed in notifications when an alert doesn't set it.
-// Keep in sync with alertNotifyRowsLimitDefault in runtime/reconcilers/alert.go.
+// Keep in sync with alertNotifyRowsLimitDefault in runtime/parser/parse_alert.go.
 export const AlertNotifyRowsLimitDefault = 5;
 // Keep in sync with alertNotifyRowsLimitMax in runtime/parser/parse_alert.go.
 export const AlertNotifyRowsLimitMax = 50;

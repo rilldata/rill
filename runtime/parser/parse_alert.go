@@ -15,6 +15,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// alertNotifyRowsLimitDefault is the value for "notify.rows_limit" when an alert doesn't set it.
+// Keep in sync with AlertNotifyRowsLimitDefault in web-common/src/features/alerts/form-utils.ts.
+const alertNotifyRowsLimitDefault = 5
+
 // alertNotifyRowsLimitMax is the maximum value for "notify.rows_limit".
 // It keeps notifications for alerts split by a high-cardinality dimension readable (and within Slack's message size limits).
 const alertNotifyRowsLimitMax = 50
@@ -269,7 +273,7 @@ func (p *Parser) parseAlert(node *Node) error {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	// Validate the number of matching rows to include in notifications; 0 means the reconciler's default.
+	// Validate the number of matching rows to include in notifications; 0 means the default.
 	if tmp.Notify.RowsLimit > alertNotifyRowsLimitMax {
 		return fmt.Errorf(`invalid value %d for property "notify.rows_limit": must be at most %d`, tmp.Notify.RowsLimit, alertNotifyRowsLimitMax)
 	}
@@ -354,6 +358,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.NotifyOnFail = true
 	r.AlertSpec.NotifyOnError = false
 	r.AlertSpec.NotifyRowsLimit = uint32(tmp.Notify.RowsLimit)
+	if r.AlertSpec.NotifyRowsLimit == 0 {
+		r.AlertSpec.NotifyRowsLimit = alertNotifyRowsLimitDefault
+	}
 	r.AlertSpec.Renotify = false
 
 	if isLegacyNotify {

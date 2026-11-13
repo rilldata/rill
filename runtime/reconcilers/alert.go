@@ -34,9 +34,6 @@ const alertDefaultIntervalsLimit = 25
 
 const alertQueryPriority = 1
 
-// alertNotifyRowsLimitDefault is the number of rows that matched the alert criteria to include in notifications when the alert doesn't set a limit.
-const alertNotifyRowsLimitDefault = 5
-
 const alertCheckDefaultTimeout = 5 * time.Minute
 
 func init() {
@@ -586,7 +583,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ErrorMessage: executeErr.Error(),
 	}
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, a, adminMeta, nil)
+	err = r.popCurrentExecution(ctx, self, a, adminMeta, alertFailRows{})
 	if err != nil {
 		return err
 	}
@@ -695,18 +692,15 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 
 // executeSingleWrapped runs the alert query and returns the result.
 // For a failed check, it also returns the rows that matched the alert criteria (up to the alert's rows limit) for inclusion in notifications.
-func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, *alertFailRows, error) {
+func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, alertFailRows, error) {
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
-		return nil, nil, fmt.Errorf("alert has no resolver")
+		return nil, alertFailRows{}, fmt.Errorf("alert has no resolver")
 	}
 
 	rowsLimit := int(a.Spec.NotifyRowsLimit)
-	if rowsLimit == 0 {
-		rowsLimit = alertNotifyRowsLimitDefault
-	}
 
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
@@ -725,7 +719,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to resolve alert: %w", err)
+		return nil, alertFailRows{}, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
 
@@ -741,14 +735,14 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return nil, nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+			return nil, alertFailRows{}, fmt.Errorf("failed to get row from alert resolver: %w", err)
 		}
 		rows = append(rows, row)
 	}
 
 	if len(rows) == 0 {
 		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil, nil
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, alertFailRows{}, nil
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
@@ -756,7 +750,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Return the first row as the fail row, which is stored in the execution history
 	failRow, err := structpb.NewStruct(rows[0])
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		return nil, alertFailRows{}, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
 	return &runtimev1.AssertionResult{
 		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
@@ -768,7 +762,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
 // At a certain limit, it trims old executions from the history to prevent it from growing unboundedly.
 // For a failed check, failRows are the rows to include in notifications.
-func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, failRows *alertFailRows) error {
+func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, failRows alertFailRows) error {
 	if a.State.CurrentExecution == nil {
 		panic(fmt.Errorf("attempting to pop current execution when there is none"))
 	}
@@ -1181,6 +1175,7 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 }
 
 // alertFailRows are the rows that matched an alert's criteria, formatted for inclusion in notifications.
+// It's passed by value, so code that sends notifications never has to check it for nil.
 type alertFailRows struct {
 	columns   []string
 	rows      [][]string
@@ -1191,8 +1186,8 @@ type alertFailRows struct {
 // It orders the columns like the schema's fields if the schema has a field for every key of the first row,
 // and otherwise by name; a row that lacks a column shows it as null.
 // If there are more than limit rows, it keeps the first limit rows and marks the result as truncated.
-func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit int) *alertFailRows {
-	res := &alertFailRows{}
+func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit int) alertFailRows {
+	res := alertFailRows{}
 	if len(rows) > limit {
 		rows = rows[:limit]
 		res.truncated = true

@@ -4176,7 +4176,7 @@ export class AlertSpec extends Message<AlertSpec> {
   notifyOnError = false;
 
   /**
-   * Maximum number of rows that matched the alert criteria to include in notifications for failed checks. If 0, a default limit is used.
+   * Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
    *
    * @generated from field: uint32 notify_rows_limit = 28;
    */

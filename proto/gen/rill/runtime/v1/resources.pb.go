@@ -4468,7 +4468,7 @@ type AlertSpec struct {
 	NotifyOnRecover      bool                 `protobuf:"varint,15,opt,name=notify_on_recover,json=notifyOnRecover,proto3" json:"notify_on_recover,omitempty"`
 	NotifyOnFail         bool                 `protobuf:"varint,16,opt,name=notify_on_fail,json=notifyOnFail,proto3" json:"notify_on_fail,omitempty"`
 	NotifyOnError        bool                 `protobuf:"varint,17,opt,name=notify_on_error,json=notifyOnError,proto3" json:"notify_on_error,omitempty"`
-	NotifyRowsLimit      uint32               `protobuf:"varint,28,opt,name=notify_rows_limit,json=notifyRowsLimit,proto3" json:"notify_rows_limit,omitempty"` // Maximum number of rows that matched the alert criteria to include in notifications for failed checks. If 0, a default limit is used.
+	NotifyRowsLimit      uint32               `protobuf:"varint,28,opt,name=notify_rows_limit,json=notifyRowsLimit,proto3" json:"notify_rows_limit,omitempty"` // Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
 	Renotify             bool                 `protobuf:"varint,18,opt,name=renotify,proto3" json:"renotify,omitempty"`
 	RenotifyAfterSeconds uint32               `protobuf:"varint,19,opt,name=renotify_after_seconds,json=renotifyAfterSeconds,proto3" json:"renotify_after_seconds,omitempty"`
 	Notifiers            []*Notifier          `protobuf:"bytes,21,rep,name=notifiers,proto3" json:"notifiers,omitempty"`
