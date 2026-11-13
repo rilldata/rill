@@ -594,6 +594,10 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}, nil
 }
 
+// maxExternalUserIDBytes is the maximum size of the external user ID that GetIFrame accepts.
+// The ID is stored with a unique index (see database.EmbedUser), and Postgres rejects index entries larger than about 2.7 KB.
+const maxExternalUserIDBytes = 2048
+
 func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (*adminv1.GetIFrameResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
@@ -631,6 +635,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if !req.Navigation && req.Resource == "" && open == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
+	}
+
+	if len(req.ExternalUserId) > maxExternalUserIDBytes {
+		return nil, status.Errorf(codes.InvalidArgument, "external_user_id must be at most %d bytes", maxExternalUserIDBytes)
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
