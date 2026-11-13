@@ -13,15 +13,14 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { onMount } from "svelte";
   import type {
     PivotSidebarSection,
     PivotState,
   } from "web-common/src/features/dashboards/pivot/types.ts";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import CreateEphemeralMeasureButton from "../ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
+  import { deleteExploreEphemeralMeasure } from "../ephemeral-measures/explore-actions";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
@@ -56,19 +55,11 @@
   }
 
   function deleteEphemeralMeasure(id: string) {
-    const def = $dashboardStore.ephemeralMeasures?.find((d) => d.name === id);
-    metricsExplorerStore.removeEphemeralMeasure(
+    deleteExploreEphemeralMeasure(
       $exploreName,
       id,
       $validSpecStore.data?.explore,
     );
-    // Confirms the delete like the dialog's delete button does.
-    if (def) {
-      eventBus.emit("notification", {
-        type: "success",
-        message: m.dashboard_pivot_ephemeral_deleted({ name: def.displayName }),
-      });
-    }
   }
 
   let sidebarHeight = 0;

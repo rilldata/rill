@@ -206,29 +206,34 @@ export class FileArtifact {
     return fetchedContent;
   };
 
+  /**
+   * Sets the editor content and, with `autoSave`, saves it. Returns the save
+   * of a programmatic edit (not `fromEditor`, which is debounced), resolving to
+   * whether it succeeded, so callers can confirm or report it.
+   */
   updateEditorContent = (
     newContent: string,
     fromEditor = false,
     autoSave = get(this.autoSave),
     firstLoad = false,
-  ) => {
+  ): Promise<boolean> | undefined => {
     this.editorContent.set(newContent);
 
     if (!firstLoad) {
       this.saveState.touch(this.path);
     }
 
+    let saved: Promise<boolean> | undefined;
     if (autoSave) {
       if (fromEditor) {
         this.debounceSave(newContent);
       } else {
-        this.saveContent(newContent).catch(console.error);
+        saved = this.saveContent(newContent);
       }
     }
 
-    if (fromEditor) return;
-
-    this.editorCallback(newContent);
+    if (!fromEditor) this.editorCallback(newContent);
+    return saved;
   };
 
   saveLocalContent = async (force = false) => {
@@ -238,8 +243,10 @@ export class FileArtifact {
     await this.saveContent(get(this.editorContent) ?? "");
   };
 
-  private saveContent = async (blob: string) => {
-    if (!this.client) return;
+  // Resolves to whether the save completed; a failure is also reported
+  // through `saveState`.
+  private saveContent = async (blob: string): Promise<boolean> => {
+    if (!this.client) return false;
 
     try {
       const kind = get(this.resourceName)?.kind;
@@ -248,9 +255,11 @@ export class FileArtifact {
       await this.io.write(this.path, blob, kind);
 
       await fileSavePromise;
+      return true;
     } catch (e) {
       console.error("Error saving file", e);
       this.saveState.reject(new Error("Unable to save file."));
+      return false;
     }
   };
 

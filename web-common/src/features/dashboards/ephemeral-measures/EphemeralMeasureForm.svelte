@@ -2,8 +2,9 @@
 The dialog for creating or editing an ephemeral measure definition, shared by
 the explore dashboards (EphemeralMeasureDialog) and the canvas inspector
 (canvas/inspector/fields/EphemeralMeasureEditor). It owns the form state and
-validation and confirms a save or delete with a toast; the wrapper supplies
-the measures the expression may reference and persists the definition.
+validation; the wrapper supplies the measures the expression may reference,
+persists the definition and confirms the change. While a save is pending the
+dialog stays open, and a failed save keeps it open with an error.
 -->
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
@@ -11,7 +12,6 @@ the measures the expression may reference and persists the definition.
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type {
@@ -36,9 +36,11 @@ the measures the expression may reference and persists the definition.
   export let referenceableMeasures: MetricsViewSpecMeasure[];
   // The definitions that already exist alongside this one.
   export let existingDefs: EphemeralMeasureDef[];
-  export let onSave: (def: EphemeralMeasureDef) => void;
+  // Persist the change and close the dialog. An async persistence resolves to
+  // false when it fails, which keeps the dialog open with an error.
+  export let onSave: (def: EphemeralMeasureDef) => void | Promise<boolean>;
   // Set when editing: shows the delete button.
-  export let onRemove: (() => void) | undefined = undefined;
+  export let onRemove: (() => void | Promise<boolean>) | undefined = undefined;
   export let onClose: () => void;
 
   const FORMAT_PRESETS = ephemeralFormatPresetOptions();
@@ -48,9 +50,15 @@ the measures the expression may reference and persists the definition.
   let description = editingDef?.description ?? "";
   let formatPreset: string = editingDef?.formatPreset ?? FormatPreset.HUMANIZE;
   let saveError: string | undefined = undefined;
+  let saving = false;
   let expressionInput: MeasureExpressionInput;
+  // The name a new definition got on its first save attempt. A failed canvas
+  // save can still leave the definition in the component's spec, so a retry
+  // reuses the name instead of adding a second definition.
+  let newName: string | undefined = undefined;
 
-  $: otherDefs = existingDefs.filter((d) => d.name !== editingDef?.name);
+  $: ownName = editingDef?.name ?? newName;
+  $: otherDefs = existingDefs.filter((d) => d.name !== ownName);
   $: knownMeasureNames = new Set(
     referenceableMeasures.map((mes) => mes.name as string),
   );
@@ -75,11 +83,9 @@ the measures the expression may reference and persists the definition.
     referenceableMeasures,
   );
 
-  function save() {
+  async function save() {
     const def: EphemeralMeasureDef = {
-      name:
-        editingDef?.name ??
-        slugifyEphemeralMeasureName(displayName, reservedNames),
+      name: ownName ?? slugifyEphemeralMeasureName(displayName, reservedNames),
       displayName: getName(displayName.trim(), otherDisplayNames),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
@@ -88,7 +94,7 @@ the measures the expression may reference and persists the definition.
     // The entry points block creating past the limit; this catches
     // definitions added elsewhere (a link, another tab) while the dialog was open.
     const countError =
-      !editingDef && validateEphemeralMeasureCount(existingDefs.length)
+      !editingDef && validateEphemeralMeasureCount(otherDefs.length)
         ? m.dashboard_pivot_ephemeral_limit_reached({
             count: String(MAX_EPHEMERAL_MEASURES),
           })
@@ -97,30 +103,27 @@ the measures the expression may reference and persists the definition.
       validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
       countError;
     if (saveError) return;
-    // Built before the callback: saving closes the dialog, and the props of an
-    // unmounting component may no longer be readable.
-    const message = editingDef
-      ? m.dashboard_pivot_ephemeral_updated({ name: def.displayName })
-      : m.dashboard_pivot_ephemeral_created({ name: def.displayName });
-    onSave(def);
-    eventBus.emit("notification", { type: "success", message });
+    if (!editingDef) newName = def.name;
+    saving = true;
+    const saved = (await onSave(def)) !== false;
+    saving = false;
+    if (!saved) saveError = m.dashboard_pivot_ephemeral_save_failed();
   }
 
-  function remove() {
-    if (!onRemove || !editingDef) return;
-    // Built before the callback, which closes the dialog (see save).
-    const message = m.dashboard_pivot_ephemeral_deleted({
-      name: editingDef.displayName,
-    });
-    onRemove();
-    eventBus.emit("notification", { type: "success", message });
+  async function remove() {
+    if (!onRemove) return;
+    saving = true;
+    const removed = (await onRemove()) !== false;
+    saving = false;
+    if (!removed) saveError = m.dashboard_pivot_ephemeral_delete_failed();
   }
 </script>
 
 <Dialog.Root
   open
   onOpenChange={(open) => {
-    if (!open) onClose();
+    // A pending save decides whether the dialog closes.
+    if (!open && !saving) onClose();
   }}
 >
   <Dialog.Content class="w-[480px] max-h-[90vh] flex flex-col">
@@ -208,17 +211,24 @@ the measures the expression may reference and persists the definition.
     <Dialog.Footer>
       {#if onRemove}
         <div class="mr-auto">
-          <Button type="secondary-destructive" onClick={remove}>
+          <Button
+            type="secondary-destructive"
+            disabled={saving}
+            onClick={remove}
+          >
             {m.common_delete()}
           </Button>
         </div>
       {/if}
-      <Button type="secondary" onClick={onClose}>
+      <Button type="secondary" disabled={saving} onClick={onClose}>
         {m.common_cancel()}
       </Button>
       <Button
         type="primary"
-        disabled={!displayName.trim() ||
+        loading={saving}
+        loadingCopy={m.dashboard_pivot_ephemeral_save()}
+        disabled={saving ||
+          !displayName.trim() ||
           !expression.trim() ||
           !!expressionError}
         onClick={save}
