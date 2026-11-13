@@ -3548,6 +3548,7 @@ type GetIFrameRequest struct {
 	For isGetIFrameRequest_For `protobuf_oneof:"for"`
 	// Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
 	// Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+	// Must be at most 2048 bytes.
 	ExternalUserId string `protobuf:"bytes,16,opt,name=external_user_id,json=externalUserId,proto3" json:"external_user_id,omitempty"`
 	// Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
 	Type string `protobuf:"bytes,14,opt,name=type,proto3" json:"type,omitempty"`
