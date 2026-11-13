@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -326,14 +325,6 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	// A report that is limited to specific dashboards can only query the metrics view of the dashboard it opens.
-	if len(embedResources) > 0 {
-		err = s.checkEmbedReportQuery(ctx, depl, req.Options)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
 		_, err := s.admin.LookupReport(ctx, depl, name)
 		return err
@@ -460,13 +451,6 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	embedResources, err = embedReportResources(embedResources, req.Options)
 	if err != nil {
 		return nil, err
-	}
-	// The limit is a property of the report, so its query is checked regardless of who edits it.
-	if len(embedResources) > 0 {
-		err = s.checkEmbedReportQuery(ctx, depl, req.Options)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, embedOwnerID, embedOwnerEmail, embedResources)
@@ -1138,8 +1122,6 @@ type embedReportInfo struct {
 	// ownerEmail is the saved email of the embed user who created the report; empty if they didn't provide one.
 	// Only this recipient gets an open link to the embedder's app.
 	ownerEmail string
-	// explore is the explore dashboard the report targets.
-	explore string
 	// resources the report is limited to; an empty list means the report is not limited.
 	resources []database.ResourceName
 }
@@ -1165,7 +1147,6 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 			AdminEmbedOwnerID    string `yaml:"admin_embed_owner_id"`
 			AdminEmbedOwnerEmail string `yaml:"admin_embed_owner_email"`
 			AdminEmbedResources  string `yaml:"admin_embed_resources"`
-			Explore              string `yaml:"explore"`
 		} `yaml:"annotations"`
 	}
 	if err := yaml.Unmarshal(vf.Data, &res); err != nil {
@@ -1181,7 +1162,6 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 	}
 	info := &embedReportInfo{
 		ownerEmail: res.Annotations.AdminEmbedOwnerEmail,
-		explore:    res.Annotations.Explore,
 		resources:  resources,
 	}
 	if vf.EmbedOwnerID != nil {
@@ -1217,8 +1197,7 @@ func (s *Server) embedReportOwnerEmail(ctx context.Context, embedUserID, request
 // and returns the resources to limit the report's data to.
 // An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
 // Reports and alerts are dropped from the returned resources, since their transitive access is derived from their own queries,
-// which can be edited by the embed user. For the same reason, embeds are never limited to a report (see GetIFrame).
-// The report's query is checked separately, since it requires a lookup in the runtime (see checkEmbedReportQuery).
+// which can be edited by the embed user. For the same reason, an embed that opens a report is not limited to the report itself (see GetIFrame).
 func embedReportResources(resources []database.ResourceName, opts *adminv1.ReportOptions) ([]database.ResourceName, error) {
 	if len(resources) == 0 {
 		return nil, nil
@@ -1240,83 +1219,6 @@ func embedReportResources(resources []database.ResourceName, opts *adminv1.Repor
 		}
 	}
 	return res, nil
-}
-
-// checkEmbedReportQuery checks that the query of a report that is limited to specific dashboards targets the metrics view of the explore it opens.
-// The embed user writes the query, but the report can only access the metrics views of the dashboards it's limited to.
-// So a query on another metrics view is rejected upfront, instead of failing every time the report runs.
-func (s *Server) checkEmbedReportQuery(ctx context.Context, depl *database.Deployment, opts *adminv1.ReportOptions) error {
-	metricsView, err := metricsViewForReportQuery(opts.QueryName, opts.QueryArgsJson) // nolint:staticcheck // backwards compatibility
-	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	rt, err := s.admin.OpenRuntimeClient(depl)
-	if err != nil {
-		return err
-	}
-	defer rt.Close()
-
-	res, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		Name:       &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: opts.Explore},
-	})
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return status.Errorf(codes.InvalidArgument, "explore %q not found", opts.Explore)
-		}
-		return fmt.Errorf("could not get explore: %w", err)
-	}
-
-	// The valid spec is also what the runtime derives the explore's metrics view from when limiting access to the explore.
-	validSpec := res.Resource.GetExplore().GetState().GetValidSpec()
-	if validSpec == nil {
-		return status.Errorf(codes.FailedPrecondition, "explore %q is not valid", opts.Explore)
-	}
-	if !sameResourceName(metricsView, validSpec.MetricsView) {
-		return status.Errorf(codes.PermissionDenied, "reports created from this embed can't query metrics view %q, since it's not the metrics view of explore %q", metricsView, opts.Explore)
-	}
-	return nil
-}
-
-// metricsViewForReportQuery returns the name of the metrics view that a report's query targets.
-// It must stay in sync with MetricsViewFromQuery in runtime/queries, which the runtime derives the report's access from.
-// It is duplicated because importing that package would add most of the runtime's dependencies to the admin service.
-func metricsViewForReportQuery(queryName, queryArgsJSON string) (string, error) {
-	var req proto.Message
-	var metricsView func() string
-	switch queryName {
-	case "MetricsViewAggregation":
-		r := &runtimev1.MetricsViewAggregationRequest{}
-		req, metricsView = r, r.GetMetricsView
-	case "MetricsViewToplist":
-		r := &runtimev1.MetricsViewToplistRequest{}
-		req, metricsView = r, r.GetMetricsViewName
-	case "MetricsViewRows":
-		r := &runtimev1.MetricsViewRowsRequest{}
-		req, metricsView = r, r.GetMetricsViewName
-	case "MetricsViewTimeSeries":
-		r := &runtimev1.MetricsViewTimeSeriesRequest{}
-		req, metricsView = r, r.GetMetricsViewName
-	case "MetricsViewComparison":
-		r := &runtimev1.MetricsViewComparisonRequest{}
-		req, metricsView = r, r.GetMetricsViewName
-	default:
-		return "", fmt.Errorf("query %q not supported for reports", queryName)
-	}
-	err := protojson.Unmarshal([]byte(queryArgsJSON), req)
-	if err != nil {
-		return "", fmt.Errorf("invalid args for query %q: %w", queryName, err)
-	}
-	return metricsView(), nil
-}
-
-// sameResourceName returns true if two names identify the same resource of a kind in the runtime.
-// The runtime identifies resources by their lowercased name (see its catalog cache), so names that only differ in case are the same resource.
-// It doesn't use strings.EqualFold, since that also matches names that the runtime keeps as separate resources (such as "ſ" and "s"),
-// which matters where the comparison decides if a name is within the resources someone can access.
-func sameResourceName(a, b string) bool {
-	return strings.ToLower(a) == strings.ToLower(b) // nolint:gocritic,staticcheck // Not equivalent to strings.EqualFold, see above
 }
 
 // parseEmbedResources parses the "admin_embed_resources" annotation of a report created from an embed.

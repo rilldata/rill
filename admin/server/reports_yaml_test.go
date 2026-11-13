@@ -1,14 +1,12 @@
 package server
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -267,68 +265,4 @@ func TestEmbedReportResources(t *testing.T) {
 	data, err = s.yamlForManagedReport(opts, "", "ext_abc", "", nil)
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "admin_embed_resources")
-}
-
-// TestMetricsViewForReportQuery tests that the admin service derives the same metrics view from a report's query as the runtime,
-// since the runtime derives the report's access from it.
-func TestMetricsViewForReportQuery(t *testing.T) {
-	tt := []struct {
-		name string
-		args string
-		want string
-	}{
-		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","dimensions":[{"name":"country"}]}`, want: "mv1"},
-		{name: "MetricsViewAggregation", args: `{"instanceId":"default","metricsView":"mv1","measures":[{"name":"total"}]}`, want: "mv1"},
-		{name: "MetricsViewAggregation", args: `{}`, want: ""},
-		{name: "MetricsViewToplist", args: `{"metrics_view_name":"mv1"}`, want: "mv1"},
-		{name: "MetricsViewRows", args: `{"metricsViewName":"mv1"}`, want: "mv1"},
-		{name: "MetricsViewTimeSeries", args: `{"metrics_view_name":"mv1"}`, want: "mv1"},
-		{name: "MetricsViewComparison", args: `{"metricsViewName":"mv1"}`, want: "mv1"},
-	}
-	for _, tc := range tt {
-		got, err := metricsViewForReportQuery(tc.name, tc.args)
-		require.NoError(t, err)
-		require.Equal(t, tc.want, got)
-		want, err := queries.MetricsViewFromQuery(tc.name, tc.args)
-		require.NoError(t, err)
-		require.Equal(t, want, got)
-	}
-
-	// Queries that the runtime rejects are rejected as well
-	invalid := []struct {
-		name string
-		args string
-	}{
-		{name: "MetricsViewAggregation", args: ``},
-		{name: "MetricsViewAggregation", args: `{"metrics_view":`},
-		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","metricsView":"mv2"}`},
-		{name: "MetricsViewAggregation", args: `{"metrics_view":"mv1","unknown":true}`},
-		{name: "MetricsViewAggregation", args: `{"metrics_view_name":"mv1"}`},
-		{name: "MetricsViewTimeRange", args: `{"metrics_view_name":"mv1"}`},
-		{name: "", args: `{"metrics_view":"mv1"}`},
-	}
-	for _, tc := range invalid {
-		_, err := metricsViewForReportQuery(tc.name, tc.args)
-		require.Error(t, err, "query %q with args %s", tc.name, tc.args)
-		_, err = queries.MetricsViewFromQuery(tc.name, tc.args)
-		require.Error(t, err, "query %q with args %s", tc.name, tc.args)
-	}
-}
-
-// TestSameResourceName tests that resource names are compared the way the runtime identifies resources, which is by their lowercased name.
-func TestSameResourceName(t *testing.T) {
-	require.True(t, sameResourceName("mv1", "mv1"))
-	require.True(t, sameResourceName("MV1", "mv1"))
-	require.True(t, sameResourceName("Mv1", "mV1"))
-	require.False(t, sameResourceName("mv1", "mv2"))
-	require.False(t, sameResourceName("MV1", "mv2"))
-	require.False(t, sameResourceName("mv1", "mv1 "))
-	require.False(t, sameResourceName("mv1", ""))
-
-	// Names that are equal under Unicode case folding, but that the runtime keeps as separate resources, are not the same.
-	// Otherwise, a name could pass for a resource that someone can access while identifying another one.
-	require.True(t, strings.EqualFold("ſales", "sales"))
-	require.False(t, sameResourceName("ſales", "sales"))
-	require.True(t, strings.EqualFold("µ", "μ"))
-	require.False(t, sameResourceName("µ", "μ"))
 }

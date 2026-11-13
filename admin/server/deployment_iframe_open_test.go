@@ -6,12 +6,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -30,10 +27,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// TestGetIFrameOpen tests the access of an embed user who creates and opens reports from an embed that is limited to a single dashboard.
-// The embed user writes a report's query, which the report's transitive access is derived from.
-// So an iframe that opens a report must get the same access as an iframe for the report's dashboard,
-// and a report that is limited to a dashboard can only query the dashboard's metrics view.
+// TestGetIFrameOpen tests the access of an iframe that opens a report created from an embed.
+// The embed user writes a report's query, which the report's transitive access is derived from, so the iframe must not be limited to the report itself.
+// Without navigation, it is limited the same way as when the report runs:
+// to the resources of the embed the report was created from, or else by the resource restrictions of the user's identity.
 func TestGetIFrameOpen(t *testing.T) {
 	fix := testadmin.NewWithOptionalRuntime(t, true)
 	ctx := t.Context()
@@ -191,10 +188,10 @@ measures:
 	_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-2", Resource: "e1"})
 	require.NoError(t, err)
 
-	// Add reports as the admin service saves them when the embed user creates them from the limited iframe:
-	// they are owned by the embed user (identified by the subject of its runtime JWTs), and open and are limited to the explore e1.
-	// r1 queries the explore's metrics view, and r2 queries a metrics view outside of the explore.
-	reportYAML := func(ownerID, metricsView, explore string) string {
+	// reportYAML returns a report as the admin service saves it when an embed user creates it.
+	// The report is owned by the embed user (identified by the subject of its runtime JWTs), who chooses its query and the explore it opens.
+	// It is limited to the explore if it was created from an iframe that is limited to the explore.
+	reportYAML := func(ownerID, metricsView, explore string, limited bool) string {
 		res := fmt.Sprintf(`
 type: report
 display_name: Report
@@ -212,9 +209,10 @@ annotations:
   admin_managed: "true"
   admin_embed_owner_id: %s
   web_open_mode: creator
-`, metricsView, ownerID)
-		if explore != "" {
-			res += fmt.Sprintf("  explore: %s\n  admin_embed_resources: '[{\"type\":\"%s\",\"name\":\"%s\"}]'\n", explore, runtime.ResourceKindExplore, explore)
+  explore: %s
+`, metricsView, ownerID, explore)
+		if limited {
+			res += fmt.Sprintf("  admin_embed_resources: '[{\"type\":\"%s\",\"name\":\"%s\"}]'\n", runtime.ResourceKindExplore, explore)
 		}
 		return res
 	}
@@ -230,17 +228,22 @@ annotations:
 	}
 	ownerID := limited.claims.UserID
 	reports := map[string]string{
-		"reports/r1.yaml": reportYAML(ownerID, "mv1", "e1"),
-		"reports/r2.yaml": reportYAML(ownerID, "mv2", "e1"),
+		// Created from the limited iframe; queries the metrics view of its explore.
+		"reports/r1.yaml": reportYAML(ownerID, "mv1", "e1", true),
+		// Created from the limited iframe; queries a metrics view outside of its explore.
+		"reports/r2.yaml": reportYAML(ownerID, "mv2", "e1", true),
+		// Created from the iframe with navigation, so it is not limited.
+		"reports/r3.yaml": reportYAML(ownerID, "mv2", "e2", false),
 	}
 	testruntime.PutFiles(t, fix.Runtime, inst.ID, reports)
 	testruntime.ReconcileParserAndWait(t, fix.Runtime, inst.ID)
-	testruntime.RequireReconcileState(t, fix.Runtime, inst.ID, 8, 0, 0)
+	testruntime.RequireReconcileState(t, fix.Runtime, inst.ID, 9, 0, 0)
 	for path, data := range reports {
 		createVirtualFile(t, ownerID, path, data)
 	}
 
-	t.Run("limited to the report's dashboard without navigation", func(t *testing.T) {
+	t.Run("limited like the report without navigation", func(t *testing.T) {
+		// The reports are limited to the explore of the iframe they were created from, so opening them gives the same access as that iframe.
 		for _, name := range []string{"r1", "r2"} {
 			got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, name)})
 			require.NoError(t, err)
@@ -254,8 +257,8 @@ annotations:
 		requireSameAccess(t, navigation, got)
 	})
 
-	t.Run("runtime access when opening a report", func(t *testing.T) {
-		// The report's query targets a metrics view outside of the explore that the report opens.
+	t.Run("runtime access when opening a limited report", func(t *testing.T) {
+		// The report's query targets a metrics view outside of the explore that the report is limited to.
 		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "r2")})
 		require.NoError(t, err)
 		ctx := runtimeCtx(got)
@@ -279,11 +282,12 @@ annotations:
 		require.Len(t, resp.Data, 1)
 	})
 
-	t.Run("report without a dashboard can't be opened without navigation", func(t *testing.T) {
-		// Without a dashboard to limit the iframe to, it must not fall back to an iframe that isn't limited.
-		createVirtualFile(t, ownerID, "reports/r-no-explore.yaml", reportYAML(ownerID, "mv1", ""))
-		_, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "r-no-explore")})
-		require.Equal(t, codes.FailedPrecondition, status.Code(err))
+	t.Run("a report that is not limited has the access of the user's identity", func(t *testing.T) {
+		// The report was created from an iframe that is not limited, so there are no resources to limit the iframe to.
+		// The iframe is then only restricted by the user's identity, same as when the report runs.
+		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "r3")})
+		require.NoError(t, err)
+		requireSameAccess(t, navigation, got)
 	})
 
 	t.Run("only the creator can open a report", func(t *testing.T) {
@@ -295,14 +299,16 @@ annotations:
 
 	t.Run("report name can't be a path", func(t *testing.T) {
 		// The name must not resolve to another kind of virtual file of the embed user, whose content isn't written by the admin service.
-		createVirtualFile(t, ownerID, "personal/c1.yaml", reportYAML(ownerID, "mv2", "e2"))
+		// Otherwise, the embed user could choose the resources that the iframe is limited to.
+		createVirtualFile(t, ownerID, "personal/c1.yaml", reportYAML(ownerID, "mv2", "e2", true))
 		_, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "../personal/c1")})
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 
-	t.Run("project member with restricted resources can't open a report on another dashboard", func(t *testing.T) {
-		// The embed user chooses the dashboard that a report opens when their iframes are not limited to a dashboard.
-		// Limiting the iframe to it must not replace the restrictions of a project member who can only access other dashboards.
+	t.Run("project member keeps their resource restrictions", func(t *testing.T) {
+		// A project member with restricted resources gets iframes with navigation, so their reports are not limited,
+		// and the member chooses the dashboard that a report opens.
+		// Opening a report must not replace the member's restrictions with the report's dashboard.
 		member, _ := fix.NewUser(t)
 		restrict := true
 		_, err := c.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
@@ -321,153 +327,27 @@ annotations:
 		require.Len(t, restricted.claims.AdditionalRules, 1)
 		require.True(t, proto.Equal(&runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "e1"}, restricted.claims.AdditionalRules[0].GetTransitiveAccess().GetResource()))
 
-		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-e1.yaml", reportYAML(restricted.claims.UserID, "mv1", "e1"))
-		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-e2.yaml", reportYAML(restricted.claims.UserID, "mv2", "e2"))
-
-		// A report on a dashboard the member can access opens with and without navigation.
-		for _, nav := range []bool{true, false} {
-			got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-e1"), Navigation: nav})
-			require.NoError(t, err)
-			require.Len(t, got.claims.AdditionalRules, 1)
-			require.True(t, proto.Equal(restricted.claims.AdditionalRules[0], got.claims.AdditionalRules[0]))
+		// One report on the dashboard the member can access, and one on another dashboard.
+		memberID := restricted.claims.UserID
+		createVirtualFile(t, memberID, "reports/r-member-e1.yaml", reportYAML(memberID, "mv1", "e1", false))
+		createVirtualFile(t, memberID, "reports/r-member-e2.yaml", reportYAML(memberID, "mv2", "e2", false))
+		for _, name := range []string{"r-member-e1", "r-member-e2"} {
+			for _, nav := range []bool{true, false} {
+				got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, name), Navigation: nav})
+				require.NoError(t, err)
+				requireSameAccess(t, restricted, got)
+			}
 		}
 
-		// A report on another dashboard keeps the member's restrictions with navigation, and can't be opened without it.
-		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-e2"), Navigation: true})
+		// The iframe that opens the report on the other dashboard can't access that dashboard or its metrics view.
+		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-e2")})
 		require.NoError(t, err)
-		require.Len(t, got.claims.AdditionalRules, 1)
-		require.True(t, proto.Equal(restricted.claims.AdditionalRules[0], got.claims.AdditionalRules[0]))
-		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-e2")})
+		_, err = rt.GetExplore(runtimeCtx(got), &runtimev1.GetExploreRequest{InstanceId: inst.ID, Name: "e2"})
 		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-
-		// The runtime identifies resources by their lowercased name, so a report that names the member's dashboard in another case opens as well.
-		// Its iframe is limited to the same dashboard, and a report that names another dashboard in another case still can't be opened.
-		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-case-e1.yaml", reportYAML(restricted.claims.UserID, "mv1", "E1"))
-		createVirtualFile(t, restricted.claims.UserID, "reports/r-member-case-e2.yaml", reportYAML(restricted.claims.UserID, "mv2", "E2"))
-		got, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-case-e1")})
-		require.NoError(t, err)
-		resp, err := aggregate(got, "mv1")
+		resp, err := aggregate(got, "mv2")
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
+		resp, err = aggregate(got, "mv1")
 		require.NoError(t, err)
 		require.Len(t, resp.Data, 1)
-		resp, err = aggregate(got, "mv2")
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
-		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "member", For: forMember, Open: open(t, "r-member-case-e2")})
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-	})
-
-	// reportOptions returns the options of a report as the embed's UI creates it.
-	reportOptions := func(displayName, explore, queryArgsJSON string) *adminv1.ReportOptions {
-		return &adminv1.ReportOptions{
-			DisplayName:     displayName,
-			RefreshCron:     "0 9 * * 1",
-			QueryName:       "MetricsViewAggregation",
-			QueryArgsJson:   queryArgsJSON,
-			ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-			EmailRecipients: []string{"embed@example.com"},
-			Explore:         explore,
-			WebOpenMode:     "creator",
-		}
-	}
-	// requireReportSaved calls a function that creates or edits a report, and waits until it has saved a report with the given display name.
-	// It then cancels the call, since the call would wait for the runtime to parse the report, which the fixture's runtime instance never does.
-	requireReportSaved := func(t *testing.T, displayName string, fn func(ctx context.Context) error) {
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		errCh := make(chan error, 1)
-		go func() { errCh <- fn(ctx) }()
-		for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
-			files, err := fix.Admin.DB.FindVirtualFilesByEmbedOwner(ctx, proj.ID, "prod", ownerID)
-			require.NoError(t, err)
-			if slices.ContainsFunc(files, func(f *database.VirtualFile) bool {
-				return strings.HasPrefix(f.Path, "reports/") && strings.Contains(string(f.Data), "display_name: "+displayName)
-			}) {
-				return
-			}
-			select {
-			case err := <-errCh:
-				require.FailNow(t, "the call returned without saving the report", "error: %v", err)
-			default:
-			}
-			require.True(t, time.Now().Before(deadline), "timed out waiting for the report to be saved")
-		}
-	}
-
-	t.Run("limited reports can only query the metrics view of their explore", func(t *testing.T) {
-		embed := fix.NewClient(t, limited.adminToken)
-		create := func(ctx context.Context, c *client.Client, opts *adminv1.ReportOptions) error {
-			_, err := c.CreateReport(ctx, &adminv1.CreateReportRequest{Org: org.Organization.Name, Project: project.Project.Name, Options: opts})
-			return err
-		}
-		edit := func(ctx context.Context, c *client.Client, name string, opts *adminv1.ReportOptions) error {
-			_, err := c.EditReport(ctx, &adminv1.EditReportRequest{Org: org.Organization.Name, Project: project.Project.Name, Name: name, Options: opts})
-			return err
-		}
-
-		// Queries on a metrics view outside of the explore are rejected, in both JSON forms of the field name.
-		for _, args := range []string{`{"metrics_view":"mv2"}`, `{"metricsView":"mv2"}`, `{"metricsView":"MV2"}`} {
-			err := create(ctx, embed, reportOptions("Created", "e1", args))
-			require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-			err = edit(ctx, embed, "r1", reportOptions("Edited", "e1", args))
-			require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-		}
-		// An explore outside of the embed is rejected regardless of the query.
-		err := create(ctx, embed, reportOptions("Created", "e2", `{"metrics_view":"mv2"}`))
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-		// Queries that the runtime can't derive a metrics view from are rejected.
-		err = create(ctx, embed, reportOptions("Created", "e1", `{"metrics_view":`))
-		require.Equal(t, codes.InvalidArgument, status.Code(err), "got error: %v", err)
-		opts := reportOptions("Created", "e1", `{"metrics_view":"mv1"}`)
-		opts.QueryName = "Unknown"
-		err = create(ctx, embed, opts)
-		require.Equal(t, codes.InvalidArgument, status.Code(err), "got error: %v", err)
-		// The limit of a report applies to everyone who edits it, since it is the report that can't access other metrics views.
-		err = edit(ctx, c, "r1", reportOptions("Edited", "e1", `{"metrics_view":"mv2"}`))
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-
-		// Queries on the explore's metrics view are accepted, with args as the UI sends them.
-		args := `{"instanceId":"default","metricsView":"mv1","dimensions":[{"name":"country"}],"measures":[{"name":"total"}],"timeRange":{"isoDuration":"P7D"}}`
-		requireReportSaved(t, "Created from limited embed", func(ctx context.Context) error {
-			return create(ctx, embed, reportOptions("Created from limited embed", "e1", args))
-		})
-		requireReportSaved(t, "Edited from limited embed", func(ctx context.Context) error {
-			return edit(ctx, embed, "r1", reportOptions("Edited from limited embed", "e1", args))
-		})
-
-		// The runtime identifies resources by their lowercased name, so the explore's metrics view can be named in another case.
-		// The limited iframe can query it under that name, so a report that does is accepted as well.
-		resp, err := aggregate(limited, "MV1")
-		require.NoError(t, err)
-		require.Len(t, resp.Data, 1)
-		resp, err = aggregate(limited, "MV2")
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error %v and data %v", err, resp.GetData())
-		args = `{"metricsView":"MV1","dimensions":[{"name":"country"}],"measures":[{"name":"total"}]}`
-		requireReportSaved(t, "Created with another case", func(ctx context.Context) error {
-			return create(ctx, embed, reportOptions("Created with another case", "e1", args))
-		})
-		requireReportSaved(t, "Edited with another case", func(ctx context.Context) error {
-			return edit(ctx, embed, "r1", reportOptions("Edited with another case", "e1", args))
-		})
-
-		// An embed that names its explore in another case is limited to the same explore, so its reports are limited to the same metrics view.
-		otherCase, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Resource: "E1"})
-		require.NoError(t, err)
-		embed = fix.NewClient(t, otherCase.adminToken)
-		err = create(ctx, embed, reportOptions("Created", "E1", `{"metricsView":"mv2"}`))
-		require.Equal(t, codes.PermissionDenied, status.Code(err), "got error: %v", err)
-		requireReportSaved(t, "Created from embed with another case", func(ctx context.Context) error {
-			return create(ctx, embed, reportOptions("Created from embed with another case", "E1", args))
-		})
-	})
-
-	t.Run("reports that are not limited can query any metrics view", func(t *testing.T) {
-		embed := fix.NewClient(t, navigation.adminToken)
-		requireReportSaved(t, "Created with navigation", func(ctx context.Context) error {
-			_, err := embed.CreateReport(ctx, &adminv1.CreateReportRequest{
-				Org:     org.Organization.Name,
-				Project: project.Project.Name,
-				Options: reportOptions("Created with navigation", "e1", `{"metrics_view":"mv2"}`),
-			})
-			return err
-		})
 	})
 }

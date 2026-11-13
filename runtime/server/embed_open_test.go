@@ -18,7 +18,7 @@ import (
 
 // TestEmbedOpenReportAccess tests what an embed that opens a report can access when it is limited to a single dashboard.
 // The embed user writes the report's query, and a report's transitive access is derived from its query,
-// so the admin service only limits the embed to the report's dashboard (see GetIFrame).
+// so the admin service limits the embed to the dashboard that the report is limited to, and not to the report itself (see GetIFrame).
 // The creator can still read the report itself, which is all the open page needs from it.
 func TestEmbedOpenReportAccess(t *testing.T) {
 	metricsView := `
@@ -160,27 +160,6 @@ annotations:
 		requireForbidden(t, timeRanges(ctx, "mv2"))
 		requireForbidden(t, getResource(ctx, runtime.ResourceKindMetricsView, "mv2"))
 		requireForbidden(t, getExplore(ctx, "e2"))
-	})
-
-	t.Run("resource names are matched by their lowercased form", func(t *testing.T) {
-		// The admin service compares resource names the same way when it validates reports and open links for limited embeds.
-		// Naming the explore or its metrics view in another case identifies the same resources, and doesn't give access to other ones.
-		for _, ctx := range []context.Context{
-			embedCtx("ext_owner", e1),
-			embedCtx("ext_owner", &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "E1"}),
-		} {
-			require.NoError(t, getExplore(ctx, "E1"))
-			for _, name := range []string{"mv1", "MV1"} {
-				rows, err := aggregate(ctx, name)
-				require.NoError(t, err)
-				require.Equal(t, 1, rows)
-			}
-			for _, name := range []string{"mv2", "MV2"} {
-				_, err := aggregate(ctx, name)
-				requireForbidden(t, err)
-			}
-			requireForbidden(t, getExplore(ctx, "E2"))
-		}
 	})
 
 	t.Run("only the creator can read a report", func(t *testing.T) {
