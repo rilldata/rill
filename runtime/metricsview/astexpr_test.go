@@ -504,3 +504,78 @@ func TestInConditionWithoutValues(t *testing.T) {
 		})
 	}
 }
+
+func TestExpressionErrors(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "test_table",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "city", Column: "city"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	sec := skipMetricsViewSecurity{}
+
+	tests := []struct {
+		name    string
+		where   *Expression
+		wantErr string
+	}{
+		{
+			name: "eq with a list value",
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorEq,
+				Expressions: []*Expression{{Name: "city"}, {Value: []any{"NYC", "SF"}}},
+			}},
+			wantErr: `"eq" takes a single value, got a list; use "in" for a list of values`,
+		},
+		{
+			name: "neq with a list value",
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorNeq,
+				Expressions: []*Expression{{Name: "city"}, {Value: []any{"NYC"}}},
+			}},
+			wantErr: `"neq" takes a single value, got a list; use "nin" for a list of values`,
+		},
+		{
+			name: "list value as an or operand",
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorOr,
+				Expressions: []*Expression{{Name: "city"}, {Value: []any{"NYC"}}},
+			}},
+			wantErr: `invalid operand for "or": expected a condition, got a list value`,
+		},
+		{
+			name: "binary condition with one expression",
+			where: &Expression{Condition: &Condition{
+				Operator:    OperatorEq,
+				Expressions: []*Expression{{Name: "city"}},
+			}},
+			wantErr: `"eq" condition has 1`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &Query{
+				MetricsView: "test",
+				Measures:    []Measure{{Name: "count"}},
+				Where:       tt.where,
+			}
+
+			_, err := NewAST(mv, sec, qry, duckdb.DialectDuckDB)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+
+	t.Run("dimension used as measure", func(t *testing.T) {
+		_, err := NewAST(mv, sec, &Query{MetricsView: "test", Measures: []Measure{{Name: "city"}}}, duckdb.DialectDuckDB)
+		require.ErrorContains(t, err, `measure "city" not found: "city" is a dimension`)
+	})
+
+	t.Run("measure used as dimension", func(t *testing.T) {
+		_, err := NewAST(mv, sec, &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "count"}}, Measures: []Measure{{Name: "count"}}}, duckdb.DialectDuckDB)
+		require.ErrorContains(t, err, `dimension "count" not found: "count" is a measure`)
+	})
+}
