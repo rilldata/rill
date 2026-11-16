@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import {
     createAdminServiceUpdateMagicAuthToken,
-    getAdminServiceListMagicAuthTokensQueryKey,
+    getAdminServiceListMagicAuthTokensInfiniteQueryKey,
     type AdminServiceUpdateMagicAuthTokenBody,
     type V1MagicAuthToken,
   } from "@rilldata/web-admin/client";
@@ -88,8 +88,9 @@
         tokenId: token.id ?? "",
         data,
       });
+      // The settings page lists the URLs with an infinite query, which has its own key.
       await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListMagicAuthTokensQueryKey(
+        queryKey: getAdminServiceListMagicAuthTokensInfiniteQueryKey(
           page.params.organization ?? "",
           page.params.project ?? "",
         ),

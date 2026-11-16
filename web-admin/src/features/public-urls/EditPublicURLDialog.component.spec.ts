@@ -5,6 +5,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/svelte";
+import { getAdminServiceListMagicAuthTokensInfiniteQueryKey } from "@rilldata/web-admin/client";
+import { QueryClient, type QueryFilters } from "@tanstack/query-core";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { writable } from "svelte/store";
 import EditPublicURLDialog from "./EditPublicURLDialog.svelte";
@@ -17,10 +19,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("$app/state", () => ({
   page: { params: { organization: "org", project: "project" } },
 }));
-vi.mock("@rilldata/web-admin/client", () => ({
+// Keep the real query key functions, so the test checks the keys the settings page uses.
+vi.mock("@rilldata/web-admin/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@rilldata/web-admin/client")>()),
   createAdminServiceUpdateMagicAuthToken: () =>
     writable({ mutateAsync: mocks.update, isPending: false }),
-  getAdminServiceListMagicAuthTokensQueryKey: () => ["tokens"],
 }));
 vi.mock("@tanstack/svelte-query", () => ({
   useQueryClient: () => ({ invalidateQueries: mocks.invalidate }),
@@ -98,6 +101,26 @@ it("removes a password and discards a replacement entered earlier", async () => 
     tokenId: "token",
     data: { removePassword: true },
   });
+});
+
+it("refreshes the settings page's list after saving", async () => {
+  open(true);
+  await fireEvent.click(
+    screen.getByRole("switch", { name: "Remove password" }),
+  );
+  await save();
+  await waitFor(() => expect(mocks.invalidate).toHaveBeenCalled());
+
+  // The settings page lists the URLs with an infinite query, 50 per page
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(
+    getAdminServiceListMagicAuthTokensInfiniteQueryKey("org", "project", {
+      pageSize: 50,
+    }),
+    { pages: [], pageParams: [] },
+  );
+  const filters = mocks.invalidate.mock.calls[0][0] as QueryFilters;
+  expect(queryClient.getQueryCache().findAll(filters)).toHaveLength(1);
 });
 
 it("changes the password of a URL without a label, but doesn't let a label be cleared", async () => {
