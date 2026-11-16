@@ -143,7 +143,7 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 
 func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
 	// Converts to the wall-clock time in tz and back, like DateTruncExpr, so the result is a TIMESTAMP in UTC.
-	return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', DATEADD('%s', -1 * (%s), CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP)))", tz, d.ConvertToDateTruncSpecifier(grain), unitExpr, tz, tsExpr), true
+	return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', DATEADD('%s', -1 * (%s), CONVERT_TIMEZONE('UTC', '%s', (%s)::TIMESTAMP)))", tz, d.ConvertToDateTruncSpecifier(grain), unitExpr, tz, tsExpr), true
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

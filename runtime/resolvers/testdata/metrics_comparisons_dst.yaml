@@ -54,6 +54,14 @@ project_files:
     measures:
       - name: sum
         expression: sum(val)
+  clickhouse_metrics_sunday.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    first_day_of_week: 7
+    measures:
+      - name: sum
+        expression: sum(val)
 tests:
   - name: fall_back_duckdb
     resolver: metrics
@@ -273,3 +281,32 @@ tests:
         sum_prev: 8
         time__day: "2025-11-10T00:00:00-08:00"
         time__week: "2025-11-10T00:00:00-08:00"
+  - name: shifted_week_start_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_sunday
+      dimensions:
+        - name: time__week
+          compute:
+            time_floor:
+              dimension: time
+              grain: week
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2025-11-09T08:00:00Z
+        end: 2025-11-16T08:00:00Z
+      comparison_time_range:
+        start: 2025-10-26T07:00:00Z
+        end: 2025-11-02T07:00:00Z
+      time_zone: America/Los_Angeles
+      sort:
+        - name: time__week
+    result:
+      - sum: 80
+        sum_prev: 8
+        time__week: "2025-11-09T00:00:00-08:00"
