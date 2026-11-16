@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,33 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMagicAuthTokenPasswordValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		password string
+		valid    bool
+	}{
+		{"empty", "", false},
+		{"short", "1234567", false},
+		{"minimum", "12345678", true},
+		{"maximum ASCII", strings.Repeat("a", 72), true},
+		{"too many bytes", strings.Repeat("a", 73), false},
+		{"maximum accented", strings.Repeat("é", 36), true},
+		{"accented byte overflow", strings.Repeat("é", 37), false},
+		{"emoji character minimum", strings.Repeat("😀", 4), false},
+		{"maximum emoji", strings.Repeat("😀", 18), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := HashMagicAuthTokenPassword(tc.password)
+			if tc.valid {
+				require.NoError(t, err)
+			} else {
+				require.ErrorIs(t, err, ErrMagicAuthTokenPasswordInvalid)
+			}
+		})
+	}
+}
 
 func TestEmbedToken(t *testing.T) {
 	issuer, err := auth.NewEphemeralIssuer("http://admin.example.com")

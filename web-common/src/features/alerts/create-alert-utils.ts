@@ -1,6 +1,8 @@
-import type { V1User } from "@rilldata/web-admin/client";
 import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
+import {
+  AlertNotifyRowsLimitDefault,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
@@ -17,11 +19,14 @@ import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/pro
 import { page } from "$app/stores";
 import { get } from "svelte/store";
 
+// showEmbedOwnerEmail is true if the form shows the field for the email of the embed user who creates the alert.
+// See showEmbedOwnerEmail in AlertFormDataWrapper.
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
   exploreName: string,
   exploreState: Partial<ExploreState>,
-  user: V1User | undefined,
+  userEmail: string,
+  showEmbedOwnerEmail = false,
 ): AlertFormValues {
   // Use comparison dimension only when in TDD view (where it's visually relevant).
   // Otherwise use the expanded dimension table dimension.
@@ -41,6 +46,7 @@ export function getNewAlertInitialFormValues(
     name: "",
     measure,
     splitByDimension: dimension,
+    notifyRowsLimit: String(AlertNotifyRowsLimitDefault),
     evaluationInterval: "",
     criteria: [
       {
@@ -55,9 +61,13 @@ export function getNewAlertInitialFormValues(
     ...getInitialScheduleFormValues(),
     enableSlackNotification: false,
     slackChannels: [""],
-    slackUsers: [user?.email ?? "", ""],
+    slackUsers: [userEmail, ""],
     enableEmailNotification: true,
-    emailRecipients: [user?.email ?? "", ""],
+    // The creator's email is in its own field if it's shown, so it isn't also added to the recipients.
+    emailRecipients: showEmbedOwnerEmail ? [""] : [userEmail, ""],
+    // In an embed, only the creator's email gets an open link to the embedder's app.
+    // The embed's `user_email` is used if set; otherwise the creator can enter it.
+    embedOwnerEmail: showEmbedOwnerEmail ? userEmail : "",
     exportAttach: false,
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
     exportLimit: "",

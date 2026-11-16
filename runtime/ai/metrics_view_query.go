@@ -87,7 +87,7 @@ Example: Get the total revenue by country and product category for 2024:
                         }
                     }
                 ]
-            },
+            }
         },
         "sort": [{"name": "total_revenue", "desc": true}],
         "limit": 10
@@ -159,14 +159,14 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"measures": [
 			{"name": "total_revenue"},
 			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
-			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}}
 		],
 		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
 		"time_range": {
 			"expression": "1M as of latest/D"
 		},
 		"comparison_time_range": {
-			expression": "1M as of latest/D offset -1M"
+			"expression": "1M as of latest/D offset -1M"
 		},
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10
@@ -178,14 +178,14 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"measures": [
 			{"name": "total_revenue"},
 			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
-			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}}
 		],
 		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
 		"time_range": {
 			"expression": "1D as of latest/m"
 		},
 		"comparison_time_range": {
-			expression": "1D as of latest/m offset -1D"
+			"expression": "1D as of latest/m offset -1D"
 		},
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10

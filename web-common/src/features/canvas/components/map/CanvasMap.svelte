@@ -2,6 +2,7 @@
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { canQueryWithTimeRange } from "@rilldata/web-common/features/components/charts/query-util";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import {
@@ -118,6 +119,7 @@
     return measure?.displayName || measureName;
   }
 
+  const themeBoundaryClass = getThemeBoundaryClass();
   const tooltipCtx = $derived({
     tooltipDimension,
     colorMeasure,
@@ -314,7 +316,7 @@
         for (const layerId of ["points", "polygons-fill"]) {
           map.on("mousemove", layerId, (e) => {
             if (map) map.getCanvas().style.cursor = "pointer";
-            showTooltip(e, tooltipCtx);
+            showTooltip(e, tooltipCtx, themeBoundaryClass);
           });
           map.on("mouseleave", layerId, () => {
             if (map) map.getCanvas().style.cursor = "";

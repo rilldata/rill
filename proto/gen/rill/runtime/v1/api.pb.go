@@ -721,7 +721,7 @@ type Instance struct {
 	AiPrompts          []*AIPrompt            `protobuf:"bytes,27,rep,name=ai_prompts,json=aiPrompts,proto3" json:"ai_prompts,omitempty"`
 	FrontendUrl        string                 `protobuf:"bytes,24,opt,name=frontend_url,json=frontendUrl,proto3" json:"frontend_url,omitempty"`
 	Theme              string                 `protobuf:"bytes,26,opt,name=theme,proto3" json:"theme,omitempty"`
-	// Base URL for open links in emails from reports created from an embed (`embeds.open_url` in rill.yaml).
+	// Base URL for open links in emails from reports and alerts created from an embed (`embeds.open_url` in rill.yaml).
 	EmbedOpenUrl string `protobuf:"bytes,28,opt,name=embed_open_url,json=embedOpenUrl,proto3" json:"embed_open_url,omitempty"`
 }
 

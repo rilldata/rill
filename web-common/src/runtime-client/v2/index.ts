@@ -1,4 +1,8 @@
-export { RuntimeClient, type AuthContext } from "./runtime-client";
+export {
+  RuntimeClient,
+  type AuthContext,
+  type JwtRefresher,
+} from "./runtime-client";
 export {
   getRuntimeClient,
   evictRuntimeClient,

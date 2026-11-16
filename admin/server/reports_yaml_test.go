@@ -234,7 +234,7 @@ func TestEmbedReportResources(t *testing.T) {
 	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{})
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 
-	// Reports are dropped, since the embed user controls their queries; for example, when the embed opens a report
+	// Reports are dropped, since the embed user controls their queries
 	res, err = embedReportResources([]database.ResourceName{r1, e1}, &adminv1.ReportOptions{Explore: "e1"})
 	require.NoError(t, err)
 	require.Equal(t, []database.ResourceName{e1}, res)
@@ -265,4 +265,26 @@ func TestEmbedReportResources(t *testing.T) {
 	data, err = s.yamlForManagedReport(opts, "", "ext_abc", "", nil)
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "admin_embed_resources")
+}
+
+// TestEmbedAlertResources tests that an alert created from an embed can't become unlimited
+// when the embed is limited but has no dashboards among its resources.
+func TestEmbedAlertResources(t *testing.T) {
+	e1 := database.ResourceName{Type: runtime.ResourceKindExplore, Name: "e1"}
+	c1 := database.ResourceName{Type: runtime.ResourceKindCanvas, Name: "c1"}
+	comp1 := database.ResourceName{Type: runtime.ResourceKindComponent, Name: "comp1"}
+
+	// The alert isn't limited if the embed isn't
+	res, err := embedAlertResources(nil)
+	require.NoError(t, err)
+	require.Empty(t, res)
+
+	// Only dashboards are kept
+	res, err = embedAlertResources([]database.ResourceName{comp1, e1, c1})
+	require.NoError(t, err)
+	require.Equal(t, []database.ResourceName{e1, c1}, res)
+
+	// An embed limited to resources other than dashboards is rejected
+	_, err = embedAlertResources([]database.ResourceName{comp1})
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
 }
