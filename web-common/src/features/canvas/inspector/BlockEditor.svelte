@@ -64,8 +64,11 @@
   } = $props();
 
   // A local draft of the name. It resets when the block is renamed, so typing isn't
-  // clobbered by unrelated updates.
-  let draftName = $derived(name);
+  // clobbered by unrelated updates. The draft follows the name through a string-valued
+  // derived: a layout update hands this inspector a new block object with the same name,
+  // and a draft derived from the prop directly would reset to it.
+  const currentName = $derived(name);
+  let draftName = $derived(currentName);
   // A name the author tried that another block already has. Its error shows while the draft
   // still holds it.
   let takenName = $state<string>();
