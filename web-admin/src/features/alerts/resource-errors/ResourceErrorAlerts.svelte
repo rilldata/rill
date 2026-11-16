@@ -3,6 +3,7 @@
   import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
@@ -45,10 +46,9 @@
     try {
       await $deleteAlert.mutateAsync({ org, project, name });
     } catch (e) {
-      const err = e as { response?: { data?: { message?: string } } };
       eventBus.emit("notification", {
         message: m.alert_errors_delete_failed({
-          message: err.response?.data?.message ?? String(e),
+          message: extractErrorMessage(e),
         }),
         type: "error",
       });

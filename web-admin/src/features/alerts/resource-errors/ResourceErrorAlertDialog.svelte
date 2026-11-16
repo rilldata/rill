@@ -16,6 +16,7 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
@@ -175,8 +176,7 @@
             await $createAlert.mutateAsync({ org, project, data: { options } });
           }
         } catch (e) {
-          const err = e as { response?: { data?: { message?: string } } };
-          submitError = err.response?.data?.message ?? String(e);
+          submitError = extractErrorMessage(e);
           return;
         }
 
