@@ -176,6 +176,34 @@ describe("ephemeral measures URL state integration", () => {
     ]);
   });
 
+  it("drops positional sorts that a new first measure column would shift", () => {
+    const profit = {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    };
+    const sortWith = (tableMode: "nest" | "flat", id: string) => {
+      applyUrl(
+        `http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=domain,impressions,bid_price&table_mode=${tableMode}`,
+      );
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot.sorting = [
+        { id, desc: true },
+      ];
+      metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, profit);
+      return getCleanMetricsExploreForAssertion().pivot?.sorting;
+    };
+
+    // In a nested table `c0v1m0` names the first measure under a column value.
+    expect(sortWith("nest", "c0v1m0")).toEqual([]);
+    expect(sortWith("nest", "publisher")).toEqual([
+      { id: "publisher", desc: true },
+    ]);
+    // A flat table sorts by field name, which an insert does not shift.
+    expect(sortWith("flat", "impressions")).toEqual([
+      { id: "impressions", desc: true },
+    ]);
+  });
+
   it("drops definitions referencing unknown measures, and their columns", () => {
     const errors = applyUrl(
       "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&adhoc_m=profit:Profit:unknown*2",

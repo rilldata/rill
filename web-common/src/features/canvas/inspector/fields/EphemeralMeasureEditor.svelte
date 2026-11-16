@@ -1,7 +1,7 @@
 <!-- @component
 Creates or edits an ephemeral measure in a canvas component's `adhoc_measures`.
-It closes and confirms only once the canvas file is saved; a failed save keeps
-the dialog open with an error.
+It closes and confirms only once the canvas file is saved; a failed save is
+undone in memory and keeps the dialog open with an error.
 -->
 <script lang="ts">
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
@@ -62,9 +62,19 @@ the dialog open with an error.
     return Array.isArray(raw) ? [...raw] : [];
   }
 
+  // Undoes a change whose save failed: the editor content (and the parsed
+  // document derived from it) goes back to the file as last fetched, and the
+  // component's spec to its value before the change, so no later write
+  // persists what the user saw fail.
+  function undoFailedSave(previousSpec: ComponentSpec) {
+    component.parent.fileArtifact?.revertChanges();
+    component.specStore.set(previousSpec);
+  }
+
   // Resolves to whether the definition was saved.
   async function save(def: EphemeralMeasureDef): Promise<boolean> {
     const isNew = !editingDef;
+    const previousSpec = $specStore;
     const rawSpecs = currentRawSpecs();
     const [spec] = ephemeralDefsToSpecs([def]);
     const index = rawSpecs.findIndex((entry) => entry?.name === def.name);
@@ -77,7 +87,10 @@ the dialog open with an error.
       EPHEMERAL_SPEC_KEY,
       rawSpecs.length ? rawSpecs : undefined,
     );
-    if (!saved) return false;
+    if (!saved) {
+      undoFailedSave(previousSpec);
+      return false;
+    }
     // Selecting the new measure is a second file write; starting it only once
     // the definition is saved keeps the two writes from racing.
     if (isNew) onCreated?.(def.name, def.displayName);
@@ -93,6 +106,7 @@ the dialog open with an error.
   async function remove(): Promise<boolean> {
     if (!editingDef) return false;
     const { name, displayName } = editingDef;
+    const previousSpec = $specStore;
     const remaining = currentRawSpecs().filter((entry) => entry?.name !== name);
     // One write removes the definition along with its uses in the component's
     // field selections, chart field configs and per-measure formatting, so the
@@ -106,7 +120,10 @@ the dialog open with an error.
       ),
       [EPHEMERAL_SPEC_KEY]: remaining.length ? remaining : undefined,
     });
-    if (!saved) return false;
+    if (!saved) {
+      undoFailedSave(previousSpec);
+      return false;
+    }
     notifyEphemeralMeasureChange("deleted", displayName);
     onClose();
     return true;

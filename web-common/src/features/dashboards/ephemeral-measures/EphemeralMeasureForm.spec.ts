@@ -76,6 +76,22 @@ describe("EphemeralMeasureForm persistence", () => {
     );
   });
 
+  it("recovers when the save callback throws", async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error("network"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    renderForm({ editingDef: PROFIT, onSave });
+
+    await fireEvent.click(saveButton());
+
+    expect(
+      await screen.findByText(m.dashboard_pivot_ephemeral_save_failed()),
+    ).toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+    consoleError.mockRestore();
+  });
+
   it("reports a failed delete", async () => {
     const onRemove = vi.fn().mockResolvedValue(false);
     renderForm({ editingDef: PROFIT, onRemove });

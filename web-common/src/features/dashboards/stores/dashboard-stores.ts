@@ -772,6 +772,13 @@ const metricsViewReducers = {
         const firstMeasure = exploreState.pivot.columns.findIndex(
           (col) => col.type === PivotChipType.Measure,
         );
+        // A nested table's sort on a measure under a column value names the
+        // measure by position, which inserting before it shifts.
+        if (firstMeasure !== -1 && exploreState.pivot.tableMode !== "flat") {
+          exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+            (sort) => !isMinimizedAccessor(sort.id),
+          );
+        }
         exploreState.pivot.columns.splice(
           firstMeasure === -1
             ? exploreState.pivot.columns.length

@@ -52,9 +52,9 @@ dialog stays open, and a failed save keeps it open with an error.
   let saveError: string | undefined = undefined;
   let saving = false;
   let expressionInput: MeasureExpressionInput;
-  // The name a new definition got on its first save attempt. A failed canvas
-  // save can still leave the definition in the component's spec, so a retry
-  // reuses the name instead of adding a second definition.
+  // The name a new definition got on its first save attempt, reused by a
+  // retry so it can never add a second definition, even if the failed write
+  // left the first one in the component's spec.
   let newName: string | undefined = undefined;
 
   $: ownName = editingDef?.name ?? newName;
@@ -104,18 +104,32 @@ dialog stays open, and a failed save keeps it open with an error.
       countError;
     if (saveError) return;
     if (!editingDef) newName = def.name;
-    saving = true;
-    const saved = (await onSave(def)) !== false;
-    saving = false;
-    if (!saved) saveError = m.dashboard_pivot_ephemeral_save_failed();
+    if (!(await persist(() => onSave(def)))) {
+      saveError = m.dashboard_pivot_ephemeral_save_failed();
+    }
   }
 
   async function remove() {
     if (!onRemove) return;
+    if (!(await persist(onRemove))) {
+      saveError = m.dashboard_pivot_ephemeral_delete_failed();
+    }
+  }
+
+  // Runs a save or delete callback; it fails when it resolves to false or
+  // throws, and the dialog is usable again either way.
+  async function persist(
+    callback: () => void | Promise<boolean>,
+  ): Promise<boolean> {
     saving = true;
-    const removed = (await onRemove()) !== false;
-    saving = false;
-    if (!removed) saveError = m.dashboard_pivot_ephemeral_delete_failed();
+    try {
+      return (await callback()) !== false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    } finally {
+      saving = false;
+    }
   }
 </script>
 
