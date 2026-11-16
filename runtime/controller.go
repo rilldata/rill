@@ -26,6 +26,10 @@ import (
 // reconcileCancelationTimeout sets a timeout for how long to wait for a reconcile to cancel before stopping the controller with a critical error.
 const reconcileCancelationTimeout = 10 * time.Minute
 
+// errReconcileHung is returned by Controller.Run when a reconcile doesn't stop within reconcileCancelationTimeout after cancelation.
+// The hung goroutine can't be killed, so recovery requires a process restart.
+var errReconcileHung = errors.New("reconcile hung after cancelation")
+
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
@@ -286,7 +290,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.RUnlock()
 
 			if len(hanging) != 0 {
-				loopErr = fmt.Errorf("reconciles for resources %v have hung for more than %s after cancelation", hanging, reconcileCancelationTimeout.String())
+				loopErr = fmt.Errorf("%w: resources %v did not stop within %s", errReconcileHung, hanging, reconcileCancelationTimeout.String())
 				stop = true
 			}
 		case <-c.catalog.hasEventsCh: // The catalog has events to process
