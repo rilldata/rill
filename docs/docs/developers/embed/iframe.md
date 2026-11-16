@@ -420,7 +420,7 @@ Note that in this mode there is no in-iframe affordance for returning from a das
 
 #### Locking viewer controls
 
-A Canvas dashboard can declare viewer controls (`controls:` in its YAML) that let viewers pick a measure, a dimension, a filter value or a time range. To fix a control for an embed, pass `locked_controls`. Each key is the control's URL key without the `c.` prefix: the control's name for a canvas-level control, or `<container, tab group or component name>.<control name>` for a control declared further down. Each value uses the format of the control's URL parameter: several values are comma-separated, each URI-encoded. Write an empty-string value as `""`; an empty value means the filter is cleared.
+A Canvas dashboard can declare viewer controls (`controls:` in its YAML) that let viewers pick a measure, a dimension, a filter value or a time range. To fix a control for an embed, pass `locked_controls`. Each key is the control's URL key without the `c.` prefix: the control's name for a canvas-level control, or `<container, tab group or component name>.<control name>` for a control declared further down. Each value uses the format of the control's URL parameter: several values are comma-separated, each URI-encoded. Write an empty-string value as `""`; an empty value means the filter is cleared. Prefix non-string filter values with `:` followed by URI-encoded JSON, such as `:1`, `:true` or `:null`. A string that starts with a colon is URI-encoded, such as `%3Anull` for the text `:null`.
 
 ```json
 {

@@ -7,6 +7,10 @@ import {
   controlUrlKey,
   parseControlValue,
   serializeControlValue,
+  lockedControlValue,
+  controlsForScopes,
+  controlMetricsViews,
+  type AppliedControl,
 } from "./controls";
 
 const spec: V1CanvasSpec = {
@@ -204,5 +208,79 @@ describe("filterValueViews", () => {
         hasDimension,
       ),
     ).toEqual([]);
+  });
+});
+
+describe("lockedControlValue", () => {
+  it("ignores inherited property names and honors own values", () => {
+    for (const name of ["constructor", "toString", "__proto__"]) {
+      expect(lockedControlValue({}, `c.${name}`)).toBeNull();
+    }
+    expect(
+      lockedControlValue(Object.create({ metric: "revenue" }), "c.metric"),
+    ).toBeNull();
+    expect(
+      lockedControlValue({ metric: "", "c.metric": "spend" }, "c.metric"),
+    ).toBe("spend");
+    expect(lockedControlValue({ metric: "" }, "c.metric")).toBe("");
+  });
+});
+
+describe("typed filter values", () => {
+  it("round-trips numbers, booleans and null distinctly from their string forms", () => {
+    const control = { kind: "filter", multiple: true };
+    const values = [1, "1", true, "true", null, "null", ":null", "", "A,B"];
+    const raw = serializeControlValue(control, values)!;
+    expect(parseControlValue(control, raw)).toEqual({ values, valid: true });
+    expect(parseControlValue(control, "1").values).toEqual(["1"]);
+    for (const raw of [":%7B%7D", ':"x"', ":NaN"])
+      expect(parseControlValue(control, raw).valid).toBe(false);
+  });
+});
+
+describe("level and widget selectors", () => {
+  const all = collectControls(spec).map((c) => ({
+    ...c,
+    values: null,
+  })) as AppliedControl[];
+  it("shares the visible-level rule across live and PDF views", () => {
+    expect(
+      controlsForScopes(all, [["section"], ["own"]]).map((c) => c.urlKey),
+    ).toEqual(["c.section.publisher"]);
+    expect(
+      controlsForScopes(
+        all.map((c) => ({ ...c, locked: true })),
+        [[]],
+      ),
+    ).toEqual([]);
+  });
+  it("uses only widgets whose resolved controls include the control", () => {
+    const components = [
+      {
+        metricsViewName: "outside",
+        controls: controlsForPath(spec, ["rows", 0, "items", 0]),
+      },
+      {
+        metricsViewName: "own",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 0]),
+      },
+      {
+        metricsViewName: "inside",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 1]),
+      },
+      {
+        metricsViewName: "ignored",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 2]),
+      },
+    ].map((c) => ({
+      ...c,
+      controls: c.controls.map((control) => ({ ...control, values: null })),
+    }));
+    expect(controlMetricsViews(components).get("c.section.publisher")).toEqual([
+      "inside",
+    ]);
+    expect(
+      controlMetricsViews(components).get("c.group.mobile.os"),
+    ).toBeUndefined();
   });
 });

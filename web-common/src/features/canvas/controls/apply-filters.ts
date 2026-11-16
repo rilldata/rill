@@ -60,7 +60,7 @@ export function applyTimeControls(
   const params = new URLSearchParams(timeFilters);
   for (const { control, values } of controls) {
     const value = values?.[0];
-    if (!value) continue;
+    if (typeof value !== "string" || !value) continue;
     if (control.kind === ControlKind.TimeRange) {
       params.set(ExploreStateURLParams.TimeRange, value);
       if (!params.has(ExploreStateURLParams.ComparisonTimeRange)) {

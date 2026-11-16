@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { controlsForScopes } from "@rilldata/web-common/features/canvas/controls/controls";
   import ControlBar from "@rilldata/web-common/features/canvas/controls/ControlBar.svelte";
   import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
@@ -22,13 +23,7 @@
 
   let enabled = $derived(canvasEntity.controls.enabled);
   let all = $derived(canvasEntity.controls.all);
-  let keys = $derived(new Set(scopes.map((s) => s.join("\u0000"))));
-  let controls = $derived(
-    $all.filter(
-      (c) =>
-        c.level !== "item" && !c.locked && keys.has(c.scope.join("\u0000")),
-    ),
-  );
+  let controls = $derived(controlsForScopes($all, scopes));
 </script>
 
 {#if $enabled && controls.length}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   controlLabel,
+  controlFieldLabels,
   controlOptionLabel,
   controlSummary,
   timeRangeLabel,
@@ -58,4 +59,28 @@ describe("control labels", () => {
       "Same as canvas",
     );
   });
+});
+
+it("uses the same first field label for the viewer and inspector", () => {
+  const labels = controlFieldLabels({
+    a: {
+      state: {
+        validSpec: {
+          measures: [{ name: "spend", displayName: "Spend" }],
+          dimensions: [{ name: "country" }],
+        },
+      },
+    },
+    b: {
+      state: {
+        validSpec: {
+          measures: [{ name: "spend", displayName: "Other spend" }],
+        },
+      },
+    },
+  });
+  expect([...labels]).toEqual([
+    ["spend", "Spend"],
+    ["country", "country"],
+  ]);
 });

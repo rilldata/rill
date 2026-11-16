@@ -521,6 +521,8 @@
   "canvas_control_level_tab": "Tab “{name}”",
   "canvas_control_reset": "Reset",
   "canvas_control_search": "Search",
+  "canvas_control_load_error": "Could not load values.",
+  "canvas_control_null": "(null)",
   "canvas_control_no_values": "No values",
   "canvas_control_selected_count": "{count} selected",
   "canvas_control_same_as_canvas": "Same as canvas",

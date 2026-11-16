@@ -18,6 +18,7 @@
   } from "../control-edit";
   import ControlDialog from "./ControlDialog.svelte";
   import { controlRequest } from "./control-request";
+  import { controlFieldLabels } from "../control-labels";
   import { controlKindLabel } from "./labels";
 
   // The "Viewer controls" section of the inspector: the controls declared on one level
@@ -63,21 +64,7 @@
     }
   });
 
-  let fieldLabels = $derived.by(() => {
-    const labels = new Map<string, string>();
-    for (const view of Object.values($metricsViews)) {
-      const spec = view?.state?.validSpec;
-      for (const f of [
-        ...(spec?.measures ?? []),
-        ...(spec?.dimensions ?? []),
-      ]) {
-        if (f.name && !labels.has(f.name)) {
-          labels.set(f.name, f.displayName || f.name);
-        }
-      }
-    }
-    return labels;
-  });
+  let fieldLabels = $derived(controlFieldLabels($metricsViews));
 
   function describe(raw: Record<string, unknown>) {
     const draft = draftFromYAML(raw);

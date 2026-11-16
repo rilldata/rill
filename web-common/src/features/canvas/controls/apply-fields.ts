@@ -27,11 +27,15 @@ const SWAP_LIST_KEYS = new Set([
   "col_dimensions",
 ]);
 
+function isFieldPosition(key: string, inFieldList: boolean): boolean {
+  return inFieldList || SWAP_SCALAR_KEYS.has(key);
+}
+
 function swapFields(value: unknown, swaps: Map<string, string>): unknown {
   // All swaps are applied in one pass over the original spec, so A→B and B→A don't chain.
   const walk = (v: unknown, key: string, inFieldList: boolean): unknown => {
     if (typeof v === "string") {
-      return (inFieldList || SWAP_SCALAR_KEYS.has(key)) && swaps.has(v)
+      return isFieldPosition(key, inFieldList) && swaps.has(v)
         ? swaps.get(v)
         : v;
     }
@@ -51,14 +55,24 @@ function swapFields(value: unknown, swaps: Map<string, string>): unknown {
 
 /** Whether a component's spec shows the field somewhere a measure or dimension swap would change. */
 export function specUsesField(spec: unknown, field: string): boolean {
-  let used = false;
-  const swaps = new Map([[field, field]]);
-  swaps.get = (key: string) => {
-    if (key === field) used = true;
-    return field;
+  const visit = (
+    value: unknown,
+    key: string,
+    inFieldList: boolean,
+  ): boolean => {
+    if (typeof value === "string")
+      return value === field && isFieldPosition(key, inFieldList);
+    if (Array.isArray(value)) {
+      return value.some((child) => visit(child, key, SWAP_LIST_KEYS.has(key)));
+    }
+    if (value && typeof value === "object") {
+      return Object.keys(value).some((key) =>
+        visit((value as Record<string, unknown>)[key], key, false),
+      );
+    }
+    return false;
   };
-  swapFields(spec, swaps);
-  return used;
+  return visit(spec, "", false);
 }
 
 function setPath(
@@ -98,7 +112,12 @@ export function applyFieldControls<T>(spec: T, controls: AppliedControl[]): T {
       continue;
     }
     const to = values?.[0];
-    if (control.target && to && to !== control.target) {
+    if (
+      control.target &&
+      typeof to === "string" &&
+      to &&
+      to !== control.target
+    ) {
       swaps.set(control.target, to);
     }
   }

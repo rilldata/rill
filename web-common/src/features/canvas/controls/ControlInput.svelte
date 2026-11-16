@@ -3,6 +3,8 @@
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
   import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { getQueryServiceMetricsViewAggregationQueryKey } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ChevronDown } from "lucide-svelte";
   import {
@@ -12,6 +14,8 @@
   } from "./control-labels";
   import {
     ControlKind,
+    controlValueKey,
+    type ControlValue,
     defaultControlValues,
     type AppliedControl,
   } from "./controls";
@@ -33,7 +37,7 @@
     timeStart?: string;
     timeEnd?: string;
     // Null resets the control to its default.
-    onChange: (values: string[] | null) => void;
+    onChange: (values: ControlValue[] | null) => void;
   } = $props();
 
   const client = useRuntimeClient();
@@ -69,20 +73,30 @@
       },
     ),
   );
-  let options = $derived(
-    queriesValues ? ($searchQuery.data ?? values) : (spec.options ?? []),
-  );
+  let options = $derived.by(() => {
+    const options: ControlValue[] = queriesValues
+      ? ($searchQuery.data ?? values)
+      : (spec.options ?? []);
+    // Search results include the selected values, which can repeat a value as text.
+    const unique = new Map<string, ControlValue>();
+    for (const value of options) {
+      if (!unique.has(controlValueKey(value)))
+        unique.set(controlValueKey(value), value);
+    }
+    return [...unique.values()];
+  });
 
-  function optionLabel(value: string): string {
+  function optionLabel(value: ControlValue): string {
     return controlOptionLabel(spec, value, fieldLabel);
   }
 
   let isDefault = $derived.by(() => {
     const def = defaultControlValues(spec);
-    if (control.values === null || def === null) return control.values === def;
+    const current = control.values;
+    if (current === null || def === null) return current === def;
     return (
-      def.length === control.values.length &&
-      def.every((v, i) => v === control.values?.[i])
+      def.length === current.length &&
+      def.every((v, i) => controlValueKey(v) === controlValueKey(current[i]))
     );
   });
 
@@ -96,15 +110,35 @@
         (spec.display !== "dropdown" && options.length <= 4)),
   );
 
-  function toggle(value: string) {
+  function selected(value: ControlValue): boolean {
+    return values.some((v) => controlValueKey(v) === controlValueKey(value));
+  }
+
+  function retry() {
+    void Promise.all(
+      metricsViewNames.map((metricsView) =>
+        queryClient.refetchQueries({
+          queryKey: getQueryServiceMetricsViewAggregationQueryKey(
+            client.instanceId,
+            {
+              metricsView,
+              dimensions: [{ name: dimension }],
+            },
+          ),
+        }),
+      ),
+    ).catch(console.error);
+  }
+
+  function toggle(value: ControlValue) {
     if (!multiple) {
-      onChange([value]);
+      onChange(isFilter && selected(value) ? [] : [value]);
       open = false;
       return;
     }
     onChange(
-      values.includes(value)
-        ? values.filter((v) => v !== value)
+      selected(value)
+        ? values.filter((v) => controlValueKey(v) !== controlValueKey(value))
         : [...values, value],
     );
   }
@@ -117,11 +151,11 @@
 
   {#if asButtons}
     <div class="buttons" role="group" aria-label={label || spec.name}>
-      {#each options as option (option)}
+      {#each options as option (controlValueKey(option))}
         <button
           type="button"
-          class:selected={values.includes(option)}
-          aria-pressed={values.includes(option)}
+          class:selected={selected(option)}
+          aria-pressed={selected(option)}
           onclick={() => onChange([option])}
         >
           {optionLabel(option)}
@@ -157,19 +191,32 @@
             onkeydown={(e) => e.stopPropagation()}
           />
         {/if}
-        {#each options as option (option)}
-          <DropdownMenu.CheckboxItem
-            closeOnSelect={!multiple}
-            checked={values.includes(option)}
-            onCheckedChange={() => toggle(option)}
-          >
-            {optionLabel(option)}
-          </DropdownMenu.CheckboxItem>
-        {:else}
-          <div class="px-2 py-1 text-xs text-fg-secondary">
-            {m.canvas_control_no_values()}
+        {#if queriesValues && $searchQuery.isLoading}
+          <div role="status" class="px-2 py-1 text-xs text-fg-secondary">
+            {m.common_loading()}
           </div>
-        {/each}
+        {:else if queriesValues && $searchQuery.error}
+          <div role="alert" class="px-2 py-1 text-xs text-fg-secondary">
+            {m.canvas_control_load_error()}
+          </div>
+          <DropdownMenu.Item onclick={retry} closeOnSelect={false}
+            >{m.common_retry()}</DropdownMenu.Item
+          >
+        {:else}
+          {#each options as option (controlValueKey(option))}
+            <DropdownMenu.CheckboxItem
+              closeOnSelect={!multiple}
+              checked={selected(option)}
+              onCheckedChange={() => toggle(option)}
+            >
+              {optionLabel(option)}
+            </DropdownMenu.CheckboxItem>
+          {:else}
+            <div class="px-2 py-1 text-xs text-fg-secondary">
+              {m.canvas_control_no_values()}
+            </div>
+          {/each}
+        {/if}
         {#if !isDefault}
           <DropdownMenu.Separator />
           <DropdownMenu.Item onclick={() => onChange(null)}>

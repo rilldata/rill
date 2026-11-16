@@ -118,3 +118,40 @@ func TestValidateControls(t *testing.T) {
 	slot := &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "x.field", Name: "x_field", Options: []string{"device", "nope"}}
 	require.ErrorContains(t, ValidateControls(spec(slot), components, mvs), `option "nope"`)
 }
+
+func TestValidateControlSlots(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{{Name: "device"}, {Name: "country"}},
+		Measures:   []*runtimev1.MetricsViewSpec_Measure{{Name: "spend"}},
+	}
+	for _, tt := range []struct {
+		name, renderer, target, option string
+		multiple, valid                bool
+		props                          map[string]any
+	}{
+		{"dimension", "bar_chart", "x.field", "country", false, true, nil},
+		{"measure in dimension slot", "bar_chart", "x.field", "spend", false, false, nil},
+		{"list in scalar slot", "bar_chart", "x.field", "device", true, false, nil},
+		{"dimension list", "pivot", "row_dimensions", "country", true, true, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}},
+		{"measure in dimension list", "pivot", "row_dimensions", "spend", true, false, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			props := tt.props
+			if props == nil {
+				props = map[string]any{"x": map[string]any{"field": "device", "type": "nominal"}, "y": map[string]any{"field": "spend", "type": "quantitative"}}
+			}
+			props["metrics_view"] = "bids"
+			pb, err := structpb.NewStruct(props)
+			require.NoError(t, err)
+			ctrl := &runtimev1.CanvasControl{Kind: ControlKindSlot, Name: "pick", Target: tt.target, Options: []string{tt.option}, Multiple: tt.multiple}
+			spec := &runtimev1.CanvasSpec{Rows: []*runtimev1.CanvasRow{{Items: []*runtimev1.CanvasItem{{Component: "chart", Controls: []*runtimev1.CanvasControl{ctrl}}}}}}
+			err = ValidateControls(spec, map[string]*runtimev1.ComponentSpec{"chart": {Renderer: tt.renderer, RendererProperties: pb}}, map[string]*runtimev1.MetricsViewSpec{"bids": mv})
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, `control "pick" option`)
+			}
+			require.Equal(t, props, pb.AsMap())
+		})
+	}
+}

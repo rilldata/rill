@@ -7,11 +7,11 @@ import {
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { andControlFilters, controlFiltersExpression } from "./apply-filters";
-import type { AppliedControl } from "./controls";
+import type { AppliedControl, ControlValue } from "./controls";
 
 function filterControl(
   target: string,
-  values: string[],
+  values: ControlValue[],
   fields?: Record<string, string>,
 ): AppliedControl {
   return {
@@ -84,4 +84,18 @@ describe("andControlFilters", () => {
   it("is the control filter when there is no other filter", () => {
     expect(andControlFilters(undefined, control)).toBe(control);
   });
+});
+
+it("retains the primitive types selected in filter controls", () => {
+  expect(
+    controlFiltersExpression(
+      [filterControl("country", [1, true, null, "null"])],
+      "sales",
+      () => true,
+    ),
+  ).toEqual(
+    createAndExpression([
+      createInExpression("country", [1, true, null, "null"]),
+    ]),
+  );
 });

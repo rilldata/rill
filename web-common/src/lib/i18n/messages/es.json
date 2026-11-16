@@ -521,6 +521,8 @@
   "canvas_control_level_tab": "Pestaña «{name}»",
   "canvas_control_reset": "Restablecer",
   "canvas_control_search": "Buscar",
+  "canvas_control_load_error": "No se pudieron cargar los valores.",
+  "canvas_control_null": "(nulo)",
   "canvas_control_no_values": "Sin valores",
   "canvas_control_selected_count": "{count} seleccionados",
   "canvas_control_same_as_canvas": "Igual que el canvas",

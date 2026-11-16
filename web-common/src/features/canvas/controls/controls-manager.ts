@@ -9,6 +9,7 @@ import {
   parseControlValue,
   serializeControlValue,
   type AppliedControl,
+  type ControlValue,
   type LockedControls,
   type ResolvedControl,
 } from "./controls";
@@ -91,7 +92,7 @@ export class ControlsManager {
   }
 
   /** Sets a control's values. Null resets it to its default. */
-  set(control: ResolvedControl, values: string[] | null) {
+  set(control: ResolvedControl, values: ControlValue[] | null) {
     if (typeof window === "undefined") return;
     if (lockedControlValue(this.locked, control.urlKey) !== null) return;
     const params = new URLSearchParams(window.location.search);

@@ -38,9 +38,12 @@ export interface ResolvedControl {
   targetKey: string;
 }
 
-/** A control in effect for an item, with its current values (null means "not set": the default applies). */
+/** A field name, time setting or raw primitive dimension value. */
+export type ControlValue = string | number | boolean | null;
+
+/** A control in effect for an item (null values mean its default applies). */
 export interface AppliedControl extends ResolvedControl {
-  values: string[] | null;
+  values: ControlValue[] | null;
   /** True when the embedding page fixed the control's value: viewers don't see or change it. */
   locked?: boolean;
 }
@@ -56,9 +59,10 @@ export function lockedControlValue(
   locked: LockedControls,
   urlKey: string,
 ): string | null {
-  return (
-    locked[urlKey] ?? locked[urlKey.slice(CONTROL_URL_PREFIX.length)] ?? null
-  );
+  const key = Object.hasOwn(locked, urlKey)
+    ? urlKey
+    : urlKey.slice(CONTROL_URL_PREFIX.length);
+  return Object.hasOwn(locked, key) ? locked[key] : null;
 }
 
 /** Encodes one segment of a control's URL key, so a "." in a name isn't read as a separator. */
@@ -236,25 +240,38 @@ const EMPTY_VALUE_TOKEN = '""';
 export function parseControlValue(
   control: V1CanvasControl,
   raw: string | null,
-): { values: string[] | null; valid: boolean } {
+): { values: ControlValue[] | null; valid: boolean } {
   if (raw === null)
     return { values: defaultControlValues(control), valid: true };
 
-  let values: string[];
+  let values: ControlValue[];
   try {
     values =
       raw === ""
         ? []
-        : raw
-            .split(",")
-            .map((v) => (v === EMPTY_VALUE_TOKEN ? "" : decodeURIComponent(v)));
+        : raw.split(",").map((v) => {
+            if (v === EMPTY_VALUE_TOKEN) return "";
+            // A colon is always escaped in string values, so it can tag typed filter values.
+            if (control.kind === ControlKind.Filter && v.startsWith(":")) {
+              const value: unknown = JSON.parse(decodeURIComponent(v.slice(1)));
+              if (
+                value === null ||
+                typeof value === "boolean" ||
+                (typeof value === "number" && Number.isFinite(value))
+              )
+                return value;
+              throw new Error("Invalid filter value");
+            }
+            return decodeURIComponent(v);
+          });
   } catch {
     return { values: defaultControlValues(control), valid: false };
   }
 
   const options = control.options ?? [];
   const allowed =
-    options.length === 0 || values.every((v) => options.includes(v));
+    options.length === 0 ||
+    values.every((v) => typeof v === "string" && options.includes(v));
   const countOk = control.multiple ? true : values.length <= 1;
   // Only a filter can be cleared: the other kinds always need a value.
   const emptyOk = values.length > 0 || control.kind === ControlKind.Filter;
@@ -267,7 +284,7 @@ export function parseControlValue(
 /** The URL value for a control, or undefined when the values are the default and the param is omitted. */
 export function serializeControlValue(
   control: V1CanvasControl,
-  values: string[] | null,
+  values: ControlValue[] | null,
 ): string | undefined {
   if (values === null) return undefined;
   const def = defaultControlValues(control);
@@ -279,7 +296,13 @@ export function serializeControlValue(
     return undefined;
   }
   return values
-    .map((v) => (v === "" ? EMPTY_VALUE_TOKEN : encodeURIComponent(v)))
+    .map((v) =>
+      typeof v === "string"
+        ? v === ""
+          ? EMPTY_VALUE_TOKEN
+          : encodeURIComponent(v)
+        : `:${encodeURIComponent(JSON.stringify(v))}`,
+    )
     .join(",");
 }
 
@@ -301,4 +324,39 @@ export function filterValueViews(
     candidates.find((v) => dimensionFor(v) === control.target) ?? candidates[0];
   if (pick === undefined) return [];
   return candidates.filter((v) => dimensionFor(v) === dimensionFor(pick));
+}
+
+/**
+ * An identity for comparing a selected value with an option. A number written as text, as in a
+ * hand-written link or `locked_controls`, matches the dimension's raw number; null stays distinct
+ * from the text "null".
+ */
+export function controlValueKey(value: ControlValue): string {
+  return value === null ? "null:" : `value:${String(value)}`;
+}
+
+/** Visible controls declared on the requested levels, shared by live and PDF renders. */
+export function controlsForScopes(
+  controls: AppliedControl[],
+  scopes: string[][],
+): AppliedControl[] {
+  const keys = new Set(scopes.map((scope) => JSON.stringify(scope)));
+  return controls.filter(
+    (c) => c.level !== "item" && !c.locked && keys.has(JSON.stringify(c.scope)),
+  );
+}
+
+/** Metrics views of widgets to which each resolved control actually applies. */
+export function controlMetricsViews(
+  components: { metricsViewName: string; controls: AppliedControl[] }[],
+): Map<string, string[]> {
+  const views = new Map<string, Set<string>>();
+  for (const component of components) {
+    if (!component.metricsViewName) continue;
+    for (const control of component.controls) {
+      if (!views.has(control.urlKey)) views.set(control.urlKey, new Set());
+      views.get(control.urlKey)!.add(component.metricsViewName);
+    }
+  }
+  return new Map([...views].map(([key, names]) => [key, [...names]]));
 }

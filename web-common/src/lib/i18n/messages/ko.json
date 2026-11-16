@@ -521,6 +521,8 @@
   "canvas_control_level_tab": "“{name}” 탭",
   "canvas_control_reset": "초기화",
   "canvas_control_search": "검색",
+  "canvas_control_load_error": "값을 불러오지 못했습니다.",
+  "canvas_control_null": "(null)",
   "canvas_control_no_values": "값 없음",
   "canvas_control_selected_count": "{count}개 선택됨",
   "canvas_control_same_as_canvas": "캔버스와 동일",

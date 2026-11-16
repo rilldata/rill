@@ -3,6 +3,7 @@ package canvas
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -164,6 +165,14 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 					if !metricsViewHasMeasure(mv, opt) && !metricsViewHasDimension(mv, opt) {
 						return fmt.Errorf("control %q option %q is not a measure or dimension of metrics view %q (component %q)", c.Name, opt, mvName, ic.Item.Component)
 					}
+					var value any = opt
+					if c.Multiple {
+						value = []any{opt}
+					}
+					selected := setControlSlot(props, strings.Split(c.Target, "."), value)
+					if err := ValidateRendererProperties(comp.Renderer, selected, metricsViews, false); err != nil {
+						return fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err)
+					}
 				}
 			case ControlKindFilter:
 				dim := c.Target
@@ -179,4 +188,19 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 		}
 	}
 	return nil
+}
+
+// setControlSlot copies the maps along the slot path, matching the frontend's setPath.
+func setControlSlot(props map[string]any, path []string, value any) map[string]any {
+	out := make(map[string]any, len(props)+1)
+	for key, child := range props {
+		out[key] = child
+	}
+	if len(path) == 1 {
+		out[path[0]] = value
+	} else {
+		child, _ := props[path[0]].(map[string]any)
+		out[path[0]] = setControlSlot(child, path[1:], value)
+	}
+	return out
 }

@@ -2,12 +2,18 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { derived } from "svelte/store";
   import { SlidersHorizontal } from "lucide-svelte";
-  import { controlLabel, controlSummary } from "./control-labels";
+  import {
+    controlFieldLabels,
+    controlLabel,
+    controlSummary,
+  } from "./control-labels";
   import { controlKindLabel } from "./editor/labels";
   import {
     ControlKind,
     filterValueViews,
+    controlMetricsViews,
     type AppliedControl,
   } from "./controls";
   import ControlInput from "./ControlInput.svelte";
@@ -27,6 +33,20 @@
   let enabled = $derived(canvasEntity.controls.enabled);
   let exportMode = $derived(canvasEntity.exportMode);
   let metricsViews = $derived(canvasEntity._metricsViews);
+  let components = $derived(canvasEntity.componentsStore);
+  let controlViews = $derived.by(() => {
+    const instances = [...$components.values()];
+    return derived(
+      instances.map((c) => c.controls),
+      (controls) =>
+        controlMetricsViews(
+          instances.map((c, i) => ({
+            metricsViewName: c.metricsViewName,
+            controls: controls[i],
+          })),
+        ),
+    );
+  });
   let interval = $derived(canvasEntity.timeManager.state.interval);
 
   // Controls the embedding page locked apply, but viewers don't see them.
@@ -37,21 +57,7 @@
   );
 
   // Display names of the measures and dimensions of the canvas's metrics views.
-  let fieldLabels = $derived.by(() => {
-    const labels = new Map<string, string>();
-    for (const mv of Object.values($metricsViews)) {
-      const spec = mv?.state?.validSpec;
-      for (const f of [
-        ...(spec?.measures ?? []),
-        ...(spec?.dimensions ?? []),
-      ]) {
-        if (f.name && !labels.has(f.name)) {
-          labels.set(f.name, f.displayName || f.name);
-        }
-      }
-    }
-    return labels;
-  });
+  let fieldLabels = $derived(controlFieldLabels($metricsViews));
 
   function fieldLabel(name: string): string {
     return fieldLabels.get(name) ?? name;
@@ -62,7 +68,7 @@
     if (metricsViewName) return [metricsViewName];
     return filterValueViews(
       control.control,
-      Object.keys($metricsViews),
+      $controlViews.get(control.urlKey) ?? [],
       (view, dimension) =>
         !!$metricsViews[view]?.state?.validSpec?.dimensions?.some(
           (d) => d.name === dimension,

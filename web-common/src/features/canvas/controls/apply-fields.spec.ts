@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFieldControls } from "./apply-fields";
+import { applyFieldControls, specUsesField } from "./apply-fields";
 import type { AppliedControl } from "./controls";
 
 function applied(
@@ -69,5 +69,26 @@ describe("applyFieldControls", () => {
 
     const unset = applied({ kind: "slot", target: "color.field" }, null);
     expect(applyFieldControls(spec, [unset])).toBe(spec);
+  });
+});
+
+describe("specUsesField", () => {
+  it("recognizes the same field positions as swapping, without visiting later branches", () => {
+    for (const field of ["device", "spend", "clicks"])
+      expect(specUsesField(spec, field)).toBe(true);
+    expect(
+      specUsesField({ title: "spend", metrics_view: "spend" }, "spend"),
+    ).toBe(false);
+    expect(
+      specUsesField(
+        {
+          x: { field: "device" },
+          get later() {
+            throw new Error("must stop");
+          },
+        },
+        "device",
+      ),
+    ).toBe(true);
   });
 });
