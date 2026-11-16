@@ -220,6 +220,9 @@ export function buildTooltipHTML(
 export function showTooltip(
   event: mapboxgl.MapMouseEvent & { features?: GeoJSON.Feature[] },
   ctx: TooltipContext,
+  // Keeps the dashboard theme once the tooltip is appended to document.body;
+  // see getThemeBoundaryClass.
+  themeBoundaryClass: string | undefined,
 ) {
   removeTooltip();
 
@@ -234,6 +237,7 @@ export function showTooltip(
 
   const el = document.createElement("div");
   el.setAttribute("id", MAP_TOOLTIP_ID);
+  if (themeBoundaryClass) el.classList.add(themeBoundaryClass);
   el.innerHTML = html;
   document.body.appendChild(el);
 
