@@ -3,6 +3,7 @@
   import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -41,7 +42,18 @@
   );
 
   async function handleDelete(name: string) {
-    await $deleteAlert.mutateAsync({ org, project, name });
+    try {
+      await $deleteAlert.mutateAsync({ org, project, name });
+    } catch (e) {
+      const err = e as { response?: { data?: { message?: string } } };
+      eventBus.emit("notification", {
+        message: m.alert_errors_delete_failed({
+          message: err.response?.data?.message ?? String(e),
+        }),
+        type: "error",
+      });
+      return;
+    }
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
         runtimeClient.instanceId,
@@ -67,6 +79,13 @@
 
   {#if $alertsQuery.isPending}
     <DelayedSpinner isLoading size="1rem" />
+  {:else if $alertsQuery.isError && !$alertsQuery.data}
+    <div class="flex items-center gap-x-2">
+      <p class="text-sm text-destructive">{m.alert_errors_load_failed()}</p>
+      <Button type="tertiary" onClick={() => $alertsQuery.refetch()}>
+        {m.common_retry()}
+      </Button>
+    </div>
   {:else if alerts.length === 0}
     <p class="text-sm text-fg-secondary">{m.alert_errors_empty()}</p>
   {:else}

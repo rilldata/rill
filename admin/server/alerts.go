@@ -237,23 +237,13 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
-	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
+	err = checkCanManageManagedAlert(claims, permissions, annotations)
+	if err != nil {
+		return nil, err
 	}
 
 	if annotations.AdminSystem != (req.Options.Resolver == resolverResourceStatus) {
 		return nil, status.Error(codes.InvalidArgument, "can't change the resolver of an existing alert")
-	}
-
-	if annotations.AdminSystem {
-		if !permissions.ManageProject {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
-		}
-	} else {
-		isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-		if !permissions.ManageAlerts && !isOwner {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
-		}
 	}
 
 	err = s.validateAlertOptions(ctx, proj, req.Options)
@@ -472,19 +462,9 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
-	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
-	}
-
-	if annotations.AdminSystem {
-		if !permissions.ManageProject {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
-		}
-	} else {
-		isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-		if !permissions.ManageAlerts && !isOwner {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
-		}
+	err = checkCanManageManagedAlert(claims, permissions, annotations)
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
@@ -856,4 +836,23 @@ func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertNam
 	}
 
 	return emailTokens, nil
+}
+
+// checkCanManageManagedAlert returns an error if the caller can't edit or delete the UI-managed alert.
+// Resource status alerts are managed by project admins; other alerts by their owner or users with ManageAlerts.
+func checkCanManageManagedAlert(claims auth.Claims, permissions *adminv1.ProjectPermissions, annotations alertAnnotations) error {
+	if !annotations.AdminManaged {
+		return status.Error(codes.FailedPrecondition, "can't manage alert because it was not created from the UI")
+	}
+	if annotations.AdminSystem {
+		if !permissions.ManageProject {
+			return status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+		return nil
+	}
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
+	if !permissions.ManageAlerts && !isOwner {
+		return status.Error(codes.PermissionDenied, "does not have permission to manage alert")
+	}
+	return nil
 }
