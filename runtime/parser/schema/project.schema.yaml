@@ -3121,8 +3121,17 @@ definitions:
             type: string
             description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
           notify:
-            $ref: '#/definitions/notify_properties'
-            description: Notification configuration
+            type: object
+            description: Notification configuration for email and Slack delivery
+            allOf:
+              - $ref: '#/definitions/notify_properties'
+              - type: object
+                properties:
+                  rows_limit:
+                    type: integer
+                    description: Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
+                    minimum: 0
+                    maximum: 50
           annotations:
             type: object
             description: Key-value pairs used for annotations.

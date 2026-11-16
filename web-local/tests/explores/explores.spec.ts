@@ -321,9 +321,9 @@ explore:
     await clickPreviewButton(page);
 
     // Assert that name changed
-    await expect(
-      page.getByRole("link", { name: "Adbids dashboard renamed" }),
-    ).toBeVisible();
+    await expect(page.locator('nav [aria-current="page"]')).toHaveText(
+      "Adbids dashboard renamed",
+    );
 
     // Assert that no time dimension specified
     // await expect(page.getByText("No time dimension specified")).toBeVisible();

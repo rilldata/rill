@@ -146,6 +146,10 @@ components:
                     type: string
                 metricsViewName:
                     type: string
+                notifyRowsLimit:
+                    description: Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+                    format: int64
+                    type: integer
                 queryArgsJson:
                     description: 'DEPRECATED: Use resolver and resolver_properties instead.'
                     type: string

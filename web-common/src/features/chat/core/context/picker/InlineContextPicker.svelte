@@ -24,6 +24,7 @@
   import { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
   import ExpandableOption from "@rilldata/web-common/features/chat/core/context/picker/ExpandableOption.svelte";
   import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let selectedChatContext: InlineContext | null = null;
@@ -63,6 +64,9 @@
     $expandedParentsStore,
     selectedItemId,
   );
+
+  // The picker is appended to document.body, out of the dashboard's theme boundary.
+  const themeBoundaryClass = getThemeBoundaryClass();
 
   function positionHandler(node: Node, ref: HTMLElement) {
     if (!(node instanceof HTMLElement)) return;
@@ -115,7 +119,10 @@
 <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
-<div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
+<div
+  class="inline-chat-context-dropdown {themeBoundaryClass ?? ''}"
+  use:positionHandler={refNode}
+>
   <div class="dropdown-content">
     {#each pickerTree.rootNodes as rootNode (rootNode.item.id)}
       {@const showBoundary = pickerTree.boundaryIndices.has(rootNode.item.id)}

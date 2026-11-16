@@ -234,7 +234,7 @@ func TestEmbedReportResources(t *testing.T) {
 	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{})
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 
-	// Reports are dropped, since the embed user controls their queries; for example, when the embed opens a report
+	// Reports are dropped, since the embed user controls their queries
 	res, err = embedReportResources([]database.ResourceName{r1, e1}, &adminv1.ReportOptions{Explore: "e1"})
 	require.NoError(t, err)
 	require.Equal(t, []database.ResourceName{e1}, res)

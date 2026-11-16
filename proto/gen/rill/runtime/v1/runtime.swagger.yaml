@@ -4661,6 +4661,10 @@ definitions:
         type: boolean
       notifyOnError:
         type: boolean
+      notifyRowsLimit:
+        type: integer
+        format: int64
+        description: Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
       renotify:
         type: boolean
       renotifyAfterSeconds:

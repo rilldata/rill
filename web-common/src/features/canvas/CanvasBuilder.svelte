@@ -1049,10 +1049,12 @@
   />
 {/if}
 
+<!-- The drag ghosts are portalled out of CanvasDashboardWrapper's theme boundary,
+     so they carry its class to keep rendering in the canvas theme. -->
 {#if dragComponent}
   <div
     use:portal
-    class="absolute pointer-events-none drag-container"
+    class="dashboard-theme-boundary absolute pointer-events-none drag-container"
     style:z-index="1000"
     style:top="{dragItemPosition.top}px"
     style:left="{dragItemPosition.left}px"
@@ -1071,7 +1073,7 @@
 {#if dragGroupTabs}
   <div
     use:portal
-    class="absolute pointer-events-none drag-container"
+    class="dashboard-theme-boundary absolute pointer-events-none drag-container"
     style:z-index="1000"
     style:top="{dragItemPosition.top}px"
     style:left="{dragItemPosition.left}px"

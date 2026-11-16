@@ -1122,8 +1122,6 @@ type embedReportInfo struct {
 	// ownerEmail is the saved email of the embed user who created the report; empty if they didn't provide one.
 	// Only this recipient gets an open link to the embedder's app.
 	ownerEmail string
-	// explore is the explore dashboard the report targets.
-	explore string
 	// resources the report is limited to; an empty list means the report is not limited.
 	resources []database.ResourceName
 }
@@ -1149,7 +1147,6 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 			AdminEmbedOwnerID    string `yaml:"admin_embed_owner_id"`
 			AdminEmbedOwnerEmail string `yaml:"admin_embed_owner_email"`
 			AdminEmbedResources  string `yaml:"admin_embed_resources"`
-			Explore              string `yaml:"explore"`
 		} `yaml:"annotations"`
 	}
 	if err := yaml.Unmarshal(vf.Data, &res); err != nil {
@@ -1165,7 +1162,6 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 	}
 	info := &embedReportInfo{
 		ownerEmail: res.Annotations.AdminEmbedOwnerEmail,
-		explore:    res.Annotations.Explore,
 		resources:  resources,
 	}
 	if vf.EmbedOwnerID != nil {
@@ -1201,7 +1197,7 @@ func (s *Server) embedReportOwnerEmail(ctx context.Context, embedUserID, request
 // and returns the resources to limit the report's data to.
 // An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
 // Reports and alerts are dropped from the returned resources, since their transitive access is derived from their own queries,
-// which can be edited by the embed user. For example, an embed that opens a report is limited to the report and its dashboard.
+// which can be edited by the embed user. For the same reason, an embed that opens a report is not limited to the report itself (see GetIFrame).
 func embedReportResources(resources []database.ResourceName, opts *adminv1.ReportOptions) ([]database.ResourceName, error) {
 	if len(resources) == 0 {
 		return nil, nil

@@ -38,6 +38,7 @@
     checkIsTabValid,
     FieldsByTab,
     getAlertQueryArgsFromFormValues,
+    getNotifyRowsLimitFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils.ts";
   import {
     generateAlertName,
@@ -200,6 +201,7 @@
             ),
           ),
           metricsViewName: values.metricsViewName,
+          notifyRowsLimit: getNotifyRowsLimitFromFormValues(values),
           slackChannels: values.enableSlackNotification
             ? values.slackChannels.filter(Boolean)
             : undefined,

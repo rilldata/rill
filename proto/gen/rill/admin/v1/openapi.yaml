@@ -146,6 +146,10 @@ components:
                     type: string
                 metricsViewName:
                     type: string
+                notifyRowsLimit:
+                    description: Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+                    format: int64
+                    type: integer
                 queryArgsJson:
                     description: 'DEPRECATED: Use resolver and resolver_properties instead.'
                     type: string
@@ -4940,6 +4944,7 @@ paths:
                                     description: |-
                                         Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
                                         Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                                        Must be at most 2048 bytes.
                                     type: string
                                 hideNavigationBar:
                                     description: |-

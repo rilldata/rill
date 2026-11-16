@@ -550,6 +550,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.RowsLimit = opts.NotifyRowsLimit
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -597,6 +598,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.RowsLimit = opts.NotifyRowsLimit
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -662,7 +664,8 @@ type alertYAML struct {
 	Renotify      bool   `yaml:"renotify"`
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
-		Email struct {
+		RowsLimit uint32 `yaml:"rows_limit,omitempty"` // Omitted unless set, so runtimes that predate it can parse the YAML
+		Email     struct {
 			Recipients []string `yaml:"recipients"`
 		}
 		Slack struct {
