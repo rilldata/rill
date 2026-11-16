@@ -26,12 +26,32 @@ func (e *Executor) RewriteQueryTimeRanges(ctx context.Context, qry *metricsview.
 		}
 	}
 
+	// Clients send the comparison for a legacy expression such as "P1D" as the expression in iso_duration with an iso_offset.
+	// Resolved as a legacy ISO range, it isn't rounded like the expression is, so it wouldn't line up with the base range;
+	// for example, "P1D" resolves to the day of the watermark, but its "rill-PD" comparison to two days before the watermark.
+	// So resolve such a comparison as the base expression offset by iso_offset.
+	var comparisonOfExpr string
+	if isLegacyComparisonOfExpression(qry.TimeRange, qry.ComparisonTimeRange, executionTime) {
+		comparisonOfExpr = qry.TimeRange.Expression
+	}
+
 	err := e.ResolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.ResolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	if comparisonOfExpr != "" {
+		var rillTime *rilltime.Expression
+		rillTime, err = rilltime.ParseWithLegacyOffset(comparisonOfExpr, qry.ComparisonTimeRange.IsoOffset, rilltime.ParseOptions{
+			SmallestGrain:   timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+			DefaultTimeZone: tz,
+		})
+		if err == nil {
+			err = e.evalRillTime(ctx, qry.ComparisonTimeRange, rillTime, executionTime)
+		}
+	} else {
+		err = e.ResolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -71,6 +91,19 @@ func (e *Executor) ResolveTimeRange(ctx context.Context, tr *metricsview.TimeRan
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
+	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
+		SmallestGrain:   timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+		DefaultTimeZone: tz,
+	})
+	if err != nil {
+		return err
+	}
+
+	return e.evalRillTime(ctx, tr, rillTime, executionTime)
+}
+
+// evalRillTime evaluates rillTime into the Start and End of tr and clears its other fields.
+func (e *Executor) evalRillTime(ctx context.Context, tr *metricsview.TimeRange, rillTime *rilltime.Expression, executionTime *time.Time) error {
 	// TODO: Implement lazy evaluation where we only evaluate timestamps if required for the time expression.
 	ts, err := e.Timestamps(ctx, tr.TimeDimension)
 	if err != nil {
@@ -81,14 +114,6 @@ func (e *Executor) ResolveTimeRange(ctx context.Context, tr *metricsview.TimeRan
 		ts.Watermark = *executionTime
 		ts.Max = *executionTime
 		ts.Now = *executionTime
-	}
-
-	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
-		SmallestGrain:   timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
-		DefaultTimeZone: tz,
-	})
-	if err != nil {
-		return err
 	}
 
 	// TODO: use grain when we have timeseries from metrics_view_aggregation
@@ -159,4 +184,21 @@ func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *metricsview.Time
 	tr.RoundToGrain = metricsview.TimeGrainUnspecified
 
 	return nil
+}
+
+// isLegacyComparisonOfExpression returns true if the comparison time range ctr is given as the expression of the base time range tr in its iso_duration, with an iso_offset.
+// Alerts and reports set the end of such a comparison to the execution time, which the expression uses as its end anchor anyway.
+// It excludes the "rill-PP" offset, since rill time doesn't offset legacy expressions by their previous period correctly;
+// clients send the duration itself as the offset for a previous period comparison instead.
+func isLegacyComparisonOfExpression(tr, ctr *metricsview.TimeRange, executionTime *time.Time) bool {
+	if tr == nil || ctr == nil || tr.Expression == "" {
+		return false
+	}
+	if ctr.Expression != "" || ctr.IsoDuration != tr.Expression || ctr.IsoOffset == "" || ctr.IsoOffset == "rill-PP" || ctr.RoundToGrain != metricsview.TimeGrainUnspecified || ctr.TimeDimension != tr.TimeDimension {
+		return false
+	}
+	if !ctr.Start.IsZero() {
+		return false
+	}
+	return ctr.End.IsZero() || (executionTime != nil && ctr.End.Equal(*executionTime))
 }

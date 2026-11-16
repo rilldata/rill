@@ -361,30 +361,30 @@ func ParseLegacy(duration, offset string, roundToGrain timeutil.TimeGrain, parse
 	}
 
 	if offset != "" {
-		if strings.HasPrefix(offset, "rill-") {
-			dax := strings.TrimPrefix(offset, "rill-")
-			if dax == "PP" {
-				rt.Offset = &Offset{
-					PreviousPeriod: &PreviousPeriod{Prefix: "-", Num: 1},
-				}
-				return rt, nil
-			}
-
-			iso, ok := daxOffsetNotations[dax]
-			if !ok {
-				return nil, fmt.Errorf("invalid DAX offset %q", offset)
-			}
-			offset = iso
-		}
-
-		offsetGrainPart, err := parseISODuration(offset)
+		rt.Offset, err = parseLegacyOffset(offset)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		rt.Offset = &Offset{
-			Grain: offsetGrainPart,
-		}
+	return rt, nil
+}
+
+// ParseWithLegacyOffset parses a time range expression like Parse and offsets it by a legacy offset like ParseLegacy.
+// Unlike ParseLegacy, it keeps the rounding that Parse applies to a legacy ISO duration such as "P1D",
+// so the offset range lines up with the range of the expression on its own.
+func ParseWithLegacyOffset(expr, offset string, parseOpts ParseOptions) (*Expression, error) {
+	rt, err := Parse(expr, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+	if rt.Offset != nil {
+		return nil, fmt.Errorf("time range %q already has an offset", expr)
+	}
+
+	rt.Offset, err = parseLegacyOffset(offset)
+	if err != nil {
+		return nil, err
 	}
 
 	return rt, nil
@@ -990,6 +990,29 @@ func exprForAllTime(parseOpts ParseOptions) *Expression {
 			},
 		},
 	}
+}
+
+// parseLegacyOffset parses a legacy offset, which is an ISO 8601 duration or a DAX comparison such as "rill-PD".
+func parseLegacyOffset(offset string) (*Offset, error) {
+	if strings.HasPrefix(offset, "rill-") {
+		dax := strings.TrimPrefix(offset, "rill-")
+		if dax == "PP" {
+			return &Offset{PreviousPeriod: &PreviousPeriod{Prefix: "-", Num: 1}}, nil
+		}
+
+		iso, ok := daxOffsetNotations[dax]
+		if !ok {
+			return nil, fmt.Errorf("invalid DAX offset %q", offset)
+		}
+		offset = iso
+	}
+
+	offsetGrainPart, err := parseISODuration(offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Offset{Grain: offsetGrainPart}, nil
 }
 
 func parseISODuration(duration string) (*GrainPointInTimePart, error) {
