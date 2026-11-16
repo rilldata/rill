@@ -27,7 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// TestGetIFrameOpen tests the access of an iframe that opens a report created from an embed.
+// TestGetIFrameOpen tests the access of an iframe that opens a report or alert created from an embed.
 // The embed user writes a report's query, which the report's transitive access is derived from, so the iframe must not be limited to the report itself.
 // Without navigation, it is limited the same way as when the report runs:
 // to the resources of the embed the report was created from, or else by the resource restrictions of the user's identity.
@@ -113,6 +113,8 @@ measures:
 
 	// iframe is what an iframe gives the browser access to.
 	type iframe struct {
+		// src is the iframe's URL.
+		src *url.URL
 		// accessToken is the runtime JWT, and claims are its claims.
 		accessToken string
 		claims      *runtime.SecurityClaims
@@ -135,16 +137,20 @@ measures:
 		tkn, err := fix.Admin.ValidateEmbedToken(adminToken)
 		require.NoError(t, err)
 		return &iframe{
+			src:         u,
 			accessToken: resp.AccessToken,
 			claims:      claims.Claims(inst.ID),
 			adminToken:  adminToken,
 			resources:   tkn.Resources,
 		}, nil
 	}
-	open := func(t *testing.T, name string) string {
-		res, err := embedopen.Encode(&embedopen.Payload{Kind: embedopen.KindReport, Name: name})
+	openKind := func(t *testing.T, kind embedopen.Kind, name string) string {
+		res, err := embedopen.Encode(&embedopen.Payload{Kind: kind, Name: name})
 		require.NoError(t, err)
 		return res
+	}
+	open := func(t *testing.T, name string) string {
+		return openKind(t, embedopen.KindReport, name)
 	}
 	requireSameAccess := func(t *testing.T, want, got *iframe) {
 		require.Equal(t, want.claims.UserID, got.claims.UserID)
@@ -349,5 +355,73 @@ annotations:
 		resp, err = aggregate(got, "mv1")
 		require.NoError(t, err)
 		require.Len(t, resp.Data, 1)
+	})
+
+	t.Run("iframe params identify the opened resource", func(t *testing.T) {
+		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "r1")})
+		require.NoError(t, err)
+		require.Equal(t, "report", got.src.Query().Get("open_kind"))
+		require.Equal(t, "r1", got.src.Query().Get("open_name"))
+		require.False(t, got.src.Query().Has("open_report"))
+	})
+
+	// alertYAML returns an alert as the admin service saves it when an embed user creates it.
+	// Alerts aren't checked against the embed's resources, but they are limited to them when created from a limited iframe.
+	alertYAML := func(ownerID, metricsView string, limited bool) string {
+		res := fmt.Sprintf(`
+type: alert
+display_name: Alert
+refs:
+- MetricsView/%s
+query:
+  name: MetricsViewAggregation
+  args_json: '{"metrics_view":"%s","dimensions":[{"name":"country"}],"measures":[{"name":"total"}]}'
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_managed: "true"
+  admin_embed_owner_id: %s
+`, metricsView, metricsView, ownerID)
+		if limited {
+			res += fmt.Sprintf("  admin_embed_resources: '[{\"type\":\"%s\",\"name\":\"e1\"}]'\n", runtime.ResourceKindExplore)
+		}
+		return res
+	}
+	createVirtualFile(t, ownerID, "alerts/a1.yaml", alertYAML(ownerID, "mv1", true))
+	createVirtualFile(t, ownerID, "alerts/a2.yaml", alertYAML(ownerID, "mv2", false))
+
+	t.Run("open an alert", func(t *testing.T) {
+		// Limited like the alert without navigation
+		got, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: openKind(t, embedopen.KindAlert, "a1")})
+		require.NoError(t, err)
+		requireSameAccess(t, limited, got)
+		require.Equal(t, "alert", got.src.Query().Get("open_kind"))
+		require.Equal(t, "a1", got.src.Query().Get("open_name"))
+		require.Equal(t, runtime.ResourceKindExplore, got.src.Query().Get("type"))
+
+		// Not limited with navigation
+		got, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: openKind(t, embedopen.KindAlert, "a1"), Navigation: true})
+		require.NoError(t, err)
+		requireSameAccess(t, navigation, got)
+
+		// An alert that is not limited has the access of the user's identity
+		got, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: openKind(t, embedopen.KindAlert, "a2")})
+		require.NoError(t, err)
+		requireSameAccess(t, navigation, got)
+	})
+
+	t.Run("only the creator can open an alert", func(t *testing.T) {
+		_, err := getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-2", Open: openKind(t, embedopen.KindAlert, "a1")})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: openKind(t, embedopen.KindAlert, "a-missing")})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+		// The kind matters: a report's name doesn't open an alert, and vice versa
+		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: openKind(t, embedopen.KindAlert, "r1")})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		_, err = getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "user-1", Open: open(t, "a1")})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
 	})
 }

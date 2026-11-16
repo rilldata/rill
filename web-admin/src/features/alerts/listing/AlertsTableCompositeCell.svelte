@@ -13,6 +13,8 @@
   export let title: string;
   export let lastTrigger: string | undefined;
   export let ownerId: string;
+  // Set for alerts created from an embed, which are owned by an embed user instead of a Rill user.
+  export let embedOwnerId: string | undefined;
   export let lastTriggerErrorMessage: string | undefined;
   export let isSystem = false;
 </script>
@@ -53,7 +55,7 @@
       <ProjectAccessControls {organization} {project}>
         <svelte:fragment slot="manage-project">
           <span class="shrink-0">•</span>
-          <AlertOwnerBullet {organization} {project} {ownerId} />
+          <AlertOwnerBullet {organization} {project} {ownerId} {embedOwnerId} />
         </svelte:fragment>
       </ProjectAccessControls>
     {/if}

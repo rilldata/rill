@@ -85,11 +85,20 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName, ownerID string
 			OpenURL:        urls.OpenUrl,
 			EditURL:        urls.EditUrl,
 			UnsubscribeURL: urls.UnsubscribeUrl,
+			EmbedOwner:     urls.EmbedOwner,
 		}
 	}
 
+	resources := make([]*runtimev1.ResourceName, len(res.Resources))
+	for i, r := range res.Resources {
+		resources[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
+	}
+
 	meta := &drivers.AlertMetadata{
-		RecipientURLs: recipientURLs,
+		RecipientURLs:     recipientURLs,
+		QueryForUserID:    res.QueryForUserId,
+		RestrictResources: res.RestrictResources,
+		Resources:         resources,
 	}
 
 	if res.QueryForAttributes != nil {

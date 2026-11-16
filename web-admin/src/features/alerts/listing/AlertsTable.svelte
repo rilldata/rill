@@ -39,6 +39,10 @@
           ownerId:
             info.row.original.alert.spec.annotations["admin_owner_user_id"],
           isSystem: isResourceErrorAlert(info.row.original.alert?.spec),
+          embedOwnerId:
+            info.row.original.alert?.spec?.annotations?.[
+              "admin_embed_owner_id"
+            ],
           lastTriggerErrorMessage:
             info.row.original.alert.state.executionHistory[0]?.result
               .errorMessage,

@@ -70,7 +70,7 @@
       <Button
         {...props}
         type="secondary"
-        noStroke
+        compact
         label={m.embed_personal_canvases_button()}
       >
         <Lock size="14px" class="text-icon-muted" />

@@ -49,6 +49,8 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  // Email of the embed user who creates the alert; only shown in an embed if rill.yaml configures `embeds.open_url`.
+  embedOwnerEmail: string;
   // Options for attaching the rows that triggered the alert to emails
   exportAttach: boolean;
   exportFormat: V1ExportFormat;
@@ -190,6 +192,22 @@ export const alertFormValidationSchema = yup(
             }
 
             const criteria = context.parent as MeasureFilterEntry;
+            // Percent of total compares each dimension value's share of the measure, so it needs a split.
+            // Removing the split keeps such criteria but blocks saving until a split is chosen again,
+            // instead of saving an alert that has lost its condition.
+            const formValues = context.from?.at(-1)?.value as
+              | AlertFormValues
+              | undefined;
+            if (
+              criteria.type === MeasureFilterType.PercentOfTotal &&
+              !formValues?.splitByDimension
+            ) {
+              return context.createError({
+                message: m.alert_form_criteria_percent_of_total_needs_split({
+                  field: context.path,
+                }),
+              });
+            }
             if (
               criteria.type === MeasureFilterType.PercentOfTotal &&
               (numValue < 0 || numValue > 100)
@@ -208,6 +226,7 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    embedOwnerEmail: string().email("Invalid email"),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
       is: (enableEmailNotification: boolean, exportAttach: boolean) =>
@@ -219,7 +238,7 @@ export const alertFormValidationSchema = yup(
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure", "notifyRowsLimit"],
   ["criteria", "criteriaOperation"],
-  ["name", "snooze", "slackUsers", "emailRecipients"],
+  ["name", "snooze", "slackUsers", "emailRecipients", "embedOwnerEmail"],
 ];
 
 export function checkIsTabValid(
@@ -265,8 +284,10 @@ function someCriteriaHasErrors(
   criteriaErrors: ValidationErrors<AlertFormValues>["criteria"],
 ) {
   if (!criteriaErrors) return false;
-  return Object.values(criteriaErrors).every((criteriaError) => {
+  // `validate(path)` clears a passing field's error to undefined,
+  // so look for any criterion field that still has an error.
+  return Object.values(criteriaErrors).some((criteriaError) => {
     if (!criteriaError) return false;
-    return Object.values(criteriaError).every((c: string[]) => !!c?.[0]);
+    return Object.values(criteriaError).some((c: string[]) => !!c?.[0]);
   });
 }

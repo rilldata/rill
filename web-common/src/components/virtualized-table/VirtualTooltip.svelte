@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import FormattedDataType from "../data-types/FormattedDataType.svelte";
@@ -22,10 +23,14 @@
   export let hovering: HoveringData;
   export let sortable: boolean;
   export let customShortcuts: { description: string; shortcut: string }[] = [];
+
+  // The tooltip is portalled out of the dashboard's theme boundary.
+  const themeBoundaryClass = getThemeBoundaryClass();
 </script>
 
 <aside
-  class="w-fit h-fit absolute -translate-x-1/2 -translate-y-full z-[1000]"
+  class="{themeBoundaryClass ??
+    ''} w-fit h-fit absolute -translate-x-1/2 -translate-y-full z-[1000]"
   use:portal
   style:top="{hoverPosition.top - 8}px"
   style:left="{hoverPosition.left + hoverPosition.width / 2}px"

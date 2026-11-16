@@ -242,6 +242,7 @@
           pinnedRows={pinnedDashboardRowIds}
           maxRows={previewLimit}
           getRowId={resourceTableGetRowId}
+          minWidth={400}
         >
           <ResourceListEmptyState
             slot="empty"

@@ -78,6 +78,10 @@ type Dialect interface {
 	DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error)
 	DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error)
 	IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error)
+	// IntervalSubtractInTimeZone is like IntervalSubtract, but subtracts from the wall-clock time of tsExpr in the time zone tz.
+	// This keeps a local midnight at local midnight when shifting by days or larger units across a DST transition.
+	// ok is false if the dialect has no such expression, in which case IntervalSubtract is used instead.
+	IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (expr string, ok bool)
 	SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error)
 	SelectInlineResults(result *Result) (string, []any, []any, error)
 	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
@@ -344,6 +348,10 @@ func (b *BaseDialect) DateDiff(_ runtimev1.TimeGrain, _, _ time.Time) (string, e
 
 func (b *BaseDialect) IntervalSubtract(_, _ string, _ runtimev1.TimeGrain) (string, error) {
 	return "", fmt.Errorf("IntervalSubtract not implemented for %s dialect", b.String())
+}
+
+func (b *BaseDialect) IntervalSubtractInTimeZone(_, _ string, _ runtimev1.TimeGrain, _ string) (string, bool) {
+	return "", false
 }
 
 func (b *BaseDialect) SelectTimeRangeBins(_, _ time.Time, _ runtimev1.TimeGrain, _ string, _ *time.Location, _, _ int) (string, []any, error) {

@@ -3,6 +3,7 @@ import {
   createPivotDataCache,
   getPivotSkeletonForPage,
   syncPivotCacheToConfig,
+  updatePivotDataCache,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-assembly";
 import {
   type PivotBaseQueryPlan,
@@ -97,6 +98,25 @@ describe("applyOutermostRowLimit", () => {
     ]);
   });
 
+  it("reports no more rows when the values end exactly at the limit", () => {
+    // The axis query asks for the limit plus one, so exactly the limit
+    // means nothing is left out.
+    const result = applyOutermostRowLimit(
+      config({
+        pivot: {
+          ...config().pivot,
+          rowLimit: 2,
+        },
+      }),
+      plan({ effectiveOutermostLimit: 2 }),
+      ["US", "CA"],
+      [{ country: "US" }, { country: "CA" }],
+    );
+
+    expect(result.hasMoreRows).toBe(false);
+    expect(result.rowDimensionValues).toEqual(["US", "CA"]);
+  });
+
   it("does not trim flat table row values", () => {
     const result = applyOutermostRowLimit(
       config({ isFlat: true }),
@@ -130,6 +150,24 @@ describe("pivot data assembly helpers", () => {
     expect(skeleton).toEqual([{ country: "US" }, { country: "CA" }]);
   });
 
+  it("keeps the column truncation only for the config it was computed for", () => {
+    const cache = createPivotDataCache();
+    updatePivotDataCache(cache, {
+      columnDef: [],
+      columnTruncation: { shown: 50, total: 120 },
+      configKey: "domain-columns",
+      data: [],
+      rowPage: 1,
+      totalColumns: 120,
+    });
+
+    expect(cache.columnTruncationMap["domain-columns"]).toEqual({
+      shown: 50,
+      total: 120,
+    });
+    expect(cache.columnTruncationMap["other-columns"]).toBeUndefined();
+  });
+
   it("resets page accumulation when the config key changes", () => {
     const cache = createPivotDataCache();
     cache.lastProcessedConfigKey = "old";
@@ -141,30 +179,85 @@ describe("pivot data assembly helpers", () => {
     expect(cache.lastProcessedRowPage).toBe(0);
   });
 
-  it("adds an outer show-more row and keeps row data open ended", () => {
+  it("adds an outer show-more row once the rows reach the limit", () => {
     const finalState = buildFinalPivotStateDetails({
       anchorDimension: "country",
       columnDimensionAxes: {},
       config: config({
         pivot: {
           ...config().pivot,
-          rowLimit: 5,
+          outermostRowLimit: 2,
         },
       }),
-      data: [{ country: "US" }] as PivotDataRow[],
+      data: [{ country: "US" }, { country: "CA" }] as PivotDataRow[],
       hasMoreRows: true,
       isCellDataEmpty: false,
-      rowDimensionValues: ["US"],
+      rowDimensionValues: ["US", "CA"],
       rowOffset: 0,
     });
 
     expect(finalState.reachedEndForRowData).toBe(false);
     expect(finalState.data).toEqual([
       { country: "US" },
+      { country: "CA" },
       {
         country: "__rill_type_SHOW_MORE_BUTTON",
-        __currentLimit: 5,
+        __currentLimit: 2,
       },
     ]);
+  });
+
+  it("adds no outer row when the rows end exactly at the limit", () => {
+    const finalState = buildFinalPivotStateDetails({
+      anchorDimension: "country",
+      columnDimensionAxes: {},
+      config: config({
+        pivot: {
+          ...config().pivot,
+          outermostRowLimit: 2,
+        },
+      }),
+      data: [{ country: "US" }, { country: "CA" }] as PivotDataRow[],
+      hasMoreRows: false,
+      isCellDataEmpty: false,
+      rowDimensionValues: ["US", "CA"],
+      rowOffset: 0,
+    });
+
+    expect(finalState.data).toEqual([{ country: "US" }, { country: "CA" }]);
+  });
+
+  it("waits for the last page when the limit spans several pages", () => {
+    const rowsOnPage = Array.from({ length: 50 }, (_, i) => `country-${i}`);
+    const args = {
+      anchorDimension: "country",
+      columnDimensionAxes: {},
+      data: rowsOnPage.map((country) => ({ country })) as PivotDataRow[],
+      hasMoreRows: true,
+      isCellDataEmpty: false,
+      rowDimensionValues: rowsOnPage,
+    };
+
+    // A limit of 100 fills over two pages of 50, and the first page also
+    // reports more rows.
+    const firstPage = buildFinalPivotStateDetails({
+      ...args,
+      config: config({ pivot: { ...config().pivot, rowLimit: 100 } }),
+      rowOffset: 0,
+    });
+    expect(firstPage.data).toHaveLength(50);
+
+    const secondPage = buildFinalPivotStateDetails({
+      ...args,
+      config: config({
+        pivot: { ...config().pivot, rowLimit: 100, rowPage: 2 },
+      }),
+      rowOffset: 50,
+    });
+    // Past the last limit step the row notes that the rest is left out.
+    expect(secondPage.data.at(-1)).toEqual({
+      country: "__rill_type_SHOW_MORE_BUTTON",
+      __currentLimit: 100,
+    });
   });
 });

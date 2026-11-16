@@ -14,12 +14,12 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
+    createRuntimeServiceListNotifierConnectors,
     createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     type V1AlertSpec,
@@ -84,7 +84,15 @@
     }),
   );
   const resources = createRuntimeServiceListResources(runtimeClient, {});
-  const hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  const hasSlackNotifier = createRuntimeServiceListNotifierConnectors(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => !!data.connectors?.some((c) => c.name === "slack"),
+      },
+    },
+  );
 
   const checkOptions = [
     { value: "*/5 * * * *", label: m.alert_errors_check_5m() },
