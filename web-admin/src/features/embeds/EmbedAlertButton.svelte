@@ -1,45 +1,33 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+  import {
+    getEmbedAlertExploreName,
+    getEmbedCreateAlertState,
+  } from "@rilldata/web-admin/features/embeds/embed-alerts.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { DialogContent } from "@rilldata/web-common/components/dialog";
   import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import { alertsEnabled } from "@rilldata/web-common/features/feature-flags.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import {
-    TimeComparisonOption,
-    TimeRangePreset,
-  } from "@rilldata/web-common/lib/time/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { BellIcon } from "lucide-svelte";
+  import { BellIcon, BellPlusIcon } from "lucide-svelte";
 
   const runtimeClient = useRuntimeClient();
 
-  // Alerts are created on an explore, so they can only be created from explore pages.
-  let exploreName = $derived.by(() => {
-    const dashboard = getDashboardFromEmbedRoute(page.route.id, page.params);
-    return dashboard?.kind === ResourceKind.Explore ? dashboard.name : "";
-  });
+  // Without navigation the alerts page can't be reached, so only creating an alert is offered.
+  const navigationEnabled = !!EmbedStore.getInstance()?.navigationEnabled;
 
-  // The header is outside of the explore's state managers, so the explore's spec and state are read by name.
-  let exploreSpecQuery = $derived(
-    useExploreValidSpec(runtimeClient, exploreName),
+  let exploreName = $derived(
+    getEmbedAlertExploreName(page.route.id, page.params),
   );
-  let hasTimeDimension = $derived(
-    !!$exploreSpecQuery.data?.metricsView?.timeDimension,
+  let createAlertState = $derived(
+    getEmbedCreateAlertState(runtimeClient, exploreName),
   );
-  let exploreState = $derived(useExploreState(exploreName));
-  // Same as the guard of the dashboard's create alert button (see CreateAlert).
-  let isCustomTimeRange = $derived(
-    $exploreState?.selectedTimeRange?.name === TimeRangePreset.CUSTOM ||
-      $exploreState?.selectedComparisonTimeRange?.name ===
-        TimeComparisonOption.CUSTOM,
-  );
+  let { canCreate, isCustomTimeRange } = $derived($createAlertState);
 
   let open = $state(false);
   // The explore whose alert is being created, captured when the dialog opens.
@@ -51,11 +39,11 @@
   }
 </script>
 
-{#if $alertsEnabled}
+{#if $alertsEnabled && navigationEnabled}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
-        <Button {...props} type="secondary" noStroke label={m.nav_tab_alerts()}>
+        <Button {...props} type="secondary" compact label={m.nav_tab_alerts()}>
           <BellIcon class="flex-none hover:text-fg-accent" size="16px" />
         </Button>
       {/snippet}
@@ -65,7 +53,7 @@
       <DropdownMenu.Item href="/-/embed/alerts">
         {m.alert_form_go_to_alerts()}
       </DropdownMenu.Item>
-      {#if exploreName && hasTimeDimension && $exploreState}
+      {#if canCreate}
         <DropdownMenu.Item
           onclick={openCreateDialog}
           disabled={isCustomTimeRange}
@@ -80,6 +68,26 @@
       {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
+{:else if $alertsEnabled && canCreate}
+  <Tooltip.Root disabled={!isCustomTimeRange}>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          compact
+          disabled={isCustomTimeRange}
+          label={m.alert_create_alert()}
+          onClick={openCreateDialog}
+        >
+          <BellPlusIcon class="flex-none hover:text-fg-accent" size="16px" />
+        </Button>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content side="bottom">
+      {m.alert_set_non_custom_time_range()}
+    </Tooltip.Content>
+  </Tooltip.Root>
 {/if}
 
 {#if dialogExploreName}

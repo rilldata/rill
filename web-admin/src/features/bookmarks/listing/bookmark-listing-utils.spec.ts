@@ -58,6 +58,20 @@ describe("buildBookmarkRows", () => {
     expect(row.filtersOnly).toBe(false);
   });
 
+  it("links to the embed dashboard routes in embeds", () => {
+    const [row] = buildBookmarkRows({
+      bookmarks: [bookmark({})],
+      dashboards,
+      organization: "org",
+      project: "proj",
+      isEmbedded: true,
+      recentlyUsed: {},
+    });
+    expect(row.href).toBe(
+      "/-/embed/explore/auction_explore?view=tdd&tr=P7D&f=domain IN ('a')",
+    );
+  });
+
   it("links canvas bookmarks to the canvas and falls back to the resource name as title", () => {
     const [row] = rowsFor([
       bookmark({
