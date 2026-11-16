@@ -44,6 +44,7 @@
   "alert_form_criteria_no_trigger_current_range": "Given the above criteria, this alert will not trigger for the current time range.",
   "alert_form_criteria_operator_aria": "Criteria operator",
   "alert_form_criteria_operator_placeholder": "Operator",
+  "alert_form_criteria_percent_of_total_needs_split": "{field} is a % of total, which needs a split-by dimension on the Data tab.",
   "alert_form_criteria_preview_title": "Alert Preview",
   "alert_form_criteria_title": "Criteria",
   "alert_form_criteria_type_aria": "Criteria type",

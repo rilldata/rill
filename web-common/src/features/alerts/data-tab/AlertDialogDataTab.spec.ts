@@ -112,21 +112,13 @@ describe("AlertDialogDataTab", () => {
     HTMLElement.prototype.scrollIntoView ??= () => {};
   });
 
-  it("removes percent-of-total criteria when the split is removed", async () => {
+  // Percent-of-total criteria stay; validation blocks saving them without a split.
+  it("clears the split and keeps the criteria when None is picked", async () => {
     const form = renderDataTab();
 
     await pickSplitBy(m.alert_form_data_none());
 
     expect(get(form).splitByDimension).toBe("");
-    expect(get(form).criteria).toEqual([valueCriteria]);
-  });
-
-  it("keeps percent-of-total criteria when switching to another dimension", async () => {
-    const form = renderDataTab();
-
-    await pickSplitBy("Device");
-
-    expect(get(form).splitByDimension).toBe("device");
     expect(get(form).criteria).toEqual([percentOfTotalCriteria, valueCriteria]);
   });
 });
