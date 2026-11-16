@@ -92,6 +92,8 @@ interface RowAxesStageArgs {
   cache: PivotDataCache;
   plan: PivotBaseQueryPlan;
   columnDimensionAxes: Record<string, string[]> | undefined;
+  // Whether a column dimension has more values than the axes hold.
+  columnAxesCapped: boolean;
 }
 
 interface CellDataStageArgs extends RowAxesStageArgs {
@@ -182,6 +184,8 @@ function createColumnAxesStage(
 ): Readable<PivotDataState> {
   const measureBody = config.measureNames.map((m) => ({ name: m }));
 
+  // Query one value past the limit, so a dimension with exactly the limit
+  // of values is not taken for a capped one.
   const columnAxesQuery = getAxisForDimensions(
     ctx,
     config,
@@ -190,7 +194,7 @@ function createColumnAxesStage(
     config.whereFilter,
     [],
     undefined,
-    COLUMN_DIMENSION_VALUES_LIMIT.toString(),
+    (COLUMN_DIMENSION_VALUES_LIMIT + 1).toString(),
   );
 
   return derivedSwitch(columnAxesQuery, (columnAxesResult) => {
@@ -201,12 +205,25 @@ function createColumnAxesStage(
       return getErrorState(columnAxesResult.error);
     }
 
+    const columnAxes = columnAxesResult?.data;
+    const columnDimensionAxes =
+      columnAxes &&
+      Object.fromEntries(
+        Object.entries(columnAxes).map(([name, values]) => [
+          name,
+          values.slice(0, COLUMN_DIMENSION_VALUES_LIMIT),
+        ]),
+      );
+
     return createRowAxesStage({
       ctx,
       config,
       cache,
-      plan: createPivotBaseQueryPlan(config, columnAxesResult?.data),
-      columnDimensionAxes: columnAxesResult?.data,
+      plan: createPivotBaseQueryPlan(config, columnDimensionAxes),
+      columnDimensionAxes,
+      columnAxesCapped: Object.values(columnAxes ?? {}).some(
+        (values) => values.length > COLUMN_DIMENSION_VALUES_LIMIT,
+      ),
     });
   });
 }
@@ -271,7 +288,9 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
           columnDef: cache.lastPivotColumnDef,
           assembled: false,
           totalColumns: cache.lastTotalColumns,
-          columnTruncation: cache.lastColumnTruncation,
+          // Only a refetch of the same config, such as the next row page,
+          // keeps the notice of the table it still shows.
+          columnTruncation: cache.columnTruncationMap[plan.configKey],
           totalsRowData: plan.displayTotalsRow
             ? getTotalsRowSkeleton(config, columnDimensionAxes)
             : undefined,
@@ -303,10 +322,13 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
         };
       }
 
+      // The totals row query asks for one combination past the limit, so a
+      // result with exactly the limit is not taken for a capped one.
+      const totalsRowCells = totalsRowResponse?.data?.data;
       const totalsRowData = getTotalsRow(
         config,
         columnDimensionAxes,
-        totalsRowResponse?.data?.data,
+        totalsRowCells?.slice(0, COLUMN_COMBINATIONS_LIMIT),
         globalTotalsResponse?.data?.data,
       );
 
@@ -323,13 +345,8 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
         limitedRowAxes,
         totalColumns: getTotalColumnCount(totalsRowData),
         columnQueriesCapped:
-          colDimensionNames.some(
-            (name) =>
-              (columnDimensionAxes?.[name]?.length ?? 0) >=
-              COLUMN_DIMENSION_VALUES_LIMIT,
-          ) ||
-          (totalsRowResponse?.data?.data?.length ?? 0) >=
-            COLUMN_COMBINATIONS_LIMIT,
+          args.columnAxesCapped ||
+          (totalsRowCells?.length ?? 0) > COLUMN_COMBINATIONS_LIMIT,
       });
     },
   );
@@ -553,6 +570,7 @@ function createExpandedDataStage(
     updatePivotDataCache(cache, {
       columnDef,
       columnTruncation,
+      configKey: plan.configKey,
       data,
       rowPage: plan.rowPage,
       totalColumns,

@@ -14,8 +14,9 @@ import type {
 } from "./types";
 
 export interface PivotDataCache {
+  // Column truncation of the last assembled table, keyed by its config key.
+  columnTruncationMap: Record<string, PivotColumnTruncation | undefined>;
   expandedTableMap: Record<string, PivotDataRow[]>;
-  lastColumnTruncation: PivotColumnTruncation | undefined;
   lastPivotColumnDef: ColumnDef<PivotDataRow>[];
   lastPivotData: PivotDataRow[];
   lastProcessedConfigKey: string;
@@ -37,8 +38,8 @@ export interface FinalPivotStateDetails {
 
 export function createPivotDataCache(): PivotDataCache {
   return {
+    columnTruncationMap: {},
     expandedTableMap: {},
-    lastColumnTruncation: undefined,
     lastPivotColumnDef: [],
     lastPivotData: [],
     lastProcessedConfigKey: "",
@@ -266,6 +267,7 @@ export function updatePivotDataCache(
   args: {
     columnDef: ColumnDef<PivotDataRow>[];
     columnTruncation: PivotColumnTruncation | undefined;
+    configKey: string;
     data: PivotDataRow[];
     rowPage: number;
     totalColumns: number;
@@ -274,6 +276,6 @@ export function updatePivotDataCache(
   cache.lastPivotData = args.data;
   cache.lastProcessedRowPage = args.rowPage;
   cache.lastPivotColumnDef = args.columnDef;
-  cache.lastColumnTruncation = args.columnTruncation;
+  cache.columnTruncationMap = { [args.configKey]: args.columnTruncation };
   cache.lastTotalColumns = args.totalColumns;
 }

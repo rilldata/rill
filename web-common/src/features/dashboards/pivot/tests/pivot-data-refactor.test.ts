@@ -3,6 +3,7 @@ import {
   createPivotDataCache,
   getPivotSkeletonForPage,
   syncPivotCacheToConfig,
+  updatePivotDataCache,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-assembly";
 import {
   type PivotBaseQueryPlan,
@@ -97,6 +98,25 @@ describe("applyOutermostRowLimit", () => {
     ]);
   });
 
+  it("reports no more rows when the values end exactly at the limit", () => {
+    // The axis query asks for the limit plus one, so exactly the limit
+    // means nothing is left out.
+    const result = applyOutermostRowLimit(
+      config({
+        pivot: {
+          ...config().pivot,
+          rowLimit: 2,
+        },
+      }),
+      plan({ effectiveOutermostLimit: 2 }),
+      ["US", "CA"],
+      [{ country: "US" }, { country: "CA" }],
+    );
+
+    expect(result.hasMoreRows).toBe(false);
+    expect(result.rowDimensionValues).toEqual(["US", "CA"]);
+  });
+
   it("does not trim flat table row values", () => {
     const result = applyOutermostRowLimit(
       config({ isFlat: true }),
@@ -128,6 +148,24 @@ describe("pivot data assembly helpers", () => {
     );
 
     expect(skeleton).toEqual([{ country: "US" }, { country: "CA" }]);
+  });
+
+  it("keeps the column truncation only for the config it was computed for", () => {
+    const cache = createPivotDataCache();
+    updatePivotDataCache(cache, {
+      columnDef: [],
+      columnTruncation: { shown: 50, total: 120 },
+      configKey: "domain-columns",
+      data: [],
+      rowPage: 1,
+      totalColumns: 120,
+    });
+
+    expect(cache.columnTruncationMap["domain-columns"]).toEqual({
+      shown: 50,
+      total: 120,
+    });
+    expect(cache.columnTruncationMap["other-columns"]).toBeUndefined();
   });
 
   it("resets page accumulation when the config key changes", () => {
@@ -167,6 +205,26 @@ describe("pivot data assembly helpers", () => {
         __currentLimit: 2,
       },
     ]);
+  });
+
+  it("adds no outer row when the rows end exactly at the limit", () => {
+    const finalState = buildFinalPivotStateDetails({
+      anchorDimension: "country",
+      columnDimensionAxes: {},
+      config: config({
+        pivot: {
+          ...config().pivot,
+          outermostRowLimit: 2,
+        },
+      }),
+      data: [{ country: "US" }, { country: "CA" }] as PivotDataRow[],
+      hasMoreRows: false,
+      isCellDataEmpty: false,
+      rowDimensionValues: ["US", "CA"],
+      rowOffset: 0,
+    });
+
+    expect(finalState.data).toEqual([{ country: "US" }, { country: "CA" }]);
   });
 
   it("waits for the last page when the limit spans several pages", () => {

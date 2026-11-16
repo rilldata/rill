@@ -160,6 +160,37 @@ describe("pivot expansion", () => {
       __currentLimit: 100,
     });
   });
+
+  it("does not end a group that has exactly the limit of rows", () => {
+    const tableData: PivotDataRow[] = [
+      {
+        publisher: "A",
+        subRows: [{ publisher: LOADING_CELL }],
+      },
+    ];
+
+    addExpandedDataToPivot(
+      getConfig(true),
+      tableData,
+      ["publisher", "campaign"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: "0",
+          rowDimensionValues: ["A"],
+          totals: [{ campaign: "campaign-1", impressions: 10 }],
+          data: [],
+          hasMore: false,
+          effectiveLimit: 100,
+        },
+      ],
+    );
+
+    expect(tableData[0].subRows?.at(-1)).toMatchObject({
+      campaign: "campaign-1",
+    });
+  });
 });
 
 describe("createSubTableCellQuery", () => {

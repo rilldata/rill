@@ -190,6 +190,7 @@ describe("getTotalsRowQuery", () => {
       start: "2022-01-01T00:00:00.000Z",
       end: "2022-01-05T04:00:00.000Z",
     });
-    expect(request.limit).toBe("300");
+    // One past the limit, to tell a capped result from an exact one.
+    expect(request.limit).toBe("301");
   });
 });

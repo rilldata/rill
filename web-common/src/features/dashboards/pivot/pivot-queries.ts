@@ -347,6 +347,8 @@ export function getTotalsRowQuery(
       name: config.measureNames[0],
     },
   ];
+  // One combination past the limit tells a capped result from one that has
+  // exactly the limit; the caller keeps only the limit.
   return createPivotAggregationRowQuery(
     ctx,
     config,
@@ -354,7 +356,7 @@ export function getTotalsRowQuery(
     dimensionBody,
     mergedFilter,
     sortBy,
-    COLUMN_COMBINATIONS_LIMIT.toString(),
+    (COLUMN_COMBINATIONS_LIMIT + 1).toString(),
     "0",
     getTimeForQuery(time, timeFilters),
   );
