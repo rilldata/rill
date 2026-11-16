@@ -219,11 +219,15 @@ test.describe.serial("Password-protected public URLs", () => {
     await expect(page.getByText("Public URL updated")).toBeVisible();
     await expect(row.getByLabel("Password protected")).toBeHidden();
 
-    // The URL now opens without a password
-    await anonPage.goto(publicUrl);
-    await expect(
-      anonPage.getByRole("button", { name: "Requests 6.60M" }),
-    ).toBeVisible();
+    // The URL now opens without a password.
+    // The admin service caches a validated token for up to 10 seconds, and the previous test used this one,
+    // so it can still be reported as password protected right after the change: reopen the URL until the cached entry expires.
+    await expect(async () => {
+      await anonPage.goto(publicUrl);
+      await expect(
+        anonPage.getByRole("button", { name: "Requests 6.60M" }),
+      ).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(
       anonPage.getByText("This dashboard is password protected"),
     ).toBeHidden();
