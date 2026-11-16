@@ -9,6 +9,8 @@
   import { openMcpConnectPopup } from "@rilldata/web-common/features/chat/connect/mcp-servers";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { errorStore } from "../../../components/errors/error-store";
+  import { viewAsUserStore } from "../../view-as-user/viewAsUserStore";
   import { connectorOAuthConnectUrl } from "./connect-url";
   import {
     connectorSignInRequired,
@@ -25,6 +27,7 @@
     branch?: string;
   } = $props();
 
+  let viewAsEmail = $derived($viewAsUserStore?.email ?? "");
   let signingIn = $state(false);
   let failure = $state<string | null>(null);
 
@@ -40,6 +43,13 @@
   function dismiss() {
     connectorSignInRequired.set(null);
     failure = null;
+  }
+
+  // The popup would authorize the admin, not the viewed user.
+  function exitViewAs() {
+    viewAsUserStore.set(null);
+    errorStore.reset();
+    dismiss();
   }
 
   async function signIn() {
@@ -72,24 +82,40 @@
   }
 >
   <Dialog.Content class="max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>{m.connector_sign_in_title()}</Dialog.Title>
-      <Dialog.Description
-        >{m.connector_sign_in_description()}</Dialog.Description
-      >
-    </Dialog.Header>
-    {#if failure}
-      <p class="text-sm text-destructive">{failure}</p>
+    {#if $viewAsUserStore}
+      <Dialog.Header>
+        <Dialog.Title>{m.connector_sign_in_view_as_title()}</Dialog.Title>
+        <Dialog.Description
+          >{m.connector_sign_in_view_as_description({
+            email: viewAsEmail,
+          })}</Dialog.Description
+        >
+      </Dialog.Header>
+      <Dialog.Footer>
+        <Button type="primary" onClick={exitViewAs}>
+          {m.connector_sign_in_view_as_exit()}
+        </Button>
+      </Dialog.Footer>
+    {:else}
+      <Dialog.Header>
+        <Dialog.Title>{m.connector_sign_in_title()}</Dialog.Title>
+        <Dialog.Description
+          >{m.connector_sign_in_description()}</Dialog.Description
+        >
+      </Dialog.Header>
+      {#if failure}
+        <p class="text-sm text-destructive">{failure}</p>
+      {/if}
+      <Dialog.Footer>
+        <Button
+          type="primary"
+          onClick={signIn}
+          loading={signingIn}
+          disabled={signingIn}
+        >
+          {m.connector_sign_in_button()}
+        </Button>
+      </Dialog.Footer>
     {/if}
-    <Dialog.Footer>
-      <Button
-        type="primary"
-        onClick={signIn}
-        loading={signingIn}
-        disabled={signingIn}
-      >
-        {m.connector_sign_in_button()}
-      </Button>
-    </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

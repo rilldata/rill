@@ -17,6 +17,12 @@ describe("connectorOAuthRequired", () => {
     ).toBe("dbx");
   });
 
+  it("matches an HTTP error", () => {
+    expect(
+      connectorOAuthRequired({ response: { data: { code: 9, message } } }),
+    ).toBe("dbx");
+  });
+
   it("returns null for other FailedPrecondition errors", () => {
     expect(connectorOAuthRequired({ code: 9, message: "other" })).toBeNull();
   });
