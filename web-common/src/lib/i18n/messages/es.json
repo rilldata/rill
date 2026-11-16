@@ -414,6 +414,7 @@
   "canvas_block_name_hint_container": "Identificador estable del contenedor en el YAML del dashboard",
   "canvas_block_name_hint_tab_group": "Identificador estable que se usa como clave del grupo en la URL de los enlaces",
   "canvas_block_name_tab_group": "Nombre del grupo de pestañas",
+  "canvas_block_name_taken": "Otro grupo de pestañas o contenedor ya se llama \"{name}\".",
   "canvas_blues": "Azules",
   "canvas_breakdown_by_label": "Desglosar por",
   "canvas_cancel": "Cancelar",

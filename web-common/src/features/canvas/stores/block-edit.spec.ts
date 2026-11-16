@@ -290,6 +290,27 @@ rows:
 });
 
 describe("block names", () => {
+  it("renameBlock rejects a name another block has", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - name: story
+    rows: []
+  - name: details
+    tabs: []
+  - rows: []
+`);
+    expect(renameBlock(doc, 1, "story")).toBe(false);
+    // The parser names the unnamed block "container-2".
+    expect(renameBlock(doc, 0, "container-2")).toBe(false);
+    expect(doc.toJSON().rows.map((r: { name?: string }) => r.name)).toEqual([
+      "story",
+      "details",
+      undefined,
+    ]);
+    // A block can keep its own name.
+    expect(renameBlock(doc, 0, " story ")).toBe(true);
+  });
+
   it("nameBlocks writes the default name of each unnamed block before its content", () => {
     const doc = parseDocument(`type: canvas
 rows:
@@ -461,6 +482,55 @@ rows:
     expect(unwrapRows(doc, 0, ["rows", 0, "rows"])).toBe(0);
     expect(doc.toJSON().rows).toEqual([{ items: [{ component: "a" }] }]);
   });
+
+  // An admin-only container holds an anchored row; a finance-only container holds an alias
+  // of it.
+  const SHARED_ROW = `type: canvas
+rows:
+  - name: admin
+    if: "{{ .user.admin }}"
+    rows:
+      - &private_row
+        items:
+          - component: secret
+  - name: finance
+    if: "{{ .user.finance }}"
+    rows:
+      - *private_row
+`;
+  const PRIVATE_ITEMS = [{ component: "secret" }];
+
+  it("gives an aliased row the condition of the container it leaves", () => {
+    const doc = parseDocument(SHARED_ROW);
+    expect(unwrapRows(doc, 1, ["rows", 1, "rows"])).toBe(1);
+
+    // The alias becomes a copy with the finance condition; the anchor keeps its own.
+    expect(doc.toJSON().rows).toEqual([
+      {
+        name: "admin",
+        if: "{{ .user.admin }}",
+        rows: [{ items: PRIVATE_ITEMS }],
+      },
+      { if: "{{ .user.finance }}", items: PRIVATE_ITEMS },
+    ]);
+    expect(parseDocument(doc.toString()).errors).toEqual([]);
+  });
+
+  it("leaves the aliases of a row alone when its container is ungrouped", () => {
+    const doc = parseDocument(SHARED_ROW);
+    expect(unwrapRows(doc, 0, ["rows", 0, "rows"])).toBe(1);
+
+    // The finance container keeps an unconditioned copy of the row.
+    expect(doc.toJSON().rows).toEqual([
+      { if: "{{ .user.admin }}", items: PRIVATE_ITEMS },
+      {
+        name: "finance",
+        if: "{{ .user.finance }}",
+        rows: [{ items: PRIVATE_ITEMS }],
+      },
+    ]);
+    expect(parseDocument(doc.toString()).errors).toEqual([]);
+  });
 });
 
 describe("moveItemAcrossContainers", () => {
@@ -627,6 +697,32 @@ rows:
       { items: [{ component: "a" }, { component: "b" }] },
       { name: "story", rows: [] },
     ]);
+  });
+
+  it("gives an aliased widget the conditions it leaves, without changing its anchor", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - &chart
+        component: c
+  - name: g
+    if: "{{ .user.admin }}"
+    tabs:
+      - label: A
+        rows:
+          - items:
+              - *chart
+`);
+    moveItemAcrossContainers(
+      doc,
+      { rowsPath: ["rows", 1, "tabs", 0, "rows"], row: 0, col: 0 },
+      { rowsPath: ["rows"], row: 0, col: 1 },
+    );
+    expect(doc.toJSON().rows[0].items).toEqual([
+      { component: "c" },
+      { if: "{{ .user.admin }}", component: "c" },
+    ]);
+    expect(parseDocument(doc.toString()).errors).toEqual([]);
   });
 });
 

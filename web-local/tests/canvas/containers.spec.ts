@@ -153,7 +153,20 @@ test.describe("canvas containers", () => {
     await blockRegion(page, 0).locator(".chip .label").click();
     const name = page.getByLabel("Container name");
     await expect(name).toHaveValue("story");
+
+    // The name of another block is refused in place, since the parser rejects it.
+    await name.fill("container-2");
+    await name.press("Enter");
+    const taken = page.getByText(
+      'Another tab group or container is already named "container-2".',
+    );
+    await expect(taken).toBeVisible();
+    await expectProjectFile(page, CANVAS, [
+      "rows:\n  - name: story\n    rows:",
+    ]);
+
     await name.fill("revenue_story");
+    await expect(taken).toBeHidden();
     await name.press("Enter");
     await expectProjectFile(page, CANVAS, [
       "rows:\n  - name: revenue_story\n    rows:",

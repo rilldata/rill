@@ -30,6 +30,7 @@
   import BlockDeleteDialog from "../BlockDeleteDialog.svelte";
   import {
     blockHasContent,
+    blockIndexOf,
     deleteBlock,
     duplicateBlock,
     renameBlock,
@@ -65,6 +66,16 @@
   // A local draft of the name. It resets when the block is renamed, so typing isn't
   // clobbered by unrelated updates.
   let draftName = $derived(name);
+  // A name the author tried that another block already has. Its error shows while the draft
+  // still holds it.
+  let takenName = $state<string>();
+  const nameError = $derived(
+    takenName !== undefined &&
+      takenName !== name &&
+      draftName.trim() === takenName
+      ? m.canvas_block_name_taken({ name: takenName })
+      : undefined,
+  );
   let pendingDelete = $state(false);
 
   const labels = $derived(
@@ -92,6 +103,13 @@
     // Every block has a name, so clearing the field puts the current one back.
     if (!trimmed || trimmed === name) {
       draftName = name;
+      return;
+    }
+    // Tab groups and containers share one set of names, and the parser rejects a canvas in
+    // which two blocks have the same one.
+    const current = parseDocument(get(fileArtifact.editorContent) ?? "");
+    if (blockIndexOf(current, trimmed) !== -1) {
+      takenName = trimmed;
       return;
     }
     await applyCanvasEdit(fileArtifact, autoSave, (doc) => {
@@ -136,6 +154,8 @@
       labelGap={2}
       label={labels.name}
       hint={labels.nameHint}
+      errors={nameError}
+      alwaysShowError
       bind:value={draftName}
       onBlur={commitRename}
       onEnter={commitRename}
