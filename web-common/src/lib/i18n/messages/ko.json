@@ -45,6 +45,7 @@
   "alert_form_criteria_no_trigger_current_range": "위 조건으로는 현재 기간에 이 알림이 발생하지 않습니다.",
   "alert_form_criteria_operator_aria": "조건 연산자",
   "alert_form_criteria_operator_placeholder": "연산자",
+  "alert_form_criteria_percent_of_total_needs_split": "{field}은(는) 전체 대비 비율(%)이므로 데이터 탭에서 분할할 차원을 선택해야 합니다.",
   "alert_form_criteria_preview_title": "알림 미리보기",
   "alert_form_criteria_title": "조건",
   "alert_form_criteria_type_aria": "조건 유형",

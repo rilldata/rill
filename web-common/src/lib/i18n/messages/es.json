@@ -45,6 +45,7 @@
   "alert_form_criteria_no_trigger_current_range": "Según los criterios anteriores, esta alerta no se activará para el rango de tiempo actual.",
   "alert_form_criteria_operator_aria": "Operador del criterio",
   "alert_form_criteria_operator_placeholder": "Operador",
+  "alert_form_criteria_percent_of_total_needs_split": "{field} es un % del total, que requiere dividir por una dimensión en la pestaña Datos.",
   "alert_form_criteria_preview_title": "Vista previa de la alerta",
   "alert_form_criteria_title": "Criterios",
   "alert_form_criteria_type_aria": "Tipo de criterio",
