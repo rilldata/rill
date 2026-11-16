@@ -1765,6 +1765,8 @@
   "pivot_auto": "자동",
   "pivot_chip_aria": "{title} 피벗 칩",
   "pivot_collapse_row": "행 접기",
+  "pivot_columns_truncated": "전체 {total}개 열 중 처음 {shown}개를 표시합니다. 나머지를 보려면 필터를 추가하거나 시간 범위를 좁히세요.",
+  "pivot_columns_truncated_unknown_total": "처음 {shown}개 열을 표시합니다. 나머지를 보려면 필터를 추가하거나 시간 범위를 좁히세요.",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1791,6 +1793,10 @@
       }
     }
   ],
+  "pivot_rows_truncated": "처음 {limit}개만 표시",
+  "pivot_rows_truncated_tooltip": "\"{dimension}\"에는 여기에 표시된 {limit}개보다 많은 값이 있습니다. 필터를 추가해 범위를 좁히세요.",
+  "pivot_show_more": "더 보기 ...",
+  "pivot_show_more_tooltip": "\"{dimension}\"의 제한을 {limit}(으)로 늘리기",
   "pivot_tags": "태그",
   "pivot_time_dimension_header": "시간 {grain}",
   "pivot_time_prefix": "시간",

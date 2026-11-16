@@ -1765,6 +1765,8 @@
   "pivot_auto": "Auto",
   "pivot_chip_aria": "{title} pivot chip",
   "pivot_collapse_row": "Collapse row",
+  "pivot_columns_truncated": "Showing the first {shown} of {total} columns. Add filters or narrow the time range to see the rest.",
+  "pivot_columns_truncated_unknown_total": "Showing the first {shown} columns. Add filters or narrow the time range to see the rest.",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1791,6 +1793,10 @@
       }
     }
   ],
+  "pivot_rows_truncated": "First {limit} shown",
+  "pivot_rows_truncated_tooltip": "\"{dimension}\" has more values than the {limit} shown here. Add filters to narrow them down.",
+  "pivot_show_more": "Show more ...",
+  "pivot_show_more_tooltip": "Increase limit to {limit} on \"{dimension}\"",
   "pivot_tags": "TAGS",
   "pivot_time_dimension_header": "Time {grain}",
   "pivot_time_prefix": "Time",
