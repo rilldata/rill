@@ -1,7 +1,7 @@
-// Package embedopen implements the "rill_open" param of open links in emails from reports created from an embed.
+// Package embedopen implements the "rill_open" param of open links in emails from reports and alerts created from an embed.
 // The runtime appends the param to the embedder's open URL.
 // The embedder forwards it to the admin service's GetIFrame API without reading it,
-// and the admin service decodes it to open the report in the embed.
+// and the admin service decodes it to open the report or alert in the embed.
 //
 // The param is an unpadded base64url encoding of a JSON object.
 // It isn't signed: it only identifies a resource, and the embed access token decides access.
@@ -25,6 +25,7 @@ type Kind string
 
 const (
 	KindReport Kind = "report"
+	KindAlert  Kind = "alert"
 )
 
 // Payload is the information encoded in the param.
@@ -37,7 +38,7 @@ type Payload struct {
 
 // Validate returns an error if the payload is not valid.
 func (p *Payload) Validate() error {
-	if p.Kind != KindReport {
+	if p.Kind != KindReport && p.Kind != KindAlert {
 		return fmt.Errorf("invalid kind %q", p.Kind)
 	}
 	if p.Name == "" {

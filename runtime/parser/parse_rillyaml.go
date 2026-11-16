@@ -112,7 +112,7 @@ type rillYAML struct {
 	PublicPaths []string `yaml:"public_paths"`
 	// Configuration for embedded dashboards
 	Embeds struct {
-		// Base URL for open links in emails from reports created from an embed
+		// Base URL for open links in emails from reports and alerts created from an embed
 		OpenURL string `yaml:"open_url"`
 	} `yaml:"embeds"`
 	// Paths to ignore when watching for changes.
