@@ -35,12 +35,15 @@ export function buildBookmarkRows({
   dashboards,
   organization,
   project,
+  isEmbedded = false,
   recentlyUsed,
 }: {
   bookmarks: V1Bookmark[];
   dashboards: V1Resource[];
   organization: string;
   project: string;
+  // Links to the embed dashboard routes instead of the Rill Cloud ones.
+  isEmbedded?: boolean;
   // Bookmark id to epoch milliseconds, see RecentlyUsedBookmarks.
   recentlyUsed: Record<string, number>;
 }): BookmarkListRow[] {
@@ -74,7 +77,7 @@ export function buildBookmarkRows({
         : undefined,
       dashboardTitle: dashboardTitles.get(dashboardKey(kind, name)) ?? name,
       href: slug
-        ? `/${organization}/${project}/${slug}/${name}${urlSearch}`
+        ? `${isEmbedded ? "/-/embed" : `/${organization}/${project}`}/${slug}/${name}${urlSearch}`
         : undefined,
       canManage: !!bookmark.canManage,
       lastUsed: bookmark.id ? (recentlyUsed[bookmark.id] ?? 0) : 0,

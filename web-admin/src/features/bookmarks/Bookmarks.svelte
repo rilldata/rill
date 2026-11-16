@@ -173,7 +173,6 @@
         {...props}
         compact
         square
-        noStroke={variant === "embed"}
         type="secondary"
         label={m.bookmark_other_dropdown_label()}
         active={open}

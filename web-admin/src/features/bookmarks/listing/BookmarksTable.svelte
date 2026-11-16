@@ -4,10 +4,13 @@
   import { onDestroy } from "svelte";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceRemoveBookmark,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
+  import {
+    bookmarkRemoveMutationFactory,
+    getEmbedProjectBookmarksQueryOptions,
+  } from "@rilldata/web-admin/features/bookmarks/bookmark-client.ts";
   import BookmarkMetadataDialog from "@rilldata/web-admin/features/bookmarks/BookmarkMetadataDialog.svelte";
   import {
     type BookmarkListRow,
@@ -27,6 +30,8 @@
   import { AlertDialogConfirmation } from "@rilldata/web-common/components/alert-dialog";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import { getOrgAndProjectForEmbed } from "@rilldata/web-common/features/embeds/selectors.ts";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -40,10 +45,13 @@
   import { writable } from "svelte/store";
 
   let {
+    isEmbedded = false,
     isPreview = false,
     previewLimit = undefined,
     sortStore: sortStoreProp = undefined,
   }: {
+    // Lists the embed user's bookmarks, authenticating with the embed's admin token.
+    isEmbedded?: boolean;
     isPreview?: boolean;
     previewLimit?: number;
     // Lets a parent share the sort state, e.g. the project home page renders the sort dropdown in its heading.
@@ -78,7 +86,13 @@
   onDestroy(() => searchTextStore.cancel());
 
   const runtimeClient = useRuntimeClient();
-  let { organization, project } = $derived(page.params);
+
+  // Embed routes have no org and project params, so they are resolved from the runtime instance.
+  // svelte-ignore state_referenced_locally
+  const embedOrgAndProject = isEmbedded
+    ? getOrgAndProjectForEmbed(runtimeClient)
+    : null;
+  let { organization, project } = $derived($embedOrgAndProject ?? page.params);
 
   const orgAndProjectNameStore = writable({
     organization: page.params.organization,
@@ -88,13 +102,18 @@
     orgAndProjectNameStore.set({ organization, project });
   });
 
-  const user = createAdminServiceGetCurrentUser();
+  // Embed users are identified by the admin token rather than a Rill user, so there is no current user to wait on.
+  // svelte-ignore state_referenced_locally
+  const user = isEmbedded ? null : createAdminServiceGetCurrentUser();
+  // svelte-ignore state_referenced_locally
   const bookmarksQuery = createQuery(
-    getProjectBookmarksQueryOptions(orgAndProjectNameStore),
+    isEmbedded
+      ? getEmbedProjectBookmarksQueryOptions()
+      : getProjectBookmarksQueryOptions(orgAndProjectNameStore),
   );
   const dashboardsQuery = useDashboards(runtimeClient);
 
-  let { data: userData, isPending: isUserPending } = $derived($user);
+  let isUserPending = $derived(!!$user?.isPending);
   let {
     data: bookmarksData,
     isPending: isBookmarksPending,
@@ -106,7 +125,7 @@
     new RecentlyUsedBookmarks(organization, project),
   );
 
-  let hasUser = $derived(!!userData?.user);
+  let hasUser = $derived(isEmbedded || !!$user?.data?.user);
   // Anonymous viewers have no bookmarks, so only wait on the bookmarks query when there is a user.
   let isLoading = $derived(isUserPending || (hasUser && isBookmarksPending));
 
@@ -116,12 +135,15 @@
       dashboards: dashboardsData ?? [],
       organization,
       project,
+      isEmbedded,
       recentlyUsed: recentlyUsedBookmarks.recentlyUsed.value,
     }),
   );
   let filteredRows = $derived(filterBookmarkRows(rows, searchTextStore.value));
+  // Embeds have no full bookmarks page to link to.
   let hasMoreBookmarks = $derived(
-    isPreview &&
+    !isEmbedded &&
+      isPreview &&
       previewLimit !== undefined &&
       filteredRows.length > previewLimit,
   );
@@ -129,7 +151,9 @@
   let editing = $state<BookmarkListRow | null>(null);
   let deleting = $state<BookmarkListRow | null>(null);
 
-  const bookmarkDeleter = createAdminServiceRemoveBookmark();
+  const bookmarkDeleter = createMutationFromFactory(
+    bookmarkRemoveMutationFactory,
+  );
 
   async function confirmDelete() {
     if (!deleting) return;
@@ -255,6 +279,7 @@
     {project}
     bookmark={editing.bookmark}
     href={editing.href}
+    showSharedBookmarks={!isEmbedded}
     onClose={() => (editing = null)}
   />
 {/if}
