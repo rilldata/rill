@@ -1,6 +1,6 @@
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
-import { render, screen } from "@testing-library/svelte";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import Select from "./Select.svelte";
 
 const OPTIONS = [
@@ -8,6 +8,37 @@ const OPTIONS = [
   { value: "opt2", label: "Option 2" },
   { value: "opt3", label: "Option 3" },
 ];
+
+describe("Select – empty-value option", () => {
+  mockAnimationsForComponentTesting();
+  beforeAll(() => {
+    // jsdom lacks scrollIntoView, which bits-ui calls to highlight the open list.
+    HTMLElement.prototype.scrollIntoView ??= () => {};
+  });
+
+  it("calls onChange with empty string when the empty-value option is picked", async () => {
+    const onChange = vi.fn();
+
+    render(Select, {
+      props: {
+        id: "test-select",
+        label: "Split by",
+        options: [{ value: "", label: "None" }, ...OPTIONS],
+        value: "opt1",
+        onChange,
+      },
+    });
+
+    await fireEvent.keyDown(screen.getByLabelText("Split by"), {
+      key: "Enter",
+    });
+    await fireEvent.pointerUp(await screen.findByText("None"), {
+      pointerType: "mouse",
+    });
+
+    expect(onChange).toHaveBeenCalledWith("");
+  });
+});
 
 describe("Select – clearable", () => {
   mockAnimationsForComponentTesting();
