@@ -136,6 +136,11 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 }
 
+func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
+	// Converts to the wall-clock time in tz and back, like DateTruncExpr, so the result is a TIMESTAMP in UTC.
+	return fmt.Sprintf("timezone('%s', timezone('%s', (%s)::TIMESTAMPTZ) - INTERVAL (%s) %s)::TIMESTAMP", tz, tz, tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), true
+}
+
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
