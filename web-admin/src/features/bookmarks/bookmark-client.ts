@@ -57,3 +57,12 @@ export function getEmbedBookmarksQueryOptions(
     ),
   );
 }
+
+/**
+ * Query options for all of the embed user's bookmarks in the project.
+ * The project ID is omitted; the server resolves it from the embed's admin token.
+ */
+export function getEmbedProjectBookmarksQueryOptions() {
+  const adminToken = EmbedStore.getInstance()?.adminToken ?? "";
+  return getAdminServiceListBookmarksUsingTokenQueryOptions({}, adminToken);
+}
