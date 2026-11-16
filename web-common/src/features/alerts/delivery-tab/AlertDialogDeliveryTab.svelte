@@ -156,6 +156,9 @@
           : embedOwnerEmailLocked
             ? m.alert_form_embed_owner_email_hint()
             : m.alert_form_embed_owner_email_optional_hint()}
+        label={isEmbedded
+          ? m.report_form_embed_owner_email_label()
+          : m.report_form_embed_creator_email_label()}
       />
     </FormSection>
   {/if}
