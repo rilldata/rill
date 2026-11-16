@@ -492,7 +492,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 
 			if errors.Is(err, errReconcileHung) {
 				select {
-				case r.rt.fatalErrs <- err:
+				case r.rt.fatalErr <- err:
 				default: // A fatal error is already pending
 				}
 			}

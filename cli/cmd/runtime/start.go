@@ -304,7 +304,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group.Go(func() error {
 				// Exit on unrecoverable runtime errors so the orchestrator restarts the process.
 				select {
-				case err := <-rt.FatalErrors():
+				case err := <-rt.Fatal():
 					return err
 				case <-cctx.Done():
 					return nil

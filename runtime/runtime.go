@@ -52,7 +52,7 @@ type Runtime struct {
 	queryCache     *queryCache
 	securityEngine *securityEngine
 	configReloader *configReloader
-	fatalErrs      chan error
+	fatalErr       chan error
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -67,7 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		storage:    st,
 		activity:   ac,
 		queryCache: newQueryCache(opts.QueryCacheSizeBytes),
-		fatalErrs:  make(chan error, 1),
+		fatalErr:   make(chan error, 1),
 	}
 	rt.securityEngine = newSecurityEngine(opts.SecurityEngineCacheSize, logger, rt)
 
@@ -96,10 +96,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 	return rt, nil
 }
 
-// FatalErrors returns a channel that receives errors the runtime can't recover from in-process.
-// The caller should restart the process when it receives one.
-func (r *Runtime) FatalErrors() <-chan error {
-	return r.fatalErrs
+// Fatal returns a channel that receives an error the runtime can't recover from in-process.
+// The caller should restart the process when it receives it.
+func (r *Runtime) Fatal() <-chan error {
+	return r.fatalErr
 }
 
 func (r *Runtime) AllowHostAccess() bool {
