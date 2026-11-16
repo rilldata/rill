@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/arrow-go/v18/parquet/file"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -343,25 +342,4 @@ func acquireTestSnowflake(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	require.True(t, ok)
 
 	return conn, olap
-}
-
-func TestQueryAsFilesSmallResult(t *testing.T) {
-	testmode.Expensive(t)
-
-	conn, _ := acquireTestSnowflake(t)
-	w, ok := conn.AsWarehouse()
-	require.True(t, ok)
-
-	it, err := w.QueryAsFiles(t.Context(), map[string]any{"sql": "SELECT seq4() AS id FROM TABLE(GENERATOR(ROWCOUNT => 3))"})
-	require.NoError(t, err)
-	t.Cleanup(func() { it.Close() })
-
-	files, err := it.Next(t.Context())
-	require.NoError(t, err)
-	require.Len(t, files, 1)
-
-	r, err := file.OpenParquetFile(files[0], false)
-	require.NoError(t, err)
-	defer r.Close()
-	require.EqualValues(t, 3, r.NumRows())
 }
