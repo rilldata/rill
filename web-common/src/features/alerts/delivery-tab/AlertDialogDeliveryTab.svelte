@@ -137,6 +137,28 @@
       </svelte:fragment>
     </FormSection>
   {/if}
+  {#if showEmbedOwnerEmail}
+    <!-- Outside of the email notifications section, since the creator gets the alert even if that section is turned off. -->
+    <FormSection
+      title={isEmbedded
+        ? m.report_form_embed_owner_email_label()
+        : m.report_form_embed_creator_email_label()}
+    >
+      <Input
+        bind:value={$form["embedOwnerEmail"]}
+        errors={$errors["embedOwnerEmail"]}
+        id="embedOwnerEmail"
+        placeholder={m.alert_form_email_placeholder()}
+        disabled={embedOwnerEmailLocked}
+        optional={!embedOwnerEmailLocked}
+        hint={!isEmbedded
+          ? m.alert_form_embed_creator_email_hint()
+          : embedOwnerEmailLocked
+            ? m.alert_form_embed_owner_email_hint()
+            : m.alert_form_embed_owner_email_optional_hint()}
+      />
+    </FormSection>
+  {/if}
   <FormSection
     bind:enabled={$form["enableEmailNotification"]}
     description={isEmbedded
@@ -155,24 +177,6 @@
       plural="emails"
       preventFocus={true}
     />
-    {#if showEmbedOwnerEmail}
-      <Input
-        bind:value={$form["embedOwnerEmail"]}
-        errors={$errors["embedOwnerEmail"]}
-        id="embedOwnerEmail"
-        label={isEmbedded
-          ? m.report_form_embed_owner_email_label()
-          : m.report_form_embed_creator_email_label()}
-        placeholder={m.alert_form_email_placeholder()}
-        disabled={embedOwnerEmailLocked}
-        optional={!embedOwnerEmailLocked}
-        hint={!isEmbedded
-          ? m.alert_form_embed_creator_email_hint()
-          : embedOwnerEmailLocked
-            ? m.alert_form_embed_owner_email_hint()
-            : m.alert_form_embed_owner_email_optional_hint()}
-      />
-    {/if}
     <Checkbox
       bind:checked={$form["exportAttach"]}
       id="exportAttach"

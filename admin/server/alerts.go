@@ -212,7 +212,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		}
 		// Unlike reports, the alert's target dashboard isn't checked against the embed's resources, since the embedder controls which dashboards it embeds.
 		// The alert's data is still limited to the embed's resources when it runs.
-		embedResources = embedDashboardResources(mdl.Resources)
+		embedResources, err = embedAlertResources(mdl.Resources)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
@@ -325,7 +328,10 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	if err != nil {
 		return nil, err
 	}
-	embedResources = embedDashboardResources(embedResources)
+	embedResources, err = embedAlertResources(embedResources)
+	if err != nil {
+		return nil, err
+	}
 
 	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
@@ -629,6 +635,21 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	return &adminv1.GetAlertYAMLResponse{
 		Yaml: string(vf.Data),
 	}, nil
+}
+
+// embedAlertResources returns the resources to limit an alert created from an embed to (see embedDashboardResources).
+// An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
+// If the embed is limited but none of its resources are dashboards, it fails,
+// since an empty list would otherwise leave the alert unlimited.
+func embedAlertResources(resources []database.ResourceName) ([]database.ResourceName, error) {
+	if len(resources) == 0 {
+		return nil, nil
+	}
+	res := embedDashboardResources(resources)
+	if len(res) == 0 {
+		return nil, status.Error(codes.PermissionDenied, "alerts aren't supported for embeds that aren't limited to any dashboards")
+	}
+	return res, nil
 }
 
 // yamlForManagedAlert generates the YAML for an alert created from the UI.

@@ -90,6 +90,7 @@ export function useAlertOwnerName(
     {
       query: {
         select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
+        enabled: !!ownerId,
       },
     },
   );

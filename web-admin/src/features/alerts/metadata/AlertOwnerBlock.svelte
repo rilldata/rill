@@ -22,6 +22,8 @@
         : m.alert_meta_created_from_embed()}
     </span>
   {/if}
+{:else if !ownerId}
+  <span>{m.alert_meta_created_through_code()}</span>
 {:else if $ownerName.isSuccess}
   <span>
     {$ownerName.data
