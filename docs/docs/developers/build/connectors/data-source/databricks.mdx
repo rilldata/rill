@@ -131,7 +131,7 @@ Viewers who have not signed in see a prompt to sign in to Databricks in place of
 "View as" queries Databricks with the viewed user's connection. Project admins (and their service tokens) can run queries as any viewer who has connected Databricks, for example through "View as" or embeds issued for a user.
 
 :::note Not supported yet
-Embedded dashboards work only when issued for a Rill user ID. Embeds for external users, alerts, and scheduled reports do not work with `auth: oauth`; queries from them fail instead of using the service credential. Caching is disabled for this connector.
+`auth: oauth` requires a DBSQL warehouse; Lakehouse//RT warehouses are not supported. Embedded dashboards work only when issued for a Rill user ID. Embeds for external users, alerts, and scheduled reports do not work with `auth: oauth`; queries from them fail instead of using the service credential. Caching is disabled for this connector.
 :::
 
 ## Create Your First Model
