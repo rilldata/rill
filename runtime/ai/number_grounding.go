@@ -33,7 +33,8 @@ Then write your complete final response again. The user has not seen your previo
 
 // ungroundedNumbers returns the numbers written in a response that are not close to any number in the tool calls, tool results or user messages.
 // Assistant and system messages are not sources, since the numbers to check come from the assistant.
-// It ignores numbers that rarely state a measured value: small integers (counts and ranks), years, the parts of dates and times, and numbers in links.
+// It ignores numbers that rarely state a measured value: small integers without a sign or currency symbol (counts and ranks), years,
+// the parts of dates and times, and numbers in links.
 func ungroundedNumbers(response string, messages []*aiv1.CompletionMessage) []string {
 	var sources []float64
 	for _, msg := range messages {
@@ -70,9 +71,10 @@ func ungroundedNumbers(response string, messages []*aiv1.CompletionMessage) []st
 var (
 	markdownLinkTargetRegexp = regexp.MustCompile(`\]\([^)\s]*\)`)
 	urlRegexp                = regexp.MustCompile(`https?://[^\s)\]>]+`)
-	// numberRegexp matches digits with the separators of common locales: 1,234.5 and 1.234,5 and 1'234 and 1 234 (with a no-break or thin space).
-	// Regular spaces are not separators, so "1 234" is two numbers.
-	numberRegexp = regexp.MustCompile(`\d(?:[\d.,'’\x{00A0}\x{202F}\x{2009}]*\d)?`)
+	// numberRegexp matches digits with the separators of common locales: 1,234.5 and 1.234,5 and 1'234 and 1 234,5.
+	// A regular space only groups digits in threes after one to three leading digits, so "Mar 11 2025" is two numbers;
+	// no-break, narrow and thin spaces group digits anywhere.
+	numberRegexp = regexp.MustCompile(`\d{1,3}(?: \d{3})+(?:[.,]\d+)?\b|\d(?:[\d.,'’\x{00A0}\x{202F}\x{2009}]*\d)?`)
 )
 
 // writtenNumber is a number written in text.
@@ -81,12 +83,11 @@ type writtenNumber struct {
 	text string
 	// readings are the values the number may stand for: "1,234" is 1234 in English but 1.234 in German.
 	readings []numberReading
+	// sign is 1 or -1 for a number written with a sign, which states the direction of a change, and 0 otherwise.
+	sign int
 	// percent is set for a percentage, which may state a ratio ("1.66%" for 0.0166) or a value that is already in percent.
 	percent bool
-	// unknownUnit is set when a word follows the number that may be a scale in another language (like "milliards"),
-	// so the number is also matched by its significant digits, regardless of magnitude.
-	unknownUnit bool
-	// plain is set for an integer written without separators, decimals, percent sign or scale, like a count, rank or year.
+	// plain is set for an integer written without sign, currency symbol, separators, decimals, percent sign or scale, like a count, rank or year.
 	plain bool
 	// ordinal is set for "1st", "2nd", "3rd" and "4th".
 	ordinal bool
@@ -98,11 +99,10 @@ type numberReading struct {
 	value float64
 	// tolerance is how far a source value may be from value, for the rounding the written precision implies.
 	tolerance float64
-	// digits are the significant digits as written, used when the scale is unknown.
-	digits string
 }
 
 // isPlainCount reports whether n is a plain integer that rarely states a measured value: a small count or rank, or a year.
+// Amounts with a currency symbol and signed changes are never plain, however small: "$300" and "+200" are checked.
 func (n writtenNumber) isPlainCount() bool {
 	if !n.plain || len(n.readings) != 1 {
 		return false
@@ -112,6 +112,8 @@ func (n writtenNumber) isPlainCount() bool {
 }
 
 // groundedIn reports whether a source value matches n, allowing for the rounding n's written precision implies.
+// A number written with a sign only matches a source with the same sign;
+// one written without a sign matches either, as in "fell by 5%" for a ratio of -0.05.
 func (n writtenNumber) groundedIn(sources []float64) bool {
 	for _, r := range n.readings {
 		candidates := []numberReading{r}
@@ -120,36 +122,15 @@ func (n writtenNumber) groundedIn(sources []float64) bool {
 		}
 		for _, c := range candidates {
 			for _, s := range sources {
-				if math.Abs(s-c.value) <= c.tolerance+1e-9*math.Max(s, c.value) {
+				if n.sign == 0 {
+					s = math.Abs(s)
+				} else {
+					s *= float64(n.sign)
+				}
+				if math.Abs(s-c.value) <= c.tolerance+1e-9*math.Max(math.Abs(s), c.value) {
 					return true
 				}
 			}
-		}
-		// With fewer than three significant digits, nearly any set of sources would match.
-		if n.unknownUnit && len(r.digits) >= 3 && digitsMatch(r.digits, sources) {
-			return true
-		}
-	}
-	return false
-}
-
-// digitsMatch reports whether a source value has the given significant digits, give or take one in the last digit.
-func digitsMatch(digits string, sources []float64) bool {
-	if len(digits) > 15 { // The precision of a float64
-		digits = digits[:15]
-	}
-	want, err := strconv.ParseFloat(digits, 64)
-	if err != nil {
-		return false
-	}
-	for _, s := range sources {
-		if s == 0 {
-			continue
-		}
-		exp := math.Floor(math.Log10(s))
-		got := s / math.Pow(10, exp-float64(len(digits))+1)
-		if math.Abs(got-want) <= 1 {
-			return true
 		}
 	}
 	return false
@@ -170,12 +151,23 @@ func scanNumbers(text string) []writtenNumber {
 			continue
 		}
 
-		// Include a sign or currency symbol in the text, for readable feedback.
-		textStart := start
+		// Read a sign and currency symbol before the number, and include them in the text for readable feedback.
+		textStart, sign, currency := start, 0, false
+	prefix:
 		for range 2 {
 			prev, size := utf8.DecodeLastRuneInString(text[:textStart])
-			if size == 0 || !strings.ContainsRune("+-−$€£¥₹", prev) {
-				break
+			before, _ := utf8.DecodeLastRuneInString(text[:textStart-size])
+			switch {
+			case strings.ContainsRune("$€£¥₹", prev):
+				currency = true
+			case strings.ContainsRune("+-−", prev) && !unicode.IsLetter(before) && !unicode.IsDigit(before):
+				// A hyphen right after a letter or digit joins a range or zone, like "10-20" or "UTC-5", so it is not a sign.
+				sign = 1
+				if prev != '+' {
+					sign = -1
+				}
+			default:
+				break prefix
 			}
 			textStart -= size
 		}
@@ -186,12 +178,12 @@ func scanNumbers(text string) []writtenNumber {
 			readings[i].tolerance *= suffix.scale
 		}
 		res = append(res, writtenNumber{
-			text:        text[textStart : end+suffix.length],
-			readings:    readings,
-			percent:     suffix.percent,
-			unknownUnit: suffix.unknownUnit,
-			plain:       suffix.scale == 1 && !suffix.percent && strings.IndexFunc(raw, func(r rune) bool { return !unicode.IsDigit(r) }) == -1,
-			ordinal:     suffix.ordinal,
+			text:     text[textStart : end+suffix.length],
+			readings: readings,
+			sign:     sign,
+			percent:  suffix.percent,
+			plain:    sign == 0 && !currency && suffix.scale == 1 && !suffix.percent && strings.IndexFunc(raw, func(r rune) bool { return !unicode.IsDigit(r) }) == -1,
+			ordinal:  suffix.ordinal,
 		})
 	}
 	return res
@@ -200,8 +192,7 @@ func scanNumbers(text string) []writtenNumber {
 // parseDigits returns the values a run of digits and separators may stand for.
 // It returns nil when the separators don't form a number, like in a version number "1.2.3".
 func parseDigits(raw string) []numberReading {
-	// Apostrophes and narrow spaces only group digits: 1'234 and 1 234.
-	s := strings.NewReplacer("'", "", "’", "", " ", "", " ", "", " ", "").Replace(raw)
+	s := digitGroupSeparators.Replace(raw)
 
 	dots, commas := strings.Count(s, "."), strings.Count(s, ",")
 	switch {
@@ -250,7 +241,6 @@ func integerReading(s string) numberReading {
 	return numberReading{
 		value:     v,
 		tolerance: 0.5 * math.Pow(10, float64(len(digits)-len(trimmed))),
-		digits:    trimmed,
 	}
 }
 
@@ -262,29 +252,36 @@ func decimalReading(s string) numberReading {
 	return numberReading{
 		value:     v,
 		tolerance: math.Pow(10, -float64(decimals)),
-		digits:    strings.TrimLeft(strings.Replace(s, ".", "", 1), "0"),
 	}
 }
 
 // numberSuffix is what follows a written number.
 type numberSuffix struct {
-	scale       float64
-	percent     bool
-	unknownUnit bool
-	ordinal     bool
+	scale   float64
+	percent bool
+	ordinal bool
 	// length is the number of bytes of the suffix to include in the number's text.
 	length int
 }
 
 var (
+	// digitGroupSeparators only group digits: 1'234 and 1 234 (with a regular, no-break, narrow or thin space).
+	digitGroupSeparators = strings.NewReplacer("'", "", "’", "", " ", "", "\u00a0", "", "\u202f", "", "\u2009", "")
 	// scaleSuffixes are case-sensitive scale suffixes: "17.5M" is a million, but "15m" is likely minutes.
 	scaleSuffixes = map[string]float64{"k": 1e3, "K": 1e3, "M": 1e6, "MM": 1e6, "B": 1e9, "T": 1e12}
-	// scaleWords are scale words, matched case-insensitively.
+	// scaleWords are scale words in the languages the analyst may answer in, matched case-insensitively.
+	// A number followed by any other word is read at face value, so a scale missing here causes a needless revision, not a missed error.
+	// Words that differ between languages keep their English meaning: "billion" is 1e9, though it is 1e12 in French and German.
 	scaleWords = map[string]float64{
-		"thousand": 1e3, "thousands": 1e3,
-		"million": 1e6, "millions": 1e6, "mn": 1e6, "mio": 1e6, "mln": 1e6,
-		"billion": 1e9, "billions": 1e9, "bn": 1e9, "bln": 1e9, "mrd": 1e9,
-		"trillion": 1e12, "trillions": 1e12, "tn": 1e12,
+		"thousand": 1e3, "thousands": 1e3, "tsd": 1e3, "tausend": 1e3, "mil": 1e3, "mille": 1e3, "mila": 1e3, "duizend": 1e3,
+		"million": 1e6, "millions": 1e6, "mn": 1e6, "mio": 1e6, "mln": 1e6, "millionen": 1e6, "millón": 1e6, "millones": 1e6,
+		"milione": 1e6, "milioni": 1e6, "milhão": 1e6, "milhões": 1e6, "miljoen": 1e6,
+		"billion": 1e9, "billions": 1e9, "bn": 1e9, "bln": 1e9, "mrd": 1e9, "milliard": 1e9, "milliards": 1e9, "milliarde": 1e9, "milliarden": 1e9,
+		"miliardo": 1e9, "miliardi": 1e9, "bilhão": 1e9, "bilhões": 1e9, "miljard": 1e9,
+		"trillion": 1e12, "trillions": 1e12, "tn": 1e12, "billón": 1e12, "billones": 1e12,
+		"lakh": 1e5, "lakhs": 1e5, "crore": 1e7, "crores": 1e7, "cr": 1e7,
+		// Chinese, Japanese and Korean scales may run into the next word, like "3.18亿元" and "31.8억원", so the first character of a word is matched too.
+		"千": 1e3, "万": 1e4, "萬": 1e4, "亿": 1e8, "億": 1e8, "兆": 1e12, "천": 1e3, "만": 1e4, "억": 1e8, "조": 1e12,
 	}
 )
 
@@ -294,7 +291,7 @@ func parseNumberSuffix(rest string) numberSuffix {
 
 	// A space may separate a number from its suffix: "1,66 %" and "17.5 million".
 	afterSpace := rest
-	for _, space := range []string{" ", " ", " "} {
+	for _, space := range []string{" ", "\u00a0", "\u202f"} {
 		if strings.HasPrefix(rest, space) {
 			afterSpace = rest[len(space):]
 			break
@@ -310,16 +307,13 @@ func parseNumberSuffix(rest string) numberSuffix {
 		}
 	}
 
-	wordLen := strings.IndexFunc(afterSpace, func(r rune) bool { return !unicode.IsLetter(r) })
-	if wordLen == -1 {
-		wordLen = len(afterSpace)
-	}
-	word := afterSpace[:wordLen]
+	word := leadingWord(afterSpace)
 	if word == "" {
 		return res
 	}
 	lower := strings.ToLower(word)
-	length := len(rest) - len(afterSpace) + wordLen
+	length := len(rest) - len(afterSpace) + len(word)
+	first, firstLen := utf8.DecodeRuneInString(word)
 
 	switch {
 	case !spaced && slices.Contains([]string{"st", "nd", "rd", "th"}, lower):
@@ -330,14 +324,32 @@ func parseNumberSuffix(rest string) numberSuffix {
 	case scaleWords[lower] != 0:
 		res.scale = scaleWords[lower]
 		res.length = length
+		// A second scale word multiplies the first: "mil millones" in Spanish and "thousand million" in British English are 1e9.
+		next := afterSpace[len(word):]
+		if strings.HasPrefix(next, " ") {
+			nextWord := leadingWord(next[1:])
+			if scale := scaleWords[strings.ToLower(nextWord)]; scale != 0 {
+				res.scale *= scale
+				res.length += 1 + len(nextWord)
+			}
+		}
+	case unicode.In(first, unicode.Han, unicode.Hangul) && scaleWords[string(first)] != 0:
+		res.scale = scaleWords[string(first)]
+		res.length = length - len(word) + firstLen
 	case lower == "percent" || lower == "pct":
 		res.percent = true
 		res.length = length
-	default:
-		// A unit ("seconds"), an unrelated word ("on"), or a scale in another language ("milliards").
-		res.unknownUnit = true
 	}
 	return res
+}
+
+// leadingWord returns the letters at the start of s.
+func leadingWord(s string) string {
+	n := strings.IndexFunc(s, func(r rune) bool { return !unicode.IsLetter(r) })
+	if n == -1 {
+		return s
+	}
+	return s[:n]
 }
 
 // appendContentNumbers appends the numbers in a tool result, which is usually JSON.
@@ -353,7 +365,7 @@ func appendContentNumbers(sources []float64, content string) []float64 {
 func appendValueNumbers(sources []float64, v any) []float64 {
 	switch v := v.(type) {
 	case float64:
-		sources = append(sources, math.Abs(v))
+		sources = append(sources, v)
 	case string:
 		sources = appendTextNumbers(sources, v)
 	case []any:
@@ -370,12 +382,20 @@ func appendValueNumbers(sources []float64, v any) []float64 {
 }
 
 // appendTextNumbers appends every value the numbers written in text may stand for.
+// A number written without a sign may state a decrease ("fell by 5%"), so it is appended with both signs.
 func appendTextNumbers(sources []float64, text string) []float64 {
 	for _, n := range scanNumbers(text) {
 		for _, r := range n.readings {
-			sources = append(sources, r.value)
+			values := []float64{r.value}
 			if n.percent {
-				sources = append(sources, r.value/100)
+				values = append(values, r.value/100)
+			}
+			for _, v := range values {
+				if n.sign == 0 {
+					sources = append(sources, v, -v)
+				} else {
+					sources = append(sources, float64(n.sign)*v)
+				}
 			}
 		}
 	}

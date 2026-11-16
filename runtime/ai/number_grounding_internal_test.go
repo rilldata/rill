@@ -13,6 +13,8 @@ func TestUngroundedNumbers(t *testing.T) {
 	timeSeries := toolResultMessage(`{"schema":[{"name":"order_date","type":"TIMESTAMP"},{"name":"revenue","type":"DOUBLE"}],"data":[["2025-03-11T00:00:00Z",3184527906],["2025-03-10T00:00:00Z",3152968451]],"open_url":"https://ui.rilldata.com/acme/sales/-/ai/0b6f3c52/message/7a8b9c0d"}`)
 	// The same revenue with comparison measures.
 	comparison := toolResultMessage(`{"schema":[],"data":[[3184527906,31559455,0.010009442051343888,3152968451]]}`)
+	// A comparison where revenue fell instead.
+	decrease := toolResultMessage(`{"schema":[],"data":[[3152968451,-31559455,-0.00991024775079747,3184527906]]}`)
 
 	tests := []struct {
 		name       string
@@ -52,6 +54,44 @@ func TestUngroundedNumbers(t *testing.T) {
 			name:     "other locales",
 			response: "Der Umsatz stieg um 31.559.455 (1,00 %) auf 3.184.527.906, also rund 31,6 Mio. Le chiffre atteint 3,18 milliards.",
 			messages: []*aiv1.CompletionMessage{comparison},
+		},
+		{
+			name:     "scale words in other languages",
+			response: "Los ingresos suben a 3,18 mil millones. 매출은 31.8억 원입니다. | 收入 | 31.85亿元 | Revenue is ₹318.45 crore.",
+			messages: []*aiv1.CompletionMessage{comparison},
+		},
+		{
+			name:       "other words do not change the magnitude",
+			response:   "Revenue rose by 315594.55 dollars.",
+			messages:   []*aiv1.CompletionMessage{comparison},
+			ungrounded: []string{"315594.55"},
+		},
+		{
+			name:     "digits grouped with regular spaces",
+			response: "Le chiffre d'affaires atteint 3 184 527 906 €, en hausse de 31 559 455 (1,00 %), soit 1 234,56 € par commande. On Mar 11 2025, that is 3 184 527 906.",
+			messages: []*aiv1.CompletionMessage{comparison, toolResultMessage(`{"data":[[1234.56]]}`)},
+		},
+		{
+			name:       "a reversed change",
+			response:   "Revenue rose by +31,559,455 (+0.99%) day over day.",
+			messages:   []*aiv1.CompletionMessage{decrease},
+			ungrounded: []string{"+31,559,455", "+0.99%"},
+		},
+		{
+			name:     "a decrease with or without its sign",
+			response: "Revenue fell by 31,559,455 (0.99%), a change of -31,559,455 (−0.99%), within 3,152,968,451-3,184,527,906.",
+			messages: []*aiv1.CompletionMessage{decrease},
+		},
+		{
+			name:     "unsigned numbers in text match either sign",
+			response: "Yes, the change of -$1,500 came from the web channel.",
+			messages: []*aiv1.CompletionMessage{textMessage(RoleUser, "Revenue fell by $1,500 yesterday. Why?")},
+		},
+		{
+			name:       "small amounts and signed changes",
+			response:   "Revenue rose by $300 (+200 orders) from $500 to $700, across 3 channels.",
+			messages:   []*aiv1.CompletionMessage{toolResultMessage(`{"data":[[500,7],[700,9]]}`)},
+			ungrounded: []string{"$300", "+200"},
 		},
 		{
 			name:     "dates, times, years, counts and ordinals",
@@ -117,6 +157,7 @@ func TestParseDigits(t *testing.T) {
 	require.Equal(t, []float64{3184527906}, values("3 184 527 906"))
 	require.Equal(t, []float64{1234.5}, values("1,234.5"))
 	require.Equal(t, []float64{1234.5}, values("1.234,5"))
+	require.Equal(t, []float64{1234.56}, values("1 234,56"))
 	require.Equal(t, []float64{1.66}, values("1,66"))
 	require.Equal(t, []float64{1234, 1.234}, values("1,234"))
 	require.Nil(t, values("1.2.3"))
