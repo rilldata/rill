@@ -120,6 +120,8 @@ test.describe.serial("Public URLs", () => {
 });
 
 test.describe.serial("Password-protected public URLs", () => {
+  // Unique per attempt: a CI retry re-runs the whole group and creates another URL.
+  const label = `Test Public URL - Password ${Date.now()}`;
   let publicUrl: string;
   let password: string;
 
@@ -130,9 +132,7 @@ test.describe.serial("Password-protected public URLs", () => {
 
     await page.getByRole("button", { name: "Share" }).click();
     await page.getByRole("tab", { name: "Create public URL" }).click();
-    await page
-      .getByPlaceholder("Label this URL")
-      .fill("Test Public URL - Password");
+    await page.getByPlaceholder("Label this URL").fill(label);
 
     // Turning on the switch shows an empty password field, which the button below it fills in
     await page.getByLabel("Require password").click();
@@ -204,9 +204,10 @@ test.describe.serial("Password-protected public URLs", () => {
     test.skip(!publicUrl, "Public URL not set");
 
     await page.goto("/e2e/openrtb/-/settings/public-urls");
-    const row = page.locator(".row", { hasText: "Test Public URL - Password" });
+    const row = page.locator(".row", { hasText: label });
     await expect(row.getByLabel("Password protected")).toBeVisible();
-    await row.getByRole("button").click();
+    // The menu trigger wraps an IconButton, so the row has two nested buttons
+    await row.locator('[aria-haspopup="menu"]').click();
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     const dialog = page.getByRole("dialog");
