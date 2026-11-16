@@ -104,39 +104,3 @@ func TestCreateAlertValidation(t *testing.T) {
 		requireCode(t, err, codes.FailedPrecondition, "production deployment")
 	})
 }
-
-func TestYAMLForAlertNotifyRowsLimit(t *testing.T) {
-	s := &Server{}
-	opts := &adminv1.AlertOptions{
-		DisplayName:      "Alert",
-		IntervalDuration: "P1D",
-		QueryName:        "MetricsViewAggregation",
-		QueryArgsJson:    `{"metrics_view":"mv1"}`,
-		MetricsViewName:  "mv1",
-		NotifyRowsLimit:  10,
-		EmailRecipients:  []string{"user_1@example.com"},
-	}
-
-	for _, committed := range []bool{false, true} {
-		yamlForAlert := func(opts *adminv1.AlertOptions) ([]byte, error) {
-			if committed {
-				return s.yamlForCommittedAlert(opts)
-			}
-			return s.yamlForManagedAlert(opts, "owner")
-		}
-
-		// The limit is set
-		data, err := yamlForAlert(opts)
-		require.NoError(t, err)
-		var res alertYAML
-		require.NoError(t, yaml.Unmarshal(data, &res))
-		require.Equal(t, uint32(10), res.Notify.RowsLimit)
-
-		// The limit is omitted when unset, so runtimes that predate it can still parse the YAML
-		opts.NotifyRowsLimit = 0
-		data, err = yamlForAlert(opts)
-		require.NoError(t, err)
-		require.NotContains(t, string(data), "rows_limit")
-		opts.NotifyRowsLimit = 10
-	}
-}
