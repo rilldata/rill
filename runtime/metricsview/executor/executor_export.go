@@ -45,6 +45,11 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	}
 	defer or()
 
+	// Pass the metrics view's query attributes so that the export query gets them just like a regular query.
+	if len(e.queryAttributes) > 0 {
+		inputProps["query_attributes"] = e.queryAttributes
+	}
+
 	outputProps := map[string]any{
 		"path":                  tempPath,
 		"format":                format,
