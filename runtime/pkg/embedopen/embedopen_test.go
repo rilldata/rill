@@ -41,6 +41,18 @@ func TestEncodeDecode(t *testing.T) {
 	data, err = base64.RawURLEncoding.DecodeString(s)
 	require.NoError(t, err)
 	require.Contains(t, string(data), `"2026-10-20T00:00:00Z"`)
+
+	// Alerts round trip as well
+	s, err = Encode(&Payload{Kind: KindAlert, Name: "revenue_drop", ExecutionTime: ts})
+	require.NoError(t, err)
+	data, err = base64.RawURLEncoding.DecodeString(s)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"kind":"alert","name":"revenue_drop","execution_time":"2026-10-20T00:00:00Z"}`, string(data))
+	p, err = Decode(s)
+	require.NoError(t, err)
+	require.Equal(t, KindAlert, p.Kind)
+	require.Equal(t, "revenue_drop", p.Name)
+	require.True(t, ts.Equal(p.ExecutionTime))
 }
 
 func TestValidation(t *testing.T) {

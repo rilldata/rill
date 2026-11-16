@@ -18,6 +18,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
+  import EmbedAlertButton from "@rilldata/web-admin/features/embeds/EmbedAlertButton.svelte";
   import EmbedPersonalCanvasButton from "@rilldata/web-admin/features/embeds/EmbedPersonalCanvasButton.svelte";
   import EmbedBookmarks from "@rilldata/web-admin/features/bookmarks/EmbedBookmarks.svelte";
   import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
@@ -128,6 +129,7 @@
     {#if $embedPersonalCanvasesEnabled}
       <EmbedPersonalCanvasButton />
     {/if}
+    <EmbedAlertButton />
     <EmbedReportButton />
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">

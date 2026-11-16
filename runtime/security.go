@@ -576,35 +576,42 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 
-	// Allow if the owner is accessing the alert
-	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		explicitAllow = true
-	}
+	// Alerts created from an embed are only accessible to admins and the embed user who created them (same as reports).
+	// Recipients don't get access, since they may be other embed users or project members, and the alert shouldn't leak the owner or other recipients.
+	// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
+	if spec.Annotations["admin_embed_owner_id"] != "" {
+		explicitAllow = claims.Admin() || (claims.UserID != "" && claims.UserID == spec.Annotations["admin_embed_owner_id"])
+	} else {
+		// Allow if the owner is accessing the alert
+		if spec.Annotations["admin_owner_user_id"] != "" && userID == spec.Annotations["admin_owner_user_id"] {
+			explicitAllow = true
+		}
 
-	// Allow if the user is an email recipient
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
+		// Allow if the user is an email recipient
+		for _, notifier := range spec.Notifiers {
+			switch notifier.Connector {
+			case "email":
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+				for _, recipient := range recipients {
+					if recipient == email {
+						explicitAllow = true
+					}
+				}
+			case "slack":
+				props, err := slack.DecodeProps(notifier.Properties.AsMap())
+				if err != nil {
+					p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
+					continue
+				}
+				for _, user := range props.Users {
+					if user == email {
+						explicitAllow = true
+					}
+				}
+				// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
+				if len(props.Channels) > 0 {
 					explicitAllow = true
 				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
-				continue
-			}
-			for _, user := range props.Users {
-				if user == email {
-					explicitAllow = true
-				}
-			}
-			// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
-			if len(props.Channels) > 0 {
-				explicitAllow = true
 			}
 		}
 	}
