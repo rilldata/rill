@@ -250,12 +250,18 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	batchesLeft := len(f.batches)
 	start := time.Now()
 
-	for _, batch := range f.batches {
+	for i, batch := range f.batches {
 		b := batch
+		isFirst := i == 0
 		errGrp.Go(func() error {
-			records, err := b.Fetch()
-			if err != nil {
-				return err
+			// Fetch consumes the batch, so the first batch (already fetched for the schema) must not be fetched again.
+			records := firstBatch
+			if !isFirst {
+				var err error
+				records, err = b.Fetch()
+				if err != nil {
+					return err
+				}
 			}
 			mu.Lock()
 			defer mu.Unlock()
