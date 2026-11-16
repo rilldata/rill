@@ -90,6 +90,7 @@ export function useAlertOwnerName(
     {
       query: {
         select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
+        enabled: !!ownerId,
       },
     },
   );
@@ -104,7 +105,8 @@ export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.alert.spec.annotations["admin_owner_user_id"],
+          !data.resource?.alert?.spec?.annotations?.["admin_owner_user_id"] &&
+          !data.resource?.alert?.spec?.annotations?.["admin_embed_owner_id"],
       },
     },
   );

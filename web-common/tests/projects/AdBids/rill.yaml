@@ -13,3 +13,5 @@ features:
   embedded_bookmarks: "{{ .user.embed }}"
   # Overrides the default of `{{ not .user.embed }}`, so web-admin/tests/embedded-reports.spec.ts can create reports from an embed.
   reports: true
+  # Overrides the default of `{{ not .user.embed }}`, so web-admin/tests/embedded-alerts.spec.ts can create alerts from an embed.
+  alerts: true

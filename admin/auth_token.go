@@ -239,7 +239,7 @@ type EmbedToken struct {
 	jwt.RegisteredClaims
 	ProjectID   string                  `json:"project_id"`
 	EmbedUserID string                  `json:"embed_user_id"`       // ID of the database.EmbedUser; also the token's subject
-	Resources   []database.ResourceName `json:"resources,omitempty"` // If non-empty, limits reports created with the token to these resources
+	Resources   []database.ResourceName `json:"resources,omitempty"` // If non-empty, limits reports and alerts created with the token to these resources
 }
 
 // IssueEmbedToken issues an embed token for an embed user in a project.
