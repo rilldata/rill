@@ -61,4 +61,14 @@ describe("getOpenExploreName", () => {
   it("returns an empty name without annotations", () => {
     expect(getOpenExploreName({})).toBe("");
   });
+
+  it("returns the explore of an alert", () => {
+    // Alerts created from the UI only set web_open_path
+    expect(
+      getOpenExploreName({
+        resolverProperties: { query_name: "MetricsViewAggregation" },
+        annotations: { web_open_path: "/explore/e1" },
+      }),
+    ).toBe("e1");
+  });
 });

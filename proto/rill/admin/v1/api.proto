@@ -1795,6 +1795,7 @@ message GetIFrameRequest {
   }
   // Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
   // Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+  // Must be at most 2048 bytes.
   string external_user_id = 16;
   // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
   string type = 14;
@@ -3210,9 +3211,19 @@ message GetAlertMetaResponse {
     string open_url = 1;
     string edit_url = 2;
     string unsubscribe_url = 3;
+    // If true, the recipient is the embed user who created the alert.
+    // Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+    bool embed_owner = 4;
   }
   map<string, URLs> recipient_urls = 2;
   google.protobuf.Struct query_for_attributes = 3;
+  // ID of the user to run the alert's queries as.
+  // Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+  string query_for_user_id = 4;
+  // If true, the alert's data must only be accessed through the resources listed in `resources`.
+  // Set for alerts created from an embed that was limited to specific resources.
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
   reserved 1;
 }
 
@@ -3904,10 +3915,16 @@ message AlertOptions {
   rill.runtime.v1.ExportFormat export_format = 19;
   bool export_include_header = 20;
   uint64 export_limit = 21;
+  uint32 notify_rows_limit = 22 [(validate.rules).uint32.lte = 50]; // Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;
   repeated string email_recipients = 8;
+  // Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+  // Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+  // It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+  // If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+  string embed_owner_email = 23;
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;

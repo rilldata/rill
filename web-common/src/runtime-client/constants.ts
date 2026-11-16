@@ -8,3 +8,6 @@ export const JWT_EXPIRY_WARNING_WINDOW = 1000; // 1 second
 
 // Interval to recheck JWT freshness while waiting for a refresh
 export const CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL = 50;
+
+// How long a request waits for a fresh JWT before it fails.
+export const JWT_REFRESH_TIMEOUT = 60_000;

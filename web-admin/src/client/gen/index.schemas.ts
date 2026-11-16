@@ -9,6 +9,9 @@ export interface GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
   unsubscribeUrl?: string;
+  /** If true, the recipient is the embed user who created the alert.
+Only set for alerts created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export type GetGithubPullRequestResponseState =
@@ -136,10 +139,17 @@ export interface V1AlertOptions {
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
   exportLimit?: string;
+  /** Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used. */
+  notifyRowsLimit?: number;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   emailRecipients?: string[];
+  /** Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -578,6 +588,13 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  /** ID of the user to run the alert's queries as.
+Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe. */
+  queryForUserId?: string;
+  /** If true, the alert's data must only be accessed through the resources listed in `resources`.
+Set for alerts created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -2248,7 +2265,8 @@ export type AdminServiceGetIFrameBody = {
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
   /** Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
-Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+Must be at most 2048 bytes. */
   externalUserId?: string;
   /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
   type?: string;

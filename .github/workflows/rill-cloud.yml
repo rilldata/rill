@@ -71,7 +71,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.26.5
+          go-version: 1.26.10
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -108,9 +108,9 @@ jobs:
           make runtime.examples.embed
 
           if [ ${RELEASE} == "true" ]; then
-            go build -tags databricks_kernel -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(scripts/versiontag.sh) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+            go build -tags databricks_kernel,minicore_disabled -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(scripts/versiontag.sh) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           else
-            go build -tags databricks_kernel -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+            go build -tags databricks_kernel,minicore_disabled -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
           
           docker buildx build --platform linux/${{ matrix.arch }} -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --push --provenance=false --sbom=false  

@@ -37604,6 +37604,44 @@ func (m *GetAlertMetaResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for QueryForUserId
+
+	// no validation rules for RestrictResources
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetAlertMetaResponseValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetAlertMetaResponseValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetAlertMetaResponseValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return GetAlertMetaResponseMultiError(errors)
 	}
@@ -49989,11 +50027,24 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for ExportLimit
 
+	if m.GetNotifyRowsLimit() > 50 {
+		err := AlertOptionsValidationError{
+			field:  "NotifyRowsLimit",
+			reason: "value must be less than or equal to 50",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	// no validation rules for MetricsViewName
 
 	// no validation rules for Renotify
 
 	// no validation rules for RenotifyAfterSeconds
+
+	// no validation rules for EmbedOwnerEmail
 
 	// no validation rules for WebOpenPath
 
@@ -53208,6 +53259,8 @@ func (m *GetAlertMetaResponse_URLs) validate(all bool) error {
 	// no validation rules for EditUrl
 
 	// no validation rules for UnsubscribeUrl
+
+	// no validation rules for EmbedOwner
 
 	if len(errors) > 0 {
 		return GetAlertMetaResponse_URLsMultiError(errors)

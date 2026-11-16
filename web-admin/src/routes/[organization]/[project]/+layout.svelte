@@ -23,6 +23,7 @@
   import {
     V1DeploymentStatus,
     type V1Organization,
+    adminServiceGetProject,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
@@ -45,11 +46,17 @@
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
-  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import {
+    createRuntimeJwtRefresher,
+    getProjectQueryOptions,
+  } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import {
+    adminServiceGetProjectWithBearerToken,
+    createAdminServiceGetProjectWithBearerToken,
+  } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -143,14 +150,14 @@
    * When `activeBranch` is set, the branch param is passed so the API
    * returns the branch deployment instead of production.
    */
-  let cookieProjectQuery = $derived(
-    createAdminServiceGetProject(
-      organization,
-      project,
-      activeBranch ? { branch: activeBranch } : undefined,
-      { query: baseGetProjectQueryOptions },
-    ),
-  );
+  let cookieProjectQuery = $derived.by(() => {
+    const params = activeBranch ? { branch: activeBranch } : undefined;
+    return createAdminServiceGetProject(organization, project, params, {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, params, signal),
+      ),
+    });
+  });
 
   /**
    * `GetProject` with token-based auth.
@@ -162,7 +169,17 @@
       project,
       token,
       undefined,
-      { query: baseGetProjectQueryOptions },
+      {
+        query: getProjectQueryOptions((signal) =>
+          adminServiceGetProjectWithBearerToken(
+            organization,
+            project,
+            token,
+            undefined,
+            signal,
+          ),
+        ),
+      },
     ),
   );
 
@@ -230,6 +247,22 @@
 
   let runtime = $derived(
     resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
+  );
+
+  // Read on its own so the refresher below keeps its identity across polls: `runtime` is a new object
+  // on every GetProject update, but the auth context only changes when View As starts or ends.
+  let authContext = $derived(runtime.authContext);
+
+  // Re-requests the runtime JWT from the query that issued it when a request finds it expired, e.g. after a
+  // laptop sleep or a network drop skipped the scheduled refetch, instead of waiting for the next poll.
+  let refreshJwt = $derived(
+    createRuntimeJwtRefresher(authContext, {
+      organization,
+      project,
+      branch: activeBranch,
+      token,
+      mockedUserId,
+    }),
   );
 
   // --- Side effects (cache invalidation and telemetry) ---
@@ -352,7 +385,8 @@
         host={runtime.host}
         instanceId={runtime.instanceId}
         jwt={runtime.jwt}
-        authContext={runtime.authContext}
+        {authContext}
+        {refreshJwt}
       >
         {#if !onWelcomePage}
           <ProjectHeader
