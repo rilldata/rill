@@ -92,7 +92,7 @@ export function getProjectIdQueryOptions(
   );
 }
 
-export function fetchMagicAuthToken(token: string) {
+export function fetchMagicAuthToken(token: string, staleTime?: number) {
   const queryKey = getAdminServiceGetMagicAuthTokenQueryKey(token);
   const queryFunction: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetMagicAuthToken>>
@@ -101,6 +101,7 @@ export function fetchMagicAuthToken(token: string) {
   return queryClient.fetchQuery({
     queryKey,
     queryFn: queryFunction,
+    staleTime,
   });
 }
 

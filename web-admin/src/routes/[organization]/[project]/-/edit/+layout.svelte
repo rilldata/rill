@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    adminServiceGetProject,
     createAdminServiceGetProject,
     getAdminServiceGetProjectQueryKey,
     V1DeploymentStatus,
@@ -13,11 +14,22 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
+  import {
+    createMockUserJwtRefresher,
+    editSessionRuntimeAuth,
+  } from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT";
   import ProjectHeader from "../../../../../features/projects/header/ProjectHeader.svelte";
-  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import {
+    createRuntimeJwtRefresher,
+    getProjectQueryOptions,
+  } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import {
+    selectedMockUserJWT,
+    selectedMockUserStore,
+  } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
@@ -53,13 +65,18 @@
     pageData?.organization as V1Organization | undefined,
   );
 
-  // Polling and JWT-refresh cadence are governed by `baseGetProjectQueryOptions`,
+  // Polling and JWT-refresh cadence are governed by `getProjectQueryOptions`,
   // shared with the parent project layout so both observers stay in sync.
+  $: branchParams = branch ? { branch } : undefined;
   $: projectQuery = createAdminServiceGetProject(
     organization,
     project,
-    branch ? { branch } : undefined,
-    { query: baseGetProjectQueryOptions },
+    branchParams,
+    {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, branchParams, signal),
+      ),
+    },
   );
   $: projectPermissions = $projectQuery.data?.projectPermissions ?? {};
   $: primaryBranch = $projectQuery.data?.project?.primaryBranch;
@@ -69,7 +86,11 @@
     organization,
     project,
     undefined,
-    { query: baseGetProjectQueryOptions },
+    {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, undefined, signal),
+      ),
+    },
   );
   $: hasPrimaryDeployment =
     !!$primaryProjectQuery.data?.project?.primaryDeploymentId;
@@ -80,6 +101,29 @@
   $: runtimeHost = deployment?.runtimeHost ?? null;
   $: instanceId = deployment?.runtimeInstanceId ?? null;
   $: jwt = $projectQuery.data?.jwt ?? null;
+
+  // Re-requests the branch's runtime JWT when a request finds it expired instead of waiting for the next poll.
+  $: userRefreshJwt = createRuntimeJwtRefresher("user", {
+    organization,
+    project,
+    branch,
+  });
+  // View As installs a mock user's JWT; it is reissued the same way when it expires.
+  // Keyed on the deployment id rather than the deployment object so the refresher keeps its identity across polls.
+  $: deploymentId = deployment?.id;
+  $: mockRefreshJwt =
+    $selectedMockUserStore && deploymentId
+      ? createMockUserJwtRefresher(deploymentId, $selectedMockUserStore)
+      : undefined;
+  // The provider follows the View As selection: a GetProject update must not push the user's JWT
+  // back onto the client while a mock user is selected (see editSessionRuntimeAuth).
+  $: runtimeAuth = editSessionRuntimeAuth({
+    userJwt: jwt ?? undefined,
+    userRefreshJwt,
+    mockUser: $selectedMockUserStore,
+    mockJwt: $selectedMockUserJWT,
+    mockRefreshJwt,
+  });
 
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
@@ -179,7 +223,13 @@
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
-      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
+      <RuntimeProvider
+        host={runtimeHost}
+        {instanceId}
+        jwt={runtimeAuth.jwt}
+        authContext={runtimeAuth.authContext}
+        refreshJwt={runtimeAuth.refreshJwt}
+      >
         {#if !inProjectWelcomePage}
           <ProjectHeader
             {organization}

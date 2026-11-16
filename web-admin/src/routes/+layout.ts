@@ -21,6 +21,10 @@ import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/aut
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
+import {
+  resolvePublicURLBearer,
+  type PublicURLBearer,
+} from "@rilldata/web-admin/features/public-urls/public-url-bearer";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
@@ -41,25 +45,61 @@ export const load = async ({ params, url, route, depends }) => {
   if (url.searchParams.has("token")) {
     searchParamToken = url.searchParams.get("token") ?? undefined;
   }
-  const token = searchParamToken ?? routeToken;
+  let token = searchParamToken ?? routeToken;
 
-  let user: V1User | undefined;
-  try {
-    const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
+  // On a public URL (identified by its route token), a password-protected token grants no access
+  // until it has been unlocked with its password. See `resolvePublicURLBearer`.
+  const publicURLPromise: Promise<PublicURLBearer | undefined> =
+    routeToken && !searchParamToken
+      ? resolvePublicURLBearer(routeToken).catch((e) => {
+          console.error(e);
+          // An unknown, expired or revoked token is rejected as unauthenticated.
+          // Other failures (e.g. a rate limit or a server error) are not about the token, so they are reported as they are.
+          const status = isAxiosError<RpcStatus>(e)
+            ? e.response?.status
+            : undefined;
+          if (!status) throw error(500, m.route_error_fetching_token());
+          if (status === 401 || status === 403 || status === 404) {
+            throw error(404, m.route_error_token_not_found());
+          }
+          throw error(status, e.response?.data?.message ?? e.message);
+        })
+      : Promise.resolve(undefined);
+
+  const userPromise: Promise<V1User | undefined> = queryClient
+    .fetchQuery<V1GetCurrentUserResponse>({
       queryKey: getAdminServiceGetCurrentUserQueryKey(),
       queryFn: () => adminServiceGetCurrentUser(),
       staleTime: 5 * 60 * 1000, // 5 minutes; prevents refetches on every navigation/hover
+    })
+    .then((resp) => resp.user)
+    .catch((e) => {
+      // If the user's auth token has expired, we automatically redirect to the login page
+      if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
+        redirectToLogin();
+      }
+      return undefined;
     });
-    user = userQuery.user;
-  } catch (e) {
-    // If the user's auth token has expired, we automatically redirect to the login page
-    if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
-      redirectToLogin();
-    }
-  }
+
+  const [publicURL, user] = await Promise.all([publicURLPromise, userPromise]);
+  if (publicURL) token = publicURL.bearer;
 
   // Maybe redirect user to welcome flow. More details in maybeRedirectToWelcomePage
   if (user) await maybeRedirectToWelcomePage(route);
+
+  // A locked public URL can't read its organization or project.
+  // The project layout renders the password prompt in their place.
+  if (publicURL?.locked) {
+    return {
+      user,
+      organizationPermissions: <V1OrganizationPermissions>{},
+      projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization: undefined,
+      publicURLLocked: true,
+      tokenMetadata: publicURL.tokenMetadata,
+    };
+  }
 
   // If no organization or project, return empty permissions
   if (!organization) {
@@ -126,6 +166,8 @@ export const load = async ({ params, url, route, depends }) => {
       token,
       project: proj,
       runtime: runtimeData,
+      publicURLLocked: false,
+      tokenMetadata: publicURL?.tokenMetadata,
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {

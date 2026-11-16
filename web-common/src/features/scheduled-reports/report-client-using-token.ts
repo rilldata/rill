@@ -22,7 +22,7 @@ import {
   type V1TriggerReportResponse,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
-import httpClient from "@rilldata/web-admin/client/http-client.ts";
+import { httpClientWithToken } from "@rilldata/web-admin/client/http-client.ts";
 
 export const adminServiceCreateReportUsingToken = (
   org: string,
@@ -30,17 +30,11 @@ export const adminServiceCreateReportUsingToken = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
   token: string,
 ) => {
-  return httpClient<V1CreateReportResponse>({
+  return httpClientWithToken<V1CreateReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -65,17 +59,11 @@ export const adminServiceEditReportUsingToken = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
   token: string,
 ) => {
-  return httpClient<V1EditReportResponse>({
+  return httpClientWithToken<V1EditReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}`,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -99,15 +87,9 @@ export const adminServiceDeleteReportUsingToken = (
   name: string,
   token: string,
 ) => {
-  return httpClient<V1DeleteReportResponse>({
+  return httpClientWithToken<V1DeleteReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}`,
     method: "DELETE",
-    headers: {
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -132,17 +114,11 @@ export const adminServiceTriggerReportUsingToken = (
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
   token: string,
 ) => {
-  return httpClient<V1TriggerReportResponse>({
+  return httpClientWithToken<V1TriggerReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}/trigger`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
@@ -167,17 +143,11 @@ export const adminServiceUnsubscribeReportUsingToken = (
   adminServiceUnsubscribeAlertBodyBody: AdminServiceUnsubscribeAlertBodyBody,
   token: string,
 ) => {
-  return httpClient<V1UnsubscribeReportResponse>({
+  return httpClientWithToken<V1UnsubscribeReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}/unsubscribe`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceUnsubscribeAlertBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 

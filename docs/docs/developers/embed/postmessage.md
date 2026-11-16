@@ -321,7 +321,7 @@ iframe.contentWindow.postMessage({
 
 **Parameters:**
 - `type` (string): One of:
-  - `"page"`: A page of the embed; `name` is `"home"` for the project home page or `"reports"` for the user's scheduled reports.
+  - `"page"`: A page of the embed; `name` is `"home"` for the project home page, `"reports"` for the user's scheduled reports, or `"alerts"` for the user's alerts.
   - `"explore"`: An explore dashboard; `name` is the dashboard name.
   - `"canvas"`: A canvas dashboard; `name` is the dashboard name.
 - `name` (string): The page or dashboard to navigate to.
