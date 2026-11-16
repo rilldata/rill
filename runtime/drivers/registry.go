@@ -132,6 +132,7 @@ type InstanceConfig struct {
 	MetricsPivotExportColumnLimit int64 `mapstructure:"rill.metrics.pivot_export_column_limit"`
 	// MetricsHeavyQueryRowThreshold is the number of rows (offset plus limit) above which an interactive metrics query counts as heavy.
 	// Queries that page this deep into a result make the OLAP compute and sort every row before the offset, so they are much more expensive than the rows they return.
+	// A query without a limit counts as reading its offset plus InteractiveSQLRowLimit rows.
 	// Heavy queries are subject to MetricsHeavyQueryConcurrency and MetricsHeavyQueryConcurrencyPerUser. If set to 0, no query counts as heavy.
 	MetricsHeavyQueryRowThreshold int64 `mapstructure:"rill.metrics.heavy_query_row_threshold"`
 	// MetricsHeavyQueryConcurrency caps the number of heavy metrics queries that run concurrently on the instance.
@@ -139,6 +140,7 @@ type InstanceConfig struct {
 	MetricsHeavyQueryConcurrency int `mapstructure:"rill.metrics.heavy_query_concurrency"`
 	// MetricsHeavyQueryConcurrencyPerUser caps the number of heavy metrics queries that one user (or service account) runs concurrently on the instance.
 	// It keeps one caller from taking every slot of MetricsHeavyQueryConcurrency. If set to 0, there is no per-user limit.
+	// Embeds are exempt, since all viewers of an embed can share one identity.
 	MetricsHeavyQueryConcurrencyPerUser int `mapstructure:"rill.metrics.heavy_query_concurrency_per_user"`
 	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").

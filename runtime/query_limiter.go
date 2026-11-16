@@ -65,8 +65,7 @@ func (l *queryLimiter) acquire(ctx context.Context, instanceID, userID string, i
 			}
 			l.mu.Unlock()
 
-			var once sync.Once
-			return func() { once.Do(func() { l.release(instanceID, userID) }) }, nil
+			return sync.OnceFunc(func() { l.release(instanceID, userID) }), nil
 		}
 		released := s.released
 		l.mu.Unlock()

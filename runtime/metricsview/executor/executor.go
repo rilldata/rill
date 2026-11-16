@@ -36,7 +36,7 @@ type Executor struct {
 	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
-	// userID identifies the caller for per-user query limits. It is empty for internal callers.
+	// userID identifies the caller for per-user query limits. It is empty for internal callers and embeds.
 	userID string
 
 	olap            drivers.OLAPStore
@@ -87,7 +87,12 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 	}
 
 	// The "id" user attribute holds the user (or service account) ID for JWT-authenticated callers; see runtime/server/auth/claims.go.
+	// Embeds only get the project-wide limit: an embed issued without an external user ID carries the identity of the user who issued it,
+	// so every viewer of the embed would share one per-user limit.
 	userID, _ := userAttrs["id"].(string)
+	if embed, _ := userAttrs["embed"].(bool); embed {
+		userID = ""
+	}
 
 	return &Executor{
 		rt:              rt,
@@ -384,15 +389,25 @@ func (e *Executor) acquireHeavyQuerySlot(ctx context.Context, qry *metricsview.Q
 		return func() {}, nil
 	}
 
-	var offset, limit int64
+	var offset int64
 	if qry.Offset != nil {
 		offset = max(*qry.Offset, 0)
 	}
-	if qry.Limit != nil {
-		limit = max(*qry.Limit, 0)
+	// The comparisons check offset+limit > threshold without overflowing, so a huge offset can't skip the limit.
+	rowCap := e.instanceCfg.InteractiveSQLRowLimit
+	var heavy bool
+	switch {
+	case qry.Limit != nil:
+		heavy = offset > threshold || max(*qry.Limit, 0) > threshold-offset
+	case rowCap > 0:
+		// rewriteQueryEnforceCaps limits the query to rowCap rows; the extra row it fetches only detects overflow.
+		heavy = offset > threshold || rowCap > threshold-offset
+	default:
+		// Without a limit or row cap, the query reads every row past its offset, so it is heavy once it skips any.
+		// Queries without an offset, like totals and time series, stay unlimited.
+		heavy = offset > 0
 	}
-	// Checks offset+limit <= threshold without overflowing, so a huge offset can't skip the limit.
-	if offset <= threshold && limit <= threshold-offset {
+	if !heavy {
 		return func() {}, nil
 	}
 
