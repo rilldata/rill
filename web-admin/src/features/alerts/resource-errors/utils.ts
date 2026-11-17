@@ -4,13 +4,11 @@ import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
 
 export const RESOURCE_STATUS_RESOLVER = "resource_status";
 export const RESOURCE_ERRORS_OPEN_PATH = "/-/status/resources?status=error";
-export const DEFAULT_CHECK_CRON = "*/15 * * * *";
 
 export type ResourceErrorAlertFormValues = {
   name: string;
   // Watched resources as "kind/name"; empty means all resources.
   resources: string[];
-  refreshCron: string;
   emailRecipients: string[];
   slackChannels: string[];
   slackUsers: string[];
@@ -49,7 +47,6 @@ export function getAlertOptionsFromFormValues(
   const snoozeSeconds = Number(values.snooze) || 0;
   return {
     displayName: values.name.trim(),
-    refreshCron: values.refreshCron,
     resolver: RESOURCE_STATUS_RESOLVER,
     resolverProperties: values.resources.length
       ? { where_error: true, where_resource: values.resources }
@@ -78,7 +75,6 @@ export function getFormValuesFromAlertSpec(
       ...((spec.resolverProperties?.where_resource as string[] | undefined) ??
         []),
     ],
-    refreshCron: spec.refreshSchedule?.cron || DEFAULT_CHECK_CRON,
     emailRecipients: notifierProp("email", "recipients"),
     slackChannels: notifierProp("slack", "channels"),
     slackUsers: notifierProp("slack", "users"),

@@ -28,6 +28,9 @@ import (
 // resolverResourceStatus is the resolver for project-owned alerts on resource reconcile errors.
 const resolverResourceStatus = "resource_status"
 
+// resourceStatusDefaultCron is the refresh schedule for resource status alerts that don't set one.
+const resourceStatusDefaultCron = "*/5 * * * *"
+
 func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequest) (*adminv1.GetAlertMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
@@ -664,10 +667,6 @@ func (s *Server) validateAlertOptions(ctx context.Context, proj *database.Projec
 		return status.Errorf(codes.InvalidArgument, "unsupported alert resolver %q", opts.Resolver)
 	}
 
-	if opts.RefreshCron == "" {
-		return status.Error(codes.InvalidArgument, "resource status alerts require a refresh schedule")
-	}
-
 	// Errors may contain sensitive details (e.g. SQL, paths, hosts), so only project admins can receive them by email.
 	for _, email := range opts.EmailRecipients {
 		user, err := s.admin.DB.FindUserByEmail(ctx, email)
@@ -729,6 +728,9 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, em
 	if opts.Resolver == resolverResourceStatus {
 		// Resource status alerts are owned by the project and only run on their refresh schedule.
 		// They must not ref the watched resources since errors in refs fail the alert's execution instead of triggering it.
+		if res.Refresh.Cron == "" {
+			res.Refresh.Cron = resourceStatusDefaultCron
+		}
 		res.OnRecover = true
 		res.Annotations.AdminSystem = true
 	} else {
@@ -813,6 +815,9 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 		}
 	}
 	if opts.Resolver == resolverResourceStatus {
+		if res.Refresh.Cron == "" {
+			res.Refresh.Cron = resourceStatusDefaultCron
+		}
 		res.OnRecover = true
 	} else {
 		// Trigger the alert when the metrics view refreshes.

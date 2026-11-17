@@ -38,7 +38,6 @@
   } from "@rilldata/web-admin/features/projects/status/overview/overview-utils";
   import {
     allResourcesKey,
-    DEFAULT_CHECK_CRON,
     getAlertOptionsFromFormValues,
     getFormValuesFromAlertSpec,
     resourceKey,
@@ -95,12 +94,6 @@
     },
   );
 
-  const checkOptions = [
-    { value: "*/5 * * * *", label: m.alert_errors_check_5m() },
-    { value: "*/15 * * * *", label: m.alert_errors_check_15m() },
-    { value: "0 * * * *", label: m.alert_errors_check_hourly() },
-  ];
-
   // The form is initialized once per mount.
   const initialValues: ResourceErrorAlertFormValues = untrack(() =>
     alertSpec
@@ -112,7 +105,6 @@
               })
             : m.alert_errors_default_name(),
           resources: initialResource ? [initialResource] : [],
-          refreshCron: DEFAULT_CHECK_CRON,
           emailRecipients: [],
           slackChannels: [],
           slackUsers: [],
@@ -124,7 +116,6 @@
     object({
       name: string().trim().required(m.alert_errors_name_required()),
       resources: array(string().defined()).defined(),
-      refreshCron: string().required(),
       emailRecipients: array(string().defined()).defined(),
       slackChannels: array(string().defined()).defined(),
       slackUsers: array(
@@ -250,15 +241,6 @@
       })),
   );
 
-  let checkSelectOptions = $derived(
-    checkOptions.some((o) => o.value === $form.refreshCron)
-      ? checkOptions
-      : [
-          ...checkOptions,
-          { value: $form.refreshCron, label: $form.refreshCron },
-        ],
-  );
-
   function toggle(list: string[], value: string): string[] {
     return list.includes(value)
       ? list.filter((v) => v !== value)
@@ -347,14 +329,6 @@
           {/if}
         {/if}
       </FormSection>
-
-      <Select
-        bind:value={$form.refreshCron}
-        id="refreshCron"
-        label={m.alert_errors_check_label()}
-        options={checkSelectOptions}
-        sameWidth
-      />
 
       <FormSection
         title={m.alert_errors_email_title()}

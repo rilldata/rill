@@ -10,7 +10,6 @@ import {
 const values: ResourceErrorAlertFormValues = {
   name: " Errors in orders ",
   resources: ["rill.runtime.v1.Model/orders"],
-  refreshCron: "*/5 * * * *",
   emailRecipients: ["admin@example.com"],
   slackChannels: ["#alerts", ""],
   slackUsers: [],
@@ -21,7 +20,6 @@ describe("resource error alert utils", () => {
   it("maps form values to alert options", () => {
     expect(getAlertOptionsFromFormValues(values)).toEqual({
       displayName: "Errors in orders",
-      refreshCron: "*/5 * * * *",
       resolver: "resource_status",
       resolverProperties: {
         where_error: true,

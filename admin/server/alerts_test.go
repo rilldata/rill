@@ -84,13 +84,6 @@ func TestCreateAlertValidation(t *testing.T) {
 		}
 	})
 
-	t.Run("resource status alerts require a refresh schedule", func(t *testing.T) {
-		opts := resourceStatusOpts(adminUser.Email)
-		opts.RefreshCron = ""
-		_, err := admin.CreateAlert(ctx, &adminv1.CreateAlertRequest{Org: org.Organization.Name, Project: proj.Project.Name, Options: opts})
-		requireCode(t, err, codes.InvalidArgument, "refresh schedule")
-	})
-
 	t.Run("email recipients must be project admins", func(t *testing.T) {
 		for _, email := range []string{editorUser.Email, viewerUser.Email, "unknown@example.com"} {
 			_, err := admin.CreateAlert(ctx, &adminv1.CreateAlertRequest{Org: org.Organization.Name, Project: proj.Project.Name, Options: resourceStatusOpts(adminUser.Email, email)})

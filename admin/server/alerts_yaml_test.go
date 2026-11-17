@@ -43,6 +43,22 @@ func TestYAMLForManagedAlert(t *testing.T) {
 		require.NotContains(t, annotations, "admin_owner_user_id")
 	})
 
+	t.Run("resource status alert defaults its refresh schedule", func(t *testing.T) {
+		props, err := structpb.NewStruct(map[string]any{"where_error": true})
+		require.NoError(t, err)
+		opts := &adminv1.AlertOptions{DisplayName: "Resource errors", Resolver: "resource_status", ResolverProperties: props}
+		for _, yamlForAlert := range []func() ([]byte, error){
+			func() ([]byte, error) { return s.yamlForManagedAlert(opts, "owner", "", "", nil) },
+			func() ([]byte, error) { return s.yamlForCommittedAlert(opts) },
+		} {
+			data, err := yamlForAlert()
+			require.NoError(t, err)
+			var res alertYAML
+			require.NoError(t, yaml.Unmarshal(data, &res))
+			require.Equal(t, resourceStatusDefaultCron, res.Refresh.Cron)
+		}
+	})
+
 	t.Run("metrics view alert", func(t *testing.T) {
 		data, err := s.yamlForManagedAlert(&adminv1.AlertOptions{
 			DisplayName:     "Revenue drop",
