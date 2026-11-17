@@ -46,6 +46,7 @@
     maxDate,
     urlComparisonTimeRange,
     comparisonTimeRange,
+    isCustomComparison,
     showComparison,
     comparisonTimeRangeOptions,
     comparisonInterval,
@@ -81,7 +82,10 @@
   );
 
   function applyCustomRange(range: Interval<true>) {
-    onSelectComparisonRange(`${range.start.toISO()} to ${range.end.toISO()}`);
+    // In UTC since the rill time parser does not accept zone offsets.
+    onSelectComparisonRange(
+      `${range.start.toJSDate().toISOString()} to ${range.end.toJSDate().toISOString()}`,
+    );
   }
 
   function onSelectComparisonRange(range: string) {
@@ -118,9 +122,7 @@
     <DropdownMenu.Root
       bind:open
       onOpenChange={() => {
-        showSelector = !!(
-          comparisonTimeRange === TimeComparisonOption.CUSTOM && showComparison
-        );
+        showSelector = isCustomComparison && showComparison;
       }}
     >
       <DropdownMenu.Trigger {disabled}>
@@ -196,10 +198,7 @@
                   showSelector = !showSelector;
                 }}
               >
-                <span
-                  class:font-bold={comparisonTimeRange ===
-                    TimeComparisonOption.CUSTOM && showComparison}
-                >
+                <span class:font-bold={isCustomComparison && showComparison}>
                   {m.time_custom()}
                 </span>
               </DropdownMenu.Item>

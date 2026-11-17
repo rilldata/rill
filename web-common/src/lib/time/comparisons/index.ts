@@ -386,7 +386,8 @@ export function getComparisonInterval(
       );
     }
   } else {
-    const normalizedRange = comparisonRange.replace(",", "/");
+    // Custom ranges are either `start,end` (older urls) or `start to end`.
+    const normalizedRange = comparisonRange.replace(/,| to /, "/");
     const normalizedInterval = Interval.fromISO(normalizedRange);
     // Safeguard against unknown comparison range format.
     if (!normalizedInterval.isValid) return undefined;

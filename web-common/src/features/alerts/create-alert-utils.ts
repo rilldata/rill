@@ -104,6 +104,7 @@ export function getNewAlertInitialFiltersFormValues(
     expressionFilterManager,
     timeFilterManager,
     cleanup: () => {
+      timeFilterManager.cleanup();
       metricsViewProvider.cleanup();
       yamlConfigProvider.cleanup?.();
     },

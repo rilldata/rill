@@ -6,6 +6,10 @@ import {
 import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import {
+  mapTimeManagerComparisonRangeToV1TimeRange,
+  mapTimeManagerRangeToV1TimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import {
   DEFAULT_TIME_RANGE,
   RESOLVED_RILL_TIMES,
   TIME_RANGE_SUMMARY,
@@ -15,6 +19,7 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
+import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -25,6 +30,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { waitFor } from "@testing-library/svelte";
+import { Settings } from "luxon";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -55,6 +61,7 @@ describe("TimeFilterManager", () => {
   function createManager(
     parent?: TimeFilterManager,
     yamlConfigProvider = new YAMLConfigProvider(),
+    config: TimeFiltersConfig = {},
   ) {
     const rendered = renderInRuntimeContext(({ runtimeClient }) => {
       const metricsViewsProvider = new MetricsViewsProvider(runtimeClient, [
@@ -64,7 +71,7 @@ describe("TimeFilterManager", () => {
         runtimeClient,
         metricsViewsProvider,
         yamlConfigProvider,
-        {},
+        config,
         parent,
       );
       return { manager, metricsViewsProvider };
@@ -168,6 +175,31 @@ describe("TimeFilterManager", () => {
     );
   });
 
+  it("does not re-apply an unchanged range when other time params change in the url", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const { manager, resolvedRanges } = createManager();
+    applyUrlTimeRange(manager, NOW_TIME_RANGE);
+    await waitFor(() =>
+      expectInterval(manager, RESOLVED_RILL_TIMES[NOW_TIME_RANGE]),
+    );
+    const requestCount = countTimeRangesRequests(fetchSpy);
+    const resolvedCount = resolvedRanges.length;
+
+    // E.g. navigating back after toggling the comparison.
+    manager.storeSync.setUrlParams(
+      new URLSearchParams([
+        [ExploreStateURLParams.TimeRange, NOW_TIME_RANGE],
+        [ExploreStateURLParams.ComparisonTimeRange, TimeComparisonOption.WEEK],
+      ]),
+    );
+    expect(manager.showComparison).toBe(true);
+    // A refetch would be issued, and resolve, asynchronously.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(resolvedRanges.length).toBe(resolvedCount);
+    expect(countTimeRangesRequests(fetchSpy)).toBe(requestCount);
+  });
+
   it("does not refetch when the same range not anchored at now is applied again", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const { manager, resolvedRanges } = createManager();
@@ -251,6 +283,195 @@ describe("TimeFilterManager", () => {
 
     parent.onSelectComparisonRange(TimeComparisonOption.MONTH);
     expect(child.comparisonTimeRange).toEqual(TimeComparisonOption.MONTH);
+  });
+
+  it("pans back and forward by the width of the range, comparing against the previous period", async () => {
+    const pannedLeft = "2024-03-18T00:00:00.000Z to 2024-03-25T00:00:00.000Z";
+    const pannedRight = "2024-04-01T00:00:00.000Z to 2024-04-08T00:00:00.000Z";
+    mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, {
+      ...RESOLVED_RILL_TIMES,
+      [pannedLeft]: {
+        start: "2024-03-18T00:00:00.000Z",
+        end: "2024-03-25T00:00:00.000Z",
+      },
+    });
+    const { manager } = createManager();
+    manager.storeSync.setUrlParams(
+      new URLSearchParams([
+        [ExploreStateURLParams.TimeRange, DEFAULT_TIME_RANGE],
+        [ExploreStateURLParams.ComparisonTimeRange, TimeComparisonOption.MONTH],
+      ]),
+    );
+    await waitFor(() =>
+      expectInterval(manager, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+    );
+
+    manager.onPan("right");
+    expect(manager.urlTimeRange).toEqual(pannedRight);
+
+    manager.onPan("left");
+    expect(manager.urlTimeRange).toEqual(pannedLeft);
+    await waitFor(() => expect(manager.timeRange).toEqual(pannedLeft));
+
+    // An absolute range compares against the previous period rather than the selected previous month.
+    expect(manager.comparisonTimeRange).toEqual(
+      TimeComparisonOption.CONTIGUOUS,
+    );
+    expect(manager.comparisonInterval?.start.toISO()).toEqual(
+      "2024-03-11T00:00:00.000Z",
+    );
+    expect(manager.comparisonInterval?.end.toISO()).toEqual(
+      "2024-03-18T00:00:00.000Z",
+    );
+  });
+
+  it("restores the highlighted range as the instants it was written as", async () => {
+    // Highlighted ranges used to be read in the browser's zone, ignoring the `Z`.
+    const defaultZone = Settings.defaultZone;
+    Settings.defaultZone = "Asia/Kathmandu";
+    try {
+      const { manager } = createManager();
+      manager.storeSync.setUrlParams(
+        new URLSearchParams([
+          [ExploreStateURLParams.TimeRange, DEFAULT_TIME_RANGE],
+          [
+            ExploreStateURLParams.HighlightedTimeRange,
+            "2024-03-26T00:00:00.000Z,2024-03-27T00:00:00.000Z",
+          ],
+        ]),
+      );
+      await waitFor(() =>
+        expect(manager.lastDefinedScrubInterval?.start.toUTC().toISO()).toEqual(
+          "2024-03-26T00:00:00.000Z",
+        ),
+      );
+      expect(manager.lastDefinedScrubInterval?.end.toUTC().toISO()).toEqual(
+        "2024-03-27T00:00:00.000Z",
+      );
+    } finally {
+      Settings.defaultZone = defaultZone;
+    }
+  });
+
+  describe("a range with a zone of its own", () => {
+    const ZONED_TIME_RANGE = `${DEFAULT_TIME_RANGE} tz Asia/Kathmandu`;
+
+    beforeEach(() => {
+      mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, {
+        ...RESOLVED_RILL_TIMES,
+        // Midnight in Kathmandu, a week before latest/D+1D.
+        [ZONED_TIME_RANGE]: {
+          start: "2024-03-24T18:15:00.000Z",
+          end: "2024-03-31T18:15:00.000Z",
+          grain: V1TimeGrain.TIME_GRAIN_DAY,
+        },
+      });
+    });
+
+    it("applies its zone without a zone param, and pans in wall-clock times of that zone", async () => {
+      const { manager } = createManager();
+      applyUrlTimeRange(manager, ZONED_TIME_RANGE);
+      await waitFor(() => expect(manager.timeRange).toEqual(ZONED_TIME_RANGE));
+      expect(manager.timeZone).toEqual("Asia/Kathmandu");
+
+      // The runtime reads absolute times in the selected zone, ignoring the `Z`.
+      manager.onPan("right");
+      expect(manager.urlTimeRange).toEqual(
+        "2024-04-01T00:00:00.000Z to 2024-04-08T00:00:00.000Z",
+      );
+    });
+
+    it("keeps a zone picked afterwards", async () => {
+      const { manager } = createManager();
+      const changes: string[] = [];
+      manager.storeSync.on("internal-change", (params) =>
+        changes.push(params.toString()),
+      );
+      applyUrlTimeRange(manager, ZONED_TIME_RANGE);
+      await waitFor(() => expect(manager.timeRange).toEqual(ZONED_TIME_RANGE));
+
+      manager.onSelectZone("America/New_York");
+      await waitFor(() =>
+        expect(changes.at(-1)).toContain(
+          `${ExploreStateURLParams.TimeZone}=America%2FNew_York`,
+        ),
+      );
+      expect(manager.timeZone).toEqual("America/New_York");
+    });
+  });
+
+  it("resolves a custom comparison window and sends it as start and end", async () => {
+    const { manager } = createManager();
+    applyUrlTimeRange(manager, DEFAULT_TIME_RANGE);
+    await waitFor(() =>
+      expectInterval(manager, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+    );
+
+    manager.onSelectComparisonRange(
+      "2024-02-01T00:00:00.000Z to 2024-02-08T00:00:00.000Z",
+    );
+    expect(manager.isCustomComparison).toBe(true);
+    const expected = {
+      start: "2024-02-01T00:00:00.000Z",
+      end: "2024-02-08T00:00:00.000Z",
+    };
+    expect(manager.comparisonTimeStart).toEqual(expected.start);
+    expect(manager.comparisonTimeEnd).toEqual(expected.end);
+    expect(
+      mapTimeManagerComparisonRangeToV1TimeRange(
+        manager,
+        mapTimeManagerRangeToV1TimeRange(manager),
+      ),
+    ).toEqual(expected);
+
+    // Older urls separate the custom window with a comma.
+    manager.onSelectComparisonRange(`${expected.start},${expected.end}`);
+    expect(manager.isCustomComparison).toBe(true);
+    expect(manager.comparisonTimeStart).toEqual(expected.start);
+  });
+
+  it.each([
+    {
+      title: "an absolute range",
+      timeRange: "2024-03-18 to 2024-03-25",
+      config: {},
+    },
+    {
+      title: "no range",
+      timeRange: undefined,
+      config: { skipDefaultTimeRange: true },
+    },
+  ])("reports a zone change on $title", async ({ timeRange, config }) => {
+    if (timeRange) {
+      mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, {
+        ...RESOLVED_RILL_TIMES,
+        [timeRange]: {
+          start: "2024-03-18T00:00:00.000Z",
+          end: "2024-03-25T00:00:00.000Z",
+        },
+      });
+    }
+    const { manager } = createManager(undefined, undefined, config);
+    const changes: string[] = [];
+    manager.storeSync.on("internal-change", (params) =>
+      changes.push(params.toString()),
+    );
+    manager.storeSync.setUrlParams(
+      new URLSearchParams(
+        timeRange ? [[ExploreStateURLParams.TimeRange, timeRange]] : [],
+      ),
+    );
+    await waitFor(() => expect(manager.ready).toBe(true));
+    if (timeRange)
+      await waitFor(() => expect(manager.timeRange).toEqual(timeRange));
+
+    manager.onSelectZone("Asia/Kathmandu");
+    await waitFor(() =>
+      expect(changes.at(-1)).toContain(
+        `${ExploreStateURLParams.TimeZone}=Asia%2FKathmandu`,
+      ),
+    );
+    expect(manager.urlTimeRange).toEqual(timeRange);
   });
 
   describe("params missing from the url", () => {
@@ -403,19 +624,22 @@ describe("TimeFilterManager", () => {
       expect(child.showComparison).toBe(false);
     });
 
-    it("follows the parent's zone only while the range is inherited", async () => {
+    it("follows the parent's zone unless it sets a zone of its own on a local range", async () => {
       const parent = await createResolvedParent([
         [ExploreStateURLParams.TimeZone, "Asia/Kathmandu"],
       ]);
       const inheriting = createChild(parent, "tr=inherit&compare_tr=inherit");
       const local = createChild(parent, `tr=${OTHER_TIME_RANGE}`);
+      const ownZone = createChild(parent, `tr=${OTHER_TIME_RANGE}&tz=UTC`);
       await waitFor(() =>
         expect(inheriting.timeRange).toEqual(DEFAULT_TIME_RANGE),
       );
       await waitFor(() => expect(local.timeRange).toEqual(OTHER_TIME_RANGE));
+      await waitFor(() => expect(ownZone.timeRange).toEqual(OTHER_TIME_RANGE));
 
       expect(inheriting.timeZone).toEqual("Asia/Kathmandu");
-      expect(local.timeZone).toEqual("UTC");
+      expect(local.timeZone).toEqual("Asia/Kathmandu");
+      expect(ownZone.timeZone).toEqual("UTC");
     });
 
     it("applies its own grain on an inherited range", async () => {

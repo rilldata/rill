@@ -143,6 +143,20 @@
   let dynamicYAxisScale = $derived($exploreState?.dynamicYAxisScale ?? false);
 
   $effect(() => measureSelection.setZone(selectedTimezone));
+  // Clears the selection when the resolved interval changes rather than on every time range apply,
+  // so changes like toggling the comparison keep it.
+  // Compared by value, since re-resolving the same range creates a new interval.
+  // TODO: only clear when the selection falls outside the new interval.
+  let intervalKey = $derived(interval?.toISO());
+  let previousIntervalKey: string | undefined;
+  $effect(() => {
+    if (
+      previousIntervalKey !== undefined &&
+      intervalKey !== previousIntervalKey
+    )
+      measureSelection.clear();
+    previousIntervalKey = intervalKey;
+  });
   $effect(() => {
     if (timeGrain) measureSelection.setTimeGrain(timeGrain);
   });

@@ -54,7 +54,6 @@ import {
   getComparisonInterval,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
 import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
 import { toStore } from "svelte/store";
@@ -137,7 +136,8 @@ export class TimeFilterManager implements UrlParamsStore {
    */
   public timeGrain: V1TimeGrain;
   /**
-   * Time zone in effect: the parent's while the time range is inherited, otherwise `ownTimeZone`.
+   * Time zone in effect: the parent's while the time range is inherited or no zone of its own is set,
+   * otherwise `ownTimeZone`.
    */
   public timeZone: string;
   public timeDimension = $state<string | undefined>(undefined);
@@ -149,6 +149,10 @@ export class TimeFilterManager implements UrlParamsStore {
    * Resolved comparison time range, taking into account the parent comparison time range when `inherit` is set.
    */
   public comparisonTimeRange: string | undefined;
+  /**
+   * Whether the comparison is a custom `start to end` window rather than a preset offset.
+   */
+  public isCustomComparison: boolean;
   /**
    * Whether the comparison is shown: the parent's while the comparison range is inherited, otherwise `ownShowComparison`.
    */
@@ -172,7 +176,8 @@ export class TimeFilterManager implements UrlParamsStore {
 
   // Selected on this instance, from the url or the controls.
   // A child following its parent reads the parent's values instead, see `timeZone` and `showComparison`.
-  private ownTimeZone = $state<string>(DEFAULT_TIMEZONE);
+  // Undefined on a child without a zone of its own, so it follows the parent's zone.
+  private ownTimeZone = $state<string | undefined>(undefined);
   private ownShowComparison = $state<boolean>(false);
 
   // When set, relative time ranges are anchored at this time instead of now/latest.
@@ -268,7 +273,7 @@ export class TimeFilterManager implements UrlParamsStore {
     this.timeZone = $derived(
       this.inheritsTimeRange && this.parent
         ? this.parent.timeZone
-        : this.ownTimeZone,
+        : (this.ownTimeZone ?? this.parent?.timeZone ?? DEFAULT_TIMEZONE),
     );
     this.showComparison = $derived(
       this.inheritsComparison && this.parent
@@ -460,25 +465,30 @@ export class TimeFilterManager implements UrlParamsStore {
         return undefined;
       }
     });
+    this.isCustomComparison = $derived(
+      this.parsedComparisonTime?.interval instanceof RillIsoInterval,
+    );
     this.comparisonTimeRange = $derived.by(() => {
       // An absolute primary time range has no relative comparison other than the contiguous one,
       // so mark the comparison as contiguous. An absolute comparison window is left as-is:
       // it already names the exact period to compare against.
       if (
         this.parsedTime?.interval instanceof RillIsoInterval &&
-        !(this.parsedComparisonTime?.interval instanceof RillIsoInterval)
+        !this.isCustomComparison
       ) {
         return TimeComparisonOption.CONTIGUOUS;
       }
       return selectedComparisonTimeRange;
     });
+    // Computed from `comparisonTimeRange` rather than the selected range,
+    // so the interval matches the comparison that is reported.
     this.comparisonInterval = $derived.by(() => {
-      if (!this.interval || !this.resolved || !selectedComparisonTimeRange)
+      if (!this.interval || !this.resolved || !this.comparisonTimeRange)
         return undefined;
       try {
         return getComparisonInterval(
           this.interval,
-          selectedComparisonTimeRange,
+          this.comparisonTimeRange,
           this.resolved.timeZone,
         );
       } catch {
@@ -534,11 +544,22 @@ export class TimeFilterManager implements UrlParamsStore {
       this.urlTimeGrain = urlGrain ? TokenToV1TimeGrain[urlGrain] : undefined;
     }
 
+    const defaultTimeRange = this.config.skipDefaultTimeRange
+      ? undefined
+      : this.rillDefaultConfigProvider.defaultTimeRange;
+    const timeRange =
+      urlParams.get(ExploreStateURLParams.TimeRange) ?? defaultTimeRange;
+
     // Yaml defaults are applied before the url gets here, so a missing param means the rill default.
     // See RillDefaultConfigProvider.
+    // Without a zone param, a `tz` in the range applies, e.g. a canvas widget's `time_filters`.
+    // A child with neither follows the parent's zone.
     this.ownTimeZone =
       urlParams.get(ExploreStateURLParams.TimeZone) ??
-      this.rillDefaultConfigProvider.defaultTimeZone;
+      getTimeZoneOfRange(timeRange) ??
+      (this.parent
+        ? undefined
+        : this.rillDefaultConfigProvider.defaultTimeZone);
 
     this.timeDimension =
       urlParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
@@ -550,45 +571,35 @@ export class TimeFilterManager implements UrlParamsStore {
       urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ??
       TimeComparisonOption.CONTIGUOUS;
 
-    // Apply time range last so that params are taken from url
-    if (urlParams.has(ExploreStateURLParams.TimeRange)) {
-      this.applyTimeRange(
-        urlParams.get(ExploreStateURLParams.TimeRange)!,
-        false,
-      );
+    // Apply time range last so that params are taken from url.
+    // An unchanged range is not applied again when only other time params change, e.g. navigating back after toggling the comparison.
+    // A zone or time dimension change already re-resolves the interval through the query inputs.
+    if (timeRange) {
+      if (timeRange !== this.urlTimeRange)
+        this.applyTimeRange(timeRange, false);
     } else {
-      const defaultTimeRange = this.rillDefaultConfigProvider.defaultTimeRange;
-      if (defaultTimeRange && !this.config.skipDefaultTimeRange) {
-        this.applyTimeRange(defaultTimeRange, false);
-      } else {
-        this.urlTimeRange = undefined;
-        this.resolved = undefined;
-      }
+      this.urlTimeRange = undefined;
+      this.resolved = undefined;
     }
 
     // Apply the highlighted range after the time range, since applying a time range clears it.
     this.scrubInterval = undefined;
     this.lastDefinedScrubInterval = undefined;
-    if (urlParams.has(ExploreStateURLParams.HighlightedTimeRange)) {
-      try {
-        const parsedHighlightRange = parseRillTime(
-          urlParams.get(ExploreStateURLParams.HighlightedTimeRange)!,
-        );
-        if (parsedHighlightRange.interval instanceof RillIsoInterval) {
-          const { start, end, interval } =
-            parsedHighlightRange.interval.toLuxonTimes();
-          this.scrubInterval =
-            start && end
-              ? {
-                  start,
-                  end,
-                  isScrubbing: false,
-                }
-              : undefined;
-          this.lastDefinedScrubInterval = interval;
-        }
-      } catch {
-        // no-op
+    // Written as UTC instants (`start,end`), so it is parsed respecting the `Z` rather than as a rill time.
+    const highlightedRange = urlParams.get(
+      ExploreStateURLParams.HighlightedTimeRange,
+    );
+    if (highlightedRange) {
+      const interval = Interval.fromISO(
+        highlightedRange.replace(",", "/"),
+      ).mapEndpoints((dt) => dt.setZone(this.timeZone));
+      if (interval.isValid) {
+        this.scrubInterval = {
+          start: interval.start,
+          end: interval.end,
+          isScrubbing: false,
+        };
+        this.lastDefinedScrubInterval = interval;
       }
     }
   }
@@ -611,7 +622,10 @@ export class TimeFilterManager implements UrlParamsStore {
       }
     }
 
-    if (this.ownTimeZone !== this.rillDefaultConfigProvider.defaultTimeZone) {
+    if (
+      this.ownTimeZone &&
+      this.ownTimeZone !== this.rillDefaultConfigProvider.defaultTimeZone
+    ) {
       urlParams.set(ExploreStateURLParams.TimeZone, this.ownTimeZone);
     } else {
       urlParams.delete(ExploreStateURLParams.TimeZone);
@@ -699,6 +713,9 @@ export class TimeFilterManager implements UrlParamsStore {
         overrideRillTimeRef(parsed, newAsOfString);
       }
 
+      // A range picked with a zone of its own switches the selected zone.
+      if (parsed.timezone) this.ownTimeZone = parsed.timezone;
+
       return this.applyTimeRange(parsed.toString());
     } catch {
       // This function is called in a controlled manner and should not throw
@@ -711,14 +728,17 @@ export class TimeFilterManager implements UrlParamsStore {
     const currentRangeWidth = this.interval.length("milliseconds");
     const panAmount = getDurationObjectFromMS(currentRangeWidth);
 
-    const newStart = this.interval.start
-      .setZone(this.timeZone)
-      [direction === "left" ? "plus" : "minus"](panAmount)
-      .toISO();
-    const newEnd = this.interval.end
-      .setZone(this.timeZone)
-      [direction === "left" ? "plus" : "minus"](panAmount)
-      .toISO();
+    // Shifted in the selected zone so calendar durations respect DST.
+    // Written as wall-clock times in that zone: the backend reads absolute times in the selected zone and ignores the `Z`,
+    // which the rill time parser requires on times with seconds.
+    const shift = direction === "left" ? "minus" : "plus";
+    const [newStart, newEnd] = [this.interval.start, this.interval.end].map(
+      (dt) =>
+        dt
+          .setZone(this.timeZone)
+          [shift](panAmount)
+          .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+    );
 
     this.applyTimeRange(`${newStart} to ${newEnd}`);
   }
@@ -743,14 +763,10 @@ export class TimeFilterManager implements UrlParamsStore {
 
   public onSelectZone(tz: string) {
     this.ownTimeZone = tz;
-    if (!this.urlTimeRange || !this.parsedTime) return;
-
-    if (this.parsedTime.interval instanceof RillIsoInterval) {
-      // TODO
-    } else {
-      // Applies the url range rather than the resolved one, so an inherited range stays inherited.
-      this.applyTimeRange(this.urlTimeRange);
-    }
+    // Applies the url range rather than the resolved one, so an inherited range stays inherited.
+    // Re-resolving reports the change once the interval in the new zone has resolved.
+    if (this.urlTimeRange) this.applyTimeRange(this.urlTimeRange);
+    else this.storeSync.stateChanged();
   }
 
   public onSelectAsOfOption(
@@ -850,21 +866,13 @@ export class TimeFilterManager implements UrlParamsStore {
     // `requestedTimeRange` follows from this, with `inherit` replaced by the parent's range.
     this.urlTimeRange = newTimeRange;
 
-    measureSelection.clear();
+    // The measure selection is cleared by the chart once the resolved interval changes.
     this.resetScrubRange(false);
 
-    // This should be returned by the API, but it is not yet implemented
-    const includesTimeZoneOffset = newTimeRange.includes("tz");
-
-    if (includesTimeZoneOffset) {
-      const timeZone = newTimeRange.match(/tz (.*)/)?.[1];
-
-      if (timeZone) this.ownTimeZone = timeZone;
-    }
-
     // A range anchored at `now` resolves differently every time,
-    // so re-selecting it has to refetch even though the query key is unchanged.
-    if (this.requestedTimeRange?.includes("now")) {
+    // so re-selecting it from the controls has to refetch even though the query key is unchanged.
+    // A url change does not, since it is not a new selection.
+    if (notifyChange && this.requestedTimeRange?.includes("now")) {
       this.getTimeRangesQueryOptions().forEach(({ queryKey }) => {
         void queryClient.invalidateQueries({ queryKey, refetchType: "all" });
       });
@@ -1016,5 +1024,14 @@ export class TimeFilterManager implements UrlParamsStore {
       });
     }
     return filteredOptions;
+  }
+}
+
+function getTimeZoneOfRange(timeRange: string | undefined) {
+  if (!timeRange) return undefined;
+  try {
+    return parseRillTime(timeRange).timezone;
+  } catch {
+    return undefined;
   }
 }

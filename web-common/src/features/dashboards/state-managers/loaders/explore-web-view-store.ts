@@ -86,7 +86,12 @@ export function updateExploreSessionStore(
       storageNamespacePrefix,
       otherWebView,
     );
-    const otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    let otherWebViewRawSearch = "";
+    try {
+      otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    } catch {
+      // Reading storage throws when the browser blocks it, e.g. in an embed with third-party cookies blocked.
+    }
     const otherWebViewUrlParams = new URLSearchParams(otherWebViewRawSearch);
 
     // Copy relevant params from current view to the other view

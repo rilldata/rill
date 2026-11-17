@@ -971,6 +971,8 @@ function setFromTimeManager(
   exploreState: ExploreState,
   timeFilterManager: TimeFilterManager,
 ) {
+  exploreState.selectedTimezone = timeFilterManager.timeZone;
+  exploreState.selectedTimeDimension = timeFilterManager.timeDimension;
   if (!timeFilterManager.timeRange) return;
 
   exploreState.selectedTimeRange = {

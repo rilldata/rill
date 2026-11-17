@@ -31,10 +31,8 @@
     showGrainPicker = false,
   } = $derived(config);
 
-  let canPanLeft = $derived(timeFilterManager.canPanLeft ?? !hidePan);
-  let canPanRight = $derived(timeFilterManager.canPanRight ?? !hidePan);
-
-  let { timeZone, minDate, maxDate } = $derived(timeFilterManager);
+  let { timeZone, minDate, maxDate, canPanLeft, canPanRight } =
+    $derived(timeFilterManager);
 </script>
 
 <div
