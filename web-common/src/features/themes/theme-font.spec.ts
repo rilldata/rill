@@ -3,29 +3,71 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadThemeFont,
+  resolveThemeFont,
   themeFontEmbedCSS,
-  themeFontFamily,
 } from "./theme-font";
 
-describe("themeFontFamily", () => {
+const HOST = "https://runtime.example.com";
+
+// Registered faces outlive a dashboard by design, so each test uses projects of its own.
+let nextInstance = 0;
+function newProject(): RuntimeClient {
+  return {
+    host: HOST,
+    instanceId: `inst${++nextInstance}`,
+    getJwt: () => "token",
+  } as unknown as RuntimeClient;
+}
+
+function font(family: string, ...paths: string[]): V1ThemeFont {
+  return {
+    family,
+    files: paths.map((path) => ({ path, weightMin: 400, weightMax: 400 })),
+  };
+}
+
+describe("resolveThemeFont", () => {
   it("quotes the family and falls back to Rill's font", () => {
-    expect(themeFontFamily({ family: "Brand Sans" })).toBe(
-      `"Brand Sans", "Inter", sans-serif`,
-    );
+    expect(resolveThemeFont({ family: "Brand Sans" }, newProject())).toEqual({
+      cssFamily: `"Brand Sans", "Inter", sans-serif`,
+      files: [],
+    });
   });
 
   it("leaves a generic family unquoted, since a quoted keyword names a font", () => {
-    expect(themeFontFamily({ family: "System-UI" })).toBe(
-      `system-ui, "Inter", sans-serif`,
-    );
+    expect(
+      resolveThemeFont({ family: "System-UI" }, newProject())?.cssFamily,
+    ).toBe(`system-ui, "Inter", sans-serif`);
   });
 
   it("rejects a family that would add CSS of its own", () => {
     expect(
-      themeFontFamily({ family: `Brand"; } body { display: none` }),
+      resolveThemeFont({ family: `Brand"; } body { display: none` }, undefined),
     ).toBeUndefined();
-    expect(themeFontFamily({ family: "Brand, serif" })).toBeUndefined();
-    expect(themeFontFamily(undefined)).toBeUndefined();
+    expect(resolveThemeFont({ family: "Brand, serif" }, undefined)).toBe(
+      undefined,
+    );
+    expect(resolveThemeFont(undefined, undefined)).toBeUndefined();
+  });
+
+  it("gives every project and every set of files a family of its own", () => {
+    const project = newProject();
+    const regular = font("Brand Sans", "public/BrandSans.woff2");
+    const resolved = resolveThemeFont(regular, project);
+
+    expect(resolved?.cssFamily).toBe(
+      `"${resolved?.faceFamily}", "Brand Sans", "Inter", sans-serif`,
+    );
+    expect(resolveThemeFont(regular, project)?.faceFamily).toBe(
+      resolved?.faceFamily,
+    );
+    expect(resolveThemeFont(regular, newProject())?.faceFamily).not.toBe(
+      resolved?.faceFamily,
+    );
+    expect(
+      resolveThemeFont(font("Brand Sans", "public/Other.woff2"), project)
+        ?.faceFamily,
+    ).not.toBe(resolved?.faceFamily);
   });
 });
 
@@ -48,19 +90,20 @@ describe("loadThemeFont", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let files: Record<string, ArrayBuffer | number>;
 
-  const client = {
-    host: "https://runtime.example.com",
-    instanceId: "inst",
-    getJwt: () => "token",
-  } as unknown as RuntimeClient;
+  const assetURL = (client: RuntimeClient, path: string) =>
+    `${HOST}/v1/instances/${client.instanceId}/assets/${path}`;
 
-  // Each test names its own family: registered faces outlive a dashboard by design.
-  function font(family: string, ...paths: string[]): V1ThemeFont {
-    return {
-      family,
-      files: paths.map((path) => ({ path, weightMin: 400, weightMax: 400 })),
-    };
+  // Resolves a font for a project and loads it, as ThemeProvider does.
+  async function load(client: RuntimeClient, themeFont: V1ThemeFont) {
+    const resolved = resolveThemeFont(themeFont, client)!;
+    await loadThemeFont(client, resolved);
+    return resolved;
   }
+
+  const facesOf = (family: string | undefined) =>
+    [...registered]
+      .filter((face) => face.family === family)
+      .map(({ descriptors }) => `${descriptors.weight} ${descriptors.style}`);
 
   beforeEach(() => {
     registered = new Set();
@@ -90,14 +133,13 @@ describe("loadThemeFont", () => {
     vi.restoreAllMocks();
   });
 
-  const assetURL = (path: string) =>
-    `https://runtime.example.com/v1/instances/inst/assets/${path}`;
+  it("fetches each file with the runtime token and registers its weight and style", async () => {
+    const client = newProject();
+    files[assetURL(client, "public/Brand%20Sans.woff2")] = new ArrayBuffer(8);
+    files[assetURL(client, "public/BrandSans-Variable.woff2")] =
+      new ArrayBuffer(8);
 
-  it("fetches each file with the runtime token and registers it under the family", async () => {
-    files[assetURL("public/Brand%20Sans.woff2")] = new ArrayBuffer(8);
-    files[assetURL("public/BrandSans-Variable.woff2")] = new ArrayBuffer(8);
-
-    await loadThemeFont(client, {
+    const resolved = await load(client, {
       family: "Brand Sans",
       files: [
         { path: "public/Brand Sans.woff2", weightMin: 700, weightMax: 700 },
@@ -111,80 +153,94 @@ describe("loadThemeFont", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      assetURL("public/Brand%20Sans.woff2"),
+      assetURL(client, "public/Brand%20Sans.woff2"),
       { headers: { Authorization: "Bearer token" } },
     );
-    expect(
-      [...registered].map(({ family, descriptors }) => ({
-        family,
-        weight: descriptors.weight,
-        style: descriptors.style,
-      })),
-    ).toEqual([
-      { family: "Brand Sans", weight: "700", style: "normal" },
-      { family: "Brand Sans", weight: "100 900", style: "italic" },
+    expect(facesOf(resolved.faceFamily)).toEqual([
+      "700 normal",
+      "100 900 italic",
     ]);
   });
 
   it("downloads a file once, however many dashboards and panels use the theme", async () => {
-    files[assetURL("public/Once.woff2")] = new ArrayBuffer(8);
+    const client = newProject();
+    files[assetURL(client, "public/Once.woff2")] = new ArrayBuffer(8);
 
     await Promise.all([
-      loadThemeFont(client, font("Once", "public/Once.woff2")),
-      loadThemeFont(client, font("Once", "public/Once.woff2")),
+      load(client, font("Once", "public/Once.woff2")),
+      load(client, font("Once", "public/Once.woff2")),
     ]);
-    await loadThemeFont(client, font("Once", "public/Once.woff2"));
+    await load(client, font("Once", "public/Once.woff2"));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(registered.size).toBe(1);
   });
 
-  it("replaces a face when the theme points it at another file", async () => {
-    files[assetURL("public/Old.woff2")] = new ArrayBuffer(8);
-    files[assetURL("public/New.woff2")] = new ArrayBuffer(16);
+  it("keeps the faces of two projects apart when their fonts share a name", async () => {
+    // A weight that one project's font lacks must not be drawn with another project's file.
+    const projectA = newProject();
+    const projectB = newProject();
+    files[assetURL(projectA, "public/Regular.woff2")] = new ArrayBuffer(8);
+    files[assetURL(projectA, "public/Bold.woff2")] = new ArrayBuffer(8);
+    files[assetURL(projectB, "public/Regular.woff2")] = new ArrayBuffer(8);
+    const fontA = font("Brand Sans", "public/Regular.woff2");
+    fontA.files?.push({ path: "public/Bold.woff2", weightMin: 700 });
 
-    await loadThemeFont(client, font("Swap", "public/Old.woff2"));
-    await loadThemeFont(client, font("Swap", "public/New.woff2"));
+    const a = await load(projectA, fontA);
+    const b = await load(projectB, font("Brand Sans", "public/Regular.woff2"));
 
-    expect([...registered].map((face) => face.source.byteLength)).toEqual([16]);
+    expect(facesOf(a.faceFamily)).toEqual(["400 normal", "700 normal"]);
+    expect(facesOf(b.faceFamily)).toEqual(["400 normal"]);
+    expect(b.cssFamily).not.toContain(`"${a.faceFamily}"`);
   });
 
   it("keeps the fallback font when a file is missing or is not a font, and retries later", async () => {
-    files[assetURL("public/Missing.woff2")] = 403;
-    files[assetURL("public/Broken.woff2")] = new ArrayBuffer(0);
+    const client = newProject();
+    files[assetURL(client, "public/Missing.woff2")] = 403;
+    files[assetURL(client, "public/Broken.woff2")] = new ArrayBuffer(0);
     const broken = font("Broken", "public/Missing.woff2");
     broken.files?.push({ path: "public/Broken.woff2", weightMin: 700 });
 
-    await loadThemeFont(client, broken);
+    await load(client, broken);
 
     expect(registered.size).toBe(0);
     expect(console.warn).toHaveBeenCalledTimes(2);
 
-    files[assetURL("public/Missing.woff2")] = new ArrayBuffer(8);
-    await loadThemeFont(client, font("Broken", "public/Missing.woff2"));
+    files[assetURL(client, "public/Missing.woff2")] = new ArrayBuffer(8);
+    await load(client, broken);
 
     expect(registered.size).toBe(1);
   });
 
-  it("offers the loaded files to exports as inlined @font-face rules", async () => {
-    // PNG and PDF exports draw the dashboard as an SVG image, which sees no font of the page.
-    files[assetURL("public/Export.woff2")] = new TextEncoder().encode(
-      "font",
-    ).buffer;
+  it("loads files for a family named like Rill's own font without replacing it", async () => {
+    const client = newProject();
+    files[assetURL(client, "public/Inter.woff2")] = new ArrayBuffer(8);
 
-    await loadThemeFont(client, font("Export Sans", "public/Export.woff2"));
+    const resolved = await load(client, font("Inter", "public/Inter.woff2"));
 
-    expect(themeFontEmbedCSS()).toContain(
-      `@font-face{font-family:"Export Sans";font-weight:400;font-style:normal;src:url(data:font/woff2;base64,${btoa("font")})}`,
-    );
+    expect(facesOf(resolved.faceFamily)).toEqual(["400 normal"]);
+    expect(facesOf("Inter")).toEqual([]);
   });
 
-  it("does not let a theme replace the fonts of Rill's own interface", async () => {
-    files[assetURL("public/Inter.woff2")] = new ArrayBuffer(8);
+  it("offers exports the faces of the theme font a node is set in, inlined", async () => {
+    // PNG and PDF exports draw the dashboard as an SVG image, which sees no font of the page.
+    const client = newProject();
+    files[assetURL(client, "public/Export.woff2")] = new TextEncoder().encode(
+      "font",
+    ).buffer;
+    files[assetURL(client, "public/Other.woff2")] = new ArrayBuffer(8);
+    const exported = await load(
+      client,
+      font("Export Sans", "public/Export.woff2"),
+    );
+    await load(client, font("Other Sans", "public/Other.woff2"));
 
-    await loadThemeFont(client, font("Inter", "public/Inter.woff2"));
+    const node = document.createElement("div");
+    node.style.setProperty("--theme-font-family", exported.cssFamily);
+    const css = themeFontEmbedCSS(node);
 
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(registered.size).toBe(0);
+    expect(css).toBe(
+      `@font-face{font-family:"${exported.faceFamily}";font-weight:400;font-style:normal;src:url(data:font/woff2;base64,${btoa("font")})}`,
+    );
   });
 });

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
-  import type { V1ThemeFont } from "@rilldata/web-common/runtime-client";
   import { tryUseRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
@@ -9,6 +8,7 @@
   import {
     loadThemeFont,
     THEME_CHART_FONT_CONTEXT_KEY,
+    type ResolvedThemeFont,
   } from "../themes/theme-font";
   import { themeManager } from "../themes/theme-manager";
 
@@ -35,17 +35,14 @@
   setContext(THEME_CHART_FONT_CONTEXT_KEY, chartFont);
 
   let fontLoadId = 0;
-  async function loadFont(
-    font: V1ThemeFont | undefined,
-    fontFamily: string | undefined,
-  ) {
+  async function loadFont(font: ResolvedThemeFont | undefined) {
     const id = ++fontLoadId;
-    if (font && fontFamily && client) await loadThemeFont(client, font);
+    if (font && client) await loadThemeFont(client, font);
     // A newer theme may have arrived while this one's files were downloading.
-    if (id === fontLoadId) chartFont.set(fontFamily);
+    if (id === fontLoadId) chartFont.set(font?.cssFamily);
   }
 
-  $: void loadFont(theme?.spec?.font, theme?.fontFamily);
+  $: void loadFont(theme?.font);
 
   $: css = theme?.css;
 

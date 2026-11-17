@@ -130,7 +130,7 @@ async function isBlank(dataUrl: string): Promise<boolean> {
 // html-to-image finds the fonts declared in the page's stylesheets; a theme's own font is
 // registered from script instead, so it is added here.
 export async function resolveFontEmbedCSS(node: HTMLElement): Promise<string> {
-  return (await getFontEmbedCSS(node)) + themeFontEmbedCSS();
+  return (await getFontEmbedCSS(node)) + themeFontEmbedCSS(node);
 }
 
 export type RasterFormat = "jpeg" | "png";

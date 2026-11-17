@@ -94,7 +94,7 @@
       enabled: !!themeName,
       select: (data) => {
         if (data.resource?.theme?.spec) {
-          return new Theme(data.resource?.theme?.spec);
+          return new Theme(data.resource?.theme?.spec, runtimeClient);
         } else {
           return undefined;
         }

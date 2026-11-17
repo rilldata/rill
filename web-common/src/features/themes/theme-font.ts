@@ -39,24 +39,75 @@ const GENERIC_FONT_FAMILIES = new Set([
   "ui-rounded",
 ]);
 
-// Families that Rill's own interface is set in. `document.fonts` is shared by the whole
-// page, so files registered under these names would restyle the app around the dashboard.
-const RESERVED_FONT_FAMILIES = new Set(["inter", "source code variable"]);
+/** Identifies the project a theme belongs to: the runtime that serves it and its instance. */
+export interface ThemeFontScope {
+  host: string;
+  instanceId: string;
+}
+
+/** A theme's font, resolved for the project the theme belongs to. */
+export interface ResolvedThemeFont {
+  /**
+   * The CSS `font-family` value for the dashboard's text and charts.
+   * Vega hands it to the canvas and SVG renderers as is.
+   */
+  cssFamily: string;
+  /** The family the font files are registered under; undefined when there are no files to load. */
+  faceFamily?: string;
+  files: V1ThemeFontFile[];
+}
+
+// The families that theme font files are registered under, by project and font definition.
+//
+// `document.fonts` is shared by the whole page. Under the theme's own family name, the faces
+// of two projects that both call their font "Brand Sans" would mix (a weight one of them lacks
+// would be drawn with the other's file), and files named after Rill's own font would restyle
+// the app around the dashboard. So every project and set of files gets a family of its own.
+const faceFamilies = new Map<string, string>();
 
 /**
- * Returns the CSS `font-family` value for a theme font, or undefined if the theme has none.
- * Charts take the same value, since Vega hands it to the canvas and SVG renderers as is.
+ * Resolves a theme's font for the project the theme belongs to.
+ * Returns undefined when the theme keeps Rill's font.
+ * Without a scope the files can't be loaded, so only the family name is used.
  */
-export function themeFontFamily(
+export function resolveThemeFont(
   font: V1ThemeFont | undefined,
-): string | undefined {
+  scope: ThemeFontScope | undefined,
+): ResolvedThemeFont | undefined {
   const family = font?.family?.trim();
   if (!family || !FONT_FAMILY_PATTERN.test(family)) return undefined;
 
-  const name = GENERIC_FONT_FAMILIES.has(family.toLowerCase())
-    ? family.toLowerCase()
-    : `"${family}"`;
-  return `${name}, ${FALLBACK_FONT_FAMILIES}`;
+  const isGeneric = GENERIC_FONT_FAMILIES.has(family.toLowerCase());
+  const name = isGeneric ? family.toLowerCase() : `"${family}"`;
+  const files = font?.files ?? [];
+  if (!scope || isGeneric || files.length === 0) {
+    return { cssFamily: `${name}, ${FALLBACK_FONT_FAMILIES}`, files: [] };
+  }
+
+  const key = JSON.stringify([
+    scope.host,
+    scope.instanceId,
+    family,
+    files.map((file) => [
+      file.path,
+      file.weightMin,
+      file.weightMax,
+      !!file.italic,
+    ]),
+  ]);
+  let faceFamily = faceFamilies.get(key);
+  if (!faceFamily) {
+    faceFamily = `rill-theme-font-${faceFamilies.size + 1}`;
+    faceFamilies.set(key, faceFamily);
+  }
+
+  // The theme's own family name comes next, for a viewer who has the font installed while
+  // the files download.
+  return {
+    cssFamily: `"${faceFamily}", ${name}, ${FALLBACK_FONT_FAMILIES}`,
+    faceFamily,
+    files,
+  };
 }
 
 /**
@@ -75,18 +126,15 @@ export function getThemeChartFont(): Readable<string | undefined> {
 }
 
 interface RegisteredFontFile {
-  /** Where the bytes came from: the runtime, the instance and the file's path. */
-  source: string;
+  faceFamily: string;
   /** Resolves when the file has been registered with the document, or has failed. */
   settled: Promise<void>;
-  face?: FontFace;
   /** The face as an `@font-face` rule with the file inlined (see themeFontEmbedCSS). */
   embedCSS?: string;
 }
 
-// One entry per face of a family: its weight range and style. A face stays registered after
-// its dashboard is closed, so opening the next dashboard of the project does not download
-// it again. A different file for the same face replaces it.
+// One entry per face: its family, weight range and style. A face stays registered after its
+// dashboard is closed, so opening the next dashboard of the project does not download it again.
 const registeredFontFiles = new Map<string, RegisteredFontFile>();
 
 /**
@@ -96,34 +144,30 @@ const registeredFontFiles = new Map<string, RegisteredFontFile>();
  */
 export async function loadThemeFont(
   client: RuntimeClient,
-  font: V1ThemeFont,
+  font: ResolvedThemeFont,
 ): Promise<void> {
-  const family = font.family?.trim();
-  const files = font.files ?? [];
-  if (!family || !themeFontFamily(font) || files.length === 0) return;
-
-  if (RESERVED_FONT_FAMILIES.has(family.toLowerCase())) {
-    console.warn(
-      `Theme font files for "${family}" were not loaded: Rill's own interface uses that family name.`,
-    );
-    return;
-  }
+  const { faceFamily } = font;
+  if (!faceFamily) return;
 
   await Promise.all(
-    files.map((file) => registerFontFile(client, family, file)),
+    font.files.map((file) => registerFontFile(client, faceFamily, file)),
   );
 }
 
 /**
- * Returns `@font-face` rules for the theme fonts registered with the document, with the
- * font files inlined as data URIs.
+ * Returns `@font-face` rules, with the font files inlined as data URIs, for the theme font
+ * that a node inside a theme boundary is set in.
  *
  * PNG and PDF exports draw a copy of the dashboard as an SVG image, which can use only the
  * fonts declared inside it. Fonts from the page's stylesheets are collected for that, but a
  * theme font is registered through the `FontFace` API and appears in no stylesheet.
  */
-export function themeFontEmbedCSS(): string {
+export function themeFontEmbedCSS(node: Element): string {
+  const cssFamily = getComputedStyle(node).getPropertyValue(
+    "--theme-font-family",
+  );
   return [...registeredFontFiles.values()]
+    .filter((file) => cssFamily.includes(`"${file.faceFamily}"`))
     .map((file) => file.embedCSS ?? "")
     .join("");
 }
@@ -143,40 +187,35 @@ function fontFaceDescriptors(file: V1ThemeFontFile): {
 
 function registerFontFile(
   client: RuntimeClient,
-  family: string,
+  faceFamily: string,
   file: V1ThemeFontFile,
 ): Promise<void> {
   const descriptors = fontFaceDescriptors(file);
-  const key = `${family}|${descriptors.weight}|${descriptors.style}`;
-  const source = `${client.host}|${client.instanceId}|${file.path}`;
+  const key = `${faceFamily}|${descriptors.weight}|${descriptors.style}`;
 
   const existing = registeredFontFiles.get(key);
-  if (existing?.source === source) return existing.settled;
+  if (existing) return existing.settled;
 
-  const entry: RegisteredFontFile = { source, settled: Promise.resolve() };
+  const entry: RegisteredFontFile = {
+    faceFamily,
+    settled: Promise.resolve(),
+  };
   entry.settled = fetchFontFile(client, file.path ?? "")
     .then(async (data) => {
-      const face = new FontFace(family, data, {
+      const face = new FontFace(faceFamily, data, {
         ...descriptors,
         display: "swap",
       });
       await face.load();
-
-      // A newer theme may have claimed this face while the file was downloading.
-      if (registeredFontFiles.get(key) !== entry) return;
-      if (existing?.face) document.fonts.delete(existing.face);
       document.fonts.add(face);
-      entry.face = face;
       entry.embedCSS =
-        `@font-face{font-family:"${family}";font-weight:${descriptors.weight};` +
+        `@font-face{font-family:"${faceFamily}";font-weight:${descriptors.weight};` +
         `font-style:${descriptors.style};src:url(data:font/${fontFormat(file.path)};base64,${toBase64(data)})}`;
     })
     .catch((error: unknown) => {
       console.warn(`Failed to load theme font file "${file.path}":`, error);
-      if (registeredFontFiles.get(key) !== entry) return;
       // Forget the failure, so that the next theme that names this file tries again.
-      if (existing) registeredFontFiles.set(key, existing);
-      else registeredFontFiles.delete(key);
+      registeredFontFiles.delete(key);
     });
   registeredFontFiles.set(key, entry);
 

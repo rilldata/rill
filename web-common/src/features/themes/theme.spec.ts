@@ -203,8 +203,8 @@ describe("Theme", () => {
       });
       const { light, dark } = parseCSS(theme.css);
 
-      expect(theme.fontFamily).toBe(`"Brand Sans", "Inter", sans-serif`);
-      expect(light["theme-font-family"]).toBe(theme.fontFamily);
+      expect(theme.font?.cssFamily).toBe(`"Brand Sans", "Inter", sans-serif`);
+      expect(light["theme-font-family"]).toBe(theme.font?.cssFamily);
       expect(theme.css).toContain("font-family: var(--theme-font-family);");
       // A width of zero removes the borders, so it must not be mistaken for unset.
       expect(light["chrome-border-width"]).toBe("0px");
@@ -217,7 +217,7 @@ describe("Theme", () => {
     it("leaves Rill's font and chrome alone when the theme sets neither", () => {
       const theme = new Theme({ light: { primary: PRIMARY } });
 
-      expect(theme.fontFamily).toBeUndefined();
+      expect(theme.font).toBeUndefined();
       expect(theme.css).not.toContain("font-family");
       expect(theme.css).not.toContain("--chrome-");
     });

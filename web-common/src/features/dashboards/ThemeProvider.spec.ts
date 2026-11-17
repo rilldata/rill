@@ -28,23 +28,20 @@ describe("ThemeProvider", () => {
       value: { add: vi.fn(), delete: vi.fn() },
     });
 
-    const theme = new Theme({
-      font: {
-        family: "Provider Sans",
-        files: [{ path: "public/ProviderSans.woff2", weightMin: 400 }],
+    const project = { host: "http://localhost:9009", instanceId: "default" };
+    const theme = new Theme(
+      {
+        font: {
+          family: "Provider Sans",
+          files: [{ path: "public/ProviderSans.woff2", weightMin: 400 }],
+        },
       },
-    });
+      project,
+    );
     render(ThemeChartFontHarness, {
       props: { theme },
       context: new Map([
-        [
-          RUNTIME_CONTEXT_KEY,
-          {
-            host: "http://localhost:9009",
-            instanceId: "default",
-            getJwt: () => undefined,
-          },
-        ],
+        [RUNTIME_CONTEXT_KEY, { ...project, getJwt: () => undefined }],
       ]),
     });
 
@@ -61,9 +58,10 @@ describe("ThemeProvider", () => {
     });
 
     await waitFor(() =>
-      expect(chartFont.textContent).toBe(
-        `"Provider Sans", "Inter", sans-serif`,
-      ),
+      expect(chartFont.textContent).toBe(theme.font?.cssFamily),
+    );
+    expect(chartFont.textContent).toMatch(
+      /^"rill-theme-font-\d+", "Provider Sans"/,
     );
   });
 });

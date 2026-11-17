@@ -8,7 +8,11 @@ import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
 import { createDarkVariation } from "./color-generation";
-import { themeFontFamily } from "./theme-font";
+import {
+  resolveThemeFont,
+  type ResolvedThemeFont,
+  type ThemeFontScope,
+} from "./theme-font";
 
 type Shade = (typeof TailwindColorSpacing)[number];
 
@@ -29,14 +33,21 @@ export class Theme {
   lengths: { light: Record<string, string>; dark: Record<string, string> };
   spec: V1ThemeSpec;
   css: string;
-  /** CSS `font-family` value of the theme's font. Undefined when the theme keeps Rill's font. */
-  fontFamily: string | undefined;
+  /** The theme's font. Undefined when the theme keeps Rill's font. */
+  font: ResolvedThemeFont | undefined;
   resolvedThemeObject: {
     dark: Record<string, string>;
     light: Record<string, string>;
   };
 
-  constructor(spec: V1ThemeSpec | undefined) {
+  /**
+   * @param fontScope The project the theme belongs to. The theme's font files are loaded
+   * from it and registered for it alone; without it only the font's family name is used.
+   */
+  constructor(
+    spec: V1ThemeSpec | undefined,
+    private readonly fontScope?: ThemeFontScope,
+  ) {
     if (spec) {
       this.processThemeSpec(spec);
     }
@@ -57,7 +68,7 @@ export class Theme {
       light: this.processLengths(spec.light),
       dark: this.processLengths(spec.dark),
     };
-    this.fontFamily = themeFontFamily(spec.font);
+    this.font = resolveThemeFont(spec.font, this.fontScope);
     this.css = this.generateCSS();
 
     // Compatibility with current implementation, this can eventually be removed
@@ -213,9 +224,9 @@ export class Theme {
   private fontAndChromeDeclarations(): string[] {
     const declarations: string[] = [];
 
-    if (this.fontFamily) {
+    if (this.font) {
       declarations.push(
-        `--theme-font-family: ${this.fontFamily};`,
+        `--theme-font-family: ${this.font.cssFamily};`,
         `font-family: var(--theme-font-family);`,
       );
     }

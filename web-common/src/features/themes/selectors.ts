@@ -58,7 +58,7 @@ export function createResolvedThemeStore(
   return derived(themeInput, ({ name, embedded }, set) => {
     // Case 1: Embedded theme (inline theme definition)
     if (embedded) {
-      set(new Theme(embedded));
+      set(new Theme(embedded, client));
       return;
     }
 
@@ -74,7 +74,7 @@ export function createResolvedThemeStore(
       return themeQuery.subscribe(($themeQuery) => {
         console.log(name, $themeQuery.data);
         if ($themeQuery.data?.theme?.spec) {
-          set(new Theme($themeQuery.data.theme.spec));
+          set(new Theme($themeQuery.data.theme.spec, client));
         } else {
           set(undefined);
         }
