@@ -34,12 +34,24 @@ export type MinMax = {
   max: DateTime<true>;
 };
 
+/**
+ * Why a time range could not be resolved.
+ * Components that are filtered by the time range wait for it, so without a reason to show they would load forever.
+ */
+export type TimeRangeIssue =
+  // The lookup failed, for example because the OLAP database could not be reached.
+  | { reason: "error"; message: string }
+  // The lookup succeeded, but the metrics views have no data to take a time range from.
+  | { reason: "no_data" };
+
 export class TimeState {
   // This class is used for global and widget time controls on Canvas
   // To avoid methods running in widgets, use isWidgetInstance flag
   isWidgetInstance: boolean;
 
   interval: Readable<Interval<true> | undefined>;
+  // Set while the selected range has no interval because it could not be resolved; see TimeRangeIssue.
+  intervalIssue = maybeWritable<TimeRangeIssue>();
 
   rangeStore: Readable<string | undefined>;
   grainStore: Readable<V1TimeGrain | undefined>;
@@ -160,6 +172,7 @@ export class TimeState {
         );
 
         if (!metricsViewsWithTimeSeries.length || !range || !timeZone) {
+          this.intervalIssue.set(undefined);
           set(undefined);
           return;
         }
@@ -175,8 +188,14 @@ export class TimeState {
           );
         });
 
+        // Set once the inputs change again, so a slow lookup for an earlier range
+        // can't replace the interval or the issue of the current one.
+        let superseded = false;
+
         Promise.all(promises)
           .then((results) => {
+            if (superseded) return;
+
             let latestInterval: Interval<true> | undefined = undefined;
             let minDate: DateTime<true> | undefined = undefined;
             let maxDate: DateTime<true> | undefined = undefined;
@@ -214,6 +233,15 @@ export class TimeState {
 
             set(latestInterval);
 
+            const failure = results.find((res) => res.error)?.error;
+            this.intervalIssue.set(
+              latestInterval
+                ? undefined
+                : failure
+                  ? { reason: "error", message: failure }
+                  : { reason: "no_data" },
+            );
+
             if (minDate && maxDate) {
               this.minMaxTimeStamps.set({
                 min: minDate,
@@ -222,6 +250,10 @@ export class TimeState {
             }
           })
           .catch(console.error);
+
+        return () => {
+          superseded = true;
+        };
       },
     );
 
@@ -391,6 +423,28 @@ export class TimeState {
 
     return this.searchParamsStore.set(props);
   };
+}
+
+/**
+ * Whether metrics SQL queries are filtered by the canvas time range, given the metrics views they read.
+ * Only a metrics view with a time dimension can be filtered by time,
+ * and a canvas without one never resolves a time range, so its queries must not wait for it.
+ * A metrics view the canvas has not resolved (an undefined name, when it can't be read from the SQL)
+ * counts if any metrics view on the canvas has a time dimension:
+ * the time range resolves then, and the runtime ignores it for a metrics view without a time dimension.
+ */
+export function metricsSQLUsesTimeRange(
+  metricsViewNames: (string | undefined)[],
+  hasTimeSeriesMap: Map<string, boolean>,
+): boolean {
+  const canvasHasTimeSeries = Array.from(hasTimeSeriesMap.values()).some(
+    (hasTimeSeries) => hasTimeSeries,
+  );
+  return metricsViewNames.some(
+    (name) =>
+      (name === undefined ? undefined : hasTimeSeriesMap.get(name)) ??
+      canvasHasTimeSeries,
+  );
 }
 
 export function parseSearchParams(urlParams: URLSearchParams) {

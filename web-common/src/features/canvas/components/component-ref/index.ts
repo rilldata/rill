@@ -19,7 +19,8 @@ import type {
   V1ComponentParam,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
+import { metricsSQLUsesTimeRange } from "../../stores/time-state";
 import CanvasComponentRef from "./CanvasComponentRef.svelte";
 
 /**
@@ -71,6 +72,20 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
     if (item?.component) this.componentName = item.component;
     this.specStore.set(this.specFromItem(item));
     this.syncMetricsViewName();
+  }
+
+  /**
+   * The referenced component queries with metrics SQL, whose metrics view is only known
+   * when the item binds it through a param (see syncMetricsViewName).
+   * See metricsSQLUsesTimeRange.
+   */
+  override get usesTimeRange(): Readable<boolean> {
+    return derived(
+      // The spec is a dependency because a change to it can bind another metrics view.
+      [this.specStore, this.parent.timeManager.hasTimeSeriesMap],
+      ([, hasTimeSeriesMap]) =>
+        metricsSQLUsesTimeRange([this.metricsViewName], hasTimeSeriesMap),
+    );
   }
 
   /** The referenced component's declared params. */

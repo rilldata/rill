@@ -46,7 +46,7 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { TimeState } from "../stores/time-state";
+import { TimeState, type TimeRangeIssue } from "../stores/time-state";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { ComponentExportPayload } from "@rilldata/web-common/features/exports/xlsx/payload";
 
@@ -428,6 +428,39 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           comparisonTimeRangeState,
           hasTimeSeries,
         };
+      },
+    );
+  }
+
+  /**
+   * Whether the component's queries are filtered by a time range, and so wait for one to resolve.
+   * Only a metrics view with a time dimension can be filtered by time.
+   */
+  get usesTimeRange(): Readable<boolean> {
+    return derived(
+      this.parent.timeManager.hasTimeSeriesMap,
+      (hasTimeSeriesMap) => hasTimeSeriesMap.get(this.metricsViewName) === true,
+    );
+  }
+
+  /**
+   * Why the component can't load, when the time range it waits for could not be resolved.
+   * Shown in place of the component, which would otherwise load forever (see CanvasComponent).
+   */
+  get timeRangeIssue(): Readable<TimeRangeIssue | undefined> {
+    return derived(
+      [
+        this.usesTimeRange,
+        this.specStore,
+        this.parent.timeManager.state.intervalIssue,
+        this.localTimeControls.intervalIssue,
+      ],
+      ([usesTimeRange, spec, canvasIssue, localIssue]) => {
+        if (!usesTimeRange) return undefined;
+        const { hasLocalTimeRange } = resolveTimeFilters(
+          spec?.["time_filters"] as string,
+        );
+        return hasLocalTimeRange ? localIssue : canvasIssue;
       },
     );
   }

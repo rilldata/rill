@@ -23,6 +23,10 @@ export class DashboardFetchMocks {
     regex: RegExp;
     response: V1MetricsViewAggregationResponse;
   }[] = [];
+  // Responses for ConnectRPC methods without a dedicated mock, keyed by "Service/Method".
+  private connectMocks = new Map<string, unknown>();
+  // Every ConnectRPC request received, for specs that assert on what was requested.
+  public connectRequests: { method: string; body: any }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
     const mock = new DashboardFetchMocks();
@@ -192,6 +196,14 @@ export class DashboardFetchMocks {
     );
   }
 
+  /**
+   * Mocks a ConnectRPC method that has no dedicated mock, such as "QueryService/MetricsViewTimeRanges".
+   * An Error makes the request fail with its message.
+   */
+  public mockConnect(method: string, response: unknown) {
+    this.connectMocks.set(method, response);
+  }
+
   private async fetchMock(url: string, body: string | Uint8Array | undefined) {
     const u = new URL(url);
 
@@ -270,8 +282,24 @@ export class DashboardFetchMocks {
     }
     const parsed = bodyStr ? JSON.parse(bodyStr) : {};
     let responseData: unknown;
+    this.connectRequests.push({ method: `${service}/${method}`, body: parsed });
 
-    if (service === "RuntimeService" && method === "GetExplore") {
+    const mocked = this.connectMocks.get(`${service}/${method}`);
+    if (mocked instanceof Error) {
+      const error = { code: "unknown", message: mocked.message };
+      return {
+        status: 500,
+        ok: false,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => error,
+        arrayBuffer: async () =>
+          new TextEncoder().encode(JSON.stringify(error)).buffer,
+      };
+    }
+
+    if (mocked !== undefined) {
+      responseData = mocked;
+    } else if (service === "RuntimeService" && method === "GetExplore") {
       responseData = this.responses.get(`resources__explore__${parsed.name}`);
     } else if (service === "RuntimeService" && method === "GetResource") {
       const name = parsed.name?.name;

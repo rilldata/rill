@@ -7,7 +7,7 @@
   export let component: ComponentRefComponent;
   export let editable: boolean = false;
 
-  $: ({ specStore, timeAndFilterStore, resource } = component);
+  $: ({ specStore, timeAndFilterStore, usesTimeRange, resource } = component);
 
   $: ({
     parent: { theme },
@@ -37,7 +37,7 @@
   name={component.id}
   timeGrain={$timeAndFilterStore?.timeGrain}
   whereFilter={$timeAndFilterStore?.where}
-  timeRange={$timeAndFilterStore?.timeRange}
+  timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
   showDataTable={editable}
   {themeMode}
   theme={currentTheme}

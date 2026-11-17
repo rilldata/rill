@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import { getDefaultComparisonRange } from "./time-state";
+import {
+  getDefaultComparisonRange,
+  metricsSQLUsesTimeRange,
+} from "./time-state";
 
 describe("getDefaultComparisonRange", () => {
   it("opens with the first comparison declared for the default range", () => {
@@ -62,5 +65,48 @@ describe("getDefaultComparisonRange", () => {
     expect(getDefaultComparisonRange(undefined, undefined)).toBe(
       TimeComparisonOption.CONTIGUOUS,
     );
+  });
+});
+
+describe("metricsSQLUsesTimeRange", () => {
+  const timeless = new Map([["products", false]]);
+  const mixed = new Map([
+    ["products", false],
+    ["orders", true],
+  ]);
+
+  it.each([
+    {
+      name: "a canvas without a time dimension never resolves a time range",
+      views: ["products"],
+      canvas: timeless,
+      expected: false,
+    },
+    {
+      name: "a metrics view without a time dimension is not filtered by another one's",
+      views: ["products"],
+      canvas: mixed,
+      expected: false,
+    },
+    {
+      name: "one query on a metrics view with a time dimension is enough",
+      views: ["products", "orders"],
+      canvas: mixed,
+      expected: true,
+    },
+    {
+      name: "an unresolved metrics view follows the canvas when it has a time dimension",
+      views: [undefined],
+      canvas: mixed,
+      expected: true,
+    },
+    {
+      name: "an unresolved metrics view does not wait on a canvas without a time dimension",
+      views: [undefined, "unknown"],
+      canvas: timeless,
+      expected: false,
+    },
+  ])("$name", ({ views, canvas, expected }) => {
+    expect(metricsSQLUsesTimeRange(views, canvas)).toBe(expected);
   });
 });
