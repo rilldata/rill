@@ -1,98 +1,98 @@
-package validate
+package validate_test
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/cli/cmd"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsLocalProjectRunning(t *testing.T) {
-	projectPath := t.TempDir()
-	otherProjectPath := t.TempDir()
-	configJSON := func(instanceID, path string) string {
-		b, err := json.Marshal(map[string]string{"instance_id": instanceID, "project_path": path})
-		require.NoError(t, err)
-		return string(b)
-	}
-	validConfig := configJSON("default", projectPath)
-
-	for _, tt := range []struct {
-		name   string
-		body   string
-		status int
-		want   bool
-	}{
-		{name: "same project", body: validConfig, want: true},
-		{name: "different instance ID", body: configJSON("custom", projectPath), want: true},
-		{name: "different project", body: configJSON("default", otherProjectPath)},
-		{name: "unrelated service", body: "<html>VPN</html>"},
-		{name: "empty config", body: "{}"},
-		{name: "missing instance ID", body: configJSON("", projectPath)},
-		{name: "missing project path", body: configJSON("default", "")},
-		{name: "nonexistent server path", body: configJSON("default", filepath.Join(projectPath, "missing"))},
-		{name: "non-OK response", body: validConfig, status: http.StatusNotFound},
-		{name: "incomplete JSON", body: validConfig[:len(validConfig)-1]},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodGet || r.URL.Path != "/local/config" {
-					http.NotFound(w, r)
-					return
-				}
-				w.Header().Set("Content-Type", "application/json")
-				if tt.status != 0 {
-					w.WriteHeader(tt.status)
-				}
-				_, _ = w.Write([]byte(tt.body))
-			}))
-			defer srv.Close()
-			require.Equal(t, tt.want, isLocalProjectRunning(t.Context(), projectPath, srv.URL))
-		})
-	}
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(validConfig))
-	}))
-	defer srv.Close()
-
-	t.Run("relative project path", func(t *testing.T) {
-		cwd, err := os.Getwd()
-		require.NoError(t, err)
-		rel, err := filepath.Rel(cwd, projectPath)
-		require.NoError(t, err)
-		require.True(t, isLocalProjectRunning(t.Context(), rel, srv.URL))
-	})
-	t.Run("symlinked project path", func(t *testing.T) {
-		alias := filepath.Join(t.TempDir(), "project")
-		if err := os.Symlink(projectPath, alias); err != nil {
-			t.Skipf("cannot create symlink: %v", err)
+func TestMain(m *testing.M) {
+	// TestValidateWhileProjectIsRunning re-executes the test binary with these variables to run `rill validate` in a process of its own.
+	if projectPath := os.Getenv("RILL_TEST_VALIDATE_PATH"); projectPath != "" {
+		ch, err := cmdutil.NewHelper(version.Version{}, os.Getenv("RILL_TEST_VALIDATE_HOME"))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
-		require.True(t, isLocalProjectRunning(t.Context(), alias, srv.URL))
+		root := cmd.RootCmd(ch)
+		root.SetArgs([]string{"validate", projectPath})
+		os.Exit(cmd.HandleExecuteError(ch, root.ExecuteContext(context.Background())))
+	}
+
+	os.Exit(m.Run())
+}
+
+func TestValidateWhileProjectIsRunning(t *testing.T) {
+	projectPath := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "rill.yaml"), []byte("compiler: rillv1\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "m1.sql"), []byte("SELECT 1 AS a"), 0o644))
+
+	homeDir := t.TempDir()
+	require.NoError(t, dotrill.New(homeDir).Set(dotrill.ConfigFilename, dotrill.AnalyticsEnabledConfigKey, "false"))
+
+	validate := func() (string, error) {
+		c := exec.CommandContext(t.Context(), os.Args[0])
+		c.Env = append(os.Environ(), "RILL_TEST_VALIDATE_PATH="+projectPath, "RILL_TEST_VALIDATE_HOME="+homeDir)
+		out, err := c.CombinedOutput()
+		return string(out), err
+	}
+
+	// Run the project the way `rill start --reset --port 9100` does.
+	// The reset must clear the state of earlier runs without giving up the project's lock.
+	staleState := filepath.Join(projectPath, "tmp", "default", "stale")
+	require.NoError(t, os.MkdirAll(staleState, 0o755))
+	ch, err := cmdutil.NewHelper(version.Version{}, homeDir)
+	require.NoError(t, err)
+	app, err := local.NewApp(t.Context(), &local.AppOptions{
+		Ch:          ch,
+		Silent:      true,
+		Reset:       true,
+		Environment: "dev",
+		ProjectPath: projectPath,
+		LogFormat:   "console",
+		LocalURL:    "http://localhost:9100",
+		ServeUI:     true,
 	})
-	t.Run("redirect", func(t *testing.T) {
-		redirect := httptest.NewServer(http.RedirectHandler(srv.URL+"/local/config", http.StatusFound))
-		defer redirect.Close()
-		require.False(t, isLocalProjectRunning(t.Context(), projectPath, redirect.URL))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = app.Close()
+		delete(drivers.Drivers, "local_admin") // Registered by NewApp; removed so the test can run more than once per process.
 	})
-	t.Run("unresponsive service", func(t *testing.T) {
-		unresponsive := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-			<-r.Context().Done()
-		}))
-		defer unresponsive.Close()
-		ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
-		defer cancel()
-		require.False(t, isLocalProjectRunning(ctx, projectPath, unresponsive.URL))
-	})
-	t.Run("closed port", func(t *testing.T) {
-		closed := httptest.NewServer(http.NotFoundHandler())
-		closed.Close()
-		require.False(t, isLocalProjectRunning(t.Context(), projectPath, closed.URL))
-	})
+	require.NoDirExists(t, staleState)
+
+	// Validate refuses to run, and says where the project is running.
+	out, err := validate()
+	require.Error(t, err)
+	require.Contains(t, out, fmt.Sprintf("Error: `rill start` is already running for this project at http://localhost:9100 (PID %d); stop it and try again", os.Getpid()))
+
+	// The running project is unaffected: it still reconciles changes and saves them to its catalog.
+	ctrl, err := app.Runtime.Controller(t.Context(), app.Instance.ID)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "m2.sql"), []byte("SELECT 2 AS b"), 0o644))
+	require.NoError(t, ctrl.Reconcile(t.Context(), runtime.GlobalProjectParserName))
+	require.Eventually(t, func() bool {
+		r, err := ctrl.Get(t.Context(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m2"}, false)
+		return err == nil && r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && r.Meta.ReconcileError == ""
+	}, 30*time.Second, 100*time.Millisecond)
+	require.NoError(t, ctrl.Flush(t.Context()))
+
+	// Once the project has stopped, validate runs.
+	require.NoError(t, app.Close())
+	out, err = validate()
+	require.NoError(t, err, out)
+	require.Contains(t, out, "Validation completed successfully")
 }
