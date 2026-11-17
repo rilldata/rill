@@ -4915,6 +4915,20 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   dark?: ThemeColors;
 
+  /**
+   * Font for the text of the themed dashboard. Unset means Rill's default font.
+   *
+   * @generated from field: rill.runtime.v1.ThemeFont font = 7;
+   */
+  font?: ThemeFont;
+
+  /**
+   * Border and font tokens for the dashboard's chrome: navigation bar, filter bar, pills and AI panel.
+   *
+   * @generated from field: rill.runtime.v1.ThemeChrome chrome = 8;
+   */
+  chrome?: ThemeChrome;
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4929,6 +4943,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
     { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
+    { no: 7, name: "font", kind: "message", T: ThemeFont },
+    { no: 8, name: "chrome", kind: "message", T: ThemeChrome },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -5025,6 +5041,171 @@ export class ThemeColors extends Message<ThemeColors> {
 
   static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
     return proto3.util.equals(ThemeColors, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeFont
+ */
+export class ThemeFont extends Message<ThemeFont> {
+  /**
+   * A single CSS font family name, or a generic family such as "system-ui".
+   *
+   * @generated from field: string family = 1;
+   */
+  family = "";
+
+  /**
+   * Font files that provide the family.
+   * If empty, the family must already be available in the viewer's browser.
+   *
+   * @generated from field: repeated rill.runtime.v1.ThemeFontFile files = 2;
+   */
+  files: ThemeFontFile[] = [];
+
+  constructor(data?: PartialMessage<ThemeFont>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeFont";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "family", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "files", kind: "message", T: ThemeFontFile, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeFont {
+    return new ThemeFont().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeFont {
+    return new ThemeFont().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeFont {
+    return new ThemeFont().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeFont | PlainMessage<ThemeFont> | undefined, b: ThemeFont | PlainMessage<ThemeFont> | undefined): boolean {
+    return proto3.util.equals(ThemeFont, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeFontFile
+ */
+export class ThemeFontFile extends Message<ThemeFontFile> {
+  /**
+   * Path of the font file relative to the project root. It is inside one of the project's public paths.
+   *
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * Lowest and highest font weight the file provides, in the range 1 to 1000.
+   * They are equal for a static font and differ for a variable font.
+   *
+   * @generated from field: uint32 weight_min = 2;
+   */
+  weightMin = 0;
+
+  /**
+   * @generated from field: uint32 weight_max = 3;
+   */
+  weightMax = 0;
+
+  /**
+   * Whether the file provides the italic style instead of the normal style.
+   *
+   * @generated from field: bool italic = 4;
+   */
+  italic = false;
+
+  constructor(data?: PartialMessage<ThemeFontFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeFontFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "weight_min", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "weight_max", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "italic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeFontFile {
+    return new ThemeFontFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeFontFile {
+    return new ThemeFontFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeFontFile {
+    return new ThemeFontFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeFontFile | PlainMessage<ThemeFontFile> | undefined, b: ThemeFontFile | PlainMessage<ThemeFontFile> | undefined): boolean {
+    return proto3.util.equals(ThemeFontFile, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChrome
+ */
+export class ThemeChrome extends Message<ThemeChrome> {
+  /**
+   * Width in pixels of the borders of the chrome. Unset means the default width.
+   *
+   * @generated from field: optional uint32 border_width_px = 1;
+   */
+  borderWidthPx?: number;
+
+  /**
+   * Font size in pixels of the chrome's labels. Unset means each label's default size.
+   *
+   * @generated from field: optional uint32 font_size_px = 2;
+   */
+  fontSizePx?: number;
+
+  /**
+   * Font weight of the chrome's labels. Unset means each label's default weight.
+   *
+   * @generated from field: optional uint32 font_weight = 3;
+   */
+  fontWeight?: number;
+
+  constructor(data?: PartialMessage<ThemeChrome>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChrome";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "border_width_px", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 2, name: "font_size_px", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 3, name: "font_weight", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChrome {
+    return new ThemeChrome().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChrome {
+    return new ThemeChrome().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChrome {
+    return new ThemeChrome().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChrome | PlainMessage<ThemeChrome> | undefined, b: ThemeChrome | PlainMessage<ThemeChrome> | undefined): boolean {
+    return proto3.util.equals(ThemeChrome, a, b);
   }
 }
 

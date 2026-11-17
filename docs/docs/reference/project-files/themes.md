@@ -51,6 +51,30 @@ _[object]_ - Dark theme color configuration
 
   - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
+### `font`
+
+_[object]_ - Font for the text of the dashboard, including its charts, filter bar and AI panel. Rill Cloud's own navigation outside the dashboard keeps Rill's font.
+
+  - **`family`** - _[string]_ - A single font family name such as `Brand Sans`, or a generic family such as `system-ui`. Rill falls back to its default font while the font loads or if it is unavailable. _(required)_
+
+  - **`files`** - _[array of object]_ - Font files that provide the family. Without files, the font must be installed on the viewer's device.
+
+    - **`path`** - _[string]_ - Path of a `.woff2`, `.woff`, `.ttf` or `.otf` file, relative to the project root. It must be inside the project's `public` folder (or another of the `public_paths` in `rill.yaml`). _(required)_
+
+    - **`weight`** - _[string, integer]_ - Font weight the file provides, from 1 to 1000. Use a range such as `100 900` for a variable font. Defaults to `400`.
+
+    - **`style`** - _[string]_ - Font style the file provides. Defaults to `normal`.
+
+### `chrome`
+
+_[object]_ - Border and font tokens for the dashboard's chrome, which is the navigation bar of an embedded dashboard, the filter bar, the filter pills and the AI panel. Their colors are set in `light` and `dark`.
+
+  - **`border_width`** - _[string, integer]_ - Width of the chrome's borders, from `0px` to `8px`. Defaults to `1px`.
+
+  - **`font_size`** - _[string, integer]_ - Font size of the chrome's labels, from `10px` to `20px`. Defaults to each label's own size.
+
+  - **`font_weight`** - _[string, integer]_ - Font weight of the chrome's labels, from 100 to 900. Defaults to each label's own weight.
+
 ## Common Properties
 
 ### `name`
@@ -122,4 +146,22 @@ dark:
     secondary: "#a78bfa"
     kpi-positive: "#4ade80" # Brighter green for dark mode
     kpi-negative: "#f87171" # Brighter red for dark mode
+```
+
+```yaml
+# Example: Theme with a brand font loaded from the project's public folder
+type: theme
+font:
+    family: Brand Sans
+    files:
+        - path: public/BrandSans-Regular.woff2
+          weight: 400
+        - path: public/BrandSans-Bold.woff2
+          weight: 700
+chrome:
+    border_width: 2px
+    font_weight: 600
+light:
+    primary: "#4F46E5"
+    secondary: "#8B5CF6"
 ```
