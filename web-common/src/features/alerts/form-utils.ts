@@ -25,6 +25,7 @@ import type {
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
 import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { object, array, string } from "yup";
 
@@ -225,7 +226,12 @@ export const alertFormValidationSchema = yup(
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
-    emailRecipients: array(string().email("Invalid email")),
+    // Checked on the email recipients rather than the whole form, so the error shows up on the delivery tab.
+    emailRecipients: array(string().email("Invalid email")).test(
+      "has-notification",
+      () => m.alert_form_no_notification(),
+      (_, context) => hasNotification(context.parent as AlertFormValues),
+    ),
     embedOwnerEmail: string().email("Invalid email"),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
@@ -278,6 +284,19 @@ export function checkIsTabValid(
   }
 
   return hasRequiredFields && !hasErrors;
+}
+
+// hasNotification returns true if an alert created from an embed is sent to someone:
+// the embed creator's email (always a recipient if set) or an email recipient.
+// Alerts created from an embed can't be sent to Slack.
+// Other alerts aren't checked, since they have always been allowed without recipients.
+function hasNotification(values: AlertFormValues) {
+  if (!EmbedStore.isEmbedded()) return true;
+  return (
+    !!values.embedOwnerEmail?.trim() ||
+    (values.enableEmailNotification &&
+      values.emailRecipients.some((r) => r.trim() !== ""))
+  );
 }
 
 function someCriteriaHasErrors(

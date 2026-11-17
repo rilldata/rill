@@ -80,6 +80,7 @@
   "alert_form_name_title": "Alert name",
   "alert_form_next": "Next",
   "alert_form_no_criteria": "No criteria selected",
+  "alert_form_no_notification": "Add your email or at least one email recipient.",
   "alert_form_no_data": "No data to preview",
   "alert_form_preview_cell": "Preview cell",
   "alert_form_preview_table_aria": "alert preview table",
