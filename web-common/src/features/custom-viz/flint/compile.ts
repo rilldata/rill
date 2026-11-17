@@ -1302,7 +1302,8 @@ const COMPOSITE_MARKS = new Set(["boxplot", "errorbar", "errorband"]);
  *
  * The tooltip Vega-Lite builds from a mark's encoding has no format to set, so a mark that would
  * get one for such a field is given the same list of fields explicitly, less the columns Flint
- * computes for itself.
+ * computes for itself. So is a mark colored over a domain Flint states: Vega-Lite orders a stack
+ * by that domain through an index column of its own, which its tooltip would list as well.
  */
 function formatDiscreteTimeAxes(
   spec: Record<string, unknown>,
@@ -1336,12 +1337,28 @@ function formatDiscreteTimeAxes(
             !UNLISTED_TOOLTIP_CHANNELS.has(channel) &&
             def &&
             !Array.isArray(def) &&
-            typeof def.field === "string" &&
-            def.type !== undefined &&
-            (!def.field.startsWith("__") || typeof def.title === "string"),
+            (typeof def.field === "string"
+              ? def.type !== undefined &&
+                (!def.field.startsWith("__") || typeof def.title === "string")
+              : def.aggregate === "count"),
         )
         .map(([, def]) => def);
-      if (listed.some((def) => formatOf(def.field) && isDiscrete(def))) {
+      const ordersStack =
+        !("order" in encoding) &&
+        [encoding.fill, encoding.color].some(
+          (def) =>
+            def &&
+            !Array.isArray(def) &&
+            def.type === "nominal" &&
+            typeof def.field === "string" &&
+            Array.isArray(
+              (def.scale as { domain?: unknown } | undefined)?.domain,
+            ),
+        );
+      if (
+        ordersStack ||
+        listed.some((def) => formatOf(def.field) && isDiscrete(def))
+      ) {
         view.encoding = {
           ...own,
           tooltip: listed.map((def) =>

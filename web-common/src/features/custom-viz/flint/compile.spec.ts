@@ -883,6 +883,57 @@ describe("compileFlintSpec", () => {
     expect(tooltips[0]).toEqual({ Time: "Oct 07", "Sum of Bid Price": "1000" });
   });
 
+  it("keeps the column a stack is ordered by out of its tooltip", async () => {
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Area Chart",
+        encodings: {
+          x: "timestamp",
+          y: "bid_price_sum",
+          color: "publisher",
+        },
+      },
+      rows: ["Yahoo", "Google"].flatMap((publisher, p) =>
+        Array.from({ length: 12 }, (_, i) => ({
+          timestamp: new Date(2026, 9, 1 + i),
+          publisher,
+          bid_price_sum: 100 * (p + 1) + i,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Flint states the series' order as the color scale's domain, and Vega-Lite stacks in that
+    // order through an index column of its own, which the tooltip it builds would list too.
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const keys = new Set<string>();
+    const visit = (node: SceneNode & { tooltip?: unknown }) => {
+      for (const item of (node.items ?? []) as (SceneNode & {
+        tooltip?: Record<string, unknown>;
+      })[]) {
+        for (const key of Object.keys(item.tooltip ?? {})) keys.add(key);
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect([...keys].sort()).toEqual(["Publisher", "Sum of Bid Price", "Time"]);
+  });
+
   it("keeps an hourly time axis on hours over two days and steps it by days over eight", async () => {
     // From 9 AM, so that 12-hour ticks would start at noon, as they did on an eight-day line.
     const hourly = (hours: number) =>
