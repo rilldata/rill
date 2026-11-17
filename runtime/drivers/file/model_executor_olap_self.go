@@ -30,9 +30,8 @@ func (e *olapToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse SQL from input properties
 	inputProps := &struct {
-		SQL             string            `mapstructure:"sql"`
-		Args            []any             `mapstructure:"args"`
-		QueryAttributes map[string]string `mapstructure:"query_attributes"`
+		SQL  string `mapstructure:"sql"`
+		Args []any  `mapstructure:"args"`
 	}{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -55,7 +54,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Query:           inputProps.SQL,
 		Args:            inputProps.Args,
 		Priority:        opts.Priority,
-		QueryAttributes: inputProps.QueryAttributes,
+		QueryAttributes: opts.QueryAttributes,
 	})
 	if err != nil {
 		return nil, err

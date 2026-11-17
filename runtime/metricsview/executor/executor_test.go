@@ -29,7 +29,8 @@ dimensions:
   - name: dim1
     expression: getSettingOrDefault('custom_attr', 'x')
 measures:
-  - expression: count(*)
+  - name: count
+    expression: count(*)
 query_attributes:
   custom_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
 `,
@@ -66,13 +67,17 @@ query_attributes:
 	})
 	require.NoError(t, err)
 	defer e.Close()
-	path, err := e.Export(t.Context(), &metricsview.Query{
-		MetricsView: "mv1",
-		Dimensions:  []metricsview.Dimension{{Name: "dim1"}},
-	}, nil, drivers.FileFormatCSV, nil)
-	require.NoError(t, err)
-	defer os.Remove(path)
-	data, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Contains(t, string(data), "org123_tenant456")
+	for _, pivotOn := range [][]string{nil, {"dim1"}} {
+		path, err := e.Export(t.Context(), &metricsview.Query{
+			MetricsView: "mv1",
+			Dimensions:  []metricsview.Dimension{{Name: "dim1"}},
+			Measures:    []metricsview.Measure{{Name: "count"}},
+			PivotOn:     pivotOn,
+		}, nil, drivers.FileFormatCSV, nil)
+		require.NoError(t, err)
+		defer os.Remove(path)
+		data, err := os.ReadFile(path)
+		require.NoError(t, err)
+		require.Contains(t, string(data), "org123_tenant456")
+	}
 }
