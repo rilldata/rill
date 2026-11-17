@@ -173,7 +173,9 @@
   <Popover.Content
     class={hasTags
       ? "p-0 z-popover text-fg-primary w-[600px]"
-      : "p-0 z-popover text-fg-primary"}
+      : $$slots.action
+        ? "p-0 z-popover text-fg-primary min-w-[340px]"
+        : "p-0 z-popover text-fg-primary"}
     align="start"
     strategy="absolute"
     overflowY="auto"
@@ -181,19 +183,25 @@
     minHeight="100px"
   >
     <div class="flex flex-col">
-      <div class="px-3 pt-3 pb-2 border-b border-border">
-        <Search
-          bind:value={searchText}
-          label={m.explore_search_list()}
-          placeholder={hasTags
-            ? type === "measure"
-              ? m.explore_search_measures_or_tags()
-              : m.explore_search_dimensions_or_tags()
-            : type === "measure"
-              ? m.explore_search_measures()
-              : m.explore_search_dimensions()}
-          showBorderOnFocus={false}
-        />
+      <!-- Wraps so an action's full-width note can sit below the search. -->
+      <div
+        class="flex flex-wrap items-center gap-2 px-3 pt-3 pb-2 border-b border-border"
+      >
+        <div class="flex-1 min-w-[140px]">
+          <Search
+            bind:value={searchText}
+            label={m.explore_search_list()}
+            placeholder={hasTags
+              ? type === "measure"
+                ? m.explore_search_measures_or_tags()
+                : m.explore_search_dimensions_or_tags()
+              : type === "measure"
+                ? m.explore_search_measures()
+                : m.explore_search_dimensions()}
+            showBorderOnFocus={false}
+          />
+        </div>
+        <slot name="action" close={() => (active = false)} />
       </div>
 
       <div class="flex flex-row" class:divide-x={hasTags}>
@@ -572,8 +580,6 @@
             : m.explore_clear_search_to_reorder_dimensions()}
         </div>
       {/if}
-
-      <slot name="action" close={() => (active = false)} />
     </div>
   </Popover.Content>
 </Popover.Root>

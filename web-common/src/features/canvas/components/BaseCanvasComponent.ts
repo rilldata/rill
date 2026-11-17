@@ -432,33 +432,43 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
   }
 
-  private updateYAML(newSpec: T) {
-    if (!this.parent.fileArtifact) return;
+  // Resolves to false when writing the canvas file failed. Without a file,
+  // the spec only changes in memory.
+  private updateYAML(newSpec: T): Promise<boolean> {
+    if (!this.parent.fileArtifact) return Promise.resolve(true);
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent } = this.parent.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    // Saved explicitly rather than with auto-save, so the result can be awaited.
+    updateEditorContent(parsedDocument.toString(), false, false);
+    return saveLocalContent(true);
   }
 
-  setSpec(newSpec: T) {
-    if (this.isValid(newSpec)) {
-      this.updateYAML(newSpec);
-    }
+  // Resolves to false when writing the canvas file failed. An invalid spec
+  // is not written, only applied in memory.
+  setSpec(newSpec: T): Promise<boolean> {
+    const saved = this.isValid(newSpec)
+      ? this.updateYAML(newSpec)
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
+    return saved;
   }
 
-  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]): Promise<boolean> {
+    return this.updateProperties({ [key]: value } as unknown as Partial<T>);
   }
 
   // Writes several properties in one YAML update, so dependent keys (such as
   // a sort field and its direction) never reach the reconciler half-applied.
   // A key whose value is undefined or empty is removed from the spec.
-  updateProperties(patch: Partial<T>) {
+  // Resolves to false when writing the canvas file failed; an invalid spec is
+  // not written, only applied in memory. Most callers don't wait, since the
+  // file's save state reports failures.
+  updateProperties(patch: Partial<T>): Promise<boolean> {
     const currentSpec = this.specInYAML() ?? get(this.specStore);
 
     const newSpec = { ...currentSpec, ...patch };
@@ -484,10 +494,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       }
     }
 
-    if (this.isValid(newSpec)) {
-      this.updateYAML(newSpec);
-    }
+    const saved = this.isValid(newSpec)
+      ? this.updateYAML(newSpec)
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
+    return saved;
   }
 
   // The component's properties as currently written in the file. While
