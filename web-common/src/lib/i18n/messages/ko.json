@@ -80,6 +80,7 @@
   "alert_form_name_title": "알림 이름",
   "alert_form_next": "다음",
   "alert_form_no_criteria": "선택된 조건이 없습니다",
+  "alert_form_no_notification": "내 이메일 또는 이메일 수신자를 하나 이상 추가하세요.",
   "alert_form_no_data": "미리 볼 데이터가 없습니다",
   "alert_form_preview_cell": "셀 미리보기",
   "alert_form_preview_table_aria": "알림 미리보기 테이블",
