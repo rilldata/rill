@@ -2,17 +2,20 @@
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { onDestroy } from "svelte";
   import ComponentHeader from "../../ComponentHeader.svelte";
+  import { ProjectAssetLoader } from "../project-assets";
   import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
 
-  const client = useRuntimeClient();
+  // A URL that isn't absolute is a project asset, such as `public/img/logo.svg`.
+  const assets = new ProjectAssetLoader(useRuntimeClient());
+  onDestroy(() => assets.destroy());
 
   export let component: ImageComponent;
 
   $: ({ specStore } = component);
 
-  $: ({ instanceId } = client);
   $: imageProperties = $specStore;
 
   $: ({
@@ -49,40 +52,16 @@
   async function fetchImage(url: string) {
     const id = ++fetchId;
     try {
-      const src = await getImageURL(url);
+      const src = await assets.resolve(url);
       if (id !== fetchId) return;
       imageSrc = src;
       errorMessage = null;
-    } catch (error) {
+    } catch {
       if (id !== fetchId) return;
       imageSrc = null;
-      errorMessage = error.message || "Failed to load image";
+      errorMessage = "Failed to fetch image from server";
     }
   }
-
-  const getImageURL = async (url: string): Promise<string> => {
-    if (isValidURL(url)) return url;
-
-    try {
-      const fetchUrl = `${client.host}/v1/instances/${instanceId}/assets/${url}`;
-      const headers: Record<string, string> = {};
-      const jwt = client.getJwt();
-      if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-      const response = await fetch(fetchUrl, { method: "GET", headers });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const blob = await response.blob();
-      return URL.createObjectURL(blob);
-    } catch {
-      throw new Error("Failed to fetch image from server");
-    }
-  };
-
-  const isValidURL = (string: string) => {
-    const regex = /^(https?):\/\/[^\s/$.?#].[^\s]*$/i;
-    return regex.test(string);
-  };
 </script>
 
 {#if errorMessage}
