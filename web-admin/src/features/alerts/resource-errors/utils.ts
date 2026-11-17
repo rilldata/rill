@@ -83,8 +83,9 @@ export function getFormValuesFromAlertSpec(
     refreshCron: spec.refreshSchedule?.cron ?? "",
     refreshTimeZone: spec.refreshSchedule?.timeZone ?? "",
     emailRecipients: notifierProp("email", "recipients"),
-    slackChannels: notifierProp("slack", "channels"),
-    slackUsers: notifierProp("slack", "users"),
+    // MultiInput expects a trailing empty entry for new input.
+    slackChannels: [...notifierProp("slack", "channels"), ""],
+    slackUsers: [...notifierProp("slack", "users"), ""],
     snooze: getSnoozeValueFromAlertSpec(spec),
   };
 }

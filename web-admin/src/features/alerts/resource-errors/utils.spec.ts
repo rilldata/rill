@@ -75,7 +75,8 @@ describe("resource error alert utils", () => {
       name: "Errors in orders",
       refreshCron: "0 * * * *",
       refreshTimeZone: "Asia/Kolkata",
-      slackChannels: ["#alerts"],
+      slackChannels: ["#alerts", ""],
+      slackUsers: [""],
     });
     // The saved schedule is sent back on edits
     expect(getAlertOptionsFromFormValues(formValues)).toMatchObject({

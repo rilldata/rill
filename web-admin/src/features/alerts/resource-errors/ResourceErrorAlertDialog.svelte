@@ -108,8 +108,9 @@
           refreshCron: "",
           refreshTimeZone: "",
           emailRecipients: [],
-          slackChannels: [],
-          slackUsers: [],
+          // MultiInput expects a trailing empty entry for new input.
+          slackChannels: [""],
+          slackUsers: [""],
           snooze: getSnoozeOptions()[0].value,
         },
   );
