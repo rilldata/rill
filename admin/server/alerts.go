@@ -25,6 +25,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// resolverResourceStatus is the resolver for project-owned alerts on resource reconcile errors.
+const resolverResourceStatus = "resource_status"
+
+// resourceStatusDefaultCron is the refresh schedule for resource status alerts that don't set one.
+const resourceStatusDefaultCron = "*/5 * * * *"
+
 func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequest) (*adminv1.GetAlertMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
@@ -189,7 +195,11 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.CreateAlerts {
+	if req.Options.Resolver == resolverResourceStatus {
+		if !permissions.ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+	} else if !permissions.CreateAlerts {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -218,6 +228,11 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		}
 	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
+	}
+
+	err = s.validateAlertOptions(ctx, proj, req.Options)
+	if err != nil {
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
@@ -304,10 +319,6 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
-	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
-	}
-
 	// Only alerts created from an embed have the embed owner annotation, so the lookup is skipped for other alerts.
 	var embedInfo *embedOwnerInfo
 	if annotations.AdminEmbedOwnerID != "" {
@@ -316,8 +327,18 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 			return nil, err
 		}
 	}
-	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+	err = checkCanManageManagedAlert(claims, permissions, annotations, embedInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if annotations.AdminSystem != (req.Options.Resolver == resolverResourceStatus) {
+		return nil, status.Error(codes.InvalidArgument, "can't change the resolver of an existing alert")
+	}
+
+	err = s.validateAlertOptions(ctx, proj, req.Options)
+	if err != nil {
+		return nil, err
 	}
 
 	embedOwnerID, embedOwnerEmail, err := s.embedOwnerForEdit(ctx, claims, embedInfo, req.Options.EmbedOwnerEmail, "alert")
@@ -554,10 +575,6 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
-	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
-	}
-
 	// Only alerts created from an embed have the embed owner annotation, so the lookup is skipped for other alerts.
 	var embedInfo *embedOwnerInfo
 	if annotations.AdminEmbedOwnerID != "" {
@@ -566,8 +583,9 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 			return nil, err
 		}
 	}
-	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+	err = checkCanManageManagedAlert(claims, permissions, annotations, embedInfo)
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
@@ -637,6 +655,43 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	}, nil
 }
 
+// validateAlertOptions validates alert options received from a client.
+// Only the legacy query and the resource_status resolver are allowed;
+// other resolvers (e.g. sql) don't enforce security policies, so they would expose data that the alert creator can't access.
+func (s *Server) validateAlertOptions(ctx context.Context, proj *database.Project, opts *adminv1.AlertOptions) error {
+	switch opts.Resolver {
+	case "":
+		return nil
+	case resolverResourceStatus:
+	default:
+		return status.Errorf(codes.InvalidArgument, "unsupported alert resolver %q", opts.Resolver)
+	}
+
+	// Errors may contain sensitive details (e.g. SQL, paths, hosts), so only project admins can receive them by email.
+	for _, email := range opts.EmailRecipients {
+		user, err := s.admin.DB.FindUserByEmail(ctx, email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return status.Errorf(codes.InvalidArgument, "email recipient %q is not a project admin", email)
+			}
+			return err
+		}
+		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, user.ID)
+		if err != nil {
+			return err
+		}
+		projPerms, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, user.ID, orgPerms)
+		if err != nil {
+			return err
+		}
+		if !projPerms.ManageProject {
+			return status.Errorf(codes.InvalidArgument, "email recipient %q is not a project admin", email)
+		}
+	}
+
+	return nil
+}
+
 // embedAlertResources returns the resources to limit an alert created from an embed to (see embedDashboardResources).
 // An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
 // If the embed is limited but none of its resources are dashboards, it fails,
@@ -659,10 +714,7 @@ func embedAlertResources(resources []database.ResourceName) ([]database.Resource
 func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) ([]byte, error) {
 	res := alertYAML{}
 	res.Type = "alert"
-	// Trigger the alert when the metrics view refreshes.
-	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
-	res.Watermark = "inherit"
 	if opts.RefreshCron != "" {
 		res.Refresh.Cron = opts.RefreshCron
 		res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -670,11 +722,23 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, em
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
-	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
+	if opts.Resolver == resolverResourceStatus {
+		// Resource status alerts are owned by the project and only run on their refresh schedule.
+		// They must not ref the watched resources since errors in refs fail the alert's execution instead of triggering it.
+		if res.Refresh.Cron == "" {
+			res.Refresh.Cron = resourceStatusDefaultCron
+		}
+		res.OnRecover = true
+		res.Annotations.AdminSystem = true
+	} else {
+		// Trigger the alert when the metrics view refreshes.
+		res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+		res.Watermark = "inherit"
+		res.Query = &alertQueryYAML{Name: opts.QueryName, ArgsJSON: opts.QueryArgsJson}
+	}
 	err := setAlertExportYAML(&res, opts)
 	if err != nil {
 		return nil, err
@@ -715,8 +779,8 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, em
 			}
 			res.Annotations.AdminEmbedResources = string(resourcesJSON)
 		}
-	} else {
-		res.For.UserID = ownerUserID
+	} else if opts.Resolver != resolverResourceStatus {
+		res.For = &alertForYAML{UserID: ownerUserID}
 		res.Query.For.UserID = ownerUserID
 		res.Annotations.AdminOwnerUserID = ownerUserID
 	}
@@ -739,10 +803,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 
 	res := alertYAML{}
 	res.Type = "alert"
-	// Trigger the alert when the metrics view refreshes.
-	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
-	res.Watermark = "inherit"
 	if opts.RefreshCron != "" {
 		res.Refresh.Cron = opts.RefreshCron
 		res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -750,11 +811,20 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
-	res.Query.Name = opts.QueryName
-	res.Query.Args = args
+	if opts.Resolver == resolverResourceStatus {
+		if res.Refresh.Cron == "" {
+			res.Refresh.Cron = resourceStatusDefaultCron
+		}
+		res.OnRecover = true
+	} else {
+		// Trigger the alert when the metrics view refreshes.
+		res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+		res.Watermark = "inherit"
+		res.Query = &alertQueryYAML{Name: opts.QueryName, Args: args}
+	}
 	err := setAlertExportYAML(&res, opts)
 	if err != nil {
 		return nil, err
@@ -796,35 +866,27 @@ func setAlertExportYAML(res *alertYAML, opts *adminv1.AlertOptions) error {
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Type        string   `yaml:"type"`
-	Refs        []string `yaml:"refs"`
+	Refs        []string `yaml:"refs,omitempty"`
 	DisplayName string   `yaml:"display_name"`
 	Title       string   `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but preserved for backwards compatibility
 	Refresh     struct {
 		Cron     string `yaml:"cron"`
 		TimeZone string `yaml:"time_zone"`
 	} `yaml:"refresh"`
-	Watermark string `yaml:"watermark"`
+	Watermark string `yaml:"watermark,omitempty"`
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Data map[string]any `yaml:"data,omitempty"`
-	For  struct {
-		UserID string `yaml:"user_id"`
-	} `yaml:"for"`
-	Query struct {
-		Name     string         `yaml:"name"`
-		Args     map[string]any `yaml:"args,omitempty"`
-		ArgsJSON string         `yaml:"args_json,omitempty"`
-		For      struct {
-			UserID string `yaml:"user_id"`
-		} `yaml:"for"`
-	} `yaml:"query"`
+	Data   map[string]any  `yaml:"data,omitempty"`
+	For    *alertForYAML   `yaml:"for,omitempty"`
+	Query  *alertQueryYAML `yaml:"query,omitempty"`
 	Export struct {
 		Attach        bool   `yaml:"attach"`
 		Format        string `yaml:"format"`
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint64 `yaml:"limit,omitempty"`
 	} `yaml:"export,omitempty"` // Omitted unless attaching, so runtimes that predate it can parse the YAML
+	OnRecover     bool   `yaml:"on_recover,omitempty"`
 	Renotify      bool   `yaml:"renotify"`
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
@@ -841,13 +903,25 @@ type alertYAML struct {
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
 
+type alertForYAML struct {
+	UserID string `yaml:"user_id"`
+}
+
+type alertQueryYAML struct {
+	Name     string         `yaml:"name"`
+	Args     map[string]any `yaml:"args,omitempty"`
+	ArgsJSON string         `yaml:"args_json,omitempty"`
+	For      alertForYAML   `yaml:"for"`
+}
+
 type alertAnnotations struct {
-	AdminOwnerUserID     string `yaml:"admin_owner_user_id"`
+	AdminOwnerUserID     string `yaml:"admin_owner_user_id,omitempty"`
 	AdminEmbedOwnerID    string `yaml:"admin_embed_owner_id,omitempty"`    // ID of the embed user who created the alert; the admin service resolves it to the user's identity
 	AdminEmbedOwnerEmail string `yaml:"admin_embed_owner_email,omitempty"` // Saved email of the embed user who created the alert; only this recipient gets an open link
 	AdminEmbedResources  string `yaml:"admin_embed_resources,omitempty"`   // JSON list of resources that limit the data of an alert created from an embed
 	AdminManaged         bool   `yaml:"admin_managed"`
-	AdminNonce           string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
+	AdminSystem          bool   `yaml:"admin_system,omitempty"` // Set for project-owned resource status alerts managed by project admins
+	AdminNonce           string `yaml:"admin_nonce"`            // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
 	WebOpenPath          string `yaml:"web_open_path"`
 	WebOpenState         string `yaml:"web_open_state"`
 }
@@ -863,6 +937,7 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 	res.AdminEmbedOwnerEmail = annotations["admin_embed_owner_email"]
 	res.AdminEmbedResources = annotations["admin_embed_resources"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
+	res.AdminSystem, _ = strconv.ParseBool(annotations["admin_system"])
 	res.AdminNonce = annotations["admin_nonce"]
 
 	return res
@@ -938,4 +1013,22 @@ func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertNam
 	}
 
 	return emailTokens, nil
+}
+
+// checkCanManageManagedAlert returns an error if the caller can't edit or delete the UI-managed alert.
+// Resource status alerts are managed by project admins; other alerts by their owner or users with ManageAlerts.
+func checkCanManageManagedAlert(claims auth.Claims, permissions *adminv1.ProjectPermissions, annotations alertAnnotations, embedInfo *embedOwnerInfo) error {
+	if !annotations.AdminManaged {
+		return status.Error(codes.FailedPrecondition, "can't manage alert because it was not created from the UI")
+	}
+	if annotations.AdminSystem {
+		if !permissions.ManageProject {
+			return status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+		return nil
+	}
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
+		return status.Error(codes.PermissionDenied, "does not have permission to manage alert")
+	}
+	return nil
 }

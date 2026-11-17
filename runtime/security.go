@@ -576,10 +576,13 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 
+	// Resource status alerts expose raw resource errors, so only admins can access them.
 	// Alerts created from an embed are only accessible to admins and the embed user who created them (same as reports).
 	// Recipients don't get access, since they may be other embed users or project members, and the alert shouldn't leak the owner or other recipients.
 	// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
-	if spec.Annotations["admin_embed_owner_id"] != "" {
+	if spec.Annotations["admin_system"] == "true" {
+		explicitAllow = claims.Admin()
+	} else if spec.Annotations["admin_embed_owner_id"] != "" {
 		explicitAllow = claims.Admin() || (claims.UserID != "" && claims.UserID == spec.Annotations["admin_embed_owner_id"])
 	} else {
 		// Allow if the owner is accessing the alert

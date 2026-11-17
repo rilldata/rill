@@ -16,6 +16,7 @@
   // Set for alerts created from an embed, which are owned by an embed user instead of a Rill user.
   export let embedOwnerId: string | undefined;
   export let lastTriggerErrorMessage: string | undefined;
+  export let isSystem = false;
 </script>
 
 <a
@@ -47,11 +48,16 @@
         >{m.alert_last_checked({ time: timeAgo(new Date(lastTrigger)) })}</span
       >
     {/if}
-    <ProjectAccessControls {organization} {project}>
-      <svelte:fragment slot="manage-project">
-        <span class="shrink-0">•</span>
-        <AlertOwnerBullet {organization} {project} {ownerId} {embedOwnerId} />
-      </svelte:fragment>
-    </ProjectAccessControls>
+    {#if isSystem}
+      <span class="shrink-0">•</span>
+      <span class="shrink-0">{m.alert_errors_system_label()}</span>
+    {:else}
+      <ProjectAccessControls {organization} {project}>
+        <svelte:fragment slot="manage-project">
+          <span class="shrink-0">•</span>
+          <AlertOwnerBullet {organization} {project} {ownerId} {embedOwnerId} />
+        </svelte:fragment>
+      </ProjectAccessControls>
+    {/if}
   </div>
 </a>
