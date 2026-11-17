@@ -143,6 +143,7 @@
       message: {
         type: "default",
         message: banner ?? "",
+        includesMarkdown: true,
         iconType: "alert",
       },
     });
@@ -150,8 +151,10 @@
 
   let release: (() => void) | undefined = undefined;
 
-  onNavigate(() => {
-    if (hasBanner) {
+  onNavigate(({ from, to }) => {
+    // The canvas keeps its state (filters, time range, tabs) in the URL's search params,
+    // so only clear the banner when navigating to another page.
+    if (hasBanner && showBanner && from?.url.pathname !== to?.url.pathname) {
       eventBus.emit("remove-banner", DashboardBannerID);
     }
   });

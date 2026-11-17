@@ -12,23 +12,30 @@ import {
   PageMockForComponentTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
+import type {
+  V1CanvasSpec,
+  V1ComponentSpec,
+} from "@rilldata/web-common/runtime-client";
 import {
   RUNTIME_CONTEXT_KEY,
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import type { OnNavigate } from "@sveltejs/kit";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
+const onNavigateCallbacks: ((navigation: OnNavigate) => void)[] = vi.hoisted(
+  () => [],
+);
 
 vi.mock("$app/navigation", () => {
   return {
     goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
-    onNavigate: () => {},
+    onNavigate: (cb) => onNavigateCallbacks.push(cb),
     beforeNavigate: () => {},
   };
 });
@@ -69,6 +76,18 @@ const CANVAS_SPEC: V1CanvasSpec = {
     },
   ],
 };
+const COMPONENTS: Record<string, V1ComponentSpec> = {
+  // Not a markdown component: its templated content query subscribes to the canvas spec
+  // for good, which would keep the canvas query cached and hide what this covers.
+  [COMPONENT_NAME]: {
+    renderer: "image",
+    rendererProperties: {
+      title: COMPONENT_TITLE,
+      url: "https://example.com/logo.png",
+    },
+    definedInCanvas: true,
+  },
+};
 
 /**
  * Covers coming back to a canvas after leaving it.
@@ -91,23 +110,8 @@ describe("CanvasInitialization", () => {
       },
     );
 
-    mocks.mockCanvas(
-      CANVAS_NAME,
-      CANVAS_SPEC,
-      {},
-      {
-        // Not a markdown component: its templated content query subscribes to the canvas spec
-        // for good, which would keep the canvas query cached and hide what this covers.
-        [COMPONENT_NAME]: {
-          renderer: "image",
-          rendererProperties: {
-            title: COMPONENT_TITLE,
-            url: "https://example.com/logo.png",
-          },
-          definedInCanvas: true,
-        },
-      },
-    );
+    mocks.mockCanvas(CANVAS_NAME, CANVAS_SPEC, {}, COMPONENTS);
+    onNavigateCallbacks.length = 0;
 
     queryClient.clear();
     removeCanvasStore(CANVAS_NAME, INSTANCE_ID);
@@ -175,6 +179,46 @@ describe("CanvasInitialization", () => {
     await assertComponentRendered();
     expect(getCanvasStore(CANVAS_NAME, INSTANCE_ID).canvasEntity.client).toBe(
       secondClient,
+    );
+  });
+
+  it("Should show the banner with its inline markdown until the user leaves the canvas", async () => {
+    mocks.mockCanvas(
+      CANVAS_NAME,
+      {
+        ...CANVAS_SPEC,
+        banner: "**Heads up:** see the [status page](https://example.com)",
+      },
+      {},
+      COMPONENTS,
+    );
+    const navigate = (to: string) => {
+      const navigation = {
+        from: { url: new URL("http://localhost/canvas/revisited_canvas") },
+        to: { url: new URL(to, "http://localhost") },
+      } as OnNavigate;
+      onNavigateCallbacks.forEach((callback) => callback(navigation));
+    };
+
+    renderCanvas(
+      new RuntimeClient({ host: "http://localhost", instanceId: INSTANCE_ID }),
+    );
+
+    const link = await screen.findByRole("link", { name: "status page" });
+    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(screen.getByText("Heads up:").tagName).toBe("STRONG");
+
+    // The canvas writes its filters and time range to the URL, which is a navigation too.
+    navigate("/canvas/revisited_canvas?tr=P7D");
+    await assertComponentRendered();
+    expect(screen.getByRole("link", { name: "status page" })).toBeVisible();
+
+    navigate("/explore/another_dashboard");
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("link", { name: "status page" }),
+      ).not.toBeInTheDocument(),
     );
   });
 });
