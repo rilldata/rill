@@ -11,7 +11,6 @@ import {
   type HoistedPageForComponentTests,
   PageMockForComponentTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
-import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type {
   V1CanvasSpec,
@@ -23,7 +22,15 @@ import {
 } from "@rilldata/web-common/runtime-client/v2";
 import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import { render, screen, waitFor } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 
 // The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
@@ -188,11 +195,11 @@ describe("CanvasInitialization", () => {
 });
 
 /**
- * Covers components that are filtered by the canvas time range, which they wait for before they query.
- * The time range only resolves when a metrics view on the canvas has a time dimension and data,
- * so a component must not wait for it otherwise, and must say why when it can't be resolved.
+ * Covers custom charts, which wait for the canvas time range before they query when their metrics view has a time dimension.
+ * A canvas only resolves a time range when one of its metrics views has a time dimension,
+ * so a chart must not wait for it otherwise.
  */
-describe("Canvas components and the time range", () => {
+describe("Custom charts and the time range", () => {
   mockResizeObserverForComponentTesting();
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
 
@@ -200,15 +207,44 @@ describe("Canvas components and the time range", () => {
   const CHART_SQL = "SELECT publisher, total_records FROM ads_metrics";
   const START = "2026-01-01T00:00:00.000Z";
   const END = "2026-02-01T00:00:00.000Z";
-  const LOOKUP_FAILURE = "dial tcp 127.0.0.1:9000: connect: connection refused";
   const METRICS_VIEW: V1MetricsViewSpec = {
     dimensions: [{ name: "publisher" }],
     measures: [{ name: "total_records" }],
   };
 
+  // The bodies of the metrics SQL queries the canvas sent.
+  let chartQueries: Record<string, unknown>[] = [];
+  let fetchSpy: MockInstance<typeof fetch>;
+
   beforeEach(() => {
     setupCanvasPage(TIME_RANGE_CANVAS);
-    mocks.connectRequests = [];
+    chartQueries = [];
+
+    // Records the chart's queries, and answers the time range lookup, which the shared mocks don't serve.
+    const serveMock = globalThis.fetch;
+    fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (url, init) => {
+        const method = String(url).split("/rill.runtime.v1.")[1];
+        if (method === "RuntimeService/QueryResolver") {
+          const body =
+            typeof init?.body === "string"
+              ? init.body
+              : new TextDecoder().decode(init?.body as Uint8Array);
+          chartQueries.push(JSON.parse(body).resolverProperties);
+        }
+        if (method === "QueryService/MetricsViewTimeRanges") {
+          return Response.json({
+            fullTimeRange: { min: START, max: END },
+            resolvedTimeRanges: [{ start: START, end: END }],
+          });
+        }
+        return serveMock(url, init);
+      });
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
   });
 
   // Renders a canvas whose only component is a custom chart on the given metrics view.
@@ -249,30 +285,19 @@ describe("Canvas components and the time range", () => {
     );
   }
 
-  // The properties of the metrics SQL queries the chart has sent.
-  function chartQueries(): Record<string, unknown>[] {
-    return mocks.connectRequests
-      .filter((request) => request.method === "RuntimeService/QueryResolver")
-      .map((request) => request.body.resolverProperties);
-  }
-
   it("Should query a custom chart without a time range when no metrics view has a time dimension", async () => {
     renderChartCanvas(METRICS_VIEW);
 
     await waitFor(() =>
-      expect(chartQueries()).toContainEqual({ sql: CHART_SQL }),
+      expect(chartQueries).toContainEqual({ sql: CHART_SQL }),
     );
   });
 
-  it("Should wait for the time range before querying a custom chart on a metrics view with a time dimension", async () => {
-    mocks.mockConnect("QueryService/MetricsViewTimeRanges", {
-      fullTimeRange: { min: START, max: END },
-      resolvedTimeRanges: [{ start: START, end: END }],
-    });
+  it("Should query a custom chart with the time range when its metrics view has a time dimension", async () => {
     renderChartCanvas({ ...METRICS_VIEW, timeDimension: "timestamp" });
 
     await waitFor(() =>
-      expect(chartQueries()).toContainEqual(
+      expect(chartQueries).toContainEqual(
         expect.objectContaining({
           sql: CHART_SQL,
           additional_time_range: expect.objectContaining({
@@ -282,46 +307,9 @@ describe("Canvas components and the time range", () => {
         }),
       ),
     );
-    expect(chartQueries().every((query) => query.additional_time_range)).toBe(
+    // It waited for the time range rather than querying without it first.
+    expect(chartQueries.every((query) => query.additional_time_range)).toBe(
       true,
-    );
-  });
-
-  it("Should show why a component can't load when the time range lookup fails", async () => {
-    // The lookup logs the failure it reports.
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    mocks.mockConnect(
-      "QueryService/MetricsViewTimeRanges",
-      new Error(LOOKUP_FAILURE),
-    );
-    renderChartCanvas({ ...METRICS_VIEW, timeDimension: "timestamp" });
-
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          m.canvas_time_range_error({ message: LOOKUP_FAILURE }),
-        ),
-      ).toBeInTheDocument(),
-    );
-    consoleError.mockRestore();
-  });
-
-  it("Should show that there is no data when the metrics view has none to take a time range from", async () => {
-    // What the runtime returns for a metrics view on an empty table.
-    mocks.mockConnect("QueryService/MetricsViewTimeRanges", {
-      fullTimeRange: {},
-      resolvedTimeRanges: [
-        { start: "0001-01-01T00:00:00Z", end: "0001-01-02T00:00:00Z" },
-      ],
-    });
-    renderChartCanvas({ ...METRICS_VIEW, timeDimension: "timestamp" });
-
-    await waitFor(() =>
-      expect(
-        screen.getByText(m.canvas_time_range_no_data()),
-      ).toBeInTheDocument(),
     );
   });
 });

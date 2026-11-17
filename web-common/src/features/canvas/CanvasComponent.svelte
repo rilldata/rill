@@ -1,7 +1,5 @@
 <script lang="ts" context="module">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import CanvasComponentPngDialog from "./export/CanvasComponentPngDialog.svelte";
@@ -79,7 +77,7 @@
     pngDialogOpen = true;
   }
 
-  $: ({ id: componentName, type: renderer, timeRangeIssue } = component);
+  $: ({ id: componentName, type: renderer } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -113,18 +111,7 @@
     class="size-full grow flex flex-col"
     onmousedown={onMouseDown}
   >
-    {#if component && $timeRangeIssue?.reason === "error"}
-      <!-- The component waits for a time range that will not resolve, so it would load forever. -->
-      <ComponentError
-        error={m.canvas_time_range_error({ message: $timeRangeIssue.message })}
-      />
-    {:else if component && $timeRangeIssue}
-      <div
-        class="size-full p-2 flex items-center justify-center text-center text-fg-disabled"
-      >
-        {m.canvas_time_range_no_data()}
-      </div>
-    {:else if component}
+    {#if component}
       <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">

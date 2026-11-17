@@ -25,7 +25,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { metricsSQLUsesTimeRange } from "../../../stores/time-state";
+import { metricsSQLUsesTimeRange } from "@rilldata/web-common/features/components/charts/custom/expression-utils";
 import CanvasCustomChart from "./CanvasCustomChart.svelte";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -97,10 +97,10 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   }
 
   /**
-   * The chart's queries are metrics SQL, each of which can read a different metrics view.
-   * See metricsSQLUsesTimeRange.
+   * Whether the chart's queries are filtered by the canvas time range, and so wait for it to resolve.
+   * Each metrics SQL query can read a different metrics view; see metricsSQLUsesTimeRange.
    */
-  override get usesTimeRange(): Readable<boolean> {
+  get usesTimeRange(): Readable<boolean> {
     return derived(
       [this.specStore, this.parent.timeManager.hasTimeSeriesMap],
       ([spec, hasTimeSeriesMap]) =>

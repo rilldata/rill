@@ -4,7 +4,6 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
-import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
@@ -451,7 +450,7 @@ export async function deriveInterval(
     return {
       interval: Interval.invalid("Unable to derive interval"),
       grain: undefined,
-      error: extractErrorMessage(error),
+      error: "Error deriving interval",
     };
   }
 }
