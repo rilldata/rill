@@ -53,6 +53,7 @@ require (
 	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
+	github.com/gofrs/flock v0.13.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-github/v71 v71.0.0
 	github.com/google/jsonschema-go v0.4.3
@@ -289,7 +290,6 @@ require (
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
-	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/glog v1.2.5 // indirect
