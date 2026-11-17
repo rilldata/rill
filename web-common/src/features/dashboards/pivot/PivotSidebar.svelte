@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { onMount } from "svelte";
   import type {
     PivotSidebarSection,
@@ -20,7 +21,6 @@
   } from "web-common/src/features/dashboards/pivot/types.ts";
   import CreateEphemeralMeasureButton from "../ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
-  import { deleteExploreEphemeralMeasure } from "../ephemeral-measures/explore-actions";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
@@ -55,7 +55,7 @@
   }
 
   function deleteEphemeralMeasure(id: string) {
-    deleteExploreEphemeralMeasure(
+    metricsExplorerStore.removeEphemeralMeasure(
       $exploreName,
       id,
       $validSpecStore.data?.explore,

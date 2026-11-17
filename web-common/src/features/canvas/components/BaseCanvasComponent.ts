@@ -432,9 +432,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
   }
 
-  // Resolves to whether the canvas file was saved.
+  // Resolves to false when writing the canvas file failed. Without a file,
+  // the spec only changes in memory.
   private updateYAML(newSpec: T): Promise<boolean> {
-    if (!this.parent.fileArtifact) return Promise.resolve(false);
+    if (!this.parent.fileArtifact) return Promise.resolve(true);
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
@@ -447,11 +448,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     return saveLocalContent(true);
   }
 
-  // Resolves to whether the canvas file was saved.
+  // Resolves to false when writing the canvas file failed. An invalid spec
+  // is not written, only applied in memory.
   setSpec(newSpec: T): Promise<boolean> {
     const saved = this.isValid(newSpec)
       ? this.updateYAML(newSpec)
-      : Promise.resolve(false);
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
     return saved;
   }
@@ -463,8 +465,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Writes several properties in one YAML update, so dependent keys (such as
   // a sort field and its direction) never reach the reconciler half-applied.
   // A key whose value is undefined or empty is removed from the spec.
-  // Resolves to whether the canvas file was saved; most callers don't wait,
-  // since the file's save state reports failures.
+  // Resolves to false when writing the canvas file failed; an invalid spec is
+  // not written, only applied in memory. Most callers don't wait, since the
+  // file's save state reports failures.
   updateProperties(patch: Partial<T>): Promise<boolean> {
     const currentSpec = this.specInYAML() ?? get(this.specStore);
 
@@ -493,7 +496,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     const saved = this.isValid(newSpec)
       ? this.updateYAML(newSpec)
-      : Promise.resolve(false);
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
     return saved;
   }

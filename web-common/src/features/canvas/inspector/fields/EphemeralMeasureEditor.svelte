@@ -1,7 +1,7 @@
 <!-- @component
 Creates or edits an ephemeral measure in a canvas component's `adhoc_measures`.
 It closes and confirms only once the canvas file is saved; a failed save is
-undone in memory and keeps the dialog open with an error.
+undone, and keeps the dialog open with an error.
 -->
 <script lang="ts">
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
@@ -18,6 +18,7 @@ undone in memory and keeps the dialog open with an error.
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { isReferenceableMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { get } from "svelte/store";
   import type { AllKeys } from "../types";
 
   export let component: BaseCanvasComponent;
@@ -62,19 +63,33 @@ undone in memory and keeps the dialog open with an error.
     return Array.isArray(raw) ? [...raw] : [];
   }
 
-  // Undoes a change whose save failed: the editor content (and the parsed
-  // document derived from it) goes back to the file as last fetched, and the
-  // component's spec to its value before the change, so no later write
-  // persists what the user saw fail.
-  function undoFailedSave(previousSpec: ComponentSpec) {
-    component.parent.fileArtifact?.revertChanges();
-    component.specStore.set(previousSpec);
+  // What a change replaces: the canvas file's editor content, whether it had
+  // unsaved edits, and the component's spec.
+  function snapshot() {
+    const fileArtifact = component.parent.fileArtifact;
+    return {
+      content: fileArtifact ? get(fileArtifact.editorContent) : null,
+      unsaved: fileArtifact ? get(fileArtifact.hasUnsavedChanges) : false,
+      spec: get(component.specStore),
+    };
+  }
+
+  // Undoes a change whose save failed, so no later write persists what the
+  // user saw fail. Only this change is undone: edits that were unsaved before
+  // it (with auto-save off) stay in the editor, still unsaved.
+  function undoFailedChange(before: ReturnType<typeof snapshot>) {
+    const fileArtifact = component.parent.fileArtifact;
+    if (fileArtifact && before.content !== null) {
+      fileArtifact.updateEditorContent(before.content, false, false);
+      if (!before.unsaved) fileArtifact.saveState.untouch(fileArtifact.path);
+    }
+    component.specStore.set(before.spec);
   }
 
   // Resolves to whether the definition was saved.
   async function save(def: EphemeralMeasureDef): Promise<boolean> {
     const isNew = !editingDef;
-    const previousSpec = $specStore;
+    const before = snapshot();
     const rawSpecs = currentRawSpecs();
     const [spec] = ephemeralDefsToSpecs([def]);
     const index = rawSpecs.findIndex((entry) => entry?.name === def.name);
@@ -88,7 +103,7 @@ undone in memory and keeps the dialog open with an error.
       rawSpecs.length ? rawSpecs : undefined,
     );
     if (!saved) {
-      undoFailedSave(previousSpec);
+      undoFailedChange(before);
       return false;
     }
     // Selecting the new measure is a second file write; starting it only once
@@ -106,7 +121,7 @@ undone in memory and keeps the dialog open with an error.
   async function remove(): Promise<boolean> {
     if (!editingDef) return false;
     const { name, displayName } = editingDef;
-    const previousSpec = $specStore;
+    const before = snapshot();
     const remaining = currentRawSpecs().filter((entry) => entry?.name !== name);
     // One write removes the definition along with its uses in the component's
     // field selections, chart field configs and per-measure formatting, so the
@@ -121,7 +136,7 @@ undone in memory and keeps the dialog open with an error.
       [EPHEMERAL_SPEC_KEY]: remaining.length ? remaining : undefined,
     });
     if (!saved) {
-      undoFailedSave(previousSpec);
+      undoFailedChange(before);
       return false;
     }
     notifyEphemeralMeasureChange("deleted", displayName);

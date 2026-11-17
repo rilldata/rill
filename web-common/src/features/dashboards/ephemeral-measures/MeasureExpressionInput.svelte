@@ -28,8 +28,9 @@ Helper text below the editor explains the syntax; an error replaces it.
   import { Placeholder } from "@tiptap/extensions";
   import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
   import { ArrowDown, ArrowUp } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { mount, onMount, unmount } from "svelte";
   import { formatMeasureRef } from "./expression-parser";
+  import MeasureChip from "./MeasureChip.svelte";
   import {
     type ExpressionToken,
     filterMeasureMentions,
@@ -45,9 +46,6 @@ Helper text below the editor explains the syntax; an error replaces it.
   export let errors: string | undefined = undefined;
 
   const MENTION = "measure";
-  // lucide's "x" icon.
-  const REMOVE_ICON =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
   let element: HTMLDivElement;
   let editor: Editor | undefined;
@@ -147,42 +145,34 @@ Helper text below the editor explains the syntax; an error replaces it.
   }
 
   /**
-   * Renders a measure chip with a button that removes it, along with the
-   * space inserted after it.
+   * Renders a measure chip (MeasureChip) whose button removes it, along with
+   * the space inserted after it.
    */
   const renderChip: NodeViewRenderer = ({ node, getPos, editor }) => {
-    const label = node.attrs.label as string;
+    // Svelte mounts into a target element, which becomes the node's view.
     const dom = document.createElement("span");
-    dom.className = "measure-chip";
-    dom.title = node.attrs.id as string;
-    dom.contentEditable = "false";
-    dom.append(label);
-
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.tabIndex = -1;
-    remove.className = "measure-chip-remove";
-    remove.setAttribute(
-      "aria-label",
-      m.dashboard_pivot_ephemeral_remove_measure({ name: label }),
-    );
-    remove.innerHTML = REMOVE_ICON;
-    // Keep the editor's focus and selection.
-    remove.addEventListener("mousedown", (e) => e.preventDefault());
-    remove.addEventListener("click", () => {
-      const from = getPos();
-      if (from === undefined) return;
-      let to = from + node.nodeSize;
-      if (editor.state.doc.textBetween(to, to + 1) === " ") to++;
-      editor.chain().focus().deleteRange({ from, to }).run();
+    const chip = mount(MeasureChip, {
+      target: dom,
+      props: {
+        name: node.attrs.id as string,
+        label: node.attrs.label as string,
+        onRemove: () => {
+          const from = getPos();
+          if (from === undefined) return;
+          let to = from + node.nodeSize;
+          if (editor.state.doc.textBetween(to, to + 1) === " ") to++;
+          editor.chain().focus().deleteRange({ from, to }).run();
+        },
+      },
     });
-    dom.append(remove);
 
     return {
       dom,
+      // The chip's remove button handles its own events.
       stopEvent: (event) =>
-        event.target instanceof Node && remove.contains(event.target),
+        event.target instanceof Element && !!event.target.closest("button"),
       ignoreMutation: () => true,
+      destroy: () => void unmount(chip),
     };
   };
 
@@ -387,20 +377,6 @@ Helper text below the editor explains the syntax; an error replaces it.
   .editor :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     @apply text-fg-muted pointer-events-none absolute;
-  }
-
-  .editor :global(.measure-chip) {
-    @apply inline-flex items-center gap-x-0.5 pl-1 pr-0.5 rounded-sm border;
-    @apply bg-secondary-50 border-secondary-200 text-secondary-800;
-  }
-
-  .editor :global(.measure-chip-remove) {
-    @apply flex items-center justify-center size-3.5 rounded-sm;
-    @apply text-secondary-600 cursor-pointer;
-  }
-
-  .editor :global(.measure-chip-remove:hover) {
-    @apply bg-secondary-200 text-secondary-900;
   }
 
   .measure-picker {

@@ -46,24 +46,33 @@ const SPEC = {
   ],
 };
 
-// A canvas component whose file writes fail after changing its spec in
-// memory, as a rejected PutFile does.
-function failingComponent() {
+// A canvas component whose file writes fail after changing the canvas file's
+// editor content and the spec in memory, as a rejected PutFile does.
+function failingComponent({ unsaved }: { unsaved: boolean }) {
   const specStore = writable<Record<string, unknown>>(SPEC);
-  const revertChanges = vi.fn();
+  const editorContent = writable<string | null>("before");
+  const untouch = vi.fn();
+  const fileArtifact = {
+    path: "canvas.yaml",
+    editorContent,
+    hasUnsavedChanges: readable(unsaved),
+    updateEditorContent: vi.fn((content: string) => editorContent.set(content)),
+    saveState: { untouch },
+  };
+  const write = (patch: Record<string, unknown>) => {
+    editorContent.set("after");
+    specStore.update((spec) => ({ ...spec, ...patch }));
+    return Promise.resolve(false);
+  };
   const component = {
     specStore,
-    parent: { fileArtifact: { revertChanges } },
-    updateProperty: vi.fn((key: string, value: unknown) => {
-      specStore.update((spec) => ({ ...spec, [key]: value }));
-      return Promise.resolve(false);
-    }),
-    updateProperties: vi.fn((patch: Record<string, unknown>) => {
-      specStore.update((spec) => ({ ...spec, ...patch }));
-      return Promise.resolve(false);
-    }),
+    parent: { fileArtifact },
+    updateProperty: vi.fn((key: string, value: unknown) =>
+      write({ [key]: value }),
+    ),
+    updateProperties: vi.fn(write),
   };
-  return { component, specStore, revertChanges };
+  return { component, specStore, editorContent, untouch };
 }
 
 function renderEditor(component: unknown, onClose = vi.fn()) {
@@ -81,7 +90,9 @@ function renderEditor(component: unknown, onClose = vi.fn()) {
 
 describe("EphemeralMeasureEditor failed saves", () => {
   it("undoes a save that failed and keeps the dialog open", async () => {
-    const { component, specStore, revertChanges } = failingComponent();
+    const { component, specStore, editorContent, untouch } = failingComponent({
+      unsaved: false,
+    });
     const onClose = renderEditor(component);
 
     await fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -90,13 +101,29 @@ describe("EphemeralMeasureEditor failed saves", () => {
       await screen.findByText(m.dashboard_pivot_ephemeral_save_failed()),
     ).toBeInTheDocument();
     expect(component.updateProperty).toHaveBeenCalled();
-    expect(revertChanges).toHaveBeenCalledTimes(1);
+    expect(get(editorContent)).toBe("before");
+    expect(untouch).toHaveBeenCalledTimes(1);
     expect(get(specStore)).toEqual(SPEC);
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("keeps edits that were unsaved before the failed change", async () => {
+    const { component, editorContent, untouch } = failingComponent({
+      unsaved: true,
+    });
+    renderEditor(component);
+
+    await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await screen.findByText(m.dashboard_pivot_ephemeral_save_failed());
+    expect(get(editorContent)).toBe("before");
+    expect(untouch).not.toHaveBeenCalled();
+  });
+
   it("undoes a delete that failed", async () => {
-    const { component, specStore, revertChanges } = failingComponent();
+    const { component, specStore, editorContent } = failingComponent({
+      unsaved: false,
+    });
     renderEditor(component);
 
     await fireEvent.click(screen.getByRole("button", { name: "Delete" }));
@@ -105,7 +132,7 @@ describe("EphemeralMeasureEditor failed saves", () => {
       await screen.findByText(m.dashboard_pivot_ephemeral_delete_failed()),
     ).toBeInTheDocument();
     expect(component.updateProperties).toHaveBeenCalled();
-    expect(revertChanges).toHaveBeenCalledTimes(1);
+    expect(get(editorContent)).toBe("before");
     expect(get(specStore)).toEqual(SPEC);
   });
 });

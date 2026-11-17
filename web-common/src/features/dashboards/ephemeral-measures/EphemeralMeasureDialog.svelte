@@ -3,13 +3,10 @@ Creates or edits an ephemeral measure on the explore dashboard's state.
 -->
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { get } from "svelte/store";
   import { ephemeralMeasureDialog } from "./dialog-store";
   import EphemeralMeasureForm from "./EphemeralMeasureForm.svelte";
-  import {
-    deleteExploreEphemeralMeasure,
-    saveExploreEphemeralMeasure,
-  } from "./explore-actions";
   import type { EphemeralMeasureDef } from "./types";
   import { isReferenceableMeasure } from "./validation";
 
@@ -37,13 +34,21 @@ Creates or edits an ephemeral measure on the explore dashboard's state.
   }
 
   function save(def: EphemeralMeasureDef) {
-    saveExploreEphemeralMeasure($exploreName, def, !editingDef);
+    if (editingDef) {
+      metricsExplorerStore.updateEphemeralMeasure($exploreName, def);
+    } else {
+      metricsExplorerStore.addEphemeralMeasure($exploreName, def);
+    }
     close();
   }
 
   function remove() {
     if (!editingDef) return;
-    deleteExploreEphemeralMeasure($exploreName, editingDef.name, explore);
+    metricsExplorerStore.removeEphemeralMeasure(
+      $exploreName,
+      editingDef.name,
+      explore,
+    );
     close();
   }
 </script>

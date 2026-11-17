@@ -11,10 +11,6 @@ import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/eve
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  deleteExploreEphemeralMeasure,
-  saveExploreEphemeralMeasure,
-} from "./explore-actions";
 
 const PROFIT = {
   name: "profit",
@@ -22,7 +18,7 @@ const PROFIT = {
   expression: "impressions * 2",
 };
 
-describe("explore ephemeral measure actions", () => {
+describe("metricsExplorerStore ephemeral measures", () => {
   let notifications: NotificationMessage[];
   let unsubscribe: () => void;
 
@@ -47,15 +43,14 @@ describe("explore ephemeral measure actions", () => {
       .ephemeralMeasures ?? [];
 
   it("confirms creates, updates and deletes", () => {
-    saveExploreEphemeralMeasure(AD_BIDS_EXPLORE_NAME, PROFIT, true);
-    saveExploreEphemeralMeasure(
-      AD_BIDS_EXPLORE_NAME,
-      { ...PROFIT, displayName: "Net profit" },
-      false,
-    );
+    metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, PROFIT);
+    metricsExplorerStore.updateEphemeralMeasure(AD_BIDS_EXPLORE_NAME, {
+      ...PROFIT,
+      displayName: "Net profit",
+    });
     expect(definitions()).toEqual([{ ...PROFIT, displayName: "Net profit" }]);
 
-    deleteExploreEphemeralMeasure(
+    metricsExplorerStore.removeEphemeralMeasure(
       AD_BIDS_EXPLORE_NAME,
       "profit",
       AD_BIDS_EXPLORE_INIT,
@@ -68,12 +63,18 @@ describe("explore ephemeral measure actions", () => {
     ]);
   });
 
-  it("does not confirm deleting a measure that does not exist", () => {
-    deleteExploreEphemeralMeasure(
+  it("removes the uses of a measure whose definition is gone, silently", () => {
+    const state = () =>
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
+    state().visibleMeasures = ["profit", ...state().visibleMeasures];
+
+    metricsExplorerStore.removeEphemeralMeasure(
       AD_BIDS_EXPLORE_NAME,
       "profit",
       AD_BIDS_EXPLORE_INIT,
     );
+
+    expect(state().visibleMeasures).not.toContain("profit");
     expect(notifications).toEqual([]);
   });
 });

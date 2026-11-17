@@ -10,7 +10,10 @@ as a full-width sibling, so place it in a wrapping flex row (`flex-wrap`); the
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ephemeralMeasureDialog } from "./dialog-store";
-  import { MAX_EPHEMERAL_MEASURES } from "./validation";
+  import {
+    MAX_EPHEMERAL_MEASURES,
+    validateEphemeralMeasureCount,
+  } from "./validation";
 
   // The number of definitions that already exist where this creates one.
   export let count: number;
@@ -22,7 +25,7 @@ as a full-width sibling, so place it in a wrapping flex row (`flex-wrap`); the
   // editor instead of the dashboard-wide dialog.
   export let onCreate: () => void = () => ephemeralMeasureDialog.set({});
 
-  $: atLimit = count >= MAX_EPHEMERAL_MEASURES;
+  $: atLimit = !!validateEphemeralMeasureCount(count);
   $: limitMessage = m.dashboard_pivot_ephemeral_limit_reached({
     count: String(MAX_EPHEMERAL_MEASURES),
   });

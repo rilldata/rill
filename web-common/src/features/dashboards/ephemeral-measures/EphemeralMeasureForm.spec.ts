@@ -54,26 +54,25 @@ describe("EphemeralMeasureForm persistence", () => {
     expect(saveButton()).toBeEnabled();
   });
 
-  it("retries a failed create under the same name", async () => {
+  it("names a retried create after its current name", async () => {
+    const netProfit = { ...PROFIT, name: "net_profit", displayName: "Net" };
     const onSave = vi.fn().mockResolvedValue(false);
-    const view = renderForm({ onSave });
-    await fireEvent.input(screen.getByLabelText("Name"), {
-      target: { value: "Profit" },
-    });
+    renderForm({ onSave, existingDefs: [netProfit] });
+    const name = screen.getByLabelText("Name");
+    await fireEvent.input(name, { target: { value: "Profit" } });
     await fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
     await fireEvent.click(saveButton());
     await screen.findByText(m.dashboard_pivot_ephemeral_save_failed());
-    const [first] = onSave.mock.calls[0] as [EphemeralMeasureDef];
 
-    // The failed canvas write may still have added the definition to the
-    // component's spec; the retry must not add a second one.
-    await view.rerender({ existingDefs: [first] });
+    // Renamed after the failure, onto another definition's name.
+    await fireEvent.input(name, { target: { value: "Net profit" } });
     await fireEvent.click(saveButton());
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2));
-    expect((onSave.mock.calls[1] as [EphemeralMeasureDef])[0].name).toBe(
-      first.name,
-    );
+    const retried = (onSave.mock.calls[1] as [EphemeralMeasureDef])[0];
+    expect(retried.name).not.toBe("profit");
+    expect(retried.name).not.toBe(netProfit.name);
+    expect(retried.name).toMatch(/^net_profit/);
   });
 
   it("recovers when the save callback throws", async () => {

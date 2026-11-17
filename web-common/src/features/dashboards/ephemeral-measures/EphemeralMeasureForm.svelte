@@ -52,12 +52,8 @@ dialog stays open, and a failed save keeps it open with an error.
   let saveError: string | undefined = undefined;
   let saving = false;
   let expressionInput: MeasureExpressionInput;
-  // The name a new definition got on its first save attempt, reused by a
-  // retry so it can never add a second definition, even if the failed write
-  // left the first one in the component's spec.
-  let newName: string | undefined = undefined;
 
-  $: ownName = editingDef?.name ?? newName;
+  $: ownName = editingDef?.name;
   $: otherDefs = existingDefs.filter((d) => d.name !== ownName);
   $: knownMeasureNames = new Set(
     referenceableMeasures.map((mes) => mes.name as string),
@@ -103,7 +99,6 @@ dialog stays open, and a failed save keeps it open with an error.
       validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
       countError;
     if (saveError) return;
-    if (!editingDef) newName = def.name;
     if (!(await persist(() => onSave(def)))) {
       saveError = m.dashboard_pivot_ephemeral_save_failed();
     }

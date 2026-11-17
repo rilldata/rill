@@ -11,7 +11,6 @@
   } from "@rilldata/web-common/runtime-client";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { ephemeralMeasuresFirst } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
@@ -97,13 +96,9 @@
     : tags;
 
   // Items visible in the right column, filtered by the selected tag if any.
-  // The hidden list offers every measure, so ephemeral ones come first; the
-  // shown list keeps the dashboard's order.
-  $: itemsForRightColumn = ephemeralMeasuresFirst(
-    filterActive ? (tagIndex.itemsByTag.get(selectedTag!) ?? []) : allItems,
-    (item) => item.name,
-    ephemeralNames,
-  );
+  $: itemsForRightColumn = filterActive
+    ? (tagIndex.itemsByTag.get(selectedTag!) ?? [])
+    : allItems;
 
   // Reset all transient state whenever the popover closes.
   $: if (!active) {

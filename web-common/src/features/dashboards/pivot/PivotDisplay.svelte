@@ -19,7 +19,6 @@
   import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
-  import { deleteExploreEphemeralMeasure } from "../ephemeral-measures/explore-actions";
   import {
     precisionStateFor,
     type PrecisionChipProps,
@@ -208,7 +207,7 @@
           if (def) ephemeralMeasureDialog.set({ def });
         }}
         onDeleteEphemeralMeasure={(id) =>
-          deleteExploreEphemeralMeasure(
+          metricsExplorerStore.removeEphemeralMeasure(
             $exploreName,
             id,
             $validSpecStore.data?.explore,

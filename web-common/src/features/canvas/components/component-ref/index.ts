@@ -166,10 +166,10 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
   /**
    * Persists the param bindings to the canvas YAML at the item's `params:` key.
    * Only the params map is written; the item's other keys (component, width) stay untouched.
-   * Resolves to whether the canvas file was saved.
+   * Resolves to false when writing the canvas file failed.
    */
   private writeParamsToYAML(params: Record<string, unknown>): Promise<boolean> {
-    if (!this.parent.fileArtifact) return Promise.resolve(false);
+    if (!this.parent.fileArtifact) return Promise.resolve(true);
     const parsedDocument = get(this.parent.parsedContent);
     const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
