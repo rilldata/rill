@@ -361,30 +361,30 @@ func ParseLegacy(duration, offset string, roundToGrain timeutil.TimeGrain, parse
 	}
 
 	if offset != "" {
-		if strings.HasPrefix(offset, "rill-") {
-			dax := strings.TrimPrefix(offset, "rill-")
-			if dax == "PP" {
-				rt.Offset = &Offset{
-					PreviousPeriod: &PreviousPeriod{Prefix: "-", Num: 1},
-				}
-				return rt, nil
-			}
-
-			iso, ok := daxOffsetNotations[dax]
-			if !ok {
-				return nil, fmt.Errorf("invalid DAX offset %q", offset)
-			}
-			offset = iso
-		}
-
-		offsetGrainPart, err := parseISODuration(offset)
+		rt.Offset, err = parseLegacyOffset(offset)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		rt.Offset = &Offset{
-			Grain: offsetGrainPart,
-		}
+	return rt, nil
+}
+
+// ParseWithLegacyOffset parses a time range expression like Parse and offsets it by a legacy offset like ParseLegacy.
+// Unlike ParseLegacy, it keeps the rounding that Parse applies to a legacy ISO duration such as "P1D",
+// so the offset range lines up with the range of the expression on its own.
+func ParseWithLegacyOffset(expr, offset string, parseOpts ParseOptions) (*Expression, error) {
+	rt, err := Parse(expr, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+	if rt.Offset != nil {
+		return nil, fmt.Errorf("time range %q already has an offset", expr)
+	}
+
+	rt.Offset, err = parseLegacyOffset(offset)
+	if err != nil {
+		return nil, err
 	}
 
 	return rt, nil
@@ -492,6 +492,9 @@ func (i *Interval) previousPeriod(evalOpts EvalOptions, tm time.Time, tz *time.L
 		o := i.Ordinal.Ordinals[0]
 		tg := grainMap[o.Grain]
 		start = timeutil.OffsetTime(tm, tg, -1, tz)
+	} else if i.LegacyIso != nil {
+		// Checked before StartEnd, which parse sets to the expansion of the legacy interval.
+		return i.LegacyIso.previousPeriod(tm, tz)
 	} else if i.StartEnd != nil {
 		evalOpts.ref = tm
 		start, _, _ = i.StartEnd.eval(evalOpts, tm, tz)
@@ -627,6 +630,20 @@ func (i *IsoInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time
 	end := tm
 	start := timeutil.OffsetTime(end, i.Start.tg, -1, tz)
 	return start, end
+}
+
+// previousPeriod returns the ISO duration that ends at tm.
+// Evaluating the expanded interval with tm as the reference, like for other intervals, would give a shorter period,
+// since the expansion adds one of the smallest grain to the reference and snaps it before subtracting the duration;
+// for example, "P1D" would give an empty period.
+func (l *LegacyISOInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	grainPoint, err := parseISODuration(l.ISO)
+	if err != nil {
+		// Unreachable, since expand already parsed the duration.
+		return tm, tm
+	}
+	start, _ := grainPoint.Duration.offset(tm, -1, tz)
+	return start, tm
 }
 
 func (l *LegacyISOInterval) expand(parseOpts ParseOptions) (*StartEndInterval, error) {
@@ -990,6 +1007,29 @@ func exprForAllTime(parseOpts ParseOptions) *Expression {
 			},
 		},
 	}
+}
+
+// parseLegacyOffset parses a legacy offset, which is an ISO 8601 duration or a DAX comparison such as "rill-PD".
+func parseLegacyOffset(offset string) (*Offset, error) {
+	if strings.HasPrefix(offset, "rill-") {
+		dax := strings.TrimPrefix(offset, "rill-")
+		if dax == "PP" {
+			return &Offset{PreviousPeriod: &PreviousPeriod{Prefix: "-", Num: 1}}, nil
+		}
+
+		iso, ok := daxOffsetNotations[dax]
+		if !ok {
+			return nil, fmt.Errorf("invalid DAX offset %q", offset)
+		}
+		offset = iso
+	}
+
+	offsetGrainPart, err := parseISODuration(offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Offset{Grain: offsetGrainPart}, nil
 }
 
 func parseISODuration(duration string) (*GrainPointInTimePart, error) {

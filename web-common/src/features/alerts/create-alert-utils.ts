@@ -60,10 +60,10 @@ export function getNewAlertInitialFormValues(
     ...getInitialScheduleFormValues(),
     enableSlackNotification: false,
     slackChannels: [""],
-    slackUsers: [userEmail, ""],
+    slackUsers: userEmail ? [userEmail, ""] : [""],
     enableEmailNotification: true,
     // The creator's email is in its own field if it's shown, so it isn't also added to the recipients.
-    emailRecipients: showEmbedOwnerEmail ? [""] : [userEmail, ""],
+    emailRecipients: showEmbedOwnerEmail || !userEmail ? [""] : [userEmail, ""],
     // In an embed, only the creator's email gets an open link to the embedder's app.
     // The embed's `user_email` is used if set; otherwise the creator can enter it.
     embedOwnerEmail: showEmbedOwnerEmail ? userEmail : "",

@@ -80,6 +80,7 @@
   "alert_form_name_title": "Nombre de la alerta",
   "alert_form_next": "Siguiente",
   "alert_form_no_criteria": "No hay criterios seleccionados",
+  "alert_form_no_notification": "Agrega tu correo o al menos un destinatario de correo.",
   "alert_form_no_data": "No hay datos para previsualizar",
   "alert_form_preview_cell": "Celda de vista previa",
   "alert_form_preview_table_aria": "tabla de vista previa de alerta",

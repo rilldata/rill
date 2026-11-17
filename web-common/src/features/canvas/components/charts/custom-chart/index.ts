@@ -18,7 +18,14 @@ import {
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { get, writable, type Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
+import { metricsSQLUsesTimeRange } from "@rilldata/web-common/features/components/charts/custom/expression-utils";
 import CanvasCustomChart from "./CanvasCustomChart.svelte";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -73,13 +80,10 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       return;
     }
 
-    const sql = spec.metrics_sql?.[0];
-    if (!sql) return;
+    const name = metricsViewFromSQL(spec.metrics_sql?.[0]);
+    if (!name) return;
 
-    const match = sql.match(/\bFROM\s+(\w+)/i);
-    if (!match) return;
-
-    this.metricsViewName = match[1];
+    this.metricsViewName = name;
     this.localExpressionFilters.metricsViewsProvider.setMetricsViewNames([
       this.metricsViewName,
     ]);
@@ -90,6 +94,21 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       ...s,
       metrics_view: this.metricsViewName,
     }));
+  }
+
+  /**
+   * Whether the chart's queries are filtered by the canvas time range, and so wait for it to resolve.
+   * Each metrics SQL query can read a different metrics view; see metricsSQLUsesTimeRange.
+   */
+  get usesTimeRange(): Readable<boolean> {
+    return derived(
+      [this.specStore, this.parent.timeManager.hasTimeSeriesMap],
+      ([spec, hasTimeSeriesMap]) =>
+        metricsSQLUsesTimeRange(
+          (spec.metrics_sql ?? []).map(metricsViewFromSQL),
+          hasTimeSeriesMap,
+        ),
+    );
   }
 
   isValid(spec: CustomChart): boolean {
@@ -178,4 +197,9 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       vega_spec: "",
     };
   }
+}
+
+// Metrics SQL always has a `FROM <metrics_view>` clause.
+function metricsViewFromSQL(sql: string | undefined): string | undefined {
+  return sql?.match(/\bFROM\s+(\w+)/i)?.[1];
 }

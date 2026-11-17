@@ -205,4 +205,7 @@
       />
     {/if}
   </FormSection>
+  {#if $errors.emailRecipients?._errors?.length}
+    <div class="text-red-500 text-sm">{$errors.emailRecipients._errors[0]}</div>
+  {/if}
 </div>
