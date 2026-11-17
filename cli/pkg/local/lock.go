@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/gofrs/flock"
 )
@@ -33,8 +34,12 @@ func lockProject(dbDirPath, url string) (*flock.Flock, error) {
 	lock := flock.New(filepath.Join(dbDirPath, lockFileName), flock.SetPermissions(0o644))
 	locked, err := lock.TryLock()
 	if err != nil {
-		// The lock is a safety net: on file systems that can't lock files (such as some network mounts), carry on without it.
-		return lock, nil
+		// On file systems that can't lock files (such as some network mounts), carry on without the lock.
+		// Any other error, such as a lock file that can't be opened, may hide a process that holds the lock.
+		if errors.Is(err, errors.ErrUnsupported) || errors.Is(err, syscall.ENOLCK) {
+			return lock, nil
+		}
+		return nil, fmt.Errorf("failed to lock the project: %w", err)
 	}
 
 	if !locked {

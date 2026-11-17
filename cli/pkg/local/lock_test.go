@@ -3,6 +3,7 @@ package local
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"testing"
@@ -44,6 +45,15 @@ func TestLockProject(t *testing.T) {
 	// The new owner's details replace those of the crashed one.
 	_, err = lockProject(dir, "http://localhost:9009")
 	require.EqualError(t, err, fmt.Sprintf("another Rill command (PID %d) is already running for this project; wait for it to finish and try again", os.Getpid()))
+
+	// A lock file that can't be opened stops the process instead of letting it run without the lock.
+	// (Root can open the file regardless of its permissions.)
+	if os.Geteuid() != 0 {
+		require.NoError(t, os.Chmod(lock.Path(), 0o000))
+		_, err = lockProject(dir, "")
+		require.ErrorIs(t, err, fs.ErrPermission)
+		require.NoError(t, os.Chmod(lock.Path(), 0o644))
+	}
 
 	// A released project can be locked again.
 	require.NoError(t, lock.Close())
