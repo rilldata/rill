@@ -105,6 +105,8 @@
               })
             : m.alert_errors_default_name(),
           resources: initialResource ? [initialResource] : [],
+          refreshCron: "",
+          refreshTimeZone: "",
           emailRecipients: [],
           slackChannels: [],
           slackUsers: [],
@@ -116,6 +118,8 @@
     object({
       name: string().trim().required(m.alert_errors_name_required()),
       resources: array(string().defined()).defined(),
+      refreshCron: string().defined(),
+      refreshTimeZone: string().defined(),
       emailRecipients: array(string().defined()).defined(),
       slackChannels: array(string().defined()).defined(),
       slackUsers: array(

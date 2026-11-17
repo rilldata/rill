@@ -10,6 +10,8 @@ import {
 const values: ResourceErrorAlertFormValues = {
   name: " Errors in orders ",
   resources: ["rill.runtime.v1.Model/orders"],
+  refreshCron: "",
+  refreshTimeZone: "",
   emailRecipients: ["admin@example.com"],
   slackChannels: ["#alerts", ""],
   slackUsers: [],
@@ -20,6 +22,8 @@ describe("resource error alert utils", () => {
   it("maps form values to alert options", () => {
     expect(getAlertOptionsFromFormValues(values)).toEqual({
       displayName: "Errors in orders",
+      refreshCron: "",
+      refreshTimeZone: "",
       resolver: "resource_status",
       resolverProperties: {
         where_error: true,
@@ -48,7 +52,7 @@ describe("resource error alert utils", () => {
   it("round-trips through an alert spec", () => {
     const spec = {
       displayName: "Errors in orders",
-      refreshSchedule: { cron: "*/5 * * * *" },
+      refreshSchedule: { cron: "0 * * * *", timeZone: "Asia/Kolkata" },
       resolver: "resource_status",
       resolverProperties: {
         where_error: true,
@@ -65,10 +69,18 @@ describe("resource error alert utils", () => {
       annotations: { admin_system: "true" },
     };
     expect(isResourceErrorAlert(spec)).toBe(true);
-    expect(getFormValuesFromAlertSpec(spec)).toEqual({
+    const formValues = getFormValuesFromAlertSpec(spec);
+    expect(formValues).toEqual({
       ...values,
       name: "Errors in orders",
+      refreshCron: "0 * * * *",
+      refreshTimeZone: "Asia/Kolkata",
       slackChannels: ["#alerts"],
+    });
+    // The saved schedule is sent back on edits
+    expect(getAlertOptionsFromFormValues(formValues)).toMatchObject({
+      refreshCron: "0 * * * *",
+      refreshTimeZone: "Asia/Kolkata",
     });
   });
 

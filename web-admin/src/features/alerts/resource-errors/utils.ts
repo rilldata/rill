@@ -9,6 +9,9 @@ export type ResourceErrorAlertFormValues = {
   name: string;
   // Watched resources as "kind/name"; empty means all resources.
   resources: string[];
+  // Kept on edits so schedules set through the API survive; empty uses the server default.
+  refreshCron: string;
+  refreshTimeZone: string;
   emailRecipients: string[];
   slackChannels: string[];
   slackUsers: string[];
@@ -47,6 +50,8 @@ export function getAlertOptionsFromFormValues(
   const snoozeSeconds = Number(values.snooze) || 0;
   return {
     displayName: values.name.trim(),
+    refreshCron: values.refreshCron,
+    refreshTimeZone: values.refreshTimeZone,
     resolver: RESOURCE_STATUS_RESOLVER,
     resolverProperties: values.resources.length
       ? { where_error: true, where_resource: values.resources }
@@ -75,6 +80,8 @@ export function getFormValuesFromAlertSpec(
       ...((spec.resolverProperties?.where_resource as string[] | undefined) ??
         []),
     ],
+    refreshCron: spec.refreshSchedule?.cron ?? "",
+    refreshTimeZone: spec.refreshSchedule?.timeZone ?? "",
     emailRecipients: notifierProp("email", "recipients"),
     slackChannels: notifierProp("slack", "channels"),
     slackUsers: notifierProp("slack", "users"),
