@@ -53,7 +53,7 @@ export function generateVLScatterPlotSpec(
   if (!config.size && spec.mark && typeof spec.mark === "object") {
     spec.mark = {
       ...spec.mark,
-      size: 40,
+      size: data.chartTheme?.point?.size ?? 40,
     } as typeof spec.mark;
   }
 

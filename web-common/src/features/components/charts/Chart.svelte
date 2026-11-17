@@ -19,7 +19,10 @@
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecMeasure,
+    V1ThemeChartStyle,
+  } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import type { SignalListeners, View } from "svelte-vega";
   import type { Readable } from "svelte/store";
@@ -137,6 +140,14 @@
   // Color mapping needs to be reactive to theme mode changes (light/dark)
   // because colors are resolved differently for each mode
   $: isThemeModeDark = themeMode === "dark";
+
+  // Memoized by identity, like the spec above: the store re-emits the same style with every
+  // result, and a new config object makes VegaLiteRenderer re-embed the view.
+  let chartTheme: V1ThemeChartStyle | undefined;
+  $: if ($chartData.chartTheme !== chartTheme) {
+    chartTheme = $chartData.chartTheme;
+  }
+  $: vegaConfig = getRillTheme(isThemeModeDark, theme, { chart: chartTheme });
   $: colorMapping = getColorMappingForChart(
     chartSpec,
     domainValues,
@@ -288,7 +299,7 @@
       renderer="canvas"
       {expressionFunctions}
       {hasComparison}
-      config={getRillTheme(isThemeModeDark, theme)}
+      config={vegaConfig}
     />
   </div>
 {/if}

@@ -14,6 +14,7 @@
     createRuntimeServiceQueryResolver,
     V1TimeGrain,
     type V1Expression,
+    type V1ThemeChartStyle,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
@@ -52,6 +53,8 @@
    * If provided, the chart uses these directly. If not, colors resolve from CSS variables.
    */
   export let theme: Record<string, string> | undefined = undefined;
+  /** The project theme's chart style for the current mode: text, gridline, mark and legend styling. */
+  export let chartTheme: V1ThemeChartStyle | undefined = undefined;
   /**
    * Notes when the query returned as many rows as its LIMIT allows, so some may have been cut.
    * Only useful where the limit can be changed, i.e. the component editor.
@@ -331,7 +334,9 @@
               canvasDashboard
               scrollX
               {themeMode}
-              config={getRillTheme(themeMode === "dark", theme)}
+              config={getRillTheme(themeMode === "dark", theme, {
+                chart: chartTheme,
+              })}
               {expressionFunctions}
               bind:viewVL
             />

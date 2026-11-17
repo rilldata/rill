@@ -12,6 +12,7 @@ import {
   ChartSortType,
   type ChartDataResult,
   type ChartDomainValues,
+  type ChartLegend,
   type ChartSortDirection,
   type ChartSpec,
   type ChartType,
@@ -164,7 +165,33 @@ export function generateSpec(
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
+  return CHART_CONFIG[chartType]?.generateSpec(
+    withThemeLegendPosition(rillChartSpec, data.chartTheme?.legend?.position),
+    data,
+  );
+}
+
+/**
+ * A chart draws its legend where its color field says, and at each chart type's default position
+ * when the field says nothing. A theme's legend position takes the place of that default.
+ */
+function withThemeLegendPosition(
+  spec: ChartSpec,
+  position: string | undefined,
+): ChartSpec {
+  const color = "color" in spec ? spec.color : undefined;
+  if (
+    !position ||
+    !color ||
+    typeof color !== "object" ||
+    ("legendOrientation" in color && color.legendOrientation)
+  ) {
+    return spec;
+  }
+  return {
+    ...spec,
+    color: { ...color, legendOrientation: position as ChartLegend },
+  } as ChartSpec;
 }
 
 export function isDomainStringArray(

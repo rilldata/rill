@@ -49,9 +49,18 @@ export function generateVLAreaChartSpec(
   xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
   spec.encoding = { x: xEncoding };
 
+  // The line along the top of each area. It is a mark of its own, so the theme's width for an
+  // area's line is set on it here; the config only reaches the line the area mark draws.
+  const edgeWidth = data.chartTheme?.area?.lineWidth;
   const inner: UnitSpec<Field>[] = [
     { mark: "area" },
-    { mark: { type: "line", opacity: 0.5 } },
+    {
+      mark: {
+        type: "line",
+        opacity: 0.5,
+        ...(typeof edgeWidth === "number" && { strokeWidth: edgeWidth }),
+      },
+    },
     buildHoverPointOverlay(),
   ];
 
