@@ -492,6 +492,9 @@ func (i *Interval) previousPeriod(evalOpts EvalOptions, tm time.Time, tz *time.L
 		o := i.Ordinal.Ordinals[0]
 		tg := grainMap[o.Grain]
 		start = timeutil.OffsetTime(tm, tg, -1, tz)
+	} else if i.LegacyIso != nil {
+		// Checked before StartEnd, which parse sets to the expansion of the legacy interval.
+		return i.LegacyIso.previousPeriod(tm, tz)
 	} else if i.StartEnd != nil {
 		evalOpts.ref = tm
 		start, _, _ = i.StartEnd.eval(evalOpts, tm, tz)
@@ -627,6 +630,20 @@ func (i *IsoInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time
 	end := tm
 	start := timeutil.OffsetTime(end, i.Start.tg, -1, tz)
 	return start, end
+}
+
+// previousPeriod returns the ISO duration that ends at tm.
+// Evaluating the expanded interval with tm as the reference, like for other intervals, would give a shorter period,
+// since the expansion adds one of the smallest grain to the reference and snaps it before subtracting the duration;
+// for example, "P1D" would give an empty period.
+func (l *LegacyISOInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	grainPoint, err := parseISODuration(l.ISO)
+	if err != nil {
+		// Unreachable, since expand already parsed the duration.
+		return tm, tm
+	}
+	start, _ := grainPoint.Duration.offset(tm, -1, tz)
+	return start, tm
 }
 
 func (l *LegacyISOInterval) expand(parseOpts ParseOptions) (*StartEndInterval, error) {

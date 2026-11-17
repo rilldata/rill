@@ -343,3 +343,18 @@ tests:
       - account: A
         sum: 50
         sum_delta: 10
+  # Clients now send the comparison for a legacy expression as the expression with an offset.
+  - name: legacy_expression_previous_period_alert_duckdb
+    resolver: legacy_metrics
+    properties:
+      query_name: MetricsViewAggregation
+      query_args_json: '{"metricsView":"duckdb_snapshots_metrics","dimensions":[{"name":"account"}],"measures":[{"name":"sum"},{"name":"sum_delta","comparisonDelta":{"measure":"sum"}}],"timeRange":{"expression":"P1D","timeZone":"UTC"},"comparisonTimeRange":{"expression":"P1D offset -1P"},"sort":[{"name":"sum","desc":true}]}'
+    args:
+      execution_time: 2024-01-05T00:00:01Z
+    result:
+      - account: B
+        sum: 51
+        sum_delta: 10
+      - account: A
+        sum: 50
+        sum_delta: 10

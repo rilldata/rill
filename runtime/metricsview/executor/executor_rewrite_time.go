@@ -26,7 +26,8 @@ func (e *Executor) RewriteQueryTimeRanges(ctx context.Context, qry *metricsview.
 		}
 	}
 
-	// Clients send the comparison for a legacy expression such as "P1D" as the expression in iso_duration with an iso_offset.
+	// Older clients sent the comparison for a legacy expression such as "P1D" as the expression in iso_duration with an iso_offset,
+	// and alerts and reports saved by them still do.
 	// Resolved as a legacy ISO range, it isn't rounded like the expression is, so it wouldn't line up with the base range;
 	// for example, "P1D" resolves to the day of the watermark, but its "rill-PD" comparison to two days before the watermark.
 	// So resolve such a comparison as the base expression offset by iso_offset.
