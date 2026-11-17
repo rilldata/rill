@@ -1,4 +1,7 @@
-import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  appendEphemeralSpecMeasures,
+  ephemeralMeasuresFirst,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -52,9 +55,13 @@ export const allMeasures = ({
     );
   // ephemeral measures behave like regular measures across the
   // explore; they get synthetic spec entries so labels/formatting resolve.
-  return appendEphemeralSpecMeasures(
-    specMeasures,
-    dashboard?.ephemeralMeasures,
+  // They come first, newest first, so the menus that offer every measure
+  // show a new definition where the user looks for it.
+  const defs = dashboard?.ephemeralMeasures ?? [];
+  return ephemeralMeasuresFirst(
+    appendEphemeralSpecMeasures(specMeasures, defs),
+    (measure) => measure.name,
+    defs.map((def) => def.name),
   );
 };
 

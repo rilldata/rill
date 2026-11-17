@@ -147,6 +147,88 @@ describe("ephemeral measures URL state integration", () => {
     ]);
   });
 
+  it("shows a new measure first in the explore view", () => {
+    metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    });
+    const state = getCleanMetricsExploreForAssertion();
+    expect(state.visibleMeasures?.[0]).toBe("profit");
+    expect(state.allMeasuresVisible).toBe(false);
+  });
+
+  it("adds a new measure as the first measure column of the pivot", () => {
+    applyUrl(
+      "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=domain,impressions,bid_price",
+    );
+    metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    });
+    const state = getCleanMetricsExploreForAssertion();
+    expect(state.pivot?.columns.map((col) => col.id)).toEqual([
+      "domain",
+      "profit",
+      "impressions",
+      "bid_price",
+    ]);
+    // It is also the first shown measure on returning to the explore view.
+    expect(state.visibleMeasures?.[0]).toBe("profit");
+  });
+
+  it("drops positional sorts that a new first measure column would shift", () => {
+    const profit = {
+      name: "profit",
+      displayName: "Profit",
+      expression: "impressions * 2",
+    };
+    const sortWith = (tableMode: "nest" | "flat", id: string) => {
+      applyUrl(
+        `http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=domain,impressions,bid_price&table_mode=${tableMode}`,
+      );
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot.sorting = [
+        { id, desc: true },
+      ];
+      metricsExplorerStore.addEphemeralMeasure(AD_BIDS_EXPLORE_NAME, profit);
+      return getCleanMetricsExploreForAssertion().pivot?.sorting;
+    };
+
+    // In a nested table `c0v1m0` names the first measure under a column value.
+    expect(sortWith("nest", "c0v1m0")).toEqual([]);
+    expect(sortWith("nest", "publisher")).toEqual([
+      { id: "publisher", desc: true },
+    ]);
+    // A flat table sorts by field name, which an insert does not shift.
+    expect(sortWith("flat", "impressions")).toEqual([
+      { id: "impressions", desc: true },
+    ]);
+  });
+
+  it("drops positional sorts that removing a measure column shifts", () => {
+    const sortAfterRemoving = (cols: string) => {
+      applyUrl(
+        `http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=${cols}&adhoc_m=profit:Profit:impressions*2`,
+      );
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot.sorting = [
+        { id: "c0v1m1", desc: true },
+      ];
+      metricsExplorerStore.removeEphemeralMeasure(
+        AD_BIDS_EXPLORE_NAME,
+        "profit",
+        AD_BIDS_EXPLORE_INIT,
+      );
+      return getCleanMetricsExploreForAssertion().pivot?.sorting;
+    };
+
+    expect(sortAfterRemoving("domain,profit,impressions")).toEqual([]);
+    // Without a profit column, no measure moves.
+    expect(sortAfterRemoving("domain,impressions,bid_price")).toEqual([
+      { id: "c0v1m1", desc: true },
+    ]);
+  });
+
   it("drops definitions referencing unknown measures, and their columns", () => {
     const errors = applyUrl(
       "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&adhoc_m=profit:Profit:unknown*2",
