@@ -160,6 +160,35 @@ describe("Theme", () => {
     });
   });
 
+  describe("font and chrome tokens", () => {
+    it("applies the font to the boundary and declares the chrome tokens once, for both modes", () => {
+      const theme = new Theme({
+        font: { family: "Brand Sans" },
+        chrome: { borderWidthPx: 0, fontSizePx: 13, fontWeight: 600 },
+        dark: { primary: PRIMARY },
+      });
+      const { light, dark } = parseCSS(theme.css);
+
+      expect(theme.fontFamily).toBe(`"Brand Sans", "Inter", sans-serif`);
+      expect(light["theme-font-family"]).toBe(theme.fontFamily);
+      expect(theme.css).toContain("font-family: var(--theme-font-family);");
+      // A width of zero removes the borders, so it must not be mistaken for unset.
+      expect(light["chrome-border-width"]).toBe("0px");
+      expect(light["chrome-font-size"]).toBe("13px");
+      expect(light["chrome-font-weight"]).toBe("600");
+      expect(dark["theme-font-family"]).toBeUndefined();
+      expect(dark["chrome-border-width"]).toBeUndefined();
+    });
+
+    it("leaves Rill's font and chrome alone when the theme sets neither", () => {
+      const theme = new Theme({ light: { primary: PRIMARY } });
+
+      expect(theme.fontFamily).toBeUndefined();
+      expect(theme.css).not.toContain("font-family");
+      expect(theme.css).not.toContain("--chrome-");
+    });
+  });
+
   describe("legacy colors format", () => {
     it("derives the same tokens from primaryColorRaw and secondaryColorRaw", () => {
       const legacy: V1ThemeSpec = {

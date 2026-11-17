@@ -323,7 +323,7 @@
     color: inherit;
     table-layout: fixed;
     border-collapse: separate;
-    font-family: Inter;
+    font-family: var(--theme-font-family, Inter);
     font-feature-settings:
       "case" 0,
       "cpsp" 0,

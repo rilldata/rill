@@ -1,6 +1,5 @@
 import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { getFontEmbedCSS } from "html-to-image";
 import { get } from "svelte/store";
 import { buildExportFilename } from "../filename";
 import {
@@ -9,7 +8,11 @@ import {
   type MeasuredBlock,
 } from "../pdf/capture";
 import { prepareCanvasForCapture } from "../pdf/settle";
-import { needsCanvasWarmup, rasterizeNode } from "../rasterize";
+import {
+  needsCanvasWarmup,
+  rasterizeNode,
+  resolveFontEmbedCSS,
+} from "../rasterize";
 import { downloadBlob, postWorkbookRequest } from "./client";
 import { buildWorkbookRequest, needsImage } from "./collect";
 import { buildWorkbookHeader } from "./header";
@@ -103,7 +106,7 @@ async function snapshotBlocks(
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
   // See captureCanvasBlocks for why these are resolved once per export.
   const warmUpCanvas = await needsCanvasWarmup();
-  const fontEmbedCSS = await getFontEmbedCSS(exportView);
+  const fontEmbedCSS = await resolveFontEmbedCSS(exportView);
 
   let done = 0;
   for (const target of targets) {

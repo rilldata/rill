@@ -1,8 +1,8 @@
-import { getFontEmbedCSS } from "html-to-image";
 import {
   needsCanvasWarmup,
   rasterizeNode,
   type RasterFormat,
+  resolveFontEmbedCSS,
 } from "../rasterize";
 import {
   FILTER_BAR_ID,
@@ -114,7 +114,7 @@ export async function captureCanvasBlocks(
   // Collected from the whole export view rather than the rows: the header is a
   // sibling of the row container, and getFontEmbedCSS keeps only the @font-face
   // rules whose family is used inside the node it is handed.
-  const fontEmbedCSS = await getFontEmbedCSS(exportView);
+  const fontEmbedCSS = await resolveFontEmbedCSS(exportView);
 
   const blocks: CapturedBlock[] = [];
   const total = targets.length + (opts.includeFilters ? 1 : 0);

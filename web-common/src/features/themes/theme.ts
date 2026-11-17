@@ -8,6 +8,7 @@ import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
 import { createDarkVariation } from "./color-generation";
+import { themeFontFamily } from "./theme-font";
 
 type Shade = (typeof TailwindColorSpacing)[number];
 
@@ -15,6 +16,8 @@ export class Theme {
   colors: { light: Colors; dark: Colors };
   spec: V1ThemeSpec;
   css: string;
+  /** CSS `font-family` value of the theme's font. Undefined when the theme keeps Rill's font. */
+  fontFamily: string | undefined;
   resolvedThemeObject: {
     dark: Record<string, string>;
     light: Record<string, string>;
@@ -37,6 +40,7 @@ export class Theme {
   processThemeSpec(spec: V1ThemeSpec) {
     this.spec = spec;
     this.colors = this.processTheme(spec);
+    this.fontFamily = themeFontFamily(spec.font);
     this.css = this.generateCSS();
 
     // Compatibility with current implementation, this can eventually be removed
@@ -156,13 +160,45 @@ export class Theme {
 
     const css = `
  .dashboard-theme-boundary {
-  ${this.stringifyVars(lightColors)}
+  ${[this.stringifyVars(lightColors), ...this.fontAndChromeDeclarations()].join("\n  ")}
 }
 .dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
 }`.trim();
 
     return css;
+  }
+
+  /**
+   * The theme's font and chrome tokens. Unlike the colors they are the same in light and
+   * dark mode, so they are declared once.
+   *
+   * The font is both applied to the boundary and exposed as `--theme-font-family`, for the
+   * few elements that set a font of their own (chart tooltips, the pivot table, the map).
+   * The chrome tokens are read by the navigation bar, filter bar, pills and AI panel.
+   */
+  private fontAndChromeDeclarations(): string[] {
+    const declarations: string[] = [];
+
+    if (this.fontFamily) {
+      declarations.push(
+        `--theme-font-family: ${this.fontFamily};`,
+        `font-family: var(--theme-font-family);`,
+      );
+    }
+
+    const { borderWidthPx, fontSizePx, fontWeight } = this.spec.chrome ?? {};
+    if (isWholeNumber(borderWidthPx)) {
+      declarations.push(`--chrome-border-width: ${borderWidthPx}px;`);
+    }
+    if (isWholeNumber(fontSizePx)) {
+      declarations.push(`--chrome-font-size: ${fontSizePx}px;`);
+    }
+    if (isWholeNumber(fontWeight)) {
+      declarations.push(`--chrome-font-weight: ${fontWeight};`);
+    }
+
+    return declarations;
   }
 
   private processTheme(spec: V1ThemeSpec) {
@@ -276,6 +312,11 @@ export class Theme {
       finalColors["popover-accent"] = finalColors["surface-hover"];
     }
   }
+}
+
+// The chrome tokens are written into a stylesheet, so only take them as the numbers they are typed as.
+function isWholeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 // Theme color variables - includes both new semantic names and deprecated names for backwards compatibility
