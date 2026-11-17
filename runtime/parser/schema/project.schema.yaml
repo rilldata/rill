@@ -2629,7 +2629,7 @@ definitions:
             description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
           banner:
             type: string
-            description: Refers to the custom banner displayed in the header of a Canvas dashboard.
+            description: Refers to the custom banner displayed in the header of a Canvas dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           rows:
@@ -2852,7 +2852,7 @@ definitions:
             description: Refers to the description of the explore dashboard
           banner:
             type: string
-            description: Refers to the custom banner displayed at the header of an explore dashboard
+            description: Refers to the custom banner displayed at the header of an explore dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:
@@ -3906,10 +3906,10 @@ definitions:
     properties:
       url:
         type: string
-        description: Image URL. Used in light mode, and in dark mode when `dark_url` is not set.
+        description: Image URL, or the path of an image file in the project's `public` directory (for example `public/img/logo.svg`). Used in light mode, and in dark mode when `dark_url` is not set.
       dark_url:
         type: string
-        description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
+        description: Image URL or project file path to use when the dashboard is displayed in dark mode. Defaults to `url`.
       css:
         type: object
         description: CSS styles
@@ -4859,7 +4859,7 @@ definitions:
             description: Description for the explore view.
           banner:
             type: string
-            description: Custom banner displayed at the header of the explore view.
+            description: Custom banner displayed at the header of the explore view. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:

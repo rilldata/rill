@@ -1,0 +1,16 @@
+# Canvas YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
+display_name: "Branded canvas"
+banner: "**Heads up:** see the [status page](https://example.com/status)"
+rows:
+  - height: 120px
+    items:
+      - image:
+          url: public/img/logo.svg
+        width: 6
+      - markdown:
+          content: |-
+            ![Logo in markdown](public/img/logo.svg)
+        width: 6

@@ -23,7 +23,7 @@ test.describe("banner in explore preview", () => {
     const exploreWithBanner = `
   type: explore
   metrics_view: "AdBids_metrics"
-  banner: "This is a banner text"
+  banner: "This is a **banner** text"
   measures: "*"
   dimensions: "*"
       `;
@@ -35,5 +35,7 @@ test.describe("banner in explore preview", () => {
     const banner = page.locator(".app-banner");
     await expect(banner).toBeVisible();
     await expect(banner).toHaveText(/This is a banner text/);
+    // Inline markdown is rendered.
+    await expect(banner.locator("strong")).toHaveText("banner");
   });
 });

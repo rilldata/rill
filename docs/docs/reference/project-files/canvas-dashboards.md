@@ -22,7 +22,7 @@ _[string]_ - Deprecated: use display_name instead. Refers to the display name fo
 
 ### `banner`
 
-_[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard.
+_[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
 
 ### `ai_prompts`
 
