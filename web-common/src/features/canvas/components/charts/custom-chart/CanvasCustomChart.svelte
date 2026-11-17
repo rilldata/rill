@@ -13,7 +13,7 @@
     clearComponentConversation(component.id);
   });
 
-  $: ({ specStore, timeAndFilterStore } = component);
+  $: ({ specStore, timeAndFilterStore, usesTimeRange } = component);
 
   $: hasValidSpec = component.isValid($specStore);
   $: hasContent = component.hasContent($specStore);
@@ -32,7 +32,7 @@
     name={component.id}
     spec={$specStore.vega_spec}
     whereFilter={$timeAndFilterStore?.where}
-    timeRange={$timeAndFilterStore?.timeRange}
+    timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}

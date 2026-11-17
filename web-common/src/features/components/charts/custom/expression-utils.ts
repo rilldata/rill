@@ -77,3 +77,26 @@ export function metricsSQLFilterProperties(
     ...(timeRange ? { additional_time_range: timeRange } : {}),
   };
 }
+
+/**
+ * Whether metrics SQL queries are filtered by a dashboard's time range, given the metrics views they read
+ * and which metrics views on the dashboard have a time dimension.
+ * Only a metrics view with a time dimension can be filtered by time,
+ * and a canvas resolves a time range only when one of its metrics views has one,
+ * so queries that wait for a time range on a canvas without one wait forever.
+ * A metrics view that is unknown (an undefined name, when it can't be read from the SQL) or missing from the map
+ * follows the dashboard: the runtime ignores a time range for a metrics view without a time dimension.
+ */
+export function metricsSQLUsesTimeRange(
+  metricsViewNames: (string | undefined)[],
+  hasTimeSeriesMap: Map<string, boolean>,
+): boolean {
+  const dashboardHasTimeSeries = Array.from(hasTimeSeriesMap.values()).some(
+    (hasTimeSeries) => hasTimeSeries,
+  );
+  return metricsViewNames.some(
+    (name) =>
+      (name === undefined ? undefined : hasTimeSeriesMap.get(name)) ??
+      dashboardHasTimeSeries,
+  );
+}
