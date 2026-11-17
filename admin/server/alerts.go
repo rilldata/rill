@@ -708,6 +708,9 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, em
 				res.Notify.Email.Recipients = append(slices.Clone(res.Notify.Email.Recipients), embedOwnerEmail)
 			}
 		}
+		if len(res.Notify.Email.Recipients) == 0 {
+			return nil, fmt.Errorf("alerts created from an embed must have at least one email recipient")
+		}
 		if len(embedResources) > 0 {
 			resourcesJSON, err := json.Marshal(embedResources)
 			if err != nil {
