@@ -140,7 +140,10 @@
   .chip {
     @apply flex gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border w-full max-w-fit truncate;
+    @apply px-2 py-[3px] chrome-border w-full max-w-fit truncate;
+    /* Pills are part of the dashboard chrome, which a theme can restyle (see `chrome` in the theme YAML). */
+    font-size: var(--chrome-font-size, inherit);
+    font-weight: var(--chrome-font-weight, inherit);
   }
 
   .dimension {
