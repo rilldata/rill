@@ -290,6 +290,45 @@ describe("a Flint chart compiled with the project theme", () => {
     ]);
   });
 
+  it("draws and colors that series in a stack", async () => {
+    const spec = compileChart("Area Chart", style);
+
+    // Flint lists the two series it counts as the color scale's domain, which leaves the
+    // third without a fill.
+    expect(await drawn(spec, style, "mark-area", "fill")).toEqual([
+      "#0f62fe",
+      "rgb(238, 83, 150)",
+      "#08bdba",
+    ]);
+  });
+
+  it("colors that series from a preset's own palette", async () => {
+    const preset = { extends: "economist" };
+    const economist = ["#006ba2", "#3ebcd2", "#ebb434"];
+
+    for (const [chartType, mark, property] of [
+      ["Line Chart", "mark-line", "stroke"],
+      ["Area Chart", "mark-area", "fill"],
+    ]) {
+      const { spec, error } = compileFlintSpec({
+        spec: {
+          chartType,
+          encodings: { x: "day", y: "revenue", color: "region" },
+        },
+        rows,
+        fields: deriveFlintFields(["day", "region", "revenue"], metricsView),
+        size: { width: 560, height: 320 },
+        // A project without palettes of its own, so the preset's is drawn.
+        theme: flintTheme(false, undefined, { chart: preset }),
+      });
+      expect(error).toBeNull();
+      expect(
+        await drawn(spec as Record<string, unknown>, preset, mark, property),
+        chartType,
+      ).toEqual(economist);
+    }
+  });
+
   it("compiles as before for a project without a chart style", () => {
     const spec = compileChart("Line Chart", undefined);
     const themed = compileChart("Line Chart", { line: { width: 3 } });

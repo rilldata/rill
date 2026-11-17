@@ -3,6 +3,7 @@ import type {
   RawEncodingValue,
   ThemeSpec,
 } from "flint-chart/core";
+import { resolveThemeSpec } from "flint-chart/core";
 import { assembleVegaLite } from "flint-chart/vegalite";
 import type { VisualizationSpec } from "svelte-vega";
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
@@ -109,7 +110,7 @@ export function compileFlintSpec({
   const warnings = (assembled._warnings as ChartWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
-  if (theme) deferPaletteToConfig(vegaSpec, theme.ink?.series?.categorical);
+  if (theme) restorePalette(vegaSpec, theme);
   // A Flint preset is a design of its own, so the chart keeps the surface, typography and legend
   // layout Flint gives it. Any other theme states Rill's own style (see `flintTheme`), which the
   // renderer's config draws exactly: what Flint wrote of it is removed, as for a chart compiled
@@ -862,16 +863,20 @@ function clearThemeSurface(spec: Record<string, unknown>): void {
 }
 
 /**
- * Flint hands a color scale as many of the theme's categorical inks as it counts series. A series
- * it does not count, such as the one for rows without a value, then wraps around to the first
- * ink and two series share a color. The inks come from the palette the renderer's config holds in
- * full, so the cut list is removed and the scale draws from the config.
+ * Flint hands a color scale as many of the theme's categorical inks as it counts series, and for
+ * a stack it lists those series as the scale's domain. It does not count the series for rows
+ * without a value. Under a domain that series has no color at all, and without one it wraps
+ * around to the first ink, so two series share a color. The scale gets the theme's whole palette
+ * back, and Vega-Lite derives the domain from the data, in the order the encoding's `sort` gives.
  */
-function deferPaletteToConfig(
-  spec: Record<string, unknown>,
-  palette: string[] | undefined,
-): void {
+function restorePalette(spec: Record<string, unknown>, theme: ThemeSpec): void {
+  const palette = resolveThemeSpec(theme)?.ink?.series?.categorical;
   if (!palette?.length) return;
+  // A palette the theme states itself is the project's, which the renderer's config holds in
+  // full (see `flintTheme`), so the scale is left to the config. A preset's own palette is in no
+  // config and is stated on the scale.
+  const inConfig = theme.ink?.series?.categorical !== undefined;
+
   for (const view of layersOf(spec)) {
     for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding) || !COLOR_CHANNELS.has(channel)) continue;
@@ -884,7 +889,9 @@ function deferPaletteToConfig(
       ) {
         continue;
       }
-      delete scale.range;
+      if (inConfig) delete scale.range;
+      else scale.range = palette;
+      delete scale.domain;
       if (Object.keys(scale).length === 0) delete encoding.scale;
     }
   }
