@@ -4915,6 +4915,13 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   dark?: ThemeColors;
 
+  /**
+   * Chart styling, applied to built-in charts, Vega-Lite charts and custom charts.
+   *
+   * @generated from field: rill.runtime.v1.ThemeChart chart = 7;
+   */
+  chart?: ThemeChart;
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4929,6 +4936,7 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
     { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
+    { no: 7, name: "chart", kind: "message", T: ThemeChart },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -5025,6 +5033,644 @@ export class ThemeColors extends Message<ThemeColors> {
 
   static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
     return proto3.util.equals(ThemeColors, a, b);
+  }
+}
+
+/**
+ * ThemeChart is a theme's chart styling, resolved per mode.
+ * The parser merges the settings a theme states for both modes into each of them, so a consumer only reads the style for its mode.
+ *
+ * @generated from message rill.runtime.v1.ThemeChart
+ */
+export class ThemeChart extends Message<ThemeChart> {
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartStyle light = 1;
+   */
+  light?: ThemeChartStyle;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartStyle dark = 2;
+   */
+  dark?: ThemeChartStyle;
+
+  constructor(data?: PartialMessage<ThemeChart>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChart";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "light", kind: "message", T: ThemeChartStyle },
+    { no: 2, name: "dark", kind: "message", T: ThemeChartStyle },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChart {
+    return new ThemeChart().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChart {
+    return new ThemeChart().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChart {
+    return new ThemeChart().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChart | PlainMessage<ThemeChart> | undefined, b: ThemeChart | PlainMessage<ThemeChart> | undefined): boolean {
+    return proto3.util.equals(ThemeChart, a, b);
+  }
+}
+
+/**
+ * ThemeChartStyle is the chart styling for one mode. Unset properties keep Rill's defaults.
+ *
+ * @generated from message rill.runtime.v1.ThemeChartStyle
+ */
+export class ThemeChartStyle extends Message<ThemeChartStyle> {
+  /**
+   * Name of a Flint theme preset to start from. Only custom charts compiled by Flint have presets; other charts ignore it.
+   *
+   * @generated from field: string extends = 1;
+   */
+  extends = "";
+
+  /**
+   * CSS font family of all chart text.
+   *
+   * @generated from field: string font_family = 2;
+   */
+  fontFamily = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartText text = 3;
+   */
+  text?: ThemeChartText;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartGrid grid = 4;
+   */
+  grid?: ThemeChartGrid;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartAxis axis = 5;
+   */
+  axis?: ThemeChartAxis;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartLine line = 6;
+   */
+  line?: ThemeChartLine;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartArea area = 7;
+   */
+  area?: ThemeChartArea;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartBar bar = 8;
+   */
+  bar?: ThemeChartBar;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartPoint point = 9;
+   */
+  point?: ThemeChartPoint;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartLegend legend = 10;
+   */
+  legend?: ThemeChartLegend;
+
+  constructor(data?: PartialMessage<ThemeChartStyle>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartStyle";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "extends", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "font_family", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "text", kind: "message", T: ThemeChartText },
+    { no: 4, name: "grid", kind: "message", T: ThemeChartGrid },
+    { no: 5, name: "axis", kind: "message", T: ThemeChartAxis },
+    { no: 6, name: "line", kind: "message", T: ThemeChartLine },
+    { no: 7, name: "area", kind: "message", T: ThemeChartArea },
+    { no: 8, name: "bar", kind: "message", T: ThemeChartBar },
+    { no: 9, name: "point", kind: "message", T: ThemeChartPoint },
+    { no: 10, name: "legend", kind: "message", T: ThemeChartLegend },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartStyle {
+    return new ThemeChartStyle().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartStyle {
+    return new ThemeChartStyle().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartStyle {
+    return new ThemeChartStyle().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartStyle | PlainMessage<ThemeChartStyle> | undefined, b: ThemeChartStyle | PlainMessage<ThemeChartStyle> | undefined): boolean {
+    return proto3.util.equals(ThemeChartStyle, a, b);
+  }
+}
+
+/**
+ * ThemeChartText styles the roles text plays in a chart.
+ *
+ * @generated from message rill.runtime.v1.ThemeChartText
+ */
+export class ThemeChartText extends Message<ThemeChartText> {
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole title = 1;
+   */
+  title?: ThemeChartTextRole;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole axis_label = 2;
+   */
+  axisLabel?: ThemeChartTextRole;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole axis_title = 3;
+   */
+  axisTitle?: ThemeChartTextRole;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole legend_label = 4;
+   */
+  legendLabel?: ThemeChartTextRole;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole legend_title = 5;
+   */
+  legendTitle?: ThemeChartTextRole;
+
+  /**
+   * Values printed on or beside marks.
+   *
+   * @generated from field: rill.runtime.v1.ThemeChartTextRole value_label = 6;
+   */
+  valueLabel?: ThemeChartTextRole;
+
+  constructor(data?: PartialMessage<ThemeChartText>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartText";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "title", kind: "message", T: ThemeChartTextRole },
+    { no: 2, name: "axis_label", kind: "message", T: ThemeChartTextRole },
+    { no: 3, name: "axis_title", kind: "message", T: ThemeChartTextRole },
+    { no: 4, name: "legend_label", kind: "message", T: ThemeChartTextRole },
+    { no: 5, name: "legend_title", kind: "message", T: ThemeChartTextRole },
+    { no: 6, name: "value_label", kind: "message", T: ThemeChartTextRole },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartText {
+    return new ThemeChartText().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartText {
+    return new ThemeChartText().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartText {
+    return new ThemeChartText().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartText | PlainMessage<ThemeChartText> | undefined, b: ThemeChartText | PlainMessage<ThemeChartText> | undefined): boolean {
+    return proto3.util.equals(ThemeChartText, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartTextRole
+ */
+export class ThemeChartTextRole extends Message<ThemeChartTextRole> {
+  /**
+   * Font size in pixels.
+   *
+   * @generated from field: optional double size = 1;
+   */
+  size?: number;
+
+  /**
+   * CSS font weight: a multiple of 100 from 100 to 900.
+   *
+   * @generated from field: optional uint32 weight = 2;
+   */
+  weight?: number;
+
+  /**
+   * CSS color.
+   *
+   * @generated from field: string color = 3;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<ThemeChartTextRole>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartTextRole";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "size", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 2, name: "weight", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 3, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartTextRole {
+    return new ThemeChartTextRole().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartTextRole {
+    return new ThemeChartTextRole().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartTextRole {
+    return new ThemeChartTextRole().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartTextRole | PlainMessage<ThemeChartTextRole> | undefined, b: ThemeChartTextRole | PlainMessage<ThemeChartTextRole> | undefined): boolean {
+    return proto3.util.equals(ThemeChartTextRole, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartGrid
+ */
+export class ThemeChartGrid extends Message<ThemeChartGrid> {
+  /**
+   * Whether to draw the gridlines values are read off: those across the measure axis.
+   *
+   * @generated from field: optional bool measure = 1;
+   */
+  measure?: boolean;
+
+  /**
+   * Whether to draw the gridlines across the category or time axis.
+   *
+   * @generated from field: optional bool category = 2;
+   */
+  category?: boolean;
+
+  /**
+   * One of "solid", "dashed" or "dotted".
+   *
+   * @generated from field: string style = 3;
+   */
+  style = "";
+
+  /**
+   * Alternating dash and gap lengths in pixels. Overrides the dash pattern of `style`.
+   *
+   * @generated from field: repeated double dash = 4;
+   */
+  dash: number[] = [];
+
+  /**
+   * Stroke width in pixels.
+   *
+   * @generated from field: optional double width = 5;
+   */
+  width?: number;
+
+  /**
+   * CSS color.
+   *
+   * @generated from field: string color = 6;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<ThemeChartGrid>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartGrid";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 2, name: "category", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 3, name: "style", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "dash", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 5, name: "width", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 6, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartGrid {
+    return new ThemeChartGrid().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartGrid {
+    return new ThemeChartGrid().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartGrid {
+    return new ThemeChartGrid().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartGrid | PlainMessage<ThemeChartGrid> | undefined, b: ThemeChartGrid | PlainMessage<ThemeChartGrid> | undefined): boolean {
+    return proto3.util.equals(ThemeChartGrid, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartAxis
+ */
+export class ThemeChartAxis extends Message<ThemeChartAxis> {
+  /**
+   * Whether to draw the axis line.
+   *
+   * @generated from field: optional bool line = 1;
+   */
+  line?: boolean;
+
+  /**
+   * Stroke width of the axis line in pixels.
+   *
+   * @generated from field: optional double line_width = 2;
+   */
+  lineWidth?: number;
+
+  /**
+   * Whether to draw tick marks.
+   *
+   * @generated from field: optional bool ticks = 3;
+   */
+  ticks?: boolean;
+
+  /**
+   * CSS color of the axis line and tick marks.
+   *
+   * @generated from field: string color = 4;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<ThemeChartAxis>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartAxis";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "line", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 2, name: "line_width", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 3, name: "ticks", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 4, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartAxis {
+    return new ThemeChartAxis().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartAxis {
+    return new ThemeChartAxis().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartAxis {
+    return new ThemeChartAxis().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartAxis | PlainMessage<ThemeChartAxis> | undefined, b: ThemeChartAxis | PlainMessage<ThemeChartAxis> | undefined): boolean {
+    return proto3.util.equals(ThemeChartAxis, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartLine
+ */
+export class ThemeChartLine extends Message<ThemeChartLine> {
+  /**
+   * Stroke width in pixels.
+   *
+   * @generated from field: optional double width = 1;
+   */
+  width?: number;
+
+  constructor(data?: PartialMessage<ThemeChartLine>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartLine";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "width", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartLine {
+    return new ThemeChartLine().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartLine {
+    return new ThemeChartLine().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartLine {
+    return new ThemeChartLine().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartLine | PlainMessage<ThemeChartLine> | undefined, b: ThemeChartLine | PlainMessage<ThemeChartLine> | undefined): boolean {
+    return proto3.util.equals(ThemeChartLine, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartArea
+ */
+export class ThemeChartArea extends Message<ThemeChartArea> {
+  /**
+   * Opacity of the fill, from 0 to 1.
+   *
+   * @generated from field: optional double fill_opacity = 1;
+   */
+  fillOpacity?: number;
+
+  /**
+   * Stroke width of the line along the top of an area, in pixels.
+   *
+   * @generated from field: optional double line_width = 2;
+   */
+  lineWidth?: number;
+
+  constructor(data?: PartialMessage<ThemeChartArea>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartArea";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "fill_opacity", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 2, name: "line_width", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartArea {
+    return new ThemeChartArea().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartArea {
+    return new ThemeChartArea().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartArea {
+    return new ThemeChartArea().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartArea | PlainMessage<ThemeChartArea> | undefined, b: ThemeChartArea | PlainMessage<ThemeChartArea> | undefined): boolean {
+    return proto3.util.equals(ThemeChartArea, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartBar
+ */
+export class ThemeChartBar extends Message<ThemeChartBar> {
+  /**
+   * Opacity of the bars, from 0 to 1.
+   *
+   * @generated from field: optional double opacity = 1;
+   */
+  opacity?: number;
+
+  /**
+   * Radius of the corners at the value end of a bar, in pixels.
+   *
+   * @generated from field: optional double corner_radius = 2;
+   */
+  cornerRadius?: number;
+
+  constructor(data?: PartialMessage<ThemeChartBar>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartBar";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "opacity", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 2, name: "corner_radius", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartBar {
+    return new ThemeChartBar().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartBar {
+    return new ThemeChartBar().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartBar {
+    return new ThemeChartBar().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartBar | PlainMessage<ThemeChartBar> | undefined, b: ThemeChartBar | PlainMessage<ThemeChartBar> | undefined): boolean {
+    return proto3.util.equals(ThemeChartBar, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartPoint
+ */
+export class ThemeChartPoint extends Message<ThemeChartPoint> {
+  /**
+   * Area of a point in square pixels.
+   *
+   * @generated from field: optional double size = 1;
+   */
+  size?: number;
+
+  /**
+   * Opacity of the points, from 0 to 1.
+   *
+   * @generated from field: optional double opacity = 2;
+   */
+  opacity?: number;
+
+  constructor(data?: PartialMessage<ThemeChartPoint>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartPoint";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "size", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 2, name: "opacity", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartPoint {
+    return new ThemeChartPoint().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartPoint {
+    return new ThemeChartPoint().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartPoint {
+    return new ThemeChartPoint().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartPoint | PlainMessage<ThemeChartPoint> | undefined, b: ThemeChartPoint | PlainMessage<ThemeChartPoint> | undefined): boolean {
+    return proto3.util.equals(ThemeChartPoint, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeChartLegend
+ */
+export class ThemeChartLegend extends Message<ThemeChartLegend> {
+  /**
+   * Default position: one of "top", "bottom", "left" or "right". A chart's own legend position takes precedence.
+   *
+   * @generated from field: string position = 1;
+   */
+  position = "";
+
+  /**
+   * Symbol beside each entry: one of "circle", "square" or "line".
+   *
+   * @generated from field: string symbol = 2;
+   */
+  symbol = "";
+
+  constructor(data?: PartialMessage<ThemeChartLegend>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeChartLegend";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "position", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "symbol", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeChartLegend {
+    return new ThemeChartLegend().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeChartLegend {
+    return new ThemeChartLegend().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeChartLegend {
+    return new ThemeChartLegend().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeChartLegend | PlainMessage<ThemeChartLegend> | undefined, b: ThemeChartLegend | PlainMessage<ThemeChartLegend> | undefined): boolean {
+    return proto3.util.equals(ThemeChartLegend, a, b);
   }
 }
 

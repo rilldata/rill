@@ -9537,6 +9537,35 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	// no validation rules for SecondaryColorRaw
 
+	if all {
+		switch v := interface{}(m.GetChart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Chart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Chart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetChart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeSpecValidationError{
+				field:  "Chart",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if m.PrimaryColor != nil {
 
 		if all {
@@ -9949,6 +9978,1647 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ThemeColorsValidationError{}
+
+// Validate checks the field values on ThemeChart with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChart) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChart with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartMultiError, or
+// nil if none found.
+func (m *ThemeChart) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChart) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetLight()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartValidationError{
+					field:  "Light",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartValidationError{
+					field:  "Light",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLight()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartValidationError{
+				field:  "Light",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetDark()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartValidationError{
+					field:  "Dark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartValidationError{
+					field:  "Dark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDark()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartValidationError{
+				field:  "Dark",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartMultiError is an error wrapping multiple validation errors
+// returned by ThemeChart.ValidateAll() if the designated constraints aren't met.
+type ThemeChartMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartMultiError) AllErrors() []error { return m }
+
+// ThemeChartValidationError is the validation error returned by
+// ThemeChart.Validate if the designated constraints aren't met.
+type ThemeChartValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartValidationError) ErrorName() string { return "ThemeChartValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChart.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartValidationError{}
+
+// Validate checks the field values on ThemeChartStyle with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartStyle) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartStyle with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ThemeChartStyleMultiError, or nil if none found.
+func (m *ThemeChartStyle) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartStyle) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Extends
+
+	// no validation rules for FontFamily
+
+	if all {
+		switch v := interface{}(m.GetText()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Text",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Text",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetText()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Text",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetGrid()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Grid",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Grid",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetGrid()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Grid",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetAxis()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Axis",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Axis",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAxis()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Axis",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetLine()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Line",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Line",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLine()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Line",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetArea()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Area",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Area",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArea()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Area",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetBar()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Bar",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Bar",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBar()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Bar",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetPoint()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Point",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Point",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPoint()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Point",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetLegend()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Legend",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartStyleValidationError{
+					field:  "Legend",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLegend()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartStyleValidationError{
+				field:  "Legend",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartStyleMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartStyleMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartStyle.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartStyleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartStyleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartStyleMultiError) AllErrors() []error { return m }
+
+// ThemeChartStyleValidationError is the validation error returned by
+// ThemeChartStyle.Validate if the designated constraints aren't met.
+type ThemeChartStyleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartStyleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartStyleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartStyleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartStyleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartStyleValidationError) ErrorName() string { return "ThemeChartStyleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartStyleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartStyle.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartStyleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartStyleValidationError{}
+
+// Validate checks the field values on ThemeChartText with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartText) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartText with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartTextMultiError,
+// or nil if none found.
+func (m *ThemeChartText) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartText) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetTitle()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "Title",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "Title",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTitle()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "Title",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetAxisLabel()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "AxisLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "AxisLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAxisLabel()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "AxisLabel",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetAxisTitle()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "AxisTitle",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "AxisTitle",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAxisTitle()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "AxisTitle",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetLegendLabel()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "LegendLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "LegendLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLegendLabel()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "LegendLabel",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetLegendTitle()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "LegendTitle",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "LegendTitle",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLegendTitle()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "LegendTitle",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetValueLabel()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "ValueLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeChartTextValidationError{
+					field:  "ValueLabel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValueLabel()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeChartTextValidationError{
+				field:  "ValueLabel",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartTextMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartTextMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartText.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartTextMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartTextMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartTextMultiError) AllErrors() []error { return m }
+
+// ThemeChartTextValidationError is the validation error returned by
+// ThemeChartText.Validate if the designated constraints aren't met.
+type ThemeChartTextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartTextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartTextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartTextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartTextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartTextValidationError) ErrorName() string { return "ThemeChartTextValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartTextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartText.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartTextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartTextValidationError{}
+
+// Validate checks the field values on ThemeChartTextRole with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartTextRole) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartTextRole with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ThemeChartTextRoleMultiError, or nil if none found.
+func (m *ThemeChartTextRole) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartTextRole) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Color
+
+	if m.Size != nil {
+		// no validation rules for Size
+	}
+
+	if m.Weight != nil {
+		// no validation rules for Weight
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartTextRoleMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartTextRoleMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartTextRole.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartTextRoleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartTextRoleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartTextRoleMultiError) AllErrors() []error { return m }
+
+// ThemeChartTextRoleValidationError is the validation error returned by
+// ThemeChartTextRole.Validate if the designated constraints aren't met.
+type ThemeChartTextRoleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartTextRoleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartTextRoleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartTextRoleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartTextRoleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartTextRoleValidationError) ErrorName() string {
+	return "ThemeChartTextRoleValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ThemeChartTextRoleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartTextRole.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartTextRoleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartTextRoleValidationError{}
+
+// Validate checks the field values on ThemeChartGrid with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartGrid) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartGrid with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartGridMultiError,
+// or nil if none found.
+func (m *ThemeChartGrid) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartGrid) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Style
+
+	// no validation rules for Color
+
+	if m.Measure != nil {
+		// no validation rules for Measure
+	}
+
+	if m.Category != nil {
+		// no validation rules for Category
+	}
+
+	if m.Width != nil {
+		// no validation rules for Width
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartGridMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartGridMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartGrid.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartGridMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartGridMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartGridMultiError) AllErrors() []error { return m }
+
+// ThemeChartGridValidationError is the validation error returned by
+// ThemeChartGrid.Validate if the designated constraints aren't met.
+type ThemeChartGridValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartGridValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartGridValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartGridValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartGridValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartGridValidationError) ErrorName() string { return "ThemeChartGridValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartGridValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartGrid.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartGridValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartGridValidationError{}
+
+// Validate checks the field values on ThemeChartAxis with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartAxis) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartAxis with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartAxisMultiError,
+// or nil if none found.
+func (m *ThemeChartAxis) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartAxis) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Color
+
+	if m.Line != nil {
+		// no validation rules for Line
+	}
+
+	if m.LineWidth != nil {
+		// no validation rules for LineWidth
+	}
+
+	if m.Ticks != nil {
+		// no validation rules for Ticks
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartAxisMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartAxisMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartAxis.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartAxisMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartAxisMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartAxisMultiError) AllErrors() []error { return m }
+
+// ThemeChartAxisValidationError is the validation error returned by
+// ThemeChartAxis.Validate if the designated constraints aren't met.
+type ThemeChartAxisValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartAxisValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartAxisValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartAxisValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartAxisValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartAxisValidationError) ErrorName() string { return "ThemeChartAxisValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartAxisValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartAxis.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartAxisValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartAxisValidationError{}
+
+// Validate checks the field values on ThemeChartLine with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartLine) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartLine with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartLineMultiError,
+// or nil if none found.
+func (m *ThemeChartLine) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartLine) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.Width != nil {
+		// no validation rules for Width
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartLineMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartLineMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartLine.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartLineMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartLineMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartLineMultiError) AllErrors() []error { return m }
+
+// ThemeChartLineValidationError is the validation error returned by
+// ThemeChartLine.Validate if the designated constraints aren't met.
+type ThemeChartLineValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartLineValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartLineValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartLineValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartLineValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartLineValidationError) ErrorName() string { return "ThemeChartLineValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartLineValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartLine.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartLineValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartLineValidationError{}
+
+// Validate checks the field values on ThemeChartArea with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartArea) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartArea with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartAreaMultiError,
+// or nil if none found.
+func (m *ThemeChartArea) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartArea) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.FillOpacity != nil {
+		// no validation rules for FillOpacity
+	}
+
+	if m.LineWidth != nil {
+		// no validation rules for LineWidth
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartAreaMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartAreaMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartArea.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartAreaMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartAreaMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartAreaMultiError) AllErrors() []error { return m }
+
+// ThemeChartAreaValidationError is the validation error returned by
+// ThemeChartArea.Validate if the designated constraints aren't met.
+type ThemeChartAreaValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartAreaValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartAreaValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartAreaValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartAreaValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartAreaValidationError) ErrorName() string { return "ThemeChartAreaValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartAreaValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartArea.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartAreaValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartAreaValidationError{}
+
+// Validate checks the field values on ThemeChartBar with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartBar) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartBar with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChartBarMultiError, or
+// nil if none found.
+func (m *ThemeChartBar) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartBar) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.Opacity != nil {
+		// no validation rules for Opacity
+	}
+
+	if m.CornerRadius != nil {
+		// no validation rules for CornerRadius
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartBarMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartBarMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartBar.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartBarMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartBarMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartBarMultiError) AllErrors() []error { return m }
+
+// ThemeChartBarValidationError is the validation error returned by
+// ThemeChartBar.Validate if the designated constraints aren't met.
+type ThemeChartBarValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartBarValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartBarValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartBarValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartBarValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartBarValidationError) ErrorName() string { return "ThemeChartBarValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartBarValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartBar.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartBarValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartBarValidationError{}
+
+// Validate checks the field values on ThemeChartPoint with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartPoint) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartPoint with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ThemeChartPointMultiError, or nil if none found.
+func (m *ThemeChartPoint) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartPoint) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.Size != nil {
+		// no validation rules for Size
+	}
+
+	if m.Opacity != nil {
+		// no validation rules for Opacity
+	}
+
+	if len(errors) > 0 {
+		return ThemeChartPointMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartPointMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartPoint.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartPointMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartPointMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartPointMultiError) AllErrors() []error { return m }
+
+// ThemeChartPointValidationError is the validation error returned by
+// ThemeChartPoint.Validate if the designated constraints aren't met.
+type ThemeChartPointValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartPointValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartPointValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartPointValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartPointValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartPointValidationError) ErrorName() string { return "ThemeChartPointValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartPointValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartPoint.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartPointValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartPointValidationError{}
+
+// Validate checks the field values on ThemeChartLegend with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ThemeChartLegend) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChartLegend with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ThemeChartLegendMultiError, or nil if none found.
+func (m *ThemeChartLegend) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChartLegend) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Position
+
+	// no validation rules for Symbol
+
+	if len(errors) > 0 {
+		return ThemeChartLegendMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChartLegendMultiError is an error wrapping multiple validation errors
+// returned by ThemeChartLegend.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeChartLegendMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChartLegendMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChartLegendMultiError) AllErrors() []error { return m }
+
+// ThemeChartLegendValidationError is the validation error returned by
+// ThemeChartLegend.Validate if the designated constraints aren't met.
+type ThemeChartLegendValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChartLegendValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChartLegendValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChartLegendValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChartLegendValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChartLegendValidationError) ErrorName() string { return "ThemeChartLegendValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChartLegendValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChartLegend.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChartLegendValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChartLegendValidationError{}
 
 // Validate checks the field values on Component with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
