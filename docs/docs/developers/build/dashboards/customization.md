@@ -195,6 +195,66 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 
 :::
 
+### Fonts
+
+Dashboards use Rill's own font unless the theme sets another one with `font`. The simplest form names a font that is already on the viewer's device. A generic family such as `system-ui` follows the operating system:
+
+```yaml
+type: theme
+font:
+  family: system-ui
+```
+
+To use a font your viewers don't have installed, such as a licensed brand font, add its files to your project's `public` folder and list them under `files`:
+
+```yaml
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans-Regular.woff2
+      weight: 400
+    - path: public/BrandSans-Bold.woff2
+      weight: 700
+    - path: public/BrandSans-Italic.woff2
+      weight: 400
+      style: italic
+```
+
+- **family**: A single font family name. Rill's own font remains the fallback while the files load, and for any weight or character the font doesn't cover.
+- **files**: One entry for each weight and style the font provides.
+  - **path**: A `.woff2`, `.woff`, `.ttf` or `.otf` file inside `public`, or inside another folder listed under `public_paths` in `rill.yaml`. Prefer `.woff2`, which is the smallest.
+  - **weight**: The weight the file provides, from 1 to 1000. Defaults to `400`. For a variable font, give the range it covers, for example `100 900`.
+  - **style**: `normal` (the default) or `italic`.
+
+Dashboards use the weights 400, 500, 600 and 700. If the font has no file for one of them, the browser picks the nearest weight that it does have.
+
+The font applies to the whole dashboard in Rill Developer, in Rill Cloud and in embedded dashboards: text, tables, charts, the filter bar and the AI panel. In an embedded dashboard it also applies to the navigation bar. Rill Cloud's own navigation above the dashboard keeps Rill's font.
+
+:::note Font files stay private
+
+Rill serves the files in `public` only to viewers who have access to the project, so a font can't be downloaded by a link from outside Rill. Check that the license of your font allows it to be used on the web.
+
+:::
+
+### Chrome
+
+The filter bar, the filter pills, the AI panel and the navigation bar of an embedded dashboard make up the dashboard's chrome. They take their colors from the `light` and `dark` variables, like the rest of the dashboard. Use `chrome` to change their borders and labels as well:
+
+```yaml
+type: theme
+chrome:
+  border_width: 2px
+  font_size: 13px
+  font_weight: 600
+```
+
+- **border_width**: Width of the chrome's borders, from `0px` to `8px`. Defaults to `1px`. Use `0px` to remove them. Their color is the theme's `border` variable.
+- **font_size**: Font size of the chrome's labels, from `10px` to `20px`. By default each label keeps its own size.
+- **font_weight**: Font weight of the chrome's labels, from 100 to 900. By default each label keeps its own weight.
+
+These settings are the same in light and dark mode, so they sit at the top level of the theme, next to `font`.
+
 ## Example
 
 ```yaml
