@@ -1463,6 +1463,7 @@
   "filter_dimension": "dimensión",
   "filter_dimension_chip_aria": "filtro {name}",
   "filter_dimension_chip_tooltip": "Haz clic para editar los filtros de esta dimensión",
+  "filter_single_select_chip_tooltip": "Haz clic para elegir un valor. Este filtro admite un solo valor a la vez.",
   "filter_dimension_result_count_aria": "recuento de resultados de {name}",
   "filter_dimension_results_aria": "resultados de {name}",
   "filter_dimension_search_list_aria": "lista de búsqueda de {name}",

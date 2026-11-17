@@ -101,9 +101,10 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events.emit("ready");
     });
     // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
-    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
-      this.topLevelJoiner.addRequiredAndPinnedFilters(),
-    );
+    const unsubYamlConfig = yamlConfigProvider.on("update", () => {
+      this.topLevelJoiner.addRequiredAndPinnedFilters();
+      this.topLevelJoiner.enforceSingleSelectFilters();
+    });
     this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
     this.topLevelJoiner = $state(
@@ -248,7 +249,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       const dfm = DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
       if (!dfm) return;
 
@@ -280,7 +281,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 

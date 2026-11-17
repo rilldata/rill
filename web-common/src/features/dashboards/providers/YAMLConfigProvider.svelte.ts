@@ -15,6 +15,8 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<Record<string, boolean>>({});
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
+  // Dimensions whose filter holds one value at a time. See `DimensionFilterManager.singleSelect`.
+  public singleSelectFilters = $state<Record<string, boolean>>({});
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
@@ -28,6 +30,7 @@ export class YAMLConfigProvider {
     defaultFilters: Record<string, V1Expression | undefined>,
     pinnedFilters: string[],
     requiredFilters: string[],
+    singleSelectFilters: string[] = [],
   ) {
     this.defaultFilters = defaultFilters;
 
@@ -42,6 +45,10 @@ export class YAMLConfigProvider {
     );
     this.requiredFilters = { ...requiredFiltersRec };
     this.specRequiredFilters = { ...requiredFiltersRec };
+
+    this.singleSelectFilters = Object.fromEntries(
+      singleSelectFilters.map((filter) => [filter, true]),
+    );
 
     this.events.emit("update");
   }

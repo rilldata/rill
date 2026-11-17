@@ -228,6 +228,13 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 	spec.MeasuresSelector = nil
 
+	// Validate single-select filters, which must name dimensions shown in the explore.
+	for _, name := range spec.SingleSelectFilters {
+		if !slices.Contains(spec.Dimensions, name) {
+			return nil, nil, fmt.Errorf("single-select filter %q is not a dimension in this explore", name)
+		}
+	}
+
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset

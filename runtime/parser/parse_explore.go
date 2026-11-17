@@ -36,7 +36,10 @@ type ExploreDefinitionYAML struct {
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
 	Defaults             *ExploreDefaultsYAML   `yaml:"defaults"`
-	Embeds               struct {
+	Filters              struct {
+		SingleSelect []string `yaml:"single_select"`
+	} `yaml:"filters"`
+	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
 	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
@@ -360,6 +363,7 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.TimeRanges = d.timeRanges
 	spec.TimeZones = tmp.TimeZones
 	spec.DefaultPreset = d.defaultPreset
+	spec.SingleSelectFilters = tmp.Filters.SingleSelect
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange

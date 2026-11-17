@@ -1454,6 +1454,7 @@
   "filter_dimension": "dimension",
   "filter_dimension_chip_aria": "{name} filter",
   "filter_dimension_chip_tooltip": "Click to edit the filters in this dimension",
+  "filter_single_select_chip_tooltip": "Click to pick a value. This filter holds one value at a time.",
   "filter_dimension_result_count_aria": "{name} result count",
   "filter_dimension_results_aria": "{name} results",
   "filter_dimension_search_list_aria": "{name} search list",

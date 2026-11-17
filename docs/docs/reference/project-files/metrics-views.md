@@ -553,6 +553,10 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
     - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
 
+  - **`filters`** - _[object]_ - Configures the filters of the explore view.
+
+    - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view.
+
   - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
 
     - **`hide_pivot`** - _[boolean]_ - When true, hides the pivot table view in embedded mode.

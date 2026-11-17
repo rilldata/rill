@@ -61,6 +61,14 @@
       (dfm) => dfm.name === dimensionName,
     )?.exclude ?? false,
   );
+  // A single-select filter holds one included value, so select all and exclude do not apply.
+  let singleSelect = $derived(
+    Boolean(
+      expressionFilterManager.yamlConfigProvider.singleSelectFilters[
+        dimensionName
+      ],
+    ),
+  );
 
   let isLeaderboardActionsOpen = $state(false);
 
@@ -150,13 +158,15 @@
     </Button>
 
     <div class="shrink-0 flex items-center gap-x-1">
-      <SelectAllButton
-        {areAllTableRowsSelected}
-        disabled={isRowsEmpty}
-        {onToggleSearchItems}
-      />
+      {#if !singleSelect}
+        <SelectAllButton
+          {areAllTableRowsSelected}
+          disabled={isRowsEmpty}
+          {onToggleSearchItems}
+        />
 
-      <ExcludeButton {excludeMode} onClick={toggleFilterMode} />
+        <ExcludeButton {excludeMode} onClick={toggleFilterMode} />
+      {/if}
 
       <SearchButton
         bind:value={searchText}

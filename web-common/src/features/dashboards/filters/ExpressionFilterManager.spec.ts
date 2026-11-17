@@ -741,6 +741,114 @@ describe("yaml config change", () => {
   });
 });
 
+describe("single-select filters", () => {
+  function createSingleSelectFilterManager() {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({}, [], [], [AD_BIDS_PUBLISHER_DIMENSION]);
+    return createFilterManager(yamlConfigProvider);
+  }
+
+  function publisherParam(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.get(
+      `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+    );
+  }
+
+  it("replaces the value when another one is picked", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleValue("Google", false),
+    );
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleValue("Facebook", false),
+    );
+
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+  });
+
+  it("keeps one of the values appended at once and reports only that one", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    const added = filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (dfm) => dfm.appendSelectedValues(["Google", "Facebook"]),
+    );
+
+    expect(added).toEqual(["Facebook"]);
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+  });
+
+  it("narrows a param with several values, an exclude or a contains to one included value", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google','Facebook')`,
+      }),
+    );
+    const dfm = filterManager.sortedFilterManagers.dimensions[0];
+    expect(dfm.exclude).toBe(false);
+    expect(dfm.selectedValues).toEqual(["Facebook"]);
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+      }),
+    );
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toBeUndefined();
+  });
+
+  it("leaves the other dimensions multi-select", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.dimensionFilterAction(AD_BIDS_DOMAIN_DIMENSION, (dfm) =>
+      dfm.appendSelectedValues(["google.com", "facebook.com"]),
+    );
+
+    expect(
+      (
+        filterManager.filterManagersMap[
+          AD_BIDS_DOMAIN_DIMENSION
+        ] as DimensionFilterManager
+      ).selectedValues,
+    ).toEqual(["google.com", "facebook.com"]);
+  });
+
+  it("narrows the filter and writes the param when the config lands after the params", async () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const filterManager = createFilterManager(yamlConfigProvider);
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      }),
+    );
+    const notify = vi.fn();
+    const unsub = eventBus.on("notification", notify);
+    cleanups.push(unsub);
+
+    yamlConfigProvider.update({}, [], [], [AD_BIDS_PUBLISHER_DIMENSION]);
+
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+    // `stateChanged` writes the param in a microtask.
+    await Promise.resolve();
+    expect(
+      filterManager.storeSync.searchParams?.get(
+        `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+      ),
+    ).toEqual(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`);
+    expect(notify).not.toHaveBeenCalled();
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();

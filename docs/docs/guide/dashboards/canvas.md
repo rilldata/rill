@@ -98,6 +98,7 @@ Dashboard authors can keep specific filters in the filter bar, and can block a c
 |---------|--------------------|
 | **Pinned** | The filter always appears in the filter bar, even when it has no value. Viewers can change its value but cannot remove the filter. |
 | **Required** | The canvas does not load until the filter has a value. A required filter is always pinned. |
+| **Single-select** | The filter holds one value at a time. Picking a value, in the filter bar or by clicking a chart or table, replaces the current one. Viewers cannot exclude values or match on text. |
 
 ### Configure Pinned and Required Filters in YAML
 
@@ -117,7 +118,23 @@ filters:
 
 Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`.
 
-Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components. If it is not, the canvas fails to reconcile with an error like:
+To limit a dimension filter to one value, list it under `single_select`. Combine it with `required` and a default value so the canvas always shows exactly one value, for example one advertiser at a time:
+
+```yaml
+filters:
+  required:
+    - advertiser
+  single_select:
+    - advertiser
+
+defaults:
+  filters:
+    bids_metrics: "advertiser = 'Acme'"
+```
+
+A link or bookmark that carries several values for a single-select filter opens with only the last of them. Single-select is a dashboard setting, not an access restriction: use [row access policies](/developers/build/metrics-view/security) to limit which data a viewer can query.
+
+Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components, and each name in `single_select` must be a dimension on one. If it is not, the canvas fails to reconcile with an error like:
 
 ```
 required filter "auction_type" is not a dimension or measure on any metrics view referenced by this canvas

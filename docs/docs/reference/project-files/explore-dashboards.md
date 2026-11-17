@@ -249,6 +249,18 @@ _[object]_ - Defines the defaults YAML struct.
 
   - **`comparison_dimension`** - _[string]_ - For dimension mode, specify the comparison dimension by name.
 
+### `filters`
+
+_[object]_ - Configures the filters of the explore dashboard.
+  ```yaml
+  filters:
+    single_select:
+      - advertiser
+  ```
+
+
+  - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore.
+
 ### `embeds`
 
 _[object]_ - Configuration options for embedded dashboard views

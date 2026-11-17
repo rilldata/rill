@@ -1454,6 +1454,7 @@
   "filter_dimension": "차원",
   "filter_dimension_chip_aria": "{name} 필터",
   "filter_dimension_chip_tooltip": "클릭하면 이 차원의 필터를 편집합니다",
+  "filter_single_select_chip_tooltip": "클릭하여 값을 선택합니다. 이 필터는 한 번에 하나의 값만 가집니다.",
   "filter_dimension_result_count_aria": "{name} 결과 수",
   "filter_dimension_results_aria": "{name} 결과",
   "filter_dimension_search_list_aria": "{name} 검색 목록",

@@ -107,3 +107,7 @@ As an example - to see the most active enterprise customers - filter all custome
 ## Pinned and Required Filters
 
 On canvas dashboards, authors can pin a filter so it always stays in the filter bar, or require a filter so the dashboard does not load until you select a value for it. Required filters are highlighted in the filter bar until they have a value. See [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters) for how to configure them.
+
+## Single-Select Filters
+
+On canvas and explore dashboards, authors can limit a dimension filter to one value at a time. Its dropdown has no Exclude, Select all or mode options, and picking a value applies it right away. Clicking a value in a leaderboard, table or chart replaces the filter's value instead of adding to it. See [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters) for canvas dashboards and [Single-select filters](/developers/build/dashboards/customization#single-select-filters) for explore dashboards.

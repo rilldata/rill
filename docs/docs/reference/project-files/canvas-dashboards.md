@@ -123,6 +123,8 @@ _[object]_ - Indicates if filters should be enabled for the canvas.
 
   - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
 
+  - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and a default value in `defaults.filters` so a value is always set. Each name must be a dimension on a metrics view referenced by the canvas.
+
 ### `allow_custom_time_range`
 
 _[boolean]_ - Defaults to true. When set to false, hides the ability to set a custom time range for the user.

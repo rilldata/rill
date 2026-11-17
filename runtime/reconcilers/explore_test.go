@@ -278,6 +278,49 @@ dimensions: ['doesnt_exist']
 	require.NotEmpty(t, e1.Meta.ReconcileError)
 }
 
+func TestExploreSingleSelectFilters(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+- column: bar
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"e1.yaml": `
+type: explore
+metrics_view: mv1
+filters:
+  single_select: [foo]
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Equal(t, []string{"foo"}, e1.GetExplore().State.ValidSpec.SingleSelectFilters)
+
+	// The dimension must be shown in the explore
+	testruntime.PutFiles(t, rt, id, map[string]string{"e1.yaml": `
+type: explore
+metrics_view: mv1
+dimensions: [bar]
+filters:
+  single_select: [foo]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Contains(t, e1.Meta.ReconcileError, `single-select filter "foo" is not a dimension in this explore`)
+}
+
 func TestExploreDerivedSecurity(t *testing.T) {
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{

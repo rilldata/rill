@@ -80,6 +80,8 @@
     Boolean(yamlConfigProvider.requiredFilters[dimensionManager.name]),
   );
   let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
+  // A single-select filter has no modes, exclude or select all: picking a value applies it.
+  let singleSelect = $derived(dimensionManager.singleSelect);
 
   // Pinned and required are edited locally and only persisted once the dropdown closes.
   // svelte-ignore state_referenced_locally
@@ -355,6 +357,12 @@
   }
 
   function handleItemClick(value: string) {
+    if (singleSelect) {
+      // Picking the applied value again keeps it, since a single-select filter is cleared with the chip's remove button.
+      proxyDimensionManager.setSelectedValues([value], false);
+      onApply();
+      return;
+    }
     proxyDimensionManager.toggleValue(value, false);
   }
 
@@ -432,6 +440,8 @@
             </TooltipTitle>
             {#if missingRequired}
               {m.dashboard_filter_required_set_value()}
+            {:else if singleSelect}
+              {m.filter_single_select_chip_tooltip()}
             {:else}
               {m.filter_dimension_chip_tooltip()}
             {/if}
@@ -468,11 +478,13 @@
         </div>
       {/if}
       <div class="flex flex-row">
-        <DimensionFilterModeSelector
-          bind:mode={proxyDimensionManager.mode}
-          onModeChange={handleModeChange}
-          size="md"
-        />
+        {#if !singleSelect}
+          <DimensionFilterModeSelector
+            bind:mode={proxyDimensionManager.mode}
+            onModeChange={handleModeChange}
+            size="md"
+          />
+        {/if}
         <Search
           bind:value={curSearchText}
           label={m.filter_dimension_search_list_aria({
@@ -482,7 +494,7 @@
           retainValueOnMount
           placeholder={searchPlaceholder}
           onSubmit={onApply}
-          forcedInputStyle="rounded-l-none"
+          forcedInputStyle={singleSelect ? "" : "rounded-l-none"}
           multiline
         />
       </div>
@@ -602,14 +614,16 @@
       {/if}
     </div>
 
-    <DimensionFilterFooter
-      mode={proxyDimensionManager.mode}
-      excludeMode={proxyDimensionManager.exclude}
-      {allSelected}
-      {disableApplyButton}
-      onToggleExcludeMode={handleToggleExcludeMode}
-      {onToggleSelectAll}
-      {onApply}
-    />
+    {#if !singleSelect}
+      <DimensionFilterFooter
+        mode={proxyDimensionManager.mode}
+        excludeMode={proxyDimensionManager.exclude}
+        {allSelected}
+        {disableApplyButton}
+        onToggleExcludeMode={handleToggleExcludeMode}
+        {onToggleSelectAll}
+        {onApply}
+      />
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -104,6 +104,20 @@ time_zones:
   - Australia/Sydney  
 ```
 
+## Single-Select Filters
+
+Some dashboards should only ever be viewed for one value of a dimension at a time, for example one advertiser or one employee, because their measures are not meaningful across several. List those dimensions under `filters.single_select`:
+
+```yaml
+filters:
+  single_select:
+    - advertiser
+```
+
+The filter for each listed dimension holds one value. Picking a value in the filter bar, a leaderboard or the dimension table replaces the current one, and viewers cannot exclude values or match on text. A link or bookmark with several values opens with only the last of them. Each name must be a dimension shown in the explore.
+
+Single-select is a dashboard setting, not an access restriction: use [row access policies](/developers/build/metrics-view/security) to limit which data a viewer can query.
+
 ## Changing Themes & Colors
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. All properties in the file are optional—any values you omit will fall back to Rill's standard theme defaults.

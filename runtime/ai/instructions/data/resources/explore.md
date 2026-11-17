@@ -108,6 +108,11 @@ defaults:
   time_range: P30D
   comparison_mode: time
 
+# Optional: dimensions whose filter holds one value at a time
+filters:
+  single_select:
+    - region
+
 # Optional: pin specific time zones to the top of the selector
 time_zones:
   - America/Los_Angeles
