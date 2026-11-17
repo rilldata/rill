@@ -7,6 +7,7 @@
  * fetched with the token, like any other asset, and registered through the `FontFace` API.
  */
 
+import { protoBase64 } from "@bufbuild/protobuf";
 import type {
   V1ThemeFont,
   V1ThemeFontFile,
@@ -210,7 +211,7 @@ function registerFontFile(
       document.fonts.add(face);
       entry.embedCSS =
         `@font-face{font-family:"${faceFamily}";font-weight:${descriptors.weight};` +
-        `font-style:${descriptors.style};src:url(data:font/${fontFormat(file.path)};base64,${toBase64(data)})}`;
+        `font-style:${descriptors.style};src:url(data:font/${fontFormat(file.path)};base64,${protoBase64.enc(new Uint8Array(data))})}`;
     })
     .catch((error: unknown) => {
       console.warn(`Failed to load theme font file "${file.path}":`, error);
@@ -224,16 +225,6 @@ function registerFontFile(
 
 function fontFormat(path: string | undefined): string {
   return path?.split(".").pop()?.toLowerCase() ?? "woff2";
-}
-
-function toBase64(data: ArrayBuffer): string {
-  const bytes = new Uint8Array(data);
-  let binary = "";
-  // In chunks: a font file has more bytes than a call can take as arguments.
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
 }
 
 async function fetchFontFile(
