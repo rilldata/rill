@@ -52,7 +52,8 @@ export function compileFlintSpec({
     return { spec: null, warnings: [], error: "No chart type provided" };
   }
 
-  // Flint's donut is its pie under another name, with the hole left at 0: a full pie.
+  // Flint's donut is its pie under another name. The hole it gets by default has varied across
+  // Flint versions (none before 1.0), so it is stated.
   const chartProperties =
     spec.chartType === "Donut Chart" &&
     spec.chartProperties?.innerRadius === undefined
@@ -153,10 +154,17 @@ function fitSingleViewToContainer(
     return;
   }
 
+  if (pinsArcs(spec)) return;
+
   // Some Flint templates (notably pie/donut) put fixed dimensions directly on the spec, while
   // most use config.view defaults. Both take precedence over responsive container sizing.
+  // A pie's outer radius is fixed to those dimensions too; without one it takes half the view.
   delete spec.width;
   delete spec.height;
+  for (const view of layersOf(spec)) {
+    const mark = view.mark as Record<string, unknown> | undefined;
+    if (mark?.type === "arc") delete mark.outerRadius;
+  }
   const config = spec.config as Record<string, unknown> | undefined;
   const view = config?.view as Record<string, unknown> | undefined;
   if (view) {
@@ -170,6 +178,17 @@ function fitSingleViewToContainer(
     spec.height = size.height;
   }
   spec.autosize = { type: "fit", contains: "padding" };
+}
+
+/**
+ * Whether a pie pins its arcs, and the labels it draws around them, to pixel positions in the plot
+ * Flint sized, as one that labels its slices does. Refitting that plot would pull them apart.
+ */
+function pinsArcs(spec: Record<string, unknown>): boolean {
+  return layersOf(spec).some((view) => {
+    const mark = view.mark as Record<string, unknown> | undefined;
+    return mark?.type === "arc" && typeof mark.x === "number";
+  });
 }
 
 /**
@@ -247,6 +266,15 @@ function fillRowFacetWidth(
 /** Room a tick label on a time axis needs along the axis, in pixels. */
 const TIME_TICK_SPACING = { x: 70, y: 30 };
 
+/** The axis properties Flint writes when it plans a time axis' ticks. */
+const FLINT_TIME_TICK_KEYS = [
+  "values",
+  "labelExpr",
+  "labelOverlap",
+  "labelFlush",
+  "tickCount",
+];
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The shortest bucket at each of Flint's temporal types that names a grain, in milliseconds. */
@@ -270,6 +298,13 @@ const TIME_GRAIN_MS: Record<string, number> = {
  * The grain comes from the field's semantic type; below a day (`DateTime`) it is the shortest
  * gap between the data's timestamps. Ticks then fall on the grain's boundaries, where a banded
  * axis centers its buckets (except that Vega's weeks start on Sunday, a day before Rill's).
+ *
+ * Flint plans these ticks itself: it lists the tick dates, labels them with an expression that
+ * looks each one up, and moves the scale to UTC when every timestamp is a UTC midnight. That plan
+ * is dropped first. It is fitted to Flint's label font and plot width, not the ones the chart is
+ * drawn with. Its tick dates are the data's, so an ejected spec would draw no ticks once its
+ * dashboard moved to another time range. And a UTC axis would disagree with the labels around it:
+ * discrete time axes, tooltips and the MCP widget's zone-shifted dates all read the browser's zone.
  */
 function spaceTimeAxisTicks(
   spec: Record<string, unknown>,
@@ -277,17 +312,31 @@ function spaceTimeAxisTicks(
   semanticTypes: Record<string, string>,
   size: { width: number; height: number } | undefined,
 ): void {
-  if (!size) return;
   for (const view of layersOf(spec)) {
     for (const [channel, dimension] of [
       ["x", "width"],
       ["y", "height"],
     ] as const) {
       const encoding = encodingsOf(view)[channel];
+      if (!encoding || Array.isArray(encoding) || encoding.type !== "temporal")
+        continue;
+      const planned = encoding.axis;
       if (
-        !encoding ||
-        Array.isArray(encoding) ||
-        encoding.type !== "temporal" ||
+        planned &&
+        Array.isArray(planned.values) &&
+        typeof planned.labelExpr === "string" &&
+        planned.labelFlush === false
+      ) {
+        for (const key of FLINT_TIME_TICK_KEYS) delete planned[key];
+        if (Object.keys(planned).length === 0) delete encoding.axis;
+        const scale = encoding.scale as Record<string, unknown> | undefined;
+        if (scale?.type === "utc") {
+          delete scale.type;
+          if (Object.keys(scale).length === 0) delete encoding.scale;
+        }
+      }
+      if (
+        !size ||
         typeof encoding.field !== "string" ||
         encoding.bin ||
         encoding.axis === null ||
@@ -345,19 +394,23 @@ const DEFAULT_DONUT_HOLE = 50;
  * Flint takes a donut's inner radius in pixels, on a 0–100 scale suited to its own small default
  * canvas, so the hole all but vanishes in a chart filling a dashboard panel. Read that setting as
  * a percentage of the outer radius instead, so the donut keeps its proportions at any size.
- * A single donut follows the size of its view; the panels of a faceted one keep the size Flint
- * gives them (and have no `width` or `height` signal of their own), so their hole is fixed too.
+ * A single donut follows the size of its view. The panels of a faceted one keep the radius Flint
+ * gives them (and have no `width` or `height` signal of their own), as does a donut that labels
+ * its slices (see `fitSingleViewToContainer`), so their hole is fixed too.
  */
 function scaleDonutHole(spec: Record<string, unknown>): void {
-  const mark = spec.mark as Record<string, unknown> | undefined;
-  if (mark?.type !== "arc" || typeof mark.innerRadius !== "number") return;
-  const share = mark.innerRadius / 100;
   const encoding = (spec.encoding ?? {}) as Record<string, unknown>;
   const faceted = ["facet", "row", "column"].some((key) => key in encoding);
-  mark.innerRadius =
-    faceted && typeof spec.width === "number" && typeof spec.height === "number"
-      ? (Math.min(spec.width, spec.height) / 2) * share
-      : { expr: `min(width, height) / 2 * ${share}` };
+  for (const view of layersOf(spec)) {
+    const mark = view.mark as Record<string, unknown> | undefined;
+    if (mark?.type !== "arc" || typeof mark.innerRadius !== "number") continue;
+    const share = mark.innerRadius / 100;
+    mark.innerRadius =
+      typeof mark.outerRadius === "number" &&
+      (faceted || typeof mark.x === "number")
+        ? mark.outerRadius * share
+        : { expr: `min(width, height) / 2 * ${share}` };
+  }
 }
 
 /** Flint's semantic types for a field that already holds ranks, which its bump template expects on y. */
@@ -752,16 +805,28 @@ function placeRoseLabels(
 
 /**
  * Removes Flint's non-standard bookkeeping keys (`_warnings`, `_width`, `_height`, `_options`,
- * `_transform`, `_pivot`). Vega-Lite rejects unknown top-level properties, so these must not reach
- * the renderer. Matching on the underscore prefix rather than a fixed list keeps this working as
- * Flint adds more of them.
+ * `_transform`, `_pivot`, `_legendLayout`, `_interactionSemantics`). Vega-Lite rejects unknown
+ * top-level properties, so these must not reach the renderer. Matching on the underscore prefix
+ * rather than a fixed list keeps this working as Flint adds more of them.
+ *
+ * Flint also annotates the views nested in a chart for its own interaction runtime and theme
+ * stages (`__flintInteractionProvenance`, `__themeSynthetic`). Those go by their prefixes only:
+ * a chart's named datasets may start with an underscore too (a bar table's `__bt_displayTable`).
  */
 function stripInternalKeys(
   assembled: Record<string, unknown>,
 ): Record<string, unknown> {
-  return Object.fromEntries(
+  const spec = Object.fromEntries(
     Object.entries(assembled).filter(([key]) => !key.startsWith("_")),
   );
+  for (const view of layersOf(spec)) {
+    for (const key of Object.keys(view)) {
+      if (key.startsWith("__flint") || key.startsWith("__theme")) {
+        delete view[key];
+      }
+    }
+  }
+  return spec;
 }
 
 /** Flint's config keys that style text; Rill's theme owns typography and colors. */
@@ -792,23 +857,131 @@ const STYLED_CONFIG_GROUPS = [
 const COLOR_CHANNELS = new Set(["color", "fill", "stroke"]);
 
 /**
- * Flint emits its own typography (8–10px labels, grey titles) and a `tableau10` scheme on every
- * nominal color encoding. A spec's config and scales take precedence over the config the renderer
- * passes, so left in place they would override Rill's theme: dark mode would draw grey-on-grey
- * titles and a project palette would never reach a Flint chart. Those keys are removed so the
- * theme applies; a `scheme` the author chose is kept.
+ * The legend properties Flint's layout writes on an encoding. Flint lays every legend out in a
+ * column at the chart's right, wrapped and sized to fit there. Rill's theme puts legends in a row
+ * above the chart instead, where a single column would take the plot's height.
+ */
+const FLINT_LEGEND_LAYOUT_KEYS = [
+  "orient",
+  "direction",
+  "offset",
+  "columns",
+  "rowPadding",
+  "gridAlign",
+  "clipHeight",
+  "labelBaseline",
+  "labelFontSize",
+  "labelLimit",
+  "symbolLimit",
+  "titleOrient",
+  "titlePadding",
+  "titleLimit",
+  "titleLineHeight",
+  "gradientLength",
+  // Positions for wrapped labels, and hover text for cut ones, which Vega only shows once the
+  // labels are made interactive in the compiled spec.
+  "encoding",
+];
+
+/** The size Flint sets axis labels at before it shrinks them to fit, in pixels. */
+const FLINT_LABEL_FONT_SIZE = 10;
+/** The longest an upright category label runs before it is cut, in pixels. */
+const UPRIGHT_LABEL_LIMIT = 100;
+
+/** The ink Flint writes value labels in when it has no theme of its own. */
+const FLINT_INK = "#121212";
+
+/** The label expression Flint writes to break a legend's labels over lines. */
+const FLINT_WRAPPED_LEGEND_LABELS =
+  /^indexof\(\[.*\], toString\(datum\.label\)\) < 0 \? datum\.label : /s;
+
+/**
+ * Flint emits its own typography (6–10px labels, grey titles), a `tableau10` scheme on every
+ * nominal color encoding, and a layout for each legend. A spec's config, scales and legends take
+ * precedence over the config the renderer passes, so left in place they would override Rill's
+ * theme: dark mode would draw grey-on-grey titles, a project palette would never reach a Flint
+ * chart, and legends would stack in a column above the plot. Those keys are removed so the theme
+ * applies; a `scheme` the author chose is kept, as are a legend's title, values and format.
  */
 function deferToTheme(
   spec: Record<string, unknown>,
   authored: Record<string, RawEncodingValue>,
 ): void {
+  // A chart of concatenated views and a pie that labels its slices are drawn at the size Flint
+  // gives them, which leaves room for the legend where Flint lays it out and none above the
+  // plot. Their legends keep that layout, at the chart's right.
+  const keepsLegendLayout =
+    pinsArcs(spec) ||
+    ["concat", "hconcat", "vconcat"].some((key) => key in spec);
+
   const config = spec.config as Record<string, unknown> | undefined;
   if (config) {
+    // How Flint arranges several legends on one edge of the chart.
+    if (!keepsLegendLayout) {
+      delete (config.legend as Record<string, unknown> | undefined)?.layout;
+    }
+    // Flint sets the names along a crowded band axis smaller, down to 6px, until they lie flat
+    // within their bands, and cuts them to the band's width. The theme draws them at its own
+    // size, where that width keeps a few letters of each name. They stand upright instead, as
+    // they do by default in Vega-Lite.
+    const axisX = config.axisX as Record<string, unknown> | undefined;
+    if (
+      axisX?.labelAngle === 0 &&
+      Number(axisX.labelFontSize) < FLINT_LABEL_FONT_SIZE &&
+      layersOf(spec).some((view) => {
+        const x = encodingsOf(view).x;
+        return x && !Array.isArray(x) && isDiscrete(x);
+      })
+    ) {
+      delete axisX.labelExpr;
+      delete axisX.labelLineHeight;
+      axisX.labelAngle = -90;
+      axisX.labelAlign = "right";
+      axisX.labelBaseline = "middle";
+      axisX.labelLimit = UPRIGHT_LABEL_LIMIT;
+    }
     for (const group of STYLED_CONFIG_GROUPS) {
       const entry = config[group] as Record<string, unknown> | undefined;
       if (!entry) continue;
       for (const key of THEME_OWNED_CONFIG_KEYS) delete entry[key];
       if (Object.keys(entry).length === 0) delete config[group];
+    }
+  }
+
+  for (const view of layersOf(spec)) {
+    // Value labels that stand off their marks, above a bar or around a pie, are drawn on the
+    // chart's background in Flint's dark ink, which a dark theme hides. They take the theme's
+    // text color; labels inside a mark keep the ink Flint chose against the mark.
+    const mark = view.mark as Record<string, unknown> | undefined;
+    if (
+      mark?.type === "text" &&
+      mark.color === FLINT_INK &&
+      (mark.dy !== undefined || mark.radius !== undefined)
+    ) {
+      delete mark.color;
+      // A pie's labels state the ink as an encoding too, over the slice colors the layer would
+      // otherwise inherit. `null` keeps those out without stating a color.
+      const encoding = view.encoding as Record<string, unknown> | undefined;
+      const color = encoding?.color as Record<string, unknown> | undefined;
+      if (encoding && color?.value === FLINT_INK) encoding.color = null;
+    }
+
+    for (const [, encoding] of channelsOf(view)) {
+      if (Array.isArray(encoding) || !encoding.legend) continue;
+      const legend = encoding.legend;
+      if (keepsLegendLayout) {
+        legend.orient ??= "right";
+        continue;
+      }
+      for (const key of FLINT_LEGEND_LAYOUT_KEYS) delete legend[key];
+      if (Array.isArray(legend.title)) legend.title = legend.title.join(" ");
+      if (
+        typeof legend.labelExpr === "string" &&
+        FLINT_WRAPPED_LEGEND_LABELS.test(legend.labelExpr)
+      ) {
+        delete legend.labelExpr;
+      }
+      if (Object.keys(legend).length === 0) delete encoding.legend;
     }
   }
 
@@ -826,7 +999,7 @@ function deferToTheme(
     );
   };
   for (const view of layersOf(spec)) {
-    for (const [channel, encoding] of Object.entries(encodingsOf(view))) {
+    for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding) || !COLOR_CHANNELS.has(channel)) continue;
       if (hasAuthoredScheme(channel)) continue;
       const scale = encoding.scale as Record<string, unknown> | undefined;
@@ -860,7 +1033,7 @@ function labelFoldedSeries(
 
   for (const row of values) row[SERIES_KEY] = label(row[SERIES_KEY]);
   for (const view of layersOf(spec)) {
-    for (const encoding of Object.values(encodingsOf(view))) {
+    for (const [, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding) || encoding.field !== SERIES_KEY) continue;
       if (Array.isArray(encoding.sort))
         encoding.sort = encoding.sort.map(label);
@@ -977,15 +1150,28 @@ function encodingsOf(
 }
 
 /**
- * Flint's derived encodings keep raw names where Rill's labels and formats belong. A waterfall titles
- * its running sums with the measure's name, its connector layer carries no title, and its step axis
- * has none either, so Vega-Lite composes one from the field names ("event_time, __wf_lead").
+ * A view's channels and their encodings, without the channels Flint turns off with `null`
+ * (the tooltip of a layer that only decorates, such as a waterfall's connectors).
+ */
+function channelsOf(view: Record<string, unknown>): [string, EncodingRecord][] {
+  return Object.entries(encodingsOf(view)).filter(
+    ([, encoding]) => encoding !== null,
+  );
+}
+
+/**
+ * Flint's derived encodings miss the labels and formats Rill gives a measure. A waterfall draws
+ * its running sums from columns of its own, titled with the measure; its connector layer carries no
+ * title, and its step axis has none either, so Vega-Lite composes one from the field names
+ * ("event_time, __wf_lead").
  *
  * A quantitative encoding of a derived field takes the display name and formatter of the measure it
- * is titled with. Without such a title it takes those of the measure another layer draws on the
- * same channel, since the layers share that channel's scale and axis. An encoding of a measure keeps
- * its own formatter. And an encoding of a known field without a title gets the field's display
- * name, on the channels whose title is shown.
+ * is titled with, by name or by display name. Without such a title it takes those of the measure
+ * another layer draws on the same channel, since the layers share that channel's scale and axis.
+ * So does a layer that states an axis but no type of its own: Vega-Lite takes a layer's axis whole
+ * in place of the one the chart states for the channel, and with it went the formatter of a
+ * candlestick's prices. An encoding of a measure keeps its own formatter. And an encoding of a
+ * known field without a title gets the field's display name, on the channels whose title is shown.
  */
 function labelDerivedEncodings(
   spec: Record<string, unknown>,
@@ -996,28 +1182,35 @@ function labelDerivedEncodings(
   const measures = new Set(measureFields);
   const measureOf = (name: unknown) =>
     typeof name === "string" && measures.has(name) ? name : undefined;
+  const measureTitled = (title: unknown) =>
+    measureOf(title) ??
+    measureFields.find((name) => fields.field_display_names[name] === title);
   const views = layersOf(spec);
 
-  // The measure each channel draws, found by field or by Flint's raw-name title in any layer.
+  // The measure each channel draws, found by field or by the title Flint gives it in any layer.
   const channelMeasure = new Map<string, string>();
   for (const view of views) {
-    for (const [channel, encoding] of Object.entries(encodingsOf(view))) {
+    for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding) || channelMeasure.has(channel)) continue;
-      const measure = measureOf(encoding.field) ?? measureOf(encoding.title);
+      const measure =
+        measureOf(encoding.field) ?? measureTitled(encoding.title);
       if (measure) channelMeasure.set(channel, measure);
     }
   }
 
   for (const view of views) {
-    for (const [channel, encoding] of Object.entries(encodingsOf(view))) {
+    for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding)) continue;
+      const derived =
+        encoding.type === "quantitative" && !measureOf(encoding.field);
       const measure =
-        encoding.type === "quantitative" && !measureOf(encoding.field)
-          ? (measureOf(encoding.title) ?? channelMeasure.get(channel))
+        derived || (encoding.type === undefined && encoding.axis)
+          ? ((derived ? measureTitled(encoding.title) : undefined) ??
+            channelMeasure.get(channel))
           : undefined;
       if (measure) {
         routeThroughFormatter(encoding, sanitizeFieldName(measure));
-        if (encoding.title === measure) {
+        if (derived && encoding.title === measure) {
           encoding.title = fields.field_display_names[measure] ?? measure;
         }
       }
@@ -1074,11 +1267,42 @@ const DISCRETE_TIME_FORMATS: Record<string, { expr: string; d3: string }> = {
   },
 };
 
+/** The channels Vega-Lite leaves out of the tooltip it builds from a mark's encoding. */
+const UNLISTED_TOOLTIP_CHANNELS = new Set([
+  "tooltip",
+  "href",
+  "url",
+  "description",
+  "key",
+]);
+
+/** What a tooltip entry takes from the encoding it lists. */
+const TOOLTIP_ENTRY_KEYS = [
+  "field",
+  "type",
+  "title",
+  "aggregate",
+  "timeUnit",
+  "bin",
+  "format",
+  "formatType",
+];
+
+/** Prefix of the columns a tooltip reads a discrete time field from, parsed into dates. */
+const TIME_COPY_PREFIX = "__rill_time_";
+
+/** Marks that summarize their data and list that summary in a tooltip of their own. */
+const COMPOSITE_MARKS = new Set(["boxplot", "errorbar", "errorband"]);
+
 /**
  * Some templates draw the time field on a discrete scale (a waterfall's steps, a slope chart's two
- * periods), and Vega-Lite then prints the raw timestamps as category labels. The data keeps its
- * chronological order; only the labels are formatted at the field's grain, on the axis or legend
- * that shows them, and in the tooltip.
+ * periods, the bars of a chart with only a few time buckets), and Vega-Lite then prints the raw
+ * timestamps as category labels. The data keeps its chronological order; only the labels are
+ * formatted at the field's grain, on the axis or legend that shows them, and in the tooltip.
+ *
+ * The tooltip Vega-Lite builds from a mark's encoding has no format to set, so a mark that would
+ * get one for such a field is given the same list of fields explicitly, less the columns Flint
+ * computes for itself.
  */
 function formatDiscreteTimeAxes(
   spec: Record<string, unknown>,
@@ -1089,12 +1313,89 @@ function formatDiscreteTimeAxes(
       ? DISCRETE_TIME_FORMATS[semanticTypes[field]]
       : undefined;
 
+  const listTooltips = (
+    view: Record<string, unknown>,
+    inherited: Record<string, EncodingRecord>,
+  ): void => {
+    const own = encodingsOf(view);
+    const encoding = { ...inherited, ...own };
+    const mark = view.mark as string | Record<string, unknown> | undefined;
+    const markType = typeof mark === "object" ? mark.type : mark;
+    const silenced =
+      typeof mark === "object" &&
+      (mark.tooltip === null || mark.tooltip === false);
+    if (
+      mark &&
+      !silenced &&
+      !COMPOSITE_MARKS.has(markType as string) &&
+      !("tooltip" in encoding)
+    ) {
+      const listed = Object.entries(encoding)
+        .filter(
+          ([channel, def]) =>
+            !UNLISTED_TOOLTIP_CHANNELS.has(channel) &&
+            def &&
+            !Array.isArray(def) &&
+            typeof def.field === "string" &&
+            def.type !== undefined &&
+            (!def.field.startsWith("__") || typeof def.title === "string"),
+        )
+        .map(([, def]) => def);
+      if (listed.some((def) => formatOf(def.field) && isDiscrete(def))) {
+        view.encoding = {
+          ...own,
+          tooltip: listed.map((def) =>
+            Object.fromEntries(
+              TOOLTIP_ENTRY_KEYS.filter(
+                (key) => def[key] !== undefined && def[key] !== null,
+              ).map((key) => [key, def[key]]),
+            ),
+          ),
+        };
+      }
+    }
+    // A layer's views read its encoding; a facet's or a concatenation's do not.
+    for (const key of ["layer", "spec", "hconcat", "vconcat", "concat"]) {
+      const children = view[key] as
+        | Record<string, unknown>
+        | Record<string, unknown>[]
+        | undefined;
+      for (const child of [children ?? []].flat()) {
+        listTooltips(child, key === "layer" ? encoding : {});
+      }
+    }
+  };
+  listTooltips(spec, {});
+
+  // The columns the tooltips read a time field from, by field.
+  const copies = new Map<string, string>();
   for (const view of layersOf(spec)) {
-    for (const [channel, encoding] of Object.entries(encodingsOf(view))) {
+    for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding)) {
         for (const entry of encoding as EncodingRecord[]) {
           const format = formatOf(entry.field);
           if (!format || !isDiscrete(entry)) continue;
+          // A time format needs a field typed as time, and Vega-Lite parses such a field into
+          // dates wherever the chart reads it. The order Flint gives the discrete axis lists
+          // the raw values, which the dates would no longer match, so the tooltip reads a copy.
+          const field = entry.field as string;
+          const copy = copies.get(field) ?? `${TIME_COPY_PREFIX}${copies.size}`;
+          copies.set(field, copy);
+          const transforms = (view.transform ?? []) as Record<
+            string,
+            unknown
+          >[];
+          if (!transforms.some((transform) => transform.as === copy)) {
+            view.transform = [
+              ...transforms,
+              {
+                calculate: `toDate(datum[${JSON.stringify(field)}])`,
+                as: copy,
+              },
+            ];
+          }
+          entry.title ??= field;
+          entry.field = copy;
           entry.type = "temporal";
           entry.format = format.d3;
           delete entry.formatType;

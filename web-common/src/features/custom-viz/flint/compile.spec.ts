@@ -84,6 +84,7 @@ type Encoding = {
   stack?: unknown;
   scale?: Record<string, unknown>;
   axis?: Record<string, unknown> | null;
+  legend?: Record<string, unknown> | null;
   header?: Record<string, unknown>;
 };
 type View = {
@@ -178,18 +179,79 @@ describe("compileFlintSpec", () => {
     const view = new vega.View(vega.parse(compile(spec as never).spec), {
       renderer: "none",
     });
+    // Rendered into a box smaller than the one Flint laid the donut out for, as a chart with a
+    // legend above it is.
+    view.width(400).height(300);
     await view.runAsync();
-    // Half of the outer radius, which is roughly half the view.
     type SceneGroup = {
-      items: { marktype?: string; items: { innerRadius?: number }[] }[];
+      items: {
+        marktype?: string;
+        items: { innerRadius?: number; outerRadius?: number }[];
+      }[];
     };
     const scene = view.scenegraph() as unknown as {
       root: { items: SceneGroup[] };
     };
-    const arcs = scene.root.items[0].items.find(
+    const arc = scene.root.items[0].items.find(
       (item) => item.marktype === "arc",
+    )?.items[0];
+    // The donut fills the view it is drawn in rather than the plot Flint sized, which would
+    // run past the box; its hole is half of that radius.
+    expect(arc?.outerRadius).toBe(Math.min(view.width(), view.height()) / 2);
+    expect(arc?.innerRadius).toBe((arc?.outerRadius ?? 0) / 2);
+  });
+
+  it("keeps Flint's plot for a pie that labels its slices", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Pie Chart",
+        encodings: {
+          color: { field: "publisher" },
+          size: { field: "bid_price_sum" },
+        },
+        chartProperties: { showValueLabels: true },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const compiled = viewOf(spec);
+    const arc = compiled.layer?.find((layer) => layer.mark?.type === "arc");
+    // The arcs and their labels are pinned to pixel positions in the plot Flint sized, so
+    // refitting the view to the container would pull them apart.
+    expect(typeof arc?.mark?.x).toBe("number");
+    expect(typeof arc?.mark?.outerRadius).toBe("number");
+    expect(compiled.autosize).toBeUndefined();
+    expect(compiled.width).toBeLessThanOrEqual(600);
+    // That plot leaves room for the legend beside it and none above, where the theme would
+    // put it, so the legend stays where Flint laid it out.
+    expect(compiled.encoding?.color?.legend?.orient).toBe("right");
+    // The labels stand on the chart's background, so they take the theme's text color, not
+    // Flint's dark ink or the slice colors the layer would inherit.
+    const labels = compiled.layer?.find((layer) => layer.mark?.type === "text");
+    expect(labels?.mark?.color).toBeUndefined();
+    expect(labels?.encoding?.color).toBeNull();
+  });
+
+  it("draws the value labels above bars in the theme's text color", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: { x: "publisher", y: "bid_price_sum" },
+        chartProperties: { showValueLabels: true },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    const labels = viewOf(spec).layer?.find(
+      (layer) => layer.mark?.type === "text",
     );
-    expect(arcs?.items[0].innerRadius).toBeGreaterThan(150);
+    // Flint's own ink is near black, which a dark theme hides.
+    expect(labels?.mark).toBeDefined();
+    expect(labels?.mark?.color).toBeUndefined();
+    expect(labels?.encoding?.text?.formatType).toBe("rill_bid_price_sum");
   });
 
   it("keeps Flint's sizing for faceted charts, which fit autosizing cannot lay out", () => {
@@ -243,6 +305,115 @@ describe("compileFlintSpec", () => {
       expect(compiled.config[group]?.titleColor).toBeUndefined();
     }
     expect(compiled.encoding.color.scale?.scheme).toBeUndefined();
+  });
+
+  it("stands category labels upright where Flint only fits them flat in a smaller font", () => {
+    const axisX = (publishers: string[]) =>
+      (
+        compileFlintSpec({
+          spec: {
+            chartType: "Bar Chart",
+            encodings: { x: "publisher", y: "bid_price_sum" },
+          },
+          rows: publishers.map((publisher, i) => ({
+            publisher,
+            bid_price_sum: 100 + i,
+          })),
+          fields: deriveFlintFields(
+            ["publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec as unknown as { config: { axisX: Record<string, unknown> } }
+      ).config.axisX;
+
+    // A few names fit their bands at full size, wrapped over two lines where they need it.
+    const few = axisX(["Yahoo", "Northwind Traders", "Contoso Media Network"]);
+    expect(few.labelAngle).toBe(0);
+
+    // A dozen only fit once Flint shrinks them, and at the theme's size its band-wide limit
+    // would leave a few letters of each.
+    const many = axisX([
+      "Yahoo",
+      "Northwind Traders",
+      "Contoso Media Network",
+      "Fabrikam Media",
+      "Adventure Works Marketing",
+      "Litware",
+      "Tailspin",
+      "Lamna",
+      "Woodgrove Bank",
+      "Adatum",
+      "Proseware",
+      "Relecloud Labs",
+    ]);
+    expect(many.labelAngle).toBe(-90);
+    expect(many.labelLimit).toBe(100);
+    expect(many.labelExpr).toBeUndefined();
+  });
+
+  it("leaves the layout of a legend to Rill's theme", async () => {
+    // Long enough that Flint breaks them over lines to fit a column at the chart's right.
+    const publishers = [
+      "Adventure Works Marketing International",
+      "Northwind Advertising Exchange Network",
+      "Litware Ad Server Open Bidding",
+      "Fabrikam Media Marketplace",
+    ];
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows: publishers.flatMap((publisher, p) =>
+        Array.from({ length: 12 }, (_, i) => ({
+          timestamp: new Date(2026, 9, 1 + i),
+          publisher,
+          bid_price_sum: 100 * (p + 1) + i,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Flint lays the legend out in one column of wrapped labels at its own font size. Above the
+    // chart, where Rill's theme puts it, that column would take most of the plot's height.
+    const legend = viewOf(spec).encoding?.color?.legend;
+    expect(Object.keys(legend ?? {})).toEqual([]);
+    expect(
+      (spec as unknown as { config?: { legend?: object } }).config?.legend,
+    ).toBeUndefined();
+
+    // Drawn with the theme's legend on top, the entries run in a row, each on one line.
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, {
+          config: { legend: { orient: "top" }, customFormatTypes: true },
+        }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: { text?: unknown; y?: number }[] = [];
+    const visit = (node: SceneNode & { y?: number }) => {
+      if (node.role === "legend-label") labels.push(...(node.items ?? []));
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(labels.map((label) => label.text)).toEqual(publishers);
   });
 
   it("keeps a color scheme the author chose", () => {
@@ -357,6 +528,26 @@ describe("compileFlintSpec", () => {
     // _warnings/_width/_height/_options/_transform/_pivot are not valid Vega-Lite
     // and make vega-embed reject the spec.
     expect(keys.filter((key) => key.startsWith("_"))).toEqual([]);
+  });
+
+  it("strips the notes Flint leaves on a chart's layers", () => {
+    // A rose chart's label layer is annotated for Flint's interaction runtime.
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Rose Chart",
+        encodings: { x: "publisher", y: "bid_price_sum" },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const layers = viewOf(spec).layer ?? [];
+    expect(layers.length).toBeGreaterThan(1);
+    for (const layer of layers) {
+      expect(Object.keys(layer).filter((key) => key.startsWith("_"))).toEqual(
+        [],
+      );
+    }
   });
 
   it("labels axes with the metrics view display names", () => {
@@ -595,17 +786,13 @@ describe("compileFlintSpec", () => {
     }
   });
 
-  it("ticks a day-grain time axis on its days", async () => {
-    // Local midnights, which is how the renderers hand Vega the buckets. Flint pads the banded
-    // axis by half a day at each end, so it starts and ends at noon; over a wide box Vega then
-    // ticked every 12 hours, and label overlap removal kept only the noons.
-    const days = Array.from({ length: 8 }, (_, i) => new Date(2026, 9, 30 + i));
-    const { spec } = compileFlintSpec({
+  const dailyBars = (timestamps: (Date | string)[]) =>
+    compileFlintSpec({
       spec: {
         chartType: "Bar Chart",
         encodings: { x: "timestamp", y: "bid_price_sum" },
       },
-      rows: days.map((timestamp, i) => ({
+      rows: timestamps.map((timestamp, i) => ({
         timestamp,
         bid_price_sum: 1000 + i,
       })),
@@ -616,11 +803,84 @@ describe("compileFlintSpec", () => {
       ),
       size: { width: 800, height: 400 },
       measureFields: ["bid_price_sum"],
-    });
+    }).spec;
 
-    const ticks = await timeTicks(spec);
+  it("ticks a day-grain time axis on its days", async () => {
+    // Local midnights, which is how the renderers hand Vega the buckets. Flint pads the banded
+    // axis by half a day at each end, so it starts and ends at noon; over a wide box Vega then
+    // ticked every 12 hours, and label overlap removal kept only the noons.
+    // Ten days, since Flint names up to eight on a discrete axis instead.
+    const days = Array.from(
+      { length: 10 },
+      (_, i) => new Date(2026, 9, 30 + i),
+    );
+    const ticks = await timeTicks(dailyBars(days));
     expect(ticks).toHaveLength(days.length);
     for (const tick of ticks) expect(tick.getHours()).toBe(0);
+  });
+
+  it("keeps a time axis in the browser's zone, on ticks Vega places", async () => {
+    // UTC midnights, as a dashboard in UTC buckets its days. Flint lists such an axis' tick
+    // dates itself and draws it in UTC, while the rest of the chart reads the browser's zone.
+    const days = Array.from({ length: 10 }, (_, i) =>
+      new Date(Date.UTC(2026, 9, 30 + i)).toISOString(),
+    );
+    const spec = dailyBars(days);
+    const x = viewOf(spec).encoding?.x;
+    expect(x?.type).toBe("temporal");
+    expect(x?.scale?.type).toBeUndefined();
+    expect(x?.axis).toEqual({ tickCount: 10 });
+    // Local midnights, not the UTC ones of the data.
+    const ticks = await timeTicks(spec);
+    expect(ticks.length).toBeGreaterThan(1);
+    for (const tick of ticks) expect(tick.getHours()).toBe(0);
+  });
+
+  it("names each bucket of a bar chart with only a few of them", async () => {
+    // Flint draws up to eight time buckets as bands of their own rather than on a time scale.
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    // Newest first, as a query ordered by time descending returns them.
+    const days = Array.from({ length: 7 }, (_, i) => new Date(2026, 9, 7 - i));
+    const spec = dailyBars(days);
+    expect(viewOf(spec).encoding?.x?.type).toBe("ordinal");
+
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: unknown[] = [];
+    const tooltips: unknown[] = [];
+    const visit = (node: SceneNode & { tooltip?: unknown }) => {
+      if (node.role === "axis-label") {
+        labels.push(...(node.items ?? []).map((item) => item.text));
+      }
+      for (const item of (node.items ?? []) as (SceneNode & {
+        tooltip?: unknown;
+      })[]) {
+        if (item.tooltip) tooltips.push(item.tooltip);
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    // The days at the day grain, on the axis and in each bar's tooltip, where Vega-Lite would
+    // otherwise print the raw timestamps. The axis keeps the days in time order: formatting
+    // the tooltip must not turn the field the axis sorts by into dates.
+    expect(labels.slice(0, 7)).toEqual([
+      "Oct 01",
+      "Oct 02",
+      "Oct 03",
+      "Oct 04",
+      "Oct 05",
+      "Oct 06",
+      "Oct 07",
+    ]);
+    expect(tooltips).toHaveLength(7);
+    expect(tooltips[0]).toEqual({ Time: "Oct 07", "Sum of Bid Price": "1000" });
   });
 
   it("keeps an hourly time axis on hours over two days and steps it by days over eight", async () => {
@@ -727,8 +987,11 @@ describe("compileFlintSpec", () => {
     const y = viewOf(spec).encoding?.y;
     expect(y?.stack).toBe("normalize");
     expect(y?.axis).toEqual({ format: ".0%" });
-    // The tooltip still shows the count.
+    // The tooltip still shows the count, through the formatter the renderer registers.
     expect(y?.formatType).toBe("rill_impressions");
+    vega.expressionFunction("rill_impressions", (value: number) =>
+      String(value),
+    );
     const labels = (await renderRole(spec, "axis-label")).map(
       (label) => label.text,
     );
@@ -958,6 +1221,64 @@ describe("compileFlintSpec", () => {
     expect(x("bid_price_sum")?.formatType).toBe("rill_bid_price_sum");
     // The goal shares the axis with the bars but keeps its own format.
     expect(x("total_records")?.formatType).toBe("rill_total_records");
+  });
+
+  it("formats a candlestick's price axis with the measure's formatter", async () => {
+    vega.expressionFunction(
+      "rill_bid_price_sum",
+      (value: number) => `$${value}`,
+    );
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Candlestick Chart",
+        encodings: {
+          x: "timestamp",
+          open: "bid_price_sum",
+          high: "high",
+          low: "low",
+          close: "close",
+        },
+      },
+      rows: Array.from({ length: 12 }, (_, i) => ({
+        timestamp: new Date(2026, 9, 1 + i),
+        bid_price_sum: 100 + i,
+        high: 110 + i,
+        low: 95 + i,
+        close: 104 + i,
+      })),
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum", "high", "low", "close"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    expect(error).toBeNull();
+
+    // Each layer states the price axis again, and Vega-Lite takes a layer's axis in place of the
+    // one the chart states for the channel, so the formatter has to be on every one of them.
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const prices: unknown[] = [];
+    const visit = (node: SceneNode) => {
+      if (node.role === "axis-label") {
+        prices.push(
+          ...(node.items ?? [])
+            .filter((item) => typeof item.datum?.value === "number")
+            .map((item) => item.text),
+        );
+      }
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(prices.length).toBeGreaterThan(1);
+    for (const price of prices) expect(price).toMatch(/^\$\d+/);
   });
 
   it("reports an unknown chart type instead of throwing", () => {
