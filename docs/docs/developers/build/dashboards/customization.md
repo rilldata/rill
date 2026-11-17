@@ -108,7 +108,80 @@ time_zones:
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. All properties in the file are optional—any values you omit will fall back to Rill's standard theme defaults.
 
-First, create the YAML file as below. You can define separate color schemes for light and dark modes:
+First, create the YAML file as below. You can define separate colors for light and dark modes:
+
+```yaml
+type: theme
+light:
+  primary: "#4F46E5"  # Indigo-600
+  secondary: "#8B5CF6"  # Purple-500
+dark:
+  primary: "#818CF8"  # Indigo-400
+  secondary: "#A78BFA"  # Purple-400
+```
+
+The `light` and `dark` properties allow you to customize:
+- **primary**: Primary color used for buttons, links, selected states, and charts that show a single series
+- **secondary**: Secondary color (used for measure chips and the loading spinner)
+- **variables**: CSS variables for finer control over backgrounds, text, borders, corners, and chart color palettes (see [Theme Variables](#theme-variables))
+
+Colors can be specified using:
+- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
+- Named colors (e.g., `plum`, `violet`)
+- HSL format (e.g., `hsl(180, 100%, 50%)`)
+
+Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
+
+`theme: <name of theme yaml file>`
+
+### Theme Variables
+
+Beyond the two brand colors, a theme can set variables for the dashboard's backgrounds, text, borders, and corner rounding. Add them under `variables` in the `light` and `dark` blocks:
+
+```yaml
+type: theme
+light:
+  primary: "#0F766E"  # Teal-700
+  secondary: "#F59E0B"  # Amber-500
+  variables:
+    surface-background: "#F8FAFC"  # Page behind the components
+    surface-card: "#FFFFFF"  # Canvas components
+    fg-primary: "#0F172A"  # Main text
+    border: "#CBD5E1"  # Borders and dividers
+    radius: 1rem  # Corner radius; use 0 for square corners
+dark:
+  primary: "#2DD4BF"  # Teal-400
+  secondary: "#FBBF24"  # Amber-400
+  variables:
+    surface-background: "#0B1120"
+    surface-card: "#111827"
+    fg-primary: "#F1F5F9"
+    border: "#334155"
+    radius: 1rem
+```
+
+Every variable takes a color, except `radius`, which takes a length in `px`, `rem`, or `em`. Light and dark modes are independent: a variable set only under `light` keeps Rill's default in dark mode.
+
+A variable can also be set directly in the `light` or `dark` block, next to `primary`, without the `variables` key:
+
+```yaml
+type: theme
+light:
+  primary: "#0F766E"
+  surface-background: "#F8FAFC"
+  radius: 1rem
+```
+
+The two forms are equivalent and can be mixed. If the same variable is set in both places, the value under `variables` is used.
+
+For the full list of variables, what each one styles, and its default in light and dark mode, see the [Theme YAML](/reference/project-files/themes#variables) reference page.
+
+### Chart Color Palettes
+
+Charts take their colors from three palettes, which are set with variables as well:
+- **Sequential palette** (`color-sequential-1` through `9`): For ordered data progressions
+- **Diverging palette** (`color-diverging-1` through `11`): For data diverging from a midpoint
+- **Qualitative palette** (`color-qualitative-1` through `24`): For categorical data
 
 ```yaml
 type: theme
@@ -171,23 +244,6 @@ dark:
     color-sequential-9: "hsl(210deg 60% 65%)"
     # ... (diverging and qualitative palettes also available)
 ```
-
-The `light` and `dark` properties allow you to customize:
-- **primary**: Primary color used for charts, buttons, and interactive elements
-- **secondary**: Secondary color (used for loading spinners and accents)
-- **variables**: Custom CSS variables for complete control over color palettes
-  - **Sequential palette** (color-sequential-1 through 9): For ordered data progressions
-  - **Diverging palette** (color-diverging-1 through 11): For data diverging from a midpoint
-  - **Qualitative palette** (color-qualitative-1 through 24): For categorical data
-
-Colors can be specified using:
-- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
-- Named colors (e.g., `plum`, `violet`)
-- HSL format (e.g., `hsl(180, 100%, 50%)`)
-
-Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
-
-`theme: <name of theme yaml file>`
 
 :::info Theme properties
 
