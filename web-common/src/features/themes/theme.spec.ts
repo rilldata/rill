@@ -160,6 +160,40 @@ describe("Theme", () => {
     });
   });
 
+  describe("length variables", () => {
+    it("emits radius as a length instead of parsing it as a color", () => {
+      const { light, dark } = parseCSS(
+        new Theme({
+          light: { variables: { radius: "1.5rem", border: "#ff0000" } },
+          dark: { variables: { radius: "0px" } },
+        }).css,
+      );
+
+      expect(light["radius"]).toBe("1.5rem");
+      expect(light["border"]).toBe("hsl(0deg 100% 50%)");
+      expect(dark["radius"]).toBe("0px");
+    });
+
+    it("resets a light-only radius in dark mode, like a light-only color", () => {
+      const { light, dark } = parseCSS(
+        new Theme({ light: { variables: { radius: "12px" } } }).css,
+      );
+
+      expect(light["radius"]).toBe("12px");
+      expect(dark["radius"]).toBe("unset");
+    });
+
+    it("drops a value that is not a plain length", () => {
+      // The value is written into a stylesheet as-is, so it must not be able to close the rule.
+      const css = new Theme({
+        light: { variables: { radius: "0; } body { display: none" } },
+      }).css;
+
+      expect(parseCSS(css).light).not.toHaveProperty("radius");
+      expect(css).not.toContain("display");
+    });
+  });
+
   describe("legacy colors format", () => {
     it("derives the same tokens from primaryColorRaw and secondaryColorRaw", () => {
       const legacy: V1ThemeSpec = {

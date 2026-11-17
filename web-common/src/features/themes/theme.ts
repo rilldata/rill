@@ -11,8 +11,21 @@ import { createDarkVariation } from "./color-generation";
 
 type Shade = (typeof TailwindColorSpacing)[number];
 
+/**
+ * Theme variables whose value is a CSS length rather than a color. The runtime marks
+ * them with `Length` in runtime/parser/parse_theme_variables.go.
+ */
+const LENGTH_VARIABLES = ["radius"];
+
+/**
+ * The lengths the runtime accepts for those variables. They are written into a
+ * stylesheet as-is, so anything else is dropped rather than trusted.
+ */
+const CSS_LENGTH = /^(\d+(\.\d+)?|\.\d+)(px|rem|em)$/;
+
 export class Theme {
   colors: { light: Colors; dark: Colors };
+  lengths: { light: Record<string, string>; dark: Record<string, string> };
   spec: V1ThemeSpec;
   css: string;
   resolvedThemeObject: {
@@ -37,6 +50,10 @@ export class Theme {
   processThemeSpec(spec: V1ThemeSpec) {
     this.spec = spec;
     this.colors = this.processTheme(spec);
+    this.lengths = {
+      light: this.processLengths(spec.light),
+      dark: this.processLengths(spec.dark),
+    };
     this.css = this.generateCSS();
 
     // Compatibility with current implementation, this can eventually be removed
@@ -154,15 +171,30 @@ export class Theme {
       darkColors[k] = undefined;
     }
 
+    // Lengths follow the same rule: one set only for light mode is reset in dark mode.
+    const lightLengths = this.lengths.light;
+    const darkLengths = { ...this.lengths.dark };
+    for (const k of Object.keys(lightLengths)) {
+      darkLengths[k] ??= "unset";
+    }
+
     const css = `
  .dashboard-theme-boundary {
   ${this.stringifyVars(lightColors)}
+  ${this.stringifyLengths(lightLengths)}
 }
 .dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
+  ${this.stringifyLengths(darkLengths)}
 }`.trim();
 
     return css;
+  }
+
+  private stringifyLengths(lengths: Record<string, string>): string {
+    return Object.entries(lengths)
+      .map(([k, v]) => `--${k}: ${v};`)
+      .join("\n  ");
   }
 
   private processTheme(spec: V1ThemeSpec) {
@@ -228,7 +260,7 @@ export class Theme {
     }
 
     for (const [k, v] of Object.entries(variables ?? {})) {
-      if (!v) continue;
+      if (!v || LENGTH_VARIABLES.includes(k)) continue;
       finalColors[k] = getChroma(v);
     }
 
@@ -239,6 +271,15 @@ export class Theme {
     );
 
     return finalColors;
+  }
+
+  private processLengths(colors: V1ThemeColors | undefined) {
+    const lengths: Record<string, string> = {};
+    for (const name of LENGTH_VARIABLES) {
+      const value = colors?.variables?.[name];
+      if (value && CSS_LENGTH.test(value)) lengths[name] = value;
+    }
+    return lengths;
   }
 
   /**
@@ -314,10 +355,9 @@ type Colors = {
   "icon-disabled"?: Color;
   "icon-accent"?: Color;
 
-  // Border, input, and radius
+  // Border and input
   border?: Color;
   input?: Color;
-  radius?: Color;
 
   // Ring (focus states)
   "ring-focus"?: Color;

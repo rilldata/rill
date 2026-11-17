@@ -479,7 +479,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for light theme
+        - **`variables`** - _[object]_ - CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
       - **`dark`** - _[object]_ - Dark theme color configuration
 
@@ -491,7 +491,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for dark theme
+        - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
 
