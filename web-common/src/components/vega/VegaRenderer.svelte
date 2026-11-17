@@ -1,6 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
@@ -35,6 +36,7 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
+  const themeBoundaryClass = getThemeBoundaryClass();
   // The container is measured asynchronously after mount. The view is only embedded once a
   // real size is known, so the first render is already at the right dimensions.
   let measured = false;
@@ -75,7 +77,10 @@
       tooltipHandler.destroy();
     }
 
-    tooltipHandler = new VegaLiteTooltipHandler(tooltipFormatter);
+    tooltipHandler = new VegaLiteTooltipHandler(
+      tooltipFormatter,
+      themeBoundaryClass,
+    );
     view.tooltip(createHoverIntentTooltipHandler(tooltipHandler.handleTooltip));
     void view.runAsync();
   }
@@ -101,6 +106,7 @@
     expressionFunctions,
     colorMapping: stableColorMapping,
     hasComparison: stableHasComparison,
+    themeBoundaryClass,
   });
 
   // Sizing the view through `options` would re-embed the chart on every frame of a resize

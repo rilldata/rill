@@ -4176,6 +4176,13 @@ export class AlertSpec extends Message<AlertSpec> {
   notifyOnError = false;
 
   /**
+   * Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
+   *
+   * @generated from field: uint32 notify_rows_limit = 28;
+   */
+  notifyRowsLimit = 0;
+
+  /**
    * @generated from field: bool renotify = 18;
    */
   renotify = false;
@@ -4225,6 +4232,7 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 28, name: "notify_rows_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 18, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },

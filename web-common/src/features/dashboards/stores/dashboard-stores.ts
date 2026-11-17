@@ -39,6 +39,7 @@ import {
 } from "../pivot/types";
 import { isMinimizedAccessor, pivotHasSortField } from "../pivot/pivot-sorting";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
+import { notifyEphemeralMeasureChange } from "../ephemeral-measures/notify";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
@@ -757,29 +758,45 @@ const metricsViewReducers = {
     });
   },
 
+  // Ephemeral measure changes confirm themselves with a toast, so every entry
+  // point (the dialog, the pivot sidebar and header chips) confirms alike.
   addEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.ephemeralMeasures = [
         ...(exploreState.ephemeralMeasures ?? []),
         def,
       ];
+      // The new measure goes first, where the user looks for it: the first
+      // shown measure (and so the first big number and chart) of the explore
+      // view, and in Pivot also the first measure column.
+      exploreState.visibleMeasures = [
+        def.name,
+        ...exploreState.visibleMeasures,
+      ];
+      exploreState.allMeasuresVisible = false;
       if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
         exploreState.pivot.rowPage = 1;
         exploreState.pivot.activeCell = null;
-        exploreState.pivot.columns.push({
-          id: def.name,
-          title: def.displayName,
-          type: PivotChipType.Measure,
-        });
-      } else {
-        // Make the new measure visible in the explore view.
-        exploreState.visibleMeasures = [
-          ...exploreState.visibleMeasures,
-          def.name,
-        ];
-        exploreState.allMeasuresVisible = false;
+        const firstMeasure = exploreState.pivot.columns.findIndex(
+          (col) => col.type === PivotChipType.Measure,
+        );
+        // A nested table's sort on a measure under a column value names the
+        // measure by position, which inserting before it shifts.
+        if (firstMeasure !== -1 && exploreState.pivot.tableMode !== "flat") {
+          exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+            (sort) => !isMinimizedAccessor(sort.id),
+          );
+        }
+        exploreState.pivot.columns.splice(
+          firstMeasure === -1
+            ? exploreState.pivot.columns.length
+            : firstMeasure,
+          0,
+          { id: def.name, title: def.displayName, type: PivotChipType.Measure },
+        );
       }
     });
+    notifyEphemeralMeasureChange("created", def.displayName);
   },
 
   updateEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
@@ -794,14 +811,21 @@ const metricsViewReducers = {
         col.id === def.name ? { ...col, title: def.displayName } : col,
       );
     });
+    notifyEphemeralMeasureChange("updated", def.displayName);
   },
 
+  // Removes every use of the measure even when its definition is already
+  // gone, and confirms the removal of a definition.
   removeEphemeralMeasure(
     name: string,
     measureName: string,
     explore: V1ExploreSpec | undefined,
   ) {
+    let removed: EphemeralMeasureDef | undefined;
     updateMetricsExplorerByName(name, (exploreState) => {
+      removed = exploreState.ephemeralMeasures?.find(
+        (d) => d.name === measureName,
+      );
       exploreState.ephemeralMeasures = (
         exploreState.ephemeralMeasures ?? []
       ).filter((d) => d.name !== measureName);
@@ -809,11 +833,16 @@ const metricsViewReducers = {
       // Remove all usages across views.
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
+      const columnCount = exploreState.pivot.columns.length;
       exploreState.pivot.columns = exploreState.pivot.columns.filter(
         (col) => col.id !== measureName,
       );
+      const columnRemoved = exploreState.pivot.columns.length !== columnCount;
+      // A sort on a measure under a column value names the measure by
+      // position, which removing a measure column before it shifts.
       exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
-        (s) => s.id !== measureName,
+        (s) =>
+          s.id !== measureName && !(columnRemoved && isMinimizedAccessor(s.id)),
       );
       if (exploreState.pivot.measureFormatting?.[measureName]) {
         const measureFormatting = { ...exploreState.pivot.measureFormatting };
@@ -847,6 +876,7 @@ const metricsViewReducers = {
       // measure; restore the spec defaults so views never end up measure-less.
       if (explore) syncMeasures(explore, exploreState);
     });
+    if (removed) notifyEphemeralMeasureChange("deleted", removed.displayName);
   },
 
   setPivotRowLimitForExpandedRow(

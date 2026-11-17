@@ -10,7 +10,7 @@
     5. Navigation chrome: full header + tabs when running, slim header otherwise
 -->
 <script lang="ts">
-  import { beforeNavigate, goto } from "$app/navigation";
+  import { beforeNavigate, goto, invalidateAll } from "$app/navigation";
   import { page } from "$app/state";
   import { onDestroy, untrack } from "svelte";
   import type { Snippet } from "svelte";
@@ -23,6 +23,7 @@
   import {
     V1DeploymentStatus,
     type V1Organization,
+    adminServiceGetProject,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
     createAdminServiceGetProject,
@@ -34,9 +35,6 @@
     isEditPage,
     isProjectInvitePage,
     isProjectPage,
-    isPublicAlertPage,
-    isPublicReportPage,
-    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -45,11 +43,19 @@
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { resolveProjectError } from "@rilldata/web-admin/features/projects/project-error";
-  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import {
+    createRuntimeJwtRefresher,
+    getProjectQueryOptions,
+  } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import {
+    adminServiceGetProjectWithBearerToken,
+    createAdminServiceGetProjectWithBearerToken,
+  } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import { clearPublicURLSession } from "@rilldata/web-admin/features/public-urls/password-session";
+  import { invalidatePublicURLMetadata } from "@rilldata/web-admin/features/public-urls/public-url-bearer";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -89,22 +95,18 @@
       mcpConnectUrl(organization, project, connector, activeBranch),
   });
 
-  // Token: from route params, or from search params on report/alert/AI conversation pages
-  let token = $derived.by(() => {
-    if (
-      isPublicReportPage(page) ||
-      isPublicAlertPage(page) ||
-      isPublicAIPage(page)
-    ) {
-      return page.url.searchParams.get("token") ?? page.params.token;
-    }
-    return page.params.token;
-  });
+  // The root loader resolves authentication for share, report, alert, and AI pages.
+  let token = $derived(page.data?.token);
 
   let onProjectPage = $derived(isProjectPage(page));
   let onEditPage = $derived(isEditPage(page));
   let onInvitePage = $derived(isProjectInvitePage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  // A password-protected public URL that hasn't been unlocked yet. The share layout renders the
+  // password prompt, which doesn't need the runtime (or the project, which a locked token can't read).
+  let onLockedPublicURLPage = $derived(
+    onPublicURLPage && page.data?.publicURLLocked === true,
+  );
   let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
@@ -143,26 +145,38 @@
    * When `activeBranch` is set, the branch param is passed so the API
    * returns the branch deployment instead of production.
    */
-  let cookieProjectQuery = $derived(
-    createAdminServiceGetProject(
-      organization,
-      project,
-      activeBranch ? { branch: activeBranch } : undefined,
-      { query: baseGetProjectQueryOptions },
-    ),
-  );
+  let cookieProjectQuery = $derived.by(() => {
+    const params = activeBranch ? { branch: activeBranch } : undefined;
+    return createAdminServiceGetProject(organization, project, params, {
+      query: getProjectQueryOptions((signal) =>
+        adminServiceGetProject(organization, project, params, signal),
+      ),
+    });
+  });
 
   /**
    * `GetProject` with token-based auth.
    * Returns deployment credentials for anonymous users visiting a Public URL.
    */
+  // A locked public URL can't read the project, so an empty token keeps the query disabled.
+  let projectToken = $derived(onLockedPublicURLPage ? "" : token);
   let tokenProjectQuery = $derived(
     createAdminServiceGetProjectWithBearerToken(
       organization,
       project,
-      token,
+      projectToken,
       undefined,
-      { query: baseGetProjectQueryOptions },
+      {
+        query: getProjectQueryOptions((signal) =>
+          adminServiceGetProjectWithBearerToken(
+            organization,
+            project,
+            projectToken,
+            undefined,
+            signal,
+          ),
+        ),
+      },
     ),
   );
 
@@ -232,7 +246,40 @@
     resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
   );
 
+  // Read on its own so the refresher below keeps its identity across polls: `runtime` is a new object
+  // on every GetProject update, but the auth context only changes when View As starts or ends.
+  let authContext = $derived(runtime.authContext);
+
+  // Re-requests the runtime JWT from the query that issued it when a request finds it expired, e.g. after a
+  // laptop sleep or a network drop skipped the scheduled refetch, instead of waiting for the next poll.
+  let refreshJwt = $derived(
+    createRuntimeJwtRefresher(authContext, {
+      organization,
+      project,
+      branch: activeBranch,
+      token,
+      mockedUserId,
+    }),
+  );
+
   // --- Side effects (cache invalidation and telemetry) ---
+
+  // The bearer of a public URL stops working when its password changes. Re-run the root layout's
+  // loader with fresh metadata so the password prompt shows:
+  // - A session that expired or was invalidated (e.g. the password changed) is rejected with a 401.
+  // - The URL's own token is denied with a 403 once a password is added to a URL that had none.
+  $effect(() => {
+    const publicURLToken = page.params.token;
+    if (!onPublicURLPage || !publicURLToken) return;
+    const usesSession = token !== publicURLToken;
+    const status = projectError?.statusCode;
+    if (usesSession ? status === 401 : status === 403) {
+      clearPublicURLSession(publicURLToken);
+      void invalidatePublicURLMetadata(publicURLToken).then(() =>
+        invalidateAll(),
+      );
+    }
+  });
 
   // Track previous status so we invalidate only on *transitions*, not on every
   // render where the status happens to be RUNNING.
@@ -313,7 +360,16 @@
   onDestroy(() => pageViewThrottler.cancel());
 </script>
 
-{#if projectError}
+{#if onLockedPublicURLPage}
+  <SlimProjectHeader
+    {organization}
+    {project}
+    readProjects={organizationPermissions?.readProjects}
+    {planDisplayName}
+    {organizationLogoUrl}
+  />
+  {@render children()}
+{:else if projectError}
   <SlimProjectHeader
     {organization}
     {project}
@@ -352,7 +408,8 @@
         host={runtime.host}
         instanceId={runtime.instanceId}
         jwt={runtime.jwt}
-        authContext={runtime.authContext}
+        {authContext}
+        {refreshJwt}
       >
         {#if !onWelcomePage}
           <ProjectHeader

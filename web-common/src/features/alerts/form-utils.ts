@@ -23,13 +23,22 @@ import type {
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
 import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { object, array, string } from "yup";
 import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+
+// The number of matching rows listed in notifications when an alert doesn't set it.
+// Keep in sync with alertNotifyRowsLimitDefault in runtime/parser/parse_alert.go.
+export const AlertNotifyRowsLimitDefault = 5;
+// Keep in sync with alertNotifyRowsLimitMax in runtime/parser/parse_alert.go.
+export const AlertNotifyRowsLimitMax = 50;
 
 export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
+  // The maximum number of matching rows listed in notifications, which only matters when the alert is split by a dimension
+  notifyRowsLimit: string;
   criteria: MeasureFilterEntry[];
   criteriaOperation: V1Operation;
   evaluationInterval: string;
@@ -39,6 +48,8 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  // Email of the embed user who creates the alert; only shown in an embed if rill.yaml configures `embeds.open_url`.
+  embedOwnerEmail: string;
   // Options for attaching the rows that triggered the alert to emails
   exportAttach: boolean;
   exportFormat: V1ExportFormat;
@@ -120,10 +131,39 @@ export function getAlertQueryArgsFromFormValues(
   };
 }
 
+// Returns the limit on the number of matching rows listed in notifications to save for an alert.
+// It returns 0, which means the runtime's default, when the alert isn't split by a dimension (so there's a single row)
+// or when the limit is the default. Leaving the limit unset keeps it out of the alert's YAML,
+// which runtimes that predate the limit can't parse.
+export function getNotifyRowsLimitFromFormValues(
+  formValues: AlertFormValues,
+): number {
+  if (!formValues.splitByDimension) return 0;
+  const limit = Number(formValues.notifyRowsLimit);
+  return limit === AlertNotifyRowsLimitDefault ? 0 : limit;
+}
+
 export const alertFormValidationSchema = yup(
   object({
     name: string().required("Required"),
     measure: string().required("Required"),
+    // The rows limit input is hidden unless the alert is split by a dimension
+    notifyRowsLimit: string().when("splitByDimension", {
+      is: (splitByDimension: string) => !!splitByDimension,
+      then: (schema) =>
+        schema.test(
+          "notify-rows-limit",
+          () =>
+            m.alert_form_data_rows_limit_invalid({
+              max: AlertNotifyRowsLimitMax,
+            }),
+          (value) =>
+            !!value &&
+            /^\d+$/.test(value) &&
+            Number(value) >= 1 &&
+            Number(value) <= AlertNotifyRowsLimitMax,
+        ),
+    }),
     criteria: array().of(
       object().shape({
         measure: string().required("Required"),
@@ -138,17 +178,37 @@ export const alertFormValidationSchema = yup(
             const numValue = Number(value);
             if (Number.isNaN(numValue)) {
               return context.createError({
-                message: `${context.path} must be a valid number.`,
+                message: m.alert_form_criteria_value_invalid({
+                  field: context.path,
+                }),
               });
             }
 
             const criteria = context.parent as MeasureFilterEntry;
+            // Percent of total compares each dimension value's share of the measure, so it needs a split.
+            // Removing the split keeps such criteria but blocks saving until a split is chosen again,
+            // instead of saving an alert that has lost its condition.
+            const formValues = context.from?.at(-1)?.value as
+              | AlertFormValues
+              | undefined;
+            if (
+              criteria.type === MeasureFilterType.PercentOfTotal &&
+              !formValues?.splitByDimension
+            ) {
+              return context.createError({
+                message: m.alert_form_criteria_percent_of_total_needs_split({
+                  field: context.path,
+                }),
+              });
+            }
             if (
               criteria.type === MeasureFilterType.PercentOfTotal &&
               (numValue < 0 || numValue > 100)
             ) {
               return context.createError({
-                message: `${context.path} must be a value between 0 and 100.`,
+                message: m.alert_form_criteria_value_percent_range({
+                  field: context.path,
+                }),
               });
             }
             return true;
@@ -159,6 +219,7 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    embedOwnerEmail: string().email("Invalid email"),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
       is: (enableEmailNotification: boolean, exportAttach: boolean) =>
@@ -168,9 +229,9 @@ export const alertFormValidationSchema = yup(
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
-  ["measure"],
+  ["measure", "notifyRowsLimit"],
   ["criteria", "criteriaOperation"],
-  ["name", "snooze", "slackUsers", "emailRecipients"],
+  ["name", "snooze", "slackUsers", "emailRecipients", "embedOwnerEmail"],
 ];
 
 export function checkIsTabValid(
@@ -185,7 +246,7 @@ export function checkIsTabValid(
 
   if (tabIndex === 0) {
     hasRequiredFields = formValues.measure !== "";
-    hasErrors = !!errors.measure;
+    hasErrors = !!errors.measure || !!errors.notifyRowsLimit;
   } else if (tabIndex === 1) {
     hasRequiredFields = true;
     formValues.criteria.forEach((criteria) => {
@@ -216,8 +277,10 @@ function someCriteriaHasErrors(
   criteriaErrors: ValidationErrors<AlertFormValues>["criteria"],
 ) {
   if (!criteriaErrors) return false;
-  return Object.values(criteriaErrors).every((criteriaError) => {
+  // `validate(path)` clears a passing field's error to undefined,
+  // so look for any criterion field that still has an error.
+  return Object.values(criteriaErrors).some((criteriaError) => {
     if (!criteriaError) return false;
-    return Object.values(criteriaError).every((c: string[]) => !!c?.[0]);
+    return Object.values(criteriaError).some((c: string[]) => !!c?.[0]);
   });
 }

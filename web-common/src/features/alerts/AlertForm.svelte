@@ -15,10 +15,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceCreateAlert,
-    createAdminServiceEditAlert,
-  } from "@rilldata/web-admin/client";
-  import {
     getAlertDashboardName,
     unwrapQueryData,
     useAlertDashboardState,
@@ -38,6 +34,7 @@
     checkIsTabValid,
     FieldsByTab,
     getAlertQueryArgsFromFormValues,
+    getNotifyRowsLimitFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils.ts";
   import {
     generateAlertName,
@@ -64,15 +61,29 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { onDestroy } from "svelte";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
   export let props: CreateAlertProps | EditAlertProps;
+  export let provider: AlertFormMetadataProvider;
   export let initialValues: ReturnType<typeof getNewAlertInitialFormValues>;
+  // True if the form shows the field for the email of the embed user who created the alert (see AlertFormDataWrapper).
+  export let showEmbedOwnerEmail: boolean;
+
+  const isEmbedded = EmbedStore.isEmbedded();
+  // Alerts created from an embed run as the creator, and can't be sent to Slack,
+  // including when an admin edits one outside of the embed.
+  const slackAllowed =
+    !isEmbedded &&
+    !(
+      props.mode === "edit" && props.alertSpec.annotations?.admin_embed_owner_id
+    );
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ organization, project, alert: alertName } = $page.params);
+  $: ({ alert: alertName } = $page.params);
   $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
@@ -94,10 +105,7 @@
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  const mutation =
-    props.mode === "create"
-      ? createAdminServiceCreateAlert()
-      : createAdminServiceEditAlert();
+  const { mutation } = provider;
 
   let expressionFilterManager: ExpressionFilterManager;
   let timeFilterManager: TimeFilterManager;
@@ -168,8 +176,8 @@
     );
 
     await $mutation.mutateAsync({
-      org: organization,
-      project,
+      org: provider.organization,
+      project: provider.project,
       name: alertName,
       data: {
         options: {
@@ -183,6 +191,7 @@
             ),
           ),
           metricsViewName: values.metricsViewName,
+          notifyRowsLimit: getNotifyRowsLimitFromFormValues(values),
           slackChannels: values.enableSlackNotification
             ? values.slackChannels.filter(Boolean)
             : undefined,
@@ -192,6 +201,12 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
+          // Only sent if the field is shown, since the creator can't unsubscribe once their email is saved.
+          // The admin service ignores it unless the creator edits the alert, so other editors keep the saved email.
+          embedOwnerEmail:
+            isEmbedded && showEmbedOwnerEmail
+              ? values.embedOwnerEmail.trim()
+              : undefined,
           // Attachments are only sent with emails, and the export options only apply to attachments
           ...(values.enableEmailNotification && values.exportAttach
             ? {
@@ -228,12 +243,17 @@
     });
     onClose();
     if (isCreateForm) {
+      // In an embed, the alerts page is only reachable when navigation is enabled.
+      const showAlertsLink =
+        !isEmbedded || !!EmbedStore.getInstance()?.navigationEnabled;
       eventBus.emit("notification", {
         message: m.alert_form_created(),
-        link: {
-          href: `/${organization}/${project}/-/alerts`,
-          text: m.alert_form_go_to_alerts(),
-        },
+        link: showAlertsLink
+          ? {
+              href: `${provider.pageBasePath}/alerts`,
+              text: m.alert_form_go_to_alerts(),
+            }
+          : undefined,
       });
     } else {
       eventBus.emit("notification", {
@@ -333,7 +353,13 @@
         />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
+        <AlertDialogDeliveryTab
+          {superFormInstance}
+          {exploreName}
+          {provider}
+          {showEmbedOwnerEmail}
+          {slackAllowed}
+        />
       </DialogTabs.Content>
     </div>
   </DialogTabs.Root>

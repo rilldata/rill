@@ -3,12 +3,13 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { Trash2Icon, CopyIcon } from "lucide-svelte";
+  import { Trash2Icon, CopyIcon, PencilIcon } from "lucide-svelte";
   import DeletePublicURLConfirmDialog from "./DeletePublicURLConfirmDialog.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let id: string;
   export let url: string;
+  export let onEdit: () => void;
   export let onDelete: (deletedTokenId: string) => void;
 
   function handleCopy() {
@@ -35,6 +36,13 @@
         <span class="ml-2">{m.public_url_copy_url_action()}</span>
       </DropdownMenu.Item>
     {/if}
+    <DropdownMenu.Item
+      class="text-fg-primary font-normal flex items-center"
+      onclick={onEdit}
+    >
+      <PencilIcon size="12px" />
+      <span class="ml-2">{m.public_url_edit_action()}</span>
+    </DropdownMenu.Item>
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"

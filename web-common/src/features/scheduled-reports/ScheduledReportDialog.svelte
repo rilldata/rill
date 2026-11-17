@@ -96,6 +96,7 @@
     runtimeClient,
     getReportMutationFactory(props.mode === "edit"),
     reportDeleteMutationFactory,
+    { loadProjectMembers: true },
   );
   const { mutation } = provider;
 
