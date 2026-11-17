@@ -105,7 +105,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       [this.specStore, this.parent.timeManager.hasTimeSeriesMap],
       ([spec, hasTimeSeriesMap]) =>
         metricsSQLUsesTimeRange(
-          [spec.metrics_sql ?? []].flat().map(metricsViewFromSQL),
+          (spec.metrics_sql ?? []).map(metricsViewFromSQL),
           hasTimeSeriesMap,
         ),
     );
