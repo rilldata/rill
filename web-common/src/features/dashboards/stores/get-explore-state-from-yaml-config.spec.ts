@@ -8,9 +8,18 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import {
+  createAndExpression,
+  createBinaryExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
+  V1Operation,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
@@ -80,6 +89,96 @@ describe("getExploreStateFromYAMLConfig", () => {
     );
 
     // The cascading merge fills these from the next source.
+    expect(exploreState).toEqual({
+      activePage: DashboardState_ActivePage.DEFAULT,
+    });
+  });
+
+  it("applies the default filter in the shape the filter chips write", () => {
+    // What the runtime parses from
+    // `publisher = 'Contoso' AND domain IN ('contoso.com', 'fabrikam.com') AND stale_dimension = 'x'`:
+    // ANDs are nested, the values of an IN are one list, and `=` is kept as is.
+    const where = createAndExpression([
+      createAndExpression([
+        createBinaryExpression(
+          AD_BIDS_PUBLISHER_DIMENSION,
+          V1Operation.OPERATION_EQ,
+          "Contoso",
+        ),
+        {
+          cond: {
+            op: V1Operation.OPERATION_IN,
+            exprs: [
+              { ident: AD_BIDS_DOMAIN_DIMENSION },
+              { val: ["contoso.com", "fabrikam.com"] },
+            ],
+          },
+        },
+      ]),
+      createBinaryExpression("stale_dimension", V1Operation.OPERATION_EQ, "x"),
+    ]);
+    const exploreSpec = { ...StaleExploreSpec, defaultPreset: { where } };
+    const specBefore = structuredClone(exploreSpec);
+
+    const exploreState = getExploreStateFromYAMLConfig(
+      AD_BIDS_METRICS_INIT_WITH_TIME,
+      exploreSpec,
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+    );
+
+    expect(exploreState).toEqual({
+      activePage: DashboardState_ActivePage.DEFAULT,
+      // The condition on the dimension the metrics view dropped is gone.
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Contoso"]),
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
+          "contoso.com",
+          "fabrikam.com",
+        ]),
+      ]),
+      dimensionsWithInlistFilter: [],
+      dimensionThresholdFilters: [],
+    });
+    // Without a home bookmark, the Home button goes to the url of this state, which carries the filter.
+    expect(
+      convertPartialExploreStateToUrlParams(
+        exploreSpec,
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        exploreState,
+        undefined,
+      ).get(ExploreStateURLParams.Filters),
+    ).toEqual(
+      "publisher IN ('Contoso') AND domain IN ('contoso.com','fabrikam.com')",
+    );
+    // The default preset, which a home bookmark's url is parsed on top of, holds the same shape.
+    expect(
+      getDefaultExplorePreset(
+        exploreSpec,
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+      ).where,
+    ).toEqual(exploreState.whereFilter);
+    // The spec is shared through the query cache, so it must not be edited.
+    expect(exploreSpec).toEqual(specBefore);
+  });
+
+  it("leaves the filter unset when no condition of the default filter is left", () => {
+    const exploreState = getExploreStateFromYAMLConfig(
+      AD_BIDS_METRICS_INIT_WITH_TIME,
+      {
+        ...StaleExploreSpec,
+        defaultPreset: {
+          where: createBinaryExpression(
+            "stale_dimension",
+            V1Operation.OPERATION_EQ,
+            "x",
+          ),
+        },
+      },
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+    );
+
+    // The cascading merge fills the filter from the next source.
     expect(exploreState).toEqual({
       activePage: DashboardState_ActivePage.DEFAULT,
     });

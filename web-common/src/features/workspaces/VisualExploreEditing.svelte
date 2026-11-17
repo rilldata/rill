@@ -24,12 +24,19 @@
     createRuntimeServiceGetInstance,
     createRuntimeServiceListResources,
     type V1Explore,
+    type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
   import { InfoIcon } from "lucide-svelte";
+  import { toStore } from "svelte/store";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
+  import { setPinnedAndRequiredFilters } from "../dashboards/filters/utils";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
+  import { getExploreDefaultFilter } from "../dashboards/url-state/getDefaultExplorePreset";
+  import { convertExpressionToFilterParam } from "../dashboards/url-state/filters/converters";
+  import { convertFilterToDefaultFilterSQL } from "../explores/default-filter-sql";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -73,7 +80,19 @@
       measures: { visibleMeasures },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
+  const { yamlConfigProvider } = expressionFilterManager;
+
+  // The filter bar holds rune state, which this component can only follow through a store.
+  // The pin and required toggles are kept apart from what the file holds until they are saved.
+  const filterBar = toStore(() => ({
+    filter: Object.values(expressionFilterManager.exprByMetricsView)[0],
+    pinned: Object.keys(yamlConfigProvider.pinnedFilters),
+    required: Object.keys(yamlConfigProvider.requiredFilters),
+    savedPinned: Object.keys(yamlConfigProvider.specPinnedFilters),
+    savedRequired: Object.keys(yamlConfigProvider.specRequiredFilters),
+  }));
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
@@ -232,8 +251,19 @@
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
 
+  $: defaultFilter =
+    metricsViewSpec && exploreSpec
+      ? getExploreDefaultFilter(metricsViewSpec, exploreSpec)
+      : undefined;
+  // Compared as url params, since that is the form in which two filters that mean the same are equal.
+  $: viewingDefaultFilters =
+    toFilterParam($filterBar.filter) === toFilterParam(defaultFilter) &&
+    arrayUnorderedEquals($filterBar.pinned, $filterBar.savedPinned) &&
+    arrayUnorderedEquals($filterBar.required, $filterBar.savedRequired);
+
   $: viewingDefaults =
     hasDefaultsSet &&
+    viewingDefaultFilters &&
     Object.entries(newDefaults).every(([key, value]) => {
       if (Array.isArray(value) && Array.isArray(defaults[key])) {
         return (
@@ -242,6 +272,30 @@
       }
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
+
+  function toFilterParam(filter: V1Expression | undefined) {
+    return filter ? convertExpressionToFilterParam(filter) : "";
+  }
+
+  /**
+   * Saves the dashboard's current state as its defaults.
+   * Along with the `defaults` block, this writes the pin and required toggles of the filter bar,
+   * since they are edited in the dashboard and have no other way into the file.
+   */
+  async function saveDefaults() {
+    const { filter, pinned, required } = $filterBar;
+    const filters = await convertFilterToDefaultFilterSQL(
+      runtimeClient,
+      filter,
+    );
+    if (filters === undefined) return;
+
+    // The document is read after the request, so that edits made while it was in flight are kept.
+    setPinnedAndRequiredFilters(parsedDocument, pinned, required, keyPath);
+    updateProperties({
+      defaults: { ...newDefaults, filters: filters || undefined },
+    });
+  }
 
   function getMeasureOrDimensionState(
     node: unknown,
@@ -439,7 +493,8 @@
               measures: "*",
               dimensions: "*",
             },
-            ["defaults"],
+            // The defaults and the filter config name fields of the previous metrics view.
+            ["defaults", "filters"],
           );
         }}
       />
@@ -618,7 +673,7 @@
             if (viewingDefaults) {
               updateProperties({}, ["defaults"]);
             } else {
-              updateProperties({ defaults: newDefaults });
+              void saveDefaults();
             }
           }}
         >
@@ -640,11 +695,13 @@
             />
             <TooltipContent slot="tooltip-content">
               {#if viewingDefaults}
-                Remove default settings for time range, comparison modes and
-                displayed measures/dimensions
+                Remove default settings for time range, comparison modes,
+                filters and displayed measures/dimensions
               {:else}
-                Overwrite default settings for time range, comparison modes and
-                displayed measures/dimensions with the current dashboard view
+                Overwrite default settings for time range, comparison modes,
+                filters and displayed measures/dimensions with the current
+                dashboard view. Also saves which filters are pinned and
+                required.
               {/if}
             </TooltipContent>
           </Tooltip>

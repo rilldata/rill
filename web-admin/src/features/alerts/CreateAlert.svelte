@@ -21,12 +21,16 @@
     metricsViewName,
     exploreName,
     dashboardStore,
+    missingRequiredFilters,
   } = getStateManagers();
 
   const runtimeClient = useRuntimeClient();
 
   $: metricsView = useMetricsViewValidSpec(runtimeClient, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
+  // An alert starts from the explore's filters,
+  // so one created now would aggregate across the values of a required filter.
+  $: hasMissingRequired = $missingRequiredFilters.length > 0;
 
   let open = false;
 </script>
@@ -44,18 +48,24 @@
   >
     <DialogTrigger>
       {#snippet child({ props })}
-        <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+        <Tooltip
+          distance={8}
+          location="top"
+          suppress={!$isCustomTimeRange && !hasMissingRequired}
+        >
           <Button
             {...props}
             compact
-            disabled={$isCustomTimeRange}
+            disabled={$isCustomTimeRange || hasMissingRequired}
             type="secondary"
             label={m.alert_create_alert()}
           >
             <BellPlusIcon class="inline-flex" size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
-            {m.alert_set_non_custom_time_range()}
+            {hasMissingRequired
+              ? m.alert_set_required_filters()
+              : m.alert_set_non_custom_time_range()}
           </TooltipContent>
         </Tooltip>
       {/snippet}

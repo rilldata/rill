@@ -1,4 +1,13 @@
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenExpression,
+  maybeConvertEqualityToInExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  dropUnknownFieldsFromFilter,
+  getExploreFieldNames,
+} from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
   getDefaultTimeRange,
   getDefaultTimeZone,
@@ -15,6 +24,7 @@ import {
   V1ExploreWebView,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewSpec,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -69,6 +79,11 @@ export function getDefaultExplorePreset(
 
     ...(explore.defaultPreset ?? {}),
   };
+  // The spread above copied the default filter as the runtime parsed it.
+  // The preset is turned into url params and filter chips, which need the normalized shape.
+  defaultExplorePreset.where =
+    getExploreDefaultFilter(metricsViewSpec, explore) ??
+    createAndExpression([]);
 
   if (defaultExplorePreset.comparisonMode) {
     Object.assign(
@@ -82,6 +97,45 @@ export function getDefaultExplorePreset(
   }
 
   return defaultExplorePreset;
+}
+
+/**
+ * The default filter of an explore, from `defaults.filters`, in the shape the filter chips write.
+ *
+ * The runtime parses the filter from Metrics SQL, which nests ANDs, keeps the values of an IN as
+ * one list and keeps `=` as is. The chips flatten all of these, so the default is normalized the
+ * same way. Otherwise the same filter would have two url params, and the dashboard could not tell
+ * that it is showing its default.
+ */
+export function getExploreDefaultFilter(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  exploreFields = getExploreFieldNames(metricsViewSpec, exploreSpec),
+): V1Expression | undefined {
+  const where = exploreSpec.defaultPreset?.where;
+  if (!where) return undefined;
+
+  // The spec is shared through the query cache and flattenExpression edits its argument.
+  const flattened = flattenExpression(structuredClone(where));
+  flattened.cond!.exprs = flattened.cond!.exprs?.map(
+    maybeConvertEqualityToInExpressions,
+  );
+
+  // Only fields the metrics view still defines can be queried. See getExploreFieldNames.
+  const measures = new Set(exploreFields.measures);
+  const dimensions = new Set(exploreFields.dimensions);
+  const { expr } = dropUnknownFieldsFromFilter(
+    flattened,
+    getMapFromArray(
+      metricsViewSpec.measures?.filter((m) => measures.has(m.name!)) ?? [],
+      (m) => m.name!,
+    ),
+    getMapFromArray(
+      metricsViewSpec.dimensions?.filter((d) => dimensions.has(d.name!)) ?? [],
+      (d) => d.name!,
+    ),
+  );
+  return expr.cond?.exprs?.length ? expr : undefined;
 }
 
 function getDefaultComparisonFields(
