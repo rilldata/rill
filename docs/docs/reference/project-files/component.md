@@ -480,8 +480,6 @@ _[object]_ - (no description)
 
   - **`content`** - _[string]_ - Markdown content _(required)_
 
-  - **`css`** - _[object]_ - CSS styles
-
   - **`title`** - _[string]_ - Markdown title
 
   - **`description`** - _[string]_ - Markdown description
@@ -493,8 +491,6 @@ _[object]_ - (no description)
   - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
 
   - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-
-  - **`css`** - _[object]_ - CSS styles
 
   - **`title`** - _[string]_ - Image title
 

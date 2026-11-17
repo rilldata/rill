@@ -3887,9 +3887,6 @@ definitions:
       content:
         type: string
         description: Markdown content
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Markdown title
@@ -3910,9 +3907,6 @@ definitions:
       dark_url:
         type: string
         description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Image title
