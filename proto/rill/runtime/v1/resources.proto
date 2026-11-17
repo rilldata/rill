@@ -863,7 +863,7 @@ message ThemeSpec {
   optional ThemeColors light = 5;
   optional ThemeColors dark = 6;
   // Chart styling, applied to built-in charts, Vega-Lite charts and custom charts.
-  ThemeChart chart = 7;
+  ThemeChart chart = 9;
 }
 
 message ThemeState {}

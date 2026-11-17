@@ -4918,7 +4918,7 @@ export class ThemeSpec extends Message<ThemeSpec> {
   /**
    * Chart styling, applied to built-in charts, Vega-Lite charts and custom charts.
    *
-   * @generated from field: rill.runtime.v1.ThemeChart chart = 7;
+   * @generated from field: rill.runtime.v1.ThemeChart chart = 9;
    */
   chart?: ThemeChart;
 
@@ -4936,7 +4936,7 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
     { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
-    { no: 7, name: "chart", kind: "message", T: ThemeChart },
+    { no: 9, name: "chart", kind: "message", T: ThemeChart },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
