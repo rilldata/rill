@@ -113,6 +113,82 @@ export function chartThemeVegaConfig(style: V1ThemeChartStyle): Config {
   }) as Config;
 }
 
+/**
+ * The chart style a Vega-Lite config draws with: `chartThemeVegaConfig` read backwards. Given the
+ * config Rill resolves for a chart, it states Rill's defaults and the theme's settings in one
+ * style, which is what a renderer that takes no Vega-Lite config, such as Flint, is handed.
+ */
+export function chartStyleOfVegaConfig(config: Config): V1ThemeChartStyle {
+  const {
+    axisY: axis = {},
+    legend = {},
+    title = {},
+    text = {},
+    area = {},
+    bar = {},
+    point = {},
+    ...rest
+  } = config as Record<string, Record<string, unknown> | undefined>;
+  const symbol = Object.keys(LEGEND_SYMBOL_TYPE).find(
+    (name) => LEGEND_SYMBOL_TYPE[name] === legend.symbolType,
+  );
+
+  return prune({
+    fontFamily: axis.labelFont,
+    text: {
+      title: {
+        size: title.fontSize,
+        weight: title.fontWeight,
+        color: title.color,
+      },
+      axisLabel: textRole("label", axis),
+      axisTitle: textRole("title", axis),
+      legendLabel: textRole("label", legend),
+      legendTitle: textRole("title", legend),
+      valueLabel: {
+        size: text.fontSize,
+        weight: text.fontWeight,
+        color: text.fill,
+      },
+    },
+    grid: {
+      // Vega-Lite's own default, which Rill keeps: gridlines across a measure axis only.
+      measure: rest.axisQuantitative?.grid ?? true,
+      category: rest.axisDiscrete?.grid ?? false,
+      dash: axis.gridDash,
+      width: axis.gridWidth,
+      color: axis.gridColor,
+    },
+    axis: {
+      line: axis.domain,
+      lineWidth: axis.domainWidth,
+      ticks: axis.ticks !== false && axis.tickSize !== 0,
+      color: axis.domainColor ?? axis.tickColor,
+    },
+    line: { width: rest.line?.strokeWidth },
+    area: {
+      fillOpacity: area.fillOpacity,
+      lineWidth: (area.line as Record<string, unknown> | undefined)
+        ?.strokeWidth,
+    },
+    bar: { opacity: bar.opacity, cornerRadius: bar.cornerRadiusEnd },
+    point: { size: point.size, opacity: point.opacity },
+    legend: { position: legend.orient, symbol },
+  }) as V1ThemeChartStyle;
+}
+
+/** The text role an axis' or a legend's font size, font weight and color properties state. */
+function textRole(
+  part: "label" | "title",
+  guide: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    size: guide[`${part}FontSize`],
+    weight: guide[`${part}FontWeight`],
+    color: guide[`${part}Color`],
+  };
+}
+
 /** A text role as the font size, font weight and color properties of an axis, legend or header. */
 function guideText(
   part: "label" | "title",
@@ -130,7 +206,7 @@ function guideText(
  * accident. Unset is undefined, or the null and empty string the API sends for an unset message
  * and string.
  */
-function prune(value: Record<string, unknown>): Record<string, unknown> {
+export function prune(value: Record<string, unknown>): Record<string, unknown> {
   const pruned: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
     if (entry === undefined || entry === null || entry === "") continue;

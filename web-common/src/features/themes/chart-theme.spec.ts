@@ -15,7 +15,7 @@ import chroma from "chroma-js";
 import * as vega from "vega";
 import { compile, type TopLevelSpec } from "vega-lite";
 import { beforeAll, describe, expect, it } from "vitest";
-import { resolveChartTheme } from "./chart-theme";
+import { chartStyleOfVegaConfig, resolveChartTheme } from "./chart-theme";
 
 /**
  * A theme's chart style, as the parser resolves it per mode: the brand font, heavier labels and
@@ -261,6 +261,54 @@ describe("a theme's chart style on built-in charts", () => {
     expect(
       horizontal(await gridOf(bars, { measure: true, category: true })).sort(),
     ).toEqual([false, true]);
+  });
+});
+
+describe("chartStyleOfVegaConfig", () => {
+  it("reads back the style a config was built from", () => {
+    const style: V1ThemeChartStyle = {
+      fontFamily: "IBM Plex Sans, sans-serif",
+      text: {
+        title: { size: 16, weight: 700, color: "#0f172a" },
+        axisLabel: { size: 12, weight: 500, color: "#475569" },
+        axisTitle: { size: 13, weight: 600, color: "#0f172a" },
+        legendLabel: { size: 12, weight: 300, color: "#334155" },
+        legendTitle: { size: 13, weight: 700, color: "#0f172a" },
+        valueLabel: { size: 10, weight: 500, color: "#1e293b" },
+      },
+      grid: {
+        measure: false,
+        category: true,
+        dash: [4, 2],
+        width: 2,
+        color: "#e2e8f0",
+      },
+      axis: { line: true, lineWidth: 2, ticks: true, color: "#94a3b8" },
+      line: { width: 3 },
+      area: { fillOpacity: 0.3, lineWidth: 0 },
+      bar: { opacity: 0.9, cornerRadius: 4 },
+      point: { size: 60, opacity: 0.7 },
+      legend: { position: "bottom", symbol: "line" },
+    };
+
+    expect(
+      chartStyleOfVegaConfig(getRillTheme(false, undefined, { chart: style })),
+    ).toEqual(style);
+  });
+
+  it("states Rill's defaults for a config built from no style", () => {
+    expect(chartStyleOfVegaConfig(getRillTheme(false))).toMatchObject({
+      fontFamily: "Inter, sans-serif",
+      text: {
+        axisLabel: { size: 11, weight: 400 },
+        axisTitle: { size: 12, weight: 500 },
+      },
+      grid: { measure: true, category: false, dash: [1] },
+      axis: { line: false, ticks: false },
+      line: { width: 1.5 },
+      area: { fillOpacity: 0.8, lineWidth: 1 },
+      legend: { position: "top" },
+    });
   });
 });
 
