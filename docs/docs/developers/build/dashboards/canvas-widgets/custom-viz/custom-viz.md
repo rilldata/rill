@@ -176,7 +176,7 @@ Charts that plot individual observations, such as box plots, histograms and scat
 | `encodings` | A mapping from channel to field. Each value is an encoding object, or a field name as shorthand for `{ field: <name> }`. |
 | `chartProperties` | Optional settings the chart type exposes, such as a donut's `innerRadius`. |
 
-Everything else is derived: sizes, axis titles, number formats, tick counts, fonts and legends. A chart spec has no title.
+Everything else is derived: sizes, axis titles, number formats, tick counts, fonts and legends. A chart spec has no title. To restyle those across a dashboard, such as the font, the gridlines, the line width or where legends sit, set the `chart` section of the dashboard's theme, as described in [Styling Charts](/developers/build/dashboards/customization#styling-charts).
 
 ### Encodings
 

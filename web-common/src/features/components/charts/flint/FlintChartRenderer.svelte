@@ -27,6 +27,7 @@
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import { flintTheme } from "@rilldata/web-common/features/custom-viz/flint/theme";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onDestroy, tick } from "svelte";
@@ -170,6 +171,12 @@
 
   $: ejected = parseVegaSpec(vegaSpec);
 
+  // Flint compiles with the project's chart style, so its layout and the marks it styles agree
+  // with the config the chart is rendered with.
+  $: flintThemeSpec = flintTheme(themeMode === "dark", theme, {
+    chart: chartTheme,
+  });
+
   // Flint reads the data to make layout decisions, so compilation waits for the rows.
   $: compiled =
     spec && !vegaSpec && $dataQuery.isSuccess
@@ -182,6 +189,7 @@
               ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
+          theme: flintThemeSpec,
         })
       : null;
 

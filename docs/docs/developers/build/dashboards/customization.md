@@ -324,6 +324,22 @@ The theme provides defaults, and a chart's own settings take precedence over the
 - A chart widget's `vl_config` and a Vega-Lite chart's `config` override the theme property by property, so a spec can restyle one thing and take the rest from the theme.
 - Series colors come from the theme's `color-qualitative-*`, `color-sequential-*` and `color-diverging-*` palettes, unless a chart maps its own colors.
 
+#### Presets for Custom Viz
+
+Custom viz components are compiled by [Flint](https://github.com/microsoft/flint-chart), which ships a set of complete chart designs. `extends` starts from one of them, and the other `chart` properties go over it:
+
+```yaml
+type: theme
+chart:
+  extends: economist
+  line:
+    width: 3
+```
+
+The presets are `nyt`, `economist`, `swiss`, `nature`, `mckinsey`, `datawrapper`, `powerbi`, `powerbi-light`, `pop`, `cartoon`, `apple`, `de-stijl`, `bbc` and `material`. A custom viz reports an error if the theme names a preset that Flint does not have.
+
+A preset is a design of its own: a custom viz drawn with one keeps the preset's fonts, surface, palette and legend layout, except where the theme sets a `chart` property or a `color-*` palette. Chart widgets and Vega-Lite charts have no presets, so they ignore `extends` and take only the other `chart` properties. A preset has one look for both modes; to use one in a single mode, or a different one in each, set `extends` under `chart.light` or `chart.dark`.
+
 The [Theme YAML](/reference/project-files/themes#chart) reference lists every `chart` property.
 
 ## Example

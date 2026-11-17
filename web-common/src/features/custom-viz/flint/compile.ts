@@ -1,4 +1,8 @@
-import type { ChartWarning, RawEncodingValue } from "flint-chart/core";
+import type {
+  ChartWarning,
+  RawEncodingValue,
+  ThemeSpec,
+} from "flint-chart/core";
 import { assembleVegaLite } from "flint-chart/vegalite";
 import type { VisualizationSpec } from "svelte-vega";
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
@@ -33,6 +37,12 @@ export interface CompileOptions {
   size?: { width: number; height: number };
   /** Measure names to route through Rill's `rill_<measure>` Vega expression formatters. */
   measureFields?: string[];
+  /**
+   * The project theme's chart style as a Flint theme (see `flintTheme`). Flint then lays the
+   * chart out for that style and writes it into the marks and scales it styles itself.
+   * Unset compiles the chart as Flint draws it without a theme.
+   */
+  theme?: ThemeSpec;
 }
 
 export interface CompileResult {
@@ -47,6 +57,7 @@ export function compileFlintSpec({
   fields,
   size,
   measureFields = [],
+  theme,
 }: CompileOptions): CompileResult {
   if (!spec?.chartType) {
     return { spec: null, warnings: [], error: "No chart type provided" };
@@ -85,6 +96,7 @@ export function compileFlintSpec({
         // chart read fine down to 40px, so fewer categories are left out of a short box.
         minSubplotSize: 40,
       },
+      ...(theme ? { theme_spec: theme } : {}),
     }) as Record<string, unknown>;
   } catch (e) {
     return {
@@ -97,7 +109,15 @@ export function compileFlintSpec({
   const warnings = (assembled._warnings as ChartWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
-  deferToTheme(vegaSpec, authored);
+  if (theme) deferPaletteToConfig(vegaSpec, theme.ink?.series?.categorical);
+  // A Flint preset is a design of its own, so the chart keeps the surface, typography and legend
+  // layout Flint gives it. Any other theme states Rill's own style (see `flintTheme`), which the
+  // renderer's config draws exactly: what Flint wrote of it is removed, as for a chart compiled
+  // without a theme.
+  if (!theme?.extends) {
+    if (theme) clearThemeSurface(vegaSpec);
+    deferToTheme(vegaSpec, authored);
+  }
   applyMeasureFormatters(vegaSpec, measureFields);
   switch (spec.chartType) {
     case "Bump Chart":
@@ -827,6 +847,47 @@ function stripInternalKeys(
     }
   }
   return spec;
+}
+
+/**
+ * A themed chart comes with the theme's surface painted behind it. Rill's own style names the card
+ * of the canvas component as that surface, and the chart is drawn on the card, so the chart itself
+ * stays transparent.
+ */
+function clearThemeSurface(spec: Record<string, unknown>): void {
+  delete spec.background;
+  delete (spec.config as Record<string, unknown> | undefined)?.background;
+  // The room Flint leaves around a chart on a painted surface, which the card already gives it.
+  delete spec.padding;
+}
+
+/**
+ * Flint hands a color scale as many of the theme's categorical inks as it counts series. A series
+ * it does not count, such as the one for rows without a value, then wraps around to the first
+ * ink and two series share a color. The inks come from the palette the renderer's config holds in
+ * full, so the cut list is removed and the scale draws from the config.
+ */
+function deferPaletteToConfig(
+  spec: Record<string, unknown>,
+  palette: string[] | undefined,
+): void {
+  if (!palette?.length) return;
+  for (const view of layersOf(spec)) {
+    for (const [channel, encoding] of channelsOf(view)) {
+      if (Array.isArray(encoding) || !COLOR_CHANNELS.has(channel)) continue;
+      const scale = encoding.scale as Record<string, unknown> | undefined;
+      const range = scale?.range;
+      if (
+        !scale ||
+        !Array.isArray(range) ||
+        !range.every((color, i) => color === palette[i])
+      ) {
+        continue;
+      }
+      delete scale.range;
+      if (Object.keys(scale).length === 0) delete encoding.scale;
+    }
+  }
 }
 
 /** Flint's config keys that style text; Rill's theme owns typography and colors. */
