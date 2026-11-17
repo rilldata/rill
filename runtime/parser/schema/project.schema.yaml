@@ -3391,6 +3391,71 @@ definitions:
             secondary: "#a78bfa"
             kpi-positive: "#4ade80"  # Brighter green for dark mode
             kpi-negative: "#f87171"  # Brighter red for dark mode
+
+      - # Example: Theme with chart styling
+        type: theme
+        light:
+          primary: "#0f62fe"
+          secondary: "#8a3ffc"
+          color-qualitative-1: "#0f62fe"
+          color-qualitative-2: "#ee5396"
+          color-qualitative-3: "#08bdba"
+          color-qualitative-4: "#f1c21b"
+        dark:
+          primary: "#78a9ff"
+          secondary: "#be95ff"
+          color-qualitative-1: "#78a9ff"
+          color-qualitative-2: "#ff7eb6"
+          color-qualitative-3: "#3ddbd9"
+          color-qualitative-4: "#fddc69"
+        chart:
+          font_family: "IBM Plex Sans, sans-serif"
+          text:
+            axis_label:
+              size: 12
+              weight: medium
+            axis_title:
+              size: 12
+              weight: semibold
+            legend_label:
+              size: 12
+          grid:
+            style: dashed
+            dash: [4, 4]
+            width: 1
+          axis:
+            line: true
+            ticks: true
+          line:
+            width: 2.5
+          area:
+            fill_opacity: 0.25
+            line_width: 2
+          bar:
+            corner_radius: 2
+          legend:
+            position: bottom
+            symbol: line
+          light:  # Colors for light mode
+            text:
+              axis_label:
+                color: "#525252"
+              axis_title:
+                color: "#161616"
+            grid:
+              color: "#e0e0e0"
+            axis:
+              color: "#8d8d8d"
+          dark:  # Colors for dark mode
+            text:
+              axis_label:
+                color: "#c6c6c6"
+              axis_title:
+                color: "#f4f4f4"
+            grid:
+              color: "#393939"
+            axis:
+              color: "#6f6f6f"
     allOf:
       - title: Properties
         type: object
@@ -4194,7 +4259,8 @@ definitions:
             additionalProperties:
               type: string
       chart:
-        $ref: '#/definitions/theme_chart_properties'
+        type: object
+        description: Styling for charts. Takes the same properties as `chart` in a [theme file](themes.md#chart).
   theme_chart_properties:
     type: object
     description: Styling for charts. It applies to built-in canvas charts, to Vega-Lite charts and to custom charts. Properties set directly under `chart` apply in light and dark mode; `light` and `dark` override them for one mode. Anything left unset keeps Rill's default. A chart's own settings, such as a Vega-Lite spec's `config`, take precedence.
@@ -4211,7 +4277,7 @@ definitions:
         properties:
           title:
             $ref: '#/definitions/theme_chart_text_role_properties'
-            description: Chart titles.
+            description: Titles drawn inside a chart, such as the `title` of a Vega-Lite spec. A canvas widget's own title is not part of the chart.
           axis_label:
             $ref: '#/definitions/theme_chart_text_role_properties'
             description: Axis tick labels and facet labels.
@@ -4243,7 +4309,7 @@ definitions:
               - solid
               - dashed
               - dotted
-            description: Line style.
+            description: Line style, one of `solid`, `dashed` or `dotted`.
           dash:
             type: array
             items:
@@ -4319,14 +4385,14 @@ definitions:
               - bottom
               - left
               - right
-            description: Default legend position. A chart that sets its own legend position keeps it.
+            description: Default legend position, one of `top`, `bottom`, `left` or `right`. A chart that sets its own legend position keeps it.
           symbol:
             type: string
             enum:
               - circle
               - square
               - line
-            description: Symbol drawn beside each legend entry.
+            description: Symbol drawn beside each legend entry, one of `circle`, `square` or `line`.
       light:
         type: object
         description: Overrides for light mode. Takes the same properties as `chart`, except `light` and `dark`.

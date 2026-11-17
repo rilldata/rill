@@ -154,6 +154,8 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
+    - **`chart`** - _[object]_ - Styling for charts. Takes the same properties as `chart` in a [theme file](themes.md#chart).
+
 ### `time_ranges`
 
 _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
