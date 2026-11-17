@@ -1,6 +1,8 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
 import {
+  areaEdgeConfig,
+  buildAreaEdgeLayer,
   buildHoverPointOverlay,
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
@@ -28,7 +30,11 @@ export function generateVLAreaChartSpec(
   const config = toVerticalSpec(chartConfig);
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, config.color);
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    areaEdgeConfig(data),
+  );
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
@@ -49,18 +55,9 @@ export function generateVLAreaChartSpec(
   xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
   spec.encoding = { x: xEncoding };
 
-  // The line along the top of each area. It is a mark of its own, so the theme's width for an
-  // area's line is set on it here; the config only reaches the line the area mark draws.
-  const edgeWidth = data.chartTheme?.area?.lineWidth;
   const inner: UnitSpec<Field>[] = [
     { mark: "area" },
-    {
-      mark: {
-        type: "line",
-        opacity: 0.5,
-        ...(typeof edgeWidth === "number" && { strokeWidth: edgeWidth }),
-      },
-    },
+    buildAreaEdgeLayer(),
     buildHoverPointOverlay(),
   ];
 

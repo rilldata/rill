@@ -59,6 +59,27 @@ export function mergedVlConfig(
   });
 }
 
+/** The legend positions a chart lays its legend out for (see `getLegendConfig`). */
+const LEGEND_POSITIONS = new Set<string>(["top", "bottom", "left", "right"]);
+
+/**
+ * The position a widget's `vl_config` gives its legend, when it is one a chart lays its legend out
+ * for. Invalid JSON states none, as `mergedVlConfig` ignores it.
+ */
+export function vlConfigLegendOrient(
+  userProvidedConfig: string | undefined,
+): ChartLegend | undefined {
+  if (!userProvidedConfig) return undefined;
+  try {
+    const orient = (JSON.parse(userProvidedConfig) as Config).legend?.orient;
+    return typeof orient === "string" && LEGEND_POSITIONS.has(orient)
+      ? (orient as ChartLegend)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface FieldsByType {
   measures: string[];
   dimensions: string[];
@@ -172,8 +193,9 @@ export function generateSpec(
 }
 
 /**
- * A chart draws its legend where its color field says, and at each chart type's default position
- * when the field says nothing. A theme's legend position takes the place of that default.
+ * A chart draws its legend where its color field says, else where its `vl_config` says, and at
+ * each chart type's default position when neither does. A theme's legend position takes the place
+ * of that default.
  */
 function withThemeLegendPosition(
   spec: ChartSpec,
@@ -184,7 +206,8 @@ function withThemeLegendPosition(
     !position ||
     !color ||
     typeof color !== "object" ||
-    ("legendOrientation" in color && color.legendOrientation)
+    ("legendOrientation" in color && color.legendOrientation) ||
+    vlConfigLegendOrient(spec.vl_config)
   ) {
     return spec;
   }

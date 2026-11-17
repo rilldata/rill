@@ -23,6 +23,7 @@ import {
   resolveColor,
   resolveCSSVariable,
   sanitizeSortFieldForVega,
+  vlConfigLegendOrient,
 } from "@rilldata/web-common/features/components/charts/util";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
@@ -431,8 +432,12 @@ export function createConfigWithLegend(
   if (!legendField || typeof legendField === "string") {
     return vlConfig;
   }
+  // The color field's position is the strongest choice, then the one the widget's `vl_config`
+  // gives, then the chart's default.
   const legendConfig = getLegendConfig(
-    legendField.legendOrientation ?? defaultLegendPosition,
+    legendField.legendOrientation ??
+      vlConfigLegendOrient(config.vl_config) ??
+      defaultLegendPosition,
   );
   if (!vlConfig) return legendConfig;
   return merge(vlConfig, legendConfig);
@@ -459,6 +464,30 @@ export function createEncoding(
       data,
     ),
   };
+}
+
+/**
+ * The line drawn along the top of each area of a stacked area chart, a layer of its own over the
+ * area marks. Its width comes from the chart's config (see `areaEdgeConfig`) rather than the mark,
+ * so that a widget's `vl_config` can still set it.
+ */
+export function buildAreaEdgeLayer(): UnitSpec<Field> {
+  return { mark: { type: "line", opacity: 0.5 } };
+}
+
+/**
+ * The config an area chart sets for its line layer: the width the project theme gives the line
+ * along the top of an area. The layer is the chart's only `line` mark (the edge an area mark draws
+ * itself is styled by `area.line`), so the chart's `line` config reaches it alone, and a widget's
+ * `vl_config` goes over it.
+ */
+export function areaEdgeConfig(
+  data: ChartDataResult,
+): Config<ExprRef | SignalRef> | undefined {
+  const width = data.chartTheme?.area?.lineWidth;
+  return typeof width === "number"
+    ? { line: { strokeWidth: width } }
+    : undefined;
 }
 
 export function buildHoverPointOverlay(): UnitSpec<Field> {

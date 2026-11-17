@@ -47,8 +47,8 @@ const light = resolveChartTheme(themeSpec, false);
 const dark = resolveChartTheme(themeSpec, true);
 
 const rows = ["2026-01-01", "2026-01-02", "2026-01-03"].flatMap((day, i) => [
-  { day, region: "EMEA", revenue: 10 + i },
-  { day, region: "APAC", revenue: 20 + i },
+  { day, region: "EMEA", revenue: 10 + i, cost: 5 + i },
+  { day, region: "APAC", revenue: 20 + i, cost: 8 + i },
 ]);
 
 function chartData(chartTheme: V1ThemeChartStyle | undefined): ChartDataResult {
@@ -59,6 +59,7 @@ function chartData(chartTheme: V1ThemeChartStyle | undefined): ChartDataResult {
       day: { field: "day", displayName: "Day" },
       region: { name: "region", displayName: "Region" },
       revenue: { name: "revenue", displayName: "Revenue" },
+      cost: { name: "cost", displayName: "Cost" },
     },
     domainValues: { region: ["EMEA", "APAC"] },
     isDarkMode: false,
@@ -136,9 +137,11 @@ describe("a theme's chart style on built-in charts", () => {
   beforeAll(() => {
     stubCanvasContext();
     // Built-in charts format measure axes through an expression function per measure.
-    vega.expressionFunction(sanitizeFieldName("revenue"), (value: number) =>
-      String(value),
-    );
+    for (const measure of ["revenue", "cost"]) {
+      vega.expressionFunction(sanitizeFieldName(measure), (value: number) =>
+        String(value),
+      );
+    }
   });
 
   it("styles the gridlines, axes, text and line of a line chart", async () => {
@@ -202,6 +205,59 @@ describe("a theme's chart style on built-in charts", () => {
     expect(values(plain("mark-line"), "strokeWidth")).toEqual([1, 1.5]);
   });
 
+  it("lets a widget's vl_config set the width of an area chart's line layer", async () => {
+    const own = await draw(
+      "area_chart",
+      { ...timeSeries, vl_config: '{"line":{"strokeWidth":6}}' } as ChartSpec,
+      light,
+    );
+
+    // The area mark's own edge keeps the theme's width; the chart's line layer takes the widget's.
+    expect(values(own("mark-line"), "strokeWidth").sort()).toEqual([0, 6]);
+  });
+
+  it("styles the line layer of an area chart with several measures", async () => {
+    const measures = {
+      metrics_view: "sales",
+      x: { field: "day", type: "temporal" },
+      y: {
+        field: "revenue",
+        type: "quantitative",
+        fields: ["revenue", "cost"],
+      },
+      color: { type: "value", field: "rill_measures" },
+    } as ChartSpec;
+
+    const themed = await draw("area_chart", measures, light);
+    const plain = await draw("area_chart", measures, undefined);
+
+    expect(values(themed("mark-area"), "fillOpacity")).toEqual([0.3]);
+    expect(values(themed("mark-line"), "strokeWidth")).toEqual([0]);
+    expect(values(plain("mark-line"), "strokeWidth")).toEqual([1, 1.5]);
+  });
+
+  it("styles the line of a combo chart", async () => {
+    const combo = {
+      metrics_view: "sales",
+      x: { field: "day", type: "temporal" },
+      y1: { field: "revenue", type: "quantitative", mark: "bar" },
+      y2: { field: "cost", type: "quantitative", mark: "line" },
+    } as ChartSpec;
+
+    const themed = await draw("combo_chart", combo, light);
+    const plain = await draw("combo_chart", combo, undefined);
+    const own = await draw(
+      "combo_chart",
+      { ...combo, vl_config: '{"line":{"strokeWidth":5}}' } as ChartSpec,
+      light,
+    );
+
+    expect(values(themed("mark-line"), "strokeWidth")).toEqual([3]);
+    // A combo chart draws its line heavier than Rill's default line.
+    expect(values(plain("mark-line"), "strokeWidth")).toEqual([2]);
+    expect(values(own("mark-line"), "strokeWidth")).toEqual([5]);
+  });
+
   it("places and draws the legend, unless the chart places its own", async () => {
     const themed = await draw("line_chart", timeSeries, light);
     expect(values(themed("legend"), "orient")).toEqual(["bottom"]);
@@ -221,6 +277,28 @@ describe("a theme's chart style on built-in charts", () => {
 
     const plain = await draw("line_chart", timeSeries, undefined);
     expect(values(plain("legend"), "orient")).toEqual(["top"]);
+  });
+
+  it("places the legend where a widget's vl_config says, below its color field", async () => {
+    const configured = {
+      ...timeSeries,
+      vl_config: '{"legend":{"orient":"left"}}',
+    } as ChartSpec;
+
+    const themed = await draw("line_chart", configured, light);
+    expect(values(themed("legend"), "orient")).toEqual(["left"]);
+    const plain = await draw("line_chart", configured, undefined);
+    expect(values(plain("legend"), "orient")).toEqual(["left"]);
+
+    const authored = await draw(
+      "line_chart",
+      {
+        ...configured,
+        color: { field: "region", type: "nominal", legendOrientation: "right" },
+      } as ChartSpec,
+      light,
+    );
+    expect(values(authored("legend"), "orient")).toEqual(["right"]);
   });
 
   it("applies each mode's own style", async () => {

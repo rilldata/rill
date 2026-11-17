@@ -320,7 +320,7 @@ chart:
 
 The theme provides defaults, and a chart's own settings take precedence over them:
 
-- A chart widget that sets a legend position keeps it; `legend.position` only places the legends of charts that don't.
+- A chart widget that sets a legend position, in its legend settings or with `legend.orient` in its `vl_config`, keeps it; `legend.position` only places the legends of charts that don't.
 - A chart widget's `vl_config` and a Vega-Lite chart's `config` override the theme property by property, so a spec can restyle one thing and take the rest from the theme.
 - Series colors come from the theme's `color-qualitative-*`, `color-sequential-*` and `color-diverging-*` palettes, unless a chart maps its own colors.
 
