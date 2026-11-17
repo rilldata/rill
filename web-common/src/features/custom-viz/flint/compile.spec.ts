@@ -883,6 +883,62 @@ describe("compileFlintSpec", () => {
     expect(tooltips[0]).toEqual({ Time: "Oct 07", "Sum of Bid Price": "1000" });
   });
 
+  it("colors and names a series of null values", async () => {
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Stacked Bar Chart",
+        encodings: { x: "device", y: "bid_price_sum", color: "publisher" },
+      },
+      rows: ["Phone", "TV"].flatMap((device, d) =>
+        ["Yahoo", null, "Google"].map((publisher, p) => ({
+          device,
+          publisher,
+          bid_price_sum: 100 * (p + 1) + d,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["device", "publisher", "bid_price_sum"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Flint pins the color scale to the values it lists, which leave out null: the rows without
+    // a publisher were stacked with no fill and no legend entry.
+    expect(viewOf(spec).encoding?.color?.scale?.domain).toBeUndefined();
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const fills = new Set<unknown>();
+    const legend: unknown[] = [];
+    const visit = (node: SceneNode & { marktype?: string }) => {
+      if (node.role === "legend-label") {
+        legend.push(...(node.items ?? []).map((item) => item.text));
+      }
+      for (const item of (node.items ?? []) as (SceneNode & {
+        fill?: unknown;
+      })[]) {
+        if (node.role === "mark" && node.marktype === "rect") {
+          fills.add(item.fill);
+        }
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(legend).toHaveLength(3);
+    expect(legend).toContain("null");
+    expect(fills.size).toBe(3);
+    expect([...fills].every((fill) => typeof fill === "string")).toBe(true);
+  });
+
   it("keeps the column a stack is ordered by out of its tooltip", async () => {
     vega.expressionFunction("rill_bid_price_sum", (value: number) =>
       String(value),
@@ -893,7 +949,10 @@ describe("compileFlintSpec", () => {
         encodings: {
           x: "timestamp",
           y: "bid_price_sum",
-          color: "publisher",
+          color: {
+            field: "publisher",
+            colors: { Yahoo: "#7b1fa2", Google: "#1976d2" },
+          },
         },
       },
       rows: ["Yahoo", "Google"].flatMap((publisher, p) =>
@@ -911,9 +970,14 @@ describe("compileFlintSpec", () => {
       size: { width: 600, height: 400 },
       measureFields: ["bid_price_sum"],
     });
+    // The colors the author assigned are a domain and a range on the color scale.
+    expect(viewOf(spec).encoding?.color?.scale?.range).toEqual([
+      "#7b1fa2",
+      "#1976d2",
+    ]);
 
-    // Flint states the series' order as the color scale's domain, and Vega-Lite stacks in that
-    // order through an index column of its own, which the tooltip it builds would list too.
+    // Vega-Lite stacks in the order of such a domain through an index column of its own, which
+    // the tooltip it builds from the encoding would list too.
     const view = new vega.View(
       vega.parse(
         compile(spec as never, { config: { customFormatTypes: true } }).spec,

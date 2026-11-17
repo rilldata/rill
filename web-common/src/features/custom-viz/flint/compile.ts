@@ -902,6 +902,7 @@ const FLINT_WRAPPED_LEGEND_LABELS =
  * theme: dark mode would draw grey-on-grey titles, a project palette would never reach a Flint
  * chart, and legends would stack in a column above the plot. Those keys are removed so the theme
  * applies; a `scheme` the author chose is kept, as are a legend's title, values and format.
+ * The order Flint pins a series' colors in goes too, since it drops null values (see below).
  */
 function deferToTheme(
   spec: Record<string, unknown>,
@@ -1001,10 +1002,21 @@ function deferToTheme(
   for (const view of layersOf(spec)) {
     for (const [channel, encoding] of channelsOf(view)) {
       if (Array.isArray(encoding) || !COLOR_CHANNELS.has(channel)) continue;
-      if (hasAuthoredScheme(channel)) continue;
       const scale = encoding.scale as Record<string, unknown> | undefined;
-      if (!scale || scale.scheme === undefined) continue;
-      delete scale.scheme;
+      if (!scale) continue;
+      // Flint lists a series' values as the color scale's domain to fix their order, and leaves
+      // out null. A domain is all the scale then colors, so a series of null values, which a
+      // dimension often has, was drawn without a color or a legend entry. Vega-Lite's own
+      // domain takes every value, in the order the encoding's `sort` gives. A domain with a
+      // range (colors the author or the template assigned) is kept.
+      if (
+        isDiscrete(encoding) &&
+        Array.isArray(scale.domain) &&
+        scale.range === undefined
+      ) {
+        delete scale.domain;
+      }
+      if (!hasAuthoredScheme(channel)) delete scale.scheme;
       if (Object.keys(scale).length === 0) delete encoding.scale;
     }
   }
