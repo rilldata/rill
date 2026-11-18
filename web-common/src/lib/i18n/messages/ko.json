@@ -423,6 +423,8 @@
   "canvas_chart": "차트",
   "canvas_chart_type": "차트 유형",
   "canvas_cividis": "Cividis",
+  "canvas_click_to_filter_description": "셀이나 헤더를 클릭하면 캔버스 전체가 해당 값으로 필터링됩니다. 표를 읽기 전용으로 유지하려면 끄세요.",
+  "canvas_click_to_filter_label": "클릭하여 필터링",
   "canvas_clear_filters": "필터 지우기",
   "canvas_color_label": "색상",
   "canvas_color_mapping": "색상 매핑",
