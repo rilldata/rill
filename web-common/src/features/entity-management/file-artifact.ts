@@ -231,27 +231,34 @@ export class FileArtifact {
     this.editorCallback(newContent);
   };
 
-  saveLocalContent = async (force = false) => {
+  // Resolves to whether the editor content was written to the file.
+  saveLocalContent = async (force = false): Promise<boolean> => {
     const saveEnabled = get(this.saveEnabled);
 
-    if (!saveEnabled && !force) return;
-    await this.saveContent(get(this.editorContent) ?? "");
+    if (!saveEnabled && !force) return false;
+    return this.saveContent(get(this.editorContent) ?? "");
   };
 
-  private saveContent = async (blob: string) => {
-    if (!this.client) return;
+  // Resolves to whether the file was written. The confirmation awaited after
+  // the write is shared by overlapping saves, so it can time out or resolve
+  // for another save; its failures are only reported through `saveState`.
+  private saveContent = async (blob: string): Promise<boolean> => {
+    if (!this.client) return false;
 
+    let written = false;
     try {
       const kind = get(this.resourceName)?.kind;
       const fileSavePromise = this.saveState.initiateSave();
 
       await this.io.write(this.path, blob, kind);
+      written = true;
 
       await fileSavePromise;
     } catch (e) {
       console.error("Error saving file", e);
       this.saveState.reject(new Error("Unable to save file."));
     }
+    return written;
   };
 
   debounceSave = debounce(this.saveContent, FILE_SAVE_DEBOUNCE_TIME);

@@ -25,6 +25,30 @@ export function ephemeralMeasureToSpecMeasure(
 }
 
 /**
+ * Orders a list that offers every measure for picking so ephemeral measures
+ * come first, newest first, which keeps a new definition easy to find.
+ * Other items keep their order. `ephemeralNames` lists the definitions in
+ * creation order. Lists that mirror the dashboard's layout, such as its shown
+ * measures, keep that order instead.
+ */
+export function ephemeralMeasuresFirst<T>(
+  items: T[],
+  nameOf: (item: T) => string | undefined,
+  ephemeralNames: Iterable<string>,
+): T[] {
+  const rank = new Map(
+    [...ephemeralNames].reverse().map((name, index) => [name, index]),
+  );
+  if (!rank.size) return items;
+  const rankOf = (item: T) => rank.get(nameOf(item) ?? "");
+  const ephemeral = items
+    .filter((item) => rankOf(item) !== undefined)
+    .sort((a, b) => rankOf(a)! - rankOf(b)!);
+  const rest = items.filter((item) => rankOf(item) === undefined);
+  return [...ephemeral, ...rest];
+}
+
+/**
  * Appends synthetic spec measures for the given ephemeral measure
  * definitions to a list of spec measures.
  */

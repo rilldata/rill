@@ -117,6 +117,7 @@ describe("parseMeasureExpression", () => {
     expect(parseMeasureExpression('coalesce true "x').error).toEqual({
       message: 'unexpected "true"',
       position: 9,
+      kind: "unexpected_token",
     });
     expect(parseMeasureExpression("'x' + select").error?.message).toContain(
       "string literals",

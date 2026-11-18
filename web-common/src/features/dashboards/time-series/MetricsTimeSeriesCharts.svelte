@@ -367,8 +367,13 @@
         )}
         onEditEphemeral={openEphemeralMeasureEditor}
       >
-        <div class="border-t border-border" slot="action" let:close>
-          <CreateEphemeralMeasureButton onOpen={close} />
+        <!-- display: contents lets the button and its limit note join the
+             menu's search row. -->
+        <div class="contents" slot="action" let:close>
+          <CreateEphemeralMeasureButton
+            count={$dashboardStore?.ephemeralMeasures?.length ?? 0}
+            onOpen={close}
+          />
         </div>
       </DashboardMetricsDraggableList>
 

@@ -153,7 +153,7 @@ Tables, pivots, KPIs, KPI grids, leaderboards, and charts can define their own [
         format_preset: percentage
 ```
 
-In the canvas editor, select **Create adhoc measure** at the bottom of a widget's measure selector to open the same dialog as in Explore dashboards. Rill writes the definition to the widget's `adhoc_measures`, and the measure selector shows an edit action next to it.
+In the canvas editor, select **New measure** next to the search box of a widget's measure selector to open the same dialog as in Explore dashboards. Rill writes the definition to the widget's `adhoc_measures`, and the measure selector shows an edit action next to it.
 
 | Property | Description |
 |----------|-------------|

@@ -18,6 +18,7 @@
   $: ({
     specStore,
     timeAndFilterStore,
+    usesTimeRange,
     parent: { theme },
   } = component);
 
@@ -42,7 +43,7 @@
     name={component.id}
     spec={$specStore.vega_spec}
     whereFilter={$timeAndFilterStore?.where}
-    timeRange={$timeAndFilterStore?.timeRange}
+    timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
     metricsSQL={$specStore.metrics_sql}
     {themeMode}
     theme={$theme?.resolvedThemeObject?.[themeMode]}

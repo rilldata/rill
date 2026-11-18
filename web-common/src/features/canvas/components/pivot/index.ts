@@ -313,7 +313,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
    * reject must be avoided here, because the component's spec would then
    * silently revert to the last valid one while the editor shows the new YAML.
    */
-  updateProperties(patch: Partial<PivotSpec | TableSpec>) {
+  updateProperties(patch: Partial<PivotSpec | TableSpec>): Promise<boolean> {
     const current = get(this.specStore);
     const next = { ...current, ...patch } as PivotSpec | TableSpec;
     const normalized = { ...patch } as Partial<PivotSpec> & Partial<TableSpec>;
@@ -357,7 +357,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       normalized.sort_comparison = undefined;
     }
 
-    super.updateProperties(normalized);
+    return super.updateProperties(normalized);
   }
 
   /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
