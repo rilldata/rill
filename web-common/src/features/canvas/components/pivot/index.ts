@@ -131,11 +131,14 @@ export function measureFormattingToConditionalFormatSpec(
 }
 
 /**
- * Presentation properties shared by tables and pivots. Per-column overrides
- * (width, wrap, align, label, number format) live on the entries of the field
- * lists themselves; see field-config.ts.
+ * Presentation and interaction properties shared by tables and pivots.
+ * Per-column overrides (width, wrap, align, label, number format) live on the
+ * entries of the field lists themselves; see field-config.ts.
  */
 export interface TablePresentationProperties {
+  // Clicking a cell or header filters the whole canvas by its values.
+  // Defaults to true; false leaves the table read-only.
+  click_to_filter?: boolean;
   // Shrink the columns so the table fits its container instead of scrolling.
   fit_to_width?: boolean;
   // Wrap dimension cells over `wrap_lines` lines instead of truncating them.
@@ -515,6 +518,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     );
 
     return {
+      click_to_filter: {
+        type: "boolean",
+        label: m.canvas_click_to_filter_label(),
+        description: m.canvas_click_to_filter_description(),
+        meta: { defaultValue: true },
+      },
       fit_to_width: {
         type: "boolean",
         label: m.canvas_fit_to_width_label(),
@@ -747,14 +756,24 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     };
   }
 
-  updateTableType(newTableType: "pivot" | "table") {
-    if (!this.parent.fileArtifact) return;
-
-    // Clear active component if this pivot was the active one
+  /**
+   * Forget this component's click-to-filter state: it stops being the canvas's
+   * active component and queries its data under every canvas filter again.
+   * The filters it applied stay on the canvas.
+   */
+  releaseClickToFilter() {
     if (get(this.parent.activeComponent) === this.id) {
       this.parent.clearActiveComponent();
     }
-    this.selfFilteredDimensions.set(new Set());
+    if (get(this.selfFilteredDimensions).size > 0) {
+      this.selfFilteredDimensions.set(new Set());
+    }
+  }
+
+  updateTableType(newTableType: "pivot" | "table") {
+    if (!this.parent.fileArtifact) return;
+
+    this.releaseClickToFilter();
 
     this.type = newTableType;
 
@@ -801,6 +820,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       hide_totals_col: currentSpec.hide_totals_col,
       totals_row_position: currentSpec.totals_row_position,
       conditional_format: currentSpec.conditional_format,
+      click_to_filter: currentSpec.click_to_filter,
       fit_to_width: currentSpec.fit_to_width,
       wrap: currentSpec.wrap,
       wrap_headers: currentSpec.wrap_headers,

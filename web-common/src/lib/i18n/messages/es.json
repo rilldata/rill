@@ -423,6 +423,8 @@
   "canvas_chart": "Gráfico",
   "canvas_chart_type": "Tipo de gráfico",
   "canvas_cividis": "Cividis",
+  "canvas_click_to_filter_description": "Al hacer clic en una celda o un encabezado se filtra todo el canvas por sus valores. Desactívalo para que la tabla sea de solo lectura.",
+  "canvas_click_to_filter_label": "Filtrar al hacer clic",
   "canvas_clear_filters": "Limpiar filtros",
   "canvas_color_label": "Color",
   "canvas_color_mapping": "Mapeo de colores",
