@@ -102,6 +102,8 @@ export class CanvasEntity {
 
   // Time filter manager
   timeFilterManager: TimeFilterManager;
+  // Whether each of the canvas' metrics views has a time dimension.
+  hasTimeSeriesMap: Readable<Map<string, boolean>>;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -213,6 +215,17 @@ export class CanvasEntity {
       this.dashboardProvider.yamlConfigProvider,
     );
     this.timeFilterManager.storeSync.syncToUrl("clear=true");
+
+    this.hasTimeSeriesMap = derived(
+      this._metricsViews,
+      (metricsViews) =>
+        new Map(
+          Object.entries(metricsViews).map(([metricsViewName, metricsView]) => [
+            metricsViewName,
+            !!metricsView?.state?.validSpec?.timeDimension,
+          ]),
+        ),
+    );
 
     this.processSpec(this.spec);
   }

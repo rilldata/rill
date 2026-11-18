@@ -98,7 +98,6 @@
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
 
   const exploreState =
     props.mode === "create"
