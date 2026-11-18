@@ -309,8 +309,9 @@ describe("Explore web view store", () => {
       [AD_BIDS_ADD_DOUBLED_ADHOC_MEASURE],
       getFilterManager(),
     );
+    // A new measure is shown first.
     const exploreSearch =
-      "adhoc_m=doubled:Doubled:impressions*2&measures=impressions,bid_price,doubled";
+      "adhoc_m=doubled:Doubled:impressions*2&measures=doubled,impressions,bid_price";
     pageMock.assertSearchParams(exploreSearch);
     const { visibleMeasures, ephemeralMeasures } =
       getCleanMetricsExploreForAssertion();

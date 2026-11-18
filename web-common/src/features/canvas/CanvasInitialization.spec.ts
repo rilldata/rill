@@ -15,6 +15,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import type {
   V1CanvasSpec,
   V1ComponentSpec,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import {
   RUNTIME_CONTEXT_KEY,
@@ -23,7 +24,15 @@ import {
 import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { OnNavigate } from "@sveltejs/kit";
 import { render, screen, waitFor } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 
 // The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
@@ -89,6 +98,36 @@ const COMPONENTS: Record<string, V1ComponentSpec> = {
   },
 };
 
+function setupCanvasPage(canvasName: string) {
+  new PageMockForComponentTests(hoistedPage);
+  // Components latch their lazy load on an IntersectionObserver, which jsdom does not have.
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+
+  queryClient.clear();
+  removeCanvasStore(canvasName, INSTANCE_ID);
+  lastVisitedState.clear();
+  onNavigateCallbacks.length = 0;
+}
+
+function renderCanvas(canvasName: string, runtimeClient: RuntimeClient) {
+  return render(CanvasDashboardTest, {
+    props: { canvasName },
+    // TODO: we need to make sure every single query uses an explicit queryClient instead of the
+    //       global one. Only then we can use a fresh client here.
+    context: new Map<string | symbol, unknown>([
+      ["$$_queryClient", queryClient],
+      [RUNTIME_CONTEXT_KEY, runtimeClient],
+    ]),
+  });
+}
+
 /**
  * Covers coming back to a canvas after leaving it.
  * The canvas store outlives the page that built it, so the second visit must not be served
@@ -99,36 +138,10 @@ describe("CanvasInitialization", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
 
   beforeEach(() => {
-    new PageMockForComponentTests(hoistedPage);
-    // Components latch their lazy load on an IntersectionObserver, which jsdom does not have.
-    vi.stubGlobal(
-      "IntersectionObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    setupCanvasPage(CANVAS_NAME);
 
     mocks.mockCanvas(CANVAS_NAME, CANVAS_SPEC, {}, COMPONENTS);
-    onNavigateCallbacks.length = 0;
-
-    queryClient.clear();
-    removeCanvasStore(CANVAS_NAME, INSTANCE_ID);
-    lastVisitedState.clear();
   });
-
-  function renderCanvas(runtimeClient: RuntimeClient) {
-    return render(CanvasDashboardTest, {
-      props: { canvasName: CANVAS_NAME },
-      // TODO: we need to make sure every single query uses an explicit queryClient instead of the
-      //       global one. Only then we can use a fresh client here.
-      context: new Map<string | symbol, unknown>([
-        ["$$_queryClient", queryClient],
-        [RUNTIME_CONTEXT_KEY, runtimeClient],
-      ]),
-    });
-  }
 
   async function assertComponentRendered() {
     await waitFor(() =>
@@ -142,7 +155,7 @@ describe("CanvasInitialization", () => {
       host: "http://localhost",
       instanceId: INSTANCE_ID,
     });
-    const { unmount } = renderCanvas(runtimeClient);
+    const { unmount } = renderCanvas(CANVAS_NAME, runtimeClient);
     await assertComponentRendered();
     unmount();
 
@@ -154,7 +167,7 @@ describe("CanvasInitialization", () => {
         getResolveCanvasRequest(CANVAS_NAME, false),
       ),
     });
-    renderCanvas(runtimeClient);
+    renderCanvas(CANVAS_NAME, runtimeClient);
 
     await assertComponentRendered();
   });
@@ -165,7 +178,7 @@ describe("CanvasInitialization", () => {
       host: "http://localhost",
       instanceId: INSTANCE_ID,
     });
-    const { unmount } = renderCanvas(firstClient);
+    const { unmount } = renderCanvas(CANVAS_NAME, firstClient);
     await assertComponentRendered();
     unmount();
     firstClient.dispose();
@@ -174,7 +187,7 @@ describe("CanvasInitialization", () => {
       host: "http://localhost",
       instanceId: INSTANCE_ID,
     });
-    renderCanvas(secondClient);
+    renderCanvas(CANVAS_NAME, secondClient);
 
     await assertComponentRendered();
     expect(getCanvasStore(CANVAS_NAME, INSTANCE_ID).canvasEntity.client).toBe(
@@ -201,6 +214,7 @@ describe("CanvasInitialization", () => {
     };
 
     renderCanvas(
+      CANVAS_NAME,
       new RuntimeClient({ host: "http://localhost", instanceId: INSTANCE_ID }),
     );
 
@@ -219,6 +233,126 @@ describe("CanvasInitialization", () => {
       expect(
         screen.queryByRole("link", { name: "status page" }),
       ).not.toBeInTheDocument(),
+    );
+  });
+});
+
+/**
+ * Covers custom charts, which wait for the canvas time range before they query when their metrics view has a time dimension.
+ * A canvas only resolves a time range when one of its metrics views has a time dimension,
+ * so a chart must not wait for it otherwise.
+ */
+describe("Custom charts and the time range", () => {
+  mockResizeObserverForComponentTesting();
+  const mocks = DashboardFetchMocks.useDashboardFetchMocks();
+
+  const TIME_RANGE_CANVAS = "time_range_canvas";
+  const CHART_SQL = "SELECT publisher, total_records FROM ads_metrics";
+  const START = "2026-01-01T00:00:00.000Z";
+  const END = "2026-02-01T00:00:00.000Z";
+  const METRICS_VIEW: V1MetricsViewSpec = {
+    dimensions: [{ name: "publisher" }],
+    measures: [{ name: "total_records" }],
+  };
+
+  // The bodies of the metrics SQL queries the canvas sent.
+  let chartQueries: Record<string, unknown>[] = [];
+  let fetchSpy: MockInstance<typeof fetch>;
+
+  beforeEach(() => {
+    setupCanvasPage(TIME_RANGE_CANVAS);
+    chartQueries = [];
+
+    // Records the chart's queries, and answers the time range lookup, which the shared mocks don't serve.
+    const serveMock = globalThis.fetch;
+    fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (url, init) => {
+        const method = String(url).split("/rill.runtime.v1.")[1];
+        if (method === "RuntimeService/QueryResolver") {
+          const body =
+            typeof init?.body === "string"
+              ? init.body
+              : new TextDecoder().decode(init?.body as Uint8Array);
+          chartQueries.push(JSON.parse(body).resolverProperties);
+        }
+        if (method === "QueryService/MetricsViewTimeRanges") {
+          return Response.json({
+            fullTimeRange: { min: START, max: END },
+            resolvedTimeRanges: [{ start: START, end: END }],
+          });
+        }
+        return serveMock(url, init);
+      });
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  // Renders a canvas whose only component is a custom chart on the given metrics view.
+  function renderChartCanvas(metricsView: V1MetricsViewSpec) {
+    const componentName = `${TIME_RANGE_CANVAS}--component-0-0`;
+    mocks.mockCanvas(
+      TIME_RANGE_CANVAS,
+      {
+        rows: [
+          {
+            height: 320,
+            heightUnit: "px",
+            items: [
+              { component: componentName, definedInCanvas: true, width: 12 },
+            ],
+          },
+        ],
+      },
+      { ads_metrics: metricsView },
+      {
+        [componentName]: {
+          renderer: "custom_chart",
+          rendererProperties: {
+            metrics_sql: [CHART_SQL],
+            vega_spec: JSON.stringify({
+              data: { name: "query1" },
+              mark: "bar",
+            }),
+          },
+          definedInCanvas: true,
+        },
+      },
+    );
+
+    return renderCanvas(
+      TIME_RANGE_CANVAS,
+      new RuntimeClient({ host: "http://localhost", instanceId: INSTANCE_ID }),
+    );
+  }
+
+  it("Should query a custom chart without a time range when no metrics view has a time dimension", async () => {
+    renderChartCanvas(METRICS_VIEW);
+
+    await waitFor(() =>
+      expect(chartQueries).toContainEqual({ sql: CHART_SQL }),
+    );
+  });
+
+  it("Should query a custom chart with the time range when its metrics view has a time dimension", async () => {
+    renderChartCanvas({ ...METRICS_VIEW, timeDimension: "timestamp" });
+
+    await waitFor(() =>
+      expect(chartQueries).toContainEqual(
+        expect.objectContaining({
+          sql: CHART_SQL,
+          additional_time_range: expect.objectContaining({
+            start: START,
+            end: END,
+          }),
+        }),
+      ),
+    );
+    // It waited for the time range rather than querying without it first.
+    expect(chartQueries.every((query) => query.additional_time_range)).toBe(
+      true,
     );
   });
 });

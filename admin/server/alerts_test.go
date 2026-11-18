@@ -117,6 +117,19 @@ func TestYAMLForManagedAlertEmbed(t *testing.T) {
 	require.Equal(t, []string{"other@example.com", "embed@example.com"}, res.Notify.Email.Recipients)
 	require.Equal(t, []string{"other@example.com"}, opts.EmailRecipients)
 
+	// The creator's email alone is enough to send the alert
+	opts = newOpts()
+	opts.EmailRecipients = nil
+	data, err = s.yamlForManagedAlert(opts, "", "ext_abc", "embed@example.com", nil)
+	require.NoError(t, err)
+	res = alertYAML{}
+	require.NoError(t, yaml.Unmarshal(data, &res))
+	require.Equal(t, []string{"embed@example.com"}, res.Notify.Email.Recipients)
+
+	// An alert without any recipient is rejected
+	_, err = s.yamlForManagedAlert(opts, "", "ext_abc", "", nil)
+	require.ErrorContains(t, err, "at least one email recipient")
+
 	// The resources of the embed are saved
 	resources := []database.ResourceName{{Type: runtime.ResourceKindExplore, Name: "e1"}}
 	data, err = s.yamlForManagedAlert(newOpts(), "", "ext_abc", "", resources)

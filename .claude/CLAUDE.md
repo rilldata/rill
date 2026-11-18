@@ -16,6 +16,8 @@ Two deployment modes share the same codebase:
 - **Rill Developer** — local application for data engineers. A single Go binary that embeds the CLI, runtime, and `web-local` frontend. Code-first, version-controlled workflow.
 - **Rill Cloud** — hosted platform for teams. Runs the `admin` service, runtime(s), and `web-admin` frontend as separate services. Adds auth, billing, multi-tenancy, and collaboration.
 
+Hosted runtimes in Rill Cloud serve a single instance each. Multiple instances on one runtime is only used for local dev and testing; simplify designs accordingly.
+
 ### Key Directories
 
 - `runtime/` — data plane: orchestration, queries, connectors, access policies, reconcilers

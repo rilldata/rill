@@ -9,10 +9,11 @@ import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 function getFormValues(overrides: Partial<AlertFormValues>): AlertFormValues {
   return {
@@ -100,6 +101,55 @@ describe("alertFormValidationSchema", () => {
       getValidFormValues({ splitByDimension: "", criteria: [] }),
     );
     expect(result.success).toBe(true);
+  });
+});
+
+describe("alertFormValidationSchema notifications", () => {
+  async function getMessages(overrides: Partial<AlertFormValues>) {
+    const result = await alertFormValidationSchema.validate(
+      getValidFormValues({
+        emailRecipients: ["other@example.com"],
+        enableEmailNotification: true,
+        embedOwnerEmail: "",
+        ...overrides,
+      }),
+    );
+    return result.success ? [] : result.issues.map((issue) => issue.message);
+  }
+  const noNotification = m.alert_form_no_notification();
+
+  describe("in an embed", () => {
+    beforeEach(() => {
+      vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it.each<[string, Partial<AlertFormValues>, string[]]>([
+      [
+        "rejects alerts without any recipient",
+        { emailRecipients: [""] },
+        [noNotification],
+      ],
+      [
+        "rejects email recipients when email notifications are turned off",
+        { enableEmailNotification: false },
+        [noNotification],
+      ],
+      ["accepts an email recipient", {}, []],
+      [
+        "accepts only the creator's email",
+        { enableEmailNotification: false, embedOwnerEmail: "me@example.com" },
+        [],
+      ],
+    ])("%s", async (_, overrides, expected) => {
+      expect(await getMessages(overrides)).toEqual(expected);
+    });
+  });
+
+  it("accepts alerts without any recipient outside of an embed", async () => {
+    expect(await getMessages({ emailRecipients: [""] })).toEqual([]);
   });
 });
 

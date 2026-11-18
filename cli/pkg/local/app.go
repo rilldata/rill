@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/gofrs/flock"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -56,6 +57,7 @@ type App struct {
 	ch                    *cmdutil.Helper
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
+	lock                  *flock.Flock                   // Held on the project's tmp directory until Close
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
 	localURL              string
 	allowedOrigins        []string
@@ -94,6 +96,29 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
+	// Get full path to project
+	projectPath, err := filepath.Abs(opts.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	dbDirPath := filepath.Join(projectPath, DefaultDBDir)
+	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
+	if err != nil {
+		return nil, err
+	}
+
+	// Lock the project before changing anything in it, so a project that another Rill process is using is left untouched.
+	lock, err := lockProject(dbDirPath, opts.LocalURL)
+	if err != nil {
+		return nil, err
+	}
+	created := false
+	defer func() {
+		if !created {
+			_ = lock.Close()
+		}
+	}()
+
 	// Always attempt to pull env for any valid Rill project (after projectPath is set)
 	if opts.PullEnv && opts.Ch.IsAuthenticated() && IsProjectInit(opts.ProjectPath) {
 		err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
@@ -129,17 +154,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		ServiceName:     "rill-local",
 		ServiceVersion:  opts.Ch.Version.String(),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Get full path to project
-	projectPath, err := filepath.Abs(opts.ProjectPath)
-	if err != nil {
-		return nil, err
-	}
-	dbDirPath := filepath.Join(projectPath, DefaultDBDir)
-	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
 	if err != nil {
 		return nil, err
 	}
@@ -224,12 +238,17 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector
 
-	// Reset tmp dir
+	// Reset tmp dir.
+	// The lock file is kept: removing it would let another process lock the project while this one is using it.
 	if opts.Reset {
-		_ = os.RemoveAll(dbDirPath)
-		err = os.MkdirAll(dbDirPath, os.ModePerm)
+		entries, err := os.ReadDir(dbDirPath)
 		if err != nil {
 			return nil, err
+		}
+		for _, entry := range entries {
+			if entry.Name() != lockFileName {
+				_ = os.RemoveAll(filepath.Join(dbDirPath, entry.Name()))
+			}
 		}
 	}
 
@@ -347,6 +366,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		ch:                    opts.Ch,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
+		lock:                  lock,
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
 		localURL:              opts.LocalURL,
 		allowedOrigins:        opts.AllowedOrigins,
@@ -358,6 +378,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		logger.Debug("failed to emit start event", zap.Error(err))
 	}
 
+	created = true
 	return app, nil
 }
 
@@ -378,7 +399,9 @@ func (a *App) Close() error {
 	}
 
 	a.loggerCleanUp()
-	return nil
+
+	// Release the project last, when nothing uses its state anymore.
+	return a.lock.Close()
 }
 
 // ServeOptions contains all configuration for serving the local app.
