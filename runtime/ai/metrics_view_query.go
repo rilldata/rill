@@ -47,6 +47,7 @@ Request:
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - A time dimension's 'compute.time_floor.grain' accepts 'minute', 'hour', 'day', 'week', 'month', 'quarter', 'year' and the multiples '5m', '10m', '15m', '30m', '2h', '3h', '4h', '6h', '8h' and '12h'. Prefer a grain the metrics view lists in 'time_grains' when it declares any.
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+- To answer how a measure changed between two periods (e.g. day over day or month over month), set 'time_range' to the later period and 'comparison_time_range' to the earlier one, and request 'comparison_delta' and 'comparison_ratio' measures (see the comparison examples below). Never query a time series and subtract or divide its rows yourself; manual arithmetic is error-prone.
 - Measures that define an 'exact_expression' in the metrics view are approximate by default. Set 'exact: true' on such a measure only when the user explicitly asks for exact, precise or reconciled numbers; exact queries are much slower. Tell the user which precision was used.
 
 Response:
