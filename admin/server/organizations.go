@@ -178,6 +178,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.BillingEmail != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.billing_email", *req.BillingEmail))
 	}
+	if req.DisableProjectDomainAccess != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.disable_project_domain_access", *req.DisableProjectDomainAccess))
+	}
 	if req.DisplayName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
@@ -254,6 +257,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
 		DefaultProvisioner:                  org.DefaultProvisioner,
+		DisableProjectDomainAccess:          valOrDefault(req.DisableProjectDomainAccess, org.DisableProjectDomainAccess),
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1056,6 +1060,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		DefaultProvisioner:                  org.DefaultProvisioner,
+		DisableProjectDomainAccess:          org.DisableProjectDomainAccess,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
 		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
@@ -1108,6 +1113,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		DefaultProvisioner:                  org.DefaultProvisioner,
+		DisableProjectDomainAccess:          org.DisableProjectDomainAccess,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1170,6 +1176,7 @@ func (s *Server) SudoUpdateOrganizationDefaultProvisioner(ctx context.Context, r
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		DefaultProvisioner:                  req.DefaultProvisioner,
+		DisableProjectDomainAccess:          org.DisableProjectDomainAccess,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1240,16 +1247,17 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 	}
 
 	res := &adminv1.Organization{
-		Id:                   o.ID,
-		Name:                 o.Name,
-		DisplayName:          o.DisplayName,
-		Description:          o.Description,
-		LogoUrl:              logoURL,
-		LogoDarkUrl:          logoDarkURL,
-		FaviconUrl:           faviconURL,
-		ThumbnailUrl:         thumbnailURL,
-		CustomDomain:         o.CustomDomain,
-		DefaultProjectRoleId: defaultProjectRoleID,
+		Id:                         o.ID,
+		Name:                       o.Name,
+		DisplayName:                o.DisplayName,
+		Description:                o.Description,
+		LogoUrl:                    logoURL,
+		LogoDarkUrl:                logoDarkURL,
+		FaviconUrl:                 faviconURL,
+		ThumbnailUrl:               thumbnailURL,
+		CustomDomain:               o.CustomDomain,
+		DefaultProjectRoleId:       defaultProjectRoleID,
+		DisableProjectDomainAccess: o.DisableProjectDomainAccess,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),
 			Deployments:                    int32(o.QuotaDeployments),

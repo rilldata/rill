@@ -79,6 +79,26 @@ The feature currently requires manual action by a support representative at Rill
 
 :::
 
+#### Project domain access
+
+A project admin can also let everyone with their email domain join a single project, by turning on **Allow domain access** on the invite page after publishing, or with the CLI:
+
+```
+rill user whitelist setup yourdomain.com --project <project_name> --role viewer
+```
+
+Existing and new users with an email address ending in `@yourdomain.com` are then added to the project with that role, without an invite. Users who are not members of the organization join it as guests.
+
+Project admins see these rules in the project's **Share** dialog, under General Access, and can remove them there or with `rill user whitelist remove yourdomain.com --project <project_name>`.
+
+Organization admins can stop project admins from adding new rules by turning off **Project domain access** on the Organization settings page, or with the CLI:
+
+```
+rill org edit --disable-project-domain-access
+```
+
+When it is off, publishing no longer offers domain access, and new project rules are refused. Rules a project already has keep adding users; remove them from each project's Share dialog. Run `rill org edit --disable-project-domain-access=false` to allow new rules again.
+
 
 ## Project Users
 
