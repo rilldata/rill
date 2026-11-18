@@ -54,6 +54,24 @@ project_files:
         expression: count(*)
       - name: sum
         expression: sum(val)
+  duckdb_snapshots.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-03'::DATE as day, 'B' as account, 30 as val union all
+      select '2024-01-04'::DATE as day, 'A' as account, 40 as val union all
+      select '2024-01-04'::DATE as day, 'B' as account, 41 as val union all
+      select '2024-01-05'::DATE as day, 'A' as account, 50 as val union all
+      select '2024-01-05'::DATE as day, 'B' as account, 51 as val
+  duckdb_snapshots_metrics.yaml:
+    type: metrics_view
+    model: duckdb_snapshots
+    timeseries: day
+    dimensions:
+      - column: account
+    measures:
+      - name: sum
+        expression: sum(val)
 tests:
   - name: time_as_dimension_clickhouse
     resolver: metrics
@@ -272,3 +290,71 @@ tests:
       - country: US
         sum: 7
         sum_prev: 2
+  # Clients send the comparison for a legacy expression as the expression in iso_duration with an iso_offset;
+  # the comparison must be the base range shifted by the offset.
+  - name: legacy_comparison_of_expression_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        expression: P1D
+      comparison_time_range:
+        iso_duration: P1D
+        iso_offset: rill-PD
+    result:
+      - sum: 5
+        sum_prev: 4
+  - name: legacy_previous_period_of_expression_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        expression: P2D
+      comparison_time_range:
+        iso_duration: P2D
+        iso_offset: P2D
+    result:
+      - sum: 9
+        sum_prev: 5
+  # Alerts run legacy queries at the watermark plus a second and pin the end of legacy ranges to it.
+  - name: legacy_comparison_of_expression_alert_duckdb
+    resolver: legacy_metrics
+    properties:
+      query_name: MetricsViewAggregation
+      query_args_json: '{"metricsView":"duckdb_snapshots_metrics","dimensions":[{"name":"account"}],"measures":[{"name":"sum"},{"name":"sum_delta","comparisonDelta":{"measure":"sum"}}],"timeRange":{"expression":"P1D","timeZone":"UTC"},"comparisonTimeRange":{"isoDuration":"P1D","isoOffset":"rill-PD"},"sort":[{"name":"sum","desc":true}]}'
+    args:
+      execution_time: 2024-01-05T00:00:01Z
+    result:
+      - account: B
+        sum: 51
+        sum_delta: 10
+      - account: A
+        sum: 50
+        sum_delta: 10
+  # Clients now send the comparison for a legacy expression as the expression with an offset.
+  - name: legacy_expression_previous_period_alert_duckdb
+    resolver: legacy_metrics
+    properties:
+      query_name: MetricsViewAggregation
+      query_args_json: '{"metricsView":"duckdb_snapshots_metrics","dimensions":[{"name":"account"}],"measures":[{"name":"sum"},{"name":"sum_delta","comparisonDelta":{"measure":"sum"}}],"timeRange":{"expression":"P1D","timeZone":"UTC"},"comparisonTimeRange":{"expression":"P1D offset -1P"},"sort":[{"name":"sum","desc":true}]}'
+    args:
+      execution_time: 2024-01-05T00:00:01Z
+    result:
+      - account: B
+        sum: 51
+        sum_delta: 10
+      - account: A
+        sum: 50
+        sum_delta: 10

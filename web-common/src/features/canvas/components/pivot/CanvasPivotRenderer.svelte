@@ -107,11 +107,20 @@
 
   onDestroy(() => clickToFilter?.destroy());
 
+  // `click_to_filter: false` only detaches the handlers and the selection
+  // highlight. Recreating the orchestration above when the spec toggles throws
+  // inside the Svelte runtime, so it stays in place.
+  $: clickToFilterEnabled = $spec?.click_to_filter !== false;
+  $: activeClickToFilter = clickToFilterEnabled ? clickToFilter : undefined;
+  // Turned off after a click: the table would otherwise keep ignoring the
+  // filters it applied.
+  $: if (!clickToFilterEnabled) component.releaseClickToFilter();
+
   // Unwrap stores from the factory result for template use
-  $: clickSelectionStore = clickToFilter?.clickSelection;
+  $: clickSelectionStore = activeClickToFilter?.clickSelection;
   $: clickSelection = clickSelectionStore ? $clickSelectionStore : undefined;
 
-  $: rowSelectionStateStore = clickToFilter?.rowSelectionState;
+  $: rowSelectionStateStore = activeClickToFilter?.rowSelectionState;
   $: rowSelectionState = rowSelectionStateStore
     ? $rowSelectionStateStore
     : undefined;
@@ -169,7 +178,7 @@
         {rowSelectionState}
         {clickSelection}
         fillWidth
-        enableClickToFilter
+        enableClickToFilter={clickToFilterEnabled}
         {columnStyles}
         fitToWidth={$spec?.fit_to_width === true}
         wrapText={$spec?.wrap === true}
@@ -227,8 +236,8 @@
             activeCell: null,
           }));
         }}
-        onCellClickToFilter={clickToFilter?.handleCellClickToFilter}
-        onColumnHeaderClick={clickToFilter?.handleColumnHeaderClick}
+        onCellClickToFilter={activeClickToFilter?.handleCellClickToFilter}
+        onColumnHeaderClick={activeClickToFilter?.handleColumnHeaderClick}
       />
     {/if}
   {/if}

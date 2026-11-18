@@ -103,9 +103,10 @@ func (e *selfToFileExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     inputProps.Args,
-		Priority: opts.Priority,
+		Query:           sql,
+		Args:            inputProps.Args,
+		Priority:        opts.Priority,
+		QueryAttributes: opts.QueryAttributes,
 	})
 	if err != nil {
 		if overLimit.Load() {

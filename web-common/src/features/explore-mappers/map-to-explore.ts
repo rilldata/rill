@@ -187,6 +187,11 @@ export function mapQueryToDashboard(
       const defaultExploreState = {
         ...rillDefaultExploreState,
         ...exploreStateFromYAMLConfig,
+        // The explore's default filter is not part of the query being mapped.
+        // A query without a filter should open the explore without one as well.
+        whereFilter: rillDefaultExploreState.whereFilter,
+        dimensionsWithInlistFilter:
+          rillDefaultExploreState.dimensionsWithInlistFilter,
       };
       getDashboardState({
         queryClient,

@@ -1,3 +1,4 @@
+import { ephemeralMeasuresFirst } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { DashboardState_ActivePage } from "../../../../proto/gen/rill/ui/v1/dashboard_pb";
@@ -31,7 +32,8 @@ export const pivotSelectors = {
       }));
 
     // Unplaced ephemeral measures stay available for re-adding until deleted.
-    const ephemeralChips = (dashData.dashboard.ephemeralMeasures ?? [])
+    const defs = dashData.dashboard.ephemeralMeasures ?? [];
+    const ephemeralChips = defs
       .filter((def) => !columnMeasures.find((c) => c.id === def.name))
       .map((def) => ({
         id: def.name,
@@ -40,7 +42,13 @@ export const pivotSelectors = {
         description: def.expression,
       }));
 
-    return [...specChips, ...ephemeralChips];
+    // The sidebar and the "add field" menu offer every unplaced measure, so
+    // ephemeral ones come first, like in the other measure pickers.
+    return ephemeralMeasuresFirst(
+      [...specChips, ...ephemeralChips],
+      (chip) => chip.id,
+      defs.map((def) => def.name),
+    );
   },
   dimensions: ({
     validMetricsView,
