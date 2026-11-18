@@ -2,9 +2,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns, Download } from "lucide-svelte";
+  import { BoxSelect, Copy, Columns, Download } from "lucide-svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import type { BlockKind } from "./stores/block-edit";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
 
@@ -12,9 +14,9 @@
   export let onDelete: () => void;
   export let onDuplicate: () => void;
   export let onDownloadPng: () => void;
-  // Optional: convert this component's row into a tab group. Only provided for
-  // top-level rows (a tab's rows cannot be nested into another tab group).
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
+  // Optional: wrap this component's row into a new tab group or container. Only provided
+  // for top-level rows (the rows of a block cannot be nested into another block).
+  export let onWrapRow: ((kind: BlockKind) => void) | undefined = undefined;
   export let editable = false;
   export let component: BaseCanvasComponent;
   export let navigationEnabled: boolean = true;
@@ -36,6 +38,8 @@
     "combo_chart",
     "custom_chart",
   ] as const;
+
+  const { canvasContainers } = featureFlags;
 
   $: showExplore =
     navigationEnabled &&
@@ -69,11 +73,17 @@
           <Copy size="14px" />
           {m.canvas_component_duplicate()}
         </DropdownMenu.Item>
-        {#if onConvertToTabGroup}
-          <DropdownMenu.Item onclick={onConvertToTabGroup}>
+        {#if onWrapRow}
+          <DropdownMenu.Item onclick={() => onWrapRow?.("tab-group")}>
             <Columns size="14px" />
             {m.canvas_component_convert_to_tab_group()}
           </DropdownMenu.Item>
+          {#if $canvasContainers}
+            <DropdownMenu.Item onclick={() => onWrapRow?.("container")}>
+              <BoxSelect size="14px" />
+              {m.canvas_component_wrap_in_container()}
+            </DropdownMenu.Item>
+          {/if}
         {/if}
         <DropdownMenu.Separator />
         {#if showExplore && exploreComponent}

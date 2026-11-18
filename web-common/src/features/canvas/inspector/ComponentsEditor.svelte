@@ -26,8 +26,18 @@
   let currentTab: string;
 
   $: ({ specStore, type, resource } = component);
+  $: ({ _metricsViews } = component.parent);
 
   $: rendererProperties = $specStore;
+
+  // Hiding a component doesn't restrict its data, unless its metrics view has a security policy.
+  $: metricsViewName = ($specStore as { metrics_view?: string } | undefined)
+    ?.metrics_view;
+  $: visibilityDataNote =
+    metricsViewName &&
+    !$_metricsViews[metricsViewName]?.state?.validSpec?.securityRules?.length
+      ? m.canvas_visibility_data_note()
+      : undefined;
 
   $: componentType = isCanvasComponentType(type) ? type : null;
 
@@ -99,7 +109,12 @@
     {#if currentTab === "options"}
       {#key component}
         <ParamMapper {component} />
-        <VisibilityInput {component} />
+        <VisibilityInput
+          canvas={component.parent}
+          path={component.pathInYAML.slice(0, -1)}
+          hint={m.canvas_visibility_hint()}
+          dataNote={visibilityDataNote}
+        />
       {/key}
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />

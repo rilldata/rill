@@ -11,10 +11,11 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { Layers, Plus, PlusCircle } from "lucide-svelte";
+  import { BoxSelect, Layers, Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
   import type { CanvasComponentType } from "./components/types";
+  import type { BlockKind } from "./stores/block-edit";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
@@ -53,11 +54,12 @@
     undefined;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
-  // When provided, the menu offers "Tab group" as a final item. Only passed at the
-  // top level (tab groups cannot be nested inside a tab or a column).
-  export let onAddTabGroup: (() => void) | undefined = undefined;
+  // When provided, the menu ends with the blocks that can be added here: "Tab group" and,
+  // behind the canvasContainers flag, "Container". Only passed at the top level (blocks
+  // cannot be nested inside a tab, a container or a column).
+  export let onAddBlock: ((kind: BlockKind) => void) | undefined = undefined;
 
-  const { customCharts, customComponents } = featureFlags;
+  const { canvasContainers, customCharts, customComponents } = featureFlags;
 
   const client = useRuntimeClient();
 
@@ -211,15 +213,24 @@
         </DropdownMenu.Sub>
       {/if}
 
-      {#if onAddTabGroup}
+      {#if onAddBlock}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex flex-row gap-x-2 text-fg-primary"
-          onclick={() => onAddTabGroup?.()}
+          onclick={() => onAddBlock?.("tab-group")}
         >
           <Layers size="16px" />
           {m.canvas_tab_group()}
         </DropdownMenu.Item>
+        {#if $canvasContainers}
+          <DropdownMenu.Item
+            class="flex flex-row gap-x-2 text-fg-primary"
+            onclick={() => onAddBlock?.("container")}
+          >
+            <BoxSelect size="16px" />
+            {m.canvas_container()}
+          </DropdownMenu.Item>
+        {/if}
       {/if}
     </div>
   </DropdownMenu.Content>

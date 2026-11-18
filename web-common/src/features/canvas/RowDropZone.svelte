@@ -2,6 +2,7 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { AddableItem } from "./layout-util";
   import Divider from "./Divider.svelte";
+  import type { BlockKind } from "./stores/block-edit";
   import { activeDivider, dropZone } from "./stores/ui-stores";
 
   export let allowDrop: boolean;
@@ -12,8 +13,8 @@
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (item: AddableItem) => void;
-  // When provided, the add menu offers inserting a tab group at this position.
-  export let onAddTabGroup: (() => void) | undefined = undefined;
+  // When provided, the add menu offers inserting a block (a tab group or a container) at this position.
+  export let onAddBlock: ((kind: BlockKind) => void) | undefined = undefined;
 
   let menuOpen = false;
 
@@ -94,7 +95,7 @@
         }}
         onItemClick={addItem}
         onAddComponentRef={(componentName) => addItem({ componentName })}
-        {onAddTabGroup}
+        {onAddBlock}
       />
     </span>
   </div>

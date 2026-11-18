@@ -44,7 +44,7 @@ _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this
 
 ### `rows`
 
-_[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
+_[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
 
   - **`height`** - _[string]_ - Height of the row in px
 
@@ -79,7 +79,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
 
 
-  - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
+  - **`name`** - _[string]_ - Stable identifier for a tab group or a container; a tab group also uses it as its deep-link URL key. Defaults to `group-<index>` for a tab group and `container-<index>` for a container if omitted. Names must be unique among the tab groups and containers of the canvas. Only used for tab-group and container entries.
 
   - **`tabs`** - _[array of object]_ - Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
 
@@ -91,7 +91,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
 
 
-    - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
+    - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
 
       - **`height`** - _[string]_ - Height of the row in px
 
@@ -100,6 +100,16 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
 
       - **`items`** - _[array]_ - List of components to display in the row
+
+  - **`rows`** - _[array of object]_ - Makes this entry a container of rows instead of a plain row. A container keeps related rows together; it has no visual element for viewers, who see its rows as plain rows. The container's `if` applies to everything inside it. Containers hold plain rows (with `items`) and cannot be nested inside a tab or another container.
+
+    - **`height`** - _[string]_ - Height of the row in px
+
+    - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+    The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
+    - **`items`** - _[array]_ - List of components to display in the row
 
 ### `max_width`
 

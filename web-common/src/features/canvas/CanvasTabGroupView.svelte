@@ -3,7 +3,7 @@
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import StaticCanvasRow from "./StaticCanvasRow.svelte";
+  import StaticRowsBlock from "./StaticRowsBlock.svelte";
   import type { TabGroup } from "./stores/tab-group";
 
   export let group: TabGroup;
@@ -33,17 +33,14 @@
       <CanvasTabStrip {group} {maxWidth} {onSelect} />
 
       {#if activeTab && activeRows}
-        {#each $activeRows as row, rowIndex (`${activeTab.name}-${rowIndex}`)}
-          <StaticCanvasRow
-            {row}
-            {rowIndex}
-            {components}
-            {maxWidth}
-            {navigationEnabled}
-            {activeComponentId}
-            idPrefix={`${group.name}-${activeTab.name}-`}
-          />
-        {/each}
+        <StaticRowsBlock
+          block={activeTab}
+          {components}
+          {maxWidth}
+          {navigationEnabled}
+          {activeComponentId}
+          idPrefix={`${group.name}-${activeTab.name}-`}
+        />
 
         {#if $activeRows.length === 0}
           <div class="flex items-center justify-center py-8">

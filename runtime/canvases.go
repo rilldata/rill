@@ -16,31 +16,15 @@ import (
 )
 
 // CollectCanvasComponentNames collects the names of all components referenced by the given rows,
-// descending into tab groups (one level deep, since tabs cannot be nested).
+// including the rows of tab groups and containers.
 func CollectCanvasComponentNames(rows []*runtimev1.CanvasRow, out map[string]bool) {
-	for _, row := range rows {
-		for _, item := range row.Items {
-			out[item.Component] = true
-		}
-		if tg := row.GetTabGroup(); tg != nil {
-			for _, tab := range tg.Tabs {
-				CollectCanvasComponentNames(tab.Rows, out)
-			}
-		}
-	}
+	canvas.WalkRows(rows, canvas.Visit{Item: func(item *runtimev1.CanvasItem) { out[item.Component] = true }})
 }
 
 // CollectCanvasItems collects all items in the given rows,
-// descending into tab groups (one level deep, since tabs cannot be nested).
+// including the rows of tab groups and containers.
 func CollectCanvasItems(rows []*runtimev1.CanvasRow, out *[]*runtimev1.CanvasItem) {
-	for _, row := range rows {
-		*out = append(*out, row.Items...)
-		if tg := row.GetTabGroup(); tg != nil {
-			for _, tab := range tg.Tabs {
-				CollectCanvasItems(tab.Rows, out)
-			}
-		}
-	}
+	canvas.WalkRows(rows, canvas.Visit{Item: func(item *runtimev1.CanvasItem) { *out = append(*out, item) }})
 }
 
 // ResolveCanvasOptions configures ResolveCanvas.
@@ -58,7 +42,7 @@ type ResolveCanvasResult struct {
 	Canvas                 *runtimev1.Resource
 	ResolvedComponents     map[string]*runtimev1.Resource
 	ReferencedMetricsViews map[string]*runtimev1.Resource
-	// HiddenPaths are the YAML paths of the canvas elements hidden from the claims, such as "rows.0.items.1" or "rows.3.tabs.0".
+	// HiddenPaths are the YAML paths of the canvas elements hidden from the claims, such as "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
 	// It's only set when ResolveCanvasOptions.IncludeHidden is set.
 	HiddenPaths []string
 }
@@ -110,7 +94,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 
 	components := make(map[string]*runtimev1.Resource)
 
-	// Collect all referenced component names, descending into tab groups.
+	// Collect all referenced component names, descending into tab groups and containers.
 	componentNames := make(map[string]bool)
 	CollectCanvasComponentNames(spec.Rows, componentNames)
 

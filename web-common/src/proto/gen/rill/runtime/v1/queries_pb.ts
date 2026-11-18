@@ -4457,7 +4457,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
   referencedMetricsViews: { [key: string]: Resource } = {};
 
   /**
-   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
    * The paths follow the canvas YAML. Only set when include_hidden is true.
    *
    * @generated from field: repeated string hidden_paths = 4;

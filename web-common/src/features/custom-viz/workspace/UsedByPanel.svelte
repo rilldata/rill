@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { forEachRowsList } from "@rilldata/web-common/features/canvas/layout-util";
   import {
     ResourceKind,
     useFilteredResources,
@@ -7,7 +8,6 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type {
     V1CanvasItem,
-    V1CanvasRow,
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -27,23 +27,19 @@
     }))
     .filter(({ items }) => items.length > 0);
 
-  // All items in a canvas that reference this component (including in tab groups).
+  // All items in a canvas that reference this component (including in tab groups and containers).
   function referencingItems(res: V1Resource): V1CanvasItem[] {
     const spec = res.canvas?.state?.validSpec ?? res.canvas?.spec;
     const items: V1CanvasItem[] = [];
-    const walk = (rows: V1CanvasRow[] | undefined) => {
-      for (const row of rows ?? []) {
+    forEachRowsList(spec?.rows ?? [], (rows) => {
+      for (const row of rows) {
         for (const item of row.items ?? []) {
           if (item.component === componentName && !item.definedInCanvas) {
             items.push(item);
           }
         }
-        for (const tab of row.tabGroup?.tabs ?? []) {
-          walk(tab.rows);
-        }
       }
-    };
-    walk(spec?.rows);
+    });
     return items;
   }
 

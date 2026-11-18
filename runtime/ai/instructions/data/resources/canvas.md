@@ -193,7 +193,7 @@ rows:
 
 ### Tab groups
 
-A row entry can be a tab group instead of a plain row. A tab group has a `name` (URL key) and a list of `tabs`, each with a `label`, optional `name`, and its own `rows`. Only the active tab loads data. Allowed only at the top level, not nested inside a tab.
+A row entry can be a tab group instead of a plain row. A tab group has a `name` (URL key) and a list of `tabs`, each with a `label`, optional `name`, and its own `rows`. Only the active tab loads data. Allowed only at the top level, not nested inside a tab or a container.
 
 ```yaml
 rows:
@@ -211,9 +211,33 @@ rows:
                 bar_chart: # ...
 ```
 
+### Containers
+
+A row entry can be a container instead of a plain row: a named list of `rows` that keeps related charts together, such as the charts of one story. Viewers see its rows as plain rows; a container has no title, border or other visual element. Allowed only at the top level, and holds plain rows only (no tab groups or other containers). A container's `if` hides everything inside it.
+
+```yaml
+rows:
+  - items: # ... plain row, unchanged
+  - name: revenue_story # container: an entry with `rows`
+    if: '{{ has "finance" .user.groups }}' # everything inside inherits it
+    rows:
+      - items:
+          - kpi_grid:
+              metrics_view: orders
+              measures: [revenue, margin]
+      - height: 320px
+        items:
+          - width: 8
+            line_chart: # ...
+          - width: 4
+            table: # ...
+  - name: deep_dives # tab group, unchanged
+    tabs: # ...
+```
+
 ### Conditional content (`if`)
 
-Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+Rows, tab groups, tabs, containers and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of the rows, tab groups, tabs and containers that hold it are true.
 
 ```yaml
 rows:
