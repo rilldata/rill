@@ -37,8 +37,6 @@ export class DimensionFilterManager {
   private oldMode: DimensionFilterMode;
   // Cause of the change currently being applied. See `runWithSource`.
   private activeSource: FilterChangeSource;
-  // True when the parsed expression held more than a single-select filter allows, so `reconcile` narrowed it.
-  public narrowedOnParse = false;
 
   public constructor(
     public readonly name: string,
@@ -135,8 +133,6 @@ export class DimensionFilterManager {
     this.inputText = initInputText;
     this.exclude = initExclude;
     this.rawExpr = initRawExpr;
-    // `commit` narrows it below without reporting, so the parser has to publish the narrowed filter.
-    this.narrowedOnParse = this.singleSelect && !this.holdsSingleValue();
     this.commit(false);
   }
 

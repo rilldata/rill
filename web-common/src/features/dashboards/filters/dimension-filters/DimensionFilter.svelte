@@ -357,7 +357,7 @@
   }
 
   // Pinned and required chips have no remove button, so the picker is how a viewer clears just this filter.
-  function onClearSingleSelect() {
+  function onClear() {
     persistPinnedAndRequired();
     proxyDimensionManager.clear();
     dimensionManager.clear();
@@ -632,7 +632,7 @@
       {onApply}
       {singleSelect}
       hasValue={dimensionManager.selectedValues.length > 0}
-      onClear={onClearSingleSelect}
+      {onClear}
     />
   </DropdownMenu.Content>
 </DropdownMenu.Root>

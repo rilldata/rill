@@ -821,27 +821,34 @@ describe("single-select filters", () => {
     ).toEqual(["google.com", "facebook.com"]);
   });
 
-  it("publishes the narrowed filter when the config is loaded before the params", async () => {
+  it("narrows the params when the config is loaded before them", () => {
     const filterManager = createSingleSelectFilterManager();
-    const internalChange = vi.fn();
-    cleanups.push(
-      filterManager.storeSync.on("internal-change", internalChange),
-    );
+    const urlParams = perMetricsViewParams({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+    });
 
-    filterManager.storeSync.setUrlParams(
-      perMetricsViewParams({
-        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
-      }),
-    );
-    // `stateChanged` writes the param in a microtask.
-    await Promise.resolve();
+    filterManager.storeSync.setUrlParams(urlParams);
 
+    // The params the next state change is compared against hold the value the chip shows.
     expect(
       filterManager.storeSync.searchParams?.get(
         `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
       ),
-    ).toEqual(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`);
-    expect(internalChange).toHaveBeenCalledTimes(1);
+    ).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+    );
+    expect(
+      (
+        filterManager.filterManagersMap[
+          AD_BIDS_PUBLISHER_DIMENSION
+        ] as DimensionFilterManager
+      ).selectedValues,
+    ).toEqual(["Facebook"]);
+
+    // The same url again normalizes to the current params, so it is not parsed again.
+    const joinerBefore = filterManager.topLevelJoiner;
+    filterManager.storeSync.setUrlParams(urlParams);
+    expect(filterManager.topLevelJoiner).toBe(joinerBefore);
   });
 
   it("does not publish a param that already holds a single value", async () => {
