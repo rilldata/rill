@@ -5,7 +5,6 @@ export type TimeFiltersConfig = {
   allowCustomTimeRange?: boolean;
   skipDefaultTimeRange?: boolean;
   skipTimeGrain?: boolean;
-  lockTimeZone?: boolean;
   showFullRange?: boolean;
   showWatermark?: boolean;
   showInheritRange?: boolean;

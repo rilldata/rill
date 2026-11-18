@@ -10,13 +10,6 @@ import {
   V1ExportFormat,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
-import { page } from "$app/stores";
-import { get } from "svelte/store";
-import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 // showEmbedOwnerEmail is true if the form shows the field for the email of the embed user who creates the alert.
 // See showEmbedOwnerEmail in AlertFormDataWrapper.
@@ -75,38 +68,5 @@ export function getNewAlertInitialFormValues(
     metricsViewName,
     exploreName: exploreName,
     ephemeralMeasures: exploreState.ephemeralMeasures,
-  };
-}
-
-export function getNewAlertInitialFiltersFormValues(
-  client: RuntimeClient,
-  metricsViewName: string,
-) {
-  const metricsViewProvider = new MetricsViewsProvider(client, [
-    metricsViewName,
-  ]);
-  const yamlConfigProvider = new YAMLConfigProvider();
-
-  const expressionFilterManager = new ExpressionFilterManager(
-    metricsViewProvider,
-    yamlConfigProvider,
-  );
-  expressionFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
-
-  const timeFilterManager = new TimeFilterManager(
-    client,
-    metricsViewProvider,
-    yamlConfigProvider,
-  );
-  timeFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
-
-  return {
-    expressionFilterManager,
-    timeFilterManager,
-    cleanup: () => {
-      timeFilterManager.cleanup();
-      metricsViewProvider.cleanup();
-      yamlConfigProvider.cleanup?.();
-    },
   };
 }

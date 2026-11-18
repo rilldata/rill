@@ -1,4 +1,5 @@
 import type { HoistedPageForComponentTests } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
+import { openTimeRangePicker } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filter-test-utils";
 import { useExploreTimeFiltersVariant } from "@rilldata/web-common/features/dashboards/time-controls/test/explore-time-filters-variant";
 import {
   testComparisonTimeRangeFilters,
@@ -6,7 +7,8 @@ import {
   testTimeRangeFilters,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
 import type { ActionResult } from "@sveltejs/kit";
-import { describe, vi } from "vitest";
+import { screen } from "@testing-library/svelte";
+import { describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
@@ -73,4 +75,17 @@ describe("ExploreTimeFilters", () => {
   testTimeRangeFilters(variant);
   testComparisonTimeRangeFilters(variant);
   testTimeGrainSelector(variant);
+
+  it.each([
+    { lockTimeZone: false, shown: true },
+    { lockTimeZone: true, shown: false },
+  ])(
+    "Should show the time zone menu: $shown, when `lock_time_zone` is $lockTimeZone",
+    async ({ lockTimeZone, shown }) => {
+      await variant.render({ lockTimeZone });
+      await openTimeRangePicker();
+
+      expect(!!screen.queryByText("Time zone")).toBe(shown);
+    },
+  );
 });

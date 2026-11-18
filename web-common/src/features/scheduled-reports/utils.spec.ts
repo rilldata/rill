@@ -198,6 +198,20 @@ describe("getFilterParamsFromAggregationRequest", () => {
     expect(params.get("tr")).toEqual("rill-PWC");
   });
 
+  it("maps an absolute range to wall-clock times in its time zone", () => {
+    const params = getFilterParamsFromAggregationRequest({
+      timeRange: {
+        start: "2026-03-01T05:00:00Z",
+        end: "2026-03-02T05:00:00Z",
+        timeZone: "America/New_York",
+      },
+    });
+
+    expect(params.get("tr")).toEqual(
+      "2026-03-01T00:00:00.000Z to 2026-03-02T00:00:00.000Z",
+    );
+  });
+
   it("defaults to all time when the request has no time range", () => {
     const params = getFilterParamsFromAggregationRequest({});
 

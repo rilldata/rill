@@ -210,7 +210,6 @@
   );
   $effect(() => () => {
     cleanupFilterManagers();
-    dashboardConfigProvider.cleanup?.();
     provider.cleanup();
   });
 

@@ -32,7 +32,9 @@
         ...formValues,
         criteria: [],
       },
-      expressionFilterManager.topLevelJoiner.expr[formValues.metricsViewName],
+      expressionFilterManager.topLevelJoiner.expr[
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0]
+      ],
       timeFilterManager,
     ),
   );

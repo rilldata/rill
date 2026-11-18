@@ -42,6 +42,8 @@ export interface TimeFiltersRenderOptions {
   initTimeRangeLabel?: RegExp;
   /** The `time_grains` the metrics view declares; the standard grains when omitted. */
   timeGrains?: V1TimeGrain[];
+  /** Sets `lock_time_zone` on the explore; a canvas has no such setting and ignores it. */
+  lockTimeZone?: boolean;
 }
 
 /**

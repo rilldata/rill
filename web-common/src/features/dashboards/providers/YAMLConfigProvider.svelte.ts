@@ -29,6 +29,7 @@ export class YAMLConfigProvider {
   public allowCustomTimeRange = $state(false);
   public defaultTimeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeZones = $state<string[]>([]);
+  public lockTimeZone = $state(false);
 
   public editable = $state<boolean>(false);
 
@@ -53,6 +54,7 @@ export class YAMLConfigProvider {
     allowCustomTimeRange,
     defaultTimeZone,
     timeZones,
+    lockTimeZone,
   }: {
     defaultFilters?: YAMLConfigProvider["defaultFilters"];
     pinnedFilters?: string[];
@@ -67,6 +69,7 @@ export class YAMLConfigProvider {
     allowCustomTimeRange?: YAMLConfigProvider["allowCustomTimeRange"];
     defaultTimeZone?: YAMLConfigProvider["defaultTimeZone"];
     timeZones?: YAMLConfigProvider["timeZones"];
+    lockTimeZone?: YAMLConfigProvider["lockTimeZone"];
   }) {
     this.defaultFilters = defaultFilters ?? {};
 
@@ -91,6 +94,7 @@ export class YAMLConfigProvider {
     this.allowCustomTimeRange = allowCustomTimeRange ?? false;
     this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
+    this.lockTimeZone = lockTimeZone ?? false;
 
     this.events.emit("update");
   }

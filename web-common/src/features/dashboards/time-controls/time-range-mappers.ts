@@ -1,6 +1,10 @@
-import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  formatRillTimeWallClock,
+  parseRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { RillAllTimeInterval } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
+import { DateTime } from "luxon";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
@@ -281,7 +285,15 @@ export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {
   }
 
   if (timeRange.start && timeRange.end) {
-    return `${timeRange.start} to ${timeRange.end}`;
+    // The saved endpoints are UTC instants, but rill time reads absolute times as wall-clock times in the time zone.
+    const [start, end] = [timeRange.start, timeRange.end].map((iso) =>
+      DateTime.fromISO(iso, { zone: "UTC" }),
+    );
+    if (!start.isValid || !end.isValid) {
+      return `${timeRange.start} to ${timeRange.end}`;
+    }
+    const timeZone = timeRange.timeZone ?? "UTC";
+    return `${formatRillTimeWallClock(start, timeZone)} to ${formatRillTimeWallClock(end, timeZone)}`;
   }
   return duration ?? timeRange.expression;
 }

@@ -17,8 +17,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
@@ -189,15 +187,13 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
 /**
  * Creates the filter managers for the report form, seeded with the report's filter state.
  * They are never synced to the url, so editing filters in the form leaves the dashboard untouched.
+ * The returned cleanup also cleans up `dashboardConfigProvider`, so the managers own it.
  * `singleParamFormMv` matches the dashboard: explore urls carry the singular `f` param,
  * canvas urls carry one param per metrics view.
  */
 export function createReportFilterManagers(
   client: RuntimeClient,
-  dashboardConfigProvider: Pick<
-    DashboardConfigProvider,
-    "metricsViewsProvider" | "yamlConfigProvider"
-  >,
+  dashboardConfigProvider: DashboardConfigProvider,
   singleParamFormMv: boolean,
   initialParams: URLSearchParams,
 ) {
@@ -220,37 +216,9 @@ export function createReportFilterManagers(
     expressionFilterManager,
     timeFilterManager,
     cleanup: () => {
-      expressionFilterManager.cleanup();
       timeFilterManager.cleanup();
-    },
-  };
-}
-
-// Filter managers for an alert's saved aggregation request, scoped to its metrics view.
-export function getFiltersAndTimeControlsFromAggregationRequest(
-  client: RuntimeClient,
-  metricsViewName: string,
-  aggregationRequest: V1MetricsViewAggregationRequest,
-) {
-  const metricsViewsProvider = new MetricsViewsProvider(client, [
-    metricsViewName,
-  ]);
-  const yamlConfigProvider = new YAMLConfigProvider();
-  const { expressionFilterManager, timeFilterManager, cleanup } =
-    createReportFilterManagers(
-      client,
-      { metricsViewsProvider, yamlConfigProvider },
-      true,
-      getFilterParamsFromAggregationRequest(aggregationRequest),
-    );
-
-  return {
-    expressionFilterManager,
-    timeFilterManager,
-    cleanup: () => {
-      cleanup();
-      metricsViewsProvider.cleanup();
-      yamlConfigProvider.cleanup?.();
+      expressionFilterManager.cleanup();
+      dashboardConfigProvider.cleanup?.();
     },
   };
 }

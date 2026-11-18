@@ -34,6 +34,7 @@ import {
 } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
 import {
+  formatRillTimeWallClock,
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
@@ -729,15 +730,13 @@ export class TimeFilterManager implements UrlParamsStore {
     const panAmount = getDurationObjectFromMS(currentRangeWidth);
 
     // Shifted in the selected zone so calendar durations respect DST.
-    // Written as wall-clock times in that zone: the backend reads absolute times in the selected zone and ignores the `Z`,
-    // which the rill time parser requires on times with seconds.
     const shift = direction === "left" ? "minus" : "plus";
     const [newStart, newEnd] = [this.interval.start, this.interval.end].map(
       (dt) =>
-        dt
-          .setZone(this.timeZone)
-          [shift](panAmount)
-          .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+        formatRillTimeWallClock(
+          dt.setZone(this.timeZone)[shift](panAmount),
+          this.timeZone,
+        ),
     );
 
     this.applyTimeRange(`${newStart} to ${newEnd}`);
@@ -889,17 +888,24 @@ export class TimeFilterManager implements UrlParamsStore {
   private getTimeRangesQueryOptions() {
     const expression = this.requestedTimeRange;
     if (!expression) return [];
-    return this.metricsViewsProvider.metricsViewNames.map((metricsViewName) =>
-      getTimeRangesQueryOptions(this.runtimeClient, {
-        metricsViewName,
-        expressions: [expression],
-        timeZone: this.timeZone,
-        timeDimension: this.timeDimension,
-        executionTime: this.parent
-          ? this.parent.executionTime
-          : this.executionTime,
-      }),
-    );
+    // A canvas can mix metrics views with and without a time dimension,
+    // and the runtime rejects resolving a range for the latter.
+    return this.metricsViewsProvider.metricsViewNames
+      .filter(
+        (metricsViewName) =>
+          this.metricsViewsProvider.specs[metricsViewName]?.timeDimension,
+      )
+      .map((metricsViewName) =>
+        getTimeRangesQueryOptions(this.runtimeClient, {
+          metricsViewName,
+          expressions: [expression],
+          timeZone: this.timeZone,
+          timeDimension: this.timeDimension,
+          executionTime: this.parent
+            ? this.parent.executionTime
+            : this.executionTime,
+        }),
+      );
   }
 
   /**

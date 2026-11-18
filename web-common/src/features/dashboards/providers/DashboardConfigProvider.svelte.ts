@@ -48,7 +48,6 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
-      console.log(exploreSpec);
       this.yamlConfigProvider.update({
         restrictedDimensions: exploreSpec.dimensions,
         primaryTimeDimension: metricsViewSpec.timeDimension,
@@ -59,6 +58,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         allowCustomTimeRange: exploreSpec.allowCustomTimeRange,
         defaultTimeZone: exploreSpec.defaultPreset?.timezone,
         timeZones: exploreSpec.timeZones,
+        lockTimeZone: exploreSpec.lockTimeZone,
       });
     });
 

@@ -13,14 +13,12 @@
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
   import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
-  import {
-    type DashboardConfigProvider,
-    ExploreDashboardConfigProvider,
-  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let expressionFilterManager: ExpressionFilterManager;
   export let timeFilterManager: TimeFilterManager;
+  export let dashboardConfigProvider: DashboardConfigProvider;
 
   const runtimeClient = useRuntimeClient();
 
@@ -28,17 +26,7 @@
 
   // memoise to avoid rerenders
   $: metricsViewName = $form["metricsViewName"];
-  $: exploreName = $form["exploreName"];
   $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
-
-  let dashboardConfigProvider: DashboardConfigProvider;
-  $: {
-    dashboardConfigProvider?.cleanup?.();
-    dashboardConfigProvider = new ExploreDashboardConfigProvider(
-      runtimeClient,
-      exploreName,
-    );
-  }
 
   // Ephemeral measures have no spec entry; synthesize one so they can be
   // selected as the alert's measure.

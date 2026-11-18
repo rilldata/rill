@@ -32,7 +32,7 @@
     canvasName,
   );
   // svelte-ignore state_referenced_locally
-  const { expressionFilterManager, timeFilterManager } =
+  const { expressionFilterManager, timeFilterManager, cleanup } =
     createReportFilterManagers(
       runtimeClient,
       dashboardConfigProvider,
@@ -41,6 +41,7 @@
     );
   // svelte-ignore state_referenced_locally
   onManagersCreated(expressionFilterManager, timeFilterManager);
+  $effect(() => cleanup);
 </script>
 
 <!-- The app layout normally supplies the tooltip provider the time controls need. -->

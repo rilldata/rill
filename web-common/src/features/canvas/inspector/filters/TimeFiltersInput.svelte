@@ -56,7 +56,6 @@
       showInheritRange: true,
       hidePan: true,
       showFullRange: false,
-      lockTimeZone: !hasLocalTimeRange,
       allowCustomTimeRange: yamlConfigProvider.allowCustomTimeRange,
       showComparisonSelector: showComparison,
       showGrainPicker: showGrain,

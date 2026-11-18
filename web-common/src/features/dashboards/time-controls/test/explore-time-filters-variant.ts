@@ -24,7 +24,10 @@ import {
   YAML_TIME_ZONES,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/rill-time-mocks";
 import { waitForTimeRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filter-test-utils";
-import type { TimeFiltersVariant } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
+import type {
+  TimeFiltersRenderOptions,
+  TimeFiltersVariant,
+} from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
@@ -35,10 +38,7 @@ import {
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { afterAll, beforeEach, expect } from "vitest";
-import type {
-  V1ResolvedTimeRange,
-  V1TimeGrain,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ResolvedTimeRange } from "@rilldata/web-common/runtime-client";
 
 // Url params for the dashboard before any time filter is applied, coming from the yaml preset.
 // A rilltime expression carries characters the url escapes, and the url search history holds the
@@ -75,7 +75,10 @@ export function useExploreTimeFiltersVariant(
   const mocks = useDashboardFetchMocksForComponentTests();
   let pageMock!: PageMockForComponentTests;
 
-  function mockMetricsViewAndExplore(timeGrains?: V1TimeGrain[]) {
+  function mockMetricsViewAndExplore({
+    timeGrains,
+    lockTimeZone,
+  }: TimeFiltersRenderOptions = {}) {
     // TODO: always doing { ...AD_BIDS_METRICS_INIT_WITH_TIME, timeGrains } stops dashboard from loading.
     //       might be a symptom of larger issue if timeGrains is present but undefined.
     const metricsView = timeGrains
@@ -86,6 +89,8 @@ export function useExploreTimeFiltersVariant(
       ...AD_BIDS_EXPLORE_INIT,
       timeRanges: YAML_TIME_RANGES,
       timeZones: YAML_TIME_ZONES,
+      // Left out unless set, since the response decoder rejects an undefined field.
+      ...(lockTimeZone ? { lockTimeZone } : {}),
       defaultPreset: {
         ...AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
         timeRange: DEFAULT_TIME_RANGE,
@@ -139,8 +144,14 @@ export function useExploreTimeFiltersVariant(
       getComparisonEnabled: () => exploreState()?.showTimeComparison ?? false,
     },
 
-    render: async ({ initUrlSearch, initTimeRangeLabel, timeGrains } = {}) => {
-      if (timeGrains) mockMetricsViewAndExplore(timeGrains);
+    render: async ({
+      initUrlSearch,
+      initTimeRangeLabel,
+      timeGrains,
+      lockTimeZone,
+    } = {}) => {
+      if (timeGrains || lockTimeZone)
+        mockMetricsViewAndExplore({ timeGrains, lockTimeZone });
       // Make sure to populate the url with the initial states.
       pageMock.gotoSearch(PageURLForInitialState);
       if (initUrlSearch) pageMock.gotoSearch(initUrlSearch);

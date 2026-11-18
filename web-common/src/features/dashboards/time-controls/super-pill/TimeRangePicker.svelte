@@ -54,7 +54,6 @@
   } = $props();
   let {
     showTimeDimensionSelector = false,
-    lockTimeZone = false,
     showFullRange = true,
     showWatermark = false,
     showInheritRange = false,
@@ -87,6 +86,10 @@
     allowCustomTimeRange,
     timeZones,
   } = $derived(yamlConfigProvider);
+  // Explore can lock the zone in yaml; a manager inheriting its range follows the parent's zone.
+  let lockTimeZone = $derived(
+    yamlConfigProvider.lockTimeZone || timeFilterManager.inheritsTimeRange,
+  );
 
   let rangeBuckets = $derived(
     bucketYamlRanges(timeRanges, largestMinTimeGrain, true, maxQueryTimeRange),

@@ -1,5 +1,6 @@
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_METRICS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -38,9 +39,14 @@ const NOW_TIME_RANGE = "7D as of now/D+1D";
 const OTHER_TIME_RANGE = "7D as of latest/D";
 // What getDefaultTimeRange picks for the 3 months of TIME_RANGE_SUMMARY.
 const RILL_DEFAULT_TIME_RANGE = TimeRangePreset.QUARTER_TO_DATE;
+const NO_TIME_METRICS_NAME = "AdBids_no_time";
+// The field is left out rather than set to undefined, which the response decoder rejects.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { timeDimension: _, ...NO_TIME_METRICS_SPEC } = AD_BIDS_METRICS_INIT;
 
 const mocks = useMetricsViewMocks({
   [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_INIT_WITH_TIME,
+  [NO_TIME_METRICS_NAME]: NO_TIME_METRICS_SPEC,
 });
 
 describe("TimeFilterManager", () => {
@@ -62,11 +68,13 @@ describe("TimeFilterManager", () => {
     parent?: TimeFilterManager,
     yamlConfigProvider = new YAMLConfigProvider(),
     config: TimeFiltersConfig = {},
+    metricsViewNames = [AD_BIDS_METRICS_NAME],
   ) {
     const rendered = renderInRuntimeContext(({ runtimeClient }) => {
-      const metricsViewsProvider = new MetricsViewsProvider(runtimeClient, [
-        AD_BIDS_METRICS_NAME,
-      ]);
+      const metricsViewsProvider = new MetricsViewsProvider(
+        runtimeClient,
+        metricsViewNames,
+      );
       const manager = new TimeFilterManager(
         runtimeClient,
         metricsViewsProvider,
@@ -109,10 +117,21 @@ describe("TimeFilterManager", () => {
     );
   }
 
-  function countTimeRangesRequests(fetchSpy: ReturnType<typeof vi.spyOn>) {
-    return fetchSpy.mock.calls.filter(([url]) =>
-      String(url).endsWith("/MetricsViewTimeRanges"),
-    ).length;
+  function countTimeRangesRequests(
+    fetchSpy: ReturnType<typeof vi.spyOn>,
+    metricsViewName?: string,
+  ) {
+    return fetchSpy.mock.calls.filter(([url, init]) => {
+      if (!String(url).endsWith("/MetricsViewTimeRanges")) return false;
+      if (!metricsViewName) return true;
+      const body = (init as RequestInit | undefined)?.body;
+      const bodyText =
+        typeof body === "string"
+          ? body
+          : new TextDecoder().decode(body as ArrayBufferView);
+      const request = JSON.parse(bodyText) as { metricsViewName?: string };
+      return request.metricsViewName === metricsViewName;
+    }).length;
   }
 
   it("re-resolves the interval when the metrics view is invalidated", async () => {
@@ -136,6 +155,21 @@ describe("TimeFilterManager", () => {
     await waitFor(() => expectInterval(manager, reconciled));
     expect(resolvedRanges.length).toBeGreaterThan(resolvedCount);
     expect(manager.timeRange).toEqual(DEFAULT_TIME_RANGE);
+  });
+
+  it("resolves the interval alongside a metrics view without a time dimension", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const { manager } = createManager(undefined, undefined, undefined, [
+      AD_BIDS_METRICS_NAME,
+      NO_TIME_METRICS_NAME,
+    ]);
+    applyUrlTimeRange(manager, DEFAULT_TIME_RANGE);
+
+    await waitFor(() =>
+      expectInterval(manager, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+    );
+    // The runtime rejects resolving a range for a metrics view without a time dimension.
+    expect(countTimeRangesRequests(fetchSpy, NO_TIME_METRICS_NAME)).toBe(0);
   });
 
   it("re-resolves the interval when the execution time changes", async () => {
@@ -575,6 +609,8 @@ describe("TimeFilterManager", () => {
       );
       expect(child.timeRange).toEqual(OTHER_TIME_RANGE);
       expect(child.urlTimeRange).toEqual(INHERIT_TIME_RANGE_ALIAS);
+      // The picker locks the zone of a child that follows the parent's range.
+      expect(child.inheritsTimeRange).toBe(true);
     });
 
     it("keeps its own range", async () => {
@@ -589,6 +625,8 @@ describe("TimeFilterManager", () => {
         expectInterval(parent, RESOLVED_RILL_TIMES[NOW_TIME_RANGE]),
       );
       expect(child.timeRange).toEqual(OTHER_TIME_RANGE);
+      // The picker lets a child with its own range pick a zone.
+      expect(child.inheritsTimeRange).toBe(false);
     });
 
     it("follows the parent's comparison, whether it is shown or not", async () => {
