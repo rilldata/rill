@@ -75,6 +75,38 @@ export function specUsesField(spec: unknown, field: string): boolean {
   return visit(spec, "", false);
 }
 
+/**
+ * Whether swapping `from` for `to` in a component's spec would list a field twice, e.g. a table
+ * column or a KPI the spec already shows. The runtime rejects such a control (listsFieldTwice in
+ * runtime/canvas/controls.go); keep them in sync.
+ */
+export function swapRepeatsField(
+  spec: unknown,
+  from: string,
+  to: string,
+): boolean {
+  const visit = (value: unknown, key: string): boolean => {
+    if (Array.isArray(value)) {
+      const isFieldList = SWAP_LIST_KEYS.has(key);
+      let count = 0;
+      for (const child of value as unknown[]) {
+        const name =
+          child && typeof child === "object" && !Array.isArray(child)
+            ? (child as Record<string, unknown>).name
+            : child;
+        if (isFieldList && name === to) count++;
+        if (visit(child, key)) return true;
+      }
+      return count > 1;
+    }
+    if (value && typeof value === "object") {
+      return Object.entries(value).some(([k, child]) => visit(child, k));
+    }
+    return false;
+  };
+  return visit(swapFields(spec, new Map([[from, to]])), "");
+}
+
 function setPath(
   spec: Record<string, unknown>,
   path: string,

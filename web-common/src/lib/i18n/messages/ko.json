@@ -521,6 +521,7 @@
   "canvas_control_dialog_options_measure": "뷰어가 선택할 수 있는 측정값",
   "canvas_control_dialog_options_time_grain": "뷰어가 선택할 수 있는 시간 단위",
   "canvas_control_dialog_options_time_range": "뷰어가 선택할 수 있는 시간 범위",
+  "canvas_control_dialog_repeated": "{item}에 이미 \"{field}\"이(가) 표시되어 있어 전환하면 두 번 표시됩니다. 선택을 해제하거나 {item}에서 제거하세요.",
   "canvas_control_dialog_save": "컨트롤 저장",
   "canvas_control_kind_dimension": "차원",
   "canvas_control_kind_filter": "필터",

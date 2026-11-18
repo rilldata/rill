@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyFieldControls, specUsesField } from "./apply-fields";
+import {
+  applyFieldControls,
+  specUsesField,
+  swapRepeatsField,
+} from "./apply-fields";
 import type { AppliedControl } from "./controls";
 
 function applied(
@@ -90,5 +94,22 @@ describe("specUsesField", () => {
         "device",
       ),
     ).toBe(true);
+  });
+});
+
+describe("swapRepeatsField", () => {
+  it("catches a swap that would list a field twice", () => {
+    // `columns` would hold spend twice, once as a field object.
+    expect(swapRepeatsField(spec, "device", "spend")).toBe(true);
+    expect(swapRepeatsField(spec, "clicks", "spend")).toBe(true);
+    expect(swapRepeatsField(spec, "spend", "impressions")).toBe(false);
+    // Separate field positions, such as the x axis and color, can show the same field.
+    expect(
+      swapRepeatsField(
+        { x: { field: "device" }, color: { field: "country" } },
+        "country",
+        "device",
+      ),
+    ).toBe(false);
   });
 });

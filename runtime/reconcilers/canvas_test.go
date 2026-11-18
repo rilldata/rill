@@ -106,6 +106,61 @@ rows:
 	require.Equal(t, 1, invalid)
 }
 
+func TestCanvasInvalidControl(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'foo' as foo, 1 as x, 2 as y`,
+			"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+- name: y
+  expression: sum(y)
+`,
+			"c1.yaml": `
+type: canvas
+controls:
+  - filter: foo
+rows:
+  - items:
+      - table:
+          metrics_view: mv1
+          columns: [foo, x, y]
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	// A swap from x to y would show y twice in the table: the control is reported and left out, but the canvas stays up.
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+controls:
+  - filter: foo
+  - measure: x
+    options: [x, y]
+rows:
+  - items:
+      - table:
+          metrics_view: mv1
+          columns: [foo, x, y]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.Contains(t, c1.Meta.ReconcileError, `control "x" option "y" is already shown`)
+	valid := c1.GetCanvas().State.ValidSpec
+	require.NotNil(t, valid)
+	require.Len(t, valid.Controls, 1)
+	require.Equal(t, "foo", valid.Controls[0].Name)
+	require.Len(t, c1.GetCanvas().Spec.Controls, 2)
+}
+
 func TestCanvasValidateMetricsViewTimeConsistency(t *testing.T) {
 	// Create an instance with StageChanges==true
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{

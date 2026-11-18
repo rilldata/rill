@@ -1,7 +1,7 @@
 import { isSeq, type Document } from "yaml";
 import type { YAMLPath } from "../layout-util";
 import { defaultBlockName, setKeyBeforeContent } from "../stores/block-edit";
-import { specUsesField } from "./apply-fields";
+import { specUsesField, swapRepeatsField } from "./apply-fields";
 import { ControlKind } from "./controls";
 
 /**
@@ -332,26 +332,77 @@ export function controlLevelsForItem(
 
 /**
  * How many items under a level show the field, i.e. how many a swap of it would change.
- * Counts items that opt out with `ignore_controls: true` as unaffected.
+ * Counts items that opt out of the control with `ignore_controls` as unaffected.
  */
 export function countItemsUsingField(
   doc: Document | undefined,
   path: YAMLPath,
   field: string,
+  controlName = field,
 ): number {
+  if (!field) return 0;
+  return itemsUnderLevel(doc, path, controlName).filter(({ specs }) =>
+    specs.some((spec) => specUsesField(spec, field)),
+  ).length;
+}
+
+/**
+ * The first option of a swap that an item under the level already shows next to the field, so
+ * choosing it would show that field twice there. The runtime reports such a control and leaves it
+ * out, so the editor checks before writing it.
+ */
+export function findRepeatedOption(
+  doc: Document | undefined,
+  path: YAMLPath,
+  field: string,
+  options: string[],
+  controlName = field,
+): { option: string; item: string } | null {
+  if (!field) return null;
+  for (const { name, specs } of itemsUnderLevel(doc, path, controlName)) {
+    for (const spec of specs) {
+      if (!specUsesField(spec, field)) continue;
+      const option = options.find(
+        (o) => o !== field && swapRepeatsField(spec, field, o),
+      );
+      if (option) return { option, item: name };
+    }
+  }
+  return null;
+}
+
+/**
+ * The items a control declared on a level applies to: the item itself, or the items below a
+ * block or the canvas, less those that opt out of the control with `ignore_controls`.
+ * Each comes with its name (or component type) and its component specs as plain objects.
+ */
+function itemsUnderLevel(
+  doc: Document | undefined,
+  path: YAMLPath,
+  controlName: string,
+): { name: string; specs: Record<string, unknown>[] }[] {
   const root = toJSON(path.length ? doc?.getIn(path) : doc);
-  if (!isRecord(root) || !field) return 0;
+  if (!isRecord(root)) return [];
 
   const own = isItemPath(path);
-  let count = 0;
+  const res: { name: string; specs: Record<string, unknown>[] }[] = [];
   const visitItem = (item: unknown) => {
     if (!isRecord(item)) return;
-    if (!own && item.ignore_controls === true) return;
-    const uses = Object.entries(item).some(
-      ([key, value]) =>
-        key !== "controls" && isRecord(value) && specUsesField(value, field),
+    const ignore = item.ignore_controls;
+    if (
+      !own &&
+      (ignore === true ||
+        (Array.isArray(ignore) && ignore.includes(controlName)))
+    ) {
+      return;
+    }
+    const entries = Object.entries(item).filter(
+      ([key, value]) => key !== "controls" && isRecord(value),
     );
-    if (uses) count++;
+    res.push({
+      name: typeof item.name === "string" ? item.name : (entries[0]?.[0] ?? ""),
+      specs: entries.map(([, value]) => value as Record<string, unknown>),
+    });
   };
   const visitRows = (rows: unknown) => {
     if (!Array.isArray(rows)) return;
@@ -374,7 +425,7 @@ export function countItemsUsingField(
   } else {
     visitRows(root.rows);
   }
-  return count;
+  return res;
 }
 
 export function isItemPath(path: YAMLPath): boolean {

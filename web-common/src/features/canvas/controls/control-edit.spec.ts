@@ -6,6 +6,7 @@ import {
   controlToYAML,
   countItemsUsingField,
   draftFromYAML,
+  findRepeatedOption,
   moveControl,
   moveControlToLevel,
   readControls,
@@ -309,5 +310,35 @@ describe("countItemsUsingField", () => {
       countItemsUsingField(doc, ["rows", 0, "items", 1], "total_bids"),
     ).toBe(1);
     expect(countItemsUsingField(doc, ["rows", 0, "items", 1], "spend")).toBe(0);
+  });
+});
+
+describe("findRepeatedOption", () => {
+  it("finds an option an item already shows next to the field", () => {
+    const doc = parseDocument(YAML);
+    // The KPI grid in the Records tab shows both measures.
+    expect(findRepeatedOption(doc, [], "total_bids", ["spend"])).toEqual({
+      option: "spend",
+      item: "kpi_grid",
+    });
+    expect(
+      findRepeatedOption(doc, ["rows", 1], "total_bids", ["spend"]),
+    ).toBeNull();
+    expect(findRepeatedOption(doc, [], "total_bids", ["clicks"])).toBeNull();
+  });
+
+  it("skips items that ignore the control by name", () => {
+    const doc = parseDocument(`rows:
+  - items:
+      - ignore_controls: [metric]
+        kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+`);
+    expect(
+      findRepeatedOption(doc, [], "total_bids", ["spend"], "metric"),
+    ).toBeNull();
+    expect(findRepeatedOption(doc, [], "total_bids", ["spend"])).toEqual({
+      option: "spend",
+      item: "kpi_grid",
+    });
   });
 });

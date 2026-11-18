@@ -521,6 +521,7 @@
   "canvas_control_dialog_options_measure": "Medidas que los lectores pueden elegir",
   "canvas_control_dialog_options_time_grain": "Granularidades que los lectores pueden elegir",
   "canvas_control_dialog_options_time_range": "Intervalos de tiempo que los lectores pueden elegir",
+  "canvas_control_dialog_repeated": "{item} ya muestra \"{field}\", así que cambiar a ese campo lo mostraría dos veces. Desmárcalo o quítalo de {item}.",
   "canvas_control_dialog_save": "Guardar control",
   "canvas_control_kind_dimension": "Dimensión",
   "canvas_control_kind_filter": "Filtro",

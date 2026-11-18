@@ -12,6 +12,7 @@
   import type { YAMLPath } from "../../layout-util";
   import {
     countItemsUsingField,
+    findRepeatedOption,
     TIME_GRAIN_OPTIONS,
     type ControlDraft,
     type ControlLevelRef,
@@ -177,9 +178,23 @@
         })),
   );
 
+  // The name the control will have, which items' `ignore_controls` refer to.
+  let controlName = $derived(name.trim() || field);
   let affected = $derived(
     isSwap && field
-      ? countItemsUsingField($parsedContent, level.path, field)
+      ? countItemsUsingField($parsedContent, level.path, field, controlName)
+      : null,
+  );
+  // A swap to a field a widget already shows would show it twice; the runtime rejects that control.
+  let repeated = $derived(
+    isSwap && field
+      ? findRepeatedOption(
+          $parsedContent,
+          level.path,
+          field,
+          resolvedOptions,
+          controlName,
+        )
       : null,
   );
 
@@ -197,7 +212,9 @@
     }
     return "";
   });
-  let valid = $derived((!needsField || !!field) && !nameError && !optionsError);
+  let valid = $derived(
+    (!needsField || !!field) && !nameError && !optionsError && !repeated,
+  );
 
   function setKind(next: string) {
     kind = next as EditableControlKind;
@@ -348,6 +365,14 @@
           </div>
           {#if optionsError}
             <span class="text-xs text-fg-secondary">{optionsError}</span>
+          {/if}
+          {#if repeated}
+            <span class="text-xs text-destructive" role="alert">
+              {m.canvas_control_dialog_repeated({
+                field: fields.get(repeated.option) ?? repeated.option,
+                item: repeated.item,
+              })}
+            </span>
           {/if}
         </div>
 

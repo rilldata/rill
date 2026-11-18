@@ -521,6 +521,7 @@
   "canvas_control_dialog_options_measure": "Measures viewers can pick",
   "canvas_control_dialog_options_time_grain": "Time grains viewers can pick",
   "canvas_control_dialog_options_time_range": "Time ranges viewers can pick",
+  "canvas_control_dialog_repeated": "{item} already shows \"{field}\", so switching to it would show it twice. Uncheck it or remove it from {item}.",
   "canvas_control_dialog_save": "Save control",
   "canvas_control_kind_dimension": "Dimension",
   "canvas_control_kind_filter": "Filter",
