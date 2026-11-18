@@ -5,7 +5,7 @@ sidebar_label: "Customization & Themes"
 sidebar_position: 30
 ---
 
-Below are some common customizations and dashboard configurations available for end users. 
+Below are some common customizations and dashboard configurations available for end users.
 
 :::info Dashboard properties
 
@@ -15,21 +15,20 @@ For a full list of available dashboard properties and configurations, please see
 
 ## Define Dashboard Access
 
-Along with [metrics views security policies](/developers/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.  Only the `access` key can be set in the dashboard.
+Along with [metrics views security policies](/developers/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard. Only the `access` key can be set in the dashboard.
 
 ```yaml
 security:
   access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
 ```
 
-
 ## Setting Default Views for Dashboards
+
 ### Default Time Range
 
 Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting it to the most frequently used period— in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
 
 The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions).
-
 
 ### Default Dimensions
 
@@ -59,17 +58,34 @@ defaults:
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/guide/dashboards/time-series#time-comparisons) and [dimension comparison.](/guide/dashboards/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
+It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/guide/dashboards/time-series#time-comparisons) and [dimension comparison.](/guide/dashboards/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default.
 
 ```yaml
 defaults:
   comparison_mode: time
   # comparison_mode: dimension
   # comparison_dimension: action
-
 ```
 
+### Default Filters
 
+A default filter is applied when a viewer first opens the dashboard, and again when they go back to its default view. Set it under `defaults.filters` as a [Metrics SQL](/developers/build/metrics-view/metrics-sql) filter expression, written the way it would follow `WHERE`:
+
+```yaml
+defaults:
+  filters: "country = 'US' AND device IN ('mobile', 'tablet')"
+```
+
+The expression can only reference dimensions and measures shown in the dashboard. Viewers can change or clear the default filter. A shared link or [bookmark](/guide/dashboards/bookmarks) opens the dashboard in the state it was saved with, including its filters, so the default filter is not applied on top of it.
+
+An explore dashboard has a single metrics view, so `defaults.filters` is one expression. On a [canvas dashboard](/guide/dashboards/canvas), `defaults.filters` is instead a map with an expression per metrics view.
+
+To set a default [measure filter](/guide/dashboards/filters#filter-by-measures), select the dimension values to keep with a subquery. This example keeps the publishers with more than 1,000 in total spend:
+
+```yaml
+defaults:
+  filters: "publisher IN (SELECT publisher FROM metrics_view HAVING total_spend > 1000)"
+```
 
 ## Time Ranges
 
@@ -77,7 +93,7 @@ One of the more important configurations, available time ranges allow you to cha
 
 ```yaml
 time_ranges:
-  - PT15M 
+  - PT15M
   - PT1H
   - P7D
   - P4W
@@ -101,8 +117,55 @@ time_zones:
   - Asia/Kolkata
   - Asia/Shanghai
   - Asia/Tokyo
-  - Australia/Sydney  
+  - Australia/Sydney
 ```
+
+## Pinned and Required Filters
+
+You can keep specific filters in the filter bar, and hold the dashboard back until the viewer picks a value for them. This is useful when a dashboard only makes sense for one customer, account or region at a time.
+
+| Setting      | Effect for viewers                                                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Pinned**   | The filter always appears in the filter bar, even when it has no value. Viewers can change its value but cannot remove the filter. |
+| **Required** | The dashboard does not load until the filter has a value. A required filter is always pinned.                                      |
+
+List dimension or measure names under `filters`:
+
+```yaml
+filters:
+  pinned:
+    - device
+  required:
+    - advertiser
+```
+
+Each name must be a measure or a dimension shown in the dashboard, other than a time dimension. If it is not, the dashboard fails to reconcile with an error like:
+
+```
+required filter "advertiser" is not a dimension or measure in this explore
+```
+
+Until every required filter has a value, the leaderboards, charts, tables and pivot are replaced by a **Select a value to continue** message that lists the missing filters. **Clear filters** removes the values but keeps the pinned and required filters in the filter bar, so clearing a required filter blocks the dashboard again. Alerts cannot be created from the dashboard while a required filter has no value.
+
+To open the dashboard with a value already selected, combine a required filter with a [default filter](#default-filters):
+
+```yaml
+filters:
+  required:
+    - advertiser
+defaults:
+  filters: "advertiser = 'Acme'"
+```
+
+The same `filters` and `defaults.filters` properties work in the `explore` block of a [metrics view](/reference/project-files/metrics-views).
+
+### Configure Filters in the Editor
+
+When you edit an explore dashboard in Rill Developer, each filter's dropdown shows two extra controls in its top-right corner: the **asterisk** marks the filter as required, and the **pin** icon pins it. These controls change only your current editing session. To write them to the file, click **Save dashboard state as default** in the editing sidebar. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and saves the current filter, time range, comparison mode and visible fields as the dashboard's `defaults`.
+
+:::note Required filters are not access control
+Pinned and required filters shape what viewers see in the dashboard. They do not restrict the data a viewer can query, for example through a report or the API. To limit which rows a user can access, use [security policies](/developers/build/metrics-view/security).
+:::
 
 ## Single-Select Filters
 
@@ -114,7 +177,19 @@ filters:
     - advertiser
 ```
 
-The filter for each listed dimension holds one value. Picking a value in the filter bar, a leaderboard or the dimension table replaces the current one, and viewers cannot exclude values or match on text. A link or bookmark with several values opens with only the last of them. Each name must be a dimension shown in the explore.
+The filter for each listed dimension holds one value. Picking a value in the filter bar, a leaderboard or the dimension table replaces the current one, and viewers cannot exclude values or match on text. A link or bookmark with several values opens with only the last of them. Each name must be a dimension shown in the explore, other than a time dimension.
+
+To always show exactly one value, combine it with a [required filter](#pinned-and-required-filters) and a default value:
+
+```yaml
+filters:
+  required:
+    - advertiser
+  single_select:
+    - advertiser
+defaults:
+  filters: "advertiser = 'Acme'"
+```
 
 Single-select is a dashboard setting, not an access restriction: use [row access policies](/developers/build/metrics-view/security) to limit which data a viewer can query.
 
@@ -127,8 +202,8 @@ First, create the YAML file as below. You can define separate color schemes for 
 ```yaml
 type: theme
 light:
-  primary: "#4F46E5"  # Indigo-600
-  secondary: "#8B5CF6"  # Purple-500
+  primary: "#4F46E5" # Indigo-600
+  secondary: "#8B5CF6" # Purple-500
   variables:
     # Sequential palette - for ordered data that progresses from low to high
     color-sequential-1: "hsl(211deg 79% 94%)"
@@ -170,8 +245,8 @@ light:
     # ... up to color-qualitative-24
 
 dark:
-  primary: "#818CF8"  # Indigo-400
-  secondary: "#A78BFA"  # Purple-400
+  primary: "#818CF8" # Indigo-400
+  secondary: "#A78BFA" # Purple-400
   variables:
     # Sequential palette - adjusted for dark backgrounds
     color-sequential-1: "hsl(210deg 20% 25%)"
@@ -187,6 +262,7 @@ dark:
 ```
 
 The `light` and `dark` properties allow you to customize:
+
 - **primary**: Primary color used for charts, buttons, and interactive elements
 - **secondary**: Secondary color (used for loading spinners and accents)
 - **variables**: Custom CSS variables for complete control over color palettes
@@ -195,6 +271,7 @@ The `light` and `dark` properties allow you to customize:
   - **Qualitative palette** (color-qualitative-1 through 24): For categorical data
 
 Colors can be specified using:
+
 - Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
 - Named colors (e.g., `plum`, `violet`)
 - HSL format (e.g., `hsl(180, 100%, 50%)`)
@@ -252,16 +329,16 @@ time_ranges:
   - rill-PYC
 theme:
   light:
-    primary: "#14B8A6"  # Teal-500
-    secondary: "#10B981"  # Emerald-500
+    primary: "#14B8A6" # Teal-500
+    secondary: "#10B981" # Emerald-500
     variables:
       color-sequential-1: "hsl(180deg 80% 95%)"
       color-sequential-5: "hsl(180deg 80% 50%)"
       color-sequential-9: "hsl(180deg 80% 25%)"
   dark:
-    primary: "#2DD4BF"  # Teal-400
-    secondary: "#34D399"  # Emerald-400
+    primary: "#2DD4BF" # Teal-400
+    secondary: "#34D399" # Emerald-400
 
 security:
-    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'" # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
 ```

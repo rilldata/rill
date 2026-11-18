@@ -25,6 +25,7 @@ import {
   narrowSingleSelectFilterParam,
 } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
+import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import {
   UrlParamsChangeTracker,
   type UrlParamsStore,
@@ -46,6 +47,12 @@ export class ExpressionFilterManager implements UrlParamsStore {
   public exprByMetricsViewStore: Readable<Record<string, V1Expression>>;
   public inList: string[];
   public hasSomeFilter: boolean;
+  // Names of the required filters that have no value yet.
+  // A dashboard is not shown until every one has a value,
+  // so that it is never seen aggregated across the values of a required filter.
+  public missingRequiredFilters: string[];
+  // Temporary svelte4 store for legacy components
+  public missingRequiredFiltersStore: Readable<string[]>;
 
   // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
   public temporaryFilterName: string | undefined = $state(undefined);
@@ -147,6 +154,16 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.exprByMetricsViewStore = toStore(() => this.exprByMetricsView);
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
+    );
+    this.missingRequiredFilters = $derived(
+      getMissingRequiredFilters(
+        this,
+        this.metricsViewsProvider,
+        this.yamlConfigProvider,
+      ),
+    );
+    this.missingRequiredFiltersStore = toStore(
+      () => this.missingRequiredFilters,
     );
   }
 

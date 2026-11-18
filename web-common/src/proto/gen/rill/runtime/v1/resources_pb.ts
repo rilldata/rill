@@ -2863,10 +2863,26 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * Preset UI state to show by default.
+   * Its `where` holds the default filter, parsed from `defaults.filters`.
    *
    * @generated from field: rill.runtime.v1.ExplorePreset default_preset = 15;
    */
   defaultPreset?: ExplorePreset;
+
+  /**
+   * Dimension or measure names whose filter chip is always shown in the filter bar.
+   *
+   * @generated from field: repeated string pinned_filters = 24;
+   */
+  pinnedFilters: string[] = [];
+
+  /**
+   * Dimension or measure names that must have a filter value before the explore renders.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 25;
+   */
+  requiredFilters: string[] = [];
 
   /**
    * Dimensions whose filter holds at most one value at a time.
@@ -2946,6 +2962,8 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
+    { no: 24, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 23, name: "single_select_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },

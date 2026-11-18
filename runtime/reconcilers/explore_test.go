@@ -6,8 +6,11 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -278,47 +281,153 @@ dimensions: ['doesnt_exist']
 	require.NotEmpty(t, e1.Meta.ReconcileError)
 }
 
-func TestExploreSingleSelectFilters(t *testing.T) {
-	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{"rill.yaml": ""},
-	})
-
-	testruntime.PutFiles(t, rt, id, map[string]string{
-		"m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 1 as x`,
-		"mv1.yaml": `
+func TestExploreFilters(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	mv := `
 version: 1
 type: metrics_view
 model: m1
+timeseries: t1
 dimensions:
+- column: t2
 - column: foo
 - column: bar
+- column: internal
 measures:
 - name: x
   expression: sum(x)
+- name: y
+  expression: sum(y)
+security:
+  access: true
+  exclude:
+    - if: "{{ not .user.admin }}"
+      names: ['internal', 'y']
+`
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT '2025-11-20T00:00:00Z'::TIMESTAMP as t1, '2025-11-20T00:00:00Z'::TIMESTAMP as t2, 'foo' as foo, 'bar' as bar, 'int' as internal, 1 as x, 2 as y`,
+		// The inline explore takes the same filter properties as a standalone explore.
+		"metrics_views/mv1.yaml": mv + `
+explore:
+  name: inline
+  filters:
+    pinned: [bar]
+    required: [foo]
+  defaults:
+    filters: foo = 'a'
 `,
-		"e1.yaml": `
+		"explores/e1.yaml": `
 type: explore
 metrics_view: mv1
 filters:
-  single_select: [foo]
+  pinned: [bar, internal, x]
+  required: [foo, internal]
+  single_select: [foo, internal]
+defaults:
+  filters: >
+    foo IN ('a', 'b') AND internal = 'c'
+    AND bar IN (SELECT bar FROM mv1 HAVING x > 1)
+    AND bar IN (SELECT bar FROM mv1 HAVING y > 1)
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
-	require.Equal(t, []string{"foo"}, e1.GetExplore().State.ValidSpec.SingleSelectFilters)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
 
-	// The dimension must be shown in the explore
-	testruntime.PutFiles(t, rt, id, map[string]string{"e1.yaml": `
-type: explore
-metrics_view: mv1
-dimensions: [bar]
-filters:
-  single_select: [foo]
-`})
-	testruntime.ReconcileParserAndWait(t, rt, id)
+	fooEqualsA, err := metricssql.ParseFilter(`foo = 'a'`)
+	require.NoError(t, err)
+	inline := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "inline").GetExplore().State.ValidSpec
+	require.Equal(t, []string{"bar"}, inline.PinnedFilters)
+	require.Equal(t, []string{"foo"}, inline.RequiredFilters)
+	require.True(t, proto.Equal(metricsview.ExpressionToProto(fooEqualsA), inline.DefaultPreset.Where))
+
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Equal(t, []string{"bar", "internal", "x"}, e1.GetExplore().State.ValidSpec.PinnedFilters)
+	require.Equal(t, []string{"foo", "internal"}, e1.GetExplore().State.ValidSpec.RequiredFilters)
+	require.Equal(t, []string{"foo", "internal"}, e1.GetExplore().State.ValidSpec.SingleSelectFilters)
+	where := metricsview.NewExpressionFromProto(e1.GetExplore().State.ValidSpec.DefaultPreset.Where)
+	require.Equal(t, []string{"bar", "foo", "internal", "x", "y"}, metricsview.AnalyzeExpressionFields(where))
+
+	// A viewer without access to `internal` and `y` gets the explore without the filters on those fields.
+	// Otherwise the required filter could never be set, and the default filter would fail every query.
+	viewer := &runtime.SecurityClaims{UserAttributes: map[string]any{"admin": false}}
+	res, access, err := rt.ApplySecurityPolicy(t.Context(), id, viewer, e1)
+	require.NoError(t, err)
+	require.True(t, access)
+	require.Equal(t, []string{"bar", "x"}, res.GetExplore().State.ValidSpec.PinnedFilters)
+	require.Equal(t, []string{"foo"}, res.GetExplore().State.ValidSpec.RequiredFilters)
+	require.Equal(t, []string{"foo"}, res.GetExplore().State.ValidSpec.SingleSelectFilters)
+	where = metricsview.NewExpressionFromProto(res.GetExplore().State.ValidSpec.DefaultPreset.Where)
+	sql, err := metricsview.ExpressionToSQL(where)
+	require.NoError(t, err)
+	require.Equal(t, `(((foo IN ('a', 'b'))) AND (bar IN (SELECT bar FROM metrics_view HAVING x > 1)))`, sql)
+
+	// The stored resource is left as is.
 	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
-	require.Contains(t, e1.Meta.ReconcileError, `single-select filter "foo" is not a dimension in this explore`)
+	require.Equal(t, []string{"foo", "internal"}, e1.GetExplore().State.ValidSpec.RequiredFilters)
+
+	// Filters that reference fields the explore doesn't show, or that can't be filtered, are reconcile errors.
+	invalid := []struct {
+		yaml    string
+		wantErr string
+	}{
+		{
+			yaml:    "filters:\n  pinned: [nope]",
+			wantErr: `pinned filter "nope" is not a dimension or measure in this explore`,
+		},
+		{
+			yaml:    "dimensions: [bar]\nfilters:\n  required: [foo]",
+			wantErr: `required filter "foo" is not a dimension or measure in this explore`,
+		},
+		{
+			yaml:    "defaults:\n  filters: nope = 'a'",
+			wantErr: `invalid default filter: "nope" is not a dimension in this explore`,
+		},
+		{
+			yaml:    "defaults:\n  filters: foo = 'a' AND x > 1",
+			wantErr: `invalid default filter: measure "x" can only be filtered in the HAVING clause of a subquery`,
+		},
+		{
+			yaml:    "defaults:\n  filters: foo IN (SELECT foo FROM mv1 HAVING bar > 1)",
+			wantErr: `invalid default filter: "bar" is not a measure in this explore`,
+		},
+		{
+			yaml:    "filters:\n  required: [t2]",
+			wantErr: `required filter "t2" is a time dimension, which can't be filtered`,
+		},
+		{
+			yaml:    "filters:\n  single_select: [x]",
+			wantErr: `single-select filter "x" is not a dimension in this explore`,
+		},
+		{
+			yaml:    "dimensions: [bar]\nfilters:\n  single_select: [foo]",
+			wantErr: `single-select filter "foo" is not a dimension in this explore`,
+		},
+		{
+			yaml:    "filters:\n  single_select: [t2]",
+			wantErr: `single-select filter "t2" is a time dimension, which can't be filtered`,
+		},
+		{
+			yaml:    "defaults:\n  filters: t2 = '2025-11-20'",
+			wantErr: `invalid default filter: "t2" is a time dimension, which can't be filtered`,
+		},
+	}
+	for _, tt := range invalid {
+		testruntime.PutFiles(t, rt, id, map[string]string{"explores/e1.yaml": "type: explore\nmetrics_view: mv1\n" + tt.yaml})
+		testruntime.ReconcileParserAndWait(t, rt, id)
+		testruntime.RequireReconcileState(t, rt, id, 5, 1, 0)
+		testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindExplore, "e1", tt.wantErr)
+	}
+
+	// A default filter that isn't a valid expression is a parse error, in a standalone and in an inline explore.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"explores/e1.yaml":       "type: explore\nmetrics_view: mv1\ndefaults:\n  filters: foo ==",
+		"metrics_views/mv1.yaml": mv + "explore:\n  defaults:\n    filters:\n      mv1: foo = 'a'\n",
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/explores/e1.yaml":       "invalid filter expression in defaults",
+		"/metrics_views/mv1.yaml": "invalid defaults.filters: must be a single Metrics SQL filter expression",
+	})
 }
 
 func TestExploreDerivedSecurity(t *testing.T) {

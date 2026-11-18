@@ -981,6 +981,8 @@ table:
   dimension_filters: region IN ('North America')
 ```
 
+**Read-only:** clicking a cell or row header in a table or pivot filters the whole canvas by that row. Set `click_to_filter: false` when the table should not filter the other components, for example a detail table under charts that drive the filters.
+
 ### Image
 
 Display external images. Set `dark_url` to show a different image when the dashboard is in dark mode (falls back to `url`):

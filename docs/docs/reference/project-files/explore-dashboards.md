@@ -212,6 +212,7 @@ _[object]_ - Defines the defaults YAML struct.
     time_range: P1M
     comparison_mode: dimension #time, none
     comparison_dimension: filename
+    filters: "country = 'US' AND device IN ('mobile', 'tablet')"
   ```
 
 
@@ -249,17 +250,27 @@ _[object]_ - Defines the defaults YAML struct.
 
   - **`comparison_dimension`** - _[string]_ - For dimension mode, specify the comparison dimension by name.
 
+  - **`filters`** - _[string]_ - Default filter applied when a user initially loads the dashboard, written as a Metrics SQL `WHERE` expression, for example `country = 'US' AND device IN ('mobile', 'tablet')`. It can only reference dimensions and measures shown in the explore. An explore has a single metrics view, so this is one expression and not a map keyed by metrics view as on a canvas dashboard.
+
 ### `filters`
 
 _[object]_ - Configures the filters of the explore dashboard.
   ```yaml
   filters:
+    pinned:
+      - device
+    required:
+      - advertiser
     single_select:
       - advertiser
   ```
 
 
-  - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore.
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+
+  - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and `defaults.filters` so a value is always set. Each name must be a dimension shown in the explore, other than a time dimension.
 
 ### `embeds`
 

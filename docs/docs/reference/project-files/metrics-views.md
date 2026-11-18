@@ -553,9 +553,15 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
     - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
 
+    - **`filters`** - _[string]_ - Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view.
+
   - **`filters`** - _[object]_ - Configures the filters of the explore view.
 
-    - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view.
+    - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
 
   - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
 

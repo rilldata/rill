@@ -1016,7 +1016,14 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
+  /** Preset UI state to show by default.
+Its `where` holds the default filter, parsed from `defaults.filters`. */
   defaultPreset?: V1ExplorePreset;
+  /** Dimension or measure names whose filter chip is always shown in the filter bar. */
+  pinnedFilters?: string[];
+  /** Dimension or measure names that must have a filter value before the explore renders.
+Required filters are implicitly pinned. */
+  requiredFilters?: string[];
   /** Dimensions whose filter holds at most one value at a time.
 Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
   singleSelectFilters?: string[];
