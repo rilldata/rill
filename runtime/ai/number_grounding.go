@@ -31,9 +31,10 @@ Numbers you calculate yourself are often wrong, so never subtract, divide, add u
 Then write your complete final response again. The user has not seen your previous response, so do not refer to it.`, strings.Join(ungrounded, ", "), QueryMetricsViewName)
 }
 
-// ungroundedNumbers returns the numbers written in a response that are not close to any number in the tool calls, tool results or user messages.
-// Assistant and system messages are not sources, since the numbers to check come from the assistant.
-// It ignores numbers that rarely state a measured value: small integers without a sign or currency symbol (counts and ranks), years,
+// ungroundedNumbers returns the numbers written in a response that are not close to any number in the tool results or user messages.
+// Assistant and system messages are not sources, since the numbers to check come from the assistant,
+// and neither are tool calls, since the assistant could put its own arithmetic in a chart title or a filter.
+// It ignores numbers that rarely state a measured value: small integers without a sign or currency symbol (counts, ranks and ordinals), years,
 // the parts of dates and times, and numbers in links.
 func ungroundedNumbers(response string, messages []*aiv1.CompletionMessage) []string {
 	var sources []float64
@@ -41,9 +42,12 @@ func ungroundedNumbers(response string, messages []*aiv1.CompletionMessage) []st
 		for _, block := range msg.Content {
 			switch b := block.BlockType.(type) {
 			case *aiv1.ContentBlock_ToolResult:
-				sources = appendContentNumbers(sources, b.ToolResult.Content)
-			case *aiv1.ContentBlock_ToolCall:
-				sources = appendValueNumbers(sources, b.ToolCall.Input.AsMap())
+				// Tool results are usually JSON; scan any other result as text.
+				var v any
+				if err := json.Unmarshal([]byte(b.ToolResult.Content), &v); err != nil {
+					v = b.ToolResult.Content
+				}
+				sources = appendValueNumbers(sources, v)
 			case *aiv1.ContentBlock_Text:
 				if msg.Role == string(RoleUser) {
 					sources = appendTextNumbers(sources, b.Text)
@@ -58,7 +62,9 @@ func ungroundedNumbers(response string, messages []*aiv1.CompletionMessage) []st
 
 	var res []string
 	for _, n := range scanNumbers(response) {
-		if n.ordinal || n.isPlainCount() {
+		// A plain integer below 1000 or between 1900 and 2100 is likely a count, rank, ordinal ("3rd") or year.
+		// Amounts with a currency symbol and signed changes are never plain, however small: "$300" and "+200" are checked.
+		if v := n.readings[0].value; n.plain && (v < 1000 || (v >= 1900 && v <= 2100)) {
 			continue
 		}
 		if !n.groundedIn(sources) && !slices.Contains(res, n.text) {
@@ -89,8 +95,6 @@ type writtenNumber struct {
 	percent bool
 	// plain is set for an integer written without sign, currency symbol, separators, decimals, percent sign or scale, like a count, rank or year.
 	plain bool
-	// ordinal is set for "1st", "2nd", "3rd" and "4th".
-	ordinal bool
 }
 
 // numberReading is one value a written number may stand for.
@@ -99,16 +103,6 @@ type numberReading struct {
 	value float64
 	// tolerance is how far a source value may be from value, for the rounding the written precision implies.
 	tolerance float64
-}
-
-// isPlainCount reports whether n is a plain integer that rarely states a measured value: a small count or rank, or a year.
-// Amounts with a currency symbol and signed changes are never plain, however small: "$300" and "+200" are checked.
-func (n writtenNumber) isPlainCount() bool {
-	if !n.plain || len(n.readings) != 1 {
-		return false
-	}
-	v := n.readings[0].value
-	return v < 1000 || (v >= 1900 && v <= 2100)
 }
 
 // groundedIn reports whether a source value matches n, allowing for the rounding n's written precision implies.
@@ -183,7 +177,6 @@ func scanNumbers(text string) []writtenNumber {
 			sign:     sign,
 			percent:  suffix.percent,
 			plain:    sign == 0 && !currency && suffix.scale == 1 && !suffix.percent && strings.IndexFunc(raw, func(r rune) bool { return !unicode.IsDigit(r) }) == -1,
-			ordinal:  suffix.ordinal,
 		})
 	}
 	return res
@@ -259,7 +252,6 @@ func decimalReading(s string) numberReading {
 type numberSuffix struct {
 	scale   float64
 	percent bool
-	ordinal bool
 	// length is the number of bytes of the suffix to include in the number's text.
 	length int
 }
@@ -269,19 +261,13 @@ var (
 	digitGroupSeparators = strings.NewReplacer("'", "", "’", "", " ", "", "\u00a0", "", "\u202f", "", "\u2009", "")
 	// scaleSuffixes are case-sensitive scale suffixes: "17.5M" is a million, but "15m" is likely minutes.
 	scaleSuffixes = map[string]float64{"k": 1e3, "K": 1e3, "M": 1e6, "MM": 1e6, "B": 1e9, "T": 1e12}
-	// scaleWords are scale words in the languages the analyst may answer in, matched case-insensitively.
-	// A number followed by any other word is read at face value, so a scale missing here causes a needless revision, not a missed error.
-	// Words that differ between languages keep their English meaning: "billion" is 1e9, though it is 1e12 in French and German.
+	// scaleWords are English scale words and common European abbreviations, matched case-insensitively.
+	// Any other word leaves the number at face value, so an answer with another scale word, like French "milliards", is revised needlessly.
 	scaleWords = map[string]float64{
-		"thousand": 1e3, "thousands": 1e3, "tsd": 1e3, "tausend": 1e3, "mil": 1e3, "mille": 1e3, "mila": 1e3, "duizend": 1e3,
-		"million": 1e6, "millions": 1e6, "mn": 1e6, "mio": 1e6, "mln": 1e6, "millionen": 1e6, "millón": 1e6, "millones": 1e6,
-		"milione": 1e6, "milioni": 1e6, "milhão": 1e6, "milhões": 1e6, "miljoen": 1e6,
-		"billion": 1e9, "billions": 1e9, "bn": 1e9, "bln": 1e9, "mrd": 1e9, "milliard": 1e9, "milliards": 1e9, "milliarde": 1e9, "milliarden": 1e9,
-		"miliardo": 1e9, "miliardi": 1e9, "bilhão": 1e9, "bilhões": 1e9, "miljard": 1e9,
-		"trillion": 1e12, "trillions": 1e12, "tn": 1e12, "billón": 1e12, "billones": 1e12,
-		"lakh": 1e5, "lakhs": 1e5, "crore": 1e7, "crores": 1e7, "cr": 1e7,
-		// Chinese, Japanese and Korean scales may run into the next word, like "3.18亿元" and "31.8억원", so the first character of a word is matched too.
-		"千": 1e3, "万": 1e4, "萬": 1e4, "亿": 1e8, "億": 1e8, "兆": 1e12, "천": 1e3, "만": 1e4, "억": 1e8, "조": 1e12,
+		"thousand": 1e3, "thousands": 1e3,
+		"million": 1e6, "millions": 1e6, "mn": 1e6, "mio": 1e6, "mln": 1e6,
+		"billion": 1e9, "billions": 1e9, "bn": 1e9, "bln": 1e9, "mrd": 1e9,
+		"trillion": 1e12, "trillions": 1e12, "tn": 1e12,
 	}
 )
 
@@ -297,7 +283,6 @@ func parseNumberSuffix(rest string) numberSuffix {
 			break
 		}
 	}
-	spaced := len(afterSpace) < len(rest)
 
 	for _, sign := range []string{"%", "％"} {
 		if strings.HasPrefix(afterSpace, sign) {
@@ -307,58 +292,26 @@ func parseNumberSuffix(rest string) numberSuffix {
 		}
 	}
 
-	word := leadingWord(afterSpace)
-	if word == "" {
-		return res
+	wordLen := strings.IndexFunc(afterSpace, func(r rune) bool { return !unicode.IsLetter(r) })
+	if wordLen == -1 {
+		wordLen = len(afterSpace)
 	}
+	word := afterSpace[:wordLen]
 	lower := strings.ToLower(word)
-	length := len(rest) - len(afterSpace) + len(word)
-	first, firstLen := utf8.DecodeRuneInString(word)
+	length := len(rest) - len(afterSpace) + wordLen
 
 	switch {
-	case !spaced && slices.Contains([]string{"st", "nd", "rd", "th"}, lower):
-		res.ordinal = true
 	case scaleSuffixes[word] != 0:
 		res.scale = scaleSuffixes[word]
 		res.length = length
 	case scaleWords[lower] != 0:
 		res.scale = scaleWords[lower]
 		res.length = length
-		// A second scale word multiplies the first: "mil millones" in Spanish and "thousand million" in British English are 1e9.
-		next := afterSpace[len(word):]
-		if strings.HasPrefix(next, " ") {
-			nextWord := leadingWord(next[1:])
-			if scale := scaleWords[strings.ToLower(nextWord)]; scale != 0 {
-				res.scale *= scale
-				res.length += 1 + len(nextWord)
-			}
-		}
-	case unicode.In(first, unicode.Han, unicode.Hangul) && scaleWords[string(first)] != 0:
-		res.scale = scaleWords[string(first)]
-		res.length = length - len(word) + firstLen
 	case lower == "percent" || lower == "pct":
 		res.percent = true
 		res.length = length
 	}
 	return res
-}
-
-// leadingWord returns the letters at the start of s.
-func leadingWord(s string) string {
-	n := strings.IndexFunc(s, func(r rune) bool { return !unicode.IsLetter(r) })
-	if n == -1 {
-		return s
-	}
-	return s[:n]
-}
-
-// appendContentNumbers appends the numbers in a tool result, which is usually JSON.
-func appendContentNumbers(sources []float64, content string) []float64 {
-	var v any
-	if err := json.Unmarshal([]byte(content), &v); err != nil {
-		return appendTextNumbers(sources, content)
-	}
-	return appendValueNumbers(sources, v)
 }
 
 // appendValueNumbers appends the numbers in a decoded JSON value, including the numbers written in its strings.

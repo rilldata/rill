@@ -52,13 +52,14 @@ func TestUngroundedNumbers(t *testing.T) {
 		},
 		{
 			name:     "other locales",
-			response: "Der Umsatz stieg um 31.559.455 (1,00 %) auf 3.184.527.906, also rund 31,6 Mio. Le chiffre atteint 3,18 milliards.",
+			response: "Der Umsatz stieg um 31.559.455 (1,00 %) auf 3.184.527.906, also rund 31,6 Mio. oder 3,18 Mrd.",
 			messages: []*aiv1.CompletionMessage{comparison},
 		},
 		{
-			name:     "scale words in other languages",
-			response: "Los ingresos suben a 3,18 mil millones. 매출은 31.8억 원입니다. | 收入 | 31.85亿元 | Revenue is ₹318.45 crore.",
-			messages: []*aiv1.CompletionMessage{comparison},
+			name:       "other scale words are read at face value",
+			response:   "Le chiffre atteint 3,18 milliards.",
+			messages:   []*aiv1.CompletionMessage{comparison},
+			ungrounded: []string{"3,18"},
 		},
 		{
 			name:       "other words do not change the magnitude",
@@ -115,9 +116,10 @@ func TestUngroundedNumbers(t *testing.T) {
 			ungrounded: []string{"35,559,455"},
 		},
 		{
-			name:     "numbers from tool calls",
-			response: "I limited the query to 2,500 rows.",
-			messages: []*aiv1.CompletionMessage{toolCallMessage(map[string]any{"limit": 2500})},
+			name:       "numbers in tool calls are not sources",
+			response:   "Revenue rose by 35,559,455 day over day.",
+			messages:   []*aiv1.CompletionMessage{timeSeries, toolCallMessage(CreateChartName, map[string]any{"title": "Revenue up 35,559,455"})},
+			ungrounded: []string{"35,559,455"},
 		},
 		{
 			name:       "repeated numbers are reported once",
@@ -171,14 +173,14 @@ func toolResultMessage(content string) *aiv1.CompletionMessage {
 	}
 }
 
-func toolCallMessage(input map[string]any) *aiv1.CompletionMessage {
+func toolCallMessage(tool string, input map[string]any) *aiv1.CompletionMessage {
 	in, err := structpb.NewStruct(input)
 	if err != nil {
 		panic(err)
 	}
 	return &aiv1.CompletionMessage{
 		Role:    string(RoleAssistant),
-		Content: []*aiv1.ContentBlock{{BlockType: &aiv1.ContentBlock_ToolCall{ToolCall: &aiv1.ToolCall{Id: "call", Name: QueryMetricsViewName, Input: in}}}},
+		Content: []*aiv1.ContentBlock{{BlockType: &aiv1.ContentBlock_ToolCall{ToolCall: &aiv1.ToolCall{Id: "call", Name: tool, Input: in}}}},
 	}
 }
 
