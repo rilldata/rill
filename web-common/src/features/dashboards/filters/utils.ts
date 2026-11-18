@@ -1,7 +1,13 @@
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
-import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import { type Document, YAMLMap } from "yaml";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  getQueryServiceConvertExpressionToMetricsSQLQueryOptions,
+  type V1Expression,
+} from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { type Document, YAMLMap, YAMLSeq } from "yaml";
 
 export function getMissingRequiredFilters(
   expressionFilterManager: ExpressionFilterManager,
@@ -18,6 +24,24 @@ export function getMissingRequiredFilters(
       return isValidDimensionOrMeasure && hasNoFilter;
     },
   );
+}
+
+/**
+ * Converts a filter expression to Metrics SQL, the form in which a dashboard's YAML holds its default filters.
+ * Rejects when the request fails.
+ */
+export async function convertExpressionToMetricsSQL(
+  client: RuntimeClient,
+  expr: V1Expression,
+): Promise<string> {
+  const resp = await queryClient.fetchQuery(
+    getQueryServiceConvertExpressionToMetricsSQLQueryOptions(client, {
+      // TODO: the API type is the proto message, but there is a fromJson underneath, which takes this JSON form.
+      //       Once that is fixed, this needs to call toExpressionProto.
+      expression: expr as any,
+    }),
+  );
+  return resp.sql ?? "";
 }
 
 /**
@@ -47,4 +71,61 @@ export function setPinnedAndRequiredFilters(
   if (filters instanceof YAMLMap && filters.items.length === 0) {
     yaml.deleteIn(filtersPath);
   }
+}
+
+/**
+ * Takes fields out of the filter config in a dashboard's YAML.
+ * For when the fields are removed from an explore, whose filter config may only name its own fields.
+ *
+ * `filters.pinned` and `filters.required` lose the fields.
+ * `defaults.filters` is Metrics SQL, which can't be edited here, so it is removed as a whole when it uses one of them.
+ * `defaultFilter` is that filter as the runtime parsed it.
+ */
+export function removeFieldsFromFilterConfig(
+  yaml: Document,
+  fields: Set<string>,
+  defaultFilter: V1Expression | undefined,
+  keyPath: string[] = [],
+) {
+  const [pinned, required] = ["pinned", "required"].map((key) => {
+    const names = yaml.getIn([...keyPath, "filters", key]);
+    return names instanceof YAMLSeq ? (names.toJSON() as string[]) : [];
+  });
+  // The lists are only rewritten when they change, which keeps their formatting otherwise.
+  if ([...pinned, ...required].some((name) => fields.has(name))) {
+    setPinnedAndRequiredFilters(
+      yaml,
+      pinned.filter((name) => !fields.has(name)),
+      required.filter((name) => !fields.has(name)),
+      keyPath,
+    );
+  }
+
+  const defaultFilterPath = [...keyPath, "defaults", "filters"];
+  if (
+    yaml.hasIn(defaultFilterPath) &&
+    [...getFilterFieldNames(defaultFilter)].some((name) => fields.has(name))
+  ) {
+    yaml.deleteIn(defaultFilterPath);
+  }
+}
+
+/**
+ * Names of the fields that a filter references, including the ones in the subquery of a measure filter.
+ */
+function getFilterFieldNames(
+  expr: V1Expression | undefined,
+  names = new Set<string>(),
+) {
+  if (!expr) return names;
+
+  if (expr.ident) names.add(expr.ident);
+  expr.cond?.exprs?.forEach((operand) => getFilterFieldNames(operand, names));
+  if (expr.subquery) {
+    if (expr.subquery.dimension) names.add(expr.subquery.dimension);
+    expr.subquery.measures?.forEach((measure) => names.add(measure));
+    getFilterFieldNames(expr.subquery.where, names);
+    getFilterFieldNames(expr.subquery.having, names);
+  }
+  return names;
 }

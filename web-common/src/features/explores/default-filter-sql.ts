@@ -1,9 +1,7 @@
+import { convertExpressionToMetricsSQL } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import {
-  queryServiceConvertExpressionToMetricsSQL,
-  type V1Expression,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Expression } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
@@ -20,11 +18,7 @@ export async function convertFilterToDefaultFilterSQL(
   if (!expr?.cond?.exprs?.length) return "";
 
   try {
-    const resp = await queryServiceConvertExpressionToMetricsSQL(client, {
-      // TODO: the API type is the proto message but takes its JSON form. See canvas-entity.ts.
-      expression: expr as any,
-    });
-    return resp.sql ?? "";
+    return await convertExpressionToMetricsSQL(client, expr);
   } catch {
     eventBus.emit("notification", {
       type: "error",

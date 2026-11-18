@@ -12,9 +12,13 @@ import {
   createAndExpression,
   createBinaryExpression,
   createInExpression,
+  createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import {
+  dropFilterFieldsOutsideExplore,
+  getDefaultExplorePreset,
+} from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -182,5 +186,37 @@ describe("getExploreStateFromYAMLConfig", () => {
     expect(exploreState).toEqual({
       activePage: DashboardState_ActivePage.DEFAULT,
     });
+  });
+});
+
+describe("dropFilterFieldsOutsideExplore", () => {
+  it("keeps the conditions on the explore's fields and leaves the filter passed in as it is", () => {
+    // The filter of a filter bar after domain and bid_price were removed from the explore.
+    const publisherFilter = createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+      "Contoso",
+    ]);
+    const filter = createAndExpression([
+      publisherFilter,
+      createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["contoso.com"]),
+      createSubQueryExpression(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        [AD_BIDS_BID_PRICE_MEASURE],
+        createBinaryExpression(
+          AD_BIDS_BID_PRICE_MEASURE,
+          V1Operation.OPERATION_GT,
+          1,
+        ),
+      ),
+    ]);
+    const filterBefore = structuredClone(filter);
+
+    expect(
+      dropFilterFieldsOutsideExplore(filter, AD_BIDS_METRICS_INIT_WITH_TIME, {
+        measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+      }),
+    ).toEqual(createAndExpression([publisherFilter]));
+    // The filter bar still shows the filter it was given.
+    expect(filter).toEqual(filterBefore);
   });
 });

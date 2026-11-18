@@ -29,9 +29,6 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
     const getExploreQuery = createRuntimeServiceGetExplore(runtimeClient, {
       name: exploreName,
     });
-    // The config last applied to `yamlConfigProvider`, which starts out empty.
-    // See the comment where it is compared.
-    let appliedConfig = JSON.stringify([{}, [], []]);
     const getExploreUnsub = getExploreQuery.subscribe((getExploreResp) => {
       const exploreSpec =
         getExploreResp.data?.explore?.explore?.state?.validSpec ?? {};
@@ -46,25 +43,12 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
-      const defaultFilters = metricsViewName
-        ? { [metricsViewName]: exploreSpec.defaultPreset?.where }
-        : {};
-      const pinnedFilters = exploreSpec.pinnedFilters ?? [];
-      const requiredFilters = exploreSpec.requiredFilters ?? [];
-      // `update` resets the pin and required toggles made in the editor to what the spec holds.
-      // The query notifies on every refetch, and the spec changes on any edit to the file,
-      // so the config is only applied when it changed. Unsaved toggles then survive unrelated edits.
-      const config = JSON.stringify([
-        defaultFilters,
-        pinnedFilters,
-        requiredFilters,
-      ]);
-      if (config === appliedConfig) return;
-      appliedConfig = config;
       this.yamlConfigProvider.update(
-        defaultFilters,
-        pinnedFilters,
-        requiredFilters,
+        metricsViewName
+          ? { [metricsViewName]: exploreSpec.defaultPreset?.where }
+          : {},
+        exploreSpec.pinnedFilters ?? [],
+        exploreSpec.requiredFilters ?? [],
       );
     });
 

@@ -6,6 +6,7 @@ import {
 import {
   dropUnknownFieldsFromFilter,
   getExploreFieldNames,
+  type ExploreFieldNames,
 } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
@@ -122,10 +123,28 @@ export function getExploreDefaultFilter(
   );
 
   // Only fields the metrics view still defines can be queried. See getExploreFieldNames.
+  return dropFilterFieldsOutsideExplore(
+    flattened,
+    metricsViewSpec,
+    exploreFields,
+  );
+}
+
+/**
+ * Drops the conditions of a filter on fields other than the given fields of an explore.
+ * Returns undefined when no condition is left. The filter passed in is left as it is.
+ */
+export function dropFilterFieldsOutsideExplore(
+  filter: V1Expression,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreFields: ExploreFieldNames,
+): V1Expression | undefined {
   const measures = new Set(exploreFields.measures);
   const dimensions = new Set(exploreFields.dimensions);
   const { expr } = dropUnknownFieldsFromFilter(
-    flattened,
+    // A copy, since the subqueries of the filter are edited in place.
+    // It is made through JSON, which unlike structuredClone also takes the rune state of a filter bar.
+    JSON.parse(JSON.stringify(filter)) as V1Expression,
     getMapFromArray(
       metricsViewSpec.measures?.filter((m) => measures.has(m.name!)) ?? [],
       (m) => m.name!,

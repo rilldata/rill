@@ -21,8 +21,10 @@
     metricsViewName,
     exploreName,
     dashboardStore,
-    missingRequiredFilters,
+    expressionFilterManager,
   } = getStateManagers();
+  const missingRequiredFilters =
+    expressionFilterManager.missingRequiredFiltersStore;
 
   const runtimeClient = useRuntimeClient();
 

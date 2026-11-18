@@ -23,7 +23,6 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
-  getQueryServiceConvertExpressionToMetricsSQLQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -60,9 +59,11 @@ import {
 } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { setPinnedAndRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
+import {
+  convertExpressionToMetricsSQL,
+  setPinnedAndRequiredFilters,
+} from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
@@ -389,32 +390,18 @@ export class CanvasEntity {
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
     );
-    const promises = Object.values(
-      this.expressionFilterManager.topLevelJoiner.expr,
-    ).map((expr) => {
-      // TODO: our API type is proto but there is a fromJSON underneath.
-      //       Once that is fixed, we need to call toExpressionProto here.
-      const protoExpr = expr as any;
-      return queryClient.fetchQuery({
-        queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
-          this.instanceId,
-          { expression: protoExpr },
-        ),
-        queryFn: () =>
-          queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: protoExpr,
-          }),
-      });
-    });
-
-    const responses = await Promise.all(promises);
+    const filterSQLs = await Promise.all(
+      Object.values(this.expressionFilterManager.topLevelJoiner.expr).map(
+        (expr) => convertExpressionToMetricsSQL(this.client, expr),
+      ),
+    );
 
     const filterMap = new YAMLMap();
-    responses.forEach((response, index) => {
-      if (!response.sql) return;
+    filterSQLs.forEach((sql, index) => {
+      if (!sql) return;
       filterMap.add({
         key: filterNames[index],
-        value: response.sql,
+        value: sql,
       });
     });
 

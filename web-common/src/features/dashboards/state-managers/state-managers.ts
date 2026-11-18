@@ -15,7 +15,6 @@ import {
   type Writable,
   derived,
   get,
-  toStore,
   writable,
 } from "svelte/store";
 import {
@@ -35,7 +34,6 @@ import {
   type ContextColWidths,
 } from "../leaderboard-context-column";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export type StateManagers = {
@@ -70,12 +68,6 @@ export type StateManagers = {
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
   expressionFilterManager: ExpressionFilterManager;
-  /**
-   * Names of the required filters that have no value yet.
-   * The explore is not shown until every one has a value,
-   * so that it is never seen aggregated across the values of a required filter.
-   */
-  missingRequiredFilters: Readable<string[]>;
   cleanup: () => void;
 };
 
@@ -191,14 +183,6 @@ export function createStateManagers({
       expressionFilterManager,
     );
   });
-  // A store, since the filter managers hold rune state that legacy components cannot follow.
-  const missingRequiredFilters = toStore(() =>
-    getMissingRequiredFilters(
-      expressionFilterManager,
-      dashboardProvider.metricsViewsProvider,
-      dashboardProvider.yamlConfigProvider,
-    ),
-  );
 
   return {
     runtimeClient,
@@ -229,7 +213,6 @@ export function createStateManagers({
     contextColumnWidths,
     defaultExploreState,
     expressionFilterManager,
-    missingRequiredFilters,
     cleanup: () => {
       dashboardProvider.cleanup?.();
     },

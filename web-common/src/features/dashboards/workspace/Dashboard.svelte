@@ -60,8 +60,9 @@
     },
     dashboardStore,
     expressionFilterManager,
-    missingRequiredFilters,
   } = StateManagers;
+  const missingRequiredFilters =
+    expressionFilterManager.missingRequiredFiltersStore;
 
   const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 

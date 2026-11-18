@@ -24,17 +24,26 @@
     createRuntimeServiceGetInstance,
     createRuntimeServiceListResources,
     type V1Explore,
+    type V1ExploreSpec,
     type V1Expression,
+    type V1MetricsViewSpec,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
   import { InfoIcon } from "lucide-svelte";
   import { toStore } from "svelte/store";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
-  import { setPinnedAndRequiredFilters } from "../dashboards/filters/utils";
+  import {
+    removeFieldsFromFilterConfig,
+    setPinnedAndRequiredFilters,
+  } from "../dashboards/filters/utils";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
-  import { getExploreDefaultFilter } from "../dashboards/url-state/getDefaultExplorePreset";
+  import { getExploreFieldNames } from "../dashboards/stores/validate-and-clean-explore-state";
+  import {
+    dropFilterFieldsOutsideExplore,
+    getExploreDefaultFilter,
+  } from "../dashboards/url-state/getDefaultExplorePreset";
   import { convertExpressionToFilterParam } from "../dashboards/url-state/filters/converters";
   import { convertFilterToDefaultFilterSQL } from "../explores/default-filter-sql";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
@@ -255,11 +264,16 @@
     metricsViewSpec && exploreSpec
       ? getExploreDefaultFilter(metricsViewSpec, exploreSpec)
       : undefined;
+  $: filterConfig = getFilterConfigToSave(
+    $filterBar,
+    metricsViewSpec,
+    exploreSpec,
+  );
   // Compared as url params, since that is the form in which two filters that mean the same are equal.
   $: viewingDefaultFilters =
-    toFilterParam($filterBar.filter) === toFilterParam(defaultFilter) &&
-    arrayUnorderedEquals($filterBar.pinned, $filterBar.savedPinned) &&
-    arrayUnorderedEquals($filterBar.required, $filterBar.savedRequired);
+    toFilterParam(filterConfig.filter) === toFilterParam(defaultFilter) &&
+    arrayUnorderedEquals(filterConfig.pinned, $filterBar.savedPinned) &&
+    arrayUnorderedEquals(filterConfig.required, $filterBar.savedRequired);
 
   $: viewingDefaults =
     hasDefaultsSet &&
@@ -278,12 +292,39 @@
   }
 
   /**
+   * The part of the filter bar that can be saved as the filter config of the explore.
+   * The config may only name fields of the explore, and the bar keeps the filter
+   * and the toggles of a field that was removed from the explore after they were set.
+   */
+  function getFilterConfigToSave(
+    bar: FilterConfig,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+    exploreSpec: V1ExploreSpec | undefined,
+  ): FilterConfig {
+    // Without the specs there is nothing to hold the bar against.
+    if (!metricsViewSpec || !exploreSpec) return bar;
+
+    const fields = getExploreFieldNames(metricsViewSpec, exploreSpec);
+    const isExploreField = (name: string) =>
+      fields.measures.includes(name) || fields.dimensions.includes(name);
+    return {
+      filter:
+        bar.filter &&
+        dropFilterFieldsOutsideExplore(bar.filter, metricsViewSpec, fields),
+      pinned: bar.pinned.filter(isExploreField),
+      required: bar.required.filter(isExploreField),
+    };
+  }
+
+  /**
    * Saves the dashboard's current state as its defaults.
    * Along with the `defaults` block, this writes the pin and required toggles of the filter bar,
    * since they are edited in the dashboard and have no other way into the file.
    */
   async function saveDefaults() {
-    const { filter, pinned, required } = $filterBar;
+    // The state is read before the request, so that all of what is saved is the dashboard as it was at the click.
+    const { filter, pinned, required } = filterConfig;
+    const dashboardDefaults = newDefaults;
     const filters = await convertFilterToDefaultFilterSQL(
       runtimeClient,
       filter,
@@ -293,8 +334,34 @@
     // The document is read after the request, so that edits made while it was in flight are kept.
     setPinnedAndRequiredFilters(parsedDocument, pinned, required, keyPath);
     updateProperties({
-      defaults: { ...newDefaults, filters: filters || undefined },
+      defaults: { ...dashboardDefaults, filters: filters || undefined },
     });
+  }
+
+  /**
+   * Takes the fields that a selection leaves out of the explore out of its filter config.
+   * The config may only name fields of the explore, which fails to reconcile otherwise.
+   *
+   * `items` are the measures or dimensions selected, or with `exclude` the ones left out.
+   * This edits the document, and is to be called ahead of the write of the selection, so that both are saved as one.
+   */
+  function removeUnselectedFieldsFromFilterConfig(
+    type: (typeof itemTypes)[number],
+    items: string[],
+    exclude: boolean,
+  ) {
+    const listed = new Set(items);
+    const unselected = (type === "measures" ? measures : dimensions)
+      .map((field) => field.name)
+      .filter(isString)
+      .filter((name) => (exclude ? listed.has(name) : !listed.has(name)));
+
+    removeFieldsFromFilterConfig(
+      parsedDocument,
+      new Set(unselected),
+      exploreSpec?.defaultPreset?.where,
+      keyPath,
+    );
   }
 
   function getMeasureOrDimensionState(
@@ -356,6 +423,12 @@
 
     replaceState(window.location.origin + window.location.pathname, {});
   }
+
+  type FilterConfig = {
+    filter: V1Expression | undefined;
+    pinned: string[];
+    required: string[];
+  };
 
   type Defaults = {
     measures?: string[] | undefined;
@@ -522,6 +595,8 @@
             deleteKeys.push(["defaults", "comparison_mode"]);
           }
 
+          removeUnselectedFieldsFromFilterConfig(type, items, Boolean(exclude));
+
           if (exclude) {
             updateProperties({ [type]: { exclude: items } }, deleteKeys);
           } else {
@@ -547,6 +622,12 @@
             deleteKeys.push(["defaults", "comparison_dimension"]);
             deleteKeys.push(["defaults", "comparison_mode"]);
           }
+
+          removeUnselectedFieldsFromFilterConfig(
+            type,
+            Array.from(subsets[type]),
+            excludeMode[type],
+          );
 
           if (excludeMode[type]) {
             updateProperties(
