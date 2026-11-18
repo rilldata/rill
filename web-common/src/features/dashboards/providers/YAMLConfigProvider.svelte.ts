@@ -24,11 +24,28 @@ export class YAMLConfigProvider {
     this.events,
   ) as typeof this.events.on;
 
+  // The config last applied by `update`.
+  private appliedConfig: string | undefined = undefined;
+
+  /**
+   * Applies the filter config of a dashboard's spec.
+   * This resets the pin and required toggles made in the editor to what the spec holds,
+   * so a config that is already applied is skipped:
+   * the spec is fetched again on every edit to the dashboard's file, and unsaved toggles must survive unrelated edits.
+   */
   public update(
     defaultFilters: Record<string, V1Expression | undefined>,
     pinnedFilters: string[],
     requiredFilters: string[],
   ) {
+    const config = JSON.stringify([
+      defaultFilters,
+      pinnedFilters,
+      requiredFilters,
+    ]);
+    if (config === this.appliedConfig) return;
+    this.appliedConfig = config;
+
     this.defaultFilters = defaultFilters;
 
     const pinnedFiltersRec = Object.fromEntries(

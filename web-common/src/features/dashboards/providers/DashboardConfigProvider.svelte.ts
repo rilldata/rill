@@ -43,7 +43,13 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
-      // this.yamlConfigProvider.update() // TODO: once we have this support for explore
+      this.yamlConfigProvider.update(
+        metricsViewName
+          ? { [metricsViewName]: exploreSpec.defaultPreset?.where }
+          : {},
+        exploreSpec.pinnedFilters ?? [],
+        exploreSpec.requiredFilters ?? [],
+      );
     });
 
     this.cleanup = () => {
