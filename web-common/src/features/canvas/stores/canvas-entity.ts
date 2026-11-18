@@ -368,12 +368,8 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
-    );
-    const requiredFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.requiredFilters,
-    );
+    const { pinnedFilters, requiredFilters } =
+      this.dashboardProvider.yamlConfigProvider;
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so

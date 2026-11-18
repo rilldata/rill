@@ -74,10 +74,10 @@
   const client = useRuntimeClient();
 
   let pinned = $derived(
-    Boolean(yamlConfigProvider.pinnedFilters[dimensionManager.name]),
+    yamlConfigProvider.isPinnedFilter(dimensionManager.name),
   );
   let required = $derived(
-    Boolean(yamlConfigProvider.requiredFilters[dimensionManager.name]),
+    yamlConfigProvider.isRequiredFilter(dimensionManager.name),
   );
   let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
 

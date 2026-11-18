@@ -119,9 +119,9 @@ _[object]_ - Indicates if filters should be enabled for the canvas.
 
   - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard.
 
-  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
 
-  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
 
 ### `allow_custom_time_range`
 
