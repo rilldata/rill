@@ -17,25 +17,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAnalystDayOverDayEval reproduces APP-960: asked for a day over day difference,
-// the analyst queried a daily time series and did the arithmetic on its rows itself.
-// A case passes when the analyst's first final answer has the correct numbers,
-// it requested a comparison measure before writing it, and it does not add up values itself.
-// The first final answer is written before the number check (CheckResponse) can step in, so it measures the instructions alone;
-// the log also reports whether the check fired and whether the final answer is correct.
+// TestAnalystDayOverDayEval reproduces APP-960: asked for the day over day difference in a forecast,
+// the analyst queried a daily time series of forecast snapshots and did the arithmetic on its rows itself.
+// A case passes when the analyst's final answer has the correct numbers,
+// it requested a comparison measure, and it does not add up values itself.
+// The log also reports the same for the first final answer, which is written before the number check (CheckResponse) can step in,
+// so it measures the instructions alone.
 // Set EVAL_AI_CONNECTOR to "claude" to use Claude instead of OpenAI, and RILL_RUNTIME_CLAUDE_TEST_MODEL to pick the model.
 func TestAnalystDayOverDayEval(t *testing.T) {
-	customers := []string{"Northwind Media", "Acme Retail", "Globex Auto", "Initech Finance", "Umbrella Health", "Stark Travel", "Wayne Foods", "Hooli Tech"}
+	accounts := []string{"Northwind Media", "Acme Retail", "Globex Auto", "Initech Finance", "Umbrella Health", "Stark Travel", "Wayne Foods", "Hooli Tech"}
 	start := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
-	revenue := map[string]map[string]int64{} // day -> customer -> revenue
+	forecast := map[string]map[string]int64{} // snapshot date -> account -> month-end forecast
 	var rows []string
 	for i := range 34 { // October 1 to November 3, 2026
 		day := start.AddDate(0, 0, i).Format("2006-01-02")
-		revenue[day] = map[string]int64{}
-		for c, customer := range customers {
-			amount := int64(90_000_000+c*11_000_000) + int64((i+3)*(c+5)*7919%104729)*37 + int64((i*131+c*71)%9973)
-			revenue[day][customer] = amount
-			rows = append(rows, fmt.Sprintf("('%sT00:00:00Z'::TIMESTAMP, '%s', %d::DOUBLE)", day, customer, amount))
+		forecast[day] = map[string]int64{}
+		for a, account := range accounts {
+			amount := int64(40_000_000+a*6_000_000) + int64((i+5)*(a+3)*6151%99991)*23 + int64((i*97+a*53)%8761)
+			forecast[day][account] = amount
+			rows = append(rows, fmt.Sprintf("('%sT00:00:00Z'::TIMESTAMP, '%s', %d::DOUBLE)", day, account, amount))
 		}
 	}
 
@@ -46,40 +46,40 @@ func TestAnalystDayOverDayEval(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: connector,
 		Files: map[string]string{
-			"models/customer_revenue.yaml": "type: model\nmaterialize: true\nsql: |\n  SELECT * FROM (VALUES\n    " + strings.Join(rows, ",\n    ") + "\n  ) AS t(order_date, customer, revenue)\n",
-			"metrics/customer_revenue.yaml": `
+			"models/revenue_forecast.yaml": "type: model\nmaterialize: true\nsql: |\n  SELECT * FROM (VALUES\n    " + strings.Join(rows, ",\n    ") + "\n  ) AS t(snapshot_date, account, month_end_forecast)\n",
+			"metrics/revenue_forecast.yaml": `
 type: metrics_view
-display_name: Customer Revenue
-model: customer_revenue
-timeseries: order_date
+display_name: Revenue Forecast
+model: revenue_forecast
+timeseries: snapshot_date
 dimensions:
-- column: customer
+- column: account
 measures:
-- name: revenue
-  display_name: Revenue
-  expression: SUM(revenue)
+- name: month_end_forecast
+  display_name: Month-end Forecast
+  expression: SUM(month_end_forecast)
 `,
-			"dashboards/customer_revenue_canvas.yaml": `
+			"dashboards/revenue_forecast_canvas.yaml": `
 type: canvas
-display_name: Customer Revenue
+display_name: Revenue Forecast
 rows:
   - items:
       - line_chart:
-          metrics_view: customer_revenue
+          metrics_view: revenue_forecast
           x:
-            field: order_date
+            field: snapshot_date
             type: temporal
           y:
-            field: revenue
+            field: month_end_forecast
             type: quantitative
         width: 12
   - items:
       - leaderboard:
-          metrics_view: customer_revenue
+          metrics_view: revenue_forecast
           dimensions:
-            - customer
+            - account
           measures:
-            - revenue
+            - month_end_forecast
           num_rows: 8
         width: 12
 `,
@@ -90,7 +90,7 @@ rows:
 	// The data ends on November 3; "day over day" can mean November 3 vs 2 or, for the last complete day, November 2 vs 1.
 	total := func(day string) int64 {
 		var res int64
-		for _, v := range revenue[day] {
+		for _, v := range forecast[day] {
 			res += v
 		}
 		return res
@@ -98,9 +98,9 @@ rows:
 	topMover := func(cur, prev string) (string, int64) {
 		var name string
 		var best int64
-		for _, c := range customers {
-			if d := revenue[cur][c] - revenue[prev][c]; abs(d) > abs(best) {
-				name, best = c, d
+		for _, a := range accounts {
+			if d := forecast[cur][a] - forecast[prev][a]; abs(d) > abs(best) {
+				name, best = a, d
 			}
 		}
 		return name, best
@@ -111,13 +111,14 @@ rows:
 	t.Logf("total deltas: %d (Nov 3 vs 2), %d (Nov 2 vs 1); top movers: %s %d, %s %d",
 		total("2026-11-03")-total("2026-11-02"), total("2026-11-02")-total("2026-11-01"), mover1, moverDelta1, mover2, moverDelta2)
 
-	// Sums of the customers' gains and of their declines: no tool returns these,
-	// so an answer that states one ("combined, these customers added $7.0M") added them up itself.
+	// Sums of the accounts' gains and of their declines: no tool returns these,
+	// so an answer that states one ("combined, these accounts added $7.0M") added them up itself.
+	// Whole millions ("4M") are left out, since they match unrelated rounded amounts.
 	var handSums, exactSums []string
 	for _, days := range [][2]string{{"2026-11-03", "2026-11-02"}, {"2026-11-02", "2026-11-01"}} {
 		var gains, declines int64
-		for _, c := range customers {
-			if d := revenue[days[0]][c] - revenue[days[1]][c]; d > 0 {
+		for _, a := range accounts {
+			if d := forecast[days[0]][a] - forecast[days[1]][a]; d > 0 {
 				gains += d
 			} else {
 				declines -= d
@@ -125,13 +126,13 @@ rows:
 		}
 		for _, n := range []int64{gains, declines} {
 			m := float64(n) / 1e6
-			handSums = append(handSums, fmt.Sprintf("%d", n), fmt.Sprintf("%.2fM", m), fmt.Sprintf("%.1fM", m), fmt.Sprintf("%.0fM", m))
+			handSums = append(handSums, fmt.Sprintf("%d", n), fmt.Sprintf("%.2fM", m), fmt.Sprintf("%.1fM", m))
 			exactSums = append(exactSums, fmt.Sprintf("%d", n))
 		}
 	}
 	t.Logf("hand sums: %v", handSums)
 
-	question := "what's the day over day difference in revenue?"
+	question := "what's the day over day difference in the month-end forecast?"
 	cases := []struct {
 		name     string
 		canvas   bool
@@ -143,7 +144,7 @@ rows:
 		{
 			name:     "CanvasWithMovers",
 			canvas:   true,
-			prompt:   question + " which customers moved the most?",
+			prompt:   question + " which accounts moved the most?",
 			expected: [][]string{totalDelta, append(amountRenderings(moverDelta1), amountRenderings(moverDelta2)...)},
 		},
 	}
@@ -159,7 +160,7 @@ rows:
 
 			args := &ai.AnalystAgentArgs{Prompt: tc.prompt}
 			if tc.canvas {
-				args.Canvas = "customer_revenue_canvas"
+				args.Canvas = "revenue_forecast_canvas"
 				args.TimeStart = time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
 				args.TimeEnd = time.Date(2026, 11, 4, 0, 0, 0, 0, time.UTC)
 			}
@@ -168,7 +169,7 @@ rows:
 			require.NoError(t, err)
 
 			// Find the first final answer (a response with text and no tool calls),
-			// whether a comparison measure was requested before it, and whether the number check rejected it.
+			// whether a comparison measure was requested, and whether the number check rejected an answer.
 			// Also keep the tool results the LLM had seen when it wrote each answer,
 			// so that a sum only counts as hand-computed if no tool result contains it.
 			var firstAnswer, firstResults, finalResults string
@@ -193,9 +194,9 @@ rows:
 						if m.ToolName == ai.QueryMetricsViewName {
 							if firstAnswer != "" {
 								t.Logf("query after check: %s", m.Content)
-								continue
+							} else {
+								t.Logf("query: %s", m.Content)
 							}
-							t.Logf("query: %s", m.Content)
 							if strings.Contains(m.Content, "comparison_time_range") {
 								usedComparison = true
 							}
@@ -215,17 +216,17 @@ rows:
 				return !slices.ContainsFunc(tc.expected, func(group []string) bool { return !mentionsNumber(answer, group) })
 			}
 
-			firstCorrect := correct(firstAnswer)
-			firstSummed := handSummed(firstAnswer, firstResults)
-			t.Logf("RESULT %s/%s/%s: pass=%v first_answer_correct=%v used_comparison=%v first_answer_hand_summed=%v check_fired=%v final_answer_correct=%v final_answer_hand_summed=%v",
-				connector, os.Getenv("RILL_RUNTIME_CLAUDE_TEST_MODEL"), tc.name, firstCorrect && usedComparison && !firstSummed,
-				firstCorrect, usedComparison, firstSummed, checkFired, correct(res.Response), handSummed(res.Response, finalResults))
+			finalCorrect := correct(res.Response)
+			finalSummed := handSummed(res.Response, finalResults)
+			t.Logf("RESULT %s/%s/%s: pass=%v final_answer_correct=%v used_comparison=%v final_answer_hand_summed=%v check_fired=%v first_answer_correct=%v first_answer_hand_summed=%v",
+				connector, os.Getenv("RILL_RUNTIME_CLAUDE_TEST_MODEL"), tc.name, finalCorrect && usedComparison && !finalSummed,
+				finalCorrect, usedComparison, finalSummed, checkFired, correct(firstAnswer), handSummed(firstAnswer, firstResults))
 			t.Logf("first answer:\n%s", firstAnswer)
 			if checkFired {
 				t.Logf("final answer:\n%s", res.Response)
 			}
-			if !firstCorrect || !usedComparison || firstSummed {
-				t.Errorf("the first answer is wrong, was not computed by a comparison query, or adds up values itself")
+			if !finalCorrect || !usedComparison || finalSummed {
+				t.Errorf("the final answer is wrong, was not computed by a comparison query, or adds up values itself")
 			}
 		})
 	}
@@ -241,12 +242,17 @@ func amountRenderings(n int64) []string {
 	}
 }
 
-// digitGroupRegexp matches a digit group separator between digits.
-var digitGroupRegexp = regexp.MustCompile(`(\d)[,\x{202f}\x{a0}](\d{3})`)
+var (
+	// linkRegexp matches link targets and URLs, as the number check strips them: their digits are IDs, not values.
+	linkRegexp = regexp.MustCompile(`\]\([^)\s]*\)|https?://[^\s)\]>]+`)
+	// digitGroupRegexp matches a digit group separator between digits.
+	digitGroupRegexp = regexp.MustCompile(`(\d)[,\x{202f}\x{a0}](\d{3})`)
+)
 
-// mentionsNumber reports whether the text states any of the candidates as a whole number,
+// mentionsNumber reports whether the text states any of the candidates as a whole number outside links,
 // ignoring digit group separators and a space before a unit: "7.0M" matches "$7.0 million" but not "$17.0M".
 func mentionsNumber(text string, candidates []string) bool {
+	text = linkRegexp.ReplaceAllString(text, " ")
 	for range 4 { // Repeat to remove every separator in long numbers.
 		text = digitGroupRegexp.ReplaceAllString(text, "$1$2")
 	}
