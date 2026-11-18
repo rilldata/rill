@@ -128,6 +128,36 @@ describe("Theme", () => {
       expect(light["fg-accent"]).toBe(light["fg-primary"]);
     });
 
+    it("leave fg-inverse to app.css when only fg-primary is set", () => {
+      // fg-inverse is the text on tooltips and primary buttons, whose backgrounds stay dark
+      // or brand-colored. Deriving it from a dark fg-primary made that text unreadable.
+      const { light, dark } = parseCSS(
+        new Theme({
+          light: { primary: PRIMARY, variables: { "fg-primary": "#0f172a" } },
+          dark: { primary: PRIMARY, variables: { "fg-primary": "#f1f5f9" } },
+        }).css,
+      );
+
+      expect(light).not.toHaveProperty("fg-inverse");
+      expect(dark).not.toHaveProperty("fg-inverse");
+      // The rest of the hierarchy still follows fg-primary.
+      expect(light["fg-muted"]).toContain(light["fg-primary"]);
+    });
+
+    it("keep an explicit fg-inverse, and reset a light-only one in dark mode", () => {
+      const { light, dark } = parseCSS(
+        new Theme({
+          light: {
+            variables: { "fg-primary": "#0f172a", "fg-inverse": "#ffffff" },
+          },
+          dark: { variables: { "fg-primary": "#f1f5f9" } },
+        }).css,
+      );
+
+      expect(light["fg-inverse"]).toBe("hsl(0deg 0% 100%)");
+      expect(dark["fg-inverse"]).toBe("unset");
+    });
+
     it("let fg-primary keep ownership of fg-accent in dark mode too", () => {
       // The light block derives fg-accent from the palette. Resetting it to `unset` in the
       // dark block would both discard dark's own fg-primary and fall back to Rill's indigo.

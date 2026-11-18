@@ -54,7 +54,7 @@ var ThemeVariableGroups = []ThemeVariableGroup{
 	},
 	{
 		Title:       "Text",
-		Description: "Text colors. If a theme sets `fg-primary` but not the others, Rill derives `fg-secondary`, `fg-tertiary`, `fg-muted` and `fg-disabled` from it by lowering its opacity, and uses it unchanged for `fg-inverse` and `fg-accent`.",
+		Description: "Text colors. If a theme sets `fg-primary` but not the others, Rill derives `fg-secondary`, `fg-tertiary`, `fg-muted` and `fg-disabled` from it by lowering its opacity, and uses it unchanged for `fg-accent`. `fg-inverse` keeps its default unless set, because tooltips and primary buttons keep their own background.",
 		Variables: []ThemeVariable{
 			{Name: "fg-primary", Description: "Main text: KPI values, leaderboard rows, pivot table cells, inputs and menu items."},
 			{Name: "fg-secondary", Description: "Supporting text: labels, component descriptions, filter text and the time axis of explore charts."},
