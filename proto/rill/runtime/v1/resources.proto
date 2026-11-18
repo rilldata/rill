@@ -862,6 +862,10 @@ message ThemeSpec {
   string secondary_color_raw = 4;
   optional ThemeColors light = 5;
   optional ThemeColors dark = 6;
+  // Font for the text of the themed dashboard. Unset means Rill's default font.
+  ThemeFont font = 7;
+  // Border and font tokens for the dashboard's chrome: navigation bar, filter bar, pills and AI panel.
+  ThemeChrome chrome = 8;
 }
 
 message ThemeState {}
@@ -870,6 +874,34 @@ message ThemeColors {
   string primary = 1;
   string secondary = 2;
   map<string, string> variables = 3;
+}
+
+message ThemeFont {
+  // A single CSS font family name, or a generic family such as "system-ui".
+  string family = 1;
+  // Font files that provide the family.
+  // If empty, the family must already be available in the viewer's browser.
+  repeated ThemeFontFile files = 2;
+}
+
+message ThemeFontFile {
+  // Path of the font file relative to the project root. It is inside one of the project's public paths.
+  string path = 1;
+  // Lowest and highest font weight the file provides, in the range 1 to 1000.
+  // They are equal for a static font and differ for a variable font.
+  uint32 weight_min = 2;
+  uint32 weight_max = 3;
+  // Whether the file provides the italic style instead of the normal style.
+  bool italic = 4;
+}
+
+message ThemeChrome {
+  // Width in pixels of the borders of the chrome. Unset means the default width.
+  optional uint32 border_width_px = 1;
+  // Font size in pixels of the chrome's labels. Unset means each label's default size.
+  optional uint32 font_size_px = 2;
+  // Font weight of the chrome's labels. Unset means each label's default weight.
+  optional uint32 font_weight = 3;
 }
 
 message Component {

@@ -40,6 +40,18 @@ const uiCopyNumber = plugin(({ addUtilities }) => {
   });
 });
 
+// Borders of the dashboard chrome: the navigation bar, filter bar, pills and AI panel.
+// Their width follows the theme's `chrome.border_width`, which the theme declares on the
+// dashboard's theme boundary. Without it they are Tailwind's 1px `border` and `border-b`.
+const chromeBorder = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".chrome-border": { "border-width": "var(--chrome-border-width, 1px)" },
+    ".chrome-border-b": {
+      "border-bottom-width": "var(--chrome-border-width, 1px)",
+    },
+  });
+});
+
 export default {
   // need to add this for storybook
   // https://www.kantega.no/blogg/setting-up-storybook-7-with-vite-and-tailwind-css
@@ -172,5 +184,5 @@ export default {
       },
     },
   },
-  plugins: [uiCopyNumber],
+  plugins: [uiCopyNumber, chromeBorder],
 } satisfies Config;

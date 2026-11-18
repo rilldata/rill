@@ -468,7 +468,7 @@
     z-index: 1000;
     background: var(--tooltip);
     color: var(--fg-inverse);
-    font-family: "Inter", sans-serif;
+    font-family: var(--theme-font-family, "Inter", sans-serif);
   }
 
   :global(#rill-map-tooltip h2) {

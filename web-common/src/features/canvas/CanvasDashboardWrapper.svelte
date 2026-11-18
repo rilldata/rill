@@ -5,10 +5,11 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+  import { activeDashboardTheme } from "../themes/active-dashboard-theme";
   import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
   import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
-  import { type Snippet } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
 
   const runtimeClient = useRuntimeClient();
   let instanceId = $derived(runtimeClient.instanceId);
@@ -50,6 +51,13 @@
     dashboardProvider.yamlConfigProvider.setEditable(builder);
   });
 
+  // Publish the theme for the chrome that renders outside this component: the AI panel and,
+  // in embeds, the navigation bar. Explore dashboards do the same.
+  $effect(() => {
+    activeDashboardTheme.set($theme);
+  });
+  onDestroy(() => activeDashboardTheme.set(undefined));
+
   let missingRequiredFilters = $derived(
     getMissingRequiredFilters(
       expressionFilterManager,
@@ -75,7 +83,7 @@
     {#if filtersEnabled}
       <header
         role="presentation"
-        class="bg-surface-subtle border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+        class="bg-surface-subtle chrome-border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
         onclick={(e) => {
           if (e.target === e.currentTarget) onClick();
         }}

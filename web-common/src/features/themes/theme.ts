@@ -8,19 +8,46 @@ import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
 import { createDarkVariation } from "./color-generation";
+import {
+  resolveThemeFont,
+  type ResolvedThemeFont,
+  type ThemeFontScope,
+} from "./theme-font";
 
 type Shade = (typeof TailwindColorSpacing)[number];
 
+/**
+ * Theme variables whose value is a CSS length rather than a color. The runtime marks
+ * them with `Length` in runtime/parser/parse_theme_variables.go.
+ */
+const LENGTH_VARIABLES = ["radius"];
+
+/**
+ * The lengths the runtime accepts for those variables. They are written into a
+ * stylesheet as-is, so anything else is dropped rather than trusted.
+ */
+const CSS_LENGTH = /^(\d+(\.\d+)?|\.\d+)(px|rem|em)$/;
+
 export class Theme {
   colors: { light: Colors; dark: Colors };
+  lengths: { light: Record<string, string>; dark: Record<string, string> };
   spec: V1ThemeSpec;
   css: string;
+  /** The theme's font. Undefined when the theme keeps Rill's font. */
+  font: ResolvedThemeFont | undefined;
   resolvedThemeObject: {
     dark: Record<string, string>;
     light: Record<string, string>;
   };
 
-  constructor(spec: V1ThemeSpec | undefined) {
+  /**
+   * @param fontScope The project the theme belongs to. The theme's font files are loaded
+   * from it and registered for it alone; without it only the font's family name is used.
+   */
+  constructor(
+    spec: V1ThemeSpec | undefined,
+    private readonly fontScope?: ThemeFontScope,
+  ) {
     if (spec) {
       this.processThemeSpec(spec);
     }
@@ -37,6 +64,11 @@ export class Theme {
   processThemeSpec(spec: V1ThemeSpec) {
     this.spec = spec;
     this.colors = this.processTheme(spec);
+    this.lengths = {
+      light: this.processLengths(spec.light),
+      dark: this.processLengths(spec.dark),
+    };
+    this.font = resolveThemeFont(spec.font, this.fontScope);
     this.css = this.generateCSS();
 
     // Compatibility with current implementation, this can eventually be removed
@@ -154,15 +186,63 @@ export class Theme {
       darkColors[k] = undefined;
     }
 
+    // Lengths follow the same rule: one set only for light mode is reset in dark mode.
+    const lightLengths = this.lengths.light;
+    const darkLengths = { ...this.lengths.dark };
+    for (const k of Object.keys(lightLengths)) {
+      darkLengths[k] ??= "unset";
+    }
+
     const css = `
  .dashboard-theme-boundary {
   ${this.stringifyVars(lightColors)}
+  ${this.stringifyLengths(lightLengths)}
+  ${this.fontAndChromeDeclarations().join("\n  ")}
 }
 .dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
+  ${this.stringifyLengths(darkLengths)}
 }`.trim();
 
     return css;
+  }
+
+  private stringifyLengths(lengths: Record<string, string>): string {
+    return Object.entries(lengths)
+      .map(([k, v]) => `--${k}: ${v};`)
+      .join("\n  ");
+  }
+
+  /**
+   * The theme's font and chrome tokens. Unlike the colors they are the same in light and
+   * dark mode, so they are declared once.
+   *
+   * The font is both applied to the boundary and exposed as `--theme-font-family`, for the
+   * few elements that set a font of their own (chart tooltips, the pivot table, the map).
+   * The chrome tokens are read by the navigation bar, filter bar, pills and AI panel.
+   */
+  private fontAndChromeDeclarations(): string[] {
+    const declarations: string[] = [];
+
+    if (this.font) {
+      declarations.push(
+        `--theme-font-family: ${this.font.cssFamily};`,
+        `font-family: var(--theme-font-family);`,
+      );
+    }
+
+    const { borderWidthPx, fontSizePx, fontWeight } = this.spec.chrome ?? {};
+    if (isWholeNumber(borderWidthPx)) {
+      declarations.push(`--chrome-border-width: ${borderWidthPx}px;`);
+    }
+    if (isWholeNumber(fontSizePx)) {
+      declarations.push(`--chrome-font-size: ${fontSizePx}px;`);
+    }
+    if (isWholeNumber(fontWeight)) {
+      declarations.push(`--chrome-font-weight: ${fontWeight};`);
+    }
+
+    return declarations;
   }
 
   private processTheme(spec: V1ThemeSpec) {
@@ -228,7 +308,7 @@ export class Theme {
     }
 
     for (const [k, v] of Object.entries(variables ?? {})) {
-      if (!v) continue;
+      if (!v || LENGTH_VARIABLES.includes(k)) continue;
       finalColors[k] = getChroma(v);
     }
 
@@ -239,6 +319,15 @@ export class Theme {
     );
 
     return finalColors;
+  }
+
+  private processLengths(colors: V1ThemeColors | undefined) {
+    const lengths: Record<string, string> = {};
+    for (const name of LENGTH_VARIABLES) {
+      const value = colors?.variables?.[name];
+      if (value && CSS_LENGTH.test(value)) lengths[name] = value;
+    }
+    return lengths;
   }
 
   /**
@@ -278,6 +367,11 @@ export class Theme {
   }
 }
 
+// The chrome tokens are written into a stylesheet, so only take them as the numbers they are typed as.
+function isWholeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
 // Theme color variables - includes both new semantic names and deprecated names for backwards compatibility
 type Colors = {
   primary?: Color;
@@ -314,10 +408,9 @@ type Colors = {
   "icon-disabled"?: Color;
   "icon-accent"?: Color;
 
-  // Border, input, and radius
+  // Border and input
   border?: Color;
   input?: Color;
-  radius?: Color;
 
   // Ring (focus states)
   "ring-focus"?: Color;

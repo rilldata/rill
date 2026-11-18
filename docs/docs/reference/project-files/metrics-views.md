@@ -479,7 +479,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for light theme
+        - **`variables`** - _[object]_ - CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
       - **`dark`** - _[object]_ - Dark theme color configuration
 
@@ -491,7 +491,27 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for dark theme
+        - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
+
+      - **`font`** - _[object]_ - Font for the text of the dashboard, including its charts, filter bar and AI panel. Rill Cloud's own navigation outside the dashboard keeps Rill's font.
+
+        - **`family`** - _[string]_ - A single font family name such as `Brand Sans`, or a generic family such as `system-ui`. Rill falls back to its default font while the font loads or if it is unavailable. _(required)_
+
+        - **`files`** - _[array of object]_ - Font files that provide the family. Without files, the font must be installed on the viewer's device.
+
+          - **`path`** - _[string]_ - Path of a `.woff2`, `.woff`, `.ttf` or `.otf` file, relative to the project root. It must be inside the project's `public` folder (or another of the `public_paths` in `rill.yaml`). _(required)_
+
+          - **`weight`** - _[string, integer]_ - Font weight the file provides, from 1 to 1000. Use a range such as `100 900` for a variable font. Defaults to `400`.
+
+          - **`style`** - _[string]_ - Font style the file provides. Defaults to `normal`.
+
+      - **`chrome`** - _[object]_ - Border and font tokens for the dashboard's chrome, which is the navigation bar of an embedded dashboard, the filter bar, the filter pills and the AI panel. Their colors are set in `light` and `dark`.
+
+        - **`border_width`** - _[string, integer]_ - Width of the chrome's borders, from `0px` to `8px`. Defaults to `1px`.
+
+        - **`font_size`** - _[string, integer]_ - Font size of the chrome's labels, from `10px` to `20px`. Defaults to each label's own size.
+
+        - **`font_weight`** - _[string, integer]_ - Font weight of the chrome's labels, from 100 to 900. Defaults to each label's own weight.
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
 

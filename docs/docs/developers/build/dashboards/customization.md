@@ -108,7 +108,80 @@ time_zones:
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. All properties in the file are optional—any values you omit will fall back to Rill's standard theme defaults.
 
-First, create the YAML file as below. You can define separate color schemes for light and dark modes:
+First, create the YAML file as below. You can define separate colors for light and dark modes:
+
+```yaml
+type: theme
+light:
+  primary: "#4F46E5"  # Indigo-600
+  secondary: "#8B5CF6"  # Purple-500
+dark:
+  primary: "#818CF8"  # Indigo-400
+  secondary: "#A78BFA"  # Purple-400
+```
+
+The `light` and `dark` properties allow you to customize:
+- **primary**: Primary color used for buttons, links, selected states, and charts that show a single series
+- **secondary**: Secondary color (used for measure chips and the loading spinner)
+- **variables**: CSS variables for finer control over backgrounds, text, borders, corners, and chart color palettes (see [Theme Variables](#theme-variables))
+
+Colors can be specified using:
+- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
+- Named colors (e.g., `plum`, `violet`)
+- HSL format (e.g., `hsl(180, 100%, 50%)`)
+
+Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
+
+`theme: <name of theme yaml file>`
+
+### Theme Variables
+
+Beyond the two brand colors, a theme can set variables for the dashboard's backgrounds, text, borders, and corner rounding. Add them under `variables` in the `light` and `dark` blocks:
+
+```yaml
+type: theme
+light:
+  primary: "#0F766E"  # Teal-700
+  secondary: "#F59E0B"  # Amber-500
+  variables:
+    surface-background: "#F8FAFC"  # Page behind the components
+    surface-card: "#FFFFFF"  # Canvas components
+    fg-primary: "#0F172A"  # Main text
+    border: "#CBD5E1"  # Borders and dividers
+    radius: 1rem  # Corner radius; use 0 for square corners
+dark:
+  primary: "#2DD4BF"  # Teal-400
+  secondary: "#FBBF24"  # Amber-400
+  variables:
+    surface-background: "#0B1120"
+    surface-card: "#111827"
+    fg-primary: "#F1F5F9"
+    border: "#334155"
+    radius: 1rem
+```
+
+Every variable takes a color, except `radius`, which takes a length in `px`, `rem`, or `em`. Light and dark modes are independent: a variable set only under `light` keeps Rill's default in dark mode.
+
+A variable can also be set directly in the `light` or `dark` block, next to `primary`, without the `variables` key:
+
+```yaml
+type: theme
+light:
+  primary: "#0F766E"
+  surface-background: "#F8FAFC"
+  radius: 1rem
+```
+
+The two forms are equivalent and can be mixed. If the same variable is set in both places, the value under `variables` is used.
+
+For the full list of variables, what each one styles, and its default in light and dark mode, see the [Theme YAML](/reference/project-files/themes#variables) reference page.
+
+### Chart Color Palettes
+
+Charts take their colors from three palettes, which are set with variables as well:
+- **Sequential palette** (`color-sequential-1` through `9`): For ordered data progressions
+- **Diverging palette** (`color-diverging-1` through `11`): For data diverging from a midpoint
+- **Qualitative palette** (`color-qualitative-1` through `24`): For categorical data
 
 ```yaml
 type: theme
@@ -172,28 +245,71 @@ dark:
     # ... (diverging and qualitative palettes also available)
 ```
 
-The `light` and `dark` properties allow you to customize:
-- **primary**: Primary color used for charts, buttons, and interactive elements
-- **secondary**: Secondary color (used for loading spinners and accents)
-- **variables**: Custom CSS variables for complete control over color palettes
-  - **Sequential palette** (color-sequential-1 through 9): For ordered data progressions
-  - **Diverging palette** (color-diverging-1 through 11): For data diverging from a midpoint
-  - **Qualitative palette** (color-qualitative-1 through 24): For categorical data
-
-Colors can be specified using:
-- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
-- Named colors (e.g., `plum`, `violet`)
-- HSL format (e.g., `hsl(180, 100%, 50%)`)
-
-Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
-
-`theme: <name of theme yaml file>`
-
 :::info Theme properties
 
 For more details about configuring themes, you can refer to our [Theme YAML](/reference/project-files/themes) reference page.
 
 :::
+
+### Fonts
+
+Dashboards use Rill's own font unless the theme sets another one with `font`. The simplest form names a font that is already on the viewer's device. A generic family such as `system-ui` follows the operating system:
+
+```yaml
+type: theme
+font:
+  family: system-ui
+```
+
+To use a font your viewers don't have installed, such as a licensed brand font, add its files to your project's `public` folder and list them under `files`:
+
+```yaml
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans-Regular.woff2
+      weight: 400
+    - path: public/BrandSans-Bold.woff2
+      weight: 700
+    - path: public/BrandSans-Italic.woff2
+      weight: 400
+      style: italic
+```
+
+- **family**: A single font family name. Rill's own font remains the fallback while the files load, and for any weight or character the font doesn't cover.
+- **files**: One entry for each weight and style the font provides.
+  - **path**: A `.woff2`, `.woff`, `.ttf` or `.otf` file inside `public`, or inside another folder listed under `public_paths` in `rill.yaml`. Prefer `.woff2`, which is the smallest.
+  - **weight**: The weight the file provides, from 1 to 1000. Defaults to `400`. For a variable font, give the range it covers, for example `100 900`.
+  - **style**: `normal` (the default) or `italic`.
+
+Dashboards use the weights 400, 500, 600 and 700. If the font has no file for one of them, the browser picks the nearest weight that it does have.
+
+The font applies to the whole dashboard in Rill Developer, in Rill Cloud and in embedded dashboards: text, tables, charts, the filter bar and the AI panel. In an embedded dashboard it also applies to the navigation bar. Rill Cloud's own navigation above the dashboard keeps Rill's font.
+
+:::note Font files stay private
+
+Rill serves the files in `public` only to viewers who have access to the project, so a font can't be downloaded by a link from outside Rill. Check that the license of your font allows it to be used on the web.
+
+:::
+
+### Chrome
+
+The filter bar, the filter pills, the AI panel and the navigation bar of an embedded dashboard make up the dashboard's chrome. They take their colors from the `light` and `dark` variables, like the rest of the dashboard. Use `chrome` to change their borders and labels as well:
+
+```yaml
+type: theme
+chrome:
+  border_width: 2px
+  font_size: 13px
+  font_weight: 600
+```
+
+- **border_width**: Width of the chrome's borders, from `0px` to `8px`. Defaults to `1px`. Use `0px` to remove them. Their color is the theme's `border` variable.
+- **font_size**: Font size of the chrome's labels, from `10px` to `20px`. By default each label keeps its own size.
+- **font_weight**: Font weight of the chrome's labels, from 100 to 900. By default each label keeps its own weight.
+
+These settings are the same in light and dark mode, so they sit at the top level of the theme, next to `font`.
 
 ## Example
 

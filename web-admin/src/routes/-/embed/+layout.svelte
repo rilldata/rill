@@ -146,9 +146,13 @@
     jwt={accessToken}
     authContext="embed"
   >
-    <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
-      <EmbedHeader {activeResource} {navigationBarEnabled} />
-    </ThemeProvider>
+    <!-- Not shrinkable: the theme boundary clips its overflow, so a header squeezed by the
+         dashboard below would lose its bottom border. -->
+    <div class="flex-none">
+      <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+        <EmbedHeader {activeResource} {navigationBarEnabled} />
+      </ThemeProvider>
+    </div>
 
     <div class="flex h-full overflow-hidden">
       <div class="flex-1 overflow-hidden">

@@ -2742,6 +2742,38 @@ export interface V1ThemeSpec {
   secondaryColorRaw?: string;
   light?: V1ThemeColors;
   dark?: V1ThemeColors;
+  /** Font for the text of the themed dashboard. Unset means Rill's default font. */
+  font?: V1ThemeFont;
+  /** Border and font tokens for the dashboard's chrome: navigation bar, filter bar, pills and AI panel. */
+  chrome?: V1ThemeChrome;
+}
+
+export interface V1ThemeFont {
+  /** A single CSS font family name, or a generic family such as "system-ui". */
+  family?: string;
+  /** Font files that provide the family.
+If empty, the family must already be available in the viewer's browser. */
+  files?: V1ThemeFontFile[];
+}
+
+export interface V1ThemeFontFile {
+  /** Path of the font file relative to the project root. It is inside one of the project's public paths. */
+  path?: string;
+  /** Lowest and highest font weight the file provides, in the range 1 to 1000.
+They are equal for a static font and differ for a variable font. */
+  weightMin?: number;
+  weightMax?: number;
+  /** Whether the file provides the italic style instead of the normal style. */
+  italic?: boolean;
+}
+
+export interface V1ThemeChrome {
+  /** Width in pixels of the borders of the chrome. Unset means the default width. */
+  borderWidthPx?: number;
+  /** Font size in pixels of the chrome's labels. Unset means each label's default size. */
+  fontSizePx?: number;
+  /** Font weight of the chrome's labels. Unset means each label's default weight. */
+  fontWeight?: number;
 }
 
 export interface V1ThemeState {

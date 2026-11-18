@@ -4290,6 +4290,303 @@ light:
 				},
 			},
 		},
+		{
+			name: "variables nested under variables",
+			yaml: `
+type: theme
+light:
+  primary: red
+  variables:
+    surface-background: "#f8fafc"
+    fg-primary: "#0f172a"
+    color-sequential-1: "hsl(211deg 79% 94%)"
+dark:
+  variables:
+    surface-background: "#0f172a"
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary: "red",
+					Variables: map[string]string{
+						"surface-background": "#f8fafc",
+						"fg-primary":         "#0f172a",
+						"color-sequential-1": "hsl(211deg 79% 94%)",
+					},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-background": "#0f172a",
+					},
+				},
+			},
+		},
+		{
+			name: "nested and flat variables are merged, nested wins",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+  surface-card: white
+  border: gray
+  variables:
+    primary: blue
+    border: black
+    fg-muted: silver
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "blue",
+					Secondary: "green",
+					Variables: map[string]string{
+						"surface-card": "white",
+						"border":       "black",
+						"fg-muted":     "silver",
+					},
+				},
+			},
+		},
+		{
+			name: "deprecated names are mapped across nested and flat variables",
+			yaml: `
+type: theme
+light:
+  surface-subtle: white
+  variables:
+    background: blue
+    card: yellow
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-subtle": "white",
+						"surface-card":   "yellow",
+					},
+				},
+			},
+		},
+		{
+			name: "unknown name under variables",
+			yaml: `
+type: theme
+light:
+  variables:
+    surface-background: white
+    unrecognised: blue
+`,
+			expectError: true,
+			errorMsg:    `invalid CSS variable: "unrecognised"`,
+		},
+		{
+			name: "invalid color under variables",
+			yaml: `
+type: theme
+dark:
+  variables:
+    fg-primary: gren
+`,
+			expectError: true,
+			errorMsg:    `invalid dark theme: invalid value "gren" for CSS variable "fg-primary"`,
+		},
+		{
+			name: "radius accepts lengths",
+			yaml: `
+type: theme
+light:
+  radius: 0.5rem
+dark:
+  variables:
+    radius: 0
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0.5rem"},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0px"},
+				},
+			},
+		},
+		{
+			name: "radius in pixels",
+			yaml: `
+type: theme
+light:
+  radius: 12PX
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "12px"},
+				},
+			},
+		},
+		{
+			name: "radius without a unit",
+			yaml: `
+type: theme
+light:
+  radius: 8
+`,
+			expectError: true,
+			errorMsg:    `invalid value "8" for CSS variable "radius": must be a length in px, rem or em`,
+		},
+		{
+			name: "radius as a percentage",
+			yaml: `
+type: theme
+light:
+  variables:
+    radius: 50%
+`,
+			expectError: true,
+			errorMsg:    `invalid value "50%" for CSS variable "radius"`,
+		},
+		{
+			name: "radius as a color",
+			yaml: `
+type: theme
+light:
+  radius: red
+`,
+			expectError: true,
+			errorMsg:    `invalid value "red" for CSS variable "radius"`,
+		},
+		{
+			name: "length for a color variable",
+			yaml: `
+type: theme
+light:
+  border: 1px
+`,
+			expectError: true,
+			errorMsg:    `invalid value "1px" for CSS variable "border"`,
+		},
+		{
+			name: "font with files and chrome tokens",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans-Regular.woff2
+    - path: /public/fonts/BrandSans-Italic.otf
+      weight: 700
+      style: italic
+    - path: public/BrandSans-Variable.ttf
+      weight: 100 900
+chrome:
+  border_width: 0
+  font_size: 13px
+  font_weight: 600
+light:
+  primary: red
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "red",
+					Variables: map[string]string{},
+				},
+				Font: &runtimev1.ThemeFont{
+					Family: "Brand Sans",
+					Files: []*runtimev1.ThemeFontFile{
+						{Path: "public/BrandSans-Regular.woff2", WeightMin: 400, WeightMax: 400},
+						{Path: "public/fonts/BrandSans-Italic.otf", WeightMin: 700, WeightMax: 700, Italic: true},
+						{Path: "public/BrandSans-Variable.ttf", WeightMin: 100, WeightMax: 900},
+					},
+				},
+				Chrome: &runtimev1.ThemeChrome{
+					BorderWidthPx: asPtr(uint32(0)),
+					FontSizePx:    asPtr(uint32(13)),
+					FontWeight:    asPtr(uint32(600)),
+				},
+			},
+		},
+		{
+			name: "generic font family with legacy colors",
+			yaml: `
+type: theme
+colors:
+  primary: red
+font:
+  family: system-ui
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				PrimaryColor:    &runtimev1.Color{Red: 1, Alpha: 1},
+				PrimaryColorRaw: "red",
+				Font:            &runtimev1.ThemeFont{Family: "system-ui"},
+			},
+		},
+		{
+			name: "font family with CSS syntax should fail",
+			yaml: `
+type: theme
+font:
+  family: "Brand Sans, sans-serif; } body { display: none"
+`,
+			expectError: true,
+			errorMsg:    "invalid font: invalid family",
+		},
+		{
+			name: "font file outside a public path should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/../models/BrandSans.woff2
+`,
+			expectError: true,
+			errorMsg:    `invalid font: files[0]: path "public/../models/BrandSans.woff2" must be inside a public path (public)`,
+		},
+		{
+			name: "font file that is not a font should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/logo.svg
+`,
+			expectError: true,
+			errorMsg:    "must be a .woff2, .woff, .ttf or .otf file",
+		},
+		{
+			name: "font file with an invalid weight should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans.woff2
+      weight: 900 100
+`,
+			expectError: true,
+			errorMsg:    `invalid font: files[0]: invalid weight "900 100"`,
+		},
+		{
+			name: "files for a generic font family should fail",
+			yaml: `
+type: theme
+font:
+  family: sans-serif
+  files:
+    - path: public/BrandSans.woff2
+`,
+			expectError: true,
+			errorMsg:    `the generic family "sans-serif" is provided by the browser and can't have files`,
+		},
+		{
+			name: "chrome token out of range should fail",
+			yaml: `
+type: theme
+chrome:
+  border_width: 40px
+`,
+			expectError: true,
+			errorMsg:    `invalid chrome: invalid border_width "40px": must be between 0px and 8px`,
+		},
 	}
 
 	for _, tt := range tests {
