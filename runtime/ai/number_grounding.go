@@ -81,6 +81,8 @@ var (
 	// A regular space only groups digits in threes after one to three leading digits, so "Mar 11 2025" is two numbers;
 	// no-break, narrow and thin spaces group digits anywhere.
 	numberRegexp = regexp.MustCompile(`\d{1,3}(?: \d{3})+(?:[.,]\d+)?\b|\d(?:[\d.,'’\x{00A0}\x{202F}\x{2009}]*\d)?`)
+	// rangeEndRegexp matches the dash and number that end a range, like "-1.06" in "1.04-1.06 billion".
+	rangeEndRegexp = regexp.MustCompile(`^ ?[-–] ?\d(?:[\d.,]*\d)?`)
 )
 
 // writtenNumber is a number written in text.
@@ -167,6 +169,13 @@ func scanNumbers(text string) []writtenNumber {
 		}
 
 		suffix := parseNumberSuffix(text[end:])
+		// In a range like "1.04-1.06 billion" or "5–8%", a number without a unit takes the unit of the range's end.
+		if suffix.length == 0 {
+			if loc := rangeEndRegexp.FindStringIndex(text[end:]); loc != nil {
+				rangeEnd := parseNumberSuffix(text[end+loc[1]:])
+				suffix.scale, suffix.percent = rangeEnd.scale, rangeEnd.percent
+			}
+		}
 		for i := range readings {
 			readings[i].value *= suffix.scale
 			readings[i].tolerance *= suffix.scale

@@ -68,6 +68,17 @@ func TestUngroundedNumbers(t *testing.T) {
 			ungrounded: []string{"315594.55"},
 		},
 		{
+			name:     "a range takes the unit of its end",
+			response: "Revenue was roughly 3.15-3.18 billion (3.15 – 3.18 bn), with margins of 5–8%.",
+			messages: []*aiv1.CompletionMessage{comparison, toolResultMessage(`{"data":[[0.05,0.08]]}`)},
+		},
+		{
+			name:       "a wrong range start",
+			response:   "Revenue was roughly 3.05-3.18 billion.",
+			messages:   []*aiv1.CompletionMessage{comparison},
+			ungrounded: []string{"3.05"},
+		},
+		{
 			name:     "digits grouped with regular spaces",
 			response: "Le chiffre d'affaires atteint 3 184 527 906 €, en hausse de 31 559 455 (1,00 %), soit 1 234,56 € par commande. On Mar 11 2025, that is 3 184 527 906.",
 			messages: []*aiv1.CompletionMessage{comparison, toolResultMessage(`{"data":[[1234.56]]}`)},
