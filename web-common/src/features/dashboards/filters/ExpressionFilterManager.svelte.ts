@@ -201,6 +201,16 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
+
+    // A single-select filter narrowed while parsing no longer matches the params,
+    // so publish the narrowed filter to the url and the dashboard state that read the params.
+    if (
+      this.topLevelJoiner.managers.dimensionManagers.some(
+        (dfm) => dfm.narrowedOnParse,
+      )
+    ) {
+      this.storeSync.stateChanged();
+    }
   }
 
   public setParamForMetricsView(mvName: string, param: string) {

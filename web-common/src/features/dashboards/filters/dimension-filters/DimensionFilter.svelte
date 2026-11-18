@@ -356,6 +356,14 @@
     }
   }
 
+  // Pinned and required chips have no remove button, so the picker is how a viewer clears just this filter.
+  function onClearSingleSelect() {
+    persistPinnedAndRequired();
+    proxyDimensionManager.clear();
+    dimensionManager.clear();
+    open = false;
+  }
+
   function handleItemClick(value: string) {
     if (singleSelect) {
       // Picking the applied value again keeps it, since a single-select filter is cleared with the chip's remove button.
@@ -614,16 +622,17 @@
       {/if}
     </div>
 
-    {#if !singleSelect}
-      <DimensionFilterFooter
-        mode={proxyDimensionManager.mode}
-        excludeMode={proxyDimensionManager.exclude}
-        {allSelected}
-        {disableApplyButton}
-        onToggleExcludeMode={handleToggleExcludeMode}
-        {onToggleSelectAll}
-        {onApply}
-      />
-    {/if}
+    <DimensionFilterFooter
+      mode={proxyDimensionManager.mode}
+      excludeMode={proxyDimensionManager.exclude}
+      {allSelected}
+      {disableApplyButton}
+      onToggleExcludeMode={handleToggleExcludeMode}
+      {onToggleSelectAll}
+      {onApply}
+      {singleSelect}
+      hasValue={dimensionManager.selectedValues.length > 0}
+      onClear={onClearSingleSelect}
+    />
   </DropdownMenu.Content>
 </DropdownMenu.Root>

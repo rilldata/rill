@@ -53,6 +53,14 @@ export class YAMLConfigProvider {
     this.events.emit("update");
   }
 
+  /**
+   * Whether `name` is listed under `filters.single_select`.
+   * Compares to `true`, since a plain lookup also finds inherited properties like `constructor`.
+   */
+  public isSingleSelectFilter(name: string) {
+    return this.singleSelectFilters[name] === true;
+  }
+
   public setEditable(newEditable: boolean) {
     this.editable = newEditable;
   }

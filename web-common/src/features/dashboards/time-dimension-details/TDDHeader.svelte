@@ -116,10 +116,8 @@
   );
   // A single-select filter holds one included value, so select all and exclude do not apply.
   const singleSelect = $derived(
-    Boolean(
-      expressionFilterManager.yamlConfigProvider.singleSelectFilters[
-        dimensionName
-      ],
+    expressionFilterManager.yamlConfigProvider.isSingleSelectFilter(
+      dimensionName,
     ),
   );
 

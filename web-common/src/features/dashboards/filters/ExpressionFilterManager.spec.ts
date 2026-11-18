@@ -821,6 +821,58 @@ describe("single-select filters", () => {
     ).toEqual(["google.com", "facebook.com"]);
   });
 
+  it("publishes the narrowed filter when the config is loaded before the params", async () => {
+    const filterManager = createSingleSelectFilterManager();
+    const internalChange = vi.fn();
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", internalChange),
+    );
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      }),
+    );
+    // `stateChanged` writes the param in a microtask.
+    await Promise.resolve();
+
+    expect(
+      filterManager.storeSync.searchParams?.get(
+        `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+      ),
+    ).toEqual(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`);
+    expect(internalChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not publish a param that already holds a single value", async () => {
+    const filterManager = createSingleSelectFilterManager();
+    const internalChange = vi.fn();
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", internalChange),
+    );
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    await Promise.resolve();
+
+    expect(internalChange).not.toHaveBeenCalled();
+  });
+
+  it("only treats the listed names as single-select", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({}, [], [], [AD_BIDS_PUBLISHER_DIMENSION]);
+
+    expect(
+      yamlConfigProvider.isSingleSelectFilter(AD_BIDS_PUBLISHER_DIMENSION),
+    ).toBe(true);
+    // Inherited properties of a plain object must not match.
+    expect(yamlConfigProvider.isSingleSelectFilter("constructor")).toBe(false);
+    expect(yamlConfigProvider.isSingleSelectFilter("toString")).toBe(false);
+  });
+
   it("narrows the filter and writes the param when the config lands after the params", async () => {
     const yamlConfigProvider = new YAMLConfigProvider();
     const filterManager = createFilterManager(yamlConfigProvider);

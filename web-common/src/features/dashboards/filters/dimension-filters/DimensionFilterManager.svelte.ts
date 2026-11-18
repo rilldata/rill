@@ -37,6 +37,8 @@ export class DimensionFilterManager {
   private oldMode: DimensionFilterMode;
   // Cause of the change currently being applied. See `runWithSource`.
   private activeSource: FilterChangeSource;
+  // True when the parsed expression held more than a single-select filter allows, so `reconcile` narrowed it.
+  public narrowedOnParse = false;
 
   public constructor(
     public readonly name: string,
@@ -64,7 +66,7 @@ export class DimensionFilterManager {
    * and a URL or bookmark with several values keeps the last one.
    */
   public get singleSelect() {
-    return Boolean(this.yamlConfigProvider?.singleSelectFilters[this.name]);
+    return Boolean(this.yamlConfigProvider?.isSingleSelectFilter(this.name));
   }
 
   public static createForMetricsViews(
@@ -133,6 +135,8 @@ export class DimensionFilterManager {
     this.inputText = initInputText;
     this.exclude = initExclude;
     this.rawExpr = initRawExpr;
+    // `commit` narrows it below without reporting, so the parser has to publish the narrowed filter.
+    this.narrowedOnParse = this.singleSelect && !this.holdsSingleValue();
     this.commit(false);
   }
 
@@ -267,15 +271,13 @@ export class DimensionFilterManager {
   }
 
   /**
-   * Narrows a single-select filter the config arrived for after it was parsed.
-   * Returns true when the filter changed, after reporting the change.
+   * Narrows a single-select filter the config arrived for after it was parsed, and reports the change.
    */
   public enforceSingleSelect() {
-    if (!this.singleSelect || this.holdsSingleValue()) return false;
-    // Not a conversion the viewer asked for, so `commit` should not announce one.
+    if (!this.singleSelect || this.holdsSingleValue()) return;
+    // This happens when the dashboard config loads, so keep it quiet.
     this.oldMode = DimensionFilterMode.Select;
     this.commit();
-    return true;
   }
 
   private holdsSingleValue() {
