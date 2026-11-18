@@ -28,6 +28,12 @@
     stateManagers?.metricsViewName.set(metricsViewName);
   }
 
+  // While the explore is being edited, the filter chips offer the pin and required toggles.
+  // The editing sidebar saves them to the file. See VisualExploreEditing.
+  $: stateManagers?.expressionFilterManager.yamlConfigProvider.setEditable(
+    visualEditing,
+  );
+
   $: exploreStore = useExploreState(exploreName);
 
   $: ready = Boolean($exploreStore) && Boolean(stateManagers);

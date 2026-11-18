@@ -499,7 +499,13 @@ message ExploreSpec {
   // The values should be valid IANA location identifiers.
   repeated string time_zones = 10;
   // Preset UI state to show by default.
+  // Its `where` holds the default filter, parsed from `defaults.filters`.
   ExplorePreset default_preset = 15;
+  // Dimension or measure names whose filter chip is always shown in the filter bar.
+  repeated string pinned_filters = 24;
+  // Dimension or measure names that must have a filter value before the explore renders.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 25;
   // If true, the pivot tab will be hidden when the explore is embedded.
   bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
