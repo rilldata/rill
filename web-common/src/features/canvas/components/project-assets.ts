@@ -32,8 +32,14 @@ export class ProjectAssetLoader {
   /** Returns a URL that an `<img>` can load, given an image URL from a component's spec. */
   resolve(url: string): Promise<string> {
     const path = getProjectAssetPath(url);
-    if (path === null) return Promise.resolve(url);
+    return path === null ? Promise.resolve(url) : this.load(path);
+  }
 
+  /**
+   * Fetches the asset at a project-relative path and returns a blob URL for it.
+   * Unlike `resolve`, it never returns its input, so it is safe for a path read from rendered HTML.
+   */
+  load(path: string): Promise<string> {
     let blobUrl = this.blobUrls.get(path);
     if (!blobUrl) {
       blobUrl = this.fetchAsBlobUrl(path);

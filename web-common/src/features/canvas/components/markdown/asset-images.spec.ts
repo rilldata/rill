@@ -2,10 +2,11 @@ import {
   loadAssetImages,
   sanitizeMarkdownHtml,
 } from "@rilldata/web-common/features/canvas/components/markdown/asset-images";
-import type { ProjectAssetLoader } from "@rilldata/web-common/features/canvas/components/project-assets";
+import { ProjectAssetLoader } from "@rilldata/web-common/features/canvas/components/project-assets";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 function render(markdown: string): HTMLElement {
   const container = document.createElement("div");
@@ -60,11 +61,11 @@ describe("sanitizeMarkdownHtml", () => {
 });
 
 describe("loadAssetImages", () => {
-  // Resolves asset paths like ProjectAssetLoader does, without a runtime to fetch from.
+  // Loads asset paths like ProjectAssetLoader does, without a runtime to fetch from.
   function fakeLoader() {
     const requested: string[] = [];
     const loader = {
-      resolve: (path: string) => {
+      load: (path: string) => {
         requested.push(path);
         return path.includes("missing")
           ? Promise.reject(new Error("HTTP 404"))
@@ -110,5 +111,40 @@ describe("loadAssetImages", () => {
     expect(img?.alt).toBe("Missing logo");
 
     action.destroy();
+  });
+
+  it("Should only fetch a set-aside path from the runtime, never use it as the source", async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response("", { status: 403 })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const loader = new ProjectAssetLoader(
+      new RuntimeClient({
+        host: "http://runtime.test",
+        instanceId: "inst",
+        authContext: "embed",
+      }),
+    );
+    const node = render(
+      [
+        // The sanitizer sets aside what follows the assets API path, which can be a URL.
+        '<img src="/v1/instances/default/assets/javascript:alert(1)" alt="Script">',
+        // The data attribute itself can be written in the markdown.
+        '<img data-asset-src="https://tracker.example/pixel.png" alt="Tracker">',
+      ].join("\n\n"),
+    );
+    const action = loadAssetImages(node, loader);
+    await settle();
+
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "http://runtime.test/v1/instances/inst/assets/javascript:alert(1)",
+      "http://runtime.test/v1/instances/inst/assets/https://tracker.example/pixel.png",
+    ]);
+    for (const img of node.querySelectorAll("img")) {
+      expect(img.hasAttribute("src")).toBe(false);
+    }
+
+    action.destroy();
+    vi.unstubAllGlobals();
   });
 });

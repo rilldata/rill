@@ -42,8 +42,9 @@ export function loadAssetImages(node: HTMLElement, loader: ProjectAssetLoader) {
     for (const img of images) {
       if (loading.has(img)) continue;
       loading.add(img);
+      // The markdown can put any value in the attribute, so only use it as a path to fetch, never as the source.
       loader
-        .resolve(img.getAttribute(ASSET_SRC_ATTRIBUTE) ?? "")
+        .load(img.getAttribute(ASSET_SRC_ATTRIBUTE) ?? "")
         .then((src) => (img.src = src))
         // Without a source, the browser shows the image's alt text.
         .catch(() => {})
