@@ -2,6 +2,7 @@ import * as vega from "vega";
 import { compile } from "vega-lite";
 import { describe, expect, it } from "vitest";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { estimateAxisLabelWidth } from "@rilldata/web-common/features/components/charts/util";
 import {
   TypeCode,
   V1TimeGrain,
@@ -1220,83 +1221,128 @@ describe("compileFlintSpec", () => {
     expect(view.autosize).toEqual({ type: "fit-y", contains: "padding" });
   });
 
-  it("fits a marginal plot and the legend at its right inside its box", async () => {
-    for (const measure of ["bid_price_sum", "total_records"]) {
-      vega.expressionFunction(`rill_${measure}`, (value: number) =>
-        String(value),
+  it.each([
+    ["categories on color", { color: "publisher" }, "Publisher"],
+    ["sizes", { size: "impressions" }, "Impressions"],
+    ["shapes", { shape: "publisher" }, "Publisher"],
+    ["opacities", { opacity: "impressions" }, "Impressions"],
+    ["a measure on color", { color: "impressions" }, "Impressions"],
+  ])(
+    "fits a marginal plot, its y axis and its legend of %s inside its box",
+    async (_, legendEncodings, legendTitle) => {
+      // The full numbers a measure with a `format_d3` of `$,.0f` or `,.0f` shows.
+      const dollars = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      });
+      vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+        dollars.format(value),
       );
-    }
-    const { spec } = compileFlintSpec({
-      spec: {
-        chartType: "Marginal Plot",
-        encodings: {
-          x: "total_records",
-          y: "bid_price_sum",
-          color: "publisher",
-        },
-      },
-      rows: ["Yahoo", "Google", "Microsoft"].flatMap((publisher, p) =>
-        Array.from({ length: 20 }, (_, i) => ({
-          publisher,
-          total_records: 10 + ((i * 37 + p * 11) % 90),
-          bid_price_sum: 100 + ((i * 53 + p * 29) % 900),
-        })),
-      ),
-      fields: deriveFlintFields(
-        ["publisher", "total_records", "bid_price_sum"],
-        metricsView,
-      ),
-      size: { width: 320, height: 300 },
-      measureFields: ["bid_price_sum", "total_records"],
-    });
-
-    // Drawn in Rill's theme at the size VegaLiteRenderer gives the view: the box's width, and its
-    // height less Vega's padding.
-    const view = new vega.View(
-      vega.parse(
-        compile(spec as never, { config: getRillTheme(false) as never }).spec,
-      ),
-      { renderer: "none" },
-    );
-    view.width(320).height(290);
-    await view.runAsync();
-    const [, width, height] =
-      /<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(await view.toSVG()) ??
-      [];
-    expect(Number(width)).toBeLessThanOrEqual(320);
-    expect(Number(height)).toBeLessThanOrEqual(300);
-
-    // Nor is anything drawn past the canvas, where the legend was cut off.
-    const [left, top] = view.origin();
-    const padding = view.padding() as vega.Padding & {
-      top: number;
-      bottom: number;
-      left: number;
-      right: number;
-    };
-    const { root } = view.scenegraph() as unknown as {
-      root: SceneNode & {
-        bounds: { x1: number; x2: number; y1: number; y2: number };
-      };
-    };
-    expect(left + root.bounds.x1).toBeGreaterThanOrEqual(0);
-    expect(top + root.bounds.y1).toBeGreaterThanOrEqual(0);
-    expect(
-      padding.left + left + root.bounds.x2 + padding.right,
-    ).toBeLessThanOrEqual(320);
-    expect(
-      padding.top + top + root.bounds.y2 + padding.bottom,
-    ).toBeLessThanOrEqual(300);
-    const legend: unknown[] = [];
-    const visit = (node: SceneNode) => {
-      if (node.role === "legend-label") {
-        legend.push(...(node.items ?? []).map((item) => item.text));
+      for (const measure of ["total_records", "impressions"]) {
+        vega.expressionFunction(`rill_${measure}`, (value: number) =>
+          value.toLocaleString("en-US"),
+        );
       }
-      for (const item of node.items ?? []) item.items?.forEach(visit);
-    };
-    visit(root);
-    expect(legend).toEqual(["Yahoo", "Google", "Microsoft"]);
-  });
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Marginal Plot",
+          encodings: {
+            x: "total_records",
+            y: "bid_price_sum",
+            ...legendEncodings,
+          },
+        },
+        rows: ["Yahoo", "Google", "Microsoft"].flatMap((publisher, p) =>
+          Array.from({ length: 20 }, (_, i) => ({
+            publisher,
+            total_records: 10 + ((i * 37 + p * 11) % 90),
+            bid_price_sum: 100_000 + ((i * 53 + p * 29) % 900) * 1_000,
+            impressions: 1_000 + ((i * 71 + p * 13) % 500) * 400,
+          })),
+        ),
+        fields: deriveFlintFields(
+          ["publisher", "total_records", "bid_price_sum", "impressions"],
+          metricsView,
+        ),
+        size: { width: 320, height: 300 },
+        measureFields: ["bid_price_sum", "total_records", "impressions"],
+      });
+
+      // Drawn in Rill's theme at the size VegaLiteRenderer gives the view: the box's width, and
+      // its height less Vega's padding.
+      const view = new vega.View(
+        vega.parse(
+          compile(spec as never, { config: getRillTheme(false) as never }).spec,
+        ),
+        { renderer: "none" },
+      );
+      view.width(320).height(290);
+      await view.runAsync();
+      const [, width, height] =
+        /<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(
+          await view.toSVG(),
+        ) ?? [];
+      expect(Number(width)).toBeLessThanOrEqual(320);
+      expect(Number(height)).toBeLessThanOrEqual(300);
+
+      // Nor is anything drawn past the canvas, where the legend was cut off.
+      const [left, top] = view.origin();
+      const padding = view.padding() as vega.Padding & {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+      };
+      const { root } = view.scenegraph() as unknown as {
+        root: SceneNode & {
+          bounds: { x1: number; x2: number; y1: number; y2: number };
+        };
+      };
+      expect(left + root.bounds.x1).toBeGreaterThanOrEqual(0);
+      expect(top + root.bounds.y1).toBeGreaterThanOrEqual(0);
+      expect(
+        padding.left + left + root.bounds.x2 + padding.right,
+      ).toBeLessThanOrEqual(320);
+      expect(
+        padding.top + top + root.bounds.y2 + padding.bottom,
+      ).toBeLessThanOrEqual(300);
+
+      const legendTitles: unknown[] = [];
+      const legendLabels: unknown[] = [];
+      const yLabels: { text: string; limit: number }[] = [];
+      const visit = (node: SceneNode, inYAxis: boolean) => {
+        for (const item of (node.items ?? []) as (SceneNode & {
+          orient?: string;
+          limit?: number;
+        })[]) {
+          if (node.role === "legend-title") legendTitles.push(item.text);
+          if (node.role === "legend-label") legendLabels.push(item.text);
+          if (inYAxis && node.role === "axis-label") {
+            yLabels.push({ text: String(item.text), limit: item.limit ?? 0 });
+          }
+          const yAxis =
+            inYAxis || (node.role === "axis" && item.orient === "left");
+          for (const child of item.items ?? []) visit(child, yAxis);
+        }
+      };
+      visit(root, false);
+      expect(legendTitles).toEqual([legendTitle]);
+      if (legendTitle === "Publisher") {
+        expect(legendLabels).toEqual(["Yahoo", "Google", "Microsoft"]);
+      } else {
+        expect(legendLabels.length).toBeGreaterThan(1);
+      }
+
+      // The y axis leaves each value the width it takes in Rill's font, uncut.
+      expect(yLabels.map((label) => label.text)).toContain("$1,000,000");
+      for (const label of yLabels) {
+        expect(label.limit).toBeGreaterThanOrEqual(
+          estimateAxisLabelWidth(label.text),
+        );
+      }
+    },
+  );
 
   it("centers violins in their panels and keeps them within the data", () => {
     const sites = Array.from({ length: 12 }, (_, i) => `site_${i}`);
