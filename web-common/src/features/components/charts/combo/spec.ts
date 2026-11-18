@@ -53,9 +53,14 @@ export function generateVLComboChartSpec(
   const spec = createMultiLayerBaseSpec();
   // The line width is set in the chart's config rather than on the marks, so that a widget's
   // `vl_config` can still set it. The chart's lines are its only `line` marks.
-  const vegaConfig = createConfigWithLegend(config, config.color, {
-    line: { strokeWidth: data.chartTheme?.line?.width ?? COMBO_LINE_WIDTH },
-  });
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    data.chartTheme,
+    {
+      line: { strokeWidth: data.chartTheme?.line?.width ?? COMBO_LINE_WIDTH },
+    },
+  );
 
   const y1MarkType = config.y1?.mark || "bar";
   const y2MarkType = config.y2?.mark || "line";

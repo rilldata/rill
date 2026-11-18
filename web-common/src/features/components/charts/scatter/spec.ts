@@ -19,6 +19,7 @@ export function generateVLScatterPlotSpec(
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
+    data.chartTheme,
     {
       axisX: { grid: true },
     },

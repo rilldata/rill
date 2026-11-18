@@ -299,6 +299,14 @@ describe("a theme's chart style on built-in charts", () => {
       light,
     );
     expect(values(authored("legend"), "orient")).toEqual(["right"]);
+
+    // A widget's vl_config can also place the legend in a corner of the chart.
+    const cornered = await draw(
+      "line_chart",
+      { ...timeSeries, vl_config: '{"legend":{"orient":"top-left"}}' },
+      light,
+    );
+    expect(values(cornered("legend"), "orient")).toEqual(["top-left"]);
   });
 
   it("applies each mode's own style", async () => {

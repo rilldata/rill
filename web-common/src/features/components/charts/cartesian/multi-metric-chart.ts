@@ -60,6 +60,7 @@ export function generateVLMultiMetricChartSpec(
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
+    data.chartTheme,
     markType === "stacked_area" ? areaEdgeConfig(data) : undefined,
   );
 

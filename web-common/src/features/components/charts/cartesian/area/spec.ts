@@ -33,6 +33,7 @@ export function generateVLAreaChartSpec(
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
+    data.chartTheme,
     areaEdgeConfig(data),
   );
 

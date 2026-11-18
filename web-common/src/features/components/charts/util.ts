@@ -12,7 +12,6 @@ import {
   ChartSortType,
   type ChartDataResult,
   type ChartDomainValues,
-  type ChartLegend,
   type ChartSortDirection,
   type ChartSpec,
   type ChartType,
@@ -57,27 +56,6 @@ export function mergedVlConfig(
   return merge(validSpecConfig, parsedConfig, {
     arrayMerge: replaceByClonedSource,
   });
-}
-
-/** The legend positions a chart lays its legend out for (see `getLegendConfig`). */
-const LEGEND_POSITIONS = new Set<string>(["top", "bottom", "left", "right"]);
-
-/**
- * The position a widget's `vl_config` gives its legend, when it is one a chart lays its legend out
- * for. Invalid JSON states none, as `mergedVlConfig` ignores it.
- */
-export function vlConfigLegendOrient(
-  userProvidedConfig: string | undefined,
-): ChartLegend | undefined {
-  if (!userProvidedConfig) return undefined;
-  try {
-    const orient = (JSON.parse(userProvidedConfig) as Config).legend?.orient;
-    return typeof orient === "string" && LEGEND_POSITIONS.has(orient)
-      ? (orient as ChartLegend)
-      : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export interface FieldsByType {
@@ -186,35 +164,7 @@ export function generateSpec(
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  return CHART_CONFIG[chartType]?.generateSpec(
-    withThemeLegendPosition(rillChartSpec, data.chartTheme?.legend?.position),
-    data,
-  );
-}
-
-/**
- * A chart draws its legend where its color field says, else where its `vl_config` says, and at
- * each chart type's default position when neither does. A theme's legend position takes the place
- * of that default.
- */
-function withThemeLegendPosition(
-  spec: ChartSpec,
-  position: string | undefined,
-): ChartSpec {
-  const color = "color" in spec ? spec.color : undefined;
-  if (
-    !position ||
-    !color ||
-    typeof color !== "object" ||
-    ("legendOrientation" in color && color.legendOrientation) ||
-    vlConfigLegendOrient(spec.vl_config)
-  ) {
-    return spec;
-  }
-  return {
-    ...spec,
-    color: { ...color, legendOrientation: position as ChartLegend },
-  } as ChartSpec;
+  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
 export function isDomainStringArray(
