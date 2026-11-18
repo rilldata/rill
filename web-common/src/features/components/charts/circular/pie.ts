@@ -118,6 +118,7 @@ export function generateVLPieChartSpec(
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
+    data.chartTheme,
     {
       legend: {
         layout: {

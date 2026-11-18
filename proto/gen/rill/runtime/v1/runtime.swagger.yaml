@@ -8973,6 +8973,163 @@ definitions:
         $ref: '#/definitions/v1ThemeSpec'
       state:
         $ref: '#/definitions/v1ThemeState'
+  v1ThemeChart:
+    type: object
+    properties:
+      light:
+        $ref: '#/definitions/v1ThemeChartStyle'
+      dark:
+        $ref: '#/definitions/v1ThemeChartStyle'
+    description: |-
+      ThemeChart is a theme's chart styling, resolved per mode.
+      The parser merges the settings a theme states for both modes into each of them, so a consumer only reads the style for its mode.
+  v1ThemeChartArea:
+    type: object
+    properties:
+      fillOpacity:
+        type: number
+        format: double
+        description: Opacity of the fill, from 0 to 1.
+      lineWidth:
+        type: number
+        format: double
+        description: Stroke width of the line along the top of an area, in pixels.
+  v1ThemeChartAxis:
+    type: object
+    properties:
+      line:
+        type: boolean
+        description: Whether to draw the axis line.
+      lineWidth:
+        type: number
+        format: double
+        description: Stroke width of the axis line in pixels.
+      ticks:
+        type: boolean
+        description: Whether to draw tick marks.
+      color:
+        type: string
+        description: CSS color of the axis line and tick marks.
+  v1ThemeChartBar:
+    type: object
+    properties:
+      opacity:
+        type: number
+        format: double
+        description: Opacity of the bars, from 0 to 1.
+      cornerRadius:
+        type: number
+        format: double
+        description: Radius of the corners at the value end of a bar, in pixels.
+  v1ThemeChartGrid:
+    type: object
+    properties:
+      measure:
+        type: boolean
+        description: 'Whether to draw the gridlines values are read off: those across the measure axis.'
+      category:
+        type: boolean
+        description: Whether to draw the gridlines across the category or time axis.
+      style:
+        type: string
+        description: One of "solid", "dashed" or "dotted".
+      dash:
+        type: array
+        items:
+          type: number
+          format: double
+        description: Alternating dash and gap lengths in pixels. Overrides the dash pattern of `style`.
+      width:
+        type: number
+        format: double
+        description: Stroke width in pixels.
+      color:
+        type: string
+        description: CSS color.
+  v1ThemeChartLegend:
+    type: object
+    properties:
+      position:
+        type: string
+        description: 'Default position: one of "top", "bottom", "left" or "right". A chart''s own legend position takes precedence.'
+      symbol:
+        type: string
+        description: 'Symbol beside each entry: one of "circle", "square" or "line".'
+  v1ThemeChartLine:
+    type: object
+    properties:
+      width:
+        type: number
+        format: double
+        description: Stroke width in pixels.
+  v1ThemeChartPoint:
+    type: object
+    properties:
+      size:
+        type: number
+        format: double
+        description: Area of a point in square pixels.
+      opacity:
+        type: number
+        format: double
+        description: Opacity of the points, from 0 to 1.
+  v1ThemeChartStyle:
+    type: object
+    properties:
+      extends:
+        type: string
+        description: Name of a Flint theme preset to start from. Only custom charts compiled by Flint have presets; other charts ignore it.
+      fontFamily:
+        type: string
+        description: CSS font family of all chart text.
+      text:
+        $ref: '#/definitions/v1ThemeChartText'
+      grid:
+        $ref: '#/definitions/v1ThemeChartGrid'
+      axis:
+        $ref: '#/definitions/v1ThemeChartAxis'
+      line:
+        $ref: '#/definitions/v1ThemeChartLine'
+      area:
+        $ref: '#/definitions/v1ThemeChartArea'
+      bar:
+        $ref: '#/definitions/v1ThemeChartBar'
+      point:
+        $ref: '#/definitions/v1ThemeChartPoint'
+      legend:
+        $ref: '#/definitions/v1ThemeChartLegend'
+    description: ThemeChartStyle is the chart styling for one mode. Unset properties keep Rill's defaults.
+  v1ThemeChartText:
+    type: object
+    properties:
+      title:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+      axisLabel:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+      axisTitle:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+      legendLabel:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+      legendTitle:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+      valueLabel:
+        $ref: '#/definitions/v1ThemeChartTextRole'
+        description: Values printed on or beside marks.
+    description: ThemeChartText styles the roles text plays in a chart.
+  v1ThemeChartTextRole:
+    type: object
+    properties:
+      size:
+        type: number
+        format: double
+        description: Font size in pixels.
+      weight:
+        type: integer
+        format: int64
+        description: 'CSS font weight: a multiple of 100 from 100 to 900.'
+      color:
+        type: string
+        description: CSS color.
   v1ThemeColors:
     type: object
     properties:
@@ -8999,6 +9156,9 @@ definitions:
         $ref: '#/definitions/v1ThemeColors'
       dark:
         $ref: '#/definitions/v1ThemeColors'
+      chart:
+        $ref: '#/definitions/v1ThemeChart'
+        description: Chart styling, applied to built-in charts, Vega-Lite charts and custom charts.
   v1ThemeState:
     type: object
   v1TimeGrain:

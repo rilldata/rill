@@ -195,6 +195,153 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 
 :::
 
+### Styling Charts
+
+The `chart` section of a theme sets how charts are drawn, so you style them once instead of per chart. It applies to every chart on a canvas dashboard that uses the theme: the [chart widgets](/developers/build/dashboards/canvas-widgets/chart), [custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz) and [Vega-Lite charts](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
+
+For example, this theme draws dashed gridlines and thicker lines:
+
+```yaml
+type: theme
+chart:
+  grid:
+    style: dashed
+  line:
+    width: 2.5
+```
+
+Every property is optional, and a chart keeps Rill's default for anything the theme leaves out.
+
+| Property | What it styles |
+|---|---|
+| `font_family` | The font of all chart text. The font must be available in the viewer's browser. |
+| `text` | The `size`, `weight` and `color` of text, by role: `axis_label`, `axis_title`, `legend_label`, `legend_title`, `value_label` (values printed on marks) and `title` (a title drawn inside a chart; a widget's own title is not part of the chart). |
+| `grid` | Gridlines: their `style` (`solid`, `dashed` or `dotted`), `dash` pattern, `width` and `color`, and which ones are drawn (`measure`, `category`). |
+| `axis` | Whether an axis has a `line` and `ticks`, and their `line_width` and `color`. |
+| `line` | The `width` of lines. |
+| `area` | The `fill_opacity` of areas, and the `line_width` of the line along their top. |
+| `bar` | The `opacity` and `corner_radius` of bars. |
+| `point` | The `size` and `opacity` of points. |
+| `legend` | The default `position` of legends and the `symbol` beside each entry. |
+
+Gridlines are named for what their axis holds rather than where it sits. `grid.measure` draws the lines that values are read off, which are horizontal on a line chart and vertical on a horizontal bar chart. `grid.category` draws the lines across the category or time axis.
+
+#### Light and Dark Mode
+
+Properties set directly under `chart` apply in both modes. Put what differs, usually the colors, under `chart.light` and `chart.dark`. Both take the same properties as `chart`:
+
+```yaml
+type: theme
+chart:
+  grid:
+    style: dashed
+  light:
+    grid:
+      color: "#e0e0e0"
+  dark:
+    grid:
+      color: "#393939"
+```
+
+#### A Complete Theme
+
+This theme sets brand colors and palettes for each mode, then styles the charts drawn with them:
+
+```yaml
+type: theme
+
+light:
+  primary: "#0f62fe"
+  secondary: "#8a3ffc"
+  color-qualitative-1: "#0f62fe"
+  color-qualitative-2: "#ee5396"
+  color-qualitative-3: "#08bdba"
+  color-qualitative-4: "#f1c21b"
+
+dark:
+  primary: "#78a9ff"
+  secondary: "#be95ff"
+  color-qualitative-1: "#78a9ff"
+  color-qualitative-2: "#ff7eb6"
+  color-qualitative-3: "#3ddbd9"
+  color-qualitative-4: "#fddc69"
+
+chart:
+  font_family: "IBM Plex Sans, sans-serif"
+  text:
+    axis_label:
+      size: 12
+      weight: medium
+    axis_title:
+      size: 12
+      weight: semibold
+    legend_label:
+      size: 12
+  grid:
+    style: dashed
+    dash: [4, 4]
+    width: 1
+  axis:
+    line: true
+    ticks: true
+  line:
+    width: 2.5
+  area:
+    fill_opacity: 0.25
+    line_width: 2
+  bar:
+    corner_radius: 2
+  legend:
+    position: bottom
+    symbol: line
+  light:
+    text:
+      axis_label:
+        color: "#525252"
+      axis_title:
+        color: "#161616"
+    grid:
+      color: "#e0e0e0"
+    axis:
+      color: "#8d8d8d"
+  dark:
+    text:
+      axis_label:
+        color: "#c6c6c6"
+      axis_title:
+        color: "#f4f4f4"
+    grid:
+      color: "#393939"
+    axis:
+      color: "#6f6f6f"
+```
+
+#### What a Chart Sets Itself
+
+The theme provides defaults, and a chart's own settings take precedence over them:
+
+- A chart widget that sets a legend position, in its legend settings or with `legend.orient` in its `vl_config`, keeps it; `legend.position` only places the legends of charts that don't.
+- A chart widget's `vl_config` and a Vega-Lite chart's `config` override the theme property by property, so a spec can restyle one thing and take the rest from the theme.
+- Series colors come from the theme's `color-qualitative-*`, `color-sequential-*` and `color-diverging-*` palettes, unless a chart maps its own colors.
+
+#### Presets for Custom Viz
+
+Custom viz components are compiled by [Flint](https://github.com/microsoft/flint-chart), which ships a set of complete chart designs. `extends` starts from one of them, and the other `chart` properties go over it:
+
+```yaml
+type: theme
+chart:
+  extends: economist
+  line:
+    width: 3
+```
+
+The presets are `nyt`, `economist`, `swiss`, `nature`, `mckinsey`, `datawrapper`, `powerbi`, `powerbi-light`, `pop`, `cartoon`, `apple`, `de-stijl`, `bbc` and `material`. A custom viz reports an error if the theme names a preset that Flint does not have.
+
+A preset is a design of its own: a custom viz drawn with one keeps the preset's fonts, surface, palette and legend layout, except where the theme sets a `chart` property or a `color-*` palette. Chart widgets and Vega-Lite charts have no presets, so they ignore `extends` and take only the other `chart` properties. A preset has one look for both modes; to use one in a single mode, or a different one in each, set `extends` under `chart.light` or `chart.dark`.
+
+The [Theme YAML](/reference/project-files/themes#chart) reference lists every `chart` property.
+
 ## Example
 
 ```yaml

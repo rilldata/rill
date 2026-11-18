@@ -3391,6 +3391,71 @@ definitions:
             secondary: "#a78bfa"
             kpi-positive: "#4ade80"  # Brighter green for dark mode
             kpi-negative: "#f87171"  # Brighter red for dark mode
+
+      - # Example: Theme with chart styling
+        type: theme
+        light:
+          primary: "#0f62fe"
+          secondary: "#8a3ffc"
+          color-qualitative-1: "#0f62fe"
+          color-qualitative-2: "#ee5396"
+          color-qualitative-3: "#08bdba"
+          color-qualitative-4: "#f1c21b"
+        dark:
+          primary: "#78a9ff"
+          secondary: "#be95ff"
+          color-qualitative-1: "#78a9ff"
+          color-qualitative-2: "#ff7eb6"
+          color-qualitative-3: "#3ddbd9"
+          color-qualitative-4: "#fddc69"
+        chart:
+          font_family: "IBM Plex Sans, sans-serif"
+          text:
+            axis_label:
+              size: 12
+              weight: medium
+            axis_title:
+              size: 12
+              weight: semibold
+            legend_label:
+              size: 12
+          grid:
+            style: dashed
+            dash: [4, 4]
+            width: 1
+          axis:
+            line: true
+            ticks: true
+          line:
+            width: 2.5
+          area:
+            fill_opacity: 0.25
+            line_width: 2
+          bar:
+            corner_radius: 2
+          legend:
+            position: bottom
+            symbol: line
+          light:  # Colors for light mode
+            text:
+              axis_label:
+                color: "#525252"
+              axis_title:
+                color: "#161616"
+            grid:
+              color: "#e0e0e0"
+            axis:
+              color: "#8d8d8d"
+          dark:  # Colors for dark mode
+            text:
+              axis_label:
+                color: "#c6c6c6"
+              axis_title:
+                color: "#f4f4f4"
+            grid:
+              color: "#393939"
+            axis:
+              color: "#6f6f6f"
     allOf:
       - title: Properties
         type: object
@@ -3452,6 +3517,8 @@ definitions:
                 description: Custom CSS variables for dark theme
                 additionalProperties:
                   type: string
+          chart:
+            $ref: '#/definitions/theme_chart_properties'
 
         required:
           - type
@@ -4191,6 +4258,161 @@ definitions:
             description: Custom CSS variables for dark theme
             additionalProperties:
               type: string
+      chart:
+        type: object
+        description: Styling for charts. Takes the same properties as `chart` in a [theme file](themes.md#chart).
+  theme_chart_properties:
+    type: object
+    description: Styling for charts. It applies to built-in canvas charts, to Vega-Lite charts and to custom charts. Properties set directly under `chart` apply in light and dark mode; `light` and `dark` override them for one mode. Anything left unset keeps Rill's default. A chart's own settings, such as a Vega-Lite spec's `config`, take precedence.
+    properties:
+      extends:
+        type: string
+        description: Name of a theme preset that ships with Flint, the compiler behind custom charts, to start from (for example `economist`, `nyt`, `swiss`, `material`). Only custom charts have presets; built-in and Vega-Lite charts ignore this property. The other `chart` properties override the preset.
+      font_family:
+        type: string
+        description: CSS font family for all chart text, for example `"IBM Plex Sans, sans-serif"`. The font must be available in the viewer's browser.
+      text:
+        type: object
+        description: Size, weight and color of chart text, by the role the text plays.
+        properties:
+          title:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Titles drawn inside a chart, such as the `title` of a Vega-Lite spec. A canvas widget's own title is not part of the chart.
+          axis_label:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Axis tick labels and facet labels.
+          axis_title:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Axis titles and facet titles.
+          legend_label:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Legend entries.
+          legend_title:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Legend titles.
+          value_label:
+            $ref: '#/definitions/theme_chart_text_role_properties'
+            description: Values printed on or beside marks.
+      grid:
+        type: object
+        description: Gridlines.
+        properties:
+          measure:
+            type: boolean
+            description: Whether to draw the gridlines that values are read off, which run across the measure axis.
+          category:
+            type: boolean
+            description: Whether to draw the gridlines across the category or time axis.
+          style:
+            type: string
+            enum:
+              - solid
+              - dashed
+              - dotted
+            description: Line style, one of `solid`, `dashed` or `dotted`.
+          dash:
+            type: array
+            items:
+              type: number
+            description: Alternating dash and gap lengths in pixels, for example `[4, 2]`. Overrides the dash pattern of `style`.
+          width:
+            type: number
+            description: Stroke width in pixels.
+          color:
+            type: string
+            description: Color of the gridlines. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+      axis:
+        type: object
+        description: Axis lines and tick marks. Axis text is styled under `text`.
+        properties:
+          line:
+            type: boolean
+            description: Whether to draw the axis line.
+          line_width:
+            type: number
+            description: Stroke width of the axis line in pixels.
+          ticks:
+            type: boolean
+            description: Whether to draw tick marks.
+          color:
+            type: string
+            description: Color of the axis line and tick marks.
+      line:
+        type: object
+        description: Line marks.
+        properties:
+          width:
+            type: number
+            description: Stroke width in pixels.
+      area:
+        type: object
+        description: Area marks.
+        properties:
+          fill_opacity:
+            type: number
+            description: Opacity of the fill, from 0 to 1.
+          line_width:
+            type: number
+            description: Stroke width of the line along the top of an area, in pixels.
+      bar:
+        type: object
+        description: Bar marks.
+        properties:
+          opacity:
+            type: number
+            description: Opacity of the bars, from 0 to 1.
+          corner_radius:
+            type: number
+            description: Radius of the corners at the value end of a bar, in pixels.
+      point:
+        type: object
+        description: Point marks, such as the dots of a scatter plot.
+        properties:
+          size:
+            type: number
+            description: Area of a point in square pixels.
+          opacity:
+            type: number
+            description: Opacity of the points, from 0 to 1.
+      legend:
+        type: object
+        description: Legends. Legend text is styled under `text`.
+        properties:
+          position:
+            type: string
+            enum:
+              - top
+              - bottom
+              - left
+              - right
+            description: Default legend position, one of `top`, `bottom`, `left` or `right`. A chart that sets its own legend position keeps it.
+          symbol:
+            type: string
+            enum:
+              - circle
+              - square
+              - line
+            description: Symbol drawn beside each legend entry, one of `circle`, `square` or `line`.
+      light:
+        type: object
+        description: Overrides for light mode. Takes the same properties as `chart`, except `light` and `dark`.
+      dark:
+        type: object
+        description: Overrides for dark mode. Takes the same properties as `chart`, except `light` and `dark`.
+  theme_chart_text_role_properties:
+    type: object
+    properties:
+      size:
+        type: number
+        description: Font size in pixels.
+      weight:
+        type:
+          - integer
+          - string
+        description: Font weight, as a multiple of 100 from 100 to 900 or a name (`thin`, `extralight`, `light`, `regular`, `medium`, `semibold`, `bold`, `extrabold`, `black`).
+      color:
+        type: string
+        description: Text color. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
   api_data_properties:
     oneOf:
       - title: SQL Query

@@ -14,6 +14,7 @@
     createRuntimeServiceQueryResolver,
     V1TimeGrain,
     type V1Expression,
+    type V1ThemeChartStyle,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
@@ -26,6 +27,7 @@
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import { flintTheme } from "@rilldata/web-common/features/custom-viz/flint/theme";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onDestroy, tick } from "svelte";
@@ -52,6 +54,8 @@
    * If provided, the chart uses these directly. If not, colors resolve from CSS variables.
    */
   export let theme: Record<string, string> | undefined = undefined;
+  /** The project theme's chart style for the current mode: text, gridline, mark and legend styling. */
+  export let chartTheme: V1ThemeChartStyle | undefined = undefined;
   /**
    * Notes when the query returned as many rows as its LIMIT allows, so some may have been cut.
    * Only useful where the limit can be changed, i.e. the component editor.
@@ -167,6 +171,12 @@
 
   $: ejected = parseVegaSpec(vegaSpec);
 
+  // Flint compiles with the project's chart style, so its layout and the marks it styles agree
+  // with the config the chart is rendered with.
+  $: flintThemeSpec = flintTheme(themeMode === "dark", theme, {
+    chart: chartTheme,
+  });
+
   // Flint reads the data to make layout decisions, so compilation waits for the rows.
   $: compiled =
     spec && !vegaSpec && $dataQuery.isSuccess
@@ -179,6 +189,7 @@
               ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
+          theme: flintThemeSpec,
         })
       : null;
 
@@ -331,7 +342,9 @@
               canvasDashboard
               scrollX
               {themeMode}
-              config={getRillTheme(themeMode === "dark", theme)}
+              config={getRillTheme(themeMode === "dark", theme, {
+                chart: chartTheme,
+              })}
               {expressionFunctions}
               bind:viewVL
             />

@@ -862,6 +862,8 @@ message ThemeSpec {
   string secondary_color_raw = 4;
   optional ThemeColors light = 5;
   optional ThemeColors dark = 6;
+  // Chart styling, applied to built-in charts, Vega-Lite charts and custom charts.
+  ThemeChart chart = 9;
 }
 
 message ThemeState {}
@@ -870,6 +872,108 @@ message ThemeColors {
   string primary = 1;
   string secondary = 2;
   map<string, string> variables = 3;
+}
+
+// ThemeChart is a theme's chart styling, resolved per mode.
+// The parser merges the settings a theme states for both modes into each of them, so a consumer only reads the style for its mode.
+message ThemeChart {
+  ThemeChartStyle light = 1;
+  ThemeChartStyle dark = 2;
+}
+
+// ThemeChartStyle is the chart styling for one mode. Unset properties keep Rill's defaults.
+message ThemeChartStyle {
+  // Name of a Flint theme preset to start from. Only custom charts compiled by Flint have presets; other charts ignore it.
+  string extends = 1;
+  // CSS font family of all chart text.
+  string font_family = 2;
+  ThemeChartText text = 3;
+  ThemeChartGrid grid = 4;
+  ThemeChartAxis axis = 5;
+  ThemeChartLine line = 6;
+  ThemeChartArea area = 7;
+  ThemeChartBar bar = 8;
+  ThemeChartPoint point = 9;
+  ThemeChartLegend legend = 10;
+}
+
+// ThemeChartText styles the roles text plays in a chart.
+message ThemeChartText {
+  ThemeChartTextRole title = 1;
+  ThemeChartTextRole axis_label = 2;
+  ThemeChartTextRole axis_title = 3;
+  ThemeChartTextRole legend_label = 4;
+  ThemeChartTextRole legend_title = 5;
+  // Values printed on or beside marks.
+  ThemeChartTextRole value_label = 6;
+}
+
+message ThemeChartTextRole {
+  // Font size in pixels.
+  optional double size = 1;
+  // CSS font weight: a multiple of 100 from 100 to 900.
+  optional uint32 weight = 2;
+  // CSS color.
+  string color = 3;
+}
+
+message ThemeChartGrid {
+  // Whether to draw the gridlines values are read off: those across the measure axis.
+  optional bool measure = 1;
+  // Whether to draw the gridlines across the category or time axis.
+  optional bool category = 2;
+  // One of "solid", "dashed" or "dotted".
+  string style = 3;
+  // Alternating dash and gap lengths in pixels. Overrides the dash pattern of `style`.
+  repeated double dash = 4;
+  // Stroke width in pixels.
+  optional double width = 5;
+  // CSS color.
+  string color = 6;
+}
+
+message ThemeChartAxis {
+  // Whether to draw the axis line.
+  optional bool line = 1;
+  // Stroke width of the axis line in pixels.
+  optional double line_width = 2;
+  // Whether to draw tick marks.
+  optional bool ticks = 3;
+  // CSS color of the axis line and tick marks.
+  string color = 4;
+}
+
+message ThemeChartLine {
+  // Stroke width in pixels.
+  optional double width = 1;
+}
+
+message ThemeChartArea {
+  // Opacity of the fill, from 0 to 1.
+  optional double fill_opacity = 1;
+  // Stroke width of the line along the top of an area, in pixels.
+  optional double line_width = 2;
+}
+
+message ThemeChartBar {
+  // Opacity of the bars, from 0 to 1.
+  optional double opacity = 1;
+  // Radius of the corners at the value end of a bar, in pixels.
+  optional double corner_radius = 2;
+}
+
+message ThemeChartPoint {
+  // Area of a point in square pixels.
+  optional double size = 1;
+  // Opacity of the points, from 0 to 1.
+  optional double opacity = 2;
+}
+
+message ThemeChartLegend {
+  // Default position: one of "top", "bottom", "left" or "right". A chart's own legend position takes precedence.
+  string position = 1;
+  // Symbol beside each entry: one of "circle", "square" or "line".
+  string symbol = 2;
 }
 
 message Component {

@@ -18,6 +18,9 @@ import {
 } from "../builder";
 import type { ComboChartSpec } from "./ComboChartProvider";
 
+/** A combo chart draws its lines heavier than Rill's default line, where the theme sets no width. */
+const COMBO_LINE_WIDTH = 2;
+
 function getColorForField(
   encoding: "y1" | "y2",
   label: string,
@@ -48,7 +51,16 @@ export function generateVLComboChartSpec(
   const valueField = "value";
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, config.color);
+  // The line width is set in the chart's config rather than on the marks, so that a widget's
+  // `vl_config` can still set it. The chart's lines are its only `line` marks.
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    data.chartTheme,
+    {
+      line: { strokeWidth: data.chartTheme?.line?.width ?? COMBO_LINE_WIDTH },
+    },
+  );
 
   const y1MarkType = config.y1?.mark || "bar";
   const y2MarkType = config.y2?.mark || "line";
@@ -151,7 +163,6 @@ export function generateVLComboChartSpec(
         ...(y1MarkType === "bar" && { width: { band: 0.9 } }),
         ...(y1MarkType === "line" && {
           point: true,
-          strokeWidth: 2,
           interpolate: "monotone",
         }),
       },
@@ -190,7 +201,6 @@ export function generateVLComboChartSpec(
         ...(y2MarkType === "bar" && { width: { band: 0.9 } }),
         ...(y2MarkType === "line" && {
           point: true,
-          strokeWidth: 2,
           interpolate: "monotone",
         }),
       },

@@ -228,6 +228,8 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
+    - **`chart`** - _[object]_ - Styling for charts. Takes the same properties as `chart` in a [theme file](themes.md#chart).
+
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for dashboards (without row filtering)

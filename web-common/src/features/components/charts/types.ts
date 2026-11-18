@@ -19,6 +19,7 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
+  V1ThemeChartStyle,
 } from "@rilldata/web-common/runtime-client";
 import {
   type MetricsViewSpecDimension,
@@ -109,6 +110,8 @@ export type ChartDataResult = {
   fields: ChartFieldsMap;
   error?: Error | null;
   theme: { primary: Color; secondary: Color };
+  /** The project theme's chart style for the current mode; unset without a theme that has one. */
+  chartTheme?: V1ThemeChartStyle;
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
   hasComparison?: boolean;

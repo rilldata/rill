@@ -9,6 +9,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
+import { resolveChartTheme } from "../../themes/chart-theme";
 import { primary, secondary } from "../../themes/colors";
 import type {
   ChartDataQuery,
@@ -144,6 +145,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.secondary ||
             secondary["500"],
         },
+        chartTheme: resolveChartTheme(theme?.spec, isThemeModeDark),
       };
     },
   );

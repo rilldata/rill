@@ -109,6 +109,8 @@ const EXCLUDED_CHART_TYPES = new Map([
   ["Map", "needs semantics Rill never derives"],
   ["Choropleth", "needs semantics Rill never derives"],
   ["KPI Card", "Rill has a native KPI widget"],
+  // Flint's table takes no channels: it prints the rows it is given, a column per field.
+  ["Table", "Rill has native table widgets"],
 ]);
 
 /** Semantic types Rill cannot produce; any example using one is skipped. */
@@ -150,17 +152,24 @@ const CHANNEL_PARAM_NAMES: Record<string, string> = {
  */
 const ROW_LEVEL_CHARTS = new Set([
   "Scatter Plot",
+  "Marginal Plot",
   "Regression",
   "Strip Plot",
   "Histogram",
   "Density Plot",
+  "Ridgeline Plot",
   "ECDF Plot",
   "Boxplot",
   "Violin Plot",
 ]);
 
 /** Row-level charts that draw every row as its own point, rather than summarizing them into a shape. */
-const POINT_CHARTS = new Set(["Scatter Plot", "Regression", "Strip Plot"]);
+const POINT_CHARTS = new Set([
+  "Scatter Plot",
+  "Marginal Plot",
+  "Regression",
+  "Strip Plot",
+]);
 
 /** Channels that split the rows into series or panels, multiplying the rows a chart needs. */
 const SERIES_CHANNELS = new Set(["color", "group", "row", "column"]);
@@ -383,8 +392,9 @@ async function renderThumbnail(
     // Faceted examples (violin grids, small multiples) label each panel separately.
     header: { labels: false, title: null },
   };
-  // Flint sets some axis titles on the encoding itself, which wins over config.
-  stripEncodingTitles(spec);
+  // Flint sets some axis titles on the encoding itself, and lays out every legend there, both of
+  // which win over config.
+  stripEncodingGuides(spec);
 
   const view = new vega.View(vega.parse(compile(spec as never).spec), {
     renderer: "none",
@@ -392,18 +402,19 @@ async function renderThumbnail(
   return minifySvg(await view.toSVG());
 }
 
-/** Nulls out per-encoding axis titles so a thumbnail carries no text of its own. */
-function stripEncodingTitles(node: unknown): void {
+/** Nulls out per-encoding axis titles and legends so a thumbnail carries no text of its own. */
+function stripEncodingGuides(node: unknown): void {
   if (Array.isArray(node)) {
-    node.forEach(stripEncodingTitles);
+    node.forEach(stripEncodingGuides);
     return;
   }
   if (!node || typeof node !== "object") return;
   const record = node as Record<string, unknown>;
-  if (typeof record.field === "string" && "title" in record) {
-    record.title = null;
+  if (typeof record.field === "string") {
+    if ("title" in record) record.title = null;
+    if (record.legend) record.legend = null;
   }
-  Object.values(record).forEach(stripEncodingTitles);
+  Object.values(record).forEach(stripEncodingGuides);
 }
 
 /**

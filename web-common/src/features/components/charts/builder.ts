@@ -33,6 +33,7 @@ import {
   getDivergingColorsAsHex,
   getSequentialColorsAsHex,
 } from "@rilldata/web-common/features/themes/palette-store";
+import type { V1ThemeChartStyle } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -420,9 +421,18 @@ export function getLegendConfig(
   };
 }
 
+/** The sides of a chart that `getLegendConfig` lays a legend out along. */
+const LEGEND_SIDES = new Set<string>(["top", "bottom", "left", "right"]);
+
+/**
+ * The chart's config with its legend placed and laid out. The legend goes where the color field
+ * says, else where the widget's `vl_config` says, else where the project theme says, and at
+ * `defaultLegendPosition` when none of them does.
+ */
 export function createConfigWithLegend(
   config: ChartSpec,
   legendField: FieldConfig | string | undefined,
+  chartTheme: V1ThemeChartStyle | undefined,
   chartVLConfig: Config<ExprRef | SignalRef> | undefined = undefined,
   defaultLegendPosition: ChartLegend = "top",
 ): Config<ExprRef | SignalRef> | undefined {
@@ -431,8 +441,24 @@ export function createConfigWithLegend(
   if (!legendField || typeof legendField === "string") {
     return vlConfig;
   }
+  // A chart's own config leaves the legend's position to `defaultLegendPosition`,
+  // so a position in the merged config is the one the widget's `vl_config` gives.
+  const orient = vlConfig?.legend?.orient;
+  const vlPosition = typeof orient === "string" ? orient : undefined;
+  if (
+    !legendField.legendOrientation &&
+    vlPosition &&
+    !LEGEND_SIDES.has(vlPosition)
+  ) {
+    // `vl_config` can place the legend anywhere Vega-Lite can, such as in a corner of the chart;
+    // the layout below is for a legend along a side.
+    return vlConfig;
+  }
   const legendConfig = getLegendConfig(
-    legendField.legendOrientation ?? defaultLegendPosition,
+    legendField.legendOrientation ??
+      (vlPosition as ChartLegend | undefined) ??
+      (chartTheme?.legend?.position as ChartLegend | undefined) ??
+      defaultLegendPosition,
   );
   if (!vlConfig) return legendConfig;
   return merge(vlConfig, legendConfig);
@@ -459,6 +485,30 @@ export function createEncoding(
       data,
     ),
   };
+}
+
+/**
+ * The line drawn along the top of each area of a stacked area chart, a layer of its own over the
+ * area marks. Its width comes from the chart's config (see `areaEdgeConfig`) rather than the mark,
+ * so that a widget's `vl_config` can still set it.
+ */
+export function buildAreaEdgeLayer(): UnitSpec<Field> {
+  return { mark: { type: "line", opacity: 0.5 } };
+}
+
+/**
+ * The config an area chart sets for its line layer: the width the project theme gives the line
+ * along the top of an area. The layer is the chart's only `line` mark (the edge an area mark draws
+ * itself is styled by `area.line`), so the chart's `line` config reaches it alone, and a widget's
+ * `vl_config` goes over it.
+ */
+export function areaEdgeConfig(
+  data: ChartDataResult,
+): Config<ExprRef | SignalRef> | undefined {
+  const width = data.chartTheme?.area?.lineWidth;
+  return typeof width === "number"
+    ? { line: { strokeWidth: width } }
+    : undefined;
 }
 
 export function buildHoverPointOverlay(): UnitSpec<Field> {
