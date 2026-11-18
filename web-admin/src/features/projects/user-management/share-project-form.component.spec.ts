@@ -35,6 +35,8 @@ const ORG_MEMBERS_URL = `/v1/orgs/${ORG}/members`;
 const ORG_INVITES_URL = `/v1/orgs/${ORG}/invites`;
 const ORG_USERGROUPS_URL = `/v1/orgs/${ORG}/usergroups`;
 const ORG_AUTOGROUP_MEMBERS_URL = `/v1/orgs/${ORG}/usergroups/autogroup:members/members`;
+// Only project admins may list the project's domain access rules.
+const PROJECT_DOMAINS_URL = `/v1/orgs/${ORG}/projects/${PROJECT}/whitelisted`;
 
 const request = vi.mocked(httpClient);
 
@@ -42,12 +44,13 @@ function requestedUrls() {
   return request.mock.calls.map(([config]) => config.url);
 }
 
-function renderForm(readOrgMembers: boolean) {
+function renderForm(readOrgMembers: boolean, manageProject = true) {
   return render(ShareProjectForm, {
     props: {
       organization: ORG,
       project: PROJECT,
-      manageProjectAdmins: true,
+      manageProject,
+      manageProjectAdmins: manageProject,
       manageOrgAdmins: false,
       manageOrgMembers: false,
       readOrgMembers,
@@ -68,15 +71,23 @@ async function focusInviteInput() {
   await new Promise((resolve) => setTimeout(resolve, 50));
 }
 
-beforeEach(() => {
-  request.mockReset();
+/** Answers the form's requests; every list is empty unless a response is given for its URL. */
+function mockResponses(responses: Record<string, unknown> = {}) {
   request.mockImplementation(((config: AxiosRequestConfig) =>
     Promise.resolve(
       config.url === "/v1/users/current"
         ? { user: { email: "me@acme.com", displayName: "Me" } }
-        : // Every list is empty: the tests only check which lists the form asks for.
-          { members: [], invites: [], nextPageToken: "" },
+        : (responses[config.url ?? ""] ?? {
+            members: [],
+            invites: [],
+            nextPageToken: "",
+          }),
     )) as typeof httpClient);
+}
+
+beforeEach(() => {
+  request.mockReset();
+  mockResponses();
   // The form observes its member list for infinite scrolling, which jsdom does not implement.
   vi.stubGlobal(
     "IntersectionObserver",
@@ -133,5 +144,41 @@ describe("ShareProjectForm", () => {
     expect(urls).not.toContain(ORG_INVITES_URL);
     expect(urls).not.toContain(ORG_USERGROUPS_URL);
     expect(urls).not.toContain(ORG_AUTOGROUP_MEMBERS_URL);
+  });
+
+  it("shows a project admin the project's domain access, which adds users without an invite, and removes it", async () => {
+    mockResponses({
+      [PROJECT_DOMAINS_URL]: {
+        domains: [{ domain: "example.com", role: "viewer" }],
+      },
+    });
+    renderForm(false);
+
+    expect(
+      await screen.findByText("Anyone with an @example.com email"),
+    ).toBeTruthy();
+    expect(screen.getByText("Joins automatically as Viewer")).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "DELETE",
+          url: `${PROJECT_DOMAINS_URL}/example.com`,
+        }),
+      ),
+    );
+  });
+
+  it("does not list the project's domain access for an editor", async () => {
+    renderForm(false, false);
+
+    await waitFor(() =>
+      expect(requestedUrls()).toEqual(
+        expect.arrayContaining([PROJECT_MEMBERS_URL, PROJECT_INVITES_URL]),
+      ),
+    );
+    // The admin server would reject it with a 403.
+    expect(requestedUrls()).not.toContain(PROJECT_DOMAINS_URL);
   });
 });
