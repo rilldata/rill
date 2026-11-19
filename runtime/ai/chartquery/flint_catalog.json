@@ -1,5 +1,5 @@
 {
-  "flint_version": "0.4.1",
+  "flint_version": "1.0.1",
   "chart_types": [
     {
       "name": "Scatter Plot",
@@ -9,6 +9,7 @@
         "color",
         "size",
         "shape",
+        "detail",
         "opacity",
         "column",
         "row"
@@ -27,6 +28,122 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Marginal Plot",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "size",
+        "shape",
+        "opacity"
+      ],
+      "properties": [
+        {
+          "key": "marginal",
+          "label": "Margins",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Density"
+            },
+            {
+              "value": "histogram",
+              "label": "Histogram"
+            },
+            {
+              "value": "boxplot",
+              "label": "Boxplot"
+            }
+          ]
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 1
+        },
+        {
+          "key": "stackMode",
+          "label": "Stack",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Layered (default)"
+            },
+            {
+              "value": "stacked",
+              "label": "Stacked"
+            }
+          ]
+        },
+        {
+          "key": "bandwidth",
+          "label": "Bandwidth",
+          "type": "continuous",
+          "min": 0.05,
+          "max": 2,
+          "step": 0.05,
+          "default": 0
+        },
+        {
+          "key": "binCount",
+          "label": "Max Bins",
+          "type": "continuous",
+          "min": 5,
+          "max": 50,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "key": "whiskerMethod",
+          "label": "Whiskers",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "iqr",
+              "label": "Tukey (1.5 × IQR)"
+            },
+            {
+              "value": "minmax",
+              "label": "Min–Max"
+            }
+          ],
+          "default": "iqr"
+        },
+        {
+          "key": "showOutliers",
+          "label": "Outliers",
+          "type": "binary",
+          "default": true
         },
         {
           "key": "logScale_x",
@@ -327,6 +444,12 @@
               "label": "Discrete"
             }
           ]
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -336,6 +459,7 @@
         "x",
         "y",
         "group",
+        "color",
         "column",
         "row"
       ],
@@ -364,6 +488,12 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -399,6 +529,12 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -455,6 +591,12 @@
               "label": "Discrete"
             }
           ]
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -506,8 +648,8 @@
           "default": "auto"
         },
         {
-          "key": "showTextLabels",
-          "label": "Labels",
+          "key": "showValueLabels",
+          "label": "Values",
           "type": "binary",
           "default": false
         },
@@ -645,9 +787,191 @@
           "default": 0
         },
         {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 0.7
+        },
+        {
+          "key": "stackMode",
+          "label": "Stack",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Stacked (default)"
+            },
+            {
+              "value": "normalize",
+              "label": "Normalize (100%)"
+            },
+            {
+              "value": "layered",
+              "label": "Layered (overlap)"
+            }
+          ]
+        },
+        {
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Ridgeline Plot",
+      "channels": [
+        "x",
+        "y",
+        "color"
+      ],
+      "properties": [
+        {
+          "key": "overlap",
+          "label": "Overlap",
+          "type": "continuous",
+          "min": 0.5,
+          "max": 4,
+          "step": 0.1,
+          "default": 1.8
+        },
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            }
+          ]
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 0.5
+        },
+        {
+          "key": "order",
+          "label": "Order",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "As given"
+            },
+            {
+              "value": "mean",
+              "label": "By mean (highest on top)"
+            },
+            {
+              "value": "reverse",
+              "label": "Reversed"
+            }
+          ]
+        },
+        {
+          "key": "tailCut",
+          "label": "Trim tails",
+          "type": "continuous",
+          "min": 0,
+          "max": 0.2,
+          "step": 0.01,
+          "default": 0
+        },
+        {
+          "key": "colorBy",
+          "label": "Fill",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "One colour"
+            },
+            {
+              "value": "series",
+              "label": "By series"
+            },
+            {
+              "value": "x",
+              "label": "By x value"
+            }
+          ]
+        },
+        {
+          "key": "perspective",
+          "label": "Perspective",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "skew",
+          "label": "Skew",
+          "type": "continuous",
+          "min": 0,
+          "max": 0.4,
+          "step": 0.01,
+          "default": 0
+        },
+        {
+          "key": "tilt",
+          "label": "Tilt",
+          "type": "continuous",
+          "min": 0,
+          "max": 6,
+          "step": 0.1,
+          "default": 0
+        },
+        {
+          "key": "markAt",
+          "label": "Mark values",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "valueMax",
+          "label": "Value max",
+          "type": "continuous",
+          "min": 0,
+          "max": 1000,
+          "step": 0.1,
+          "default": 0
+        },
+        {
+          "key": "bandwidth",
+          "label": "Bandwidth",
+          "type": "continuous",
+          "min": 0.05,
+          "max": 2,
+          "step": 0.05,
+          "default": 0
         }
       ]
     },
@@ -715,6 +1039,53 @@
           "default": 0
         },
         {
+          "key": "showPoints",
+          "label": "Observations",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "showMedian",
+          "label": "Median rule",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "showContour",
+          "label": "Contour",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "widths",
+          "label": "Widths",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Auto"
+            },
+            {
+              "value": "area",
+              "label": "Equal area"
+            },
+            {
+              "value": "band",
+              "label": "Fill band"
+            }
+          ],
+          "default": "auto"
+        },
+        {
+          "key": "medianWidth",
+          "label": "Median width",
+          "type": "continuous",
+          "min": 0.2,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.6
+        },
+        {
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
@@ -747,6 +1118,12 @@
             }
           ],
           "default": "iqr"
+        },
+        {
+          "key": "showPoints",
+          "label": "Points",
+          "type": "binary",
+          "default": false
         },
         {
           "key": "showOutliers",
@@ -810,7 +1187,14 @@
         "y",
         "color"
       ],
-      "properties": []
+      "properties": [
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
+        }
+      ]
     },
     {
       "name": "Candlestick Chart",
@@ -1095,6 +1479,48 @@
       ],
       "properties": [
         {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            },
+            {
+              "value": "cardinal",
+              "label": "Cardinal"
+            },
+            {
+              "value": "catmull-rom",
+              "label": "Catmull-Rom"
+            }
+          ]
+        },
+        {
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
@@ -1134,6 +1560,18 @@
         "row"
       ],
       "properties": [
+        {
+          "key": "showText",
+          "label": "Values",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "showSeriesInLabel",
+          "label": "Name in label",
+          "type": "binary",
+          "default": false
+        },
         {
           "key": "independentYAxis",
           "label": "Independent Y",
@@ -1446,6 +1884,12 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -1465,7 +1909,7 @@
           "min": 0,
           "max": 100,
           "step": 5,
-          "default": 0
+          "default": 50
         },
         {
           "key": "sortSlices",
@@ -1491,6 +1935,12 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -1552,6 +2002,12 @@
           "key": "independentYAxis",
           "label": "Independent Y",
           "type": "binary"
+        },
+        {
+          "key": "showValueLabels",
+          "label": "Values",
+          "type": "binary",
+          "default": false
         }
       ]
     },
@@ -1629,8 +2085,8 @@
       ],
       "properties": [
         {
-          "key": "showTextLabels",
-          "label": "Labels",
+          "key": "showValueLabels",
+          "label": "Values",
           "type": "binary",
           "default": false
         },
@@ -1668,6 +2124,24 @@
               "label": "Discrete"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Calendar Heatmap",
+      "channels": [
+        "x",
+        "color"
+      ],
+      "properties": [
+        {
+          "key": "cornerRadius",
+          "label": "Corners",
+          "type": "continuous",
+          "min": 0,
+          "max": 8,
+          "step": 1,
+          "default": 2
         }
       ]
     },
