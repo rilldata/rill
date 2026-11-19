@@ -1,7 +1,14 @@
 import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import type { FileIO } from "@rilldata/web-common/features/entity-management/file-io";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const client = vi.hoisted(
@@ -95,15 +102,40 @@ describe("cloud editor file page", () => {
     );
   });
 
-  it("mounts the workspace when the content fetch fails", async () => {
+  it("shows an error instead of an empty editor when the fetch fails, and Retry loads the file", async () => {
     const io = new HeldFileIO();
     const model = newArtifact(io, "/models/orders.yaml");
 
     render(Page, pageProps(model));
     io.respond(model.path, undefined);
 
+    const retry = await screen.findByRole("button", { name: m.common_retry() });
+    expect(screen.queryByTestId("workspace")).toBeNull();
+
+    await fireEvent.click(retry);
+    expect(screen.queryByRole("alert")).toBeNull();
+    io.respond(model.path, "type: model\n");
+
     await waitFor(() =>
-      expect(screen.getByTestId("workspace").textContent).toBe("(not loaded)"),
+      expect(screen.getByTestId("workspace").textContent).toBe("type: model\n"),
     );
+  });
+
+  it("ignores a slower fetch for the previous file", async () => {
+    const io = new HeldFileIO();
+    const slow = newArtifact(io, "/models/slow.yaml");
+    const failing = newArtifact(io, "/models/failing.yaml");
+
+    const { rerender } = render(Page, pageProps(slow));
+    await rerender(pageProps(failing));
+    io.respond(failing.path, undefined);
+    await screen.findByRole("alert");
+
+    io.respond(slow.path, undefined);
+    // Let the slow fetch's completion and any re-render run.
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByTestId("workspace")).toBeNull();
   });
 });

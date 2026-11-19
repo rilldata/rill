@@ -1220,6 +1220,7 @@
   "edit_existing_branch": "Existing branch",
   "edit_exit": "Exit",
   "edit_failed_to_commit": "Failed to commit and push changes",
+  "edit_failed_to_load_file": "Failed to load this file.",
   "edit_failed_to_merge": "Failed to merge",
   "edit_failed_to_publish": "Failed to publish",
   "edit_failed_to_start": "Failed to start edit session.",

@@ -9,4 +9,4 @@
   const content = untrack(() => get(fileArtifact.editorContent));
 </script>
 
-<pre data-testid="workspace">{content === null ? "(not loaded)" : content}</pre>
+<pre data-testid="workspace">{content}</pre>
