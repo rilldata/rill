@@ -231,6 +231,17 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
   } = variantAssertions(variant);
 
   describe("Comparison Time range filters", () => {
+    // Explore resets its percent of total sort once the comparison turns on, dropping the sort params.
+    // A canvas has no sort params, so this leaves its url as is.
+    const urlSearchWithComparison = (
+      timeParams: Record<string, string | undefined>,
+    ) =>
+      urlSearchWithTimeParams({
+        ...timeParams,
+        sort_type: undefined,
+        sort_dir: undefined,
+      });
+
     it("Should toggle comparison time range", async () => {
       await variant.render();
 
@@ -251,7 +262,7 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
       });
 
       // Url is updated with comparison after enabling
-      const defaultComparisonUrl = urlSearchWithTimeParams({
+      const defaultComparisonUrl = urlSearchWithComparison({
         compare_tr: "rill-PP",
       });
       assertUrlSearch(defaultComparisonUrl);
@@ -266,7 +277,7 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
       });
 
       // Url is updated with comparison after enabling
-      const last4WeeksComparisonUrl = urlSearchWithTimeParams({
+      const last4WeeksComparisonUrl = urlSearchWithComparison({
         tr: "4W as of latest/D+1D",
         compare_tr: "rill-PP",
       });
@@ -281,7 +292,7 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
 
       await toggleComparison();
       assertComparisonEnabled(true);
-      const defaultComparisonUrl = urlSearchWithTimeParams({
+      const defaultComparisonUrl = urlSearchWithComparison({
         compare_tr: "rill-PP",
       });
 
@@ -293,7 +304,7 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
       });
       assertComparisonEnabled(true);
 
-      const previousWeekComparisonUrl = urlSearchWithTimeParams({
+      const previousWeekComparisonUrl = urlSearchWithComparison({
         compare_tr: "rill-PW",
       });
       assertUrlSearch(previousWeekComparisonUrl);
@@ -306,7 +317,7 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
         end: "2024-03-24T15:00:00.000Z",
       });
 
-      const last24PreviousWeekComparisonUrl = urlSearchWithTimeParams({
+      const last24PreviousWeekComparisonUrl = urlSearchWithComparison({
         tr: "24h as of latest/h+1h",
         compare_tr: "rill-PW",
       });

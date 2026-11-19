@@ -52,8 +52,10 @@ import {
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getAvailableComparisonsForTimeRange,
+  getComparionRangeForScrub,
   getComparisonInterval,
 } from "@rilldata/web-common/lib/time/comparisons";
+import { clampDateToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
 import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
@@ -414,13 +416,29 @@ export class TimeFilterManager implements UrlParamsStore {
       timeDimension: this.timeDimension,
     });
 
-    // TODO: calculate vs scrub
-    this.comparisonTimeStart = $derived(
-      this.comparisonInterval?.start.toJSDate().toISOString(),
-    );
-    this.comparisonTimeEnd = $derived(
-      this.comparisonInterval?.end.toJSDate().toISOString(),
-    );
+    // Shifted along with a scrub, so the comparison covers the same part of its period as `timeStart`/`timeEnd`.
+    const comparisonTimes = $derived.by(() => {
+      if (!this.comparisonInterval) return undefined;
+      let start = this.comparisonInterval.start.toJSDate();
+      let end = this.comparisonInterval.end.toJSDate();
+      if (this.interval && this.lastDefinedScrubInterval) {
+        ({ start, end } = getComparionRangeForScrub(
+          this.interval.start.toJSDate(),
+          this.interval.end.toJSDate(),
+          start,
+          end,
+          this.lastDefinedScrubInterval.start.toJSDate(),
+          this.lastDefinedScrubInterval.end.toJSDate(),
+        ));
+      }
+      // A custom comparison, or one shifted along with a scrub, can reach past the bounds of a protobuf timestamp.
+      return {
+        start: clampDateToTimestampBounds(start).toISOString(),
+        end: clampDateToTimestampBounds(end).toISOString(),
+      };
+    });
+    this.comparisonTimeStart = $derived(comparisonTimes?.start);
+    this.comparisonTimeEnd = $derived(comparisonTimes?.end);
     this.apiComparisonTimeRange = $derived.by(() => {
       if (!this.comparisonTimeStart || !this.comparisonTimeEnd)
         return undefined;
@@ -720,6 +738,14 @@ export class TimeFilterManager implements UrlParamsStore {
     }
   }
 
+  /**
+   * Applies a range exactly as it was selected before, e.g. to undo a zoom.
+   * Unlike {@link onSelectRange}, it does not add an as-of clause.
+   */
+  public onRestoreRange(range: string) {
+    this.applyTimeRange(range);
+  }
+
   public onPan(direction: "left" | "right") {
     if (!this.interval) return;
 
@@ -976,15 +1002,8 @@ export class TimeFilterManager implements UrlParamsStore {
         timeRange.comparisonTimeRanges?.map(
           (co) => co.offset as TimeComparisonOption,
         ) ?? [];
-      if (this.config.allowCustomTimeRange)
-        allOptions.push(TimeComparisonOption.CUSTOM);
     } else {
       allOptions = [...Object.values(TimeComparisonOption)];
-      if (!this.config.allowCustomTimeRange) {
-        allOptions = allOptions.filter(
-          (o) => o !== TimeComparisonOption.CUSTOM,
-        );
-      }
     }
 
     const timeComparisonOptions = getAvailableComparisonsForTimeRange(
@@ -1015,12 +1034,7 @@ export class TimeFilterManager implements UrlParamsStore {
         };
       })
       .filter(Boolean) as ComparisonTimeRangeOption[];
-    if (this.config.allowCustomTimeRange) {
-      filteredOptions.push({
-        name: TimeComparisonOption.CUSTOM,
-        key: filteredOptions.length,
-      });
-    }
+    // Custom comparisons are rendered separately by ComparisonTimeRangePicker.
     return filteredOptions;
   }
 }

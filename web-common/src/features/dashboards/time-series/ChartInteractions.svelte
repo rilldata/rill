@@ -86,7 +86,7 @@
       selectedScrubRange?.start instanceof Date &&
       selectedScrubRange?.end instanceof Date
     ) {
-      priorRange = timeFilterManager.timeRange;
+      priorRange = timeFilterManager.urlTimeRange;
 
       const { start, end } = getOrderedStartEnd(
         selectedScrubRange.start,
@@ -106,7 +106,7 @@
 
   function undoZoom() {
     if (priorRange) {
-      void timeFilterManager.onSelectRange(priorRange);
+      timeFilterManager.onRestoreRange(priorRange);
       clearPriorRange();
     }
   }

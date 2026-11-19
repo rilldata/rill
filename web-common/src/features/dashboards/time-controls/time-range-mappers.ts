@@ -160,33 +160,41 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
 export function mapTimeManagerRangeToV1TimeRange(
   timeFilterManager: TimeFilterManager | undefined,
 ): V1TimeRange | undefined {
-  if (!timeFilterManager?.timeRange) return undefined;
-  if (timeFilterManager.parsedTime) {
+  // The requested range rather than the resolved `timeRange`:
+  // it is what the user selected even before it resolves, or when it fails to resolve,
+  // and the resolved range lags behind it while a new range resolves.
+  const requestedTimeRange = timeFilterManager?.requestedTimeRange;
+  if (!requestedTimeRange) return undefined;
+  try {
+    parseRillTime(requestedTimeRange);
     return {
-      expression: timeFilterManager.timeRange,
+      expression: requestedTimeRange,
       timeZone: timeFilterManager.timeZone,
     };
+  } catch {
+    // Legacy presets that are not rill time are handled below.
   }
 
   // Legacy rill-time handling
   const timeRange: V1TimeRange = {};
-  switch (timeFilterManager.timeRange) {
+  switch (requestedTimeRange) {
     case TimeRangePreset.CUSTOM:
-      timeRange.start = timeFilterManager.timeStart;
-      timeRange.end = timeFilterManager.timeEnd;
+      // The full range, since `timeStart`/`timeEnd` follow a scrub.
+      timeRange.start = timeFilterManager.interval?.start.toUTC().toISO();
+      timeRange.end = timeFilterManager.interval?.end.toUTC().toISO();
       break;
 
     default:
-      if (timeFilterManager.timeRange in PreviousCompleteRangeMap) {
+      if (requestedTimeRange in PreviousCompleteRangeMap) {
         const prevCompleteTimeRange: V1TimeRange | undefined =
-          PreviousCompleteRangeMap[timeFilterManager.timeRange];
+          PreviousCompleteRangeMap[requestedTimeRange];
         // Backend doesn't support previous complete ranges since it has offset built in.
         // We add the offset manually as a workaround for now
         timeRange.isoDuration = prevCompleteTimeRange?.isoDuration;
         timeRange.isoOffset = prevCompleteTimeRange?.isoOffset;
         timeRange.roundToGrain = prevCompleteTimeRange?.roundToGrain;
       } else {
-        timeRange.isoDuration = timeFilterManager.timeRange;
+        timeRange.isoDuration = requestedTimeRange;
       }
       break;
   }
@@ -210,10 +218,11 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
   }
 
   // A custom comparison is stored as `start to end`, so it is sent as the resolved interval.
+  // The full window, since `comparisonTimeStart`/`comparisonTimeEnd` follow a scrub.
   if (timeFilterManager.isCustomComparison) {
     return {
-      start: timeFilterManager.comparisonTimeStart,
-      end: timeFilterManager.comparisonTimeEnd,
+      start: timeFilterManager.comparisonInterval?.start.toUTC().toISO(),
+      end: timeFilterManager.comparisonInterval?.end.toUTC().toISO(),
     };
   }
 

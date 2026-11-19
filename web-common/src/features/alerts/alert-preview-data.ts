@@ -44,12 +44,19 @@ export function getAlertPreviewData(
   expr: V1Expression | undefined,
   timeFilterManager: TimeFilterManager,
 ): CreateQueryResult<AlertPreviewResponse> {
+  // Built outside the store callback, which svelte runs untracked,
+  // so a caller's `$derived` reruns when the time filters change.
+  const request = getAlertPreviewQueryRequest(
+    formValues,
+    expr,
+    timeFilterManager,
+  );
   return derived(
     [useExploreValidSpec(client, formValues.exploreName)],
     ([validExploreSpec], set) =>
       createQueryServiceMetricsViewAggregation(
         client,
-        getAlertPreviewQueryRequest(formValues, expr, timeFilterManager),
+        request,
         {
           query: getAlertPreviewQueryOptions(
             formValues,
@@ -78,8 +85,14 @@ function getAlertPreviewQueryRequest(
   if (req.timeRange && !req.timeRange.expression) {
     req.timeRange.end = timeFilterManager.timeEnd;
   }
-  if (req.comparisonTimeRange && !req.comparisonTimeRange.expression) {
-    req.comparisonTimeRange.end = timeFilterManager.comparisonTimeEnd;
+  // The runtime offsets a legacy comparison from its end, so it ends with the primary range like the alert does at execution time.
+  // A custom comparison already has both of its endpoints.
+  if (
+    req.comparisonTimeRange &&
+    !req.comparisonTimeRange.expression &&
+    !req.comparisonTimeRange.start
+  ) {
+    req.comparisonTimeRange.end = timeFilterManager.timeEnd;
   }
   return req;
 }

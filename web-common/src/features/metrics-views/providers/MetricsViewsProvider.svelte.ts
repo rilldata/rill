@@ -364,8 +364,11 @@ export class MetricsViewsProvider {
         if (summary) {
           this.timeRangeSummaries[metricsViewName] = summary;
           this.timeSpecLoaded(metricsViewName);
+        } else if (timeRangeResp.isError) {
+          // A failed summary still counts as loaded,
+          // otherwise the time filters never become ready and never apply the url.
+          this.timeSpecLoaded(metricsViewName);
         }
-        // TODO: handle error
         this.maxQueryTimeRangeMillis[metricsViewName] = Number(
           timeRangeResp.data?.maxQueryTimeRangeMillis ?? 0,
         );

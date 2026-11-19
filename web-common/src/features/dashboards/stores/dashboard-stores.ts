@@ -28,7 +28,10 @@ import type {
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
-import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import {
+  SortDirection,
+  SortType,
+} from "web-common/src/features/dashboards/proto-state/derived-types";
 import { dedupePivotChips } from "../pivot/pivot-chip-utils";
 import {
   PivotChipType,
@@ -357,7 +360,24 @@ const metricsViewReducers = {
   syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
     if (!name) return;
     updateMetricsExplorerByName(name, (exploreState) => {
+      const showedComparison = exploreState.showTimeComparison;
       setFromTimeManager(exploreState, timeFilterManager);
+
+      // Delta sorts need a comparison, so turning it off resets them;
+      // turning it on resets a percent of total sort, as the comparison toggle always has.
+      const sortType = exploreState.dashboardSortType;
+      if (
+        (showedComparison &&
+          !exploreState.showTimeComparison &&
+          (sortType === SortType.DELTA_PERCENT ||
+            sortType === SortType.DELTA_ABSOLUTE)) ||
+        (!showedComparison &&
+          exploreState.showTimeComparison &&
+          sortType === SortType.PERCENT)
+      ) {
+        exploreState.dashboardSortType = SortType.VALUE;
+        exploreState.sortDirection = SortDirection.DESCENDING;
+      }
     });
   },
 

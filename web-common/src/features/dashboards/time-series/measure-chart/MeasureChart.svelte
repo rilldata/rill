@@ -81,15 +81,11 @@
 
   let {
     interval,
-    timeStart,
-    timeEnd,
     timeGrain,
     timeZone,
 
     showComparison,
     comparisonInterval,
-    comparisonTimeStart,
-    comparisonTimeEnd,
 
     scrubInterval,
     canPanLeft,
@@ -98,6 +94,17 @@
     ready,
   } = $derived(timeFilterManager);
   let timeGranularity = $derived(timeGrain ?? MinSupportedGrain);
+
+  // The chart always fetches the full range, not the scrubbed one that `timeStart`/`timeEnd` follow.
+  // UTC, since protobuf timestamps do not parse zone offsets.
+  let timeStart = $derived(interval?.start.toUTC().toISO() ?? undefined);
+  let timeEnd = $derived(interval?.end.toUTC().toISO() ?? undefined);
+  let comparisonTimeStart = $derived(
+    comparisonInterval?.start.toUTC().toISO() ?? undefined,
+  );
+  let comparisonTimeEnd = $derived(
+    comparisonInterval?.end.toUTC().toISO() ?? undefined,
+  );
 
   let chartScrubInterval = $derived.by(() => {
     if (!scrubInterval) return undefined;

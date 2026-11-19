@@ -228,10 +228,14 @@ export class DashboardStateSync {
     // Else navigate to the new url.
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    await goto(redirectUrl, {
-      replaceState: true,
-      state: pageState.state,
-    });
+    try {
+      await goto(redirectUrl, {
+        replaceState: true,
+        state: pageState.state,
+      });
+    } catch {
+      // A failed navigation leaves the url behind the state; the lock below must still be released.
+    }
     this.initialized = true;
     this.updating = false;
   }
@@ -346,52 +350,52 @@ export class DashboardStateSync {
     if (this.updating) return;
     this.updating = true;
 
-    try {
-      const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-      const exploreSpec = validSpecData?.explore ?? {};
-      const metricsViewSpec = validSpecData?.metricsView ?? {};
-      const timeControlsState = get(this.timeControlStore);
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
+    const timeControlsState = get(this.timeControlStore);
 
-      const pageState = get(page);
+    const pageState = get(page);
 
-      // Get the new url params for the updated state
-      const newUrl = this.getUrlForExploreState(exploreState);
+    // Get the new url params for the updated state
+    const newUrl = this.getUrlForExploreState(exploreState);
 
-      // Update the session storage with the new explore state.
-      updateExploreSessionStore(
+    // Update the session storage with the new explore state.
+    updateExploreSessionStore(
+      this.exploreName,
+      this.extraPrefix,
+      exploreState,
+      exploreSpec,
+      metricsViewSpec,
+      timeControlsState,
+    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state.
+      // Since we do not update the state per action we do it here as blanket update.
+      saveMostRecentPartialExploreState(
         this.exploreName,
         this.extraPrefix,
         exploreState,
-        exploreSpec,
-        metricsViewSpec,
-        timeControlsState,
       );
-      if (!this.dataLoader.disableMostRecentDashboardState) {
-        // Update "most recent explore state" with updated state.
-        // Since we do not update the state per action we do it here as blanket update.
-        saveMostRecentPartialExploreState(
-          this.exploreName,
-          this.extraPrefix,
-          exploreState,
-        );
-        this.syncEphemeralMeasureLibrary(
-          exploreSpec,
-          exploreState.ephemeralMeasures,
-        );
-      }
-
-      this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
-      this.timeFilterParamsTracker.setUrlParams(newUrl.searchParams);
-      // If the state didnt result in a new url then skip goto.
-      // This avoids adding redundant urls to the history.
-      if (newUrl.search === pageState.url.search) {
-        return;
-      }
-
-      // dashboard changed so we should update the url
-      await goto(newUrl);
-    } finally {
-      this.updating = false;
+      this.syncEphemeralMeasureLibrary(
+        exploreSpec,
+        exploreState.ephemeralMeasures,
+      );
     }
+
+    this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
+    this.timeFilterParamsTracker.setUrlParams(newUrl.searchParams);
+    // If the state didnt result in a new url then skip goto.
+    // This avoids adding redundant urls to the history.
+    if (newUrl.search !== pageState.url.search) {
+      try {
+        // dashboard changed so we should update the url
+        await goto(newUrl);
+      } catch {
+        // A failed navigation leaves the url behind the state; the lock below must still be released.
+      }
+    }
+
+    this.updating = false;
   }
 }
