@@ -36,6 +36,9 @@ func TestParseISO8601(t *testing.T) {
 }
 
 func TestTruncate(t *testing.T) {
+	halfHourZone := time.FixedZone("IST", 5*3600+1800)
+	quarterHourZone := time.FixedZone("NPT", 5*3600+2700)
+
 	// Test case structure
 	type testCase struct {
 		name             string
@@ -167,6 +170,24 @@ func TestTruncate(t *testing.T) {
 			firstDayOfWeek:   1, // Monday
 			firstMonthOfYear: 2, // February
 			expectedTime:     time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			// t.Truncate(time.Hour) aligns to UTC hour boundaries, which are at :30 in a +05:30 zone.
+			name:             "Truncate to start of hour in half-hour offset zone",
+			duration:         StandardDuration{Hour: 2},
+			inputTime:        time.Date(2022, 7, 15, 10, 45, 0, 0, halfHourZone),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2022, 7, 15, 10, 0, 0, 0, halfHourZone),
+		},
+		{
+			// The UTC truncation can even land in the previous local hour in a +05:45 zone.
+			name:             "Truncate to start of hour in quarter-hour offset zone",
+			duration:         StandardDuration{Hour: 2},
+			inputTime:        time.Date(2022, 7, 15, 10, 15, 0, 0, quarterHourZone),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2022, 7, 15, 10, 0, 0, 0, quarterHourZone),
 		},
 	}
 
