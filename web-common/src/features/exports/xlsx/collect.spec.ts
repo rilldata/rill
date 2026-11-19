@@ -1,3 +1,4 @@
+import { unformatResolvedContent } from "@rilldata/web-common/features/canvas/components/markdown/util";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { describe, expect, it } from "vitest";
 import type { MeasuredBlock } from "../pdf/capture";
@@ -7,11 +8,12 @@ import {
   jsonCell,
   kpiTrendTable,
   leaderboardTable,
+  markdownTextBlock,
   needsImage,
   stackRows,
-  stripMarkdown,
   toDataSheet,
 } from "./collect";
+import type { ExportTable } from "./payload";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 
@@ -146,47 +148,106 @@ describe("jsonCell", () => {
   });
 });
 
-describe("stripMarkdown", () => {
-  it("reduces markdown to plain text", () => {
+describe("markdownTextBlock", () => {
+  // The block of a markdown text, with the data sheets it adds.
+  function textBlock(text: string, unformattedText = text) {
+    const sheets: { suffix: string; title: string; table: ExportTable }[] = [];
+    const block = markdownTextBlock(
+      { kind: "text", text, unformattedText },
+      (suffix, title, table) => {
+        sheets.push({ suffix, title, table });
+        return `sheet-${sheets.length}`;
+      },
+    );
+    return { block: block?.toJson(), sheets };
+  }
+
+  it("is plain text for markdown and HTML without a table", () => {
     expect(
-      stripMarkdown(
-        "# Title\n\nSome **bold** and _italic_ text with a [link](https://x.y) and `code`.\n- item\n> quote",
+      textBlock(
+        `# Title\n\n<div class="card"><b>Revenue</b><div>$1.2M</div></div>`,
       ),
-    ).toBe(
-      "Title\n\nSome bold and italic text with a link and code.\n• item\nquote",
-    );
+    ).toStrictEqual({
+      block: { text: "Title\nRevenue\n$1.2M" },
+      sheets: [],
+    });
   });
 
-  it("keeps underscores and asterisks that are not emphasis", () => {
-    expect(stripMarkdown("snake_case_name costs 2 * 3 * 4, *really*")).toBe(
-      "snake_case_name costs 2 * 3 * 4, really",
-    );
-  });
-
-  it("drops raw HTML and decodes entities", () => {
+  it("is nothing for a text that shows nothing", () => {
     expect(
-      stripMarkdown(
-        "Spend <b>up</b> 5% &amp; CPA &lt; $2\n\n<div>hidden block</div>\n\nDone",
-      ),
-    ).toBe("Spend up 5% & CPA < $2\n\nDone");
+      textBlock(`<style>.card { color: red }</style>`).block,
+    ).toBeUndefined();
   });
 
-  it("leaves text that only looks like a tag as literal cell text", () => {
-    // The parser sees one tag inside the broken one; what remains is plain
-    // text in a cell, which nothing renders as HTML.
-    expect(stripMarkdown("<scr<script>ipt>alert(1)</script>")).toBe(
-      "<script>alert(1)",
-    );
+  it("puts each table on a data sheet and keeps the text around it, in reading order", () => {
+    const { block, sheets } = textBlock(`## Scorecard
+
+<table>
+  <tr><th>Metric</th><th>Actual</th></tr>
+  <tr><td>Spend</td><td>$1,200</td></tr>
+  <tr><td>Win rate</td><td>25%</td></tr>
+</table>
+
+Targets are set per quarter.
+
+| Rep | Deals |
+|---|---|
+| Ana | 12 |
+`);
+    expect(block).toStrictEqual({
+      parts: [
+        { text: "Scorecard" },
+        { dataSheetId: "sheet-1" },
+        { text: "Targets are set per quarter." },
+        { dataSheetId: "sheet-2" },
+      ],
+    });
+    // Both tables sit under the same heading; the suffix tells their sheets apart.
+    expect(sheets.map(({ suffix, title }) => [suffix, title])).toStrictEqual([
+      ["table 1", "Scorecard"],
+      ["table 2", "Scorecard"],
+    ]);
+    expect(sheets[0].table).toStrictEqual({
+      columns: [
+        {
+          name: "col_1",
+          displayName: "Metric",
+          type: WorkbookColumnType.STRING,
+          numberFormat: undefined,
+        },
+        {
+          name: "col_2",
+          displayName: "Actual",
+          type: WorkbookColumnType.NUMBER,
+          numberFormat: undefined,
+        },
+      ],
+      rows: [
+        ["Spend", 1200],
+        ["Win rate", 0.25],
+      ],
+      rowNumberFormats: ['"$"#,##0', "0%"],
+    });
+    expect(sheets[1].table.rows).toStrictEqual([["Ana", 12]]);
   });
 
-  it("keeps lists, tables, code and line breaks readable", () => {
-    expect(
-      stripMarkdown(
-        "1. one\n2. two\n\n| Channel | Spend |\n|---|---|\n| Search | **10** |\n\n```\nselect 1\n```\n\n![Logo](logo.png) first  \nsecond `a < b`",
-      ),
-    ).toBe(
-      "1. one\n2. two\n\nChannel | Spend\nSearch | 10\n\nselect 1\n\nLogo first\nsecond a < b",
+  it("writes the value behind a formatted measure with the format the text shows", () => {
+    // What the runtime resolves with `apply_formatting` on, and what the component shows for it.
+    const token = (value: number) =>
+      `__RILL__FORMAT__(${JSON.stringify({ metrics_view: "mv", field: "revenue", value })})`;
+    const resolved = (revenue: string) =>
+      `| Rep | Revenue |\n|---|---|\n| Ana | ${revenue} |\n`;
+    const { block, sheets } = textBlock(
+      resolved("$1.2M"),
+      unformatResolvedContent(resolved(token(1234567.891))),
     );
+    expect(block).toStrictEqual({ parts: [{ dataSheetId: "sheet-1" }] });
+    // One table needs no suffix, and without a caption or heading it is named like the component.
+    expect(sheets.map(({ suffix, title }) => [suffix, title])).toStrictEqual([
+      ["", ""],
+    ]);
+    expect(sheets[0].table.rows).toStrictEqual([["Ana", 1234567.891]]);
+    expect(sheets[0].table.columns[1].numberFormat).toBe('"$"#,##0.00');
   });
 });
 

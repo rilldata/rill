@@ -1,7 +1,6 @@
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
+import { markdownParts } from "./markdown-content";
 import { mapChart } from "./xlsx/chart-mapping";
 import { customChartTable, jsonCell } from "./xlsx/collect";
 import type { ComponentExportPayload, ExportTable } from "./xlsx/payload";
@@ -36,7 +35,10 @@ export function componentCsv(
       });
       break;
     case "text":
-      tables = markdownTables(payload.unformattedText);
+      // Tables written in markdown and in HTML both count, and each cell holds the text it shows.
+      tables = markdownParts(payload.unformattedText).flatMap((part) =>
+        part.kind === "table" ? [part.table.rows] : [],
+      );
       break;
     default:
       return undefined;
@@ -78,21 +80,4 @@ function exportTableRows(table: ExportTable): string[][] {
     kept.map((i) => table.columns[i].displayName),
     ...table.rows.map((row) => kept.map((i) => cell(row[i], i))),
   ];
-}
-
-// The tables in a markdown text, rendered and sanitized the way the canvas markdown component shows them,
-// so tables written in markdown and in HTML both count,
-// and each cell holds the text it shows with inline formatting dropped.
-function markdownTables(markdown: string): string[][][] {
-  const html = DOMPurify.sanitize(marked.parse(markdown, { async: false }));
-  // An inert document: nothing in it runs or loads.
-  const document = new DOMParser().parseFromString(html, "text/html");
-  return Array.from(document.querySelectorAll("table"), (table) =>
-    Array.from(table.rows, (row) =>
-      Array.from(row.cells, (cell) =>
-        // Whitespace collapses as it does on screen.
-        (cell.textContent ?? "").replace(/\s+/g, " ").trim(),
-      ),
-    ),
-  ).filter((rows) => rows.length > 0);
 }

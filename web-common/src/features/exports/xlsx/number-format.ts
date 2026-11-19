@@ -112,7 +112,7 @@ export function d3ToExcelFormat(
 }
 
 // A literal for an Excel number format, or nothing for an empty string.
-function quoted(text: string): string {
+export function quoted(text: string): string {
   return text ? `"${text.replace(/"/g, "")}"` : "";
 }
 

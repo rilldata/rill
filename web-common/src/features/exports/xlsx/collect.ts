@@ -18,12 +18,14 @@ import {
   WorkbookNoteBlock,
   WorkbookTableBlock,
   WorkbookTextBlock,
+  WorkbookTextPart,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
-import { marked, type Token, type Tokens } from "marked";
 import { get } from "svelte/store";
+import { markdownParts } from "../markdown-content";
 import type { MeasuredBlock } from "../pdf/capture";
 import { hasNativeChart, mapChart } from "./chart-mapping";
 import type { WorkbookHeader } from "./header";
+import { markdownExportTable } from "./markdown-table";
 import { excelNumberFormat, PERCENT_FORMAT } from "./number-format";
 import type {
   ComponentExportPayload,
@@ -86,8 +88,8 @@ export function needsImage(
 // Builds the workbook request: one dashboard sheet for the canvas's own rows
 // plus one per exported tab, each mirroring the export render's geometry with
 // the rows stacked (so a tab group leaves no gap), and the data sheets behind
-// every chart, table, leaderboard and KPI. Async because a flat table may load
-// the rows its data sheet needs.
+// every chart, table, leaderboard, KPI and markdown table. Async because a flat
+// table may load the rows its data sheet needs.
 export async function buildWorkbookRequest(
   input: CollectInput,
 ): Promise<CanvasWorkbookExportRequest> {
@@ -114,6 +116,7 @@ export async function buildWorkbookRequest(
       const block = component
         ? await blockFor(component, input, dataSheets, kpis, usedIds)
         : { title: "", subtitle: "", content: note("No valid component") };
+      if (!block) continue;
       sheet.blocks.push(
         new WorkbookBlock({
           component: measured.id,
@@ -287,13 +290,14 @@ interface BlockContent {
   content: WorkbookBlock["content"];
 }
 
+// The block of a component, or undefined for one that shows nothing to export.
 async function blockFor(
   component: BaseCanvasComponent,
   input: CollectInput,
   dataSheets: WorkbookDataSheet[],
   kpis: KpiRows,
   usedIds: Set<string>,
-): Promise<BlockContent> {
+): Promise<BlockContent | undefined> {
   const payload = get(component.exportPayload);
   const spec = get(component.specStore) as
     | { title?: string; description?: string }
@@ -443,15 +447,21 @@ async function blockFor(
       addSheet("", title, mapTable(payload));
       return { title, subtitle, content: imageOr("No data") };
     }
-    case "text":
-      return {
-        title,
-        subtitle,
-        content: {
-          case: "text",
-          value: new WorkbookTextBlock({ text: stripMarkdown(payload.text) }),
-        },
-      };
+    case "text": {
+      // A table is named by its caption or heading, or else like the component.
+      const text = markdownTextBlock(payload, (suffix, tableTitle, table) =>
+        addSheet(
+          suffix,
+          tableTitle ||
+            [title || component.id, suffix].filter(Boolean).join(" "),
+          table,
+        ),
+      );
+      // A markdown that shows nothing, such as one that only holds styles,
+      // gets no block: an empty one would merge its cells for nothing.
+      if (!text) return undefined;
+      return { title, subtitle, content: { case: "text", value: text } };
+    }
     case "imageUrl":
       // The snapshot is the image as the canvas shows it, with the URL as its
       // alt text; when the snapshot failed, the block names the URL instead.
@@ -740,108 +750,48 @@ export function jsonCell(value: unknown): JsonValue {
   }
 }
 
-// Reduces markdown to the plain text a cell shows, by walking the token tree of
-// the parser the markdown component renders with: headings, emphasis, code,
-// links and images keep their text, list items get a marker and raw HTML is
-// dropped. Blocks keep a blank line between them where the source had one.
-export function stripMarkdown(markdown: string): string {
-  return blocksText(marked.lexer(markdown)).trim();
-}
-
-function blocksText(tokens: Token[]): string {
-  let text = "";
-  let separator = "";
-  for (const token of tokens) {
-    if (token.type === "space") {
-      separator = "\n\n";
-      continue;
-    }
-    const block = blockText(token);
-    if (block === undefined) continue;
-    if (text) text += separator;
-    text += block;
-    separator = token.raw.endsWith("\n\n") ? "\n\n" : "\n";
+// The text block of a markdown component: the text it shows, flattened from the
+// rendered markdown so HTML counts too, and each of its tables as a data sheet
+// (added through `addSheet`, which returns the sheet's id) that the block previews
+// in place, as a table component's block does. Undefined when the markdown shows
+// neither text nor a table.
+export function markdownTextBlock(
+  payload: Extract<ComponentExportPayload, { kind: "text" }>,
+  addSheet: (suffix: string, title: string, table: ExportTable) => string,
+): WorkbookTextBlock | undefined {
+  const parts = markdownParts(payload.text);
+  if (parts.length === 0) return undefined;
+  if (parts.length === 1 && parts[0].kind === "text") {
+    return new WorkbookTextBlock({ text: parts[0].text });
   }
-  return text;
-}
 
-// The text of a block-level token, or undefined for one that shows no text.
-function blockText(token: Token): string | undefined {
-  switch (token.type) {
-    case "html":
-    case "hr":
-    case "def":
-      return undefined;
-    case "blockquote":
-      return blocksText((token as Tokens.Blockquote).tokens);
-    case "list": {
-      const list = token as Tokens.List;
-      const start = Number(list.start) || 1;
-      return list.items
-        .map(
-          (item, i) =>
-            (list.ordered ? `${start + i}. ` : "• ") + blocksText(item.tokens),
-        )
-        .join("\n");
-    }
-    case "code":
-      return (token as Tokens.Code).text;
-    case "table": {
-      const table = token as Tokens.Table;
-      return [table.header, ...table.rows]
-        .map((cells) =>
-          cells.map((cell) => inlineText(cell.tokens)).join(" | "),
-        )
-        .join("\n");
-    }
-    default:
-      return inlineText([token]);
-  }
-}
-
-function inlineText(tokens: Token[]): string {
-  let text = "";
-  for (const token of tokens) {
-    const { tokens: children, text: own } = token as {
-      tokens?: Token[];
-      text?: string;
-    };
-    switch (token.type) {
-      case "html":
-        break;
-      case "br":
-        text += "\n";
-        break;
-      case "codespan":
-        text += own ?? "";
-        break;
-      default:
-        text += children ? inlineText(children) : decodeEntities(own ?? "");
-    }
-  }
-  return text;
-}
-
-const HTML_ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: " ",
-};
-
-// Markdown text may spell characters as HTML entities; a cell shows the characters.
-function decodeEntities(text: string): string {
-  return text.replace(
-    /&(#\d+|#x[0-9a-f]+|[a-z]+);/gi,
-    (entity, name: string) => {
-      if (name[0] !== "#") return HTML_ENTITIES[name.toLowerCase()] ?? entity;
-      const code =
-        name[1].toLowerCase() === "x"
-          ? parseInt(name.slice(2), 16)
-          : parseInt(name.slice(1), 10);
-      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
-    },
-  );
+  const tableCount = parts.filter((part) => part.kind === "table").length;
+  // The same tables before measure values were formatted, when the text formats any.
+  const rawTables =
+    payload.unformattedText === payload.text
+      ? []
+      : markdownParts(payload.unformattedText).flatMap((part) =>
+          part.kind === "table" ? [part.table] : [],
+        );
+  let tableIndex = 0;
+  return new WorkbookTextBlock({
+    parts: parts.map((part) => {
+      if (part.kind === "text") {
+        return new WorkbookTextPart({
+          part: { case: "text", value: part.text },
+        });
+      }
+      const raw =
+        rawTables.length === tableCount ? rawTables[tableIndex] : undefined;
+      tableIndex += 1;
+      const id = addSheet(
+        tableCount > 1 ? `table ${tableIndex}` : "",
+        part.table.title,
+        markdownExportTable(part.table, raw),
+      );
+      return new WorkbookTextPart({
+        part: { case: "dataSheetId", value: id },
+      });
+    }),
+  });
 }
