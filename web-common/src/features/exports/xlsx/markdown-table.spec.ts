@@ -60,6 +60,7 @@ describe("markdownExportTable", () => {
         ["Spend", "$1.2M", "$1,000,000.50", "83.3%"],
         ["Deals", "15", "12", "80%"],
         ["Win rate", "25.5%", "n/a", "−5%"],
+        ["Traffic", "1,234", "+5%", "2%"],
         ["Notes", "see above", "", ""],
       ),
     );
@@ -74,12 +75,15 @@ describe("markdownExportTable", () => {
       ["Spend", 1200000, 1000000.5, 0.833],
       ["Deals", 15, 12, 0.8],
       ["Win rate", 0.255, "n/a", -0.05],
+      // A count and a percentage share no format, and 0.05 would not read as 5%: the percentage stays as shown.
+      ["Traffic", 1234, "+5%", 0.02],
       ["Notes", "see above", null, null],
     ]);
     expect(result.rowNumberFormats).toStrictEqual([
       '"$"#,##0.00',
       "General",
       "0.0%",
+      "",
       "",
     ]);
   });

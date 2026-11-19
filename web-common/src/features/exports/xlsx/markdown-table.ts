@@ -11,7 +11,8 @@ import type { ExportColumn, ExportTable } from "./payload";
 // currency, percent sign, thousands separators and decimals; a magnitude ("1.2M") is written out in full, as in a
 // table component's data sheet. A column counts as numeric when it shows numbers and nothing else that holds a digit
 // (so "n/a" may sit between amounts, but codes and dates stay text). A format is per column where the column's
-// numbers share one and else per row, as in a scorecard whose rows are different measures.
+// numbers share one and else per row, as in a scorecard whose rows are different measures. A number that neither
+// format covers keeps the text it shows when that names a currency or a percentage, which a bare number would lose.
 export function markdownExportTable(
   shown: MarkdownTable,
   raw?: MarkdownTable,
@@ -67,9 +68,15 @@ export function markdownExportTable(
   return {
     columns,
     rows: body.map((row, i) =>
-      row.map((text, j) =>
-        isNumberCell(i, j) ? numbers[i][j]!.value : text || null,
-      ),
+      row.map((text, j) => {
+        if (!isNumberCell(i, j)) return text || null;
+        const { value, look } = numbers[i][j]!;
+        // Without a format, 25% would read 0.25 and $100 would read 100.
+        const hasFormat =
+          columns[j].numberFormat !== undefined || rowNumberFormats[i] !== "";
+        const hasUnit = !!look.prefix || !!look.suffix || look.percent;
+        return hasUnit && !hasFormat ? text : value;
+      }),
     ),
     ...(rowNumberFormats.some(Boolean) && { rowNumberFormats }),
   };
