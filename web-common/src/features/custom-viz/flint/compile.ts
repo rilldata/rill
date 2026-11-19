@@ -1,5 +1,6 @@
 import type { ChartWarning, RawEncodingValue } from "flint-chart/core";
 import { assembleVegaLite } from "flint-chart/vegalite";
+import { extent, ticks } from "d3-array";
 import type { VisualizationSpec } from "svelte-vega";
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
 import type { FlintFields } from "./semantic-types";
@@ -33,6 +34,11 @@ export interface CompileOptions {
   size?: { width: number; height: number };
   /** Measure names to route through Rill's `rill_<measure>` Vega expression formatters. */
   measureFields?: string[];
+  /**
+   * Each measure's formatter by name, as its `rill_<measure>` expression applies it, so the
+   * layout can make room for the labels it prints.
+   */
+  measureFormatters?: Record<string, (value: number) => string>;
 }
 
 export interface CompileResult {
@@ -47,6 +53,7 @@ export function compileFlintSpec({
   fields,
   size,
   measureFields = [],
+  measureFormatters = {},
 }: CompileOptions): CompileResult {
   if (!spec?.chartType) {
     return { spec: null, warnings: [], error: "No chart type provided" };
@@ -113,7 +120,7 @@ export function compileFlintSpec({
       placeRoseLabels(vegaSpec, rows);
       break;
     case "Marginal Plot":
-      fitMarginalPlot(vegaSpec, rows, fields, size);
+      fitMarginalPlot(vegaSpec, rows, fields, size, measureFormatters);
       break;
   }
   labelDerivedEncodings(vegaSpec, fields, measureFields);
@@ -820,37 +827,51 @@ const MARGINAL_X_AXIS_HEIGHT = 45;
 const MARGINAL_MIN_PLOT = 80;
 /** The channels a Marginal Plot's plot draws a legend for, each at its right. */
 const MARGINAL_LEGEND_CHANNELS = ["color", "size", "shape", "opacity"];
+/** The gap between a Marginal Plot's right margin and its legends, and between two legends. */
+const MARGINAL_LEGEND_GAP = 8;
 /** Room after a legend symbol's fill for its stroke and the gap before its label, in pixels. */
 const LEGEND_SYMBOL_GAP = 6;
 /** Room before each legend label for a symbol of Vega's default size, 10px across, and its gap. */
 const LEGEND_SYMBOL_WIDTH = 10 + LEGEND_SYMBOL_GAP;
-/** Room before each label of a gradient legend for the gradient and the gap after it, in pixels. */
-const LEGEND_GRADIENT_WIDTH = 20;
 /** Vega-Lite's largest point on a size scale, in square pixels, when the scale names none. */
 const DEFAULT_MAX_POINT_SIZE = 361;
 /** The font sizes of an axis label and of a legend title in Rill's theme, in pixels. */
 const RILL_LABEL_FONT_SIZE = 11;
 const RILL_LEGEND_TITLE_FONT_SIZE = 12;
+/** A legend's title line and Vega's padding below it, in pixels. */
+const LEGEND_TITLE_HEIGHT = RILL_LEGEND_TITLE_FONT_SIZE + 5;
+/**
+ * A legend entry's row as Vega lays it out, in pixels: a symbol of its default size, 10px across
+ * with its stroke, beside a label at Rill's size, with some room for the rounding of its layout.
+ */
+const LEGEND_ROW_HEIGHT = 14;
+/** Vega's gap between a legend's rows, in pixels. */
+const LEGEND_ROW_PADDING = 2;
+/** The entries Vega lists for a measure on a symbol legend: the ticks of a count of five. */
+const LEGEND_TICK_COUNT = 5;
 
 /**
  * A Marginal Plot is a column of the margin over x above a row of the plot and the margin over y,
  * with its legends at the right. Flint sizes the three panels to its canvas less a fixed
- * allowance for the axes and the legend, and the chart is drawn at those sizes: Vega-Lite cannot
- * fit a concatenation to its box. Rill's theme draws the axes larger than that allowance, and the
- * legends' labels and titles were never cut, so the legends ran past the box and were cut off.
+ * allowance for the axes and the legends, and the chart is drawn at those sizes: Vega-Lite cannot
+ * fit a concatenation to its box. Rill's theme draws the axes larger than that allowance, and
+ * Flint's legends, side by side or below the plot, were laid out at its own text sizes, so the
+ * guides ran past the box and were cut off.
  *
  * The plot takes the width its y axis, its legends and Vega's padding leave, and with a continuous
  * x axis the height that axis leaves; the margins keep Flint's thickness and run along the plot.
- * The y axis's labels get the width its values take once formatted, and every legend, whether of
- * categories, sizes, shapes, opacities or a measure's colors, has its labels and title cut to a
- * third of the box at most, less where the y axis and the plot need it, so the guides cannot
- * outgrow the box.
+ * The y axis's labels get the width they take once formatted. The legends, whether of
+ * categories, sizes, shapes, opacities or a measure's colors, stack in one column at the right,
+ * with their labels and titles cut to a third of the box at most, less where the y axis and the
+ * plot need it. Where the column would outgrow the box's height, its tallest legends end early,
+ * in Vega's "…N entries".
  */
 function fitMarginalPlot(
   spec: Record<string, unknown>,
   rows: Record<string, unknown>[],
   fields: FlintFields,
   size: { width: number; height: number } | undefined,
+  formatters: Record<string, (value: number) => string>,
 ): void {
   const [top, row] =
     (spec.vconcat as Record<string, unknown>[] | undefined) ?? [];
@@ -864,22 +885,47 @@ function fitMarginalPlot(
   // Text at a given size, as wide as LABEL_CHAR_WIDTH allows at Rill's label size.
   const textWidth = (chars: number, fontSize: number) =>
     Math.ceil((chars * LABEL_CHAR_WIDTH * fontSize) / RILL_LABEL_FONT_SIZE);
-  // The values a field takes in the rows, as its labels count them: a share as a percentage.
-  const numbersOf = (field: string) => {
-    const scale = fields.semantic_types[field] === "Percentage" ? 100 : 1;
-    return rows.map((datum) => Number(datum[field]) * scale);
+  // The finite values a field takes in the rows, with any more its axis or legend states.
+  const numbersOf = (field: string, stated: unknown) =>
+    [
+      ...rows.map((datum) => datum[field]),
+      ...(Array.isArray(stated) ? (stated as unknown[]) : []),
+    ]
+      .map(Number)
+      .filter(Number.isFinite);
+  // The widest label a measure's axis or legend shows over those values: the longest of the
+  // ticks Vega may pick, as Rill's formatter prints them, or else its largest value in full.
+  const numberLabelWidth = (field: string, values: number[]) => {
+    const format = formatters[field];
+    if (!format) {
+      // A share is labelled as a percentage.
+      const scale = fields.semantic_types[field] === "Percentage" ? 100 : 1;
+      return textWidth(
+        numberLabelChars(values.map((value) => value * scale)),
+        RILL_LABEL_FONT_SIZE,
+      );
+    }
+    const [low, high] = extent(values);
+    if (low === undefined || high === undefined) return 0;
+    const candidates = [low, high];
+    for (let count = 2; count <= 10; count++) {
+      candidates.push(...ticks(low, high, count));
+    }
+    return textWidth(
+      candidates.reduce(
+        (longest, value) => Math.max(longest, format(value).length),
+        0,
+      ),
+      RILL_LABEL_FONT_SIZE,
+    );
   };
 
   let yLabelLimit = UPRIGHT_LABEL_LIMIT;
   if (y.type === "quantitative" && typeof y.field === "string") {
     const domain = (y.scale as Record<string, unknown> | undefined)?.domain;
-    const values = [
-      ...numbersOf(y.field),
-      ...(Array.isArray(domain) ? domain.map(Number) : []),
-    ];
     yLabelLimit = Math.min(
       UPRIGHT_LABEL_LIMIT,
-      textWidth(numberLabelChars(values), RILL_LABEL_FONT_SIZE),
+      numberLabelWidth(y.field, numbersOf(y.field, domain)),
     );
   }
   if (y.axis !== null) y.axis = { ...y.axis, labelLimit: yLabelLimit };
@@ -891,39 +937,59 @@ function fitMarginalPlot(
     yLabelLimit +
     (Number(right.width) || 0) +
     columnGap;
-  // The legends stack in one column, which takes a third of the box at most, and no more than
-  // the plot leaves at its smallest.
-  const legendRoom = Math.max(
+  // The legends' column takes a third of the box at most, and no more than the plot leaves at its
+  // smallest. Vega takes a limit of 0 or less as none.
+  const room = Math.max(
     2 * LEGEND_SYMBOL_WIDTH,
     Math.min(
       Math.floor(size.width / 3),
       size.width - besidePlot - MARGINAL_MIN_PLOT,
-    ),
+    ) - MARGINAL_LEGEND_GAP,
   );
-  let legendWidth = 0;
+  const legends: {
+    channel: string;
+    field: string;
+    entries: number;
+    keyWidth: number;
+    labelWidth: number;
+    titleLimit: number;
+    titleHeight: number;
+    rowHeight: number;
+    height: number;
+  }[] = [];
   for (const channel of MARGINAL_LEGEND_CHANNELS) {
     const encoding = encodings[channel];
     if (!encoding || encoding.legend === null) continue;
     if (typeof encoding.field !== "string") continue;
     const field = encoding.field;
     const legend = encoding.legend ?? {};
-    const offset = Number(legend.offset) || 0;
-    // Vega takes a limit of 0 or less as none.
-    const room = Math.max(2 * LEGEND_SYMBOL_WIDTH, legendRoom - offset);
 
     let keyWidth = LEGEND_SYMBOL_WIDTH;
-    let labelChars: number;
+    let rowHeight = LEGEND_ROW_HEIGHT;
+    let labelWidth: number;
+    let entries: number;
     if (isDiscrete(encoding)) {
-      labelChars = rows.reduce(
-        (longest, datum) => Math.max(longest, String(datum[field]).length),
-        0,
+      const labels = new Set(rows.map((datum) => String(datum[field])));
+      labelWidth = textWidth(
+        [...labels].reduce(
+          (longest, label) => Math.max(longest, label.length),
+          0,
+        ),
+        RILL_LABEL_FONT_SIZE,
       );
+      entries = labels.size;
     } else {
-      labelChars = numberLabelChars([
-        ...numbersOf(field),
-        ...(Array.isArray(legend.values) ? legend.values.map(Number) : []),
-      ]);
-      if (channel === "color") keyWidth = LEGEND_GRADIENT_WIDTH;
+      const values = numbersOf(field, legend.values);
+      labelWidth = numberLabelWidth(field, values);
+      const [low = 0, high = 0] = extent(values);
+      // A size scale starts at zero.
+      entries = Array.isArray(legend.values)
+        ? legend.values.length
+        : ticks(
+            channel === "size" ? Math.min(0, low) : low,
+            high,
+            LEGEND_TICK_COUNT,
+          ).length;
       if (channel === "size") {
         const range = (encoding.scale as Record<string, unknown> | undefined)
           ?.range;
@@ -931,10 +997,9 @@ function fitMarginalPlot(
           ? Math.max(...range.map(Number).filter(Number.isFinite))
           : DEFAULT_MAX_POINT_SIZE;
         // A symbol's size is its area.
-        keyWidth = Math.max(
-          LEGEND_SYMBOL_WIDTH,
-          Math.ceil(Math.sqrt(largest)) + LEGEND_SYMBOL_GAP,
-        );
+        const across = Math.ceil(Math.sqrt(largest));
+        keyWidth = Math.max(LEGEND_SYMBOL_WIDTH, across + LEGEND_SYMBOL_GAP);
+        rowHeight = Math.max(LEGEND_ROW_HEIGHT, across + 2);
       }
     }
     // A title of `null` is none.
@@ -953,28 +1018,88 @@ function fitMarginalPlot(
             (longest, line) => Math.max(longest, String(line).length),
             0,
           );
-    const labelLimit = Math.min(
-      room - keyWidth,
-      textWidth(
-        labelChars,
-        Number(legend.labelFontSize) || RILL_LABEL_FONT_SIZE,
+    const titleHeight = title === null ? 0 : LEGEND_TITLE_HEIGHT;
+    legends.push({
+      channel,
+      field,
+      entries,
+      keyWidth,
+      labelWidth,
+      titleLimit: Math.min(
+        room,
+        textWidth(titleChars, RILL_LEGEND_TITLE_FONT_SIZE),
       ),
-    );
-    const titleLimit = Math.min(
-      room,
-      textWidth(titleChars, RILL_LEGEND_TITLE_FONT_SIZE),
-    );
-    // Flint states a color's legend on each panel, and Vega-Lite draws the one they share
-    // with the limits of whichever states them first.
-    for (const view of layersOf(spec)) {
-      const shared = encodingsOf(view)[channel];
-      if (shared?.field !== field || shared.legend === null) continue;
-      shared.legend = { ...shared.legend, labelLimit, titleLimit };
+      titleHeight,
+      rowHeight,
+      height:
+        titleHeight +
+        entries * rowHeight +
+        Math.max(0, entries - 1) * LEGEND_ROW_PADDING,
+    });
+  }
+
+  // Where the column would outgrow the box's height, the tallest legends give way first, each to
+  // an equal share of the height the shorter ones leave.
+  let share = Infinity;
+  let left =
+    size.height -
+    2 * VEGA_PADDING -
+    MARGINAL_LEGEND_GAP * Math.max(0, legends.length - 1);
+  const heights = legends.map((legend) => legend.height).sort((a, b) => a - b);
+  for (const [index, height] of heights.entries()) {
+    const shorter = heights.length - index;
+    if (height * shorter > left) {
+      share = left / shorter;
+      break;
     }
+    left -= height;
+  }
+
+  let legendWidth = 0;
+  for (const legend of legends) {
+    // A measure's colors are listed as symbols too, as Vega draws them already: the points take
+    // a color as both fill and stroke, and Vega keeps gradients for legends of one.
+    const layout: Record<string, unknown> = {
+      type: "symbol",
+      orient: "right",
+      offset: MARGINAL_LEGEND_GAP,
+      titleLimit: legend.titleLimit,
+    };
+    let labelWidth = legend.labelWidth;
+    if (legend.height > share) {
+      // Vega lists one entry fewer than its limit, and then how many it left out.
+      const limit = Math.max(
+        2,
+        Math.floor(
+          (share - legend.titleHeight + LEGEND_ROW_PADDING) /
+            (legend.rowHeight + LEGEND_ROW_PADDING),
+        ),
+      );
+      layout.symbolLimit = limit;
+      if (limit < legend.entries) {
+        const leftOut = `\u2026${legend.entries - limit + 1} entries`;
+        labelWidth = Math.max(
+          labelWidth,
+          textWidth(leftOut.length, RILL_LABEL_FONT_SIZE),
+        );
+      }
+    }
+    const labelLimit = Math.min(room - legend.keyWidth, labelWidth);
+    layout.labelLimit = labelLimit;
     legendWidth = Math.max(
       legendWidth,
-      offset + Math.max(keyWidth + labelLimit, titleLimit),
+      MARGINAL_LEGEND_GAP +
+        Math.max(legend.keyWidth + labelLimit, legend.titleLimit),
     );
+    // Flint states a legend on each panel, and Vega-Lite draws the one they share with the
+    // settings of whichever states them first.
+    for (const view of layersOf(spec)) {
+      const shared = encodingsOf(view)[legend.channel];
+      if (shared?.field !== legend.field || shared.legend === null) continue;
+      const own = { ...shared.legend };
+      dropFlintLegendLayout(own);
+      shared.legend = { ...own, ...layout };
+    }
   }
 
   plot.width = Math.max(
@@ -996,6 +1121,21 @@ function fitMarginalPlot(
     right.height = plot.height;
   }
 
+  // Flint arranges several legends side by side, where they would outgrow the width the plot
+  // leaves them.
+  const config = (spec.config ?? {}) as Record<string, unknown>;
+  config.legend = {
+    ...(config.legend as Record<string, unknown> | undefined),
+    layout: {
+      right: {
+        direction: "vertical",
+        anchor: "start",
+        margin: MARGINAL_LEGEND_GAP,
+      },
+    },
+  };
+  spec.config = config;
+
   // Rill's theme outlines an area with a line, and where a density margin peaks at its panel's
   // outer edge, half of that line's stroke rose past it: above the box, at the top.
   for (const margin of [top, right]) {
@@ -1013,7 +1153,7 @@ function fitMarginalPlot(
 }
 
 /**
- * The most characters a measure's tick or legend labels take once Rill formats them: the largest
+ * The most characters a measure's tick or legend labels take, short of its formatter: the largest
  * value's digits and thousands separators, as a full format such as `$,.0f` prints them, a minus
  * sign, a currency or percent sign or a unit, and a decimal point and two decimals for values
  * under ten. A humanized label such as `$1.2M` takes fewer.
@@ -1207,14 +1347,7 @@ function deferToTheme(
         legend.orient ??= "right";
         continue;
       }
-      for (const key of FLINT_LEGEND_LAYOUT_KEYS) delete legend[key];
-      if (Array.isArray(legend.title)) legend.title = legend.title.join(" ");
-      if (
-        typeof legend.labelExpr === "string" &&
-        FLINT_WRAPPED_LEGEND_LABELS.test(legend.labelExpr)
-      ) {
-        delete legend.labelExpr;
-      }
+      dropFlintLegendLayout(legend);
       if (Object.keys(legend).length === 0) delete encoding.legend;
     }
   }
@@ -1252,6 +1385,18 @@ function deferToTheme(
       if (!hasAuthoredScheme(channel)) delete scale.scheme;
       if (Object.keys(scale).length === 0) delete encoding.scale;
     }
+  }
+}
+
+/** Removes the layout Flint gives a legend, its labels broken over lines included. */
+function dropFlintLegendLayout(legend: Record<string, unknown>): void {
+  for (const key of FLINT_LEGEND_LAYOUT_KEYS) delete legend[key];
+  if (Array.isArray(legend.title)) legend.title = legend.title.join(" ");
+  if (
+    typeof legend.labelExpr === "string" &&
+    FLINT_WRAPPED_LEGEND_LABELS.test(legend.labelExpr)
+  ) {
+    delete legend.labelExpr;
   }
 }
 

@@ -153,17 +153,23 @@
     timeGrain,
   ));
 
-  $: expressionFunctions = measures.reduce<
-    Record<string, { fn: (val: number) => string }>
-  >((acc, measure) => {
-    const fieldName = sanitizeFieldName(measure.name as string);
-    const formatter = createMeasureValueFormatter<null | undefined>(measure);
-    return {
-      ...acc,
-      // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
-      [fieldName]: { fn: (val: number) => formatter(val) ?? String(val) },
-    };
-  }, {});
+  $: measureFormatters = Object.fromEntries(
+    measures.map((measure) => {
+      const formatter = createMeasureValueFormatter<null | undefined>(measure);
+      return [
+        measure.name as string,
+        // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
+        (val: number) => formatter(val) ?? String(val),
+      ];
+    }),
+  );
+
+  $: expressionFunctions = Object.fromEntries(
+    Object.entries(measureFormatters).map(([measure, fn]) => [
+      sanitizeFieldName(measure),
+      { fn },
+    ]),
+  );
 
   $: ejected = parseVegaSpec(vegaSpec);
 
@@ -179,6 +185,7 @@
               ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
+          measureFormatters,
         })
       : null;
 
