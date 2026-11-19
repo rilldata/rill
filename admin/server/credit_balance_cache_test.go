@@ -14,27 +14,34 @@ func TestCreditBalanceCache(t *testing.T) {
 
 	tt := []struct {
 		name        string
-		cachedAge   time.Duration // zero means nothing is cached
+		cached      bool
+		expired     bool
 		allowCached bool
 		fetchErr    error
 		wantBalance float64
 		wantErr     bool
 		wantFetch   bool
 	}{
-		{name: "fresh cache is served without fetching", cachedAge: time.Minute, allowCached: true, wantBalance: 100},
-		{name: "expired cache fetches", cachedAge: 20 * time.Minute, allowCached: true, wantBalance: 200, wantFetch: true},
+		{name: "fresh cache is served without fetching", cached: true, allowCached: true, wantBalance: 100},
+		{name: "expired cache fetches", cached: true, expired: true, allowCached: true, wantBalance: 200, wantFetch: true},
 		{name: "empty cache fetches", allowCached: true, wantBalance: 200, wantFetch: true},
-		{name: "fetch failure with expired cache errors", cachedAge: 20 * time.Minute, allowCached: true, fetchErr: errFetch, wantErr: true, wantFetch: true},
-		{name: "cache is ignored when not allowed", cachedAge: time.Minute, allowCached: false, wantBalance: 200, wantFetch: true},
-		{name: "fetch failure errors when cache not allowed", cachedAge: time.Minute, allowCached: false, fetchErr: errFetch, wantErr: true, wantFetch: true},
+		{name: "fetch failure with expired cache errors", cached: true, expired: true, allowCached: true, fetchErr: errFetch, wantErr: true, wantFetch: true},
+		{name: "cache is ignored when not allowed", cached: true, allowCached: false, wantBalance: 200, wantFetch: true},
+		{name: "fetch failure errors when cache not allowed", cached: true, allowCached: false, fetchErr: errFetch, wantErr: true, wantFetch: true},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			c, err := newCreditBalanceCache()
-			require.NoError(t, err)
-			if tc.cachedAge != 0 {
-				c.cache.Add("org", creditBalanceEntry{balance: 100, fetchedOn: time.Now().Add(-tc.cachedAge)})
+			ttl := time.Hour
+			if tc.expired {
+				ttl = 10 * time.Millisecond
+			}
+			c := newCreditBalanceCache(ttl)
+			if tc.cached {
+				c.cache.Add("org", 100)
+			}
+			if tc.expired {
+				time.Sleep(2 * ttl)
 			}
 
 			fetched := false
@@ -55,11 +62,10 @@ func TestCreditBalanceCache(t *testing.T) {
 }
 
 func TestCreditBalanceCacheUpdatesAndInvalidates(t *testing.T) {
-	c, err := newCreditBalanceCache()
-	require.NoError(t, err)
+	c := newCreditBalanceCache(time.Hour)
 
 	// A fetch that bypasses the cache still updates it for later cached reads.
-	_, err = c.get(t.Context(), "org", false, func(ctx context.Context) (float64, error) { return 150, nil })
+	_, err := c.get(t.Context(), "org", false, func(ctx context.Context) (float64, error) { return 150, nil })
 	require.NoError(t, err)
 	balance, err := c.get(t.Context(), "org", true, func(ctx context.Context) (float64, error) {
 		t.Fatal("unexpected fetch")
@@ -76,11 +82,10 @@ func TestCreditBalanceCacheUpdatesAndInvalidates(t *testing.T) {
 }
 
 func TestCreditBalanceCacheFetchTimeout(t *testing.T) {
-	c, err := newCreditBalanceCache()
-	require.NoError(t, err)
+	c := newCreditBalanceCache(time.Hour)
 
 	// A slow fetch is cut off by the timeout when cached values are allowed.
-	_, err = c.get(t.Context(), "org", true, func(ctx context.Context) (float64, error) {
+	_, err := c.get(t.Context(), "org", true, func(ctx context.Context) (float64, error) {
 		<-ctx.Done()
 		return 0, ctx.Err()
 	})

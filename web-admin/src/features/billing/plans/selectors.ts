@@ -3,6 +3,7 @@ import {
   adminServiceGetPaymentsPortalURL,
   adminServiceListPublicBillingPlans,
   createAdminServiceGetBillingCreditBalance,
+  getAdminServiceGetBillingCreditBalanceQueryKey,
   createAdminServiceGetBillingProjectCredentials,
   getAdminServiceGetPaymentsPortalURLQueryKey,
   getAdminServiceListPublicBillingPlansQueryKey,
@@ -301,6 +302,14 @@ export function getPlanCredits(
           isUnavailable: creditsBalance.isError,
         };
       }
+
+      // Keep the trial banner, which allows a cached balance, in sync with the fresh balance shown here.
+      queryClient.setQueryData(
+        getAdminServiceGetBillingCreditBalanceQueryKey(org, {
+          allowCached: true,
+        }),
+        creditsBalance.data,
+      );
 
       const totalCredit =
         billingIssue?.metadata?.onCreditTrial?.creditAllocation ?? TOTAL_CREDIT;

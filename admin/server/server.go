@@ -131,11 +131,6 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
-	creditBalance, err := newCreditBalanceCache()
-	if err != nil {
-		return nil, err
-	}
-
 	return &Server{
 		logger:        logger,
 		admin:         adm,
@@ -145,7 +140,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		limiter:       limiter,
 		activity:      activityClient,
-		creditBalance: creditBalance,
+		creditBalance: newCreditBalanceCache(creditBalanceTTL),
 	}, nil
 }
 
