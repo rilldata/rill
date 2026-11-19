@@ -7383,6 +7383,13 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
+      tagOrder:
+        type: array
+        items:
+          type: string
+        description: |-
+          Display order of the tags set on dimensions and measures.
+          Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
       parentDimensions:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.

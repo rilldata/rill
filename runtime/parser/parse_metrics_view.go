@@ -78,6 +78,7 @@ type MetricsViewYAML struct {
 		LowerIsBetter       bool           `yaml:"lower_is_better"`
 		Tags                []string
 	}
+	TagOrder         []string           `yaml:"tag_order"`
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
 	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`   // used when Parent is set
 	Annotations      []*struct {
@@ -652,6 +653,20 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Checking that each tag is set on a dimension or measure happens during validation,
+	// since a derived metrics view only gets its dimensions and measures from its parent then.
+	var tagOrder []string
+	for _, tag := range tmp.TagOrder {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			return fmt.Errorf(`"tag_order" must not contain empty tags`)
+		}
+		if slices.Contains(tagOrder, tag) {
+			return fmt.Errorf(`tag %q is listed more than once in "tag_order"`, tag)
+		}
+		tagOrder = append(tagOrder, tag)
+	}
+
 	// 0 is default and type is uint32
 	if tmp.FirstDayOfWeek > 7 {
 		return fmt.Errorf("invalid first day of week %d, must be between 1 and 7", tmp.FirstDayOfWeek)
@@ -915,6 +930,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
+	spec.TagOrder = tagOrder
 
 	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
 	if !timeDimSeenInDimList && tmp.TimeDimension != "" {
