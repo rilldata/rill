@@ -33,12 +33,13 @@ type ItemControls struct {
 // An item's own controls come first, then those of its tab, tab group or container, then the canvas's.
 // For each target (see ControlTargetKey), only the nearest control is kept.
 // An item's ignore_controls drops controls of the enclosing levels, never its own.
+// The controls in skip are left out, as if the canvas didn't declare them; skip can be nil.
 //
 // The frontend implements the same rules in web-common/src/features/canvas/controls/controls.ts; keep them in sync.
-func ResolveItemControls(spec *runtimev1.CanvasSpec) []ItemControls {
+func ResolveItemControls(spec *runtimev1.CanvasSpec, skip map[*runtimev1.CanvasControl]bool) []ItemControls {
 	var res []ItemControls
 	walkCanvas(spec, nil, func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) {
-		res = append(res, ItemControls{Item: item, Controls: resolveItem(item, enclosing)})
+		res = append(res, ItemControls{Item: item, Controls: resolveItem(item, enclosing, skip)})
 	})
 	return res
 }
@@ -81,10 +82,13 @@ func walkCanvas(spec *runtimev1.CanvasSpec, onLevel func(controls *[]*runtimev1.
 	walk(spec.Rows, [][]*runtimev1.CanvasControl{spec.Controls})
 }
 
-func resolveItem(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) []*runtimev1.CanvasControl {
+func resolveItem(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl, skip map[*runtimev1.CanvasControl]bool) []*runtimev1.CanvasControl {
 	var res []*runtimev1.CanvasControl
 	seen := make(map[string]bool)
 	for _, c := range item.Controls {
+		if skip[c] {
+			continue
+		}
 		if key := ControlTargetKey(c); !seen[key] {
 			seen[key] = true
 			res = append(res, c)
@@ -95,7 +99,7 @@ func resolveItem(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasCont
 	}
 	for _, level := range enclosing {
 		for _, c := range level {
-			if slices.Contains(item.IgnoreControls, c.Name) {
+			if skip[c] || slices.Contains(item.IgnoreControls, c.Name) {
 				continue
 			}
 			if key := ControlTargetKey(c); !seen[key] {
@@ -236,19 +240,15 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 		}, nil)
 	}
 
-	// Check each control against the items it applies to, and leave out the controls that fail.
+	// Check each control against the items it applies to, leaving out the controls that failed.
 	// Leaving one out puts the control of an enclosing level it overrode in effect for its items,
-	// so check again until every control in effect works.
-	res := spec
+	// so resolve the items again and check until no more controls fail.
 	for {
-		if len(invalid) > 0 {
-			res = withoutControls(res, invalid)
-			invalid = make(map[*runtimev1.CanvasControl]bool)
-		}
-		for _, ic := range ResolveItemControls(res) {
+		n := len(invalid)
+		for _, ic := range ResolveItemControls(spec, invalid) {
 			validateItemControls(ic, components, metricsViews, fail)
 		}
-		if len(invalid) == 0 {
+		if len(invalid) == n {
 			break
 		}
 	}
@@ -266,7 +266,10 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 		}
 	})
 
-	return res, errors.Join(errs...)
+	if len(invalid) == 0 {
+		return spec, errors.Join(errs...)
+	}
+	return withoutControls(spec, invalid), errors.Join(errs...)
 }
 
 // validateItemControls checks the controls in effect for an item against its component, and calls fail for each control that doesn't work in it.

@@ -50,7 +50,7 @@ func TestResolveItemControls(t *testing.T) {
 	}
 
 	got := make(map[string][]string)
-	for _, ic := range ResolveItemControls(spec) {
+	for _, ic := range ResolveItemControls(spec, nil) {
 		got[ic.Item.Name] = names(ic.Controls)
 	}
 	require.Equal(t, map[string][]string{

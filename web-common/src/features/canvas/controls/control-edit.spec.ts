@@ -397,6 +397,28 @@ describe("findRepeatedOption", () => {
     ).toEqual({ option: "spend", item: "kpi_grid" });
   });
 
+  it("checks items that ignore the nearer control", () => {
+    const doc = parseDocument(`rows:
+  - name: section
+    controls:
+      - measure: total_bids
+        name: section_metric
+    rows:
+      - items:
+          - name: opted_out
+            ignore_controls: [section_metric]
+            kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+          - kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+`);
+    // The canvas control reaches the KPI grid that ignores the section's control.
+    expect(
+      countItemsUsingField(doc, [], "measure", "total_bids", "metric"),
+    ).toBe(1);
+    expect(
+      findRepeatedOption(doc, [], "measure", "total_bids", ["spend"], "metric"),
+    ).toEqual({ option: "spend", item: "opted_out" });
+  });
+
   it("skips items that ignore the control by name", () => {
     const doc = parseDocument(`rows:
   - items:

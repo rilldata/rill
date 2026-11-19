@@ -383,7 +383,7 @@ export function findRepeatedOption(
 /**
  * The items a control declared on a level applies to: the item itself, or the items below a
  * block or the canvas, less those that opt out of the control with `ignore_controls` and those
- * under a nearer level with a control of the same kind and field, which wins (see controlsForPath).
+ * a nearer control of the same kind and field reaches, since it wins (see controlsForPath).
  * Each comes with its name (or component type) and its component specs as plain objects.
  */
 function itemsUnderLevel(
@@ -396,19 +396,27 @@ function itemsUnderLevel(
   const root = toJSON(path.length ? doc?.getIn(path) : doc);
   if (!isRecord(root)) return [];
 
-  const overrides = (level: Record<string, unknown>) =>
-    Array.isArray(level.controls) &&
-    level.controls.some((c) => isRecord(c) && c[kind] === field);
+  // The names of a level's controls of the same kind and field.
+  const sameControls = (level: Record<string, unknown>) =>
+    Array.isArray(level.controls)
+      ? level.controls
+          .filter((c): c is RawControl => isRecord(c) && c[kind] === field)
+          .map(defaultControlName)
+      : [];
   const own = isItemPath(path);
   const res: { name: string; specs: Record<string, unknown>[] }[] = [];
-  const visitItem = (item: unknown) => {
+  // `nearer` holds the names of such controls on the levels between this one and the item.
+  const visitItem = (item: unknown, nearer: string[]) => {
     if (!isRecord(item)) return;
     const ignore = item.ignore_controls;
+    const ignores = (name: string) =>
+      ignore === true || (Array.isArray(ignore) && ignore.includes(name));
+    // The item's own control wins, and so does a nearer one it doesn't ignore.
     if (
       !own &&
-      (overrides(item) ||
-        ignore === true ||
-        (Array.isArray(ignore) && ignore.includes(controlName)))
+      (sameControls(item).length > 0 ||
+        ignores(controlName) ||
+        nearer.some((name) => !ignores(name)))
     ) {
       return;
     }
@@ -420,28 +428,31 @@ function itemsUnderLevel(
       specs: entries.map(([, value]) => value as Record<string, unknown>),
     });
   };
-  const visitTabs = (tabs: unknown) => {
+  const visitTabs = (tabs: unknown, nearer: string[]) => {
     if (!Array.isArray(tabs)) return;
     for (const tab of tabs) {
-      if (isRecord(tab) && !overrides(tab)) visitRows(tab.rows);
+      if (isRecord(tab)) visitRows(tab.rows, [...nearer, ...sameControls(tab)]);
     }
   };
-  const visitRows = (rows: unknown) => {
+  const visitRows = (rows: unknown, nearer: string[]) => {
     if (!Array.isArray(rows)) return;
     for (const row of rows) {
-      if (!isRecord(row) || overrides(row)) continue;
-      if (Array.isArray(row.items)) row.items.forEach(visitItem);
-      visitTabs(row.tabs);
-      visitRows(row.rows);
+      if (!isRecord(row)) continue;
+      const inner = [...nearer, ...sameControls(row)];
+      if (Array.isArray(row.items)) {
+        for (const item of row.items) visitItem(item, inner);
+      }
+      visitTabs(row.tabs, inner);
+      visitRows(row.rows, inner);
     }
   };
 
   if (own) {
-    visitItem(root);
+    visitItem(root, []);
   } else if (Array.isArray(root.tabs)) {
-    visitTabs(root.tabs);
+    visitTabs(root.tabs, []);
   } else {
-    visitRows(root.rows);
+    visitRows(root.rows, []);
   }
   return res;
 }
