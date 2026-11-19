@@ -1,21 +1,22 @@
 /**
  * Value-based keys for pivot row expansion. A row is keyed by the dimension
  * values from the root to it, NUL-joined and hierarchical, so the key stays
- * stable across sorting, adding a field, and data refreshes. Uses the same
- * separator and null sentinel as the dimKeys in pivot-click-selection.ts,
- * except that undefined also maps to the sentinel here.
+ * stable across sorting, adding a field, and data refreshes.
  */
 
 // NUL separator, since dimension values won't contain it.
 export const EXPAND_KEY_SEP = "\0";
 
-// Sentinel for null values, so a null at depth N differs from an absent level.
-// A literal "<NULL>" string value encodes the same way, which only matters if
-// both appear under the same parent; the dimKeys make the same trade-off.
-const NULL_SENTINEL = "<NULL>";
+// Every segment is tagged with its type, so no segment is ever empty
+// (an empty-string value would otherwise look like the root key "")
+// and a null can't collide with a string value such as "<NULL>" or "null".
+const VALUE_PREFIX = "=";
+const NULL_SEGMENT = "null";
 
 export function encodeExpandKeyValue(value: unknown): string {
-  return value === null || value === undefined ? NULL_SENTINEL : String(value);
+  return value === null || value === undefined
+    ? NULL_SEGMENT
+    : VALUE_PREFIX + String(value);
 }
 
 export function buildExpandKey(values: unknown[]): string {

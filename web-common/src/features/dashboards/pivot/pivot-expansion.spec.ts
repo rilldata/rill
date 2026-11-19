@@ -155,6 +155,30 @@ describe("pivot expansion (value-based keys)", () => {
     expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
   });
 
+  it("does not confuse a null row with a literal '<NULL>' row", () => {
+    const tableData: PivotDataRow[] = [
+      { publisher: null, subRows: [{ publisher: LOADING_CELL }] },
+      { publisher: "<NULL>", subRows: [{ publisher: LOADING_CELL }] },
+    ];
+    addExpandedDataToPivot(
+      getConfig(false),
+      tableData,
+      ["publisher", "campaign"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: buildExpandKey(["<NULL>"]),
+          rowDimensionValues: ["<NULL>"],
+          totals: [{ campaign: "c", impressions: 1 }],
+          data: [],
+        },
+      ],
+    );
+    expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
+    expect(tableData[1].subRows?.[0]).toMatchObject({ campaign: "c" });
+  });
+
   it("ends a group that has more rows past the last limit step", () => {
     const tableData: PivotDataRow[] = [
       {
@@ -261,6 +285,7 @@ describe("queryExpandedRowMeasureValues", () => {
   // Rows are [publisher, domain, campaign], so A's children are domains.
   const tableData: PivotDataRow[] = [
     { publisher: "A", subRows: [{ publisher: "example.com" }] },
+    { publisher: "", subRows: [{ publisher: "example.com" }] },
   ];
 
   function query(expandedKey: string) {
@@ -281,6 +306,14 @@ describe("queryExpandedRowMeasureValues", () => {
 
   it("queries the next dimension for a fully resolved key", () => {
     query(buildExpandKey(["A"]));
+    expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
+      "domain",
+    ]);
+  });
+
+  it("queries the next dimension for a top-level empty-string row", () => {
+    query(buildExpandKey([""]));
     expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
     expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
       "domain",
