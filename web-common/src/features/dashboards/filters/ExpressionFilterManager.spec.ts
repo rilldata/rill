@@ -6,6 +6,7 @@ import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options.ts";
+import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
@@ -547,12 +548,14 @@ describe("setUrlParams", () => {
 });
 
 describe("single param form", () => {
-  function createSingleParamFilterManager() {
+  function createSingleParamFilterManager(
+    yamlConfigProvider: YAMLConfigProvider = new YAMLConfigProvider(),
+  ) {
     const { value, destroy } = createInEffectRoot(
       () =>
         new ExpressionFilterManager(
           metricsViewsProvider,
-          new YAMLConfigProvider(),
+          yamlConfigProvider,
           true,
         ),
     );
@@ -585,6 +588,45 @@ describe("single param form", () => {
     const searchParams = new URLSearchParams();
     filterManager.applyFilterToParams(searchParams);
     expect(searchParams.toString()).toEqual(sharedParam(filter).toString());
+  });
+
+  it("keeps an explore's required and pinned chips through a clear and reports the required filter as missing", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update(
+      {},
+      [AD_BIDS_DOMAIN_DIMENSION],
+      [AD_BIDS_PUBLISHER_DIMENSION],
+    );
+    const filterManager = createSingleParamFilterManager(yamlConfigProvider);
+    const missingRequiredFilters = () =>
+      getMissingRequiredFilters(
+        filterManager,
+        metricsViewsProvider,
+        yamlConfigProvider,
+      );
+
+    // Without a value for the required filter, the explore is not shown.
+    expect(missingRequiredFilters()).toEqual([AD_BIDS_PUBLISHER_DIMENSION]);
+
+    // The explore's default filter arrives through the singular param.
+    filterManager.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Contoso')`),
+    );
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(missingRequiredFilters()).toEqual([]);
+
+    filterManager.clear();
+
+    // The chips stay, without a value, and the required filter is missing again.
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(filterManager.hasSomeFilter).toBe(false);
+    expect(missingRequiredFilters()).toEqual([AD_BIDS_PUBLISHER_DIMENSION]);
   });
 });
 

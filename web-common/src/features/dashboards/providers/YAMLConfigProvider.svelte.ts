@@ -40,22 +40,16 @@ export class YAMLConfigProvider {
     this.events,
   ) as typeof this.events.on;
 
-  public update({
-    defaultFilters,
-    pinnedFilters,
-    requiredFilters,
+  // The config last applied by `update`.
+  private appliedConfigJson: string | undefined = undefined;
 
-    restrictedDimensions,
-    primaryTimeDimension,
-    restrictedMeasures,
-
-    defaultTimeRange,
-    timeRanges,
-    allowCustomTimeRange,
-    defaultTimeZone,
-    timeZones,
-    lockTimeZone,
-  }: {
+  /**
+   * Applies the filter config of a dashboard's spec.
+   * This resets the pin and required toggles made in the editor to what the spec holds,
+   * so a config that is already applied is skipped:
+   * the spec is fetched again on every edit to the dashboard's file, and unsaved toggles must survive unrelated edits.
+   */
+  public update(config: {
     defaultFilters?: YAMLConfigProvider["defaultFilters"];
     pinnedFilters?: string[];
     requiredFilters?: string[];
@@ -71,6 +65,27 @@ export class YAMLConfigProvider {
     timeZones?: YAMLConfigProvider["timeZones"];
     lockTimeZone?: YAMLConfigProvider["lockTimeZone"];
   }) {
+    const configJson = JSON.stringify(config);
+    if (configJson === this.appliedConfigJson) return;
+    this.appliedConfigJson = configJson;
+
+    const {
+      defaultFilters,
+      pinnedFilters,
+      requiredFilters,
+
+      restrictedDimensions,
+      primaryTimeDimension,
+      restrictedMeasures,
+
+      defaultTimeRange,
+      timeRanges,
+      allowCustomTimeRange,
+      defaultTimeZone,
+      timeZones,
+      lockTimeZone,
+    } = config;
+
     this.defaultFilters = defaultFilters ?? {};
 
     const pinnedFiltersRec = Object.fromEntries(

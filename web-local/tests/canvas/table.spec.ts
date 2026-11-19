@@ -267,4 +267,47 @@ rows:
       "fit_to_width: true",
     ]);
   });
+
+  test("click_to_filter: false keeps a click from filtering the canvas", async ({
+    page,
+  }) => {
+    await gotoNavEntry(page, CANVAS_FILE);
+    const table = (clickToFilter: boolean) =>
+      canvasYaml(`- table:
+    metrics_view: AdBids_metrics
+    title: Table component
+    click_to_filter: ${clickToFilter}
+    columns:
+      - publisher
+      - total_records`);
+    // The first row is the null publisher, which never filters.
+    const publisherCell = () =>
+      dataRows(page).filter({ hasText: "Facebook" }).locator("td").first();
+    const publisherFilter = page.getByRole("button", {
+      name: "Open publisher filter",
+    });
+
+    await setCanvasYaml(page, table(false));
+    await expect(publisherCell()).toBeVisible({ timeout: 60_000 });
+    await expect(publisherCell()).not.toHaveClass(/interactive-cell/);
+    await publisherCell().click();
+    await expect(publisherFilter).toHaveCount(0);
+
+    // The same click filters the canvas once the switch is back on.
+    await setCanvasYaml(page, table(true));
+    await expect(publisherCell()).toHaveClass(/interactive-cell/, {
+      timeout: 60_000,
+    });
+    await publisherCell().click();
+    await expect(publisherFilter).toBeVisible();
+    // The table that applied the filter keeps listing every publisher.
+    await expect(dataRows(page)).not.toHaveCount(1);
+
+    // Turned off afterwards, the table drops its selection and shows the
+    // filter it left on the canvas like any other widget.
+    await setCanvasYaml(page, table(false));
+    await expect(publisherFilter).toBeVisible();
+    await expect(dataRows(page)).toHaveCount(1, { timeout: 60_000 });
+    await expect(dataRows(page)).toContainText("Facebook");
+  });
 });

@@ -2939,6 +2939,7 @@ definitions:
                   time_range: P1M
                   comparison_mode: dimension #time, none
                   comparison_dimension: filename
+                  filters: "country = 'US' AND device IN ('mobile', 'tablet')"
                 ```
             properties:
               dimensions:
@@ -2960,6 +2961,32 @@ definitions:
               comparison_dimension:
                 description: 'For dimension mode, specify the comparison dimension by name.'
                 type: string
+              filters:
+                description: "Default filter applied when a user initially loads the dashboard, written as a Metrics SQL `WHERE` expression, for example `country = 'US' AND device IN ('mobile', 'tablet')`. It can only reference dimensions and measures shown in the explore. An explore has a single metrics view, so this is one expression and not a map keyed by metrics view as on a canvas dashboard."
+                type: string
+            additionalProperties: false
+          filters:
+            type: object
+            description: |
+              Configures the filters of the explore dashboard.
+                ```yaml
+                filters:
+                  pinned:
+                    - device
+                  required:
+                    - advertiser
+                ```
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object
@@ -3839,6 +3866,9 @@ definitions:
       row_limit:
         type: string
         description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+      click_to_filter:
+        type: boolean
+        description: Whether clicking a cell or header filters the whole canvas by its values. Set to false to keep the table read-only, so selecting a row does not filter the other components. Defaults to true.
       fit_to_width:
         type: boolean
         description: When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
@@ -3887,9 +3917,6 @@ definitions:
       content:
         type: string
         description: Markdown content
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Markdown title
@@ -3910,9 +3937,6 @@ definitions:
       dark_url:
         type: string
         description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Image title
@@ -4910,6 +4934,24 @@ definitions:
               comparison_dimension:
                 type: string
                 description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+              filters:
+                type: string
+                description: "Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view."
+            additionalProperties: false
+          filters:
+            type: object
+            description: Configures the filters of the explore view.
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object

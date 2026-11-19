@@ -49,6 +49,12 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
       );
 
       this.yamlConfigProvider.update({
+        defaultFilters: metricsViewName
+          ? { [metricsViewName]: exploreSpec.defaultPreset?.where }
+          : {},
+        pinnedFilters: exploreSpec.pinnedFilters ?? [],
+        requiredFilters: exploreSpec.requiredFilters ?? [],
+
         restrictedDimensions: exploreSpec.dimensions,
         primaryTimeDimension: metricsViewSpec.timeDimension,
         restrictedMeasures: exploreSpec.measures,
