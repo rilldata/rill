@@ -38,6 +38,7 @@ import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {
   type DashboardTimeControls,
@@ -432,15 +433,7 @@ describe("DashboardStateManager", () => {
       });
 
       it("Should keep a url change made while an earlier one is applied", async () => {
-        releaseTimeRanges();
-        renderDashboardStateManager();
-        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-
-        hoistedTimeRanges.pending = new Promise(
-          (resolve) => (releaseTimeRanges = resolve),
-        );
-        pageMock.gotoSearch("tr=PT24H");
-        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledTimes(2));
+        await startUrlChangeWithPendingTimeRange();
         pageMock.gotoSearch("tr=P14D");
         releaseTimeRanges();
 
@@ -451,6 +444,57 @@ describe("DashboardStateManager", () => {
         );
         pageMock.assertSearchParams("tr=P14D");
       });
+
+      it("Should apply going back while an earlier url change is applied like any going back", async () => {
+        await startUrlChangeWithPendingTimeRange();
+        pageMock.popState("");
+        releaseTimeRanges();
+
+        // Going back to an empty url gives the rill defaults, not the session state.
+        await waitFor(() =>
+          assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+        );
+        pageMock.assertSearchParams("");
+      });
+
+      it("Should drop a url change when another explore opens while it is applied", async () => {
+        await startUrlChangeWithPendingTimeRange();
+        hoistedPage.goto(
+          new URL("http://localhost/explore/other_explore?dims=other_dim"),
+        );
+        releaseTimeRanges();
+        await asyncWait(10);
+
+        pageMock.assertSearchParams("dims=other_dim");
+        expect(
+          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
+        ).toEqual("P7D");
+      });
+
+      it("Should drop a url change when the dashboard is torn down while it is applied", async () => {
+        const renderResults = await startUrlChangeWithPendingTimeRange();
+        renderResults.unmount();
+        releaseTimeRanges();
+        await asyncWait(10);
+
+        expect(
+          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
+        ).toEqual("P7D");
+      });
+
+      // Loads the dashboard, then starts a url change whose time range stays unresolved.
+      async function startUrlChangeWithPendingTimeRange() {
+        releaseTimeRanges();
+        const { renderResults } = renderDashboardStateManager();
+        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+        hoistedTimeRanges.pending = new Promise(
+          (resolve) => (releaseTimeRanges = resolve),
+        );
+        pageMock.gotoSearch("tr=PT24H");
+        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledTimes(2));
+        return renderResults;
+      }
     });
   });
 

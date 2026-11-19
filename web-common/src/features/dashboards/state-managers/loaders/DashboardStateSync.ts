@@ -56,6 +56,13 @@ export class DashboardStateSync {
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
+  // The latest navigation handleURLChange skipped because the lock was held.
+  // resolveTimeRange replays it with its own type, since going back restores different state than a goto.
+  private skippedNavigation:
+    | { search: string; type: AfterNavigate["type"] }
+    | undefined;
+  // Set once the dashboard is left, so a time range that resolves afterwards is dropped.
+  private tornDown = false;
 
   private readonly expressionFilterParamsTracker: UrlParamsChangeTracker;
 
@@ -108,6 +115,7 @@ export class DashboardStateSync {
   }
 
   public teardown() {
+    this.tornDown = true;
     this.unsubInit?.();
     this.unsubExploreState?.();
   }
@@ -180,7 +188,14 @@ export class DashboardStateSync {
     this.updating = true;
 
     if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-      initExploreState = await this.resolveTimeRange(initExploreState);
+      const resolvedExploreState =
+        await this.resolveTimeRange(initExploreState);
+      // The dashboard was left while the time range resolved.
+      if (!resolvedExploreState) {
+        this.updating = false;
+        return;
+      }
+      initExploreState = resolvedExploreState;
     }
     const pageState = get(page);
 
@@ -246,7 +261,10 @@ export class DashboardStateSync {
   ) {
     // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
     // Init already incorporates the url into the state so we can skip this processing.
-    if (this.updating || !this.initialized) return;
+    if (this.updating || !this.initialized) {
+      this.skippedNavigation = { search: urlSearchParams.toString(), type };
+      return;
+    }
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
@@ -275,7 +293,10 @@ export class DashboardStateSync {
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-        partialExplore = await this.resolveTimeRange(partialExplore);
+        const resolvedExplore = await this.resolveTimeRange(partialExplore);
+        // The dashboard was left while the time range resolved.
+        if (!resolvedExplore) return;
+        partialExplore = resolvedExplore;
       }
 
       // Merge the partial state from url into the store
@@ -342,15 +363,17 @@ export class DashboardStateSync {
 
   /**
    * Resolves the start and end of the state's time range, which takes a network call.
+   * Returns undefined when the dashboard was left during the call, so the caller drops the state.
    *
    * handleURLChange skips navigations while init or another url change holds the lock, as both do across this call.
    * A navigation that lands meanwhile, like an embed's setValidState on a slow connection, would be lost,
    * and applying the state, built from the url before it, would revert it.
-   * So when the url changes during the call, this starts over with the state for the new url.
+   * So when the url changes during the call, this starts over with the state for the new url,
+   * built the way handleURLChange would have built it for that navigation.
    */
   private async resolveTimeRange(
     exploreState: ExploreState,
-  ): Promise<ExploreState> {
+  ): Promise<ExploreState | undefined> {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const { url } = get(page);
     [
@@ -369,10 +392,19 @@ export class DashboardStateSync {
     );
 
     const latestUrl = get(page).url;
+    // Another page or dashboard is open now; the url is not ours to apply or change.
+    if (this.tornDown || latestUrl.pathname !== url.pathname) return undefined;
+
     if (latestUrl.search !== url.search) {
+      const latestSearch = latestUrl.searchParams.toString();
+      const navigationType =
+        this.skippedNavigation?.search === latestSearch
+          ? this.skippedNavigation.type
+          : "goto";
+      this.skippedNavigation = undefined;
       const latestExploreState = this.dataLoader.getExploreStateFromURLParams(
         latestUrl.searchParams,
-        "goto",
+        navigationType,
       );
       if (latestExploreState) return this.resolveTimeRange(latestExploreState);
     }
