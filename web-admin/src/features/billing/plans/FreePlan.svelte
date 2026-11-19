@@ -20,7 +20,8 @@
   let trialIssue = $derived($categorisedIssues.data?.trial);
 
   let planCredits = $derived(getPlanCredits(organization, trialIssue));
-  let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
+  let { usedCredit, availableCredit, creditPercent, isUnavailable } =
+    $derived($planCredits);
 </script>
 
 <PlanContainer
@@ -40,20 +41,26 @@
   {/snippet}
 
   <div class="credit-section">
-    <div class="flex justify-between">
-      <span class="credit-label">{m.billing_used_credit()}</span>
-      <span class="credit-label">{m.billing_available_credit()}</span>
-    </div>
-    <div class="flex justify-between items-end">
-      <span class="credit-used">{formatCredit(usedCredit)}</span>
-      <span class="credit-available">{formatCredit(availableCredit)}</span>
-    </div>
-    <div class="credit-bar-bg">
-      <div class="credit-bar-fill" style:width="{creditPercent}%"></div>
-    </div>
-    <span class="text-xs text-fg-tertiary font-medium">
-      {m.billing_credit_percent_used({ percent: String(creditPercent) })}
-    </span>
+    {#if isUnavailable}
+      <span class="text-sm text-fg-secondary">
+        {m.billing_credit_balance_unavailable()}
+      </span>
+    {:else}
+      <div class="flex justify-between">
+        <span class="credit-label">{m.billing_used_credit()}</span>
+        <span class="credit-label">{m.billing_available_credit()}</span>
+      </div>
+      <div class="flex justify-between items-end">
+        <span class="credit-used">{formatCredit(usedCredit)}</span>
+        <span class="credit-available">{formatCredit(availableCredit)}</span>
+      </div>
+      <div class="credit-bar-bg">
+        <div class="credit-bar-fill" style:width="{creditPercent}%"></div>
+      </div>
+      <span class="text-xs text-fg-tertiary font-medium">
+        {m.billing_credit_percent_used({ percent: String(creditPercent) })}
+      </span>
+    {/if}
 
     <PricingLink />
   </div>

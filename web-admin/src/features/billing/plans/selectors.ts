@@ -294,19 +294,26 @@ export function getPlanCredits(
     (creditsBalance) => {
       if (!creditsBalance.data) {
         // Set everything to 0 while the data is potentially loading.
-        return { usedCredit: 0, availableCredit: 0, creditPercent: 0 };
+        return {
+          usedCredit: 0,
+          availableCredit: 0,
+          creditPercent: 0,
+          isUnavailable: creditsBalance.isError,
+        };
       }
 
       const totalCredit =
         billingIssue?.metadata?.onCreditTrial?.creditAllocation ?? TOTAL_CREDIT;
 
-      const availableCredit = creditsBalance.data?.balance ?? totalCredit;
+      // A zero balance is omitted from the response.
+      const availableCredit = creditsBalance.data.balance ?? 0;
       const usedCredit = totalCredit - availableCredit;
       const creditPercent = Math.round((usedCredit / totalCredit) * 100);
       return {
         usedCredit,
         availableCredit,
         creditPercent,
+        isUnavailable: false,
       };
     },
   );

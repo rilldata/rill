@@ -82,6 +82,7 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
+	creditBalance *creditBalanceCache
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -130,6 +131,11 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
+	creditBalance, err := newCreditBalanceCache(logger.Named("billing"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
 		logger:        logger,
 		admin:         adm,
@@ -139,6 +145,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		limiter:       limiter,
 		activity:      activityClient,
+		creditBalance: creditBalance,
 	}, nil
 }
 
