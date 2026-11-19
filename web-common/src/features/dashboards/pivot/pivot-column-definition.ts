@@ -151,15 +151,14 @@ function createColumnDefinitionForDimensions(
       meta: { ...leaf.meta, isRowTotal: true },
     }));
     // The totals get one group per column dimension, so they sit under the same header rows as the other columns.
-    // Only the outermost group (the last one wrapped) is labeled:
+    // Only the outermost group is labeled:
     // the header rows have no lines between them, so the label reads as one header spanning all levels.
-    rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension, i) => {
+    rowTotalsColumns = colDimensions.reduceRight((acc, dimension, i) => {
       const { name } = dimension;
 
       const headColumn = {
         id: name,
-        header:
-          i === colDimensions.length - 1 ? m.pivot_totals_column_header() : "",
+        header: i === 0 ? m.pivot_totals_column_header() : "",
         columns: acc,
       };
 
@@ -563,7 +562,7 @@ function getNestedColumnDef(
 
   let firstDimensionColumns: ColumnDef<PivotDataRow>[] = rowDefinitions;
   if (config.rowDimensionNames.length && config.colDimensionNames.length) {
-    firstDimensionColumns = colDimensions.reverse().reduce((acc, dimension) => {
+    firstDimensionColumns = colDimensions.reduceRight((acc, dimension) => {
       const { label, name, description } = dimension;
 
       const headColumn = {
