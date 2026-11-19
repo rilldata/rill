@@ -1,4 +1,7 @@
-import { unformatResolvedContent } from "@rilldata/web-common/features/canvas/components/markdown/util";
+import {
+  formatResolvedContent,
+  unformatResolvedContent,
+} from "@rilldata/web-common/features/canvas/components/markdown/util";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { describe, expect, it } from "vitest";
 import type { MeasuredBlock } from "../pdf/capture";
@@ -14,7 +17,10 @@ import {
   toDataSheet,
 } from "./collect";
 import type { ExportTable } from "./payload";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1MetricsView,
+} from "@rilldata/web-common/runtime-client";
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 
 function block(
@@ -233,21 +239,42 @@ Targets are set per quarter.
 
   it("writes the value behind a formatted measure with the format the text shows", () => {
     // What the runtime resolves with `apply_formatting` on, and what the component shows for it.
-    const token = (value: number) =>
-      `__RILL__FORMAT__(${JSON.stringify({ metrics_view: "mv", field: "revenue", value })})`;
-    const resolved = (revenue: string) =>
-      `| Rep | Revenue |\n|---|---|\n| Ana | ${revenue} |\n`;
+    const token = (field: string, value: number) =>
+      `__RILL__FORMAT__(${JSON.stringify({ metrics_view: "mv", field, value })})`;
+    const resolved = `| Rep | Revenue | Revenue (EUR) |\n|---|---|---|\n| Ana | ${token("revenue", 1234567.891)} | ${token("revenue_eur", 1234)} |\n`;
+    const metricsView: V1MetricsView = {
+      state: {
+        validSpec: {
+          measures: [
+            { name: "revenue", formatPreset: "currency_usd" },
+            // A locale that groups thousands with ".", so 1234 shows as "1.234 €".
+            {
+              name: "revenue_eur",
+              formatD3: "$,.0f",
+              formatD3Locale: {
+                decimal: ",",
+                thousands: ".",
+                grouping: [3],
+                currency: ["", "\u00a0€"],
+              },
+            },
+          ],
+        },
+      },
+    };
     const { block, sheets } = textBlock(
-      resolved("$1.2M"),
-      unformatResolvedContent(resolved(token(1234567.891))),
+      formatResolvedContent(resolved, { mv: metricsView }),
+      unformatResolvedContent(resolved),
     );
     expect(block).toStrictEqual({ parts: [{ dataSheetId: "sheet-1" }] });
     // One table needs no suffix, and without a caption or heading it is named like the component.
     expect(sheets.map(({ suffix, title }) => [suffix, title])).toStrictEqual([
       ["", ""],
     ]);
-    expect(sheets[0].table.rows).toStrictEqual([["Ana", 1234567.891]]);
-    expect(sheets[0].table.columns[1].numberFormat).toBe('"$"#,##0.00');
+    expect(sheets[0].table.rows).toStrictEqual([["Ana", 1234567.891, 1234]]);
+    expect(
+      sheets[0].table.columns.map((column) => column.numberFormat),
+    ).toStrictEqual([undefined, '"$"#,##0.00', '#,##0"€"']);
   });
 });
 

@@ -122,7 +122,27 @@ function shownNumber(
     rawText !== undefined && rawText !== text && PRINTED_NUMBER.test(rawText)
       ? Number(rawText)
       : undefined;
+  if (raw === undefined) return readNumber(text);
 
+  // A formatted measure is the value behind it, whatever its text reads as: a locale that groups thousands
+  // with "." shows 1234 as "1.234". The text says how to show the value when it reads as that value rounded,
+  // either as written or with "." and "," swapped, as such a locale writes them.
+  // A text that a cell format can't follow, such as an interval ("2.3 s"), leaves the value plain.
+  const swapped = text.replace(/[.,]/g, (c) => (c === "." ? "," : "."));
+  for (const reading of [text, swapped]) {
+    const number = readNumber(reading);
+    if (number && Math.abs(raw - number.value) <= number.step) {
+      return { value: raw, look: number.look };
+    }
+  }
+  return { value: raw, look: PLAIN };
+}
+
+// Reads a text as a number written with "," between thousands and "." before the decimals.
+// `step` is the value of its last digit, which the text is rounded to.
+function readNumber(
+  text: string,
+): (ShownNumber & { step: number }) | undefined {
   const match = SHOWN_NUMBER.exec(text);
   const [
     ,
@@ -141,21 +161,17 @@ function shownNumber(
     (sign && innerSign) ||
     digits.length + fraction.length > MAX_DIGITS
   ) {
-    // A measure formatted in a way a cell format can't follow, such as an interval ("2.3 s"),
-    // is the number behind it.
-    return raw === undefined ? undefined : { value: raw, look: PLAIN };
+    return undefined;
   }
 
   const exponent = (MAGNITUDES[magnitude] ?? 0) - (percent ? 2 : 0);
   const negative = (sign ?? innerSign ?? "+") !== "+";
-  // Scaled as text, so "83.3%" is 0.833 and not 83.3 / 100 with its binary rounding.
-  const value = Number(
-    `${negative ? "-" : ""}${digits}.${fraction || "0"}e${exponent}`,
-  );
-  // The value behind the text, as long as the text is that value rounded to its last digit.
-  const step = 10 ** (exponent - fraction.length);
   return {
-    value: raw !== undefined && Math.abs(raw - value) <= step ? raw : value,
+    // Scaled as text, so "83.3%" is 0.833 and not 83.3 / 100 with its binary rounding.
+    value: Number(
+      `${negative ? "-" : ""}${digits}.${fraction || "0"}e${exponent}`,
+    ),
+    step: 10 ** (exponent - fraction.length),
     look: {
       prefix,
       suffix,

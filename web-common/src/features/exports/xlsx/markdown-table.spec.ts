@@ -116,7 +116,8 @@ describe("markdownExportTable", () => {
         ["Orders", "3.5k"],
         ["Latency", "2.3 s"],
         ["Rate", "12.3%"],
-        ["Edited", "40"],
+        ["Total", "1.234 €"],
+        ["Average", "12,5 €"],
       ),
       table(
         1,
@@ -125,8 +126,9 @@ describe("markdownExportTable", () => {
         ["Orders", "3456"],
         ["Latency", "2300"],
         ["Rate", "0.12345"],
-        // Not the value the text shows, so the text stands.
-        ["Edited", "7"],
+        // A locale that groups thousands with "." and writes decimals after ",".
+        ["Total", "1234.4"],
+        ["Average", "12.49"],
       ),
     );
     expect(result.rows).toStrictEqual([
@@ -135,14 +137,17 @@ describe("markdownExportTable", () => {
       // An interval has no cell format: the number behind it, shown plainly.
       ["Latency", 2300],
       ["Rate", 0.12345],
-      ["Edited", 40],
+      // Not 1.234, which is how the text reads with "." before the decimals.
+      ["Total", 1234.4],
+      ["Average", 12.49],
     ]);
     expect(result.rowNumberFormats).toStrictEqual([
       '"$"#,##0.00',
       "#,##0",
       "General",
       "0.0%",
-      "General",
+      '#,##0"€"',
+      '0.0"€"',
     ]);
   });
 
