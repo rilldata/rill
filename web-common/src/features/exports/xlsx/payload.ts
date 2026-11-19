@@ -38,7 +38,9 @@ export type ComponentExportPayload =
       dimensions: MetricsViewSpecDimension[];
       measures: MetricsViewSpecMeasure[];
     }
-  | { kind: "text"; text: string }
+  // The markdown as shown, and as resolved before measure values were
+  // formatted (for the CSV download of its tables; see csv.ts).
+  | { kind: "text"; text: string; unformattedText: string }
   | { kind: "imageUrl"; url: string }
   | { kind: "error"; message: string };
 

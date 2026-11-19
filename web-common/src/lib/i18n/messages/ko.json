@@ -923,6 +923,7 @@
   "dashboard_dimensions": "차원",
   "dashboard_dimensions_count": "차원 {count}개",
   "dashboard_dimensions_label": "차원",
+  "dashboard_download_as_csv": "CSV로 다운로드",
   "dashboard_download_as_png": "PNG로 다운로드",
   "dashboard_download_png": "PNG 다운로드",
   "dashboard_drag_dimensions": "여기에 차원을 끌어다 놓으세요",

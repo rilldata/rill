@@ -227,9 +227,13 @@ describe("needsImage", () => {
     expect(
       needsImage(component, { kind: "imageUrl", url: "logo.png" }, "native"),
     ).toBe(true);
-    expect(needsImage(component, { kind: "text", text: "x" }, "native")).toBe(
-      false,
-    );
+    expect(
+      needsImage(
+        component,
+        { kind: "text", text: "x", unformattedText: "x" },
+        "native",
+      ),
+    ).toBe(false);
     // A static component without a payload would be captured as a blank card.
     expect(needsImage(component, undefined, "native")).toBe(false);
   });
