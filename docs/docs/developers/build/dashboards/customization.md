@@ -163,9 +163,23 @@ defaults:
 
 The same `filters` and `defaults.filters` properties work in the `explore` block of a [metrics view](/reference/project-files/metrics-views).
 
+### Filter Order
+
+Pinned and required filters appear in the filter bar in the order you list them, so you can arrange them by hierarchy:
+
+```yaml
+filters:
+  pinned:
+    - region
+    - country
+    - city
+```
+
+Required filters that are not also listed under `pinned` come first, in the order of `required`. To show a required filter elsewhere, list it under `pinned` as well: its position in `pinned` then decides where it appears. Filters that viewers add come after the pinned and required ones, sorted by name. Measure filters always appear after dimension filters.
+
 ### Configure Filters in the Editor
 
-When you edit an explore dashboard in Rill Developer, each filter's dropdown shows two extra controls in its top-right corner: the **asterisk** marks the filter as required, and the **pin** icon pins it. These controls change only your current editing session. To write them to the file, click **Save dashboard state as default** in the editing sidebar. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and saves the current filter, time range, comparison mode and visible fields as the dashboard's `defaults`.
+When you edit an explore dashboard in Rill Developer, each filter's dropdown shows two extra controls in its top-right corner: the **asterisk** marks the filter as required, and the **pin** icon pins it. These controls change only your current editing session. To write them to the file, click **Save dashboard state as default** in the editing sidebar. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and saves the current filter, time range, comparison mode and visible fields as the dashboard's `defaults`. Pinning a filter in the editor adds it to the end of `filters.pinned`; to change the order, edit the list in the file.
 
 :::note Required filters are not access control
 Pinned and required filters shape what viewers see in the dashboard. They do not restrict the data a viewer can query, for example through a report or the API. To limit which rows a user can access, use [security policies](/developers/build/metrics-view/security).
