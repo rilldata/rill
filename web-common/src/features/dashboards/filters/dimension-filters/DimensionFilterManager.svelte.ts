@@ -63,7 +63,7 @@ export class DimensionFilterManager {
    * picking a value from a chart, leaderboard or table replaces the current one,
    * and a URL or bookmark with several values keeps the last one.
    */
-  public get singleSelect() {
+  public isSingleSelect() {
     return Boolean(this.yamlConfigProvider?.isSingleSelectFilter(this.name));
   }
 
@@ -270,7 +270,7 @@ export class DimensionFilterManager {
    * Narrows a single-select filter the config arrived for after it was parsed, and reports the change.
    */
   public enforceSingleSelect() {
-    if (!this.singleSelect || this.holdsSingleValue()) return;
+    if (!this.isSingleSelect() || this.holdsSingleValue()) return;
     // This happens when the dashboard config loads, so keep it quiet.
     this.oldMode = DimensionFilterMode.Select;
     this.commit();
@@ -286,7 +286,7 @@ export class DimensionFilterManager {
   }
 
   public commit(notify: boolean = true) {
-    if (this.singleSelect) {
+    if (this.isSingleSelect()) {
       // The value picked last wins: click to filter appends the clicked value.
       this.rawExpr = undefined;
       this.mode = DimensionFilterMode.Select;

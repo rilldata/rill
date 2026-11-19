@@ -15,7 +15,7 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<Record<string, boolean>>({});
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
-  // Dimensions whose filter holds one value at a time. See `DimensionFilterManager.singleSelect`.
+  // Dimensions whose filter holds one value at a time. See `DimensionFilterManager.isSingleSelect`.
   public singleSelectFilters = $state<Record<string, boolean>>({});
   public editable = $state<boolean>(false);
 

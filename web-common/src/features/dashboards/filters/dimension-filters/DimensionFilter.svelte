@@ -81,7 +81,7 @@
   );
   let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
   // A single-select filter has no modes, exclude or select all: picking a value applies it.
-  let singleSelect = $derived(dimensionManager.singleSelect);
+  let singleSelect = $derived(dimensionManager.isSingleSelect());
 
   // Pinned and required are edited locally and only persisted once the dropdown closes.
   // svelte-ignore state_referenced_locally
