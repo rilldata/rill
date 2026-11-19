@@ -21,7 +21,7 @@ import {
   WorkbookTextPart,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { get } from "svelte/store";
-import { markdownParts } from "../markdown-content";
+import { markdownParts, markdownTables } from "../markdown-content";
 import type { MeasuredBlock } from "../pdf/capture";
 import { hasNativeChart, mapChart } from "./chart-mapping";
 import type { WorkbookHeader } from "./header";
@@ -770,9 +770,7 @@ export function markdownTextBlock(
   const rawTables =
     payload.unformattedText === payload.text
       ? []
-      : markdownParts(payload.unformattedText).flatMap((part) =>
-          part.kind === "table" ? [part.table] : [],
-        );
+      : markdownTables(payload.unformattedText);
   let tableIndex = 0;
   return new WorkbookTextBlock({
     parts: parts.map((part) => {

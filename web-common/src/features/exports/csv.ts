@@ -1,6 +1,6 @@
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { markdownParts } from "./markdown-content";
+import { markdownTables } from "./markdown-content";
 import { mapChart } from "./xlsx/chart-mapping";
 import { customChartTable, jsonCell } from "./xlsx/collect";
 import type { ComponentExportPayload, ExportTable } from "./xlsx/payload";
@@ -36,8 +36,8 @@ export function componentCsv(
       break;
     case "text":
       // Tables written in markdown and in HTML both count, and each cell holds the text it shows.
-      tables = markdownParts(payload.unformattedText).flatMap((part) =>
-        part.kind === "table" ? [part.table.rows] : [],
+      tables = markdownTables(payload.unformattedText).map(
+        (table) => table.rows,
       );
       break;
     default:

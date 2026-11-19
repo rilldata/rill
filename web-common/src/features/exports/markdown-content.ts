@@ -56,6 +56,13 @@ export function markdownParts(markdown: string): MarkdownPart[] {
   return parts;
 }
 
+// The tables in a markdown text, in reading order.
+export function markdownTables(markdown: string): MarkdownTable[] {
+  return markdownParts(markdown).flatMap((part) =>
+    part.kind === "table" ? [part.table] : [],
+  );
+}
+
 // Elements whose content is not shown as text.
 const UNSHOWN = new Set(["STYLE", "SCRIPT", "TEMPLATE", "TITLE"]);
 
