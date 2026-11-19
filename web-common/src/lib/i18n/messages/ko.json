@@ -1462,6 +1462,7 @@
   "export_xlsx_description": "이 대시보드를 Excel 통합 문서로 내보냅니다.",
   "export_xlsx_failed": "Excel 내보내기에 실패했습니다",
   "export_xlsx_success": "대시보드가 Excel로 내보내졌습니다",
+  "export_xlsx_upload_failed": "내보내기({size})를 서버로 보내지 못했습니다. 다시 시도하거나, 기본 차트 또는 현재 탭만 내보내 크기를 줄이세요.",
   "field_list_add_fields": "{label} 필드 추가",
   "field_list_aria": "{label} 필드 목록",
   "field_list_dimensions": "차원",

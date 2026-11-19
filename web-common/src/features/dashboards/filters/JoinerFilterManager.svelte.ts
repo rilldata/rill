@@ -215,8 +215,8 @@ export class JoinerFilterManager {
     // yamlConfigProvider is only provided for the top level manager.
     // TODO: handle advanced filters
     if (yamlConfigProvider) {
-      Object.keys(yamlConfigProvider.requiredFilters)
-        .concat(Object.keys(yamlConfigProvider.pinnedFilters))
+      yamlConfigProvider.requiredFilters
+        .concat(yamlConfigProvider.pinnedFilters)
         .forEach((requiredFilter) => {
           const manager =
             DimensionFilterManager.createForMetricsViews(
@@ -282,8 +282,8 @@ export class JoinerFilterManager {
   public addRequiredAndPinnedFilters() {
     if (!this.yamlConfigProvider) return;
 
-    Object.keys(this.yamlConfigProvider.requiredFilters)
-      .concat(Object.keys(this.yamlConfigProvider.pinnedFilters))
+    this.yamlConfigProvider.requiredFilters
+      .concat(this.yamlConfigProvider.pinnedFilters)
       .forEach((name) => {
         if (this.managerLookup[name]) return;
 
@@ -317,14 +317,12 @@ export class JoinerFilterManager {
       dimensionManagers: this.managers.dimensionManagers.filter(
         (dfm) =>
           !!dfm.expr ||
-          this.yamlConfigProvider?.requiredFilters[dfm.name] ||
-          this.yamlConfigProvider?.pinnedFilters[dfm.name],
+          this.yamlConfigProvider?.isPinnedOrRequiredFilter(dfm.name),
       ),
       measureManagers: this.managers.measureManagers.filter(
         (mfm) =>
           !!mfm.expr ||
-          this.yamlConfigProvider?.requiredFilters[mfm.name] ||
-          this.yamlConfigProvider?.pinnedFilters[mfm.name],
+          this.yamlConfigProvider?.isPinnedOrRequiredFilter(mfm.name),
       ),
     };
   }

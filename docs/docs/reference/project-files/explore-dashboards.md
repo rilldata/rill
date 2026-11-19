@@ -266,9 +266,9 @@ _[object]_ - Configures the filters of the explore dashboard.
   ```
 
 
-  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
 
-  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
 
   - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and `defaults.filters` so a value is always set. Each name must be a dimension shown in the explore, other than a time dimension.
 

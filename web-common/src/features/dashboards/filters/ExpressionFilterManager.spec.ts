@@ -1301,30 +1301,83 @@ describe("setExprForMetricsView / setParamForMetricsView", () => {
 });
 
 describe("chip order", () => {
-  it("leads with required filters, then pinned, then the param filters by name", () => {
+  it("shows pinned chips in the order of the pinned list, then the param filters by name", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
-    yamlConfigProvider.pinnedFilters = { [AD_BIDS_PUBLISHER_DIMENSION]: true };
+    yamlConfigProvider.pinnedFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
-        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
       }),
     );
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
       AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_COUNTRY_DIMENSION,
+    ]);
+  });
+
+  it("leads with the required filters that are not pinned, in the order of the required list", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.requiredFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_COUNTRY_DIMENSION];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_COUNTRY_DIMENSION,
+    ]);
+  });
+
+  it("places a filter that is both required and pinned by the pinned list", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
+    yamlConfigProvider.pinnedFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+  });
+
+  it("moves a filter pinned in the editor after the pinned ones", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_PUBLISHER_DIMENSION];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
+      }),
+    );
+    yamlConfigProvider.togglePinnedFilter(AD_BIDS_COUNTRY_DIMENSION);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
       AD_BIDS_PUBLISHER_DIMENSION,
       AD_BIDS_COUNTRY_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
     ]);
   });
 
   it("gives required and pinned filters a chip without a value", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
-    yamlConfigProvider.pinnedFilters = { [AD_BIDS_IMPRESSIONS_MEASURE]: true };
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_IMPRESSIONS_MEASURE];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
@@ -1341,7 +1394,7 @@ describe("chip order", () => {
 
   it("skips required filters that no metrics view defines", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { not_a_field: true };
+    yamlConfigProvider.requiredFilters = ["not_a_field"];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
@@ -1699,7 +1752,7 @@ describe("clear", () => {
 
   it("keeps the required and pinned chips", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     filterManager.storeSync.setUrlParams(

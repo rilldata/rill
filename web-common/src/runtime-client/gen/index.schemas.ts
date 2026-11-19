@@ -1843,6 +1843,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  /** Display order of the tags set on dimensions and measures.
+Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure. */
+  tagOrder?: string[];
   parentDimensions?: V1FieldSelector;
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];

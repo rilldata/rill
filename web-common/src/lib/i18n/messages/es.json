@@ -1471,6 +1471,7 @@
   "export_xlsx_description": "Exporta este dashboard como libro de Excel.",
   "export_xlsx_failed": "No se pudo exportar el Excel",
   "export_xlsx_success": "Dashboard exportado como Excel",
+  "export_xlsx_upload_failed": "No se pudo enviar la exportación ({size}) al servidor. Vuelve a intentarlo o redúcela exportando gráficos nativos o solo la pestaña actual.",
   "field_list_add_fields": "Agregar campos de {label}",
   "field_list_aria": "Lista de campos de {label}",
   "field_list_dimensions": "DIMENSIONES",

@@ -116,7 +116,7 @@ filters:
     - auction_type
 ```
 
-Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`.
+Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`, unless you want to choose where it appears in the filter bar (see [Filter Order](#filter-order)).
 
 To limit a dimension filter to one value, list it under `single_select`. Combine it with `required` and a default value so the canvas always shows exactly one value, for example one advertiser at a time:
 
@@ -142,6 +142,20 @@ required filter "auction_type" is not a dimension or measure on any metrics view
 
 See the [`filters`](/reference/project-files/canvas-dashboards#filters) reference for the full list of properties.
 
+### Filter Order
+
+Pinned and required filters appear in the filter bar in the order you list them, so you can arrange them by hierarchy:
+
+```yaml
+filters:
+  pinned:
+    - region
+    - country
+    - city
+```
+
+Required filters that are not also listed under `pinned` come first, in the order of `required`. To show a required filter elsewhere, list it under `pinned` as well: its position in `pinned` then decides where it appears. Filters that viewers add come after the pinned and required ones, sorted by name. Measure filters always appear after dimension filters.
+
 ### Configure Pinned and Required Filters in the Editor
 
 When you edit a canvas in [Rill Developer](/developers/build/dashboards/canvas) or in Rill Cloud, each dimension and measure filter's dropdown shows two extra controls in its top-right corner:
@@ -151,7 +165,7 @@ When you edit a canvas in [Rill Developer](/developers/build/dashboards/canvas) 
 
 ![Pin and required controls in a canvas filter dropdown](/img/explore/canvas/pin-required-filter-toggles.png)
 
-These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values, time range and comparison setting as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults).
+These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values, time range and comparison setting as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults). Pinning a filter in the editor adds it to the end of `filters.pinned`; to change the order, edit the list in the file.
 
 ### What Viewers See
 

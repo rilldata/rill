@@ -2500,6 +2500,22 @@ definitions:
               required:
                 - name
 
+          tag_order:
+            type: array
+            description: |
+              Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+              Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+              Each tag must be set on at least one dimension or measure.
+              A derived metrics view uses the parent's order unless it sets its own.
+
+              ```yaml
+              tag_order:
+                - Revenue
+                - Engagement
+                - Geography
+              ```
+            items:
+              type: string
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
             $ref: '#/definitions/field_selector_properties'
@@ -2739,12 +2755,12 @@ definitions:
                 description: Toggles filtering functionality for the canvas dashboard.
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
                 items:
                   type: string
               single_select:
@@ -2986,12 +3002,12 @@ definitions:
             properties:
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
                 items:
                   type: string
               single_select:
@@ -4956,12 +4972,12 @@ definitions:
             properties:
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
                 items:
                   type: string
               single_select:

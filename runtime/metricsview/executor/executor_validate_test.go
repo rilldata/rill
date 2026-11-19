@@ -604,3 +604,61 @@ func TestValidateMetricsViewExactExpression(t *testing.T) {
 		require.ErrorContains(t, res.MeasureErrs[0].Err, "exact_expression")
 	})
 }
+
+func TestValidateAndNormalizeMetricsViewTagOrder(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"model.sql": `SELECT 'DK' AS country, 1 AS val`,
+		`parent.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: country
+  tags: [geo]
+measures:
+- name: total
+  expression: count(*)
+  tags: [core, revenue]
+- name: average
+  expression: avg(val)
+  tags: [usage]
+tag_order: [usage, geo, revenue]
+`,
+		// Inherits the parent's tag order without "usage", which none of its measures have.
+		`derived_inherited.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+parent_measures: [total]
+`,
+		`derived_own.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+tag_order: [core]
+`,
+		`fail_unknown_tag.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+parent_measures: [total]
+tag_order: [usage]
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 1, 0)
+
+	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "parent")
+	require.Equal(t, []string{"usage", "geo", "revenue"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "derived_inherited")
+	require.Equal(t, []string{"geo", "revenue"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "derived_own")
+	require.Equal(t, []string{"core"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "fail_unknown_tag")
+	require.Contains(t, mv.Meta.ReconcileError, `tag "usage" referenced in 'tag_order' is not set on any dimension or measure`)
+}
