@@ -1138,10 +1138,14 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 }
 
 // buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
-// It combines the provided where expression with the security policy's filters.
+// It combines the table_filter, the provided where expression, and the security policy's filters.
 // It allows the input `where` to be nil, and returns nil if there are no conditions to apply.
 func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
+
+	if a.MetricsView.TableFilter != "" {
+		res = res.And(a.MetricsView.TableFilter, nil)
+	}
 
 	expr, args, err := a.SQLForExpression(where, nil, false, true)
 	if err != nil {

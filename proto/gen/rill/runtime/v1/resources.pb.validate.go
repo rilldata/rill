@@ -3230,6 +3230,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Model
 
+	// no validation rules for TableFilter
+
 	// no validation rules for DisplayName
 
 	// no validation rules for Description

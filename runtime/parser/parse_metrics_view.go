@@ -31,6 +31,7 @@ type MetricsViewYAML struct {
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
 	Table             string           `yaml:"table"`
+	TableFilter       string           `yaml:"table_filter"`
 	TimeDimension     string           `yaml:"timeseries"`
 	Watermark         string           `yaml:"watermark"`
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
@@ -309,6 +310,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if err := validateDataTimeRange(tmp.DataTimeRange); err != nil {
 			return fmt.Errorf(`invalid "data_time_range": %w`, err)
 		}
+	}
+
+	tmp.TableFilter = strings.TrimSpace(tmp.TableFilter)
+	if tmp.TableFilter != "" && strings.Contains(tmp.TableFilter, "{{") {
+		return errors.New(`invalid "table_filter": template expressions are not supported; use "security.row_filter" for user-dependent filtering`)
 	}
 
 	for _, tz := range tmp.AvailableTimeZones {
@@ -894,6 +900,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.DatabaseSchema = tmp.DatabaseSchema
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
+	spec.TableFilter = tmp.TableFilter
 	spec.DisplayName = tmp.DisplayName
 	if spec.DisplayName == "" {
 		spec.DisplayName = ToDisplayName(node.Name)

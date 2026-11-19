@@ -664,3 +664,21 @@ func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
 		require.Equal(t, "base_table", e.LatestQueryTable())
 	}
 }
+
+func TestBuildSyntheticSpec_ClearsTableFilter(t *testing.T) {
+	original := &runtimev1.MetricsViewSpec{
+		Table:       "base_table",
+		Model:       "base_model",
+		TableFilter: "snapshot = 'latest'",
+		Rollups: []*runtimev1.MetricsViewSpec_Rollup{
+			{Table: "daily_rollup", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY},
+		},
+	}
+
+	synth := buildSyntheticSpec(original, original.Rollups[0])
+	require.Equal(t, "daily_rollup", synth.Table)
+	require.Empty(t, synth.Model)
+	require.Empty(t, synth.TableFilter)
+	require.Nil(t, synth.Rollups)
+	require.Equal(t, "snapshot = 'latest'", original.TableFilter)
+}

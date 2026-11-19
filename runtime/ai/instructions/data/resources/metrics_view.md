@@ -36,6 +36,8 @@ model: my_external_table # Note: Doesn't support dot syntax for database/schema 
 
 **Note**: The `table:` property is a legacy alias for referencing external tables. Always prefer `model:` in new metrics views.
 
+To restrict every query, timestamp probe, summary, and watermark read against the underlying table to a static row subset (such as `datetime = 'latest'` on a snapshot table), set top-level `table_filter:`. It accepts raw static SQL only (no `{{ ... }}` templates) and always applies, including in local development.
+
 ### Timeseries
 
 The `timeseries:` property identifies the timestamp column used for time-based filtering and line charts. This column must be a time/timestamp type in the underlying table.
@@ -229,7 +231,7 @@ explore:
 - `smallest_time_grain:`, if set, must be equal to or coarser than the parent's (e.g. parent `hour`, child `day` is fine; child `minute` is not).
 - The parent must be a valid metrics view in the project. If the parent has an error, fix the parent first.
 
-**Properties you can override**: `display_name`, `description`, `timeseries`, `smallest_time_grain`, `first_day_of_week`, `first_month_of_year`, `ai_instructions`. If omitted, `timeseries` and the time settings are inherited from the parent; `display_name` and `description` are not inherited.
+**Properties you can override**: `display_name`, `description`, `timeseries`, `smallest_time_grain`, `first_day_of_week`, `first_month_of_year`, `ai_instructions`, `table_filter`. If omitted, `timeseries`, time settings, and `table_filter` are inherited from the parent (`table_filter` on a child is `AND`ed with the parent's `table_filter`); `display_name` and `description` are not inherited.
 
 **Security**: the parent's security rules are always inherited. If the derived view sets its own `security.access`, it replaces the parent's `access` rule; all other parent rules (`row_filter`, `exclude`, etc.) still apply, and any rules on the derived view are added on top. This makes derived views a good fit for narrowing access for a particular audience:
 
@@ -354,7 +356,7 @@ The expression syntax should be a DuckDB expression, which will be evaluated in 
 
 ### Row-level security
 
-The `row_filter:` property restricts which rows a user can see. It's a SQL expression that references user attributes via templating:
+The `row_filter:` property restricts which rows a user can see. It's a SQL expression that references user attributes via templating (for static, unconditional table-level filtering such as partition pruning that must apply even in local development and timestamp probes, use top-level `table_filter:` instead):
 
 ```yaml
 security:

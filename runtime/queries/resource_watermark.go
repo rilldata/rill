@@ -107,6 +107,9 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		// No watermark available
 		return nil
 	}
+	if spec.TableFilter != "" {
+		sql = fmt.Sprintf("%s WHERE (%s)", sql, spec.TableFilter)
+	}
 
 	res, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
@@ -118,7 +121,7 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 	}
 	defer res.Close()
 
-	var t time.Time
+	var t *time.Time
 	for res.Next() {
 		if err := res.Scan(&t); err != nil {
 			return err
@@ -129,12 +132,12 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	if !t.IsZero() {
+	if t != nil && !t.IsZero() {
 		// Hacky workaround for the following issue: the watermark is used as the *exclusive* upper bound for time ranges.
 		// We need to add a small delta to ensure the row with the watermark is included in the result.
-		t = t.Add(time.Second)
+		wm := t.Add(time.Second)
 
-		q.Result = &t
+		q.Result = &wm
 	}
 
 	return nil

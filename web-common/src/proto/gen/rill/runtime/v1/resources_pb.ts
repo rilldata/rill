@@ -1431,6 +1431,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   model = "";
 
   /**
+   * Optional static SQL WHERE predicate unconditionally applied to every query, timestamp probe, summary, and watermark read against the underlying table.
+   * Unlike security.row_filter, table_filter does not accept template expressions and is never bypassed by SkipChecks.
+   *
+   * @generated from field: string table_filter = 39;
+   */
+  tableFilter = "";
+
+  /**
    * User-facing name
    *
    * @generated from field: string display_name = 3;
@@ -1611,6 +1619,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 39, name: "table_filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },

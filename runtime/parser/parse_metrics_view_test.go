@@ -1460,3 +1460,76 @@ measures:
 	require.Equal(t, "/metrics_views/mv2.yaml", p.Errors[0].FilePath)
 	require.Contains(t, p.Errors[0].Message, `can only be listed in "time_grains"`)
 }
+
+func TestParseMetricsViewTableFilter(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id, 'latest' AS snapshot, 'APAC' AS region, '2025-01-01T00:00:00Z'::TIMESTAMP AS ts`,
+		`metrics_views/base.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+table_filter: "  snapshot = 'latest'  "
+dimensions:
+- column: id
+- column: region
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/whitespace.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+table_filter: "   "
+dimensions:
+- column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/child.yaml`: `
+type: metrics_view
+version: 1
+parent: base
+table_filter: "region = 'APAC'"
+parent_dimensions: '*'
+parent_measures: '*'
+`,
+		`metrics_views/templated.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+table_filter: "region = '{{ .user.region }}'"
+dimensions:
+- column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+
+	base := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "base"}]
+	require.NotNil(t, base)
+	require.Equal(t, "snapshot = 'latest'", base.MetricsViewSpec.TableFilter)
+
+	ws := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "whitespace"}]
+	require.NotNil(t, ws)
+	require.Equal(t, "", ws.MetricsViewSpec.TableFilter)
+
+	child := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "child"}]
+	require.NotNil(t, child)
+	require.Equal(t, "region = 'APAC'", child.MetricsViewSpec.TableFilter)
+
+	require.Len(t, p.Errors, 1)
+	require.Equal(t, "/metrics_views/templated.yaml", p.Errors[0].FilePath)
+	require.Contains(t, p.Errors[0].Message, "table_filter")
+	require.Contains(t, p.Errors[0].Message, "security.row_filter")
+}

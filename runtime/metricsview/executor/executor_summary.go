@@ -168,6 +168,9 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			args = append(args, maxTime.Add(-SummarySampleInterval))
 		}
 	}
+	if e.metricsView.TableFilter != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("(%s)", e.metricsView.TableFilter))
+	}
 	// Note the sample interval is derived from the unfiltered max timestamp,
 	// so if the user's accessible rows are all older than the sample interval, the summary values will be null.
 	if securityFilter != "" {

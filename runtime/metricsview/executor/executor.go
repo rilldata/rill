@@ -201,7 +201,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 			return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range": %w`, err)
 		}
 	} else {
-		res, err = e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
+		res, err = e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression, mv.TableFilter)
 		if err != nil {
 			return metricsview.TimestampsResult{}, err
 		}
@@ -221,7 +221,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 				res.Rollups[rollup.Table] = rts
 				continue
 			}
-			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "")
+			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "", "")
 			if err != nil {
 				return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve timestamps for rollup %q: %w", rollup.Table, err)
 			}

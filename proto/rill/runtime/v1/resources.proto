@@ -345,6 +345,9 @@ message MetricsViewSpec {
   string table = 2;
   // Name of the model the metrics view is based on. Either table or model should be set.
   string model = 24;
+  // Optional static SQL WHERE predicate unconditionally applied to every query, timestamp probe, summary, and watermark read against the underlying table.
+  // Unlike security.row_filter, table_filter does not accept template expressions and is never bypassed by SkipChecks.
+  string table_filter = 39;
   // User-facing name
   string display_name = 3;
   // User-facing description

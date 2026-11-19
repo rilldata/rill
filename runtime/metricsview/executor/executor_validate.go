@@ -103,6 +103,18 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("database cannot be set for clickHouse, set database_schema instead"))
 	}
 
+	if mv.TableFilter != "" {
+		escapeTable := e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)
+		err = e.olap.Exec(ctx, &drivers.Statement{
+			Query:           fmt.Sprintf("SELECT 1 FROM %s WHERE (%s)", escapeTable, mv.TableFilter),
+			DryRun:          true,
+			QueryAttributes: e.queryAttributes,
+		})
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid table_filter: %w", err))
+		}
+	}
+
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f
@@ -407,6 +419,13 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	e.metricsView.DatabaseSchema = parent.DatabaseSchema
 	e.metricsView.Table = parent.Table
 	e.metricsView.Model = parent.Model
+	if parent.TableFilter != "" {
+		if e.metricsView.TableFilter == "" {
+			e.metricsView.TableFilter = parent.TableFilter
+		} else {
+			e.metricsView.TableFilter = fmt.Sprintf("(%s) AND (%s)", parent.TableFilter, e.metricsView.TableFilter)
+		}
+	}
 	e.metricsView.CacheEnabled = parent.CacheEnabled
 	e.metricsView.CacheKeySql = parent.CacheKeySql
 	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds

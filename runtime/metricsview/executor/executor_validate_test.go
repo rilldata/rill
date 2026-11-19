@@ -604,3 +604,125 @@ func TestValidateMetricsViewExactExpression(t *testing.T) {
 		require.ErrorContains(t, res.MeasureErrs[0].Err, "exact_expression")
 	})
 }
+
+func TestValidateMetricsViewTableFilter(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	newMV := func(tableFilter string) *runtimev1.MetricsViewSpec {
+		return &runtimev1.MetricsViewSpec{
+			Connector:     "duckdb",
+			Table:         "ad_bids",
+			DisplayName:   "Ad Bids",
+			TimeDimension: "timestamp",
+			TableFilter:   tableFilter,
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: []*runtimev1.MetricsViewSpec_Measure{
+				{Name: "records", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			},
+		}
+	}
+
+	t.Run("valid filter on unexposed column", func(t *testing.T) {
+		mv := newMV("domain IS NOT NULL")
+		e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+		require.NoError(t, err)
+		defer e.Close()
+
+		res, err := e.ValidateAndNormalizeMetricsView(context.Background())
+		require.NoError(t, err)
+		require.True(t, res.IsZero(), "unexpected validation error: %v", res.Error())
+	})
+
+	t.Run("invalid column fails validation", func(t *testing.T) {
+		mv := newMV("no_such_col = 'latest'")
+		e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+		require.NoError(t, err)
+		defer e.Close()
+
+		res, err := e.ValidateAndNormalizeMetricsView(context.Background())
+		require.NoError(t, err)
+		require.NotEmpty(t, res.OtherErrs)
+		require.ErrorContains(t, res.Error(), "table_filter")
+	})
+
+	t.Run("invalid syntax fails validation", func(t *testing.T) {
+		mv := newMV("publisher = 'Google' AND (")
+		e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+		require.NoError(t, err)
+		defer e.Close()
+
+		res, err := e.ValidateAndNormalizeMetricsView(context.Background())
+		require.NoError(t, err)
+		require.NotEmpty(t, res.OtherErrs)
+		require.ErrorContains(t, res.Error(), "table_filter")
+	})
+
+	t.Run("derived view inherits and combines parent table_filter", func(t *testing.T) {
+		rt2, inst2 := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+			Files: map[string]string{
+				"rill.yaml": "",
+				"models/m1.sql": `
+SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS ts, 'latest' AS snapshot, 'APAC' AS region, 1 AS val
+UNION ALL
+SELECT '2025-01-02T00:00:00Z'::TIMESTAMP AS ts, 'old' AS snapshot, 'EMEA' AS region, 2 AS val
+`,
+				"metrics/parent.yaml": `
+version: 1
+type: metrics_view
+model: m1
+timeseries: ts
+table_filter: "snapshot = 'latest'"
+dimensions:
+  - column: region
+measures:
+  - name: total
+    expression: SUM(val)
+`,
+				"metrics/child_inherit.yaml": `
+version: 1
+type: metrics_view
+parent: parent
+parent_dimensions: '*'
+parent_measures: '*'
+`,
+				"metrics/child_narrow.yaml": `
+version: 1
+type: metrics_view
+parent: parent
+table_filter: "region = 'APAC'"
+parent_dimensions: '*'
+parent_measures: '*'
+`,
+				"metrics/child_invalid.yaml": `
+version: 1
+type: metrics_view
+parent: parent
+table_filter: "missing_col = 'APAC'"
+parent_dimensions: '*'
+parent_measures: '*'
+`,
+			},
+		})
+		testruntime.RequireReconcileState(t, rt2, inst2, 6, 1, 0)
+
+		ctrl, err := rt2.Controller(context.Background(), inst2)
+		require.NoError(t, err)
+
+		inheritRes, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "child_inherit"}, false)
+		require.NoError(t, err)
+		require.NotNil(t, inheritRes.GetMetricsView().State.ValidSpec)
+		require.Equal(t, "snapshot = 'latest'", inheritRes.GetMetricsView().State.ValidSpec.TableFilter)
+
+		narrowRes, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "child_narrow"}, false)
+		require.NoError(t, err)
+		require.NotNil(t, narrowRes.GetMetricsView().State.ValidSpec)
+		require.Equal(t, "(snapshot = 'latest') AND (region = 'APAC')", narrowRes.GetMetricsView().State.ValidSpec.TableFilter)
+
+		invalidRes, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "child_invalid"}, false)
+		require.NoError(t, err)
+		require.Nil(t, invalidRes.GetMetricsView().State.ValidSpec)
+		require.Contains(t, invalidRes.Meta.ReconcileError, "table_filter")
+	})
+}

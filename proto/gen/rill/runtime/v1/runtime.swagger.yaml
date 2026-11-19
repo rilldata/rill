@@ -7339,6 +7339,11 @@ definitions:
       model:
         type: string
         description: Name of the model the metrics view is based on. Either table or model should be set.
+      tableFilter:
+        type: string
+        description: |-
+          Optional static SQL WHERE predicate unconditionally applied to every query, timestamp probe, summary, and watermark read against the underlying table.
+          Unlike security.row_filter, table_filter does not accept template expressions and is never bypassed by SkipChecks.
       displayName:
         type: string
         title: User-facing name

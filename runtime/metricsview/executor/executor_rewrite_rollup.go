@@ -465,6 +465,7 @@ func buildSyntheticSpec(original *runtimev1.MetricsViewSpec, rollup *runtimev1.M
 	// Point to rollup table (connector stays the same as base)
 	synth.Table = rollup.Table
 	synth.Model = ""
+	synth.TableFilter = ""
 	if rollup.Database != "" {
 		synth.Database = rollup.Database
 	}

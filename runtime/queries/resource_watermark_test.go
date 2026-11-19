@@ -77,3 +77,79 @@ measures:
 	require.NoError(t, err)
 	require.Equal(t, ts.Add(-24*time.Hour), *q.Result)
 }
+
+func TestResourceWatermark_MetricsViewTableFilter(t *testing.T) {
+	oldTS, err := time.Parse(time.RFC3339, "2022-01-10T00:00:00Z")
+	require.NoError(t, err)
+	latestTS, err := time.Parse(time.RFC3339, "2022-01-05T00:00:00Z")
+	require.NoError(t, err)
+
+	rt, instanceID := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"/models/snapshots.sql": fmt.Sprintf(`
+SELECT '%s'::TIMESTAMP AS time, 'old' AS snapshot
+UNION ALL
+SELECT '%s'::TIMESTAMP AS time, 'latest' AS snapshot
+`, oldTS.Add(-time.Second).Format(time.RFC3339), latestTS.Add(-time.Second).Format(time.RFC3339)),
+		"/metrics/filtered.yaml": `
+version: 1
+type: metrics_view
+model: snapshots
+timeseries: time
+table_filter: "snapshot = 'latest'"
+measures:
+- name: a
+  expression: count(*)
+`,
+		"/metrics/filtered_expr.yaml": `
+version: 1
+type: metrics_view
+model: snapshots
+timeseries: time
+table_filter: "snapshot = 'latest'"
+watermark: max(time) - interval '1 day'
+measures:
+- name: a
+  expression: count(*)
+`,
+		"/metrics/filtered_empty.yaml": `
+version: 1
+type: metrics_view
+model: snapshots
+timeseries: time
+table_filter: "snapshot = 'nonexistent'"
+measures:
+- name: a
+  expression: count(*)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	q := &queries.ResourceWatermark{
+		ResourceKind: runtime.ResourceKindMetricsView,
+		ResourceName: "filtered",
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotNil(t, q.Result)
+	require.Equal(t, latestTS, *q.Result)
+
+	q = &queries.ResourceWatermark{
+		ResourceKind: runtime.ResourceKindMetricsView,
+		ResourceName: "filtered_expr",
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotNil(t, q.Result)
+	require.Equal(t, latestTS.Add(-24*time.Hour), *q.Result)
+
+	// Zero-row table_filter returns SQL NULL from MAX(...) and must resolve to nil without error.
+	q = &queries.ResourceWatermark{
+		ResourceKind: runtime.ResourceKindMetricsView,
+		ResourceName: "filtered_empty",
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Nil(t, q.Result)
+}

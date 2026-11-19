@@ -64,6 +64,10 @@ _[string]_ - A SQL expression that tells us the max timestamp that the measures 
 
 _[string]_ - Optional [time range syntax](/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
+### `table_filter`
+
+_[string]_ - Optional static SQL `WHERE` predicate applied unconditionally to every query, timestamp probe, dimension summary, and watermark read against the underlying table (e.g. `datetime = 'latest'`). Unlike `security.row_filter`, `table_filter` does not accept template expressions, is never bypassed in local development or unauthenticated/admin contexts, does not require a `security` block, and is validated during reconciliation. Derived metrics views inherit their parent's `table_filter` and `AND` any child `table_filter` on top. Pre-aggregated rollup tables do not inherit `table_filter`.
+
 ### `smallest_time_grain`
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
