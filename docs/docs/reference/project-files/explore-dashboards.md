@@ -212,6 +212,7 @@ _[object]_ - Defines the defaults YAML struct.
     time_range: P1M
     comparison_mode: dimension #time, none
     comparison_dimension: filename
+    filters: "country = 'US' AND device IN ('mobile', 'tablet')"
   ```
 
 
@@ -248,6 +249,24 @@ _[object]_ - Defines the defaults YAML struct.
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)
 
   - **`comparison_dimension`** - _[string]_ - For dimension mode, specify the comparison dimension by name.
+
+  - **`filters`** - _[string]_ - Default filter applied when a user initially loads the dashboard, written as a Metrics SQL `WHERE` expression, for example `country = 'US' AND device IN ('mobile', 'tablet')`. It can only reference dimensions and measures shown in the explore. An explore has a single metrics view, so this is one expression and not a map keyed by metrics view as on a canvas dashboard.
+
+### `filters`
+
+_[object]_ - Configures the filters of the explore dashboard.
+  ```yaml
+  filters:
+    pinned:
+      - device
+    required:
+      - advertiser
+  ```
+
+
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
 
 ### `embeds`
 

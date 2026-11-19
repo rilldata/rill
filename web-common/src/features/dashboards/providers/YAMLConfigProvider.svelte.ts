@@ -11,10 +11,12 @@ type YAMLConfigProviderEvents = {
  */
 export class YAMLConfigProvider {
   public defaultFilters = $state<Record<string, V1Expression | undefined>>({});
-  public pinnedFilters = $state<Record<string, boolean>>({});
-  public specPinnedFilters = $state<Record<string, boolean>>({});
-  public requiredFilters = $state<Record<string, boolean>>({});
-  public specRequiredFilters = $state<Record<string, boolean>>({});
+  // Lists, not sets: the filter bar shows the chips in the order the YAML lists them.
+  // Filters toggled in the editor are added at the end. The `spec` lists hold what the file holds.
+  public pinnedFilters = $state<string[]>([]);
+  public specPinnedFilters = $state<string[]>([]);
+  public requiredFilters = $state<string[]>([]);
+  public specRequiredFilters = $state<string[]>([]);
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
@@ -24,24 +26,35 @@ export class YAMLConfigProvider {
     this.events,
   ) as typeof this.events.on;
 
+  // The config last applied by `update`.
+  private appliedConfig: string | undefined = undefined;
+
+  /**
+   * Applies the filter config of a dashboard's spec.
+   * This resets the pin and required toggles made in the editor to what the spec holds,
+   * so a config that is already applied is skipped:
+   * the spec is fetched again on every edit to the dashboard's file, and unsaved toggles must survive unrelated edits.
+   */
   public update(
     defaultFilters: Record<string, V1Expression | undefined>,
     pinnedFilters: string[],
     requiredFilters: string[],
   ) {
+    const config = JSON.stringify([
+      defaultFilters,
+      pinnedFilters,
+      requiredFilters,
+    ]);
+    if (config === this.appliedConfig) return;
+    this.appliedConfig = config;
+
     this.defaultFilters = defaultFilters;
 
-    const pinnedFiltersRec = Object.fromEntries(
-      pinnedFilters.map((filter) => [filter, true]),
-    );
-    this.pinnedFilters = { ...pinnedFiltersRec };
-    this.specPinnedFilters = { ...pinnedFiltersRec };
+    this.pinnedFilters = [...new Set(pinnedFilters)];
+    this.specPinnedFilters = [...this.pinnedFilters];
 
-    const requiredFiltersRec = Object.fromEntries(
-      requiredFilters.map((filter) => [filter, true]),
-    );
-    this.requiredFilters = { ...requiredFiltersRec };
-    this.specRequiredFilters = { ...requiredFiltersRec };
+    this.requiredFilters = [...new Set(requiredFilters)];
+    this.specRequiredFilters = [...this.requiredFilters];
 
     this.events.emit("update");
   }
@@ -50,23 +63,30 @@ export class YAMLConfigProvider {
     this.editable = newEditable;
   }
 
-  public togglePinnedFilter(filter: string) {
-    if (!this.pinnedFilters[filter]) {
-      this.pinnedFilters[filter] = true;
-    } else {
-      delete this.pinnedFilters[filter];
-    }
+  public isPinnedFilter(name: string) {
+    return this.pinnedFilters.includes(name);
   }
 
-  public toggleRequiredFilter(filter: string) {
-    if (!this.requiredFilters[filter]) {
-      this.requiredFilters[filter] = true;
-    } else {
-      delete this.requiredFilters[filter];
-    }
+  public isRequiredFilter(name: string) {
+    return this.requiredFilters.includes(name);
   }
 
   public isPinnedOrRequiredFilter(name: string) {
-    return Boolean(this.pinnedFilters[name] || this.requiredFilters[name]);
+    return this.isPinnedFilter(name) || this.isRequiredFilter(name);
   }
+
+  public togglePinnedFilter(filter: string) {
+    this.pinnedFilters = toggle(this.pinnedFilters, filter);
+  }
+
+  public toggleRequiredFilter(filter: string) {
+    this.requiredFilters = toggle(this.requiredFilters, filter);
+  }
+}
+
+// Adds the name at the end of the list, or removes it.
+function toggle(names: string[], name: string) {
+  return names.includes(name)
+    ? names.filter((n) => n !== name)
+    : [...names, name];
 }

@@ -68,6 +68,8 @@ type ModelExecuteOptions struct {
 	OutputProperties map[string]any
 	// Priority is the priority of the model execution.
 	Priority int
+	// QueryAttributes are passed to the input connector's queries, if supported.
+	QueryAttributes map[string]string
 	// Incremental is true if the model is an incremental model.
 	Incremental bool
 	// IncrementalRun is true if the execution is an incremental run.

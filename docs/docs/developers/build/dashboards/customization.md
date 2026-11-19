@@ -69,6 +69,26 @@ defaults:
 
 ```
 
+### Default Filters
+
+A default filter is applied when a viewer first opens the dashboard, and again when they go back to its default view. Set it under `defaults.filters` as a [Metrics SQL](/developers/build/metrics-view/metrics-sql) filter expression, written the way it would follow `WHERE`:
+
+```yaml
+defaults:
+  filters: "country = 'US' AND device IN ('mobile', 'tablet')"
+```
+
+The expression can only reference dimensions and measures shown in the dashboard. Viewers can change or clear the default filter. A shared link or [bookmark](/guide/dashboards/bookmarks) opens the dashboard in the state it was saved with, including its filters, so the default filter is not applied on top of it.
+
+An explore dashboard has a single metrics view, so `defaults.filters` is one expression. On a [canvas dashboard](/guide/dashboards/canvas), `defaults.filters` is instead a map with an expression per metrics view.
+
+To set a default [measure filter](/guide/dashboards/filters#filter-by-measures), select the dimension values to keep with a subquery. This example keeps the publishers with more than 1,000 in total spend:
+
+```yaml
+defaults:
+  filters: "publisher IN (SELECT publisher FROM metrics_view HAVING total_spend > 1000)"
+```
+
 
 
 ## Time Ranges
@@ -103,6 +123,67 @@ time_zones:
   - Asia/Tokyo
   - Australia/Sydney  
 ```
+
+## Pinned and Required Filters
+
+You can keep specific filters in the filter bar, and hold the dashboard back until the viewer picks a value for them. This is useful when a dashboard only makes sense for one customer, account or region at a time.
+
+| Setting | Effect for viewers |
+|---------|--------------------|
+| **Pinned** | The filter always appears in the filter bar, even when it has no value. Viewers can change its value but cannot remove the filter. |
+| **Required** | The dashboard does not load until the filter has a value. A required filter is always pinned. |
+
+List dimension or measure names under `filters`:
+
+```yaml
+filters:
+  pinned:
+    - device
+  required:
+    - advertiser
+```
+
+Each name must be a measure or a dimension shown in the dashboard, other than a time dimension. If it is not, the dashboard fails to reconcile with an error like:
+
+```
+required filter "advertiser" is not a dimension or measure in this explore
+```
+
+Until every required filter has a value, the leaderboards, charts, tables and pivot are replaced by a **Select a value to continue** message that lists the missing filters. **Clear filters** removes the values but keeps the pinned and required filters in the filter bar, so clearing a required filter blocks the dashboard again. Alerts cannot be created from the dashboard while a required filter has no value.
+
+To open the dashboard with a value already selected, combine a required filter with a [default filter](#default-filters):
+
+```yaml
+filters:
+  required:
+    - advertiser
+defaults:
+  filters: "advertiser = 'Acme'"
+```
+
+The same `filters` and `defaults.filters` properties work in the `explore` block of a [metrics view](/reference/project-files/metrics-views).
+
+### Filter Order
+
+Pinned and required filters appear in the filter bar in the order you list them, so you can arrange them by hierarchy:
+
+```yaml
+filters:
+  pinned:
+    - region
+    - country
+    - city
+```
+
+Required filters that are not also listed under `pinned` come first, in the order of `required`. To show a required filter elsewhere, list it under `pinned` as well: its position in `pinned` then decides where it appears. Filters that viewers add come after the pinned and required ones, sorted by name. Measure filters always appear after dimension filters.
+
+### Configure Filters in the Editor
+
+When you edit an explore dashboard in Rill Developer, each filter's dropdown shows two extra controls in its top-right corner: the **asterisk** marks the filter as required, and the **pin** icon pins it. These controls change only your current editing session. To write them to the file, click **Save dashboard state as default** in the editing sidebar. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and saves the current filter, time range, comparison mode and visible fields as the dashboard's `defaults`. Pinning a filter in the editor adds it to the end of `filters.pinned`; to change the order, edit the list in the file.
+
+:::note Required filters are not access control
+Pinned and required filters shape what viewers see in the dashboard. They do not restrict the data a viewer can query, for example through a report or the API. To limit which rows a user can access, use [security policies](/developers/build/metrics-view/security).
+:::
 
 ## Changing Themes & Colors
 

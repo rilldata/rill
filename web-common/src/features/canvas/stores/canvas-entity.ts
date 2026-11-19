@@ -23,7 +23,6 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
-  getQueryServiceConvertExpressionToMetricsSQLQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -60,8 +59,11 @@ import {
 } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import {
+  convertExpressionToMetricsSQL,
+  setPinnedAndRequiredFilters,
+} from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
@@ -366,12 +368,8 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
-    );
-    const requiredFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.requiredFilters,
-    );
+    const { pinnedFilters, requiredFilters } =
+      this.dashboardProvider.yamlConfigProvider;
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
@@ -388,32 +386,18 @@ export class CanvasEntity {
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
     );
-    const promises = Object.values(
-      this.expressionFilterManager.topLevelJoiner.expr,
-    ).map((expr) => {
-      // TODO: our API type is proto but there is a fromJSON underneath.
-      //       Once that is fixed, we need to call toExpressionProto here.
-      const protoExpr = expr as any;
-      return queryClient.fetchQuery({
-        queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
-          this.instanceId,
-          { expression: protoExpr },
-        ),
-        queryFn: () =>
-          queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: protoExpr,
-          }),
-      });
-    });
-
-    const responses = await Promise.all(promises);
+    const filterSQLs = await Promise.all(
+      Object.values(this.expressionFilterManager.topLevelJoiner.expr).map(
+        (expr) => convertExpressionToMetricsSQL(this.client, expr),
+      ),
+    );
 
     const filterMap = new YAMLMap();
-    responses.forEach((response, index) => {
-      if (!response.sql) return;
+    filterSQLs.forEach((sql, index) => {
+      if (!sql) return;
       filterMap.add({
         key: filterNames[index],
-        value: response.sql,
+        value: sql,
       });
     });
 
@@ -424,19 +408,7 @@ export class CanvasEntity {
     // synchronously to keep the read-modify-write atomic.
     const yaml = get(this.parsedContent);
 
-    setOrDeleteFilterList(yaml, "pinned", pinnedNames);
-    setOrDeleteFilterList(yaml, "required", requiredNames);
-
-    if (
-      yaml.get("filters") instanceof YAMLMap &&
-      (yaml.get("filters") as YAMLMap).items.length === 0
-    ) {
-      try {
-        yaml.deleteIn(["filters"]);
-      } catch {
-        // no-op
-      }
-    }
+    setPinnedAndRequiredFilters(yaml, pinnedNames, requiredNames);
 
     if (timeRange) {
       yaml.setIn(["defaults", "time_range"], timeRange);
@@ -1198,22 +1170,6 @@ function getDefaults(
   );
 
   return defaultSearchParams;
-}
-
-function setOrDeleteFilterList(
-  yaml: ReturnType<typeof parseDocument>,
-  key: "pinned" | "required",
-  names: string[],
-) {
-  if (names.length > 0) {
-    yaml.setIn(["filters", key], names);
-  } else {
-    try {
-      yaml.deleteIn(["filters", key]);
-    } catch {
-      // no-op
-    }
-  }
 }
 
 const customKeySort = (

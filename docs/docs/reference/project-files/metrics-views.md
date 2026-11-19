@@ -220,6 +220,21 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
 
+### `tag_order`
+
+_[array of string]_ - Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+Each tag must be set on at least one dimension or measure.
+A derived metrics view uses the parent's order unless it sets its own.
+
+```yaml
+tag_order:
+  - Revenue
+  - Engagement
+  - Geography
+```
+
+
 ### `parent_dimensions`
 
 _[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view.
@@ -552,6 +567,14 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
     - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension).
 
     - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
+
+    - **`filters`** - _[string]_ - Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view.
+
+  - **`filters`** - _[object]_ - Configures the filters of the explore view.
+
+    - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
 
   - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
 

@@ -1013,7 +1013,14 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
+  /** Preset UI state to show by default.
+Its `where` holds the default filter, parsed from `defaults.filters`. */
   defaultPreset?: V1ExplorePreset;
+  /** Dimension or measure names whose filter chip is always shown in the filter bar. */
+  pinnedFilters?: string[];
+  /** Dimension or measure names that must have a filter value before the explore renders.
+Required filters are implicitly pinned. */
+  requiredFilters?: string[];
   /** If true, the pivot tab will be hidden when the explore is embedded. */
   embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
@@ -1830,6 +1837,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  /** Display order of the tags set on dimensions and measures.
+Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure. */
+  tagOrder?: string[];
   parentDimensions?: V1FieldSelector;
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];

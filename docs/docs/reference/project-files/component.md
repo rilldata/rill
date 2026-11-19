@@ -444,6 +444,8 @@ _[object]_ - (no description)
 
   - **`row_limit`** - _[string]_ - Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
 
+  - **`click_to_filter`** - _[boolean]_ - Whether clicking a cell or header filters the whole canvas by its values. Set to false to keep the table read-only, so selecting a row does not filter the other components. Defaults to true.
+
   - **`fit_to_width`** - _[boolean]_ - When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
 
   - **`wrap`** - _[boolean]_ - Wrap the text of dimension cells over `wrap_lines` lines instead of truncating it. Defaults to false.
@@ -490,8 +492,6 @@ _[object]_ - (no description)
 
   - **`time_filters`** - _[string]_ - Time range for the queries in `content`, as a `tr` URL parameter such as `tr=P7D`. Defaults to the canvas time range.
 
-  - **`css`** - _[object]_ - CSS styles
-
   - **`title`** - _[string]_ - Markdown title
 
   - **`description`** - _[string]_ - Markdown description
@@ -503,8 +503,6 @@ _[object]_ - (no description)
   - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
 
   - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-
-  - **`css`** - _[object]_ - CSS styles
 
   - **`title`** - _[string]_ - Image title
 

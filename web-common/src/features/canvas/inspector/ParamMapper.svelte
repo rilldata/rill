@@ -181,6 +181,7 @@
             <InputLabel
               small
               label={config.label ?? key}
+              hint={config.description}
               id={key}
               faint={config.meta?.invertBoolean
                 ? ($specStore[key] ?? config.meta?.defaultValue ?? false)

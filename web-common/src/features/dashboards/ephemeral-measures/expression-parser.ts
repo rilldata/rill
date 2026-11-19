@@ -291,10 +291,22 @@ export function formatMeasureRef(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
 }
 
+// Classes of errors that editors describe in their own words
+// (see expression-feedback.ts); other errors only carry a message.
+export type MeasureExpressionErrorKind =
+  // A token the grammar cannot accept at this position.
+  | "unexpected_token"
+  // The expression ends where an operand is still expected.
+  | "incomplete"
+  | "unclosed_parenthesis"
+  | "no_measure"
+  | "unsupported_function";
+
 export type MeasureExpressionError = {
   message: string;
   // 0-based character offset into the expression where the error was detected.
   position: number;
+  kind?: MeasureExpressionErrorKind;
 };
 
 // A measure reference in the expression: `start` is the 0-based offset of its
@@ -324,9 +336,15 @@ type Node =
 
 class ParseError extends Error {
   position: number;
-  constructor(message: string, position: number) {
+  kind?: MeasureExpressionErrorKind;
+  constructor(
+    message: string,
+    position: number,
+    kind?: MeasureExpressionErrorKind,
+  ) {
     super(message);
     this.position = position;
+    this.kind = kind;
   }
 }
 
@@ -369,6 +387,7 @@ export function parseMeasureExpression(
         error: {
           message: "expression must reference at least one measure",
           position: 0,
+          kind: "no_measure",
         },
       };
     }
@@ -378,7 +397,11 @@ export function parseMeasureExpression(
       return {
         refs: [],
         refSpans: [],
-        error: { message: e.message, position: e.position },
+        error: {
+          message: e.message,
+          position: e.position,
+          ...(e.kind ? { kind: e.kind } : {}),
+        },
       };
     }
     throw e;
@@ -410,12 +433,17 @@ function parse(expression: string): Node {
     if (partial) throw partial;
     const opens = (expression.match(/\(/g) ?? []).length;
     const closes = (expression.match(/\)/g) ?? []).length;
-    throw new ParseError(
-      opens > closes
-        ? "expected closing parenthesis"
-        : "unexpected end of expression",
-      expression.length,
-    );
+    throw opens > closes
+      ? new ParseError(
+          "expected closing parenthesis",
+          expression.length,
+          "unclosed_parenthesis",
+        )
+      : new ParseError(
+          "unexpected end of expression",
+          expression.length,
+          "incomplete",
+        );
   }
   return root;
 }
@@ -485,7 +513,7 @@ function syntaxError(input: string, offset: number): ParseError {
   const partial = partialNumberError(input, offset);
   if (partial) return partial;
   if (offset >= input.length) {
-    return new ParseError("unexpected end of expression", offset);
+    return new ParseError("unexpected end of expression", offset, "incomplete");
   }
   const rest = input.slice(offset);
   const token =
@@ -494,9 +522,13 @@ function syntaxError(input: string, offset: number): ParseError {
     /^"(?:[^"]|"")*"/.exec(rest)?.[0].slice(1, -1).replace(/""/g, '"') ??
     (/^[-+*/%(),]/.test(rest) ? rest[0] : undefined);
   if (token === undefined) {
-    return new ParseError(`unexpected character "${rest[0]}"`, offset);
+    return new ParseError(
+      `unexpected character "${rest[0]}"`,
+      offset,
+      "unexpected_token",
+    );
   }
-  return new ParseError(`unexpected "${token}"`, offset);
+  return new ParseError(`unexpected "${token}"`, offset, "unexpected_token");
 }
 
 /**
@@ -547,7 +579,11 @@ function walk(node: Node, depth: number, refs: MeasureRefSpan[]): void {
     case "func": {
       const spec = EPHEMERAL_MEASURE_FUNCTIONS[node.name.toLowerCase()];
       if (!spec) {
-        throw new ParseError(`unsupported function "${node.name}"`, node.pos);
+        throw new ParseError(
+          `unsupported function "${node.name}"`,
+          node.pos,
+          "unsupported_function",
+        );
       }
       const argCount = node.args.length;
       if (
