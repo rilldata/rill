@@ -300,6 +300,7 @@ async function blockFor(
     | { title?: string; description?: string }
     | undefined;
   const image = input.images.get(component.id);
+  const imageNeeded = needsImage(component, payload, input.chartMode);
   const timeZone = input.header.timeZone || "UTC";
   let title = spec?.title?.trim() ?? "";
   const subtitle = spec?.description?.trim() ?? "";
@@ -322,11 +323,7 @@ async function blockFor(
     if (image) {
       return { case: "image", value: new WorkbookImageBlock({ png: image }) };
     }
-    return note(
-      needsImage(component, payload, input.chartMode)
-        ? CAPTURE_FAILED_NOTE
-        : fallback,
-    );
+    return note(imageNeeded ? CAPTURE_FAILED_NOTE : fallback);
   };
 
   if (!payload) {
@@ -350,7 +347,7 @@ async function blockFor(
         timeZone,
       });
       const sheetId = addSheet("", title, table);
-      if (chart && !needsImage(component, payload, input.chartMode)) {
+      if (chart && !imageNeeded) {
         chart.dataSheetId = sheetId;
         return { title, subtitle, content: { case: "chart", value: chart } };
       }
@@ -378,7 +375,7 @@ async function blockFor(
       const trendDataSheetId = trend
         ? addSheet("trend", `${title || component.id} trend`, trend)
         : "";
-      if (needsImage(component, payload, input.chartMode)) {
+      if (imageNeeded) {
         return { title, subtitle, content: imageOr("No data") };
       }
       return {
