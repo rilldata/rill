@@ -147,8 +147,14 @@ function useTrialCreditBalance(
       return createAdminServiceGetBillingCreditBalance(
         organization,
         { allowCached: true },
-        // Retrying would only delay the banner; on failure it links to the billing page instead.
-        { query: { retry: false } },
+        {
+          query: {
+            // Retrying would only delay the banner; on failure it links to the billing page instead.
+            retry: false,
+            // Refetch so long-open tabs pick up balance changes; matches the server's 15-minute cache.
+            refetchInterval: 15 * 60 * 1000,
+          },
+        },
         queryClient,
       ).subscribe((balanceResp) =>
         set({

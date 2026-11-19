@@ -299,6 +299,7 @@ export function getPlanCredits(
           usedCredit: 0,
           availableCredit: 0,
           creditPercent: 0,
+          isLoading: creditsBalance.isLoading,
           isUnavailable: creditsBalance.isError,
         };
       }
@@ -322,6 +323,7 @@ export function getPlanCredits(
         usedCredit,
         availableCredit,
         creditPercent,
+        isLoading: false,
         isUnavailable: false,
       };
     },

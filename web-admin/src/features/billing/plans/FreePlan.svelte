@@ -4,6 +4,8 @@
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
   import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
@@ -20,7 +22,7 @@
   let trialIssue = $derived($categorisedIssues.data?.trial);
 
   let planCredits = $derived(getPlanCredits(organization, trialIssue));
-  let { usedCredit, availableCredit, creditPercent, isUnavailable } =
+  let { usedCredit, availableCredit, creditPercent, isLoading, isUnavailable } =
     $derived($planCredits);
 </script>
 
@@ -41,7 +43,9 @@
   {/snippet}
 
   <div class="credit-section">
-    {#if isUnavailable}
+    {#if isLoading}
+      <Spinner status={EntityStatus.Running} size="16px" />
+    {:else if isUnavailable}
       <span class="text-sm text-fg-secondary">
         {m.billing_credit_balance_unavailable()}
       </span>

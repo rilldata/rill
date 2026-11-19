@@ -3,6 +3,7 @@ import {
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
@@ -148,11 +149,7 @@ function getMessageForCreditsTrial(
 
 // Rounds down to whole dollars so the banner never overstates the remaining credit.
 function formatTrialCredit(credit: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(Math.max(0, Math.floor(credit)));
+  return formatCredit(Math.max(0, Math.floor(credit)), 0);
 }
 
 function getMessageForCreditsDepletedIssue() {
