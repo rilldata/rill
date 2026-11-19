@@ -923,6 +923,7 @@
   "dashboard_dimensions": "Dimensions",
   "dashboard_dimensions_count": "{count} dimensions",
   "dashboard_dimensions_label": "DIMENSIONS",
+  "dashboard_download_as_csv": "Download as CSV",
   "dashboard_download_as_png": "Download as PNG",
   "dashboard_download_png": "Download PNG",
   "dashboard_drag_dimensions": "Drag dimensions here",

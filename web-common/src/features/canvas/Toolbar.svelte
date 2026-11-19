@@ -2,8 +2,12 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns, Download } from "lucide-svelte";
+  import { Copy, Columns, Download, FileSpreadsheet } from "lucide-svelte";
+  import { buildExportFilename } from "@rilldata/web-common/features/exports/filename";
+  import { componentCsv } from "@rilldata/web-common/features/exports/csv";
+  import { downloadBlob } from "@rilldata/web-common/features/exports/xlsx/client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { get } from "svelte/store";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
@@ -43,6 +47,31 @@
   $: exploreComponent = showExplore
     ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
     : null;
+
+  // The data the component shows, as CSV with values unformatted;
+  // undefined when it has none to download. Worked out only while the menu is open.
+  $: exportPayload = component.exportPayload;
+  $: csv = dropdownOpen
+    ? componentCsv(
+        $exportPayload,
+        get(component.timeAndFilterStore)?.timeGrain,
+        get(component.parent.timeManager.state.timeZoneStore) || "UTC",
+      )
+    : undefined;
+
+  function downloadCsv() {
+    if (csv === undefined) return;
+    const { title } = get(component.specStore) as { title?: unknown };
+    downloadBlob(
+      new Blob([csv], { type: "text/csv" }),
+      buildExportFilename(
+        (typeof title === "string" && title) ||
+          get(component.parent.titleStore) ||
+          component.id,
+        "csv",
+      ),
+    );
+  }
 </script>
 
 <div
@@ -83,6 +112,12 @@
           <Download size="14px" />
           {m.dashboard_download_as_png()}
         </DropdownMenu.Item>
+        {#if csv !== undefined}
+          <DropdownMenu.Item onclick={downloadCsv}>
+            <FileSpreadsheet size="14px" />
+            {m.dashboard_download_as_csv()}
+          </DropdownMenu.Item>
+        {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           onclick={onDelete}
@@ -114,6 +149,12 @@
           <Download size="14px" />
           {m.dashboard_download_as_png()}
         </DropdownMenu.Item>
+        {#if csv !== undefined}
+          <DropdownMenu.Item onclick={downloadCsv}>
+            <FileSpreadsheet size="14px" />
+            {m.dashboard_download_as_csv()}
+          </DropdownMenu.Item>
+        {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
     {#if showExplore && exploreComponent}
