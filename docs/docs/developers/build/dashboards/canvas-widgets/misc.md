@@ -102,7 +102,7 @@ Alternatively, you can use dot notation directly without assigning a variable:
 
 The `metrics_sql_rows` function returns an array of rows that you can iterate over with `{{ range }}`. Access columns using either `{{ $row.column_name }}` (when using named variables) or `{{ .column_name }}` (when using dot notation).
 
-Give the query a `LIMIT` that fits the widget. A query that returns more rows than the project's [`rill.interactive_sql_row_limit`](/reference/project-files/rill-yaml#env), 10,000 by default, fails.
+Give the query a `LIMIT` that fits the widget and is at or below the project's [`rill.interactive_sql_row_limit`](/reference/project-files/rill-yaml#env), 10,000 by default. Without a `LIMIT`, the query fails if it returns more rows than the cap.
 
 For more information on Metrics SQL syntax and capabilities, see the [Metrics SQL API documentation](/developers/build/metrics-view/metrics-sql).
 

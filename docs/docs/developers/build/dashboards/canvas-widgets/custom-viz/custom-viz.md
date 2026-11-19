@@ -375,7 +375,7 @@ rows:
         width: 6
 ```
 
-The chart draws as it did inline, with every query it ran there, and follows the canvas's time range and filters.
+A component without params is drawn the same way as the inline widget: every query still runs, and the canvas's time range and filters apply to the metrics view in the first query's `FROM`.
 
 To draw the same chart for other metrics views or fields, declare [params](#params), replace the names in the query and the spec with `{{ .params.<name> }}`, and bind them in each canvas item:
 
@@ -394,6 +394,7 @@ rows:
 A few things to know:
 
 - A component that declares params runs one query. A chart that reads several datasets, such as `query1` and `query2`, has to stay without params.
+- The preview in the component file's editor runs only the first query, so a chart that also reads `query2` looks incomplete there. The canvas draws it in full.
 - A component file that is itself larger than 128 KB fails the same way. Keep data out of the spec: read it from the query rather than inlining `values`.
 - [Personal canvases](/developers/embed/iframe#personal-canvases-in-embeds) can't reference component files. Every widget on a personal canvas is defined inline.
 
