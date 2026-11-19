@@ -10,7 +10,5 @@ export type TimeFiltersConfig = {
   showInheritRange?: boolean;
   showGrainPicker?: boolean;
 
-  log?: boolean;
-
   side?: "top" | "right" | "bottom" | "left";
 };

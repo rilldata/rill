@@ -198,7 +198,6 @@ export function createStateManagers({
       allowCustomTimeRange: true,
       skipDefaultTimeRange: false,
       skipTimeGrain: false,
-      log: true,
     },
   );
   timeFilterManager.storeSync.on("change", () => {

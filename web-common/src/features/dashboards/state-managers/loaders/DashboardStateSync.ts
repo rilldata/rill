@@ -218,7 +218,6 @@ export class DashboardStateSync {
 
     this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
     this.timeFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
-    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -322,7 +321,6 @@ export class DashboardStateSync {
     }
 
     this.updating = false;
-    log("URL", redirectUrl);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -384,7 +382,6 @@ export class DashboardStateSync {
 
       this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
       this.timeFilterParamsTracker.setUrlParams(newUrl.searchParams);
-      log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -397,12 +394,4 @@ export class DashboardStateSync {
       this.updating = false;
     }
   }
-}
-
-function log(label: string, toUrl: URL) {
-  const fromUrlSearch = get(page).url.search;
-  const areEqual = fromUrlSearch === toUrl.search;
-  console.log(
-    `[${label}] ${fromUrlSearch} =${areEqual ? "x" : "="}> ${toUrl.search}`,
-  );
 }

@@ -54,10 +54,7 @@ export class UrlParamsChangeTracker {
     this.events,
   ) as typeof this.events.on;
 
-  public constructor(
-    private readonly store: UrlParamsStore,
-    private readonly log = false,
-  ) {
+  public constructor(private readonly store: UrlParamsStore) {
     this.store.on("ready", () => this.replayPendingParams());
   }
 
@@ -67,11 +64,6 @@ export class UrlParamsChangeTracker {
    */
   public setUrlParams(urlParams: URLSearchParams) {
     if (!this.store.ready) {
-      if (this.log)
-        console.log(
-          "UrlParamsChangeTracker::setUrlParams::delay",
-          urlParams.toString(),
-        );
       this.pendingParams = urlParams;
       return;
     }
@@ -89,12 +81,6 @@ export class UrlParamsChangeTracker {
     const relevantParams = this.store.normalizeParams(
       copySubsetParams(expandedUrlParams, this.store.paramKeys),
     );
-    if (this.log)
-      console.log(
-        "UrlParamsChangeTracker::setUrlParams",
-        this.searchParams?.toString() === relevantParams.toString(),
-        relevantParams.toString(),
-      );
     if (this.searchParams?.toString() === relevantParams.toString()) return;
 
     this.searchParams = relevantParams;

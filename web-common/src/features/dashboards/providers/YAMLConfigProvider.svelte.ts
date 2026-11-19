@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
+import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
 
 type YAMLConfigProviderEvents = {
   /** Fired after `update` has applied the config from a spec. */
@@ -44,14 +45,18 @@ export class YAMLConfigProvider {
     this.events,
   ) as typeof this.events.on;
 
-  // The config last applied by `update`.
-  private appliedConfigJson: string | undefined = undefined;
+  // The part of the config last applied by `update` that the editor does not change.
+  private appliedSpecConfigJson: string | undefined = undefined;
 
   /**
-   * Applies the filter config of a dashboard's spec.
-   * This resets the pin and required toggles made in the editor to what the spec holds,
-   * so a config that is already applied is skipped:
-   * the spec is fetched again on every edit to the dashboard's file, and unsaved toggles must survive unrelated edits.
+   * Applies the config of a dashboard's spec.
+   * The spec is fetched again on every edit to the dashboard's file,
+   * and the pin and required toggles made in the editor must survive edits that do not touch them.
+   * So each of those lists is reset to what the spec holds only when the spec's list changes,
+   * and the rest of the config is applied only when it changes.
+   *
+   * Note: any changes to editors that writes temporary fields before yaml write
+   *       need to make sure they are checked separately than specConfig.
    */
   public update(config: {
     defaultFilters?: YAMLConfigProvider["defaultFilters"];
@@ -70,36 +75,52 @@ export class YAMLConfigProvider {
     timeZones?: YAMLConfigProvider["timeZones"];
     lockTimeZone?: YAMLConfigProvider["lockTimeZone"];
   }) {
-    const configJson = JSON.stringify(config);
-    if (configJson === this.appliedConfigJson) return;
-    this.appliedConfigJson = configJson;
+    const { pinnedFilters, requiredFilters, ...specConfig } = config;
+    let changed = false;
 
-    const {
-      defaultFilters,
-      pinnedFilters,
-      requiredFilters,
-      singleSelectFilters,
+    const specPinnedFilters = [...new Set(pinnedFilters)];
+    if (!arrayOrderedEquals(specPinnedFilters, this.specPinnedFilters)) {
+      this.specPinnedFilters = specPinnedFilters;
+      this.pinnedFilters = [...specPinnedFilters];
+      changed = true;
+    }
 
-      restrictedDimensions,
-      primaryTimeDimension,
-      restrictedMeasures,
+    const specRequiredFilters = [...new Set(requiredFilters)];
+    if (!arrayOrderedEquals(specRequiredFilters, this.specRequiredFilters)) {
+      this.specRequiredFilters = specRequiredFilters;
+      this.requiredFilters = [...specRequiredFilters];
+      changed = true;
+    }
 
-      defaultTimeRange,
-      timeRanges,
-      allowCustomTimeRange,
-      defaultTimeZone,
-      timeZones,
-      lockTimeZone,
-    } = config;
+    const specConfigJson = JSON.stringify(specConfig);
+    if (specConfigJson !== this.appliedSpecConfigJson) {
+      this.appliedSpecConfigJson = specConfigJson;
+      this.applySpecConfig(specConfig);
+      changed = true;
+    }
 
+    if (changed) this.events.emit("update");
+  }
+
+  private applySpecConfig({
+    defaultFilters,
+    singleSelectFilters,
+
+    restrictedDimensions,
+    primaryTimeDimension,
+    restrictedMeasures,
+
+    defaultTimeRange,
+    timeRanges,
+    allowCustomTimeRange,
+    defaultTimeZone,
+    timeZones,
+    lockTimeZone,
+  }: Omit<
+    Parameters<YAMLConfigProvider["update"]>[0],
+    "pinnedFilters" | "requiredFilters"
+  >) {
     this.defaultFilters = defaultFilters ?? {};
-
-    this.pinnedFilters = [...new Set(pinnedFilters)];
-    this.specPinnedFilters = [...this.pinnedFilters];
-
-    this.requiredFilters = [...new Set(requiredFilters)];
-    this.specRequiredFilters = [...this.requiredFilters];
-
     this.singleSelectFilters = Object.fromEntries(
       singleSelectFilters?.map((filter) => [filter, true]) ?? [],
     );
@@ -114,8 +135,6 @@ export class YAMLConfigProvider {
     this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
     this.lockTimeZone = lockTimeZone ?? false;
-
-    this.events.emit("update");
   }
 
   /**

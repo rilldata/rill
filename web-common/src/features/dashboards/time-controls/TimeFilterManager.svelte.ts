@@ -537,9 +537,6 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   public setUrlParams(urlParams: URLSearchParams) {
-    if (this.config.log)
-      console.log("TimeFilterManager::setUrlParams", urlParams.toString());
-
     if (!this.config.skipTimeGrain) {
       const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
       this.urlTimeGrain = urlGrain ? TokenToV1TimeGrain[urlGrain] : undefined;
@@ -949,11 +946,6 @@ export class TimeFilterManager implements UrlParamsStore {
       if (expression === TimeRangePreset.ALL_TIME)
         this.ownShowComparison = false;
 
-      if (this.config.log)
-        console.log(
-          "TimeFilterManager::commitResolvedIntervals::dataUpdated",
-          expression,
-        );
       if (this.notifyChangeOnCommit) {
         this.notifyChangeOnCommit = false;
         this.storeSync.stateChanged();

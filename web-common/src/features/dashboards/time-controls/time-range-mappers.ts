@@ -261,8 +261,13 @@ export function setTimeFilterParamsFromV1TimeRanges(
   if (!timeRangeParam) return;
   params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
 
-  if (timeRange.timeZone) {
-    params.set(ExploreStateURLParams.TimeZone, timeRange.timeZone);
+  // An absolute range without a zone is formatted in UTC by `mapV1TimeRangeToRillTime`,
+  // so pin the zone to UTC instead of falling back to the dashboard's default zone.
+  const timeZone =
+    timeRange.timeZone ??
+    (timeRange.start && timeRange.end ? "UTC" : undefined);
+  if (timeZone) {
+    params.set(ExploreStateURLParams.TimeZone, timeZone);
   }
 
   if (comparisonTimeRange) {
