@@ -105,10 +105,13 @@ function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
   if (rect.width < 1 || rect.height < 1) return false;
   // Read from the computed styles rather than Element.checkVisibility, which
   // Safari lacks before 17.4. visibility is inherited, so the target's value
-  // covers its ancestors; opacity is not, so each ancestor is looked at.
+  // covers its ancestors; opacity is not, so each ancestor is looked at, as is
+  // content-visibility: hidden, which skips drawing an ancestor's contents.
   if (getComputedStyle(target).visibility !== "visible") return false;
   for (let el: Element | null = target; el; el = el.parentElement) {
-    if (getComputedStyle(el).opacity === "0") return false;
+    const style = getComputedStyle(el);
+    if (style.opacity === "0") return false;
+    if (el !== target && style.contentVisibility === "hidden") return false;
   }
   return true;
 }

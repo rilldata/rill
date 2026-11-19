@@ -279,13 +279,17 @@ describe("measureCanvasBlocks", () => {
       <section id="canvas-row-4">
         <article id="in-transparent-row" class="component-card"></article>
       </section>
-      <section id="pdf-tab-label-g-hidden" class="pdf-tab-label-row"></section>
       <section id="canvas-row-5">
+        <article id="in-skipped-row" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-hidden" class="pdf-tab-label-row"></section>
+      <section id="canvas-row-6">
         <article id="after" class="component-card"></article>
       </section>
       <style>
         #invisible, #canvas-row-3 { visibility: hidden; }
         #canvas-row-4 { opacity: 0; }
+        #canvas-row-5 { content-visibility: hidden; }
       </style>
     `;
     // The rules of a <style> block apply once it is in the document.
@@ -299,11 +303,12 @@ describe("measureCanvasBlocks", () => {
     layOut(el("pdf-tab-label-g-hidden"), { width: 0, height: 0 });
     // A card in a row too short for its padding: a width but no height.
     layOut(el("no-height"), { width: 1180, height: 0 });
-    // `visibility: hidden` and `opacity: 0` keep the box, on the card or on its
-    // row, so only the styles tell that nothing is drawn.
+    // `visibility: hidden`, `opacity: 0` and a row's `content-visibility:
+    // hidden` keep the card's box, so only the styles tell that nothing is drawn.
     layOut(el("invisible"));
     layOut(el("in-invisible-row"));
     layOut(el("in-transparent-row"));
+    layOut(el("in-skipped-row"));
 
     try {
       const blocks = measureCanvasBlocks(container);
@@ -311,7 +316,7 @@ describe("measureCanvasBlocks", () => {
       // The blocks that remain keep the row they had.
       expect(blocks.map((b) => [b.id, b.rowIndex])).toStrictEqual([
         ["shown", 0],
-        ["after", 6],
+        ["after", 7],
       ]);
     } finally {
       container.remove();
