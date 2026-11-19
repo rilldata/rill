@@ -1840,6 +1840,7 @@
   "pivot_tags": "ETIQUETAS",
   "pivot_time_dimension_header": "Tiempo {grain}",
   "pivot_time_prefix": "Tiempo",
+  "pivot_totals_column_header": "Total",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

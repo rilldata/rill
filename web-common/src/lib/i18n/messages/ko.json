@@ -1831,6 +1831,7 @@
   "pivot_tags": "태그",
   "pivot_time_dimension_header": "시간 {grain}",
   "pivot_time_prefix": "시간",
+  "pivot_totals_column_header": "합계",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

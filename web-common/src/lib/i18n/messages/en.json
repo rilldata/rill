@@ -1831,6 +1831,7 @@
   "pivot_tags": "TAGS",
   "pivot_time_dimension_header": "Time {grain}",
   "pivot_time_prefix": "Time",
+  "pivot_totals_column_header": "Total",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

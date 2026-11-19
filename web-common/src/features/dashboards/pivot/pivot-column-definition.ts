@@ -150,12 +150,16 @@ function createColumnDefinitionForDimensions(
       ...leaf,
       meta: { ...leaf.meta, isRowTotal: true },
     }));
-    rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
+    // The totals get one group per column dimension, so they sit under the same header rows as the other columns.
+    // Only the outermost group (the last one wrapped) is labeled:
+    // the header rows have no lines between them, so the label reads as one header spanning all levels.
+    rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension, i) => {
       const { name } = dimension;
 
       const headColumn = {
         id: name,
-        header: "",
+        header:
+          i === colDimensions.length - 1 ? m.pivot_totals_column_header() : "",
         columns: acc,
       };
 
