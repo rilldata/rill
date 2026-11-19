@@ -20,6 +20,8 @@ export class DashboardFetchMocks {
   // Every resource mocked so far, keyed by name. GetResource serves one of these,
   // ListResources serves all of them.
   private resources = new Map<string, V1Resource>();
+  // Error message per metrics view whose time range summary request fails.
+  private timeRangeSummaryErrors = new Map<string, string>();
   private aggregationRequestMocks: {
     regex: RegExp;
     response: V1MetricsViewAggregationResponse;
@@ -172,6 +174,10 @@ export class DashboardFetchMocks {
     );
   }
 
+  public mockTimeRangeSummaryError(metricsViewName: string, message: string) {
+    this.timeRangeSummaryErrors.set(metricsViewName, message);
+  }
+
   public mockMetricsViewAggregation(
     regex: RegExp,
     response: V1MetricsViewAggregationResponse,
@@ -312,6 +318,13 @@ export class DashboardFetchMocks {
       service === "QueryService" &&
       method === "MetricsViewTimeRange"
     ) {
+      const errorMessage = this.timeRangeSummaryErrors.get(
+        parsed.metricsViewName,
+      );
+      if (errorMessage) {
+        return connectErrorResponse(errorMessage);
+      }
+
       const stored = this.responses.get(
         `queries__metrics-views__time-range-summary__${parsed.metricsViewName}`,
       );
@@ -351,4 +364,17 @@ export class DashboardFetchMocks {
         new TextEncoder().encode(JSON.stringify(jsonBody)).buffer,
     };
   }
+}
+
+/** A failed ConnectRPC unary response, which carries the error as a JSON body with a non-200 status. */
+function connectErrorResponse(message: string) {
+  const jsonBody = { code: "internal", message };
+  return {
+    status: 500,
+    ok: false,
+    headers: new Headers({ "content-type": "application/json" }),
+    json: async () => jsonBody,
+    arrayBuffer: async () =>
+      new TextEncoder().encode(JSON.stringify(jsonBody)).buffer,
+  };
 }

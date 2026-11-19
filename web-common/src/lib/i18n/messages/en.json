@@ -2560,6 +2560,7 @@
   "time_relative_hours_short": "{count}h ago",
   "time_relative_minutes_short": "{count}m ago",
   "time_relative_now": "now",
+  "time_select_comparison_period": "select comparison period",
   "time_today": "Today",
   "time_unable_to_parse": "Unable to parse time string",
   "time_vs": "vs",

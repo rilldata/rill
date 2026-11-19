@@ -51,6 +51,8 @@ export class MetricsViewsProvider {
   public timeRangeSummaries = $state<
     Record<MetricsViewName, V1TimeRangeSummary>
   >({});
+  /** Error message per metrics view name whose time range summary failed to load. */
+  public timeRangeErrors = $state<Record<MetricsViewName, string>>({});
   /** Max queryable time range in milliseconds per metrics view name. Zero when unrestricted. */
   public maxQueryTimeRangeMillis = $state<Record<string, number>>({});
 
@@ -84,9 +86,14 @@ export class MetricsViewsProvider {
    * so a grain no metrics view declares is never offered and `time_grains` keeps replacing the default list.
    */
   public availableTimeGrains: V1TimeGrain[];
-  /** True once every metrics view has a spec and every time series metrics view has a summary. */
+  /** True once every metrics view has a spec. Stays true until the set of metrics views changes. */
   public specsReady = $state(false);
-  public ready: boolean;
+  /**
+   * True once the specs are ready and every time series metrics view has settled its summary,
+   * either loading it or failing to.
+   * Stays true until the set of metrics views changes.
+   */
+  public ready = $state(false);
   public metricsViewNames = $state<string[]>([]);
 
   // Stores for legacy svelte4 usages
@@ -103,8 +110,6 @@ export class MetricsViewsProvider {
 
   private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();
-  private pendingSpecs = new Set<string>();
-  private pendingTimestamps = new Set<string>();
 
   public constructor(
     public readonly runtimeClient: RuntimeClient,
@@ -206,17 +211,6 @@ export class MetricsViewsProvider {
       );
     });
 
-    this.ready = $derived(
-      this.metricsViewNames.length > 0 &&
-        this.metricsViewNames.every((metricsViewName) => {
-          const spec = this.specs[metricsViewName];
-          if (!spec) return false;
-          return (
-            !spec.timeDimension || !!this.timeRangeSummaries[metricsViewName]
-          );
-        }),
-    );
-
     this.cleanup = () => {
       allResourcesUnsub();
       this.timeRangeUnsubs.forEach((unsub) => unsub());
@@ -237,11 +231,10 @@ export class MetricsViewsProvider {
     });
 
     this.metricsViewNames = metricsViewNames;
-    // The specs for the new set have to load before dependents can use them.
+    // The specs and summaries for the new set have to load before dependents can use them.
     // `processResources` below marks them ready again if they are already available.
     this.specsReady = false;
-    this.pendingSpecs = new Set(metricsViewNames);
-    this.pendingTimestamps = new Set(metricsViewNames);
+    this.ready = false;
     this.events.emit("update-metrics-views", this.metricsViewNames);
     this.processResources();
   }
@@ -333,9 +326,7 @@ export class MetricsViewsProvider {
     // Set legacy stores
     this.largestMinTimeGrainStore.set(largestMinTimeGrain);
 
-    Object.keys(specs).forEach((metricsViewName) =>
-      this.specLoaded(metricsViewName),
-    );
+    this.updateReadiness();
   }
 
   /**
@@ -347,7 +338,6 @@ export class MetricsViewsProvider {
     spec: V1MetricsViewSpec,
   ) {
     if (!spec.timeDimension || this.timeRangeUnsubs.has(metricsViewName)) {
-      this.timeSpecLoaded(metricsViewName);
       return;
     }
 
@@ -363,33 +353,45 @@ export class MetricsViewsProvider {
         const summary = timeRangeResp.data?.timeRangeSummary;
         if (summary) {
           this.timeRangeSummaries[metricsViewName] = summary;
-          this.timeSpecLoaded(metricsViewName);
+          delete this.timeRangeErrors[metricsViewName];
         } else if (timeRangeResp.isError) {
-          // A failed summary still counts as loaded,
-          // otherwise the time filters never become ready and never apply the url.
-          this.timeSpecLoaded(metricsViewName);
+          this.timeRangeErrors[metricsViewName] =
+            timeRangeResp.error?.message ?? "Failed to load the time range";
         }
         this.maxQueryTimeRangeMillis[metricsViewName] = Number(
           timeRangeResp.data?.maxQueryTimeRangeMillis ?? 0,
         );
+        this.updateReadiness();
       }),
     );
   }
 
-  private specLoaded(name: string) {
-    if (!this.pendingSpecs.has(name)) return;
-    this.pendingSpecs.delete(name);
+  /**
+   * Marks the specs, and then the time ranges, ready once every metrics view has settled them.
+   * A failed summary counts as settled,
+   * otherwise one broken metrics view would keep the time filters from ever applying the url.
+   */
+  private updateReadiness() {
+    if (!this.metricsViewNames.length) return;
 
-    if (this.pendingSpecs.size > 0) return;
-    this.events.emit("specs-loaded");
-    this.specsReady = true;
-  }
+    if (!this.specsReady) {
+      if (!this.metricsViewNames.every((name) => !!this.specs[name])) return;
+      this.specsReady = true;
+      this.events.emit("specs-loaded");
+    }
 
-  private timeSpecLoaded(name: string) {
-    if (!this.pendingTimestamps.has(name)) return;
-    this.pendingTimestamps.delete(name);
-
-    if (this.pendingTimestamps.size > 0) return;
+    if (this.ready) return;
+    const timeRangesSettled = this.metricsViewNames.every((name) => {
+      const spec = this.specs[name];
+      return (
+        !!spec &&
+        (!spec.timeDimension ||
+          name in this.timeRangeSummaries ||
+          name in this.timeRangeErrors)
+      );
+    });
+    if (!timeRangesSettled) return;
+    this.ready = true;
     this.events.emit("time-specs-loaded");
   }
 }

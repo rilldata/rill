@@ -2560,6 +2560,7 @@
   "time_relative_hours_short": "{count}시간 전",
   "time_relative_minutes_short": "{count}분 전",
   "time_relative_now": "지금",
+  "time_select_comparison_period": "비교 기간 선택",
   "time_today": "오늘",
   "time_unable_to_parse": "시간 문자열을 구문 분석할 수 없습니다",
   "time_vs": "vs",

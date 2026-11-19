@@ -40,6 +40,8 @@ const OTHER_TIME_RANGE = "7D as of latest/D";
 // What getDefaultTimeRange picks for the 3 months of TIME_RANGE_SUMMARY.
 const RILL_DEFAULT_TIME_RANGE = TimeRangePreset.QUARTER_TO_DATE;
 const NO_TIME_METRICS_NAME = "AdBids_no_time";
+const FAILED_SUMMARY_METRICS_NAME = "AdBids_failed_summary";
+const SUMMARY_ERROR = "failed to query the time range";
 // The field is left out rather than set to undefined, which the response decoder rejects.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { timeDimension: _, ...NO_TIME_METRICS_SPEC } = AD_BIDS_METRICS_INIT;
@@ -47,7 +49,9 @@ const { timeDimension: _, ...NO_TIME_METRICS_SPEC } = AD_BIDS_METRICS_INIT;
 const mocks = useMetricsViewMocks({
   [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_INIT_WITH_TIME,
   [NO_TIME_METRICS_NAME]: NO_TIME_METRICS_SPEC,
+  [FAILED_SUMMARY_METRICS_NAME]: AD_BIDS_METRICS_INIT_WITH_TIME,
 });
+mocks.mockTimeRangeSummaryError(FAILED_SUMMARY_METRICS_NAME, SUMMARY_ERROR);
 
 describe("TimeFilterManager", () => {
   let destroy: (() => void) | undefined;
@@ -96,7 +100,11 @@ describe("TimeFilterManager", () => {
     rendered.value.manager.on("rangeResolved", () =>
       resolvedRanges.push(rendered.value.manager.timeRange!),
     );
-    return { manager: rendered.value.manager, resolvedRanges };
+    return {
+      manager: rendered.value.manager,
+      metricsViewsProvider: rendered.value.metricsViewsProvider,
+      resolvedRanges,
+    };
   }
 
   function applyUrlTimeRange(manager: TimeFilterManager, timeRange: string) {
@@ -170,6 +178,29 @@ describe("TimeFilterManager", () => {
     );
     // The runtime rejects resolving a range for a metrics view without a time dimension.
     expect(countTimeRangesRequests(fetchSpy, NO_TIME_METRICS_NAME)).toBe(0);
+  });
+
+  it("shows the time controls and applies the url when another metrics view's summary fails", async () => {
+    const { manager, metricsViewsProvider } = createManager(
+      undefined,
+      undefined,
+      undefined,
+      [AD_BIDS_METRICS_NAME, FAILED_SUMMARY_METRICS_NAME],
+    );
+    applyUrlTimeRange(manager, DEFAULT_TIME_RANGE);
+
+    await waitFor(() => expect(manager.ready).toBe(true));
+    expect(manager.hasTimeSeries).toBe(true);
+    expect(
+      metricsViewsProvider.timeRangeErrors[FAILED_SUMMARY_METRICS_NAME],
+    ).toContain(SUMMARY_ERROR);
+    // The bounds come from the summary that did load.
+    expect(manager.minDate?.toUTC().toISO()).toEqual(
+      new Date(TIME_RANGE_SUMMARY.min!).toISOString(),
+    );
+    await waitFor(() =>
+      expectInterval(manager, RESOLVED_RILL_TIMES[DEFAULT_TIME_RANGE]),
+    );
   });
 
   it("re-resolves the interval when the execution time changes", async () => {

@@ -295,6 +295,10 @@ export class TimeFilterManager implements UrlParamsStore {
     );
 
     this.ready = metricsViewsProvider.ready;
+    // The summaries for the new metrics views are loading, so params are queued until `time-specs-loaded`.
+    metricsViewsProvider.on("update-metrics-views", () => {
+      this.ready = metricsViewsProvider.ready;
+    });
     metricsViewsProvider.on("time-specs-loaded", () => {
       this.ready = true;
       this.events.emit("ready");
@@ -535,8 +539,10 @@ export class TimeFilterManager implements UrlParamsStore {
       this.getComparisonTimeRangeOptions(),
     );
 
+    // Only needs the specs, so the controls show even when a summary is still loading or failed;
+    // the options that depend on the summary, like the calendar bounds, fill in once it loads.
     this.hasTimeSeries = $derived.by(() => {
-      if (!metricsViewsProvider.ready) return undefined;
+      if (!metricsViewsProvider.specsReady) return undefined;
 
       let hasTimeSeries = false;
       for (const metricsView of metricsViewsProvider.metricsViewNames) {

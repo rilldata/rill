@@ -266,15 +266,10 @@ export function setTimeFilterParamsFromV1TimeRanges(
 ) {
   if (!timeRange) return;
 
-  const timeRangeParam = mapV1TimeRangeToRillTime(timeRange);
+  const { timeRange: timeRangeParam, timeZone } =
+    mapV1TimeRangeToTimeFilterParams(timeRange);
   if (!timeRangeParam) return;
   params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
-
-  // An absolute range without a zone is formatted in UTC by `mapV1TimeRangeToRillTime`,
-  // so pin the zone to UTC instead of falling back to the dashboard's default zone.
-  const timeZone =
-    timeRange.timeZone ??
-    (timeRange.start && timeRange.end ? "UTC" : undefined);
   if (timeZone) {
     params.set(ExploreStateURLParams.TimeZone, timeZone);
   }
@@ -290,26 +285,37 @@ export function setTimeFilterParamsFromV1TimeRanges(
   }
 }
 
-export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {
-  let duration = timeRange.isoDuration;
+/**
+ * Maps an API time range to the rill time range and zone a {@link TimeFilterManager} is seeded with.
+ * The zone is undefined when the dashboard's default zone should apply.
+ */
+function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
+  timeRange: string | undefined;
+  timeZone: string | undefined;
+} {
+  if (timeRange.start && timeRange.end) {
+    // An absolute range without a saved zone is pinned to UTC instead of the dashboard's default zone,
+    // since its endpoints are UTC instants.
+    const timeZone = timeRange.timeZone ?? "UTC";
+    // Rill time reads absolute times as wall-clock times in the zone.
+    const start = DateTime.fromISO(timeRange.start, { zone: "UTC" });
+    const end = DateTime.fromISO(timeRange.end, { zone: "UTC" });
+    if (!start.isValid || !end.isValid) {
+      return { timeRange: `${timeRange.start} to ${timeRange.end}`, timeZone };
+    }
+    return {
+      timeRange: `${formatRillTimeWallClock(start, timeZone)} to ${formatRillTimeWallClock(end, timeZone)}`,
+      timeZone,
+    };
+  }
 
   const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
-  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
-    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
-  }
-
-  if (timeRange.start && timeRange.end) {
-    // The saved endpoints are UTC instants, but rill time reads absolute times as wall-clock times in the time zone.
-    const [start, end] = [timeRange.start, timeRange.end].map((iso) =>
-      DateTime.fromISO(iso, { zone: "UTC" }),
-    );
-    if (!start.isValid || !end.isValid) {
-      return `${timeRange.start} to ${timeRange.end}`;
-    }
-    const timeZone = timeRange.timeZone ?? "UTC";
-    return `${formatRillTimeWallClock(start, timeZone)} to ${formatRillTimeWallClock(end, timeZone)}`;
-  }
-  return duration ?? timeRange.expression;
+  const duration =
+    PreviousCompleteRangeReverseMap[fullRangeKey] ?? timeRange.isoDuration;
+  return {
+    timeRange: duration ?? timeRange.expression,
+    timeZone: timeRange.timeZone,
+  };
 }
 
 export function mapV1TimeRangeToComparisonTimeOption(

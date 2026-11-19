@@ -142,7 +142,12 @@
                   · {inheritedComparisonDesc}
                 </span>
               {:else if !comparisonTimeRangeOptions.length && !showComparison}
-                <p>{m.time_no_comparison_period()}</p>
+                <!-- No preset fits the range, but a custom period can still be picked from the dropdown. -->
+                <p>
+                  {allowCustomTimeRange
+                    ? m.time_select_comparison_period()
+                    : m.time_no_comparison_period()}
+                </p>
               {:else}
                 <b class="line-clamp-1">{label}</b>
                 {#if comparisonInterval?.isValid && showFullRange}

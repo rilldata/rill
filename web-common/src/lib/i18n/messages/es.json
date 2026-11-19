@@ -2569,6 +2569,7 @@
   "time_relative_hours_short": "hace {count}h",
   "time_relative_minutes_short": "hace {count}m",
   "time_relative_now": "ahora",
+  "time_select_comparison_period": "seleccionar período de comparación",
   "time_today": "Hoy",
   "time_unable_to_parse": "No se pudo interpretar el rango de tiempo",
   "time_vs": "vs",
