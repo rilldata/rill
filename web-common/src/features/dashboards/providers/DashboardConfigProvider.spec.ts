@@ -82,16 +82,13 @@ describe("ExploreDashboardConfigProvider", () => {
     );
     const { yamlConfigProvider } = provider;
 
-    await waitUntil(
-      () => Object.keys(yamlConfigProvider.requiredFilters).length > 0,
-      5000,
-    );
-    expect(yamlConfigProvider.pinnedFilters).toEqual({
-      [AD_BIDS_DOMAIN_DIMENSION]: true,
-    });
-    expect(yamlConfigProvider.requiredFilters).toEqual({
-      [AD_BIDS_PUBLISHER_DIMENSION]: true,
-    });
+    await waitUntil(() => yamlConfigProvider.requiredFilters.length > 0, 5000);
+    expect(yamlConfigProvider.pinnedFilters).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
     expect(yamlConfigProvider.defaultFilters).toEqual({
       [AD_BIDS_METRICS_NAME]: FILTERED_EXPLORE.defaultPreset?.where,
     });
@@ -118,10 +115,7 @@ describe("ExploreDashboardConfigProvider", () => {
         ),
     );
     const { yamlConfigProvider } = provider;
-    await waitUntil(
-      () => Object.keys(yamlConfigProvider.requiredFilters).length > 0,
-      5000,
-    );
+    await waitUntil(() => yamlConfigProvider.requiredFilters.length > 0, 5000);
 
     // Toggled in the editor, not saved to the file yet.
     yamlConfigProvider.togglePinnedFilter(AD_BIDS_PUBLISHER_DIMENSION);
@@ -135,11 +129,12 @@ describe("ExploreDashboardConfigProvider", () => {
     await queryClient.refetchQueries();
     // The query notifies its subscribers on a later tick.
     await asyncWait(10);
-    expect(Object.keys(yamlConfigProvider.pinnedFilters)).toEqual([
+    // A filter pinned in the editor goes after the ones the file pins.
+    expect(yamlConfigProvider.pinnedFilters).toEqual([
       AD_BIDS_DOMAIN_DIMENSION,
       AD_BIDS_PUBLISHER_DIMENSION,
     ]);
-    expect(yamlConfigProvider.requiredFilters).toEqual({});
+    expect(yamlConfigProvider.requiredFilters).toEqual([]);
 
     // Once the filter config changes, the file is the source of truth again.
     mocks.mockMetricsExplore(FILTERED_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
@@ -148,10 +143,10 @@ describe("ExploreDashboardConfigProvider", () => {
     });
     await queryClient.refetchQueries();
     await asyncWait(10);
-    expect(yamlConfigProvider.pinnedFilters).toEqual({});
-    expect(yamlConfigProvider.requiredFilters).toEqual({
-      [AD_BIDS_PUBLISHER_DIMENSION]: true,
-    });
+    expect(yamlConfigProvider.pinnedFilters).toEqual([]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
 
     destroy();
     provider.cleanup?.();

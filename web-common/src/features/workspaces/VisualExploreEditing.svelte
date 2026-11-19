@@ -29,7 +29,7 @@
     type V1MetricsViewSpec,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
+  import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
   import { InfoIcon } from "lucide-svelte";
   import { toStore } from "svelte/store";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
@@ -97,10 +97,10 @@
   // The pin and required toggles are kept apart from what the file holds until they are saved.
   const filterBar = toStore(() => ({
     filter: Object.values(expressionFilterManager.exprByMetricsView)[0],
-    pinned: Object.keys(yamlConfigProvider.pinnedFilters),
-    required: Object.keys(yamlConfigProvider.requiredFilters),
-    savedPinned: Object.keys(yamlConfigProvider.specPinnedFilters),
-    savedRequired: Object.keys(yamlConfigProvider.specRequiredFilters),
+    pinned: [...yamlConfigProvider.pinnedFilters],
+    required: [...yamlConfigProvider.requiredFilters],
+    savedPinned: [...yamlConfigProvider.specPinnedFilters],
+    savedRequired: [...yamlConfigProvider.specRequiredFilters],
   }));
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
@@ -272,8 +272,9 @@
   // Compared as url params, since that is the form in which two filters that mean the same are equal.
   $: viewingDefaultFilters =
     toFilterParam(filterConfig.filter) === toFilterParam(defaultFilter) &&
-    arrayUnorderedEquals(filterConfig.pinned, $filterBar.savedPinned) &&
-    arrayUnorderedEquals(filterConfig.required, $filterBar.savedRequired);
+    // In order, since the order of the lists is the order of the chips.
+    arrayOrderedEquals(filterConfig.pinned, $filterBar.savedPinned) &&
+    arrayOrderedEquals(filterConfig.required, $filterBar.savedRequired);
 
   $: viewingDefaults =
     hasDefaultsSet &&

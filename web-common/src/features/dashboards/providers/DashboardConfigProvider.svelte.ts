@@ -54,6 +54,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
           : {},
         pinnedFilters: exploreSpec.pinnedFilters ?? [],
         requiredFilters: exploreSpec.requiredFilters ?? [],
+        singleSelectFilters: exploreSpec.singleSelectFilters ?? [],
 
         restrictedDimensions: exploreSpec.dimensions,
         primaryTimeDimension: metricsViewSpec.timeDimension,
@@ -127,6 +128,7 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
           defaultFilters,
           pinnedFilters: canvasSpec.pinnedFilters,
           requiredFilters: canvasSpec.requiredFilters,
+          singleSelectFilters: canvasSpec.singleSelectFilters ?? [],
 
           // Without `defaults.time_range`, a canvas opens on the first `time_ranges` entry.
           defaultTimeRange:

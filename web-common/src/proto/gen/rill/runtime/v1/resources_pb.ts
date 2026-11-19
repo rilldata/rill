@@ -1504,6 +1504,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Display order of the tags set on dimensions and measures.
+   * Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+   *
+   * @generated from field: repeated string tag_order = 39;
+   */
+  tagOrder: string[] = [];
+
+  /**
    * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
    *
    * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 31;
@@ -1621,6 +1629,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 39, name: "tag_order", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
     { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
@@ -2885,6 +2894,14 @@ export class ExploreSpec extends Message<ExploreSpec> {
   requiredFilters: string[] = [];
 
   /**
+   * Dimensions whose filter holds at most one value at a time.
+   * Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+   *
+   * @generated from field: repeated string single_select_filters = 23;
+   */
+  singleSelectFilters: string[] = [];
+
+  /**
    * If true, the pivot tab will be hidden when the explore is embedded.
    *
    * @generated from field: bool embeds_hide_pivot = 16;
@@ -2956,6 +2973,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 24, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 25, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "single_select_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -5540,6 +5558,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
   requiredFilters: string[] = [];
 
   /**
+   * Array of dimension names whose filter holds at most one value at a time.
+   * Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+   *
+   * @generated from field: repeated string single_select_filters = 22;
+   */
+  singleSelectFilters: string[] = [];
+
+  /**
    * Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
    *
    * @generated from field: map<string, string> annotations = 20;
@@ -5578,6 +5604,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 22, name: "single_select_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);
