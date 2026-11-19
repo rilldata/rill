@@ -34,6 +34,7 @@ import {
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -59,7 +60,7 @@ import {
 } from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
@@ -77,6 +78,28 @@ vi.mock("$app/stores", () => {
     page: hoistedPage,
   };
 });
+
+// Stands in for the network call that resolves time ranges, so a test can hold it open.
+const hoistedTimeRanges = vi.hoisted(() => ({
+  pending: Promise.resolve(),
+}));
+vi.mock(
+  "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    resolveTimeRanges: vi.fn(
+      async (
+        _client: unknown,
+        _exploreSpec: unknown,
+        timeRanges: unknown[],
+      ) => {
+        await hoistedTimeRanges.pending;
+        return timeRanges;
+      },
+    ),
+  }),
+);
+const VitestEnv = String(import.meta.env.VITEST);
 
 // Contains basic tests for verifying order of selection.
 // In-depth tests for storing and retrieving state are separate.
@@ -373,6 +396,60 @@ describe("DashboardStateManager", () => {
       assertExploreStateSubset({
         ...ExploreStateSubsetForRillDefaultState,
         ...ExploreStateSubsetForYAMLState,
+      });
+    });
+
+    describe("Url changes while a time range resolves", () => {
+      let releaseTimeRanges!: () => void;
+
+      beforeEach(() => {
+        // DashboardStateSync skips resolving time ranges under vitest.
+        vi.stubEnv("VITEST", "");
+        vi.mocked(resolveTimeRanges).mockClear();
+        hoistedTimeRanges.pending = new Promise(
+          (resolve) => (releaseTimeRanges = resolve),
+        );
+      });
+
+      afterEach(() => {
+        vi.stubEnv("VITEST", VitestEnv);
+        hoistedTimeRanges.pending = Promise.resolve();
+      });
+
+      it("Should keep a url change made while the dashboard initializes", async () => {
+        renderDashboardStateManager();
+        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledOnce());
+
+        // Like an embed's setValidState that lands before the dashboard has loaded.
+        pageMock.gotoSearch("tr=PT24H");
+        releaseTimeRanges();
+
+        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+        expect(
+          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
+        ).toEqual("PT24H");
+        pageMock.assertSearchParams("tr=PT24H");
+      });
+
+      it("Should keep a url change made while an earlier one is applied", async () => {
+        releaseTimeRanges();
+        renderDashboardStateManager();
+        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+        hoistedTimeRanges.pending = new Promise(
+          (resolve) => (releaseTimeRanges = resolve),
+        );
+        pageMock.gotoSearch("tr=PT24H");
+        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledTimes(2));
+        pageMock.gotoSearch("tr=P14D");
+        releaseTimeRanges();
+
+        await waitFor(() =>
+          expect(
+            getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
+          ).toEqual("P14D"),
+        );
+        pageMock.assertSearchParams("tr=P14D");
       });
     });
   });

@@ -179,27 +179,10 @@ export class DashboardStateSync {
     if (!rillDefaultExploreURLParams) return;
     this.updating = true;
 
-    const pageState = get(page);
-
     if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-      // Resolve start/end by making a network call.
-      [
-        initExploreState.selectedTimeRange,
-        // initExploreState.selectedComparisonTimeRange,
-      ] = await resolveTimeRanges(
-        this.client,
-        exploreSpec,
-        [
-          initExploreState.selectedTimeRange,
-          // initExploreState.selectedComparisonTimeRange,
-        ],
-        initExploreState.selectedTimezone,
-        undefined,
-        initExploreState.selectedTimeDimension,
-      );
-      // The grain can only be derived from the actual interval once start and end are known.
-      applyAdaptiveTimeGrain(initExploreState, metricsViewSpec);
+      initExploreState = await this.resolveTimeRange(initExploreState);
     }
+    const pageState = get(page);
 
     // Init the store with state we got from dataLoader
     metricsExplorerStore.init(this.exploreName, initExploreState);
@@ -275,7 +258,7 @@ export class DashboardStateSync {
     // Type-safety
     if (!rillDefaultExploreURLParams) return;
 
-    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+    let partialExplore = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
       type,
     );
@@ -285,8 +268,6 @@ export class DashboardStateSync {
     // This shouldn't ideally happen.
     if (!partialExplore) return;
 
-    const pageState = get(page);
-
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
@@ -294,22 +275,7 @@ export class DashboardStateSync {
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-        // Resolve start/end by making a network call.
-        [
-          partialExplore.selectedTimeRange,
-          // partialExplore.selectedComparisonTimeRange,
-        ] = await resolveTimeRanges(
-          this.client,
-          exploreSpec,
-          [
-            partialExplore.selectedTimeRange,
-            // partialExplore.selectedComparisonTimeRange,
-          ],
-          partialExplore.selectedTimezone,
-          undefined,
-          partialExplore.selectedTimeDimension,
-        );
-        applyAdaptiveTimeGrain(partialExplore, metricsViewSpec);
+        partialExplore = await this.resolveTimeRange(partialExplore);
       }
 
       // Merge the partial state from url into the store
@@ -360,6 +326,7 @@ export class DashboardStateSync {
 
     if (!redirectUrl) return; // type-safety
 
+    const pageState = get(page);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -371,6 +338,48 @@ export class DashboardStateSync {
       replaceState: true,
       state: pageState.state,
     });
+  }
+
+  /**
+   * Resolves the start and end of the state's time range, which takes a network call.
+   *
+   * handleURLChange skips navigations while init or another url change holds the lock, as both do across this call.
+   * A navigation that lands meanwhile, like an embed's setValidState on a slow connection, would be lost,
+   * and applying the state, built from the url before it, would revert it.
+   * So when the url changes during the call, this starts over with the state for the new url.
+   */
+  private async resolveTimeRange(
+    exploreState: ExploreState,
+  ): Promise<ExploreState> {
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const { url } = get(page);
+    [
+      exploreState.selectedTimeRange,
+      // exploreState.selectedComparisonTimeRange,
+    ] = await resolveTimeRanges(
+      this.client,
+      validSpecData?.explore ?? {},
+      [
+        exploreState.selectedTimeRange,
+        // exploreState.selectedComparisonTimeRange,
+      ],
+      exploreState.selectedTimezone,
+      undefined,
+      exploreState.selectedTimeDimension,
+    );
+
+    const latestUrl = get(page).url;
+    if (latestUrl.search !== url.search) {
+      const latestExploreState = this.dataLoader.getExploreStateFromURLParams(
+        latestUrl.searchParams,
+        "goto",
+      );
+      if (latestExploreState) return this.resolveTimeRange(latestExploreState);
+    }
+
+    // The grain can only be derived from the actual interval once start and end are known.
+    applyAdaptiveTimeGrain(exploreState, validSpecData?.metricsView ?? {});
+    return exploreState;
   }
 
   /**
