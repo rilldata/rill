@@ -368,6 +368,9 @@ message MetricsViewSpec {
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
   repeated Measure measures = 7;
+  // Display order of the tags set on dimensions and measures.
+  // Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+  repeated string tag_order = 39;
   // Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
   FieldSelector parent_dimensions = 31;
   // Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.

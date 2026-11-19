@@ -1504,6 +1504,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Display order of the tags set on dimensions and measures.
+   * Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+   *
+   * @generated from field: repeated string tag_order = 39;
+   */
+  tagOrder: string[] = [];
+
+  /**
    * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
    *
    * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 31;
@@ -1621,6 +1629,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 39, name: "tag_order", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
     { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
