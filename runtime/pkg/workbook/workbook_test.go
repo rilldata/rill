@@ -732,6 +732,15 @@ func TestWriteTextParts(t *testing.T) {
 			Component: "below", Title: "Below", Geometry: geo(0, 400, 400, 60),
 			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
 		},
+		{
+			// More lines than the 500 rows the cap on a block's side would give.
+			Component: "long", Geometry: geo(0, 480, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: strings.Repeat("Line\n", 519) + "Last line"}},
+		},
+		{
+			Component: "after", Title: "After", Geometry: geo(0, 560, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
+		},
 	}
 	var buf bytes.Buffer
 	require.NoError(t, Write(&buf, req))
@@ -787,6 +796,10 @@ func TestWriteTextParts(t *testing.T) {
 	require.Equal(t, "Revenue\n$1.1M\nDeals\n140\nWin rate\n30%", cell(dashboard, "A25"))
 	require.Contains(t, ranges, "A25:E30")
 	require.Equal(t, "Below", cell(dashboard, "A33"))
+	// A long text keeps every one of its 520 rows, and the block below it starts after the last of them.
+	require.True(t, strings.HasSuffix(cell(dashboard, "A37"), "Line\nLast line"))
+	require.Contains(t, ranges, "A37:E556")
+	require.Equal(t, "After", cell(dashboard, "A559"))
 
 	// A block without text or tables leaves its cells alone instead of merging them into one empty cell.
 	require.Equal(t, "", cell(dashboard, "G25"))

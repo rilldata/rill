@@ -108,6 +108,8 @@ func clampGeometry(g *runtimev1.WorkbookGeometry) geometry {
 // A text block whose content needs more rows than its height gives is made taller, and the blocks below it move down by
 // as much: unlike the dashboard's component, a cell can't scroll, so text that doesn't fit would be cut off.
 // Content that sits side by side in the component (cards, say) is stacked here, so this is common.
+// The block gets every row writeText fills, however many: the cap on a block's side bounds drawings, not rows of text,
+// and a block that stopped short of its text would have the blocks below it written over that text.
 func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
 	geometries := make([]geometry, len(blocks))
 	for i, b := range blocks {
@@ -128,7 +130,7 @@ func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
 		for _, p := range w.textParts(b.GetText(), max(1, g.width/cellWidthPx)) {
 			need += p.minRows
 		}
-		grow := min(need*cellHeightPx, maxBlockSidePx) - g.height
+		grow := need*cellHeightPx - g.height
 		if grow <= 0 {
 			continue
 		}
