@@ -1462,6 +1462,7 @@
   "export_xlsx_description": "Export this dashboard as an Excel workbook.",
   "export_xlsx_failed": "Failed to export Excel",
   "export_xlsx_success": "Dashboard exported as Excel",
+  "export_xlsx_upload_failed": "Couldn't upload the export ({size}) to the server. Try again, or make it smaller by exporting native charts or only the current tab.",
   "field_list_add_fields": "Add {label} fields",
   "field_list_aria": "{label} field list",
   "field_list_dimensions": "DIMENSIONS",
