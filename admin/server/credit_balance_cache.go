@@ -10,7 +10,8 @@ import (
 
 const (
 	// creditBalanceCacheSize bounds the number of orgs whose balance is kept in memory.
-	creditBalanceCacheSize = 1000
+	// Only orgs on the credit trial (or that just ran out of trial credits) query their balance.
+	creditBalanceCacheSize = 500
 	// creditBalanceTTL is how long a cached balance is served to callers that allow cached values,
 	// without querying the billing provider.
 	creditBalanceTTL = 15 * time.Minute
