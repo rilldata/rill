@@ -161,6 +161,37 @@ describe("pivot expansion (value-based keys)", () => {
     expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
   });
 
+  it("does not overwrite a matched ancestor when a deeper segment is missing", () => {
+    const tableData: PivotDataRow[] = [
+      {
+        publisher: "A",
+        subRows: [
+          { publisher: "camp1", subRows: [{ publisher: LOADING_CELL }] },
+        ],
+      },
+    ];
+    const before = structuredClone(tableData);
+    addExpandedDataToPivot(
+      getConfig(false, ["publisher", "campaign", "adgroup", "ad"]),
+      tableData,
+      ["publisher", "campaign", "adgroup", "ad"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: buildExpandKey(
+            ["publisher", "campaign", "adgroup"],
+            ["A", "camp1", "missing"],
+          ),
+          rowDimensionValues: ["ad-1"],
+          totals: [{ ad: "ad-1", impressions: 1 }],
+          data: [],
+        },
+      ],
+    );
+    expect(tableData).toEqual(before);
+  });
+
   it("does not confuse a null row with a literal '<NULL>' row", () => {
     const tableData: PivotDataRow[] = [
       { publisher: null, subRows: [{ publisher: LOADING_CELL }] },

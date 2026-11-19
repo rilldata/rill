@@ -30,6 +30,7 @@ import { derived, writable, type Readable } from "svelte/store";
 import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import { dedupePivotChips } from "../pivot/pivot-chip-utils";
+import { expandKeyDepth } from "../pivot/pivot-expand-keys";
 import {
   PivotChipType,
   type PivotChipData,
@@ -373,6 +374,31 @@ const metricsViewReducers = {
       const dimensions = dedupePivotChips(
         value.filter((val) => val.type !== PivotChipType.Measure),
       );
+
+      // Only branches in the unchanged dimension prefix can still be open.
+      // Compare chip types as well as ids so time grains and ordinary
+      // dimensions with the same name cannot inherit each other's expansion.
+      const previousRows = exploreState.pivot.rows;
+      let sharedDepth = 0;
+      while (
+        sharedDepth < dimensions.length &&
+        dimensions[sharedDepth].id === previousRows[sharedDepth]?.id &&
+        dimensions[sharedDepth].type === previousRows[sharedDepth]?.type
+      ) {
+        sharedDepth++;
+      }
+      const expanded = exploreState.pivot.expanded;
+      exploreState.pivot.expanded =
+        expanded === true
+          ? sharedDepth === previousRows.length
+            ? true
+            : {}
+          : Object.fromEntries(
+              Object.entries(expanded).filter(([key]) => {
+                const depth = expandKeyDepth(key);
+                return depth <= sharedDepth && depth < dimensions.length;
+              }),
+            );
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;

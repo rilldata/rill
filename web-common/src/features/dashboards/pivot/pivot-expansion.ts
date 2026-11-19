@@ -52,23 +52,17 @@ import type {
 } from "./types";
 
 /**
- * Extracts and organizes dimension values from a nested array structure
- * based on a given dimensions and an expanded key.
- *
- * This function iterates over a key in the `expanded` object, which
- * indicates whether a particular path in the nested array is expanded.
- * For each expanded path, it navigates through the table data
- * following the (dimension, value) path defined by the key and extracts
- * the dimension values at each level.
+ * Returns the rows along the resolvable part of a (dimension, value) path.
+ * Callers that need a full match must compare its length with the key depth.
  */
-export function getValuesForExpandedKey(
+function getRowsForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
-): string[] {
-  const dimensionValues: string[] = [];
+): PivotDataRow[] {
+  const rows: PivotDataRow[] = [];
   // The totals row is not part of the table data and has no dimension values.
-  if (key === PIVOT_TOTALS_ROW_ID) return dimensionValues;
+  if (key === PIVOT_TOTALS_ROW_ID) return rows;
 
   // Each row stores its own value under rowDimensions[0] at every depth, so
   // match key segments against that to resolve a key to the actual values.
@@ -76,15 +70,25 @@ export function getValuesForExpandedKey(
   let currentRows: PivotDataRow[] | undefined = tableData;
 
   for (const [depth, segment] of expandKeySegments(key).entries()) {
-    const node = currentRows?.find(
+    const node: PivotDataRow | undefined = currentRows?.find(
       (row) =>
         encodeExpandKeySegment(rowDimensions[depth], row[anchor]) === segment,
     );
     if (!node) break;
-    dimensionValues.push(node[anchor] as string);
+    rows.push(node);
     currentRows = node.subRows;
   }
-  return dimensionValues;
+  return rows;
+}
+
+export function getValuesForExpandedKey(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  key: string,
+): string[] {
+  return getRowsForExpandedKey(tableData, rowDimensions, key).map(
+    (row) => row[rowDimensions[0]] as string,
+  );
 }
 
 /**
@@ -533,19 +537,13 @@ export function addExpandedDataToPivot(
     if (rowValues.length === 0) return;
     const segments = expandKeySegments(expandedRowData.expandIndex);
 
-    let node: PivotDataRow | undefined;
-    let currentRows: PivotDataRow[] | undefined = pivotData;
-    for (const [depth, segment] of segments.entries()) {
-      node = currentRows?.find(
-        (row) =>
-          encodeExpandKeySegment(
-            rowDimensions[depth],
-            row[rowDimensions[0]],
-          ) === segment,
-      );
-      if (!node) break;
-      currentRows = node.subRows;
-    }
+    const rows = getRowsForExpandedKey(
+      pivotData,
+      rowDimensions,
+      expandedRowData.expandIndex,
+    );
+    if (rows.length !== segments.length) return;
+    const node = rows.at(-1);
 
     // Update the node's subRows in place
     if (node && node.subRows) {

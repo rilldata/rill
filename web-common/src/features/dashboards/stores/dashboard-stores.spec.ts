@@ -2,6 +2,7 @@ import {
   type PivotChipData,
   PivotChipType,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { buildExpandKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import {
   getUpdatedPinIndex,
   metricsExplorerStore,
@@ -186,6 +187,59 @@ describe("pivot field reducers", () => {
       dim("publisher"),
     ]);
     expect(pivot().rows).toEqual([dim("publisher"), dim("domain")]);
+  });
+
+  it.each([
+    { next: ["publisher", "domain", "campaign", "adgroup"], depths: [1, 2] },
+    { next: ["publisher", "domain"], depths: [1] },
+    { next: ["publisher", "campaign", "domain"], depths: [1] },
+    { next: ["publisher", "device", "campaign"], depths: [1] },
+    { next: ["device", "domain", "campaign"], depths: [] },
+    { next: ["domain", "publisher", "campaign"], depths: [] },
+    { next: ["publisher"], depths: [] },
+    { next: [], depths: [] },
+  ])("setPivotRows retains valid expansions for $next", ({ next, depths }) => {
+    const previous = ["publisher", "domain", "campaign"];
+    const keys = [1, 2].map((depth) =>
+      buildExpandKey(previous, ["Facebook", "facebook.com"].slice(0, depth)),
+    );
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, previous.map(dim));
+    metricsExplorerStore.setPivotExpanded(
+      AD_BIDS_EXPLORE_NAME,
+      Object.fromEntries(keys.map((key) => [key, true])),
+    );
+
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, next.map(dim));
+
+    expect(pivot().expanded).toEqual(
+      Object.fromEntries(depths.map((depth) => [keys[depth - 1], true])),
+    );
+  });
+
+  it("setPivotRows distinguishes time grains from ordinary dimensions", () => {
+    const month = { ...dim("month"), type: PivotChipType.Time };
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, [
+      month,
+      dim("publisher"),
+    ]);
+    metricsExplorerStore.setPivotExpanded(AD_BIDS_EXPLORE_NAME, {
+      [buildExpandKey(["timestamp_rill_month"], ["2022-01-01T00:00:00Z"])]:
+        true,
+    });
+
+    // Appending a dimension preserves the month despite its encoded time alias.
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, [
+      month,
+      dim("publisher"),
+      dim("domain"),
+    ]);
+    expect(Object.keys(pivot().expanded)).toHaveLength(1);
+
+    metricsExplorerStore.setPivotRows(AD_BIDS_EXPLORE_NAME, [
+      dim("month"),
+      dim("publisher"),
+    ]);
+    expect(pivot().expanded).toEqual({});
   });
 
   it("setPivotColumns keeps a repeated field once", () => {
