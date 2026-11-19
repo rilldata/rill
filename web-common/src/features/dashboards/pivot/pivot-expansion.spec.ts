@@ -82,7 +82,7 @@ describe("pivot expansion (value-based keys)", () => {
         [
           {
             isFetching: false,
-            expandIndex: buildExpandKey(["B"]),
+            expandIndex: buildExpandKey(["publisher", "campaign"], ["B"]),
             rowDimensionValues: ["B"],
             totals: [{ campaign: "campaign-1", impressions: 10 }],
             data: [],
@@ -118,7 +118,10 @@ describe("pivot expansion (value-based keys)", () => {
       [
         {
           isFetching: false,
-          expandIndex: buildExpandKey(["A", "camp1"]),
+          expandIndex: buildExpandKey(
+            ["publisher", "campaign", "adgroup"],
+            ["A", "camp1"],
+          ),
           rowDimensionValues: ["A", "camp1"],
           totals: [{ adgroup: "ad-1", impressions: 5 }],
           data: [],
@@ -145,7 +148,10 @@ describe("pivot expansion (value-based keys)", () => {
       [
         {
           isFetching: false,
-          expandIndex: buildExpandKey(["does-not-exist"]),
+          expandIndex: buildExpandKey(
+            ["publisher", "campaign"],
+            ["does-not-exist"],
+          ),
           rowDimensionValues: ["does-not-exist"],
           totals: [{ campaign: "c", impressions: 1 }],
           data: [],
@@ -168,7 +174,7 @@ describe("pivot expansion (value-based keys)", () => {
       [
         {
           isFetching: false,
-          expandIndex: buildExpandKey(["<NULL>"]),
+          expandIndex: buildExpandKey(["publisher", "campaign"], ["<NULL>"]),
           rowDimensionValues: ["<NULL>"],
           totals: [{ campaign: "c", impressions: 1 }],
           data: [],
@@ -177,6 +183,37 @@ describe("pivot expansion (value-based keys)", () => {
     );
     expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
     expect(tableData[1].subRows?.[0]).toMatchObject({ campaign: "c" });
+  });
+
+  it("fills a parent before its child, whatever the expanded order", () => {
+    // A child key can come first in `expanded`, e.g. after its parent was
+    // collapsed and expanded again.
+    const dims = ["publisher", "campaign", "adgroup"];
+    const tableData: PivotDataRow[] = [
+      { publisher: "A", subRows: [{ publisher: LOADING_CELL }] },
+    ];
+
+    addExpandedDataToPivot(getConfig(false, dims), tableData, dims, {}, [
+      {
+        isFetching: false,
+        expandIndex: buildExpandKey(dims, ["A", "camp1"]),
+        rowDimensionValues: ["ad-1"],
+        totals: [{ adgroup: "ad-1", impressions: 5 }],
+        data: [],
+      },
+      {
+        isFetching: false,
+        expandIndex: buildExpandKey(dims, ["A"]),
+        rowDimensionValues: ["camp1"],
+        totals: [{ campaign: "camp1", impressions: 5 }],
+        data: [],
+      },
+    ]);
+
+    expect(tableData[0].subRows?.[0]?.subRows?.[0]).toMatchObject({
+      publisher: "ad-1",
+      adgroup: "ad-1",
+    });
   });
 
   it("ends a group that has more rows past the last limit step", () => {
@@ -195,7 +232,7 @@ describe("pivot expansion (value-based keys)", () => {
       [
         {
           isFetching: false,
-          expandIndex: buildExpandKey(["A"]),
+          expandIndex: buildExpandKey(["publisher", "campaign"], ["A"]),
           rowDimensionValues: ["A"],
           totals: [{ campaign: "campaign-1", impressions: 10 }],
           data: [],
@@ -227,7 +264,7 @@ describe("pivot expansion (value-based keys)", () => {
       [
         {
           isFetching: false,
-          expandIndex: buildExpandKey(["A"]),
+          expandIndex: buildExpandKey(["publisher", "campaign"], ["A"]),
           rowDimensionValues: ["A"],
           totals: [{ campaign: "campaign-1", impressions: 10 }],
           data: [],
@@ -257,14 +294,14 @@ describe("getValuesForExpandedKey", () => {
       getValuesForExpandedKey(
         tableData,
         ["publisher", "campaign"],
-        buildExpandKey(["B"]),
+        buildExpandKey(["publisher", "campaign"], ["B"]),
       ),
     ).toEqual(["B"]);
     expect(
       getValuesForExpandedKey(
         tableData,
         ["publisher", "campaign"],
-        buildExpandKey(["A", "camp2"]),
+        buildExpandKey(["publisher", "campaign"], ["A", "camp2"]),
       ),
     ).toEqual(["A", "camp2"]);
   });
@@ -274,9 +311,21 @@ describe("getValuesForExpandedKey", () => {
       getValuesForExpandedKey(
         tableData,
         ["publisher", "campaign"],
-        buildExpandKey(["A", "missing"]),
+        buildExpandKey(["publisher", "campaign"], ["A", "missing"]),
       ),
     ).toEqual(["A"]);
+  });
+
+  it("does not match a row of a different dimension with the same value", () => {
+    // Expanded while "publisher" was the first row dimension, then the
+    // dimension was swapped for "domain", which has a row with the same value.
+    expect(
+      getValuesForExpandedKey(
+        tableData,
+        ["domain", "campaign"],
+        buildExpandKey(["publisher"], ["A"]),
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -305,7 +354,7 @@ describe("queryExpandedRowMeasureValues", () => {
   });
 
   it("queries the next dimension for a fully resolved key", () => {
-    query(buildExpandKey(["A"]));
+    query(buildExpandKey(["publisher", "domain", "campaign"], ["A"]));
     expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
     expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
       "domain",
@@ -313,7 +362,7 @@ describe("queryExpandedRowMeasureValues", () => {
   });
 
   it("queries the next dimension for a top-level empty-string row", () => {
-    query(buildExpandKey([""]));
+    query(buildExpandKey(["publisher", "domain", "campaign"], [""]));
     expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
     expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
       "domain",
@@ -323,7 +372,7 @@ describe("queryExpandedRowMeasureValues", () => {
   it("does not query for a key that only partially resolves", () => {
     // Expanded as [publisher, campaign] before domain was inserted: "camp1"
     // no longer matches a row at depth 1, so only "A" resolves.
-    query(buildExpandKey(["A", "camp1"]));
+    query(buildExpandKey(["publisher", "campaign"], ["A", "camp1"]));
     expect(getAxisForDimensions).not.toHaveBeenCalled();
   });
 });

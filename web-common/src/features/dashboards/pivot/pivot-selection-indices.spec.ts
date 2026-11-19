@@ -297,16 +297,26 @@ describe("computeAncestorRowIds", () => {
   const rowDimensionNames = ["A", "B", "C"];
 
   // Tree: A expanded, B expanded. Visible rows: aRow, bRow, c1Row, c2Row.
-  const aRow = makeRow(buildExpandKey(["a_val"]), 0, "a_val", []);
-  const bRow = makeRow(buildExpandKey(["a_val", "b_val"]), 1, "b_val", [aRow]);
+  const aRow = makeRow(
+    buildExpandKey(rowDimensionNames, ["a_val"]),
+    0,
+    "a_val",
+    [],
+  );
+  const bRow = makeRow(
+    buildExpandKey(rowDimensionNames, ["a_val", "b_val"]),
+    1,
+    "b_val",
+    [aRow],
+  );
   const c1Row = makeRow(
-    buildExpandKey(["a_val", "b_val", "c1_val"]),
+    buildExpandKey(rowDimensionNames, ["a_val", "b_val", "c1_val"]),
     2,
     "c1_val",
     [aRow, bRow],
   );
   const c2Row = makeRow(
-    buildExpandKey(["a_val", "b_val", "c2_val"]),
+    buildExpandKey(rowDimensionNames, ["a_val", "b_val", "c2_val"]),
     2,
     "c2_val",
     [aRow, bRow],
@@ -333,9 +343,11 @@ describe("computeAncestorRowIds", () => {
     const ids = computeAncestorRowIds(selection, allRows, rowDimensionNames);
 
     // A's rowId "1" should be in the set (A is an ancestor of B).
-    expect(ids.has(buildExpandKey(["a_val"]))).toBe(true);
+    expect(ids.has(buildExpandKey(rowDimensionNames, ["a_val"]))).toBe(true);
     // B's own rowId "1.0" must NOT be in the set — B is the clicked row.
-    expect(ids.has(buildExpandKey(["a_val", "b_val"]))).toBe(false);
+    expect(ids.has(buildExpandKey(rowDimensionNames, ["a_val", "b_val"]))).toBe(
+      false,
+    );
   });
 
   it("B header clicked and a C row has a null leaf value: keys do not collide", () => {
@@ -344,7 +356,7 @@ describe("computeAncestorRowIds", () => {
     // such a child row must remain distinct from its B parent's dk so
     // B's own selection does not bleed into a null-valued descendant.
     const c1RowNullLeaf = makeRow(
-      buildExpandKey(["a_val", "b_val", "c1_null"]),
+      buildExpandKey(rowDimensionNames, ["a_val", "b_val", "c1_null"]),
       2,
       null,
       [aRow, bRow],
@@ -370,8 +382,10 @@ describe("computeAncestorRowIds", () => {
 
     const ids = computeAncestorRowIds(selection, rows, rowDimensionNames);
 
-    expect(ids.has(buildExpandKey(["a_val"]))).toBe(true);
-    expect(ids.has(buildExpandKey(["a_val", "b_val"]))).toBe(false);
+    expect(ids.has(buildExpandKey(rowDimensionNames, ["a_val"]))).toBe(true);
+    expect(ids.has(buildExpandKey(rowDimensionNames, ["a_val", "b_val"]))).toBe(
+      false,
+    );
   });
 
   it("A (depth-0) header clicked: a depth-1 child with null value is not selected", () => {

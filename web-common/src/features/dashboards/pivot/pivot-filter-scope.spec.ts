@@ -79,7 +79,7 @@ describe("pivot filter builders exclude the global where filter", () => {
   it("getFiltersForRowHeader", () => {
     const result = getFiltersForRowHeader(
       makeConfig(),
-      buildExpandKey(["US"]),
+      buildExpandKey(["country"], ["US"]),
       FLAT_DATA,
     );
 
@@ -97,7 +97,7 @@ describe("pivot filter builders exclude the global where filter", () => {
   it("getFiltersForCell on a flat table", () => {
     const result = getFiltersForCell(
       makeConfig(),
-      buildExpandKey(["US"]),
+      buildExpandKey(["country"], ["US"]),
       "revenue",
       {},
       FLAT_DATA,
@@ -115,7 +115,7 @@ describe("pivot filter builders exclude the global where filter", () => {
 
     const result = getFiltersForCell(
       config,
-      buildExpandKey(["US"]),
+      buildExpandKey(["country"], ["US"]),
       "c0v0m0",
       { region: ["NA", "EU"] },
       FLAT_DATA,
@@ -148,7 +148,10 @@ describe("rows viewer cell filters include the global where filter", () => {
   it("merges config.whereFilter into activeCellFilters", () => {
     const config = makeConfig({
       pivot: {
-        activeCell: { rowId: buildExpandKey(["US"]), columnId: "revenue" },
+        activeCell: {
+          rowId: buildExpandKey(["country"], ["US"]),
+          columnId: "revenue",
+        },
         rowPage: 1,
         showTotalsRow: false,
         sorting: [],

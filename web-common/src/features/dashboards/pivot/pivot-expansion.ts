@@ -5,7 +5,7 @@ import {
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import {
-  encodeExpandKeyValue,
+  encodeExpandKeySegment,
   expandKeyDepth,
   expandKeySegments,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
@@ -58,7 +58,7 @@ import type {
  * This function iterates over a key in the `expanded` object, which
  * indicates whether a particular path in the nested array is expanded.
  * For each expanded path, it navigates through the table data
- * following the path defined by the key (split into indices) and extracts
+ * following the (dimension, value) path defined by the key and extracts
  * the dimension values at each level.
  */
 export function getValuesForExpandedKey(
@@ -75,15 +75,55 @@ export function getValuesForExpandedKey(
   const anchor = rowDimensions[0];
   let currentRows: PivotDataRow[] | undefined = tableData;
 
-  for (const segment of expandKeySegments(key)) {
+  for (const [depth, segment] of expandKeySegments(key).entries()) {
     const node = currentRows?.find(
-      (row) => encodeExpandKeyValue(row[anchor]) === segment,
+      (row) =>
+        encodeExpandKeySegment(rowDimensions[depth], row[anchor]) === segment,
     );
     if (!node) break;
     dimensionValues.push(node[anchor] as string);
     currentRows = node.subRows;
   }
   return dimensionValues;
+}
+
+/**
+ * Returns the dimension values along an expanded key's path when the whole
+ * path is in the table data and there is a dimension below it to expand into.
+ * Otherwise returns undefined: the key is either waiting for its parent's sub
+ * rows to load, or stale because its dimensions no longer match the rows.
+ */
+function resolveExpandedKey(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  key: string,
+): string[] | undefined {
+  const depth = expandKeyDepth(key);
+  if (depth >= rowDimensions.length) return undefined;
+  const values = getValuesForExpandedKey(tableData, rowDimensions, key);
+  if (
+    values.length !== depth ||
+    values.some((v) => v === undefined || v === LOADING_CELL)
+  ) {
+    return undefined;
+  }
+  return values;
+}
+
+/**
+ * Counts the expanded keys that resolve against the table data. Filling in a
+ * parent's sub rows can make its expanded children resolvable, which raises
+ * the count.
+ */
+export function countResolvedExpandedKeys(
+  config: PivotDataStoreConfig,
+  tableData: PivotDataRow[],
+): number {
+  return Object.keys(config.pivot.expanded).filter(
+    (key) =>
+      resolveExpandedKey(tableData, config.rowDimensionNames, key) !==
+      undefined,
+  ).length;
 }
 
 /**
@@ -220,20 +260,15 @@ export function queryExpandedRowMeasureValues(
           totals: [],
         });
       const anchorDimension = rowDimensionNames[nestLevel];
-      const values = getValuesForExpandedKey(
+      const values = resolveExpandedKey(
         tableData,
         rowDimensionNames,
         expandIndex,
       );
 
-      // A key that resolves only partway is either still loading or stale
-      // (e.g. a dimension was inserted above it), so don't query with a
-      // partial filter.
-      if (
-        !anchorDimension ||
-        values.length !== nestLevel ||
-        values.some((v) => v === undefined || v === LOADING_CELL)
-      )
+      // Don't query with a partial filter. The data store reruns this stage
+      // once a parent's sub rows fill in and make more keys resolvable.
+      if (!values)
         return readable({
           isFetching: true,
           expandIndex,
@@ -484,7 +519,15 @@ export function addExpandedDataToPivot(
   const pivotData = tableData;
   const numRowDimensions = rowDimensions.length;
 
-  expandedRowMeasureValues.forEach((expandedRowData) => {
+  // Fill parents before their children: a parent's sub rows are replaced
+  // wholesale, which would drop children filled in earlier. The order of
+  // `expanded` can't be relied on, e.g. after collapsing and re-expanding a
+  // parent its key comes after its children's.
+  const parentsFirst = [...expandedRowMeasureValues].sort(
+    (a, b) => expandKeyDepth(a.expandIndex) - expandKeyDepth(b.expandIndex),
+  );
+
+  parentsFirst.forEach((expandedRowData) => {
     const rowValues = expandedRowData.rowDimensionValues;
 
     if (rowValues.length === 0) return;
@@ -492,9 +535,13 @@ export function addExpandedDataToPivot(
 
     let node: PivotDataRow | undefined;
     let currentRows: PivotDataRow[] | undefined = pivotData;
-    for (const segment of segments) {
+    for (const [depth, segment] of segments.entries()) {
       node = currentRows?.find(
-        (row) => encodeExpandKeyValue(row[rowDimensions[0]]) === segment,
+        (row) =>
+          encodeExpandKeySegment(
+            rowDimensions[depth],
+            row[rowDimensions[0]],
+          ) === segment,
       );
       if (!node) break;
       currentRows = node.subRows;

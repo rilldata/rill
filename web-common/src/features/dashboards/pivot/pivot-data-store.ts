@@ -30,6 +30,7 @@ import {
 import { getPivotConfig } from "./pivot-data-config";
 import {
   addExpandedDataToPivot,
+  countResolvedExpandedKeys,
   getExpandedQueryErrors,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
@@ -529,6 +530,10 @@ function createExpandedDataStage(
     isCellDataEmpty,
   } = args;
 
+  // A key nested under a row whose sub rows haven't loaded yet can't resolve
+  // against this data, so it isn't queried in this pass.
+  const resolvedKeyCount = countResolvedExpandedKeys(config, pivotData);
+
   const expandedRowMeasureValuesQuery = queryExpandedRowMeasureValues(
     ctx,
     config,
@@ -537,58 +542,76 @@ function createExpandedDataStage(
     totalsRowData,
   );
 
-  return derived(expandedRowMeasureValuesQuery, (expandedRowMeasureValues) => {
-    prepareNestedPivotData(pivotData, config.rowDimensionNames);
-    let tableDataExpanded: PivotDataRow[] = pivotData;
-    if (expandedRowMeasureValues?.length) {
-      const queryErrors = getExpandedQueryErrors(expandedRowMeasureValues);
-      if (queryErrors.length) return getErrorState(queryErrors);
+  return derivedSwitch(
+    expandedRowMeasureValuesQuery,
+    (expandedRowMeasureValues) => {
+      prepareNestedPivotData(pivotData, config.rowDimensionNames);
+      let tableDataExpanded: PivotDataRow[] = pivotData;
+      if (expandedRowMeasureValues?.length) {
+        const queryErrors = getExpandedQueryErrors(expandedRowMeasureValues);
+        if (queryErrors.length) return getErrorState(queryErrors);
 
-      tableDataExpanded = addExpandedDataToPivot(
-        config,
-        pivotData,
-        config.rowDimensionNames,
-        columnDimensionAxes || {},
-        expandedRowMeasureValues,
-      );
+        tableDataExpanded = addExpandedDataToPivot(
+          config,
+          pivotData,
+          config.rowDimensionNames,
+          columnDimensionAxes || {},
+          expandedRowMeasureValues,
+        );
 
-      cacheExpandedPivotData(cache, config, tableDataExpanded);
-    }
+        cacheExpandedPivotData(cache, config, tableDataExpanded);
 
-    const { data, activeCellFilters, reachedEndForRowData } =
-      buildFinalPivotStateDetails({
-        anchorDimension: plan.anchorDimension,
-        columnDimensionAxes,
-        config,
-        data: tableDataExpanded,
-        hasMoreRows: limitedRowAxes.hasMoreRows,
-        isCellDataEmpty,
-        rowDimensionValues: limitedRowAxes.rowDimensionValues,
-        rowOffset: plan.rowOffset,
+        // The sub rows just filled in can make deeper expanded keys resolvable,
+        // e.g. after the row dimensions change and the table is rebuilt from
+        // its top level. Run the stage again on the filled data to query them.
+        // Each rerun resolves more keys, so this ends after at most one pass per
+        // expanded key.
+        if (
+          countResolvedExpandedKeys(config, tableDataExpanded) >
+          resolvedKeyCount
+        ) {
+          return createExpandedDataStage({
+            ...args,
+            pivotData: tableDataExpanded,
+          });
+        }
+      }
+
+      const { data, activeCellFilters, reachedEndForRowData } =
+        buildFinalPivotStateDetails({
+          anchorDimension: plan.anchorDimension,
+          columnDimensionAxes,
+          config,
+          data: tableDataExpanded,
+          hasMoreRows: limitedRowAxes.hasMoreRows,
+          isCellDataEmpty,
+          rowDimensionValues: limitedRowAxes.rowDimensionValues,
+          rowOffset: plan.rowOffset,
+        });
+
+      updatePivotDataCache(cache, {
+        columnDef,
+        columnTruncation,
+        configKey: plan.configKey,
+        data,
+        rowPage: plan.rowPage,
+        totalColumns,
       });
 
-    updatePivotDataCache(cache, {
-      columnDef,
-      columnTruncation,
-      configKey: plan.configKey,
-      data,
-      rowPage: plan.rowPage,
-      totalColumns,
-    });
-
-    return {
-      isFetching: false,
-      data,
-      columnDef,
-      assembled: true,
-      activeCellFilters,
-      totalColumns,
-      columnTruncation,
-      reachedEndForRowData,
-      totalsRowData: plan.displayTotalsRow ? totalsRowData : undefined,
-      columnDimensionAxes,
-    };
-  });
+      return {
+        isFetching: false,
+        data,
+        columnDef,
+        assembled: true,
+        activeCellFilters,
+        totalColumns,
+        columnTruncation,
+        reachedEndForRowData,
+        totalsRowData: plan.displayTotalsRow ? totalsRowData : undefined,
+        columnDimensionAxes,
+      };
+    },
+  );
 }
 
 /**

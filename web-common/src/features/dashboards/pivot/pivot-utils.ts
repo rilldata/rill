@@ -663,7 +663,10 @@ export function getValuesForFlatTable(
 
   const row = tableData?.find(
     (candidate) =>
-      buildExpandKey(rowDimensions.map((dim) => candidate[dim])) === rowId,
+      buildExpandKey(
+        rowDimensions,
+        rowDimensions.map((dim) => candidate[dim]),
+      ) === rowId,
   );
   if (!row) return [];
 

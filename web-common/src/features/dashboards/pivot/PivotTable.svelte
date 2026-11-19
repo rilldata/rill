@@ -23,7 +23,6 @@
   import {
     buildExpandKey,
     childExpandKey,
-    encodeExpandKeyValue,
     parentExpandKey,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -129,16 +128,23 @@
         // array identity changes.
         data: [...pivotData.data],
         columns: pivotData.columnDef,
-        // Value-based, hierarchical row ids (parent id + this row's value) so
-        // expansion survives sorting, adding a field, and data refreshes.
+        // Value-based, hierarchical row ids (parent id + this row's dimension
+        // and value) so expansion survives sorting, adding a field, and data
+        // refreshes.
         getRowId: (row, _index, parent) => {
           if (cfg.isFlat) {
-            return buildExpandKey(rowDims.map((dim) => row[dim]));
+            return buildExpandKey(
+              rowDims,
+              rowDims.map((dim) => row[dim]),
+            );
           }
-          const anchor = rowDims[0];
-          return parent
-            ? childExpandKey(parent.id, row[anchor])
-            : encodeExpandKeyValue(row[anchor]);
+          // Nested rows store their own value under rowDims[0] at every depth.
+          const depth = parent ? parent.depth + 1 : 0;
+          return childExpandKey(
+            parent?.id ?? "",
+            rowDims[depth],
+            row[rowDims[0]],
+          );
         },
         state: {
           expanded: state.expanded,
