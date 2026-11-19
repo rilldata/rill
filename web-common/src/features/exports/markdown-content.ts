@@ -36,7 +36,10 @@ export function markdownParts(markdown: string): MarkdownPart[] {
     if (table) parts.push({ kind: "table", table });
     // A table inside a cell is also a table of its own, after the one that holds it.
     for (const nested of element.querySelectorAll("table")) {
-      if (nested.parentElement?.closest("table") === element) {
+      if (
+        nested.parentElement?.closest("table") === element &&
+        !isHiddenWithin(nested, element)
+      ) {
         addTable(nested, title);
       }
     }
@@ -153,6 +156,14 @@ function isHidden(element: Element): boolean {
   );
 }
 
+// Whether an element inside `root` is hidden, by its own markup or that of an element between the two.
+function isHiddenWithin(element: Element, root: Element): boolean {
+  for (let e: Element | null = element; e && e !== root; e = e.parentElement) {
+    if (isHidden(e)) return true;
+  }
+  return false;
+}
+
 // The bullet or number of a list item, indented by the depth of its list.
 function listMarker(item: Element): string {
   const list = item.parentElement;
@@ -170,7 +181,7 @@ function listMarker(item: Element): string {
 
 // The text an element shows, on one line.
 function oneLine(element: Element | null): string {
-  if (!element) return "";
+  if (!element || isHidden(element)) return "";
   const flow = new TextFlow();
   writeText(element, flow, () => false);
   return flow.take().replace(/\s+/g, " ");
@@ -226,32 +237,45 @@ class TextFlow {
 }
 
 // The cells of a table as a grid, or undefined for a table without cells.
+// Rows, row groups and cells hidden by their markup are left out, as the component leaves them out.
 // A cell that spans columns or rows fills its first position and leaves the others empty,
 // except in the header rows, where every column repeats the label that spans it.
 function tableGrid(
   table: HTMLTableElement,
   title: string,
 ): MarkdownTable | undefined {
-  const trs = Array.from(table.rows);
+  const rows = Array.from(table.rows)
+    .filter((tr) => !isHiddenWithin(tr, table))
+    .map((tr) => ({
+      group: tr.parentElement,
+      cells: Array.from(tr.cells).filter((cell) => !isHidden(cell)),
+    }));
   let headerRows = 0;
   while (
-    headerRows < trs.length &&
-    (trs[headerRows].parentElement?.tagName === "THEAD" ||
-      (trs[headerRows].cells.length > 0 &&
-        Array.from(trs[headerRows].cells).every((c) => c.tagName === "TH")))
+    headerRows < rows.length &&
+    (rows[headerRows].group?.tagName === "THEAD" ||
+      (rows[headerRows].cells.length > 0 &&
+        rows[headerRows].cells.every((c) => c.tagName === "TH")))
   ) {
     headerRows++;
   }
 
-  const grid: string[][] = trs.map(() => []);
-  trs.forEach((tr, r) => {
+  // The rows from each row to the last one of its row group.
+  // A cell spans rows of its own group only, and a span of zero reaches the group's last row.
+  const rowsLeft = rows.map(() => 1);
+  for (let r = rows.length - 2; r >= 0; r--) {
+    if (rows[r].group === rows[r + 1].group) rowsLeft[r] = rowsLeft[r + 1] + 1;
+  }
+
+  const grid: string[][] = rows.map(() => []);
+  rows.forEach(({ cells }, r) => {
     let c = 0;
-    for (const cell of tr.cells) {
+    for (const cell of cells) {
       // Positions a cell of an earlier row spans down into are taken.
       while (grid[r][c] !== undefined) c++;
       const text = oneLine(cell);
       const colSpan = Math.min(Math.max(cell.colSpan, 1), MAX_COL_SPAN);
-      const rowSpan = Math.min(Math.max(cell.rowSpan, 1), trs.length - r);
+      const rowSpan = Math.min(cell.rowSpan || rowsLeft[r], rowsLeft[r]);
       for (let dr = 0; dr < rowSpan; dr++) {
         for (let dc = 0; dc < colSpan; dc++) {
           const first = dr === 0 && dc === 0;

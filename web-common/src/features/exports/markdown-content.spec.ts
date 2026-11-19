@@ -96,6 +96,14 @@ Footnote.`),
   <tr><td colspan="2">n/a</td></tr>
   <tr><td>South</td><td>5</td></tr>
 </tbody>
+<tbody>
+  <tr><td rowspan="0">East</td><td>7</td><td>8</td></tr>
+  <tr><td>9</td><td>10</td></tr>
+  <tr><td rowspan="5">11</td><td>12</td></tr>
+</tbody>
+<tfoot>
+  <tr><td>Total</td><td>43</td><td>30</td></tr>
+</tfoot>
 </table>`),
     ).toStrictEqual([
       {
@@ -106,8 +114,38 @@ Footnote.`),
           ["North", "10", "12"],
           ["", "n/a", ""],
           ["South", "5", ""],
+          // A span of zero reaches the end of its row group, and no span reaches past it.
+          ["East", "7", "8"],
+          ["", "9", "10"],
+          ["", "11", "12"],
+          ["Total", "43", "30"],
         ],
         headerRows: 2,
+      },
+    ]);
+  });
+
+  it("leaves out the rows, row groups and cells of a table that its markup hides", () => {
+    expect(
+      text(`<table>
+<thead><tr><th>Team</th><th hidden>Id</th><th>Target</th></tr></thead>
+<tbody>
+  <tr><td>North</td><td hidden>n-1</td><td>10</td></tr>
+  <tr hidden><td>Draft</td><td>d-1</td><td>0</td></tr>
+  <tr style="display: none"><td>Old <table><tr><td>nested</td></tr></table></td><td>o-1</td><td>1</td></tr>
+</tbody>
+<tbody hidden><tr><td>Archived</td><td>a-1</td><td>2</td></tr></tbody>
+<tfoot><tr><td>Total</td><td hidden>all</td><td>10</td></tr></tfoot>
+</table>`),
+    ).toStrictEqual([
+      {
+        title: "",
+        rows: [
+          ["Team", "Target"],
+          ["North", "10"],
+          ["Total", "10"],
+        ],
+        headerRows: 1,
       },
     ]);
   });
