@@ -23,11 +23,12 @@
 
   const updateOrgMutation = createAdminServiceUpdateOrganization();
 
-  async function toggle() {
+  // Bits UI toggles on Space and Enter without a click event, so this runs on the checked change.
+  async function toggle(checked: boolean) {
     try {
       await $updateOrgMutation.mutateAsync({
         org: organization,
-        data: { disableProjectDomainAccess: allowed },
+        data: { disableProjectDomainAccess: !checked },
       });
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceGetOrganizationQueryKey(organization),
@@ -64,7 +65,7 @@
         checked={allowed}
         disabled={!$orgResp.data}
         id="allow-project-domain-access"
-        onclick={toggle}
+        onCheckedChange={toggle}
       />
     </DelayedCircleOutlineSpinner>
   </div>

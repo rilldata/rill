@@ -72,7 +72,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			DefaultProvisioner:                  org.DefaultProvisioner,
-			DisableProjectDomainAccess:          org.DisableProjectDomainAccess,
+			DisableProjectDomainAccess:          nil,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,
 			QuotaSlotsTotal:                     0,
