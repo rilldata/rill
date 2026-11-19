@@ -141,6 +141,39 @@ You can add `ai_instructions` in two places:
 
 For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developers/build/ai-configuration).
 
+## Memory
+
+AI Chat remembers durable preferences and clarifications you share with it, and uses them in later conversations in the same project. Each user has their own memory, and memories never cross users or projects.
+
+### What is remembered
+
+Memory only holds what you tell the AI about yourself and how you want it to work, for example:
+
+- Preferences such as tables instead of charts, units, a default time range or comparison
+- Definitions such as "revenue means net revenue" or "active means 30-day active"
+- Context such as your role, your team, and which metrics views you care about
+- Feedback such as "do not use the legacy metrics view"
+
+You can ask the AI directly ("remember that I always want week-over-week comparisons", "forget that") or just state a preference in passing. When the AI saves, changes or removes a memory, it shows a **Memory updated** notice under its reply. Open **Manage memory** from the notice to edit or delete it.
+
+Memories are kept per agent: what the AI learns while analyzing data is used when it analyzes data, and what it learns while developing the project is used when it develops the project. When you add a memory yourself, you choose whether it applies to one of them or to both.
+
+### What is never remembered
+
+- Data values, query results, or anything about what the data showed
+- Credentials, tokens, connection details, or file contents
+- Sensitive personal details such as health, ethnicity, religion, politics, identification numbers, or account numbers
+- One-off requests that only apply to the current question
+- Anything the project's `ai_instructions` already say
+
+### Managing memory
+
+Open **Manage memory** from the chat sidebar (or **Settings > AI memory** in Rill Cloud) to see everything the AI remembers, edit or delete individual memories, or add your own. Each memory links to the conversation it was learned from. Deleting a memory is permanent.
+
+Turn **Use memory** off to keep your memories but stop the AI from using or updating them until you turn it back on.
+
+Memory is available in Rill Cloud for logged-in users and in Rill Developer, where it is stored locally and never committed to git. It is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
+
 ## Use in Your Favorite AI Client
 
 Prefer to chat with your data in Claude Desktop, ChatGPT, or another AI assistant? You can connect your Rill projects to external AI clients using the **[Rill MCP Server](/guide/ai/mcp)**. This gives you the same governed, accurate analytics experience—powered by your predefined metrics—but integrated into your preferred AI workflow. Perfect for data teams who want deep analysis sessions, local development access, or integration with other tools. See the **[Rill MCP Server documentation](/guide/ai/mcp)** to learn more.

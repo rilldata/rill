@@ -1,5 +1,5 @@
 ---
-title: Databricks
+title: Databricks (OLAP Engine)
 description: Power Rill dashboards using Databricks
 sidebar_label: Databricks
 sidebar_position: 02

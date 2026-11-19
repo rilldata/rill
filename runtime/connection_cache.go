@@ -166,9 +166,15 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 	}
 
 	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
-	handle, err := drivers.Open(cfg.driver, cfg.name, cfg.instanceID, cfg.config, storage, activityClient, logger)
-	if err == nil && ctx.Err() != nil {
-		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
+	handle, err := drivers.Open(ctx, cfg.driver, cfg.name, cfg.instanceID, cfg.config, storage, activityClient, logger)
+	if ctx.Err() != nil {
+		if err == nil {
+			// The driver didn't observe the cancellation and opened anyway. Discard the handle since we're returning an error.
+			handle.Close()
+			err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
+		} else {
+			err = fmt.Errorf("timed out while opening driver %q: %w", cfg.driver, err)
+		}
 	}
 	r.activity.Record(ctx, activity.EventTypeLog, "connection_open",
 		attribute.String("instance_id", cfg.instanceID),

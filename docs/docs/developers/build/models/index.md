@@ -1,6 +1,6 @@
 ---
 title: Models in Rill
-sidebar_label: Build
+sidebar_label: Models
 sidebar_position: 0
 ---
 

@@ -16,19 +16,17 @@ import (
 )
 
 type MetricsViewRows struct {
-	MetricsViewName    string                       `json:"metrics_view_name,omitempty"`
-	TimeStart          *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd            *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	TimeGranularity    runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	Where              *runtimev1.Expression        `json:"where,omitempty"`
-	Sort               []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Limit              *int64                       `json:"limit,omitempty"`
-	Offset             int64                        `json:"offset,omitempty"`
-	TimeZone           string                       `json:"time_zone,omitempty"`
-	MetricsView        *runtimev1.MetricsViewSpec   `json:"-"`
-	ResolvedMVSecurity *runtime.ResolvedSecurity    `json:"security"`
-	Streaming          bool                         `json:"streaming,omitempty"`
-	TimeDimension      string                       `json:"time_dimension,omitempty"` // if empty, the default time dimension in mv is used
+	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
+	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
+	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
+	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
+	Limit           *int64                       `json:"limit,omitempty"`
+	Offset          int64                        `json:"offset,omitempty"`
+	TimeZone        string                       `json:"time_zone,omitempty"`
+	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
+	TimeDimension   string                       `json:"time_dimension,omitempty"` // if empty, the default time dimension in mv is used
 
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -69,7 +67,12 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	if err != nil {
+		return err
+	}
+
+	if (mv.ValidSpec.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
@@ -78,7 +81,12 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority, nil)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -106,7 +114,12 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	if err != nil {
+		return err
+	}
+
+	if (mv.ValidSpec.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
@@ -116,7 +129,12 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	qry.Rows = true
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority, nil)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -140,7 +158,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	defer func() { _ = os.Remove(path) }()
 
-	filename := q.generateFilename(q.MetricsView)
+	filename := q.generateFilename(mv.ValidSpec)
 	if opts.PreWriteHook != nil {
 		err = opts.PreWriteHook(filename)
 		if err != nil {

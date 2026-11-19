@@ -68,8 +68,10 @@ describe("getBookmarkData and parseBookmarks", () => {
         ]),
         selectedTimeRange: {
           name: "P7D",
-          interval: V1TimeGrain.TIME_GRAIN_HOUR, // Explicit grain for the P7D range
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
         } as DashboardTimeControls,
+        // A fixed grain is the only one written to the URL; adaptive grains are derived from the range.
+        adaptiveTimeGrain: false,
         showTimeComparison: true,
         selectedComparisonTimeRange: {
           name: "rill-PP",
@@ -121,6 +123,7 @@ describe("getBookmarkData and parseBookmarks", () => {
           name: "P7D",
           interval: V1TimeGrain.TIME_GRAIN_HOUR,
         } as DashboardTimeControls,
+        adaptiveTimeGrain: false,
       },
       urls: [
         {

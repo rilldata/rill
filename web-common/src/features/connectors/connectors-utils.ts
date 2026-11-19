@@ -3,11 +3,21 @@ import type { V1AnalyzedConnector } from "../../runtime-client";
 
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
+/**
+ * Identifies a table in a connector.
+ * The backend interprets an empty `database` or `databaseSchema` as the connector's default.
+ * The fields match the query service's table requests (such as `TableCardinality` and `TableColumns`), so a `ConnectorTable` can be passed to them as is.
+ */
+export type ConnectorTable = {
+  connector: string;
+  database: string;
+  databaseSchema: string;
+  tableName: string;
+};
+
 export function makeFullyQualifiedTableName(
   driver: string,
-  database: string,
-  databaseSchema: string,
-  table: string,
+  { database, databaseSchema, tableName: table }: ConnectorTable,
 ) {
   switch (driver) {
     case "clickhouse":
@@ -81,10 +91,12 @@ export function makeSufficientlyQualifiedTableName(
 
 export function makeTablePreviewHref(
   driver: string,
-  connectorName: string,
-  database: string,
-  databaseSchema: string,
-  table: string,
+  {
+    connector: connectorName,
+    database,
+    databaseSchema,
+    tableName: table,
+  }: ConnectorTable,
 ): string | null {
   switch (driver) {
     case "clickhouse":

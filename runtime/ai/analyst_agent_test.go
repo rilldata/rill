@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -312,6 +313,12 @@ func TestAnalystCharts(t *testing.T) {
 		end, ok := timeRange["end"].(string)
 		require.True(t, ok, "time_range.end must be a string")
 		require.Contains(t, end, "2023-09-14", "time_range.end should honor the provided context")
+
+		// Verify the chart applies the dashboard's filter
+		where, err := json.Marshal(spec["where"])
+		require.NoError(t, err)
+		require.Contains(t, string(where), "auction_type", "spec.where should apply the dashboard's filter")
+		require.Contains(t, string(where), "First Price", "spec.where should apply the dashboard's filter")
 	})
 
 	t.Run("ChartsDisabled", func(t *testing.T) {

@@ -1,6 +1,6 @@
 ---
 title: "Unnest Dimensions"
-description: Tips & Tricks for Measure Formatting
+description: Unnest multi-value dimensions so filters match on individual values
 sidebar_label: "Unnest Dimensions"
 sidebar_position: 50
 ---

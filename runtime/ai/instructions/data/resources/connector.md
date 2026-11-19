@@ -19,7 +19,7 @@ Each connector uses a **driver** that implements one or more capabilities:
 - **Information schema**: Can list tables and their schemas (e.g., `duckdb`, `bigquery`)
 - **Object store**: Can list, read, and write flat files (e.g., `s3`, `gcs`)
 - **Notifier**: Can send notifications and alerts (e.g., `slack`)
-- **AI**: Can generate embeddings or responses (e.g., `openai`, `claude`, `gemini`)
+- **AI**: Can generate embeddings or responses (e.g., `openai`, `claude`, `gemini`, `bedrock`)
 
 ## Core Concepts
 
@@ -201,6 +201,7 @@ Databricks, as a live OLAP connector or a data source for ingestion. Key propert
 
 - **Slack**: Use `bot_token` for alert notifications
 - **OpenAI**, **Claude**, or **Gemini**: Use `api_key` for AI-powered features; optionally set `model` to override the default
+- **Bedrock**: Amazon Bedrock models in the user's own AWS account. Requires `model` (a model ID, inference profile ID, or ARN) and usually `region`; authenticate with either `api_key` (a long-term Bedrock API key, which only works in the region it was generated in) or `aws_access_key_id` and `aws_secret_access_key` (optionally with `aws_role_arn`), but not both
 - **HTTPS**: Simple connector for public HTTP sources
 - **Pinot**: Use `broker_host`, `controller_host`, `username`, `password`
 
@@ -480,6 +481,20 @@ api_key: "{{ .env.claude_api_key }}"
 type: connector
 driver: gemini
 api_key: "{{ .env.gemini_api_key }}"
+```
+
+### Bedrock
+
+```yaml
+# connectors/bedrock.yaml
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+api_key: "{{ .env.bedrock_api_key }}"
+# Or use AWS access keys instead of an API key:
+# aws_access_key_id: "{{ .env.bedrock_aws_access_key_id }}"
+# aws_secret_access_key: "{{ .env.bedrock_aws_secret_access_key }}"
 ```
 
 ### Slack

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -16,14 +17,14 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func init() {
@@ -1673,9 +1674,23 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecr
 	return c.magicAuthTokenFromDTO(res, withSecret)
 }
 
+// FindMagicAuthTokenForUpdate is like FindMagicAuthToken without the secret, but it must be called in a transaction:
+// it locks the token's row until the transaction ends, so concurrent updates of the token wait for it.
+func (c *connection) FindMagicAuthTokenForUpdate(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+	if txFromContext(ctx) == nil {
+		return nil, errors.New("FindMagicAuthTokenForUpdate must be called in a transaction")
+	}
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1 FOR UPDATE", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return c.magicAuthTokenFromDTO(res, false)
+}
+
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
 	res := &magicAuthTokenWithUserDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, COALESCE(u.email, '') AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, COALESCE(u.email, '') AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
@@ -1705,16 +1720,31 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		opts.MetricsViewFilterJSONs = make(map[string]string)
 	}
 
+	// Marshal the attributes so nil attributes are stored as a JSON null; pgx would send a nil map as SQL NULL, which the NOT NULL column rejects.
+	attrs, err := json.Marshal(opts.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, password_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.PasswordHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, attrs, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
 	return c.magicAuthTokenFromDTO(res, true)
+}
+
+func (c *connection) UpdateMagicAuthToken(ctx context.Context, id string, opts *database.UpdateMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE magic_auth_tokens SET display_name=$1, password_hash=$2 WHERE id=$3 RETURNING *", opts.DisplayName, opts.PasswordHash, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return c.magicAuthTokenFromDTO(res, false)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1738,6 +1768,47 @@ func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) er
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("magic auth token", err)
+}
+
+func (c *connection) FindMagicAuthTokenSession(ctx context.Context, id string) (*database.MagicAuthTokenSession, error) {
+	res := &database.MagicAuthTokenSession{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT s.* FROM magic_auth_token_sessions s WHERE s.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token session", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertMagicAuthTokenSession(ctx context.Context, opts *database.InsertMagicAuthTokenSessionOptions) (*database.MagicAuthTokenSession, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.MagicAuthTokenSession{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_token_sessions (id, secret_hash, magic_auth_token_id, expires_on)
+		VALUES ($1, $2, $3, $4) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.MagicAuthTokenID, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token session", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteMagicAuthTokenSession(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE id=$1", id)
+	return checkDeleteRow("magic auth token session", res, err)
+}
+
+func (c *connection) DeleteMagicAuthTokenSessionsForToken(ctx context.Context, magicAuthTokenID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE magic_auth_token_id=$1", magicAuthTokenID)
+	return parseErr("magic auth token session", err)
+}
+
+func (c *connection) DeleteExpiredMagicAuthTokenSessions(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_token_sessions WHERE expires_on + $1 < now()", retention)
+	return parseErr("magic auth token session", err)
 }
 
 func (c *connection) FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationToken, error) {
@@ -2168,7 +2239,7 @@ func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, us
 		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, org_id) DO NOTHING
-	`, userID, orgID, roleID, attributes)
+	`, userID, orgID, roleID, attrs)
 	if err != nil {
 		return false, parseErr("org member", err)
 	}
@@ -2935,6 +3006,39 @@ func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind,
 	return res, nil
 }
 
+// FindBookmarksByEmbedOwner returns the bookmarks in a project owned by the embed user.
+// resourceKind and resourceName are optional filters; when empty, they are not applied.
+func (c *connection) FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*database.Bookmark, error) {
+	qry := `SELECT * FROM bookmarks WHERE project_id = $1 AND embed_owner_id = $2`
+	args := []any{projectID, embedOwnerID}
+	if resourceKind != "" {
+		args = append(args, resourceKind)
+		qry += fmt.Sprintf(" AND resource_kind = $%d", len(args))
+	}
+	if resourceName != "" {
+		args = append(args, resourceName)
+		qry += fmt.Sprintf(" AND lower(resource_name) = lower($%d)", len(args))
+	}
+	qry += " ORDER BY lower(display_name), created_on"
+
+	var res []*database.Bookmark
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
+// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
+func (c *connection) CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM bookmarks WHERE project_id = $1 AND embed_owner_id = $2", projectID, embedOwnerID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("bookmarks", err)
+	}
+	return count, nil
+}
+
 // FindBookmark returns a bookmark for given bookmark id
 func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}
@@ -2962,9 +3066,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, "default", shared)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, embed_owner_id, "default", shared)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.EmbedOwnerID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2986,6 +3090,77 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
+func (c *connection) FindEmbedUser(ctx context.Context, id string) (*database.EmbedUser, error) {
+	res := &embedUserDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM embed_users WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("embed user", err)
+	}
+	return res.embedUserFromDTO()
+}
+
+func (c *connection) LockEmbedUser(ctx context.Context, id string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: embed user locks must be acquired within a transaction")
+	}
+	// FOR NO KEY UPDATE conflicts with itself, but not with the FOR KEY SHARE locks taken by foreign key checks on rows that reference the embed user.
+	var res int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT 1 FROM embed_users WHERE id=$1 FOR NO KEY UPDATE", id).Scan(&res)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	return nil
+}
+
+func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertEmbedUserOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	// Store NULL for empty attributes, so an empty map and NULL don't count as a change.
+	var attrs *string
+	if len(opts.Attributes) > 0 {
+		data, err := json.Marshal(opts.Attributes)
+		if err != nil {
+			return fmt.Errorf("failed to serialize embed user attributes: %w", err)
+		}
+		str := string(data)
+		attrs = &str
+	}
+
+	// We don't use INSERT ... ON CONFLICT DO UPDATE ... WHERE, since it locks the existing row even when the WHERE clause is false.
+	// Instead, we update the row if it exists and changed, and otherwise insert it if it doesn't exist.
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE embed_users SET email=$2, attributes=$3::JSONB, last_seen_on=now(), updated_on=now()
+		WHERE id=$1 AND (email IS DISTINCT FROM $2 OR attributes IS DISTINCT FROM $3::JSONB OR last_seen_on < now() - INTERVAL '1 day')
+	`, opts.ID, opts.Email, attrs)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+
+	// The insert names no conflict target, so it does nothing on a conflict with any unique index.
+	// Concurrent calls for the same new user conflict on both the primary key and the (project_id, external_user_id) index;
+	// with only one of them as the target, a conflict on the other one fails with a unique violation.
+	// If those calls carry different identities, the first insert wins and the others are dropped, as if they ran just before it.
+	// So the row still has the identity of one of the concurrent iframes, until the user's next iframe updates it.
+	_, err = c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO embed_users (id, project_id, external_user_id, email, attributes)
+		VALUES ($1, $2, $3, $4, $5::JSONB)
+		ON CONFLICT DO NOTHING
+	`, opts.ID, opts.ProjectID, opts.ExternalUserID, opts.Email, attrs)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	return nil
+}
+
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -3003,7 +3178,7 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environmen
 func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, owner_id, embed_owner_id, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND path=$3
 	`, projectID, environment, path).StructScan(res)
@@ -3027,20 +3202,35 @@ func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, env
 	return res, nil
 }
 
+func (c *connection) FindVirtualFilesByEmbedOwner(ctx context.Context, projectID, environment, embedOwnerID string) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, owner_id, embed_owner_id, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND embed_owner_id=$3
+		ORDER BY path
+	`, projectID, environment, embedOwnerID)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
-		VALUES ($1, $2, $3, $4, $5, FALSE)
+		INSERT INTO virtual_files (project_id, environment, owner_id, embed_owner_id, path, data, deleted)
+		VALUES ($1, $2, $3, $4, $5, $6, FALSE)
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
 		    owner_id = EXCLUDED.owner_id,
+		    embed_owner_id = EXCLUDED.embed_owner_id,
 			deleted = FALSE,
 			updated_on = now()
-	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.Path, opts.Data)
+	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.EmbedOwnerID, opts.Path, opts.Data)
 	if err != nil {
 		return parseErr("virtual file", err)
 	}
@@ -3052,6 +3242,7 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, en
 		UPDATE virtual_files SET
 			data = ''::BYTEA,
 			deleted = TRUE,
+			embed_owner_id = NULL,
 			updated_on = now()
 		WHERE project_id=$1 AND environment=$2 AND path=$3`, projectID, environment, path)
 	return checkUpdateRow("virtual file", res, err)
@@ -3439,8 +3630,8 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 
 	res := &provisionerResourceDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5, updated_on = now() WHERE id = $6 RETURNING *`,
-		opts.Status, opts.StatusMessage, args, state, config, id,
+		UPDATE provisioner_resources SET status = $1, status_message = $2, provisioner = $3, args_json = $4, state_json = $5, config_json = $6, updated_on = now() WHERE id = $7 RETURNING *`,
+		opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("provisioner resource", err)
@@ -3549,11 +3740,48 @@ func (c *connection) InsertGitRepoTransfer(ctx context.Context, fromRemote, toRe
 	return res, nil
 }
 
-// projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+// jsonColumn scans a nullable JSON or JSONB column, which can then be decoded with AssignTo.
+type jsonColumn []byte
+
+// Scan implements sql.Scanner.
+func (c *jsonColumn) Scan(src any) error {
+	switch src := src.(type) {
+	case nil:
+		*c = nil
+	case []byte:
+		*c = bytes.Clone(src)
+	case string:
+		*c = []byte(src)
+	default:
+		return fmt.Errorf("cannot scan %T into a JSON column", src)
+	}
+	return nil
+}
+
+// AssignTo decodes the JSON into dst.
+// A NULL column decodes like a JSON null, which sets a map or slice to nil.
+func (c jsonColumn) AssignTo(dst any) error {
+	data := []byte(c)
+	if data == nil {
+		data = []byte("null")
+	}
+	return json.Unmarshal(data, dst)
+}
+
+// textArrayColumn scans a nullable Postgres array column into a string slice.
+// It is nil for NULL and non-nil for an empty array.
+type textArrayColumn []string
+
+// Scan implements sql.Scanner.
+func (c *textArrayColumn) Scan(src any) error {
+	return pgtype.NewMap().SQLScanner((*[]string)(c)).Scan(src)
+}
+
+// projectDTO wraps database.Project, using jsonColumn to read the columns that database/sql can't scan into their native Go types.
 type projectDTO struct {
 	*database.Project
-	ProdVariables pgtype.JSON `db:"prod_variables"`
-	Annotations   pgtype.JSON `db:"annotations"`
+	ProdVariables jsonColumn `db:"prod_variables"`
+	Annotations   jsonColumn `db:"annotations"`
 }
 
 func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
@@ -3577,12 +3805,12 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
-// provisionerResourceDTO wraps database.ProvisionerResource, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+// provisionerResourceDTO wraps database.ProvisionerResource, using jsonColumn to read the columns that database/sql can't scan into their native Go types.
 type provisionerResourceDTO struct {
 	*database.ProvisionerResource
-	Args   pgtype.JSON `db:"args_json"`
-	State  pgtype.JSON `db:"state_json"`
-	Config pgtype.JSON `db:"config_json"`
+	Args   jsonColumn `db:"args_json"`
+	State  jsonColumn `db:"state_json"`
+	Config jsonColumn `db:"config_json"`
 }
 
 func (c *connection) provisionerResourceFromDTO(dto *provisionerResourceDTO) (*database.ProvisionerResource, error) {
@@ -3613,13 +3841,27 @@ func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO
 	return res, nil
 }
 
-// magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+// embedUserDTO wraps database.EmbedUser, using jsonColumn to read its JSONB attributes.
+type embedUserDTO struct {
+	*database.EmbedUser
+	Attributes jsonColumn `db:"attributes"`
+}
+
+func (dto *embedUserDTO) embedUserFromDTO() (*database.EmbedUser, error) {
+	err := dto.Attributes.AssignTo(&dto.EmbedUser.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return dto.EmbedUser, nil
+}
+
+// magicAuthTokenDTO wraps database.MagicAuthToken, using jsonColumn and textArrayColumn to read the columns that database/sql can't scan into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes             pgtype.JSON      `db:"attributes"`
-	Fields                 pgtype.TextArray `db:"fields"`
-	Resources              pgtype.JSONB     `db:"resources"`
-	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
+	Attributes             jsonColumn      `db:"attributes"`
+	Fields                 textArrayColumn `db:"fields"`
+	Resources              jsonColumn      `db:"resources"`
+	MetricsViewFilterJSONs jsonColumn      `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -3627,10 +3869,7 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	if err != nil {
 		return nil, err
 	}
-	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
-	if err != nil {
-		return nil, err
-	}
+	dto.MagicAuthToken.Fields = dto.Fields
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
 	if err != nil {
 		return nil, err
@@ -3653,13 +3892,13 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	return dto.MagicAuthToken, nil
 }
 
-// magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+// magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using jsonColumn and textArrayColumn to read the columns that database/sql can't scan into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes             pgtype.JSON      `db:"attributes"`
-	Fields                 pgtype.TextArray `db:"fields"`
-	Resources              pgtype.JSONB     `db:"resources"`
-	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
+	Attributes             jsonColumn      `db:"attributes"`
+	Fields                 textArrayColumn `db:"fields"`
+	Resources              jsonColumn      `db:"resources"`
+	MetricsViewFilterJSONs jsonColumn      `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -3667,10 +3906,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
-	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
-	if err != nil {
-		return nil, err
-	}
+	dto.MagicAuthToken.Fields = dto.Fields
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
 	if err != nil {
 		return nil, err
@@ -3690,7 +3926,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 
 type projectMemberUserDTO struct {
 	*database.ProjectMemberUser
-	Resources pgtype.JSONB `db:"resources"`
+	Resources jsonColumn `db:"resources"`
 }
 
 func (dto *projectMemberUserDTO) asModel() (*database.ProjectMemberUser, error) {
@@ -3715,7 +3951,7 @@ func (c *connection) projectMemberUsersFromDTOs(dtos []*projectMemberUserDTO) ([
 
 type memberUsergroupDTO struct {
 	*database.MemberUsergroup
-	Resources pgtype.JSONB `db:"resources"`
+	Resources jsonColumn `db:"resources"`
 }
 
 func (dto *memberUsergroupDTO) asModel() (*database.MemberUsergroup, error) {
@@ -3740,7 +3976,7 @@ func (c *connection) memberUsergroupsFromDTOs(dtos []*memberUsergroupDTO) ([]*da
 
 type projectInviteDTO struct {
 	*database.ProjectInvite
-	Resources pgtype.JSONB `db:"resources"`
+	Resources jsonColumn `db:"resources"`
 }
 
 func (dto *projectInviteDTO) asModel() (*database.ProjectInvite, error) {
@@ -3765,7 +4001,7 @@ func projectInvitesFromDTOs(dtos []*projectInviteDTO) ([]*database.ProjectInvite
 
 type projectInviteWithRoleDTO struct {
 	*database.ProjectInviteWithRole
-	Resources pgtype.JSONB `db:"resources"`
+	Resources jsonColumn `db:"resources"`
 }
 
 func (dto *projectInviteWithRoleDTO) asModel() (*database.ProjectInviteWithRole, error) {
@@ -3807,15 +4043,12 @@ func (c *connection) notificationTokenWithSecretFromDTO(dto *notificationTokenWi
 
 type organizationInviteDTO struct {
 	*database.OrganizationInvite
-	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
-	Attributes   pgtype.JSON      `db:"attributes"`
+	UsergroupIDs textArrayColumn `db:"usergroup_ids"`
+	Attributes   jsonColumn      `db:"attributes"`
 }
 
 func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
-	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
-	if err != nil {
-		return nil, err
-	}
+	o.OrganizationInvite.UsergroupIDs = o.UsergroupIDs
 
 	// Handle Attributes: Normalize NULL JSONB to empty map
 	var attrs map[string]any
@@ -3832,15 +4065,12 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 
 type organizationInviteWithRoleDTO struct {
 	*database.OrganizationInviteWithRole
-	Usergroups pgtype.TextArray `db:"usergroups"`
-	Attributes pgtype.JSON      `db:"attributes"`
+	Usergroups textArrayColumn `db:"usergroups"`
+	Attributes jsonColumn      `db:"attributes"`
 }
 
 func (o *organizationInviteWithRoleDTO) AsModel() (*database.OrganizationInviteWithRole, error) {
-	err := o.Usergroups.AssignTo(&o.OrganizationInviteWithRole.Usergroups)
-	if err != nil {
-		return nil, err
-	}
+	o.OrganizationInviteWithRole.Usergroups = o.Usergroups
 
 	// Handle Attributes: Normalize NULL JSONB to empty map
 	var attrs map[string]any
@@ -3857,20 +4087,16 @@ func (o *organizationInviteWithRoleDTO) AsModel() (*database.OrganizationInviteW
 
 type authClientDTO struct {
 	*database.AuthClient
-	GrantTypes   pgtype.TextArray `db:"grant_types"`
-	RedirectURIs pgtype.TextArray `db:"redirect_uris"`
+	GrantTypes   textArrayColumn `db:"grant_types"`
+	RedirectURIs textArrayColumn `db:"redirect_uris"`
 }
 
 func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
 	if dto.AuthClient == nil {
 		dto.AuthClient = &database.AuthClient{}
 	}
-	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
-		return nil, err
-	}
-	if err := dto.RedirectURIs.AssignTo(&dto.AuthClient.RedirectURIs); err != nil {
-		return nil, err
-	}
+	dto.AuthClient.GrantTypes = dto.GrantTypes
+	dto.AuthClient.RedirectURIs = dto.RedirectURIs
 	return dto.AuthClient, nil
 }
 
@@ -3936,7 +4162,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 
 type serviceDTO struct {
 	*database.Service
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (d *serviceDTO) serviceFromDTO() (*database.Service, error) {
@@ -3949,7 +4175,7 @@ func (d *serviceDTO) serviceFromDTO() (*database.Service, error) {
 
 type organizationMemberServiceDTO struct {
 	*database.OrganizationMemberService
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (d *organizationMemberServiceDTO) organizationMemberServiceFromDTO() (*database.OrganizationMemberService, error) {
@@ -3962,7 +4188,7 @@ func (d *organizationMemberServiceDTO) organizationMemberServiceFromDTO() (*data
 
 type projectMemberServiceDTO struct {
 	*database.ProjectMemberService
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (d *projectMemberServiceDTO) projectMemberServiceFromDTO() (*database.ProjectMemberService, error) {
@@ -3975,7 +4201,7 @@ func (d *projectMemberServiceDTO) projectMemberServiceFromDTO() (*database.Proje
 
 type projectMemberServiceWithProjectDTO struct {
 	*database.ProjectMemberServiceWithProject
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFromDTO() (*database.ProjectMemberServiceWithProject, error) {
@@ -3988,7 +4214,7 @@ func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFrom
 
 type organizationMemberUserDTO struct {
 	*database.OrganizationMemberUser
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database.OrganizationMemberUser, error) {
@@ -4019,7 +4245,7 @@ func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database
 
 type userWithAttributesDTO struct {
 	*database.User
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes jsonColumn `db:"attributes"`
 }
 
 func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
@@ -4287,4 +4513,192 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 	})
 
 	return deduped
+}
+
+func (c *connection) FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2 AND config_hash=$3", projectID, connector, configHash).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindConnectorOAuthClientByID(ctx context.Context, id string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrInsertConnectorOAuthClient(ctx context.Context, opts *database.InsertConnectorOAuthClientOptions) (*database.ConnectorOAuthClient, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Client)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.ConnectorOAuthClient{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO connector_oauth_clients (project_id, connector, config_hash, client, client_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (project_id, connector, config_hash) DO UPDATE SET config_hash = EXCLUDED.config_hash
+		RETURNING *`,
+		opts.ProjectID, opts.Connector, opts.ConfigHash, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*database.ConnectorOAuthClient, error) {
+	var res []*database.ConnectorOAuthClient
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2", projectID, connector)
+	if err != nil {
+		return nil, parseErr("connector oauth clients", err)
+	}
+	for _, r := range res {
+		err = c.decryptConnectorOAuthClient(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM connector_oauth_clients c
+		WHERE c.project_id=$1 AND c.connector=$2 AND c.config_hash<>$3
+		AND NOT EXISTS (SELECT 1 FROM connector_oauth_tokens t WHERE t.oauth_client_id=c.id)
+	`, projectID, connector, keepConfigHash)
+	if err != nil {
+		return parseErr("connector oauth clients", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteConnectorOAuthClient(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE id=$1", id)
+	return checkDeleteRow("connector oauth client", res, err)
+}
+
+func (c *connection) decryptConnectorOAuthClient(res *database.ConnectorOAuthClient) error {
+	client, err := c.decryptText(res.Client, res.ClientEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Client = client
+	res.ClientEncryptionKeyID = ""
+	return nil
+}
+
+func (c *connection) AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: connector OAuth locks must be acquired within a transaction")
+	}
+	key := "connector_oauth_tokens/" + oauthClientID + "/" + userID
+	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", key)
+	if err != nil {
+		return parseErr("connector oauth lock", err)
+	}
+	return nil
+}
+
+func (c *connection) FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*database.ConnectorOAuthToken, error) {
+	res := &database.ConnectorOAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth token", err)
+	}
+	err = c.decryptConnectorOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertConnectorOAuthToken(ctx context.Context, opts *database.UpsertConnectorOAuthTokenOptions) (*database.ConnectorOAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Token)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.ConnectorOAuthToken{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO connector_oauth_tokens (oauth_client_id, user_id, token, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (oauth_client_id, user_id) DO UPDATE SET
+			token = EXCLUDED.token,
+			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
+			updated_on = now()
+		RETURNING *`,
+		opts.OAuthClientID, opts.UserID, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth token", err)
+	}
+	err = c.decryptConnectorOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID)
+	return checkDeleteRow("connector oauth token", res, err)
+}
+
+func (c *connection) decryptConnectorOAuthToken(res *database.ConnectorOAuthToken) error {
+	token, err := c.decryptText(res.Token, res.TokenEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Token = token
+	res.TokenEncryptionKeyID = ""
+	return nil
+}
+
+// encryptText encrypts a value for storage in a TEXT column.
+// It returns the value to store (base64 of the ciphertext when encryption is configured, the plain text otherwise) and the key ID used.
+func (c *connection) encryptText(plain []byte) (string, string, error) {
+	encrypted, keyID, err := c.encrypt(plain)
+	if err != nil {
+		return "", "", err
+	}
+	if keyID == "" {
+		return string(plain), "", nil
+	}
+	return base64.StdEncoding.EncodeToString(encrypted), keyID, nil
+}
+
+// decryptText reverses encryptText.
+func (c *connection) decryptText(stored []byte, keyID string) ([]byte, error) {
+	if keyID == "" {
+		return stored, nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(string(stored))
+	if err != nil {
+		return nil, err
+	}
+	return c.decrypt(decoded, keyID)
 }

@@ -313,6 +313,7 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 		AiPrompts:          inst.AIPrompts,
 		FrontendUrl:        inst.FrontendURL,
 		Theme:              inst.Theme,
+		EmbedOpenUrl:       inst.EmbedOpenURL,
 	}
 
 	if sensitive {

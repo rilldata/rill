@@ -61,7 +61,66 @@ describe("transformFileList", () => {
         files: [],
       },
     },
-    // Additional test cases...
+    {
+      description: "lists hidden directories after visible ones at every level",
+      // The input mirrors the explorer's alphabetical sort, where dot-prefixed
+      // entries come first.
+      fileList: [
+        { path: "/.claude/skills/analyst/SKILL.md", isDir: false },
+        { path: "/.env", isDir: false },
+        { path: "/models/.scratch/draft.sql", isDir: false },
+        { path: "/models/events.sql", isDir: false },
+        { path: "/models/staging", isDir: true },
+        { path: "/rill.yaml", isDir: false },
+      ] as V1DirEntry[],
+      expectedStructure: {
+        name: "",
+        path: "/",
+        directories: [
+          {
+            name: "models",
+            path: "/models",
+            directories: [
+              {
+                name: "staging",
+                path: "/models/staging",
+                directories: [],
+                files: [],
+              },
+              {
+                name: ".scratch",
+                path: "/models/.scratch",
+                directories: [],
+                files: ["draft.sql"],
+              },
+            ],
+            files: ["events.sql"],
+          },
+          {
+            name: ".claude",
+            path: "/.claude",
+            directories: [
+              {
+                name: "skills",
+                path: "/.claude/skills",
+                directories: [
+                  {
+                    name: "analyst",
+                    path: "/.claude/skills/analyst",
+                    directories: [],
+                    files: ["SKILL.md"],
+                  },
+                ],
+                files: [],
+              },
+            ],
+            files: [],
+          },
+        ],
+        // Only directories are reordered; files keep the caller's order.
+        files: [".env", "rill.yaml"],
+      },
+    },
   ];
 
   testCases.forEach(({ description, fileList, expectedStructure }) => {

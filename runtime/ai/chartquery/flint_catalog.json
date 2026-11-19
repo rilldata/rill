@@ -1,0 +1,1707 @@
+{
+  "flint_version": "0.4.1",
+  "chart_types": [
+    {
+      "name": "Scatter Plot",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "size",
+        "shape",
+        "opacity",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 1
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Regression",
+      "channels": [
+        "x",
+        "y",
+        "size",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "regressionMethod",
+          "label": "Method",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "log",
+              "label": "Logarithmic"
+            },
+            {
+              "value": "exp",
+              "label": "Exponential"
+            },
+            {
+              "value": "pow",
+              "label": "Power"
+            },
+            {
+              "value": "quad",
+              "label": "Quadratic"
+            },
+            {
+              "value": "poly",
+              "label": "Polynomial"
+            }
+          ],
+          "default": "linear"
+        },
+        {
+          "key": "polyOrder",
+          "label": "Poly Order",
+          "type": "continuous",
+          "min": 2,
+          "max": 10,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Connected Scatter Plot",
+      "channels": [
+        "x",
+        "y",
+        "order",
+        "color",
+        "detail",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Ranged Dot Plot",
+      "channels": [
+        "x",
+        "y",
+        "color"
+      ],
+      "properties": [
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Strip Plot",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "size",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "stepWidth",
+          "label": "Jitter",
+          "type": "continuous",
+          "min": 10,
+          "max": 100,
+          "step": 5,
+          "default": 20
+        },
+        {
+          "key": "pointSize",
+          "label": "Size",
+          "type": "continuous",
+          "min": 0,
+          "max": 150,
+          "step": 5,
+          "default": 0
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0,
+          "max": 1,
+          "step": 0.1,
+          "default": 0
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Bar Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "opacity",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "cornerRadius",
+          "label": "Corners",
+          "type": "continuous",
+          "min": 0,
+          "max": 15,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "xAxisType",
+          "label": "X as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        },
+        {
+          "key": "yAxisType",
+          "label": "Y as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Grouped Bar Chart",
+      "channels": [
+        "x",
+        "y",
+        "group",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "dodge",
+          "label": "Dodge",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Auto"
+            },
+            {
+              "value": "local",
+              "label": "Local (compact)"
+            },
+            {
+              "value": "global",
+              "label": "Global (aligned)"
+            }
+          ],
+          "default": "auto"
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Stacked Bar Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "stackMode",
+          "label": "Stack",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Stacked (default)"
+            },
+            {
+              "value": "normalize",
+              "label": "Normalize (100%)"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            }
+          ]
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Lollipop Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "dotSize",
+          "label": "Dot Size",
+          "type": "continuous",
+          "min": 20,
+          "max": 300,
+          "step": 10,
+          "default": 80
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "xAxisType",
+          "label": "X as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        },
+        {
+          "key": "yAxisType",
+          "label": "Y as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Waterfall Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "cornerRadius",
+          "label": "Corners",
+          "type": "continuous",
+          "min": 0,
+          "max": 8,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "key": "totals",
+          "label": "Totals",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Auto"
+            },
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "first",
+              "label": "First"
+            },
+            {
+              "value": "last",
+              "label": "Last"
+            },
+            {
+              "value": "both",
+              "label": "Both"
+            }
+          ],
+          "default": "auto"
+        },
+        {
+          "key": "showTextLabels",
+          "label": "Labels",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Gantt Chart",
+      "channels": [
+        "y",
+        "x",
+        "x2",
+        "color",
+        "detail",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "taskHeight",
+          "label": "Task height",
+          "type": "continuous",
+          "min": 40,
+          "max": 90,
+          "step": 5,
+          "default": 70
+        },
+        {
+          "key": "cornerRadius",
+          "label": "Corners",
+          "type": "continuous",
+          "min": 0,
+          "max": 8,
+          "step": 1,
+          "default": 2
+        },
+        {
+          "key": "intervalLabels",
+          "label": "Labels",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Bullet Chart",
+      "channels": [
+        "y",
+        "x",
+        "goal",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Histogram",
+      "channels": [
+        "x",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "binCount",
+          "label": "Max Bins",
+          "type": "continuous",
+          "min": 5,
+          "max": 50,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Density Plot",
+      "channels": [
+        "x",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "bandwidth",
+          "label": "Bandwidth",
+          "type": "continuous",
+          "min": 0.05,
+          "max": 2,
+          "step": 0.05,
+          "default": 0
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "ECDF Plot",
+      "channels": [
+        "x",
+        "color",
+        "detail",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "showPoints",
+          "label": "Points",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Violin Plot",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "bandwidth",
+          "label": "Bandwidth",
+          "type": "continuous",
+          "min": 0.05,
+          "max": 2,
+          "step": 0.05,
+          "default": 0
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Boxplot",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "opacity",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "whiskerMethod",
+          "label": "Whiskers",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "iqr",
+              "label": "Tukey (1.5 × IQR)"
+            },
+            {
+              "value": "minmax",
+              "label": "Min–Max"
+            }
+          ],
+          "default": "iqr"
+        },
+        {
+          "key": "showOutliers",
+          "label": "Outliers",
+          "type": "binary",
+          "default": true
+        },
+        {
+          "key": "dodge",
+          "label": "Dodge",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Auto"
+            },
+            {
+              "value": "local",
+              "label": "Local (compact)"
+            },
+            {
+              "value": "global",
+              "label": "Global (aligned)"
+            }
+          ],
+          "default": "auto"
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Pyramid Chart",
+      "channels": [
+        "x",
+        "y",
+        "color"
+      ],
+      "properties": []
+    },
+    {
+      "name": "Candlestick Chart",
+      "channels": [
+        "x",
+        "open",
+        "high",
+        "low",
+        "close",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Line Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "strokeDash",
+        "detail",
+        "opacity",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            },
+            {
+              "value": "cardinal",
+              "label": "Cardinal"
+            },
+            {
+              "value": "catmull-rom",
+              "label": "Catmull-Rom"
+            }
+          ]
+        },
+        {
+          "key": "showPoints",
+          "label": "Points",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        },
+        {
+          "key": "xAxisType",
+          "label": "X as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        },
+        {
+          "key": "yAxisType",
+          "label": "Y as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sparkline",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "detail",
+        "row",
+        "column"
+      ],
+      "properties": [
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            },
+            {
+              "value": "cardinal",
+              "label": "Cardinal"
+            },
+            {
+              "value": "catmull-rom",
+              "label": "Catmull-Rom"
+            }
+          ]
+        },
+        {
+          "key": "baseline",
+          "label": "Reference line",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "mean",
+              "label": "Average"
+            },
+            {
+              "value": "zero",
+              "label": "Zero"
+            },
+            {
+              "value": "median",
+              "label": "Median"
+            },
+            {
+              "value": "none",
+              "label": "None"
+            }
+          ],
+          "default": "mean"
+        },
+        {
+          "key": "trendWidth",
+          "label": "Sparkline width",
+          "type": "continuous",
+          "min": 80,
+          "max": 600,
+          "step": 10,
+          "default": 240
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Bump Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "detail",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Slope Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "detail",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Area Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "opacity",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            },
+            {
+              "value": "cardinal",
+              "label": "Cardinal"
+            },
+            {
+              "value": "catmull-rom",
+              "label": "Catmull-Rom"
+            }
+          ]
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 0.7
+        },
+        {
+          "key": "stackMode",
+          "label": "Stack",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Stacked (default)"
+            },
+            {
+              "value": "normalize",
+              "label": "Normalize (100%)"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "layered",
+              "label": "Layered (overlap)"
+            }
+          ]
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "xAxisType",
+          "label": "X as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        },
+        {
+          "key": "yAxisType",
+          "label": "Y as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Streamgraph",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            },
+            {
+              "value": "cardinal",
+              "label": "Cardinal"
+            },
+            {
+              "value": "catmull-rom",
+              "label": "Catmull-Rom"
+            }
+          ]
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Range Area Chart",
+      "channels": [
+        "x",
+        "y",
+        "y2",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "interpolate",
+          "label": "Curve",
+          "type": "discrete",
+          "options": [
+            {
+              "label": "Default (linear)"
+            },
+            {
+              "value": "linear",
+              "label": "Linear"
+            },
+            {
+              "value": "monotone",
+              "label": "Monotone (smooth)"
+            },
+            {
+              "value": "step",
+              "label": "Step"
+            },
+            {
+              "value": "step-before",
+              "label": "Step Before"
+            },
+            {
+              "value": "step-after",
+              "label": "Step After"
+            },
+            {
+              "value": "basis",
+              "label": "Basis (smooth)"
+            }
+          ]
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity",
+          "type": "continuous",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.1,
+          "default": 0.5
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Pie Chart",
+      "channels": [
+        "size",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "innerRadius",
+          "label": "Donut",
+          "type": "continuous",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "default": 0
+        },
+        {
+          "key": "sortSlices",
+          "label": "Sort slices",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "none",
+              "label": "Data order"
+            },
+            {
+              "value": "descending",
+              "label": "Largest first"
+            },
+            {
+              "value": "ascending",
+              "label": "Smallest first"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Donut Chart",
+      "channels": [
+        "size",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "innerRadius",
+          "label": "Donut",
+          "type": "continuous",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "default": 0
+        },
+        {
+          "key": "sortSlices",
+          "label": "Sort slices",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "none",
+              "label": "Data order"
+            },
+            {
+              "value": "descending",
+              "label": "Largest first"
+            },
+            {
+              "value": "ascending",
+              "label": "Smallest first"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Rose Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "padAngle",
+          "label": "Gap",
+          "type": "continuous",
+          "min": 0,
+          "max": 0.1,
+          "step": 0.005,
+          "default": 0
+        },
+        {
+          "key": "alignment",
+          "label": "Alignment",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left (default)"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            }
+          ]
+        },
+        {
+          "key": "sortSlices",
+          "label": "Sort slices",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "none",
+              "label": "Data order"
+            },
+            {
+              "value": "descending",
+              "label": "Largest first"
+            },
+            {
+              "value": "ascending",
+              "label": "Smallest first"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Radar Chart",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "filled",
+          "label": "Filled",
+          "type": "binary",
+          "default": true
+        },
+        {
+          "key": "fillOpacity",
+          "label": "Fill Opacity",
+          "type": "continuous",
+          "min": 0,
+          "max": 0.5,
+          "step": 0.1,
+          "default": 0.15
+        },
+        {
+          "key": "strokeWidth",
+          "label": "Line Width",
+          "type": "continuous",
+          "min": 0.5,
+          "max": 4,
+          "step": 0.5,
+          "default": 1.5
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "logScale_x",
+          "label": "Log X",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "logScale_y",
+          "label": "Log Y",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "includeZero_x",
+          "label": "Zero X",
+          "type": "binary"
+        },
+        {
+          "key": "includeZero_y",
+          "label": "Zero Y",
+          "type": "binary"
+        }
+      ]
+    },
+    {
+      "name": "Heatmap",
+      "channels": [
+        "x",
+        "y",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "showTextLabels",
+          "label": "Labels",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        },
+        {
+          "key": "xAxisType",
+          "label": "X as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        },
+        {
+          "key": "yAxisType",
+          "label": "Y as",
+          "type": "discrete",
+          "options": [
+            {
+              "value": "temporal",
+              "label": "Temporal"
+            },
+            {
+              "value": "nominal",
+              "label": "Discrete"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bar Table",
+      "channels": [
+        "y",
+        "x",
+        "color",
+        "column",
+        "row"
+      ],
+      "properties": [
+        {
+          "key": "maxRows",
+          "label": "Max Rows",
+          "type": "continuous",
+          "min": 5,
+          "max": 100,
+          "step": 1,
+          "default": 20
+        },
+        {
+          "key": "showPercent",
+          "label": "% of total",
+          "type": "binary",
+          "default": false
+        },
+        {
+          "key": "independentYAxis",
+          "label": "Independent Y",
+          "type": "binary"
+        }
+      ]
+    }
+  ]
+}

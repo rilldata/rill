@@ -26,6 +26,9 @@
 
   $: objectPosition = getImagePosition(alignment);
 
+  // The image location for the workbook export; see BaseCanvasComponent.exportPayload.
+  $: component.exportPayload.set(url ? { kind: "imageUrl", url } : undefined);
+
   // Prefer the dark mode image when the app is in dark mode; fall back to `url`.
   $: activeUrl = $themeControl === "dark" && dark_url ? dark_url : url;
 

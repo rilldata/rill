@@ -938,6 +938,11 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
    */
   userId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 6;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<ListDeploymentsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -951,6 +956,7 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsRequest {
@@ -1274,6 +1280,11 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StartDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1283,6 +1294,7 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StartDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartDeploymentRequest {
@@ -1348,6 +1360,11 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StopDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1357,6 +1374,7 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StopDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopDeploymentRequest {
@@ -2774,6 +2792,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   /**
    * Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
    * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   * Must be at most 2048 bytes.
    *
    * @generated from field: string external_user_id = 16;
    */
@@ -2799,6 +2818,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
    * @generated from field: string resource = 5;
    */
   resource = "";
+
+  /**
+   * The `rill_open` query param of an open link from an email sent by a report created from an embed.
+   * If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
 
   /**
    * Theme to use for the embedded resource.
@@ -2870,6 +2898,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -2954,6 +2983,96 @@ export class GetIFrameResponse extends Message<GetIFrameResponse> {
 
   static equals(a: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined, b: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined): boolean {
     return proto3.util.equals(GetIFrameResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbedUserRequest
+ */
+export class GetEmbedUserRequest extends Message<GetEmbedUserRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+   *
+   * @generated from field: string id = 3;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined, b: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbedUserResponse
+ */
+export class GetEmbedUserResponse extends Message<GetEmbedUserResponse> {
+  /**
+   * The external user ID passed to GetIFrame.
+   *
+   * @generated from field: string external_user_id = 1;
+   */
+  externalUserId = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined, b: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserResponse, a, b);
   }
 }
 
@@ -4100,7 +4219,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
 
   /**
    * Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-   * It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+   * Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
    *
    * @generated from field: optional string provisioner = 8;
    */
@@ -4967,6 +5086,195 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
 
   static equals(a: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined, b: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined): boolean {
     return proto3.util.equals(GetDeploymentConfigResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenRequest
+ */
+export class GetConnectorOAuthTokenRequest extends Message<GetConnectorOAuthTokenRequest> {
+  /**
+   * Name of the connector in the deployment's project.
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Hash of the connector's current OAuth configuration, as computed by the runtime.
+   * A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+   *
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * ID of the user whose token to return.
+   *
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  /**
+   * If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+   *
+   * @generated from field: bool force_refresh = 4;
+   */
+  forceRefresh = false;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "force_refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined, b: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenResponse
+ */
+export class GetConnectorOAuthTokenResponse extends Message<GetConnectorOAuthTokenResponse> {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken = "";
+
+  /**
+   * When the access token expires. Unset if the token does not expire.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined, b: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenRequest
+ */
+export class DeleteConnectorOAuthTokenRequest extends Message<DeleteConnectorOAuthTokenRequest> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined, b: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenResponse
+ */
+export class DeleteConnectorOAuthTokenResponse extends Message<DeleteConnectorOAuthTokenResponse> {
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined, b: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenResponse, a, b);
   }
 }
 
@@ -10323,11 +10631,14 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 /**
  * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
  * the caller's own bookmarks plus shared and default bookmarks.
+ * Embed users only see their own personal bookmarks.
  *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
@@ -10518,6 +10829,8 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   resourceName = "";
 
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 6;
    */
   projectId = "";
@@ -11168,6 +11481,14 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   resources: ResourceName[] = [];
 
+  /**
+   * Optional password that recipients must enter before the token grants access.
+   * Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
+   *
+   * @generated from field: string password = 13;
+   */
+  password = "";
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11186,6 +11507,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 13, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -11429,6 +11751,14 @@ export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAut
    */
   token?: MagicAuthToken;
 
+  /**
+   * True when the bearer is a password-protected token that has not been unlocked.
+   * In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+   *
+   * @generated from field: bool locked = 2;
+   */
+  locked = false;
+
   constructor(data?: PartialMessage<GetCurrentMagicAuthTokenResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11438,6 +11768,7 @@ export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAut
   static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+    { no: 2, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenResponse {
@@ -11522,6 +11853,186 @@ export class RevokeMagicAuthTokenResponse extends Message<RevokeMagicAuthTokenRe
 
   static equals(a: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined, b: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined): boolean {
     return proto3.util.equals(RevokeMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateMagicAuthTokenRequest
+ */
+export class UpdateMagicAuthTokenRequest extends Message<UpdateMagicAuthTokenRequest> {
+  /**
+   * @generated from field: string token_id = 1;
+   */
+  tokenId = "";
+
+  /**
+   * New display name. Unchanged if not set.
+   *
+   * @generated from field: optional string display_name = 2;
+   */
+  displayName?: string;
+
+  /**
+   * New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+   *
+   * @generated from field: optional string password = 3;
+   */
+  password?: string;
+
+  /**
+   * Removes the password. Can't be combined with password.
+   *
+   * @generated from field: bool remove_password = 4;
+   */
+  removePassword = false;
+
+  constructor(data?: PartialMessage<UpdateMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "remove_password", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMagicAuthTokenRequest | PlainMessage<UpdateMagicAuthTokenRequest> | undefined, b: UpdateMagicAuthTokenRequest | PlainMessage<UpdateMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateMagicAuthTokenResponse
+ */
+export class UpdateMagicAuthTokenResponse extends Message<UpdateMagicAuthTokenResponse> {
+  /**
+   * @generated from field: rill.admin.v1.MagicAuthToken token = 1;
+   */
+  token?: MagicAuthToken;
+
+  constructor(data?: PartialMessage<UpdateMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMagicAuthTokenResponse | PlainMessage<UpdateMagicAuthTokenResponse> | undefined, b: UpdateMagicAuthTokenResponse | PlainMessage<UpdateMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UnlockMagicAuthTokenRequest
+ */
+export class UnlockMagicAuthTokenRequest extends Message<UnlockMagicAuthTokenRequest> {
+  /**
+   * @generated from field: string password = 1;
+   */
+  password = "";
+
+  constructor(data?: PartialMessage<UnlockMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UnlockMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnlockMagicAuthTokenRequest | PlainMessage<UnlockMagicAuthTokenRequest> | undefined, b: UnlockMagicAuthTokenRequest | PlainMessage<UnlockMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(UnlockMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UnlockMagicAuthTokenResponse
+ */
+export class UnlockMagicAuthTokenResponse extends Message<UnlockMagicAuthTokenResponse> {
+  /**
+   * Session token to use as the bearer token instead of the magic auth token.
+   *
+   * @generated from field: string session_token = 1;
+   */
+  sessionToken = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<UnlockMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UnlockMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnlockMagicAuthTokenResponse | PlainMessage<UnlockMagicAuthTokenResponse> | undefined, b: UnlockMagicAuthTokenResponse | PlainMessage<UnlockMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(UnlockMagicAuthTokenResponse, a, b);
   }
 }
 
@@ -13516,6 +14027,27 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
    */
   userAttrs?: Struct;
 
+  /**
+   * If true, the report's data must only be accessed through the resources listed in `resources`.
+   * Set for reports created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 7;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 8;
+   */
+  resources: ResourceName[] = [];
+
+  /**
+   * If true, the recipient is the embed user who created the report.
+   * Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 9;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_DeliveryMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13530,6 +14062,9 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
     { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_attrs", kind: "message", T: Struct },
+    { no: 7, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 9, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_DeliveryMeta {
@@ -13649,6 +14184,27 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
    */
   queryForAttributes?: Struct;
 
+  /**
+   * ID of the user to run the alert's queries as.
+   * Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+   *
+   * @generated from field: string query_for_user_id = 4;
+   */
+  queryForUserId = "";
+
+  /**
+   * If true, the alert's data must only be accessed through the resources listed in `resources`.
+   * Set for alerts created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 5;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<GetAlertMetaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13659,6 +14215,9 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetAlertMetaResponse_URLs} },
     { no: 3, name: "query_for_attributes", kind: "message", T: Struct },
+    { no: 4, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse {
@@ -13697,6 +14256,14 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
    */
   unsubscribeUrl = "";
 
+  /**
+   * If true, the recipient is the embed user who created the alert.
+   * Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 4;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetAlertMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13708,6 +14275,7 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse_URLs {
@@ -18221,6 +18789,13 @@ export class Bookmark extends Message<Bookmark> {
   shared = false;
 
   /**
+   * Whether the caller can update and remove the bookmark.
+   *
+   * @generated from field: bool can_manage = 14;
+   */
+  canManage = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
    */
   createdOn?: Timestamp;
@@ -18249,6 +18824,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "can_manage", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -18513,6 +19089,13 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   displayName = "";
 
+  /**
+   * True if recipients must enter a password before the token grants access.
+   *
+   * @generated from field: bool password_protected = 19;
+   */
+  passwordProtected = false;
+
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18538,6 +19121,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "password_protected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -18678,9 +19262,26 @@ export class ReportOptions extends Message<ReportOptions> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
+
+  /**
+   * Email of the embed user who creates the report; only used for reports created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the report.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 25;
+   */
+  embedOwnerEmail = "";
 
   /**
    * @generated from field: repeated string slack_users = 10;
@@ -18760,7 +19361,9 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -18838,6 +19441,35 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 18;
+   */
+  exportAttach = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 19;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 20;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 21;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
+   * Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+   *
+   * @generated from field: uint32 notify_rows_limit = 22;
+   */
+  notifyRowsLimit = 0;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -18856,6 +19488,16 @@ export class AlertOptions extends Message<AlertOptions> {
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
+
+  /**
+   * Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 23;
+   */
+  embedOwnerEmail = "";
 
   /**
    * @generated from field: repeated string slack_users = 9;
@@ -18902,10 +19544,16 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 22, name: "notify_rows_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

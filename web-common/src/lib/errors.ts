@@ -1,3 +1,5 @@
+import { isCancelledError } from "@tanstack/query-core";
+
 export interface HTTPError {
   response: {
     status: number;
@@ -96,6 +98,27 @@ export function isControllerClosedError(error: unknown): boolean {
   return typeof respMessage === "string"
     ? respMessage.includes(ControllerIsClosedError)
     : false;
+}
+
+/**
+ * Returns true if the error comes from a request that the client cancelled rather than one that failed:
+ * the AbortError that fetch raises when its signal fires, the ConnectRPC Canceled error that wraps it,
+ * an axios request cancelled through its signal or aborted by the browser during navigation,
+ * or TanStack Query's CancelledError.
+ * Matching is by error shape, never by message: timeouts (ConnectRPC DeadlineExceeded, axios timeouts)
+ * and server failures that merely mention cancellation, such as a reconcile that hung after cancelation, are real errors.
+ */
+export function isCancelledRequestError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if (isCancelledError(error)) return true;
+  const e = error as Record<string, unknown>;
+  // DOMException raised by fetch, or thrown by an aborted AbortSignal
+  if (e.name === "AbortError") return true;
+  // ConnectError: { code: 1 }; the name check keeps out other errors with a numeric code, such as DOMException
+  if (e.name === "ConnectError" && e.code === 1) return true;
+  // Axios: CanceledError, or an XMLHttpRequest the browser aborted; ECONNABORTED also marks timeouts, hence the message check
+  if (e.code === "ERR_CANCELED") return true;
+  return e.code === "ECONNABORTED" && e.message === "Request aborted";
 }
 
 /**

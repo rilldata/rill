@@ -13,13 +13,11 @@
   import {
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
+    type ConnectorTable,
   } from "../connectors-utils";
 
   export let driver: string;
-  export let connector: string;
-  export let database: string; // The backend interprets an empty string as the default database
-  export let databaseSchema: string; // The backend interprets an empty string as the default schema
-  export let table: string;
+  export let table: ConnectorTable;
   export let store: ConnectorExplorerStore;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
@@ -29,7 +27,14 @@
 
   const client = useRuntimeClient();
 
-  $: expandedStore = store.getItem(connector, database, databaseSchema, table);
+  $: ({ connector, database, databaseSchema, tableName } = table);
+
+  $: expandedStore = store.getItem(
+    connector,
+    database,
+    databaseSchema,
+    tableName,
+  );
   $: showSchema = $expandedStore;
 
   const {
@@ -48,7 +53,7 @@
     selectedConnector === connector &&
     selectedDatabase === database &&
     selectedSchema === databaseSchema &&
-    selectedTable === table;
+    selectedTable === tableName;
 
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     client,
@@ -56,18 +61,11 @@
   );
   $: isModelingSupported = $isModelingSupportedForConnector.data;
 
-  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
-    driver,
-    database,
-    databaseSchema,
-    table,
-  );
+  $: fullyQualifiedTableName = makeFullyQualifiedTableName(driver, table);
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
 
   // Generate preview href for any connector that supports preview routes
-  $: href =
-    makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
-    undefined;
+  $: href = makeTablePreviewHref(driver, table) || undefined;
 
   $: open = isSelected || (href ? $page.url.pathname === href : false);
 
@@ -84,7 +82,7 @@
       <button
         type="button"
         onclick={() => {
-          store.toggleItem(connector, database, databaseSchema, table);
+          store.toggleItem(connector, database, databaseSchema, tableName);
         }}
       >
         <CaretDownIcon
@@ -102,12 +100,12 @@
       role="menuitem"
       tabindex="0"
       onclick={() => {
-        store.toggleItem(connector, database, databaseSchema, table);
+        store.toggleItem(connector, database, databaseSchema, tableName);
       }}
     >
       <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span class="truncate">
-        {table}
+        {tableName}
       </span>
     </svelte:element>
 
@@ -133,9 +131,6 @@
           sideOffset={16}
         >
           <TableMenuItems
-            {connector}
-            {database}
-            {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
             {showGenerateModel}
@@ -148,7 +143,7 @@
   </div>
 
   {#if allowShowSchema && showSchema}
-    <TableSchema {connector} {database} {databaseSchema} {table} />
+    <TableSchema {table} />
   {/if}
 </li>
 

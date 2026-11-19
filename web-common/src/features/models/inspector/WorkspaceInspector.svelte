@@ -21,6 +21,7 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
+    createRuntimeServiceGetResource,
   } from "@rilldata/web-common/runtime-client";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
@@ -29,6 +30,7 @@
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
   import References from "./References.svelte";
+  import { getResultTable } from "./result-table";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let filePath: string;
@@ -52,12 +54,23 @@
   $: connectorType = source && formatConnectorType(source);
   $: fileExtension = source && getFileExtension(source);
 
-  $: cardinalityQuery = createQueryServiceTableCardinality(client, {
-    tableName,
-    connector,
-    database,
-    databaseSchema,
-  });
+  // The model has no result table until it has been reconciled, and the table queries reject an empty table name.
+  $: hasResultTable = !!connector && !!tableName;
+
+  $: cardinalityQuery = createQueryServiceTableCardinality(
+    client,
+    {
+      tableName,
+      connector,
+      database,
+      databaseSchema,
+    },
+    {
+      query: {
+        enabled: hasResultTable,
+      },
+    },
+  );
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     client,
@@ -69,6 +82,7 @@
     },
     {
       query: {
+        enabled: hasResultTable,
         placeholderData: keepPreviousData,
       },
     },
@@ -108,40 +122,36 @@
 
   $: resourceRefs = resource?.meta?.refs ?? [];
 
-  $: cardinalityQueries = resourceRefs.map((ref) => {
-    return createQueryServiceTableCardinality(
-      client,
-      {
-        tableName: ref.name as string,
-        connector,
-        database,
-        databaseSchema,
-      },
-      {
-        query: {
-          select: (data) => +(data?.cardinality ?? 0),
-        },
-      },
-    );
-  });
+  // Refs include the model's connectors and other resources without a table,
+  // so resolve each ref to the result table of the resource it names (which lives in that resource's own connector) and only query those.
+  $: refResourceQueries = resourceRefs.map((ref) =>
+    createRuntimeServiceGetResource(client, {
+      name: { kind: ref.kind, name: ref.name },
+    }),
+  );
 
-  $: sourceProfileColumns =
-    resourceRefs.map((ref) => {
-      return createQueryServiceTableColumns(
-        client,
-        {
-          tableName: ref.name as string,
-          connector,
-          database,
-          databaseSchema,
-        },
-        {
-          query: {
-            select: (data) => data?.profileColumns?.length || 0,
-          },
-        },
-      );
-    }) ?? [];
+  $: refTablesStore = derived(refResourceQueries, ($refResources) =>
+    $refResources.flatMap(
+      (refResource) => getResultTable(refResource.data?.resource) ?? [],
+    ),
+  );
+  $: refTables = $refTablesStore;
+
+  $: cardinalityQueries = refTables.map((table) =>
+    createQueryServiceTableCardinality(client, table, {
+      query: {
+        select: (data) => +(data?.cardinality ?? 0),
+      },
+    }),
+  );
+
+  $: sourceProfileColumns = refTables.map((table) =>
+    createQueryServiceTableColumns(client, table, {
+      query: {
+        select: (data) => data?.profileColumns?.length || 0,
+      },
+    }),
+  );
 
   $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
     return $cardinalities
@@ -257,13 +267,7 @@
       </InspectorHeaderGrid>
 
       <hr />
-      <References
-        refs={resourceRefs}
-        modelHasError={hasErrors}
-        {connector}
-        {database}
-        {databaseSchema}
-      />
+      <References refs={resourceRefs} modelHasError={hasErrors} />
       <hr />
 
       <div>

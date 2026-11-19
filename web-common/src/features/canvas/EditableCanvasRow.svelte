@@ -6,7 +6,6 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
@@ -15,9 +14,11 @@
     MIN_WIDTH,
     mousePosition,
     normalizeSizeArray,
+    type AddableItem,
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import VisibilityBadge from "./VisibilityBadge.svelte";
   import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
@@ -37,7 +38,7 @@
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
   ) => void;
   export let spreadEvenly: (index: number) => void;
   export let onComponentMouseDown: (params: {
@@ -51,7 +52,7 @@
   // Optional: insert a tab group at a given top-level index (top-level rows only).
   export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
-  export let initializeRow: (row: number, type: CanvasComponentType) => void;
+  export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
   export let updateComponentWidths: (
     index: number,
@@ -268,6 +269,7 @@
             ? () => onConvertToTabGroup?.()
             : undefined}
         />
+        <VisibilityBadge {component} />
       {:else}
         <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}

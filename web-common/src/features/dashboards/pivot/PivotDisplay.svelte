@@ -19,8 +19,14 @@
   import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
+  import {
+    precisionStateFor,
+    type PrecisionChipProps,
+  } from "../exact-measures/exact-measures";
+  import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
+  import PivotColumnTruncationNotice from "./PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import type { PivotChipData } from "./types";
@@ -38,11 +44,16 @@
     selectors: {
       pivot: { columns, measures, dimensions },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
+      measures: { measureLabel },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     timeRangeSummaryStore,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
   $: timeControlsForPillActions = {
@@ -68,7 +79,23 @@
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
 
-  $: ({ isFetching, assembled } = $pivotDataStore);
+  $: ({ isFetching, assembled, columnTruncation } = $pivotDataStore);
+
+  // Precision chip of a measure column header; undefined when the measure has no exact variant.
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
+    const state = precisionStateFor(
+      measureName,
+      $exactMeasureContext(exploreExactSurface.pivot),
+    );
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel: $measureLabel(measureName),
+      loading: state !== "approx" && isFetching,
+      onToggle: () =>
+        toggleExactMeasure(exploreExactSurface.pivot, measureName),
+    };
+  };
 
   // Build a description lookup from the metricsView so pivot chips get
   // descriptions even when the metricsView loads after the pivot state
@@ -229,7 +256,7 @@
           {#if $exports}
             <ExportMenu
               label={m.dashboard_export_pivot_data()}
-              includeScheduledReport={$adminServer && exploreHasTimeDimension}
+              includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
               exploreName={$exploreName}
@@ -248,6 +275,9 @@
           {isEmbedded}
         />
       {:else}
+        {#if columnTruncation}
+          <PivotColumnTruncationNotice {columnTruncation} />
+        {/if}
         <PivotTable
           bind:this={pivotTable}
           {widthScopeKey}
@@ -255,6 +285,7 @@
           overscan={60}
           config={pivotConfig}
           pivotState={pivotExploreState}
+          {precisionFor}
           setPivotExpanded={(expanded) =>
             metricsExplorerStore.setPivotExpanded($exploreName, expanded)}
           setPivotSort={(sorting) =>

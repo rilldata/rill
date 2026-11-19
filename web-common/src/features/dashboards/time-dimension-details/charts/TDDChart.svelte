@@ -39,6 +39,8 @@
   export let metricsViewName: string;
   export let measure: MetricsViewSpecMeasure;
   export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  export let exact = false;
   export let timeDimension: string | undefined = undefined;
   export let interval: Interval<true> | undefined = undefined;
   export let comparisonInterval: Interval<true> | undefined = undefined;
@@ -83,6 +85,7 @@
     showTimeDimensionDetail,
     dynamicYAxis,
     ephemeralMeasures,
+    exact,
   );
 
   $: componentChartType = TDD_TO_COMPONENT_CHART_TYPE[chartType];

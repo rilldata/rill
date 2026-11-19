@@ -4,6 +4,7 @@
  */
 
 import type { V1Tool } from "@rilldata/web-common/runtime-client";
+import { isMcpToolName, parseMcpToolName } from "../../../connect/mcp-servers";
 
 // Meta keys for tool invocation display names (matches backend conventions)
 const META_KEY_INVOKING = "openai/toolInvocation/invoking";
@@ -19,6 +20,12 @@ export function getToolDisplayName(
   tools: V1Tool[] | undefined,
 ): string {
   const tool = tools?.find((t) => t.name === toolName);
+
+  // External MCP tools are not in ListTools; label them "<connector>: <tool>" from the name
+  if (isMcpToolName(toolName)) {
+    const parsed = parseMcpToolName(toolName);
+    return `${parsed.connector}: ${parsed.tool}`;
+  }
 
   if (tool?.meta) {
     const metaKey = isComplete ? META_KEY_INVOKED : META_KEY_INVOKING;

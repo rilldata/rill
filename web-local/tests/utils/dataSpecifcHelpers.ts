@@ -1,5 +1,5 @@
 import { expect, type Page, type Response } from "@playwright/test";
-import { assertLeaderboards } from "web-local/tests/utils/metricsViewHelpers";
+import { assertLeaderboards } from "./metricsViewHelpers";
 import {
   updateCodeEditor,
   waitForProfiling,
@@ -7,6 +7,7 @@ import {
 } from "./commonHelpers";
 import { createModel } from "./modelHelpers";
 import { createSourceV2 } from "./sourceHelpers";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 export interface TimeSeriesValue {
   ts: string;
@@ -69,6 +70,12 @@ export async function assertAdBidsDashboard(page: Page) {
  */
 export function interceptTimeseriesResponse(
   page: Page,
+  expected: {
+    metricsViewName: string;
+    measureName: string;
+    timeGranularity: V1TimeGrain;
+    timeZone: string;
+  },
 ): Promise<TimeSeriesResponse> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -79,9 +86,20 @@ export function interceptTimeseriesResponse(
     const handler = async (response: Response) => {
       if (
         response.url().includes("QueryService/MetricsViewTimeSeries") &&
-        response.request().method() === "POST"
+        response.request().method() === "POST" &&
+        response.ok()
       ) {
         try {
+          const request = response.request().postDataJSON();
+          if (
+            request?.metricsViewName !== expected.metricsViewName ||
+            request?.measureNames?.length !== 1 ||
+            request.measureNames[0] !== expected.measureName ||
+            request?.timeGranularity !== expected.timeGranularity ||
+            request?.timeZone !== expected.timeZone
+          ) {
+            return;
+          }
           const data = (await response.json()) as TimeSeriesResponse;
           clearTimeout(timeout);
           page.off("response", handler);

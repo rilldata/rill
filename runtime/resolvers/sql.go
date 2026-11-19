@@ -77,7 +77,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	// Resolve the SQL template
-	sql, refs, err := resolveTemplate(props.SQL, opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
+	sql, refs, err := resolveTemplate(props.SQL, inst, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -255,15 +255,22 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 	return nil
 }
 
-func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
+// resolveTemplate resolves the templating in a SQL string.
+// Project variables are only available to templates declared in the project, see ResolverOptions.TemplateVariables.
+func resolveTemplate(sqlTemplate string, inst *drivers.Instance, opts *runtime.ResolverOptions) (string, []*runtimev1.ResourceName, error) {
+	variables, err := opts.TemplateVariables(inst, sqlTemplate)
+	if err != nil {
+		return "", nil, err
+	}
+
 	var refs []*runtimev1.ResourceName
 	sql, err := parser.ResolveTemplate(sqlTemplate, parser.TemplateData{
 		Environment: inst.Environment,
-		User:        userAttributes,
-		Variables:   inst.ResolveVariables(false),
+		User:        opts.Claims.UserAttributes,
+		Variables:   variables,
 		ExtraProps: map[string]any{
-			"args":   args,
-			"export": forExport,
+			"args":   opts.Args,
+			"export": opts.ForExport,
 		},
 		Resolve: func(ref parser.ResourceName) (string, error) {
 			// Add to the list of potential refs

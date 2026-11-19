@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v4"
 )
 
 func main() {
-	// NOTE: JWKS generation based on: https://github.com/go-jose/go-jose/blob/v3/jose-util/generate.go
+	// NOTE: JWKS generation based on: https://github.com/go-jose/go-jose/blob/v4/jose-util/generate.go
 
 	// Generate RSA private key
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)

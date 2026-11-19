@@ -6,6 +6,7 @@ import {
   type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
+  runtimeServiceGetResource,
   runtimeServicePutFile,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -17,14 +18,29 @@ import {
   BehaviourEventMedium,
 } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+import { extractFileName } from "../file-path-utils.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 
 export async function createResourceAndNavigate(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
-  const filePath = await createResourceFile(client, kind, baseResource);
+  const filePath = await createResourceFile(
+    client,
+    kind,
+    baseResource,
+    folderName,
+  );
   if (!filePath) return;
+
+  if (kind === ResourceKind.Canvas) {
+    await waitForCanvasCreation(client, extractFileName(filePath));
+  }
 
   const previousScreenName = getScreenNameFromPage();
   await navigateToFile(filePath);
@@ -36,16 +52,52 @@ export async function createResourceAndNavigate(
   );
 }
 
+// PutFile can finish before the parser creates the Canvas needed by ResolveCanvas.
+// Give it a short head start, but still open the editor on timeout or errors.
+async function waitForCanvasCreation(client: RuntimeClient, name: string) {
+  const controller = new AbortController();
+  const { signal } = controller;
+  // The observed creation race was about 250 ms; keep the fallback bounded to 1 s.
+  const deadline = setTimeout(() => controller.abort(), 1_000);
+  try {
+    while (!signal.aborted) {
+      try {
+        const response = await runtimeServiceGetResource(
+          client,
+          { name: { name, kind: ResourceKind.Canvas } },
+          { signal },
+        );
+        if (response.resource) return;
+      } catch (error) {
+        if (!isNotFoundError(error) && !isControllerClosedError(error)) return;
+      }
+      if (signal.aborted) return;
+      await new Promise<void>((resolve) => {
+        const finish = () => {
+          clearTimeout(timer);
+          signal.removeEventListener("abort", finish);
+          resolve();
+        };
+        const timer = setTimeout(finish, 50);
+        signal.addEventListener("abort", finish, { once: true });
+      });
+    }
+  } finally {
+    clearTimeout(deadline);
+  }
+}
+
 export async function createResourceFile(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ): Promise<string> {
   if (!(kind in ResourceKindMap)) {
     throw new Error(`Unknown resource kind: ${kind}`);
   }
 
-  const newPath = getPathForNewResourceFile(kind, baseResource);
+  const newPath = getPathForNewResourceFile(kind, baseResource, folderName);
   await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
@@ -60,6 +112,7 @@ export async function createResourceFile(
 export function getPathForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
@@ -70,11 +123,11 @@ export function getPathForNewResourceFile(
         ]
       : fileArtifacts.getNamesForKind(newKind);
 
-  const { folderName, extension } = ResourceKindMap[newKind];
+  const { folderName: defaultFolderName, extension } = ResourceKindMap[newKind];
   const baseName = getBaseNameForNewResourceFile(newKind, baseResource);
   const newName = getName(baseName, allNames);
 
-  return `${folderName}/${newName}${extension}`;
+  return `${folderName ?? defaultFolderName}/${newName}${extension}`;
 }
 
 export const ResourceKindMap: Record<
@@ -244,6 +297,46 @@ type: api
 
 metrics_sql: |
   select measure, dimension from metrics_view
+`;
+    case ResourceKind.Component:
+      return `# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/component
+# A custom viz: a reusable visualization with declared params.
+# Add it to canvas dashboards and bind values to the params there.
+
+type: component
+display_name: "My custom viz"
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: dimension
+    type: dimension
+    required: true
+  - name: order_by
+    type: string
+    required: true
+    description: "Field to sort the query by (defaults to the measure)"
+  - name: limit
+    type: number
+    default: 10
+    description: "Maximum number of rows to plot"
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.dimension }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.order_by }} DESC
+    LIMIT {{ .params.limit }}
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: { field: "{{ .params.dimension }}", sortBy: y, sortOrder: descending }
+      y: { field: "{{ .params.measure }}" }
 `;
     case ResourceKind.Canvas:
       return `# Explore YAML

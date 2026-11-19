@@ -103,6 +103,41 @@ async function verifyChartTooltipData(
   }
 }
 
+/**
+ * Selects each time range from the menu and checks the chart against the API response.
+ * The grain is adaptive, so selecting the range is what sets the grain and fires the query.
+ */
+async function verifyTimeRangeCases(page: Page, dashboardTZ: string) {
+  for (const testCase of TIME_RANGE_TEST_CASES) {
+    let timeseriesPromise: ReturnType<typeof interceptTimeseriesResponse>;
+    await interactWithTimeRangeMenu(page, async () => {
+      // A timezone reload may still have WEEK responses in flight when this menu opens.
+      timeseriesPromise = interceptTimeseriesResponse(page, {
+        metricsViewName: "AdBids_metrics",
+        measureName: "total_records",
+        timeGranularity: testCase.grain,
+        timeZone: dashboardTZ,
+      });
+      await page.getByRole("menuitem", { name: testCase.menuItem }).click();
+    });
+
+    await expect(
+      page.getByRole("button", { name: "Select aggregation grain" }),
+    ).toContainText(`by ${V1TimeGrainToDateTimeUnit[testCase.grain]}`);
+
+    const apiData = await timeseriesPromise!;
+    expect(apiData.data.length).toBe(testCase.expectedDataPoints);
+
+    await verifyChartTooltipData(
+      page,
+      apiData,
+      testCase.grain,
+      "total_records",
+      dashboardTZ,
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Group 1: Rendering coverage — test dashboard TZ variations with a fixed
 // system TZ. Covers the actual label formatting and value display logic.
@@ -130,36 +165,7 @@ test.describe("timeseries charts (rendering)", () => {
 
       await setDashboardTimezone(page, dashboardTZ);
 
-      for (const testCase of TIME_RANGE_TEST_CASES) {
-        await interactWithTimeRangeMenu(page, async () => {
-          await page.getByRole("menuitem", { name: testCase.menuItem }).click();
-        });
-
-        await page
-          .getByRole("button", {
-            name: "Select aggregation grain",
-          })
-          .click();
-
-        const timeseriesPromise = interceptTimeseriesResponse(page);
-        await page
-          .getByRole("menuitemcheckbox", {
-            name: V1TimeGrainToDateTimeUnit[testCase.grain],
-            exact: true,
-          })
-          .click();
-
-        const apiData = await timeseriesPromise;
-        expect(apiData.data.length).toBe(testCase.expectedDataPoints);
-
-        await verifyChartTooltipData(
-          page,
-          apiData,
-          testCase.grain,
-          "total_records",
-          dashboardTZ,
-        );
-      }
+      await verifyTimeRangeCases(page, dashboardTZ);
     });
   }
 });
@@ -191,35 +197,6 @@ test.describe("timeseries charts system TZ independence", () => {
 
     await setDashboardTimezone(page, dashboardTZ);
 
-    for (const testCase of TIME_RANGE_TEST_CASES) {
-      await interactWithTimeRangeMenu(page, async () => {
-        await page.getByRole("menuitem", { name: testCase.menuItem }).click();
-      });
-
-      await page
-        .getByRole("button", {
-          name: "Select aggregation grain",
-        })
-        .click();
-
-      const timeseriesPromise = interceptTimeseriesResponse(page);
-      await page
-        .getByRole("menuitemcheckbox", {
-          name: V1TimeGrainToDateTimeUnit[testCase.grain],
-          exact: true,
-        })
-        .click();
-
-      const apiData = await timeseriesPromise;
-      expect(apiData.data.length).toBe(testCase.expectedDataPoints);
-
-      await verifyChartTooltipData(
-        page,
-        apiData,
-        testCase.grain,
-        "total_records",
-        dashboardTZ,
-      );
-    }
+    await verifyTimeRangeCases(page, dashboardTZ);
   });
 });

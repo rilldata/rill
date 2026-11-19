@@ -1,5 +1,6 @@
 ---
 title: Data Quality Tests
+description: Define SQL checks that run whenever a model refreshes
 sidebar_label: Data Quality Tests
 sidebar_position: 14
 ---
@@ -37,14 +38,18 @@ Tests are defined in your model's YAML file under the `tests:` property. Each te
 ### Basic Syntax
 
 ```yaml
+# models/my_model.yaml
 type: model
 sql: SELECT * FROM my_source
 
 tests:
-  - name: Test Name
-    assert: column > 0  # OR
-    sql: SELECT * FROM model WHERE condition_is_bad
+  - name: No negative amounts
+    assert: amount >= 0
+  - name: No orphaned orders
+    sql: SELECT * FROM my_model WHERE customer_id IS NULL
 ```
+
+Each test uses either `assert` or `sql`. A test with both fails with `test "<name>" must not have both "sql" and "assert" defined`.
 
 ## Test Types
 

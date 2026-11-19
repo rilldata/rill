@@ -2,6 +2,7 @@ import {
   getDashboardNameFromReport,
   getExistingReportInitialFormValues,
   getNewCanvasReportInitialFormValues,
+  getNewReportInitialFormValues,
   isAIReportSpec,
   isCanvasReportSpec,
 } from "@rilldata/web-common/features/scheduled-reports/utils";
@@ -118,5 +119,42 @@ describe("getExistingReportInitialFormValues", () => {
     );
     expect(values.pdfIncludeFilters).toBe(true);
     expect(values.pdfAllTabs).toBe(true);
+  });
+});
+
+describe("embed owner email", () => {
+  it("puts the creator's email in its own field instead of the recipients when shown", () => {
+    const values = getNewReportInitialFormValues("user@example.com", {}, true);
+    expect(values.emailRecipients).toEqual([""]);
+    expect(values.embedOwnerEmail).toEqual("user@example.com");
+  });
+
+  it("keeps the creator's email in the recipients when the field is hidden", () => {
+    const values = getNewReportInitialFormValues("user@example.com", {});
+    expect(values.emailRecipients).toEqual(["user@example.com", ""]);
+    expect(values.embedOwnerEmail).toEqual("");
+  });
+
+  it("moves the saved creator email out of the recipients of an existing report", () => {
+    const reportSpec: V1ReportSpec = {
+      annotations: { admin_embed_owner_email: "Creator@example.com" },
+      notifiers: [
+        {
+          connector: "email",
+          properties: {
+            recipients: ["creator@example.com", "other@example.com"],
+          },
+        },
+      ],
+    };
+    // Outside of an embed, the editor's email is not the creator's email
+    const values = getExistingReportInitialFormValues(
+      reportSpec,
+      "editor@example.com",
+      {},
+      true,
+    );
+    expect(values.emailRecipients).toEqual(["other@example.com", ""]);
+    expect(values.embedOwnerEmail).toEqual("Creator@example.com");
   });
 });

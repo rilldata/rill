@@ -6,6 +6,7 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import { personalCanvasHref } from "@rilldata/web-admin/features/personal-files/personal-file-client.ts";
 
   let {
     name,
@@ -29,7 +30,7 @@
     lastRefreshed ? new Date(lastRefreshed) : null,
   );
 
-  let href = $derived(`/${organization}/${project}/-/personal/${name}`);
+  let href = $derived(personalCanvasHref(organization, project, name));
 
   let resourceKind = $derived(
     isMetricsExplorer ? ResourceKind.Explore : ResourceKind.Canvas,

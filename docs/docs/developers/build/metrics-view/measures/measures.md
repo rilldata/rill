@@ -42,5 +42,6 @@ Explore these advanced capabilities to enhance your measures:
 - **[Case Statements and Filters](/developers/build/metrics-view/measures/case-statements)** - Use conditional logic and filtering in your measures
 - **[Referencing Measures](/developers/build/metrics-view/measures/referencing)** - Reference and combine existing measures in your calculations
 - **[Quantiles](/developers/build/metrics-view/measures/quantiles)** - Calculate percentiles and quantiles for statistical analysis
+- **[Approximate and Exact](/developers/build/metrics-view/measures/exact-measures)** - Serve fast approximate aggregates by default and let viewers switch to exact values on demand
 - **[Fixed Measures](/developers/build/metrics-view/measures/fixed-measures)** - Create measures with fixed values and constants
 - **[Window Functions](/developers/build/metrics-view/measures/windows)** - Apply window functions for advanced analytical operations

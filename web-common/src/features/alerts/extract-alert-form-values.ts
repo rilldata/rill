@@ -1,5 +1,8 @@
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import {
+  AlertNotifyRowsLimitDefault,
+  type AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils";
 import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   getEmptyMeasureFilterEntry,
@@ -8,11 +11,13 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import { getExistingScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
+  V1ExportFormat,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
@@ -93,9 +98,13 @@ export function extractAlertNotification(
   };
 }
 
+// userEmail is the email of the current user, and showEmbedOwnerEmail is true if the form shows the field for the creator's email.
+// See showEmbedOwnerEmail in AlertFormDataWrapper.
 export function getExistingAlertInitialFormValues(
   alertSpec: V1AlertSpec,
   metricsViewName: string,
+  userEmail = "",
+  showEmbedOwnerEmail = false,
 ): AlertFormValues {
   const queryArgsJson = JSON.parse(
     (alertSpec.resolverProperties?.query_args_json ??
@@ -106,6 +115,16 @@ export function getExistingAlertInitialFormValues(
     alertSpec.annotations?.web_open_path ?? "",
   );
 
+  // The creator's saved email is in its own field rather than in the recipients,
+  // since the admin service always keeps it as a recipient (the creator can't unsubscribe).
+  const savedOwnerEmail = alertSpec.annotations?.admin_embed_owner_email ?? "";
+  const notification = extractAlertNotification(alertSpec);
+  if (savedOwnerEmail) {
+    notification.emailRecipients = notification.emailRecipients.filter(
+      (r) => r.toLowerCase() !== savedOwnerEmail.toLowerCase(),
+    );
+  }
+
   return {
     name: alertSpec.displayName as string,
     exploreName: exploreName ?? metricsViewName,
@@ -113,7 +132,28 @@ export function getExistingAlertInitialFormValues(
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
     refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
     ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
-    ...extractAlertNotification(alertSpec),
+    ...notification,
+    // In an embed, the embed's `user_email` takes precedence over the saved email, the same way the admin service applies it.
+    // Outside of an embed, userEmail is the editor's email, so only the saved email applies.
+    embedOwnerEmail: showEmbedOwnerEmail
+      ? (EmbedStore.isEmbedded() ? userEmail : "") || savedOwnerEmail
+      : "",
+    exportAttach: alertSpec.exportAttach ?? false,
+    // Alerts that don't attach an export have no format, so default to CSV for when attaching is enabled
+    exportFormat:
+      alertSpec.exportFormat &&
+      alertSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? alertSpec.exportFormat
+        : V1ExportFormat.EXPORT_FORMAT_CSV,
+    exportLimit:
+      !alertSpec.exportLimit || alertSpec.exportLimit === "0"
+        ? ""
+        : alertSpec.exportLimit,
+    exportIncludeHeader: alertSpec.exportIncludeHeader ?? false,
+    // An unset limit (0) means the runtime's default
+    notifyRowsLimit: String(
+      alertSpec.notifyRowsLimit || AlertNotifyRowsLimitDefault,
+    ),
     ...extractAlertFormValues(queryArgsJson),
   };
 }

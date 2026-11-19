@@ -39,6 +39,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
 - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
+- [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
 - [**Slack**](#slack) - Slack data
 
 ### _Other_
@@ -362,6 +363,10 @@ _[string]_ - Default catalog name. Optional.
 ### `schema`
 
 _[string]_ - Default schema name. Optional.
+
+### `catalog_whitelist`
+
+_[string]_ - Comma-separated list of catalogs to show
 
 ### `dsn`
 
@@ -734,7 +739,7 @@ _[number]_ - Maximum number of tokens to generate in the completion (default: 81
 
 ### `reasoning_effort`
 
-_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject.
 
 ### `base_url`
 
@@ -781,11 +786,15 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (e.g., 0.0)
+_[number]_ - Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
 
 ### `base_url`
 
 _[string]_ - The base URL for the Claude API
+
+### `prompt_caching`
+
+_[boolean]_ - Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
 
 ```yaml
 # Example: Claude connector configuration
@@ -823,7 +832,7 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (0.0-2.0)
+_[number]_ - Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
 
 ### `top_p`
 
@@ -839,6 +848,75 @@ type: connector
 driver: gemini
 api_key: "{{ .env.gemini_api_key }}"
 model: gemini-2.5-pro-preview-05-06
+```
+
+## Bedrock
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "bedrock" _(required)_
+
+### `model`
+
+_[string]_ - The Bedrock model ID, inference profile ID, or ARN to use (e.g., 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'). The model must support tool use and structured outputs in the Bedrock Converse API. _(required)_
+
+### `region`
+
+_[string]_ - Optional AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
+
+### `api_key`
+
+_[string]_ - Amazon Bedrock API key. Use either an API key or AWS access keys; they cannot be combined.
+
+### `aws_access_key_id`
+
+_[string]_ - AWS Access Key ID used for authentication. Required unless using an API key or running locally with host credentials.
+
+### `aws_secret_access_key`
+
+_[string]_ - AWS Secret Access Key paired with the Access Key ID.
+
+### `aws_access_token`
+
+_[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of temporary session credentials.
+
+### `aws_role_arn`
+
+_[string]_ - ARN of the IAM role to assume. When specified, the base credentials are used to call STS AssumeRole and obtain temporary credentials scoped to this role.
+
+### `aws_role_session_name`
+
+_[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'aws_role_arn' is specified.
+
+### `aws_external_id`
+
+_[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'aws_role_arn' is specified.
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response. Defaults to the model's maximum.
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.1). Defaults to the model's default. Leave unset for models that don't support it, such as reasoning models.
+
+```yaml
+# Example: Bedrock connector configuration
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
+```
+
+```yaml
+# Example: Bedrock connector configuration using an API key
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+api_key: "{{ .env.BEDROCK_API_KEY }}"
 ```
 
 ## Pinot
@@ -1020,7 +1098,32 @@ _[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`.
+_[string]_ - SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+
+
+### `sslrootcert_pem`
+
+_[string]_ - CA certificate contents as raw PEM or standard base64-encoded PEM.
+Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+
+
+### `sslcert_pem`
+
+_[string]_ - Client certificate contents as raw PEM or standard base64-encoded PEM.
+Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+
+
+### `sslkey_pem`
+
+_[string]_ - Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+Store this value in a secret project variable.
+
+See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+for upload and Cloud configuration instructions.
+
 
 ### `max_open_conns`
 
@@ -1240,6 +1343,131 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
+```
+
+## MCP Server
+
+Connects an external MCP (Model Context Protocol) server so its tools become available to Rill's AI agents.
+Credentials are either project-scoped (`headers` with `{{ .env.* }}` templating) or per-user (`auth: oauth`, where each user authorizes the server in their browser from the chat).
+
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `mcp` _(required)_
+
+### `url`
+
+_[string]_ - URL of the MCP server's streamable HTTP endpoint. Must use `https` in Rill Cloud _(required)_
+
+### `display_name`
+
+_[string]_ - Human-friendly name for the server, shown in the chat and to AI agents. Defaults to the connector name
+
+### `ai_instructions`
+
+_[string]_ - Guidance for AI agents on when and how to use the server's tools
+
+### `auth`
+
+_[string]_ - Set to `oauth` for servers that require each user to authorize access in their browser (OAuth 2.1 with PKCE).
+Only available in Rill Cloud, where users connect from the chat and each user's token is stored encrypted. Rill Developer lists such servers but cannot connect them.
+Cannot be combined with an `Authorization` header.
+
+
+### `oauth_client_id`
+
+_[string]_ - Pre-registered OAuth client ID, for authorization servers that do not support dynamic client registration
+
+### `oauth_client_secret`
+
+_[string]_ - Secret of the pre-registered OAuth client. Reference it from `.env` with `{{ .env.* }}` templating rather than committing it
+
+### `oauth_scopes`
+
+_[array of string]_ - Scopes to request during authorization. Defaults to all scopes the server advertises
+
+### `oauth_authorization_params`
+
+_[object]_ - Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again
+
+### `headers`
+
+_[object]_ - HTTP headers sent on every request to the server, such as a project-scoped `Authorization` header.
+Values may use `{{ .env.* }}` for secrets and `{{ .user.* }}` to pass attributes of the requesting user (which makes the server usable only by identified users).
+
+
+### `timeout`
+
+_[string]_ - Timeout per tool call, as a duration (default `60s`)
+
+### `connect_timeout`
+
+_[string]_ - Timeout for connecting to the server and listing its tools, as a duration (default `10s`)
+
+### `max_result_bytes`
+
+_[integer]_ - Maximum size of a tool result passed to the AI, in bytes. Larger results are truncated (default `131072`)
+
+### `security`
+
+_[object]_ - Controls who may use the server and which of its tools. It uses the same syntax as [metrics view security policies](/developers/build/metrics-view/security),
+with tool names in place of dimension and measure names, plus an `agents` field.
+Omit the block to allow every user with AI access; a block without `access` denies everyone.
+
+
+  - **`access`** - _[oneOf]_ - Expression indicating whether the user may use the server. Can reference user attributes with `{{ .user.* }}`
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
+
+  - **`agents`** - _[array of string]_ - AI agents that may use the server's tools. Defaults to all agents
+
+  - **`include`** - _[array of object]_ - Tools each user may call. If any include rule is present, tools not matched by a passing rule are denied
+
+    - **`if`** - _[string]_ - Templated boolean condition over user attributes _(required)_
+
+    - **`names`** - _[oneOf]_ - Tool names the rule applies to, or `'*'` for all tools _(required)_
+
+      - **option 1** - _[string]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+  - **`exclude`** - _[array of object]_ - Tools to deny. A matching exclude always wins over an include
+
+    - **`if`** - _[string]_ - Templated boolean condition over user attributes _(required)_
+
+    - **`names`** - _[oneOf]_ - Tool names the rule applies to, or `'*'` for all tools _(required)_
+
+      - **option 1** - _[string]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+```yaml
+# Example: MCP server with per-user OAuth
+type: connector # Must be `connector` (required)
+driver: mcp # Must be `mcp` _(required)_
+url: "https://mcp.linear.app/mcp" # Streamable HTTP endpoint of the MCP server
+display_name: "Linear" # Name shown in the chat and to AI agents
+ai_instructions: "Use Linear to look up issues. Search before creating anything."
+auth: oauth # Each user authorizes the server from the chat
+security:
+    access: "'{{ .user.domain }}' == 'example.com'" # Only users of this domain may use the server
+    agents: [analyst] # Only the analyst agent may use it
+    exclude:
+        - if: "NOT {{ .user.admin }}"
+          names: [create_issue, update_issue, delete_issue]
+```
+
+```yaml
+# Example: internal MCP server with a project-scoped token
+type: connector
+driver: mcp
+url: "https://mcp.internal.example.com/mcp"
+display_name: "Company data"
+headers:
+    Authorization: "Bearer {{ .env.INTERNAL_MCP_TOKEN }}" # Secret from .env or Rill Cloud variables
+    X-Rill-User: "{{ .user.email }}" # Pass the requesting user's identity to the server
 ```
 
 ## Slack

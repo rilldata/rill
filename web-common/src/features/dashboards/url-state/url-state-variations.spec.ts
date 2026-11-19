@@ -1,4 +1,5 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -139,7 +140,7 @@ const TestCases: {
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_KATHMANDU_TIMEZONE,
     ],
-    expectedSearch: "tr=P4W&tz=Asia%2FKathmandu&grain=week",
+    expectedSearch: "tr=P4W&tz=Asia%2FKathmandu",
   },
   {
     title: "Time range with preset and state matching preset",
@@ -149,7 +150,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -161,7 +162,7 @@ const TestCases: {
     mutations: [AD_BIDS_SET_P4W_TIME_RANGE_FILTER, AD_BIDS_SET_LA_TIMEZONE],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -173,14 +174,14 @@ const TestCases: {
     mutations: [AD_BIDS_SET_ALL_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=inf&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=inf&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range with preset and ALL_TIME selected",
     mutations: [AD_BIDS_SET_PREVIOUS_WEEK_RILL_TIME_COMPARE_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
 
   {
@@ -189,7 +190,7 @@ const TestCases: {
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
     ],
-    expectedSearch: "tr=P4W&compare_tr=rill-PW&grain=week",
+    expectedSearch: "tr=P4W&compare_tr=rill-PW",
   },
   {
     title: "Time range comparison with preset and state matching preset",
@@ -199,7 +200,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range comparison with preset and state not matching preset",
@@ -209,7 +210,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Time range comparison enable and disable",
@@ -220,7 +221,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P4W&tz=Asia%2FKathmandu&grain=week&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P4W&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
     legacyNotSupported: true,
   },
   {
@@ -230,7 +231,7 @@ const TestCases: {
       timeRange: "P9D",
       comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
     },
-    expectedSearch: "tr=P9D&grain=day",
+    expectedSearch: "tr=P9D",
     legacyNotSupported: true,
   },
 
@@ -300,7 +301,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title:
@@ -312,7 +313,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions%2Cbid_price&dims=publisher%2Cdomain&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions%2Cbid_price&dims=publisher%2Cdomain&sort_type=percent&sort_dir=ASC",
   },
   {
     title: "Show and hide measures/dimensions",
@@ -345,7 +346,7 @@ const TestCases: {
     mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_IMPRESSIONS],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
   },
   {
     title:
@@ -356,7 +357,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
+      "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
   },
   {
     title: "Leaderboard configs with multiple measures",
@@ -698,10 +699,24 @@ describe("Human readable URL state variations", () => {
             explore,
             defaultExplorePreset,
           );
-        expect(entityFromUrl).toEqual({
+        // The adaptive grain is derived from the range before use, as correctExploreState does on load.
+        applyAdaptiveTimeGrain(entityFromUrl, AD_BIDS_METRICS_VIEW);
+        const expectedEntity = {
           ...curState,
           ...(extraExploreState ?? {}),
-        });
+        };
+        // Adaptive grains are not part of the legacy state. They are re-derived from the range,
+        // which for all-time only happens once the range is resolved.
+        if (
+          curState.adaptiveTimeGrain &&
+          curState.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+        ) {
+          expectedEntity.selectedTimeRange = {
+            ...curState.selectedTimeRange,
+            interval: undefined,
+          };
+        }
+        expect(entityFromUrl).toEqual(expectedEntity);
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
@@ -712,6 +727,7 @@ describe("Human readable URL state variations", () => {
             explore,
             defaultExplorePreset,
           );
+        applyAdaptiveTimeGrain(entityFromDefaultUrl, AD_BIDS_METRICS_VIEW);
 
         // assert that the entity we got back matches the original
         expect(entityFromDefaultUrl).toEqual(initState);

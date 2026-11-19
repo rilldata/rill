@@ -2,6 +2,7 @@ import {
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { RillAllTimeInterval } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -114,17 +115,16 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
     TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset
   ) {
     const rt = parseRillTime(timeRange.expression);
-    if (!rt.isOldFormat) {
+    // The runtime can't offset all time, so all time keeps the legacy fields.
+    if (!(rt.interval instanceof RillAllTimeInterval)) {
       return {
         expression:
           rt.toString() +
           " offset " +
           TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
       };
-    } else {
-      // Handle old syntax differently until we have the backend parser updated.
-      isoDuration = timeRange.expression;
     }
+    isoDuration = timeRange.expression;
   }
 
   const comparisonTimeRange: V1TimeRange = {};
@@ -206,13 +206,24 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
     duration = PreviousCompleteRangeReverseMap[fullRangeKey];
   }
 
+  // A comparison sent as the base expression with an offset, such as "P1D offset -1W"
+  const offsetOption = timeRange.expression
+    ? getComparisonOptionFromExpression(timeRange.expression)
+    : undefined;
+  if (offsetOption) {
+    duration = offsetOption;
+  }
+
   if (timeRange.start && timeRange.end) {
     selectedTimeRange = {
       name: TimeComparisonOption.CUSTOM,
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
-  } else if (timeRange.isoOffset === timeRange.isoDuration) {
+  } else if (
+    offsetOption === TimeComparisonOption.CONTIGUOUS ||
+    (!offsetOption && timeRange.isoOffset === timeRange.isoDuration)
+  ) {
     // Previous period is when offset = duration
     selectedTimeRange = {
       name: TimeComparisonOption.CONTIGUOUS,
@@ -235,4 +246,15 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
+}
+
+// Returns the comparison option whose rill time offset ends the expression, such as "-1W" in "P7D offset -1W".
+function getComparisonOptionFromExpression(
+  expression: string,
+): TimeComparisonOption | undefined {
+  const offset = / offset (\S+)$/.exec(expression)?.[1];
+  if (!offset) return undefined;
+  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
+    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
+  );
 }

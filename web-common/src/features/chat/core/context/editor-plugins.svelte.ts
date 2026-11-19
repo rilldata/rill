@@ -23,14 +23,15 @@ export function getEditorPlugins({
   placeholder,
   onSubmit,
   skillOptions,
+  sharedEditorStore = new SharedEditorStore(),
 }: {
   placeholder: string;
   onSubmit: () => void;
   // Adds a "/" picker listing the skills this getter returns.
   skillOptions?: PickerOptionsGetter;
+  // Pass a store to observe whether a picker or dropdown is open from outside the editor.
+  sharedEditorStore?: SharedEditorStore;
 }) {
-  const sharedEditorStore = new SharedEditorStore();
-
   const plugins = [
     Document,
     Paragraph,
@@ -382,7 +383,7 @@ type InlineContextExports = { closeDropdown: () => void };
  * It is used to keep track of the state of the context picker dropdowns.
  * It also keeps track of the components that are currently rendered and makes sure only one dropdown is open at a time.
  */
-class SharedEditorStore {
+export class SharedEditorStore {
   public contextOpen: boolean = false;
   private components: InlineContextExports[] = [];
 

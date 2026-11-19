@@ -37,6 +37,26 @@ Text widgets allow you to add formatted text, markdown content, and documentatio
   codeLanguage="yaml"
 />
 
+### Styling
+
+Use `alignment` to position the text within the widget. `horizontal` is `left` (default), `center`, or `right`, and `vertical` is `top`, `middle` (default), or `bottom`.
+
+Text size follows the markdown heading level (`#` to `####`). To style one block of text beyond that, such as its size, weight, or color, write it as HTML with a `style` attribute:
+
+```yaml
+- markdown:
+    alignment:
+      horizontal: center
+      vertical: middle
+    content: |-
+      <div style="font-size: 28px; font-weight: 600; color: #0F766E;">Quarterly review</div>
+
+      Updated every Monday.
+  width: 6
+```
+
+A color set this way stays the same in light and dark mode. To change colors across the whole dashboard, use a [theme](/developers/build/dashboards/customization#changing-themes--colors) instead. HTML in `content` is sanitized, so scripts and event handlers are removed.
+
 ### Dynamic Markdown
 
 The `metrics_sql` template function allows you to execute a Metrics SQL query and display the results as formatted text in your dashboard. This is useful for displaying aggregated data or custom metrics.
@@ -98,6 +118,19 @@ To show a different image when the dashboard is viewed in dark mode, set `dark_u
   codeLanguage="yaml"
 />
 
+### Alignment
+
+An image is scaled to fit the widget without cropping, and centered in it. Use `alignment` to anchor it to a side instead, with the same `horizontal` and `vertical` values as the text widget:
+
+```yaml
+- image:
+    url: public/logo-light.png
+    alignment:
+      horizontal: left
+      vertical: top
+  width: 6
+```
+
 ## Component
 
 Reference a reusable component created outside of the canvas dashboard.
@@ -108,3 +141,15 @@ Reference a reusable component created outside of the canvas dashboard.
   code={`- component: my_component`}
   codeLanguage="yaml"
 />
+
+To reuse one chart with different metrics views and fields, define it as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz): a component that declares params, which each canvas item binds.
+
+```yaml
+- component: bullet_chart
+  params:
+    metrics_view: bids_metrics
+    y_axis: device_type
+    x_axis: avg_bid_price
+    goal: avg_bid_floor
+  width: 6
+```

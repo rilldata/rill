@@ -29,10 +29,23 @@ export interface PivotDataState {
   columnDef: ColumnDef<PivotDataRow>[];
   assembled: boolean;
   totalColumns: number; // total columns excluding row and group totals columns
+  // Set when the table leaves out columns that the data has.
+  columnTruncation?: PivotColumnTruncation;
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
   columnDimensionAxes?: Record<string, string[]>;
+}
+
+/**
+ * A nested table with column dimensions renders a limited number of leaf
+ * columns (one per measure under each combination of column values).
+ */
+export interface PivotColumnTruncation {
+  shown: number;
+  // Undefined when the column queries hit their own limits,
+  // so the number of columns the data has is unknown.
+  total: number | undefined;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
@@ -72,6 +85,21 @@ export interface PivotState {
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+export type PivotColumnAlign = "left" | "center" | "right";
+
+// Presentation overrides for one column, keyed in PivotColumnStyles by the
+// tanstack column id: the field name in flat tables; the measure name or the
+// first row dimension name in nested tables.
+export interface PivotColumnStyle {
+  // Pixel width; the column is pinned, so stretch and fit never change it.
+  width?: number;
+  // Wrap cell text instead of truncating it. Dimension columns only.
+  wrap?: boolean;
+  align?: PivotColumnAlign;
+}
+
+export type PivotColumnStyles = Record<string, PivotColumnStyle>;
 
 export type PivotTotalsRowPosition = "top" | "bottom";
 export const PIVOT_TOTALS_ROW_POSITIONS: readonly PivotTotalsRowPosition[] = [
@@ -168,6 +196,11 @@ export interface PivotDataStoreConfig {
   // Sourced from the explore state in explore dashboards, and from the
   // component spec in canvas table/pivot components.
   ephemeralMeasures?: EphemeralMeasureDef[];
+  // Measures to request with `exact: true` (see `requestExactNames`).
+  // Sourced from the viewer's exact selection in explore dashboards, and from
+  // the canvas exact selection plus the component's `exact` pin in canvas
+  // table/pivot components.
+  exactMeasures?: string[];
 }
 
 export interface PivotAxesData {

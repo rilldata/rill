@@ -59,6 +59,50 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/deployments/-/connector-oauth-token:
+    post:
+      summary: |-
+        GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+        refreshing it first if it is about to expire.
+        It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+        It can only be called by deployments.
+      operationId: AdminService_GetConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenRequest'
+  /v1/deployments/-/connector-oauth-token/delete:
+    post:
+      summary: |-
+        DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+        It can only be called by deployments.
+      operationId: AdminService_DeleteConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenRequest'
   /v1/deployments/{deploymentId}:
     delete:
       summary: DeleteDeployment deletes a deployment.
@@ -261,6 +305,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/deployments/{deploymentId}/stop:
     post:
       summary: StopDeployment stops a deployment.
@@ -284,6 +331,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/github/repositories:
     get:
       summary: |-
@@ -349,6 +399,38 @@ paths:
           in: path
           required: true
           type: string
+    patch:
+      summary: UpdateMagicAuthToken updates the display name or password of a magic auth token.
+      operationId: AdminService_UpdateMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              displayName:
+                type: string
+                description: New display name. Unchanged if not set.
+              password:
+                type: string
+                description: New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+              removePassword:
+                type: boolean
+                description: Removes the password. Can't be combined with password.
   /v1/magic-tokens/current:
     get:
       summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
@@ -362,6 +444,28 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/magic-tokens/current/unlock:
+    post:
+      summary: |-
+        UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+        It must be called with the magic auth token as the bearer token.
+        On success, it returns a short-lived session token that grants the same access as the magic auth token.
+      operationId: AdminService_UnlockMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnlockMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UnlockMagicAuthTokenRequest'
   /v1/organization-for-domain/{domain}:
     get:
       summary: |-
@@ -1233,7 +1337,7 @@ paths:
                 type: string
                 description: |-
                   Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-                  It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+                  Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
               newName:
                 type: string
               prodTtlSeconds:
@@ -1582,6 +1686,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
     post:
       summary: CreateDeployment creates a new deployment for a project.
       operationId: AdminService_CreateDeployment
@@ -1619,6 +1727,35 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/embed-users/{id}:
+    get:
+      summary: |-
+        GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+        It is used to show which external user owns a report created from an embed.
+      operationId: AdminService_GetEmbedUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEmbedUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: id
+          description: ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/github/pr:
     post:
       summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
@@ -1759,6 +1896,7 @@ paths:
                 description: |-
                   Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
                   Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                  Must be at most 2048 bytes.
               type:
                 type: string
                 description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
@@ -1768,6 +1906,12 @@ paths:
               resource:
                 type: string
                 description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
+              open:
+                type: string
+                description: |-
+                  The `rill_open` query param of an open link from an email sent by a report created from an embed.
+                  If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+                  Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
@@ -2605,6 +2749,11 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
+              password:
+                type: string
+                description: |-
+                  Optional password that recipients must enter before the token grants access.
+                  Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
   /v1/orgs/{org}/projects/{project}/usergroups:
     get:
       summary: ListProjectMemberUsergroups lists the user groups assigned to a project
@@ -4154,7 +4303,7 @@ paths:
     patch:
       summary: |-
         SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
       operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
       responses:
         "200":
@@ -4674,7 +4823,9 @@ paths:
                 description: Flag for superusers to override normal access checks.
   /v1/users/bookmarks:
     get:
-      summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+      summary: |-
+        ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+        Embed users only see their own personal bookmarks.
       operationId: AdminService_ListBookmarks
       responses:
         "200":
@@ -4687,6 +4838,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: ID of the project. Optional for embed users, where it defaults to the embed's project.
           in: query
           required: false
           type: string
@@ -4842,6 +4994,11 @@ definitions:
         type: string
       unsubscribeUrl:
         type: string
+      embedOwner:
+        type: boolean
+        description: |-
+          If true, the recipient is the embed user who created the alert.
+          Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
   GetGithubPullRequestResponseState:
     type: string
     enum:
@@ -4866,6 +5023,21 @@ definitions:
       userAttrs:
         type: object
         title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+      restrictResources:
+        type: boolean
+        description: |-
+          If true, the report's data must only be accessed through the resources listed in `resources`.
+          Set for reports created from an embed that was limited to specific resources.
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+      embedOwner:
+        type: boolean
+        description: |-
+          If true, the recipient is the embed user who created the report.
+          Only set for reports created from an embed, for the recipient that matches the creator's saved email.
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4965,6 +5137,20 @@ definitions:
       queryArgsJson:
         type: string
         description: 'DEPRECATED: Use resolver and resolver_properties instead.'
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
+      notifyRowsLimit:
+        type: integer
+        format: int64
+        description: Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
       metricsViewName:
         type: string
       renotify:
@@ -4976,6 +5162,13 @@ definitions:
         type: array
         items:
           type: string
+      embedOwnerEmail:
+        type: string
+        description: |-
+          Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+          Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+          It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+          If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
       slackUsers:
         type: array
         items:
@@ -5207,6 +5400,9 @@ definitions:
         type: boolean
       shared:
         type: boolean
+      canManage:
+        type: boolean
+        description: Whether the caller can update and remove the bookmark.
       createdOn:
         type: string
         format: date-time
@@ -5233,6 +5429,11 @@ definitions:
       outputJsonSchema:
         type: string
         title: Optional output JSON schema
+      includeReasoning:
+        type: boolean
+        description: |-
+          Whether the response may include reasoning blocks.
+          Older clients don't support them, so they are removed from the response unless this is set.
   v1CompleteResponse:
     type: object
     properties:
@@ -5251,6 +5452,10 @@ definitions:
         type: integer
         format: int64
         description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      cacheWriteInputTokens:
+        type: integer
+        format: int64
+        description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
       provider:
         type: string
         description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
@@ -5289,6 +5494,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1CreateAlertResponse:
     type: object
@@ -5321,6 +5528,7 @@ definitions:
         type: string
       projectId:
         type: string
+        description: ID of the project. Optional for embed users, where it defaults to the embed's project.
       default:
         type: boolean
       shared:
@@ -5398,6 +5606,17 @@ definitions:
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
+    type: object
+  v1DeleteConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+      configHash:
+        type: string
+      userId:
+        type: string
+  v1DeleteConnectorOAuthTokenResponse:
     type: object
   v1DeleteDeploymentResponse:
     type: object
@@ -5517,6 +5736,21 @@ definitions:
           $ref: '#/definitions/GetAlertMetaResponseURLs'
       queryForAttributes:
         type: object
+      queryForUserId:
+        type: string
+        description: |-
+          ID of the user to run the alert's queries as.
+          Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+      restrictResources:
+        type: boolean
+        description: |-
+          If true, the alert's data must only be accessed through the resources listed in `resources`.
+          Set for alerts created from an embed that was limited to specific resources.
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1GetAlertYAMLResponse:
     type: object
     properties:
@@ -5580,11 +5814,42 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector in the deployment's project.
+      configHash:
+        type: string
+        description: |-
+          Hash of the connector's current OAuth configuration, as computed by the runtime.
+          A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+      userId:
+        type: string
+        description: ID of the user whose token to return.
+      forceRefresh:
+        type: boolean
+        description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  v1GetConnectorOAuthTokenResponse:
+    type: object
+    properties:
+      accessToken:
+        type: string
+      expiresOn:
+        type: string
+        format: date-time
+        description: When the access token expires. Unset if the token does not expire.
   v1GetCurrentMagicAuthTokenResponse:
     type: object
     properties:
       token:
         $ref: '#/definitions/v1MagicAuthToken'
+      locked:
+        type: boolean
+        description: |-
+          True when the bearer is a password-protected token that has not been unlocked.
+          In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -5656,6 +5921,12 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetEmbedUserResponse:
+    type: object
+    properties:
+      externalUserId:
+        type: string
+        description: The external user ID passed to GetIFrame.
   v1GetGithubPullRequestResponse:
     type: object
     properties:
@@ -6224,6 +6495,9 @@ definitions:
         type: string
       displayName:
         type: string
+      passwordProtected:
+        type: boolean
+        description: True if recipients must enter a password before the token grants access.
   v1MemberUsergroup:
     type: object
     properties:
@@ -6701,6 +6975,21 @@ definitions:
         type: string
       tokensPerSeat:
         type: string
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1RecordEventsRequest:
     type: object
     properties:
@@ -6767,10 +7056,20 @@ definitions:
         $ref: '#/definitions/v1ExportFormat'
       exportIncludeHeader:
         type: boolean
+      exportAttach:
+        type: boolean
+        description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
       emailRecipients:
         type: array
         items:
           type: string
+      embedOwnerEmail:
+        type: string
+        description: |-
+          Email of the embed user who creates the report; only used for reports created from an embed.
+          Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+          It's always added to `email_recipients`, and it can't unsubscribe from the report.
+          If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
       slackUsers:
         type: array
         items:
@@ -7226,6 +7525,20 @@ definitions:
     type: object
   v1TriggerReportResponse:
     type: object
+  v1UnlockMagicAuthTokenRequest:
+    type: object
+    properties:
+      password:
+        type: string
+  v1UnlockMagicAuthTokenResponse:
+    type: object
+    properties:
+      sessionToken:
+        type: string
+        description: Session token to use as the bearer token instead of the magic auth token.
+      expiresOn:
+        type: string
+        format: date-time
   v1UnsubscribeAlertResponse:
     type: object
   v1UnsubscribeReportResponse:
@@ -7254,6 +7567,11 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateMagicAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        $ref: '#/definitions/v1MagicAuthToken'
   v1UpdateOrganizationMemberUserAttributesResponse:
     type: object
   v1UpdateOrganizationResponse:

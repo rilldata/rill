@@ -2,6 +2,7 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -64,7 +65,11 @@ func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
 	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour(t, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_empty_time_range", func(t *testing.T) { testMetricsViewTimeSeries_empty_time_range(t, rt, instanceID) })
 }
 
 func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
@@ -95,6 +100,9 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t, false, rt, instanceID)
 	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_6Hour", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_6Hour(t, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t, rt, instanceID)
 	})
@@ -108,7 +116,23 @@ func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
 	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly", func(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, false, rt, instanceID)
 	})
+	t.Run("testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour", func(t *testing.T) {
+		testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour(t, rt, instanceID)
+	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+}
+
+// TestMetricsViewsTimeseriesLegacyNullFilling covers the Go null filling used when the time spine is not pushed down.
+func TestMetricsViewsTimeseriesLegacyNullFilling(t *testing.T) {
+	for _, impl := range []string{"", "new"} {
+		t.Run(fmt.Sprintf("implementation=%q", impl), func(t *testing.T) {
+			rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, "timeseries", map[string]string{
+				"rill.metrics.timeseries_null_filling_implementation": impl,
+			})
+			testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_6Hour(t, rt, instanceID)
+			testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour(t, rt, instanceID)
+		})
+	}
 }
 
 func TestMetricsViewsTimeseriesAgainstBigQuery(t *testing.T) {
@@ -278,6 +302,7 @@ measures:
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_empty_time_range", func(t *testing.T) { testMetricsViewTimeSeries_empty_time_range(t, rt, instanceID) })
 }
 
 func TestMetricsViewsTimeseriesAgainstDatabricks(t *testing.T) {
@@ -836,6 +861,25 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *test
 	require.Equal(t, parseTime(t, "2023-11-06T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
 }
 
+// A daily metrics view whose latest timestamp sits at midnight resolves `DTD as of latest/h` to an empty range (start == end).
+// The time series must return no rows instead of failing on an empty time spine.
+func testMetricsViewTimeSeries_empty_time_range(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"total_records"},
+		MetricsViewName: "timeseries_dst_backwards",
+		TimeStart:       parseTime(t, "2023-11-04T00:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-04T00:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		TimeZone:        "UTC",
+		Limit:           250,
+		SecurityClaims:  testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotNil(t, q.Result)
+	require.Empty(t, q.Result.Data)
+}
+
 func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
@@ -995,6 +1039,61 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 		require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 		i++
 		require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	}
+}
+
+// testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_6Hour checks that null filling steps hour multiples on the wall clock:
+// the 25-hour fall-back day has buckets at local 00:00, 06:00, 12:00 and 18:00, with no null bucket six absolute hours after midnight.
+func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_6Hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames: []string{"total_records"},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "continuous"))},
+		),
+		MetricsViewName: "timeseries_dst_backwards",
+		TimeStart:       parseTime(t, "2023-11-05T04:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-06T05:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_6_HOUR,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+		SecurityClaims:  testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	rows := q.Result.Data
+	require.Len(t, rows, 4)
+	for i, ts := range []string{"2023-11-05T04:00:00Z", "2023-11-05T11:00:00Z", "2023-11-05T17:00:00Z", "2023-11-05T23:00:00Z"} {
+		require.Equal(t, parseTime(t, ts).AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, rows[i].Records.AsMap()["total_records"])
+	}
+}
+
+// testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour checks that null filling steps past a bucket that starts in a DST gap:
+// local 02:00 does not exist on 2023-03-12, so that bucket starts at 03:00 EDT (07:00Z) and the next one at 04:00 EDT (08:00Z).
+func testMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_2Hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames: []string{"total_records"},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "continuous"))},
+		),
+		MetricsViewName: "timeseries_dst_forwards",
+		TimeStart:       parseTime(t, "2023-03-12T05:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-03-12T13:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_2_HOUR,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+		SecurityClaims:  testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	rows := q.Result.Data
+	want := []string{"2023-03-12T05:00:00Z", "2023-03-12T07:00:00Z", "2023-03-12T08:00:00Z", "2023-03-12T10:00:00Z", "2023-03-12T12:00:00Z"}
+	require.Len(t, rows, len(want))
+	for i, ts := range want {
+		require.Equal(t, parseTime(t, ts).AsTime(), rows[i].Ts.AsTime())
+		require.NotNil(t, rows[i].Records.AsMap()["total_records"])
 	}
 }
 

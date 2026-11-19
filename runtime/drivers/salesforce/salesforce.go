@@ -141,7 +141,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("salesforce driver can't be shared")
 	}
@@ -305,6 +305,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
+}
+
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.

@@ -58,12 +58,143 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, executionT
 			Where:               req.Where,
 			Having:              req.Having,
 			Filter:              req.Filter,
-			Exact:               req.Exact,
 			SecurityClaims:      claims,
 			ExecutionTime:       executionTime,
 		}, nil
 	default:
 		return nil, fmt.Errorf("query type %T not supported for alerts", r)
+	}
+}
+
+// ProtoToExportQuery builds a runtime query for exporting the results of a proto query.
+// The limit is the maximum number of rows to export (zero means no limit); the query's own limit only applies if it is lower.
+// It is shared by download links and report attachments, which must export the same data.
+func ProtoToExportQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, limit int64, executionTime *time.Time) (runtime.Query, error) {
+	switch v := q.Query.(type) {
+	case *runtimev1.Query_MetricsViewAggregationRequest:
+		r := v.MetricsViewAggregationRequest
+
+		var limitPtr *int64
+		if l := resolveExportLimit(limit, r.Limit); l != 0 {
+			limitPtr = &l
+		}
+
+		tr := r.TimeRange
+		if r.TimeStart != nil || r.TimeEnd != nil {
+			tr = &runtimev1.TimeRange{
+				Start: r.TimeStart,
+				End:   r.TimeEnd,
+			}
+		}
+
+		return &MetricsViewAggregation{
+			MetricsViewName:     r.MetricsView,
+			Dimensions:          r.Dimensions,
+			Measures:            r.Measures,
+			Sort:                r.Sort,
+			TimeRange:           tr,
+			ComparisonTimeRange: r.ComparisonTimeRange,
+			Where:               r.Where,
+			Having:              r.Having,
+			Filter:              r.Filter,
+			Limit:               limitPtr,
+			Offset:              r.Offset,
+			PivotOn:             r.PivotOn,
+			SecurityClaims:      claims,
+			Aliases:             r.Aliases,
+			Rows:                r.Rows,
+			ExecutionTime:       executionTime,
+		}, nil
+	case *runtimev1.Query_MetricsViewToplistRequest:
+		r := v.MetricsViewToplistRequest
+
+		var limitPtr *int64
+		if l := resolveExportLimit(limit, r.Limit); l != 0 {
+			limitPtr = &l
+		}
+
+		return &MetricsViewToplist{
+			MetricsViewName: r.MetricsViewName,
+			DimensionName:   r.DimensionName,
+			MeasureNames:    r.MeasureNames,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Limit:           limitPtr,
+			Sort:            r.Sort,
+			Where:           r.Where,
+			Filter:          r.Filter,
+			Having:          r.Having,
+			SecurityClaims:  claims,
+		}, nil
+	case *runtimev1.Query_MetricsViewRowsRequest:
+		r := v.MetricsViewRowsRequest
+
+		var limitPtr *int64
+		if l := resolveExportLimit(limit, int64(r.Limit)); l != 0 {
+			limitPtr = &l
+		}
+
+		return &MetricsViewRows{
+			MetricsViewName: r.MetricsViewName,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Filter:          r.Filter,
+			Where:           r.Where,
+			Sort:            r.Sort,
+			Limit:           limitPtr,
+			TimeZone:        r.TimeZone,
+			SecurityClaims:  claims,
+		}, nil
+	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
+		r := v.MetricsViewTimeSeriesRequest
+
+		return &MetricsViewTimeSeries{
+			MetricsViewName:   r.MetricsViewName,
+			MeasureNames:      r.MeasureNames,
+			EphemeralMeasures: r.EphemeralMeasures,
+			ExactMeasureNames: r.ExactMeasureNames,
+			TimeStart:         r.TimeStart,
+			TimeEnd:           r.TimeEnd,
+			Where:             r.Where,
+			Having:            r.Having,
+			TimeGranularity:   r.TimeGranularity,
+			TimeZone:          r.TimeZone,
+			SecurityClaims:    claims,
+		}, nil
+	case *runtimev1.Query_MetricsViewComparisonRequest:
+		r := v.MetricsViewComparisonRequest
+
+		return &MetricsViewComparison{
+			MetricsViewName:     r.MetricsViewName,
+			DimensionName:       r.Dimension.Name,
+			Measures:            r.Measures,
+			ComparisonMeasures:  r.ComparisonMeasures,
+			TimeRange:           r.TimeRange,
+			ComparisonTimeRange: r.ComparisonTimeRange,
+			Limit:               resolveExportLimit(limit, r.Limit),
+			Offset:              r.Offset,
+			Sort:                r.Sort,
+			Filter:              r.Filter,
+			Where:               r.Where,
+			Having:              r.Having,
+			SecurityClaims:      claims,
+			ExecutionTime:       executionTime,
+		}, nil
+	case *runtimev1.Query_TableRowsRequest:
+		r := v.TableRowsRequest
+		if !claims.Can(runtime.ReadOLAP) {
+			return nil, ErrForbidden
+		}
+
+		return &TableHead{
+			Connector:      r.Connector,
+			Database:       r.Database,
+			DatabaseSchema: r.DatabaseSchema,
+			TableName:      r.TableName,
+			Limit:          int(r.Limit),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported request type: %T", v)
 	}
 }
 
@@ -345,6 +476,15 @@ func rowFilterJSONAndFields(where *runtimev1.Expression, whereSQL string, filter
 	fields := metricsview.AnalyzeExpressionFields(metricsview.NewExpressionFromProto(where))
 
 	return string(b), fields, nil
+}
+
+// resolveExportLimit returns the query's own limit (override) if it is positive and lower than the export limit (base).
+func resolveExportLimit(base, override int64) int64 {
+	res := base
+	if override > 0 && override < res {
+		res = override
+	}
+	return res
 }
 
 func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {

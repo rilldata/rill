@@ -5,7 +5,7 @@
     type NavDragData,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavFile from "./NavFile.svelte";
-  import { directoryState } from "./directory-store";
+  import { directoryState, isDirectoryExpanded } from "./directory-store";
   import type { Directory } from "./transform-file-list";
 
   export let directory: Directory;
@@ -14,8 +14,7 @@
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
-  // Directories are expanded by default; only explicitly collapsed ones are false.
-  $: expanded = $directoryState[directory.path] ?? true;
+  $: expanded = isDirectoryExpanded($directoryState, directory.path);
   const { dragData, dropDirs } = navEntryDragDropStore;
   $: isDragDropHover =
     $dragData && $dropDirs[$dropDirs.length - 1] === directory.path;

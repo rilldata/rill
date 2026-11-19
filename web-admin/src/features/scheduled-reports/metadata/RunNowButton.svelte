@@ -1,10 +1,11 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { createAdminServiceTriggerReport } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { reportTriggerMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -17,7 +18,7 @@
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerReport = createAdminServiceTriggerReport();
+  const triggerReport = createMutationFromFactory(reportTriggerMutationFactory);
   const reportQuery = useReport(runtimeClient, report);
 
   async function handleRunNow() {

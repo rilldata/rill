@@ -1,4 +1,7 @@
-import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import {
   createAndExpression,
@@ -19,7 +22,11 @@ import {
   keepPreviousData,
   type CreateQueryResult,
 } from "@tanstack/svelte-query";
-import { transformAggregateDimensionData, prepareTimeSeries } from "../utils";
+import {
+  getTimeDimensionForComparison,
+  prepareTimeSeries,
+  transformAggregateDimensionData,
+} from "../utils";
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { DateTime } from "luxon";
@@ -45,6 +52,8 @@ export function createDimensionAggregationQuery(
   timeGranularity: V1TimeGrain,
   timeZone: string,
   enabled: boolean,
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  exact = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   const baseFilter = where
     ? (filterExpressions(where, () => true) ?? createAndExpression([]))
@@ -54,18 +63,26 @@ export function createDimensionAggregationQuery(
     createInExpression(dimensionName, dimensionValues),
   ]);
 
+  const { dimension: timeDimensionRequest, field: timeField } =
+    getTimeDimensionForComparison(
+      dimensionName,
+      timeDimension,
+      timeGranularity,
+      timeZone,
+    );
+
   return createQueryServiceMetricsViewAggregation(
     client,
     {
       metricsView: metricsViewName,
-      measures: mapEphemeralMeasuresForRequest(
-        [{ name: measureName }],
-        ephemeralMeasures,
+      measures: applyExactMeasures(
+        mapEphemeralMeasuresForRequest(
+          [{ name: measureName }],
+          ephemeralMeasures,
+        ),
+        exact ? new Set([measureName]) : undefined,
       ),
-      dimensions: [
-        { name: dimensionName },
-        { name: timeDimension, timeGrain: timeGranularity as any, timeZone },
-      ],
+      dimensions: [{ name: dimensionName }, timeDimensionRequest],
       where: sanitiseExpression(updatedFilter, undefined),
       timeRange: {
         start: timeStart as any,
@@ -74,7 +91,7 @@ export function createDimensionAggregationQuery(
       },
       sort: [
         { desc: true, name: measureName },
-        { desc: false, name: timeDimension },
+        { desc: false, name: timeField },
       ],
       // Upper bound: dimensions × time-grain buckets. Matches the limit
       // used in multiple-dimension-queries.ts. Results exceeding this are
@@ -112,9 +129,15 @@ export function buildDimensionSeriesData(
   if (!dimensionValues.length || !primaryTimeSeriesData?.length) return [];
 
   const measures = [measureName];
+  const { field: timeField } = getTimeDimensionForComparison(
+    dimensionName,
+    timeDimension,
+    timeGranularity,
+    timeZone,
+  );
 
   const transformedData = transformAggregateDimensionData(
-    timeDimension,
+    timeField,
     dimensionName,
     measures,
     dimensionValues,
@@ -125,7 +148,7 @@ export function buildDimensionSeriesData(
   let comparisonData: V1TimeSeriesValue[][] = [];
   if (comparisonTimeSeriesData && compAggData) {
     comparisonData = transformAggregateDimensionData(
-      timeDimension,
+      timeField,
       dimensionName,
       measures,
       dimensionValues,

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embed host</title>
+    <style>
+      /* The iframe fills the rest of the viewport, like a real embed.
+         If it overflowed the viewport, elements at its bottom, such as dialog footers, couldn't be scrolled into view,
+         since scrolling inside the cross-origin iframe doesn't scroll this page. */
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 8px;
+        box-sizing: border-box;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+      }
+      button[aria-pressed="true"] {
+        font-weight: bold;
+      }
+      #embed-error {
+        color: red;
+      }
+      #rill-frame {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="users" class="row" role="group" aria-label="Users"></div>
+    <div class="row">
+      <label>
+        <input type="checkbox" id="navigation" />
+        Navigation
+      </label>
+      <button type="button" data-page="home">Home</button>
+      <button type="button" data-page="reports">Reports</button>
+      <button type="button" data-page="alerts">Alerts</button>
+    </div>
+    <p id="embed-error" role="alert" aria-label="Embed error" hidden></p>
+    <iframe id="rill-frame" title="Rill" hidden></iframe>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

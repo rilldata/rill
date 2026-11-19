@@ -20,6 +20,7 @@ import {
 } from "./route-constants";
 import { Settings } from "luxon";
 import { RuntimeFileIO } from "@rilldata/web-common/features/entity-management/file-io.ts";
+import { isCancelledError } from "@tanstack/svelte-query";
 
 Settings.defaultLocale = "en";
 
@@ -75,12 +76,22 @@ export async function load({ url, depends, untrack, route }) {
   // (e.g., files/[...file]/+page.ts) can access it before components render.
   fileArtifacts.setClient(client, new RuntimeFileIO());
 
-  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
-    queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(client, {}, { signal });
-    },
-  });
+  let files: V1ListFilesResponse;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      files = await queryClient.fetchQuery<V1ListFilesResponse>({
+        queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
+        queryFn: ({ signal }) => {
+          return runtimeServiceListFiles(client, {}, { signal });
+        },
+      });
+      break;
+    } catch (error) {
+      // A watcher refetch can supersede this request. Await its replacement
+      // instead of turning a background cancellation into a page error.
+      if (!isCancelledError(error) || attempt === 2) throw error;
+    }
+  }
 
   const firstDashboardFile = files.files?.find((file) =>
     file.path?.startsWith("/dashboards/"),

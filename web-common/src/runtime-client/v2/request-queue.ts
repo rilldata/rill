@@ -149,7 +149,9 @@ export class RequestQueue {
     if (!nameEntry) return;
     while (!nameEntry.queryHeap.empty()) {
       const entry = nameEntry.queryHeap.pop()!;
-      entry.reject?.(new DOMException("Request cancelled", "AbortError"));
+      entry.reject?.(
+        new DOMException("Request cancelled: resource removed", "AbortError"),
+      );
     }
     this.nameHeap.delete(nameEntry);
   }
@@ -160,7 +162,12 @@ export class RequestQueue {
       const nameEntry = this.nameHeap.pop()!;
       while (!nameEntry.queryHeap.empty()) {
         const entry = nameEntry.queryHeap.pop()!;
-        entry.reject?.(new DOMException("Request cancelled", "AbortError"));
+        entry.reject?.(
+          new DOMException(
+            "Request cancelled: runtime client disposed",
+            "AbortError",
+          ),
+        );
       }
     }
   }
@@ -233,7 +240,9 @@ export class RequestQueue {
  * Extract the resource name from a ConnectRPC request message.
  * Looks for common field patterns in runtime API request messages.
  */
-function extractResourceName(msg: Record<string, unknown>): string | undefined {
+export function extractResourceName(
+  msg: Record<string, unknown>,
+): string | undefined {
   if (typeof msg.metricsViewName === "string") return msg.metricsViewName;
   if (typeof msg.metricsView === "string") return msg.metricsView;
   if (typeof msg.tableName === "string") return msg.tableName;

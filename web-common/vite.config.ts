@@ -22,9 +22,16 @@ export default defineConfig(({ mode }) => {
     });
     // canvas-entity dynamically imports the admin client only in the cloud context; stub
     // it so web-common unit tests that pull in canvas-entity can resolve the import graph.
+    // Match the bare specifier only: a string `find` also matches subpaths,
+    // which would resolve e.g. `@rilldata/web-admin/client/http-client` inside the mock file.
     alias.push({
-      find: "@rilldata/web-admin/client",
+      find: /^@rilldata\/web-admin\/client$/,
       replacement: "/../web-common/tests/web-admin-client.mock.ts",
+    });
+    // Subpaths (the http client, generated schemas) resolve to the real admin client source.
+    alias.push({
+      find: /^@rilldata\/web-admin\/client\/(.*)$/,
+      replacement: "/../web-admin/src/client/$1",
     });
   }
 

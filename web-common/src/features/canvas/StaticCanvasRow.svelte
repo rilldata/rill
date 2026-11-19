@@ -19,6 +19,9 @@
   // When false, components render eagerly without lazy-load (PDF export).
   export let lazy: boolean = true;
   export let idPrefix: string = "";
+  // Set when the row renders inside a tab (see CanvasPdfExportTab).
+  export let tabGroupName: string | undefined = undefined;
+  export let tabName: string | undefined = undefined;
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -35,6 +38,8 @@
   height={$height}
   {heightUnit}
   {id}
+  {tabGroupName}
+  {tabName}
   gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
 >
   {#each itemIds as id, columnIndex (columnIndex)}

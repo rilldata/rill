@@ -16,12 +16,10 @@
     createSqlModelFromTable,
     createYamlModelFromTable,
   } from "../code-utils";
+  import type { ConnectorTable } from "../connectors-utils";
   import GenerateMenuItem from "./GenerateMenuItem.svelte";
 
-  export let connector: string;
-  export let database: string = "";
-  export let databaseSchema: string = "";
-  export let table: string;
+  export let table: ConnectorTable;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
@@ -29,6 +27,7 @@
 
   const client = useRuntimeClient();
   $: ({ instanceId } = client);
+  $: ({ connector, database, databaseSchema, tableName } = table);
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,
@@ -58,7 +57,7 @@
           connector,
           database,
           databaseSchema,
-          table,
+          tableName,
         ),
       );
     } else if (showGenerateModel) {
@@ -69,7 +68,7 @@
           connector,
           database,
           databaseSchema,
-          table,
+          tableName,
         ),
       );
     }
@@ -82,7 +81,7 @@
       connector,
       database,
       databaseSchema,
-      table,
+      tableName,
       false, // Don't create explore dashboard
       isOlapConnector,
     );
@@ -95,7 +94,7 @@
       connector,
       database,
       databaseSchema,
-      table,
+      tableName,
       true, // Create explore dashboard
       isOlapConnector,
     );

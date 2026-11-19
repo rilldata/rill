@@ -28,6 +28,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import { withEphemeralMeasures } from "../ephemeral-measures";
@@ -204,6 +205,11 @@ export class FunnelChartProvider {
 
           if (stageDimensionName) {
             this.customSortStageItems = includedStageValues;
+          }
+          // No stage values means the top-N query found none, so there is
+          // nothing to narrow to, and an `IN` with no values is rejected by the
+          // runtime. The base filter above already matches what that query matched.
+          if (stageDimensionName && includedStageValues.length > 0) {
             const filterForTopStageValues = createInExpression(
               stageDimensionName,
               includedStageValues,
@@ -242,7 +248,7 @@ export class FunnelChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [topNStageQuery], visibleStore);
   }
 
   getChartDomainValues() {

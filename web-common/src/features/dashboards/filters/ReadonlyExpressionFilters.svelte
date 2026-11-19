@@ -1,16 +1,22 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1TimeGrain,
+    V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
+  import TimeGrainReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeGrainReadOnly.svelte";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import ReadonlyDimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/ReadonlyDimensionFilter.svelte";
   import ReadonlyMeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/ReadonlyMeasureFilter.svelte";
+  import { getFilterManagerKeys } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
   import { flip } from "svelte/animate";
 
   let {
     expressionFilterManager,
     displayTimeRange,
     displayComparisonTimeRange,
+    displayTimeGrain = undefined,
     queryTimeStart = undefined,
     queryTimeEnd = undefined,
     hasBoldTimeRange = true,
@@ -21,6 +27,8 @@
     expressionFilterManager: ExpressionFilterManager;
     displayTimeRange?: V1TimeRange | undefined;
     displayComparisonTimeRange?: V1TimeRange | undefined;
+    // A grain the widget sets itself, shown as its own chip since it applies with or without a local range.
+    displayTimeGrain?: V1TimeGrain | undefined;
     queryTimeStart?: string | undefined;
     queryTimeEnd?: string | undefined;
     hasBoldTimeRange?: boolean;
@@ -44,6 +52,8 @@
       (measureManager) => showPinned || !!measureManager.expr,
     ),
   );
+  let dimensionKeys = $derived(getFilterManagerKeys(nonEmptyDimensionManagers));
+  let measureKeys = $derived(getFilterManagerKeys(nonEmptyMeasureManager));
 
   function handleWheel(event: WheelEvent) {
     if (chipLayout === "scroll" && event.deltaY !== 0) {
@@ -70,7 +80,11 @@
     />
   {/if}
 
-  {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
+  {#if displayTimeGrain}
+    <TimeGrainReadOnly timeGrain={displayTimeGrain} />
+  {/if}
+
+  {#each nonEmptyDimensionManagers as dimensionManager, i (dimensionKeys[i])}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyDimensionFilter
         manager={expressionFilterManager}
@@ -83,7 +97,7 @@
     </div>
   {/each}
 
-  {#each nonEmptyMeasureManager as measureManager (measureManager.name)}
+  {#each nonEmptyMeasureManager as measureManager, i (measureKeys[i])}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyMeasureFilter
         {measureManager}

@@ -43,6 +43,42 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestCol := drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name))
+	tableAlias := drivers.TempName("tbl")
+	tbl, _, _, err := d.LateralUnnest(expr, tableAlias, unnestCol)
+	if err != nil {
+		return "", "", err
+	}
+	return fmt.Sprintf(`%s AS %s`, d.UnnestedColumn(tableAlias, unnestCol), alias), ", " + tbl, nil
+}
+
+// LateralUnnest aliases every FLATTEN output column so the element is addressable as tableAlias.colName.
+// FLATTEN cannot be wrapped in an inline view because Snowflake does not resolve the outer array column inside it.
+func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`LATERAL FLATTEN(INPUT => %s) %s (seq, key, path, index, %s, this)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
+}
+
+// UnnestedColumn casts the element to VARCHAR. FLATTEN yields VARIANT elements for semi-structured arrays, which the driver returns as JSON-encoded text.
+func (d *dialect) UnnestedColumn(tableAlias, colName string) string {
+	return d.EscapeMember(tableAlias, colName) + "::VARCHAR"
+}
+
+// ArrayAnyExpression uses FILTER because Snowflake rejects correlated FLATTEN inside EXISTS subqueries.
+// It also serves IN filters: ARRAYS_OVERLAP does not accept structured arrays and compares raw VARIANT elements, which would not match the VARCHAR values shown by UnnestedColumn.
+// FILTER(NULL, ...) is NULL, so the result is coalesced to FALSE to keep rows with a NULL array under negated filters.
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	return fmt.Sprintf("COALESCE(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0, FALSE)", true
+}
+
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
@@ -54,13 +90,23 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples bucket with TIME_SLICE on the local wall clock, so buckets stay aligned to local midnight.
+		if tz == "" {
+			return fmt.Sprintf("TIME_SLICE(%s::TIMESTAMP, %d, '%s')", expr, n, specifier), nil
+		}
+		return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', TIME_SLICE(CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP), %d, '%s'))", tz, tz, expr, n, specifier), nil
 	}
 
 	var shift string
@@ -93,6 +139,11 @@ func (d *dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string,
 
 func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+}
+
+func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
+	// Converts to the wall-clock time in tz and back, like DateTruncExpr, so the result is a TIMESTAMP in UTC.
+	return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', DATEADD('%s', -1 * (%s), CONVERT_TIMEZONE('UTC', '%s', (%s)::TIMESTAMP)))", tz, d.ConvertToDateTruncSpecifier(grain), unitExpr, tz, tsExpr), true
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

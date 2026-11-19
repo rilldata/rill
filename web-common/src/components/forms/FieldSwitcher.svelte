@@ -4,11 +4,13 @@
   export let onClick: (i: number, value: string) => void = () => {};
   export let small = false;
   export let expand = false;
+  export let disabled = false;
 </script>
 
 <div class:small class:expand class="option-wrapper">
   {#each fields as field, i (field)}
     <button
+      {disabled}
       onclick={() => onClick(i, field)}
       class="-ml-[1px] first-of-type:-ml-0 px-2 border first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
       class:selected={selected === i}
@@ -23,8 +25,12 @@
     @apply capitalize bg-input text-fg-secondary;
   }
 
-  button:hover:not(.selected) {
+  button:hover:not(.selected):not(:disabled) {
     @apply bg-surface-hover;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed opacity-50;
   }
 
   .option-wrapper {

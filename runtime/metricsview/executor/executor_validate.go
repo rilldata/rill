@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -130,6 +131,14 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 	}
 
+	// Check that tag_order only lists tags that are set on a dimension or measure
+	tags := fieldTags(mv)
+	for _, tag := range mv.TagOrder {
+		if !tags[tag] {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("tag %q referenced in 'tag_order' is not set on any dimension or measure", tag))
+		}
+	}
+
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
 	if e.olap.Dialect().String() == drivers.DialectNameClickHouse {
@@ -158,6 +167,9 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// One or more dimension/measure expressions failed to validate. We need to check each one individually to provide useful errors.
 		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
 	}
+
+	// Dimensions with lookup_group_by_key are also validated against the two-level query that the flag generates.
+	e.validateLookupGroupByKeyDimensions(ctx, t, mv, res)
 
 	// Check and rewrite annotations
 	err = e.validateAndNormalizeAnnotations(ctx, mv, res)
@@ -234,8 +246,13 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			mv.SmallestTimeGrain = smallestPossibleGrain
-		} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(mv.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(mv.SmallestTimeGrain), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
+		for _, tg := range mv.TimeGrains {
+			if timeutil.TimeGrainFromAPI(tg).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time_grains entry %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(tg), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+			}
 		}
 	}
 	for _, d := range mv.Dimensions {
@@ -261,7 +278,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if d.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			d.SmallestTimeGrain = smallestPossibleGrain
-		} else if d.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(d.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q for time dimension %q is smaller than the smallest possible grain %q based on the data type of the time dimension", metricsview.TimeGrainFromProto(d.SmallestTimeGrain), d.Name, metricsview.TimeGrainFromProto(smallestPossibleGrain)))
 		}
 	}
@@ -357,7 +374,8 @@ func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev
 				if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
 					continue
 				}
-				if err := e.validateMeasure(ctx, t, m); err != nil {
+				// Only the default expression is validated against the rollup table: exact queries never route to rollups.
+				if err := e.validateMeasureExpression(ctx, t, m.Expression); err != nil {
 					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, m.Name, err))
 				}
 			}
@@ -489,6 +507,16 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	if e.metricsView.AiInstructions == "" {
 		e.metricsView.AiInstructions = parent.AiInstructions
 	}
+	// If the metrics view doesn't have a tag order, use the parent's tag order,
+	// leaving out tags that none of the selected dimensions and measures have.
+	if len(e.metricsView.TagOrder) == 0 {
+		tags := fieldTags(e.metricsView)
+		for _, tag := range parent.TagOrder {
+			if tags[tag] {
+				e.metricsView.TagOrder = append(e.metricsView.TagOrder, tag)
+			}
+		}
+	}
 
 	return nil
 }
@@ -517,6 +545,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 			continue
 		}
 		metricExprs = append(metricExprs, "("+m.Expression+")")
+		if m.ExactExpression != "" {
+			metricExprs = append(metricExprs, "("+m.ExactExpression+")")
+		}
 	}
 	var query string
 	if len(dimExprs) == 0 && len(metricExprs) == 0 {
@@ -592,7 +623,7 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 		idx := idx
 		m := m
 		grp.Go(func() error {
-			err := e.validateMeasure(ctx, t, m)
+			err := e.validateMeasureExpression(ctx, t, m.Expression)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -600,6 +631,23 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 					Idx: idx,
 					Err: fmt.Errorf("invalid expression for measure %q: %w", m.Name, err),
+				})
+			}
+			return nil
+		})
+
+		if m.ExactExpression == "" {
+			continue
+		}
+		grp.Go(func() error {
+			err := e.validateMeasureExpression(ctx, t, m.ExactExpression)
+			if err != nil {
+				mu.Lock()
+				defer mu.Unlock()
+
+				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+					Idx: idx,
+					Err: fmt.Errorf("invalid exact_expression for measure %q: %w", m.Name, err),
 				})
 			}
 			return nil
@@ -782,10 +830,56 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 	return nil
 }
 
-// validateMeasure validates a metrics view measure.
-func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
+// validateLookupGroupByKeyDimensions dry-runs, for each dimension with lookup_group_by_key, the two-level query that the flag generates:
+// the key grouped in a sub-select and the lookup resolved over it.
+// It catches a lookup_default_expression that references anything but constants and the key column, which no other validation sees.
+// Without a lookup_default_expression, the query only resolves the key with the lookup expression that the dimension validation already checks, so it is skipped,
+// as are dimensions that already failed validation.
+func (e *Executor) validateLookupGroupByKeyDimensions(ctx context.Context, t *drivers.OlapTable, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) {
+	failed := make(map[int]bool, len(res.DimensionErrs))
+	for _, ie := range res.DimensionErrs {
+		failed[ie.Idx] = true
+	}
+	for idx, d := range mv.Dimensions {
+		if !d.GetLookupGroupByKey() || d.LookupDefaultExpression == "" || failed[idx] {
+			continue
+		}
+		err := e.validateLookupGroupByKey(ctx, t, d)
+		if err != nil {
+			res.DimensionErrs = append(res.DimensionErrs, IndexErr{Idx: idx, Err: err})
+		}
+	}
+	slices.SortFunc(res.DimensionErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
+}
+
+// validateLookupGroupByKey dry-runs the two-level query that lookup_group_by_key generates for one dimension.
+func (e *Executor) validateLookupGroupByKey(ctx context.Context, t *drivers.OlapTable, d *runtimev1.MetricsViewSpec_Dimension) error {
+	dialect := e.olap.Dialect()
+	const innerAlias = "t0"
+	keyAlias := lookupKeyAlias(d)
+	expr, err := dialect.LookupExpr(d.LookupTable, d.LookupValueColumn, dialect.EscapeMemberAlias(innerAlias, keyAlias), d.LookupDefaultExpression)
+	if err != nil {
+		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
+	}
+
+	err = e.olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf(
+			"SELECT (%s) AS %s FROM (SELECT (%s) AS %s FROM %s GROUP BY 1) %s GROUP BY 1",
+			expr, dialect.EscapeAlias(d.Name), metricsview.LookupKeyExpr(dialect, d), dialect.EscapeAlias(keyAlias), dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), innerAlias,
+		),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to validate dimension %q with lookup_group_by_key (lookup_default_expression may only reference constants and the key column): %w", d.Name, err)
+	}
+	return nil
+}
+
+// validateMeasureExpression validates a metrics view measure's expression (or exact_expression) with a dry run.
+func (e *Executor) validateMeasureExpression(ctx context.Context, t *drivers.OlapTable, expr string) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", expr, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun:          true,
 		QueryAttributes: e.queryAttributes,
 	})
@@ -815,14 +909,19 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 			continue
 		}
 
-		switch typ.Code {
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+		if !isNumericMeasureType(typ) {
 			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 				Idx: i,
 				Err: fmt.Errorf("measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
 			})
 		}
 		m.DataType = typ
+	}
+
+	// Check that the exact expressions are not strings either. The DataType stays that of the default expression.
+	err = e.validateExactExpressionTypes(ctx, res)
+	if err != nil {
+		return err
 	}
 
 	// Populate the dimension types and data types
@@ -862,4 +961,74 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	}
 
 	return nil
+}
+
+// validateExactExpressionTypes checks that measures with an exact_expression produce a numeric type when computed exactly.
+// It is a no-op when no measure defines an exact_expression, so the extra schema query only runs for metrics views that use the feature.
+func (e *Executor) validateExactExpressionTypes(ctx context.Context, res *ValidateMetricsViewResult) error {
+	hasExact := false
+	for _, m := range e.metricsView.Measures {
+		if m.ExactExpression != "" {
+			hasExact = true
+			break
+		}
+	}
+	if !hasExact {
+		return nil
+	}
+
+	schema, err := e.ExactSchema(ctx)
+	if err != nil {
+		return err
+	}
+	types := make(map[string]*runtimev1.Type, len(schema.Fields))
+	for _, f := range schema.Fields {
+		types[strings.ToLower(f.Name)] = f.Type
+	}
+
+	for i, m := range e.metricsView.Measures {
+		if m.ExactExpression == "" {
+			continue
+		}
+		typ, ok := types[strings.ToLower(m.Name)]
+		if !ok {
+			// Don't error: schemas are not always reliable
+			continue
+		}
+		if !isNumericMeasureType(typ) {
+			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+				Idx: i,
+				Err: fmt.Errorf("exact_expression of measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
+			})
+		}
+	}
+
+	return nil
+}
+
+// isNumericMeasureType returns false for types that a measure must not have (strings, timestamps, composite types).
+func isNumericMeasureType(typ *runtimev1.Type) bool {
+	switch typ.Code {
+	case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+		return false
+	default:
+		return true
+	}
+}
+
+// fieldTags returns the tags set on the metrics view's dimensions and measures.
+// It trims them the same way dashboards do.
+func fieldTags(mv *runtimev1.MetricsViewSpec) map[string]bool {
+	tags := make(map[string]bool)
+	for _, d := range mv.Dimensions {
+		for _, tag := range d.Tags {
+			tags[strings.TrimSpace(tag)] = true
+		}
+	}
+	for _, m := range mv.Measures {
+		for _, tag := range m.Tags {
+			tags[strings.TrimSpace(tag)] = true
+		}
+	}
+	return tags
 }

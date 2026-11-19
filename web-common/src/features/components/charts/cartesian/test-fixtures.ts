@@ -52,3 +52,34 @@ export function at(spec: unknown, path: string): unknown {
     return (value as Record<string, unknown>)[key];
   }, spec);
 }
+
+/**
+ * Collects every name a generated spec hands to Vega as a field reference:
+ * the values of `field` and `pivot` keys and the entries of `fold` and
+ * `groupby` arrays. Vega resolves these as field paths, so a test can assert
+ * that a dotted name only reaches Vega in its escaped form.
+ */
+export function vegaFieldReferences(spec: unknown): string[] {
+  const refs: string[] = [];
+  const visit = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (node === null || typeof node !== "object") return;
+    for (const [key, value] of Object.entries(node)) {
+      if ((key === "field" || key === "pivot") && typeof value === "string") {
+        refs.push(value);
+      } else if (
+        (key === "fold" || key === "groupby") &&
+        Array.isArray(value)
+      ) {
+        refs.push(...value.filter((v): v is string => typeof v === "string"));
+      } else {
+        visit(value);
+      }
+    }
+  };
+  visit(spec);
+  return refs;
+}

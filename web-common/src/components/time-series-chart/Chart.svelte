@@ -1,9 +1,11 @@
 <script lang="ts">
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import { computeNiceYExtent } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/scales";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { plusGrain } from "@rilldata/web-common/lib/time/new-grains";
   import {
     V1TimeGrain,
     type V1TimeSeriesValue,
@@ -19,6 +21,8 @@
 
   const THROTTLE_MS = 16;
   const chartId = Math.random().toString(36).slice(2, 11);
+  // The hover label is portalled out of the dashboard's theme boundary.
+  const themeBoundaryClass = getThemeBoundaryClass();
 
   // Hover snaps to the nearest non-null point within this distance (in index
   // units), so sparse points are easy to land on without snapping across wide
@@ -91,7 +95,11 @@
   $: mins = allYExtents.map((extents) => extents[0]).filter(isNumber);
   $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
 
-  $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
+  // No padding: keep the line flush with the top of the sparkline
+  $: yExtents = computeNiceYExtent(min(mins) ?? 0, max(maxes) ?? 0, {
+    includeZero: true,
+    paddingFactor: 1,
+  });
   $: yScale = scaleLinear().domain(yExtents).range([100, 0]);
 
   // Bridge gaps in the data, treating missing data as zero
@@ -163,9 +171,7 @@
 
     const interval = Interval.fromDateTimes(
       DateTime.fromJSDate(date).setZone(selectedTimeZone),
-      DateTime.fromJSDate(date)
-        .setZone(selectedTimeZone)
-        .plus({ [TIME_GRAIN[timeGrain]?.unit || "minute"]: 1 }),
+      plusGrain(DateTime.fromJSDate(date).setZone(selectedTimeZone), timeGrain),
     );
 
     hoveredIntervalCache.set(cacheKey, interval);
@@ -222,7 +228,8 @@
     {#if hasValidHoveredPoints && offsetPosition}
       <div
         use:portal
-        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface-subtle text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
+        class="{themeBoundaryClass ??
+          ''} w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface-subtle text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
         style:top="{clientPosition.y}px"
         style:left="{clientPosition.x + 10}px"
       >

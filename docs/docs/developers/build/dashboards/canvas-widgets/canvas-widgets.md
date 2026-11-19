@@ -125,6 +125,19 @@ Rill Canvas dashboards are built using a variety of widgets that can display dat
     />
 </div>
 
+## Custom Viz
+
+### Reusable Charts
+
+<div className="component-icon-grid">
+    <ComponentTile
+        header="Custom Viz"
+        link="/developers/build/dashboards/canvas-widgets/custom-viz"
+        multiple_measures="True"
+        image={<img src="/img/build/dashboard/canvas/custom-viz/chart-scatter-plot.png" alt="Custom Viz" />}
+    />
+</div>
+
 ## Miscellaneous 
 
 ### Markdown Text

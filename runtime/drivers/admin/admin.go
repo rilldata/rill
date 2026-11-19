@@ -48,7 +48,7 @@ type configProperties struct {
 	ProjectID   string `mapstructure:"project_id"`
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("admin driver can't be shared")
 	}
@@ -198,6 +198,11 @@ func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorO
 // AsModelManager implements drivers.Handle.
 func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (h *Handle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.

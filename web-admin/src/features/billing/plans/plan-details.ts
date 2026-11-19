@@ -16,6 +16,8 @@ export type SelfServePlan = {
   // Otherwise, it would be redundant to have different keys.
   price: string;
   priceUnit: string;
+  // Hourly price per compute unit, billed on top of seats.
+  computePrice: string;
   tagline: string;
   highlights: string[];
   recommended?: boolean;
@@ -59,6 +61,7 @@ export const SELF_SERVE_PLANS: SelfServePlan[] = [
     displayName: "Starter",
     price: "$20",
     priceUnit: "/ seat / month",
+    computePrice: "$0.15",
     tagline: "For small teams getting started.",
     highlights: [
       "quota:seats",
@@ -75,6 +78,7 @@ export const SELF_SERVE_PLANS: SelfServePlan[] = [
     displayName: "Growth",
     price: "$30",
     priceUnit: "/ seat / month",
+    computePrice: "$0.20",
     tagline: "For growing teams and embedded analytics.",
     recommended: true,
     highlights: [

@@ -1,7 +1,12 @@
 import type { TopLevelSpec } from "vega-lite";
 import { describe, expect, it } from "vitest";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
-import { at, chartData, stubCanvasContext } from "../test-fixtures";
+import {
+  at,
+  chartData,
+  stubCanvasContext,
+  vegaFieldReferences,
+} from "../test-fixtures";
 import { generateVLStackedBarNormalizedSpec } from "./normalized";
 
 const base: CartesianChartSpec = {
@@ -55,5 +60,27 @@ describe("generateVLStackedBarNormalizedSpec orientation", () => {
       chartData({ colorValues: ["us", "eu"], hasComparison: true }),
     );
     expect(() => compile(spec as TopLevelSpec)).not.toThrow();
+  });
+});
+
+describe("generateVLStackedBarNormalizedSpec with a dotted x dimension", () => {
+  it("escapes the dimension in the percentage groupby and the hover encoding", () => {
+    // Nested Druid columns surface as dimensions whose names contain dots,
+    // which Vega would otherwise read as a nested field path.
+    const dimension = "query.context.metaData.type";
+    const data = chartData({ colorValues: ["us", "eu"] });
+    data.fields[dimension] = { name: dimension, displayName: "Query Type" };
+
+    const spec = generateVLStackedBarNormalizedSpec(
+      { ...base, x: { field: dimension, type: "nominal" } },
+      data,
+    );
+    expect(at(spec, "transform.0.groupby")).toEqual([
+      "query\\.context\\.metaData\\.type",
+    ]);
+    expect(at(spec, "layer.0.encoding.x.field")).toBe(
+      "query\\.context\\.metaData\\.type",
+    );
+    expect(vegaFieldReferences(spec)).not.toContain(dimension);
   });
 });

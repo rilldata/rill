@@ -81,10 +81,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
-			if cmdutil.IsLocalRillRunning(cmd.Context()) {
-				return fmt.Errorf("`rill start` appears to be running on http://localhost:9009; stop it and rerun validate")
-			}
-
 			var projectPath string
 			if len(args) > 0 {
 				var err error

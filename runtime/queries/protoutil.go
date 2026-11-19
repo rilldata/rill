@@ -27,10 +27,5 @@ func safeFieldTypeName(t *runtimev1.StructType, n string) *runtimev1.Type {
 
 // sizeProtoMessage returns size of serialized proto message
 func sizeProtoMessage(m proto.Message) int64 {
-	bytes, err := proto.Marshal(m)
-	if err != nil {
-		panic(err)
-	}
-
-	return int64(len(bytes))
+	return int64(proto.Size(m))
 }

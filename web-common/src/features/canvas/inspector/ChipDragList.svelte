@@ -1,5 +1,9 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
+  import {
+    columnSettingsCapabilities,
+    type ColumnSettings,
+  } from "@rilldata/web-common/features/canvas/components/pivot/field-config";
   import MeasureFormatChip from "@rilldata/web-common/features/dashboards/pivot/MeasureFormatChip.svelte";
   import PivotPortalItem from "@rilldata/web-common/features/dashboards/pivot/PivotPortalItem.svelte";
   import { swapListener } from "@rilldata/web-common/features/dashboards/pivot/swapListener";
@@ -9,6 +13,7 @@
     type PivotMeasureFormatting,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { writable } from "svelte/store";
+  import ColumnSettingsChip from "./fields/ColumnSettingsChip.svelte";
   import type { FieldType } from "./types";
 
   const _ghostIndex = writable<number | null>(null);
@@ -26,6 +31,10 @@
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
   export let lowerIsBetterMap: Record<string, boolean> = {};
+  // When provided, every chip gets a column settings dropdown (label, width,
+  // wrap, alignment, number format), with the conditional formatting controls
+  // folded in for measures.
+  export let columnSettings: ColumnSettings | undefined = undefined;
 
   // Distinguish click (open the format dropdown) from drag (reorder): the drag
   // only begins once the pointer moves past this threshold.
@@ -194,7 +203,31 @@
       data-type={displayMap[item]?.type ?? "dimension"}
       onmousedown={(e) => handleMouseDown(e, item, i)}
     >
-      {#if setMeasureFormatting && displayMap[item]?.type === "measure"}
+      {#if columnSettings}
+        {@const isMeasure = displayMap[item]?.type === "measure"}
+        <ColumnSettingsChip
+          item={toChipData(item)}
+          config={columnSettings.configs[item]}
+          defaultLabel={displayMap[item]?.label || item}
+          capabilities={columnSettingsCapabilities(
+            columnSettings.listKey,
+            i,
+            isMeasure,
+            columnSettings.adhocNames.has(item),
+          )}
+          removable
+          grab
+          fullWidth
+          fmt={isMeasure ? measureFormatting?.[item] : undefined}
+          lowerIsBetter={lowerIsBetterMap[item] ?? false}
+          onFormatChange={setMeasureFormatting && isMeasure
+            ? (fmt: PivotMeasureFormatting | null) =>
+                setMeasureFormatting?.(item, fmt)
+            : undefined}
+          onConfigChange={(patch) => columnSettings?.onChange(item, patch)}
+          onRemove={() => handleRemove(item)}
+        />
+      {:else if setMeasureFormatting && displayMap[item]?.type === "measure"}
         <MeasureFormatChip
           item={{
             id: item,

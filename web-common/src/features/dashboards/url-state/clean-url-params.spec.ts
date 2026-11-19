@@ -9,8 +9,7 @@ const TestCases: {
 }[] = [
   {
     title: "should remove default params for explore and tdd",
-    defaultSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=",
+    defaultSearch: "view=explore&tr=PT6H&tz=UTC&compare_tr=&compare_dim=",
     search:
       "view=tdd&tr=P7D&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measure=impressions&chart_type=line",
     expectedCleanedSearch:

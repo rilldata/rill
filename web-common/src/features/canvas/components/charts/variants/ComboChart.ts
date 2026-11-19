@@ -117,7 +117,7 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new ComboChartProvider(this.specStore, {
+    this.provider = new ComboChartProvider(this.querySpecStore, {
       nominalLimit: DEFAULT_NOMINAL_LIMIT,
       sort: DEFAULT_SORT,
     });
@@ -131,7 +131,7 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   updateProperty(
     key: keyof ComboCanvasChartSpec,
     value: ComboCanvasChartSpec[keyof ComboCanvasChartSpec],
-  ) {
+  ): Promise<boolean> {
     const currentSpec = get(this.specStore);
 
     // Handle mark type mutual exclusivity
@@ -153,12 +153,11 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
             [otherKey]: updatedOtherField,
           };
 
-          this.setSpec(newSpec);
-          return;
+          return this.setSpec(newSpec);
         }
       }
     }
-    super.updateProperty(key, value);
+    return super.updateProperty(key, value);
   }
 
   getMeasureLabels(): string[] | undefined {

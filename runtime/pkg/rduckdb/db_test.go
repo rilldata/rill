@@ -601,6 +601,27 @@ func TestDiskCleanupOnFailures(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestWriteHandleClosedOnOpenFailure(t *testing.T) {
+	testDB, _, _ := prepareDB(t)
+	ctx := t.Context()
+
+	// A failing init query makes openDBAndAttach fail after the write handle is opened.
+	// The first failure warms up lazily opened file descriptors.
+	createFailing := func() {
+		_, err := testDB.CreateTableAsSelect(ctx, "test_table", "SELECT 1 AS id", &CreateTableOptions{InitQueries: []string{"SELEC 1"}})
+		require.ErrorContains(t, err, "syntax error")
+	}
+	createFailing()
+
+	fds := countOpenFDs(t)
+	for range 5 {
+		createFailing()
+	}
+	require.Equal(t, fds, countOpenFDs(t), "failed writes leaked file descriptors")
+
+	require.NoError(t, testDB.Close())
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
@@ -618,6 +639,15 @@ func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	})
 	require.NoError(t, err)
 	return
+}
+
+func countOpenFDs(t *testing.T) int {
+	f, err := os.Open("/dev/fd")
+	require.NoError(t, err)
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	require.NoError(t, err)
+	return len(names)
 }
 
 func verifyTable(t *testing.T, db DB, query string, data []testData) {

@@ -70,6 +70,29 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestColName := d.EscapeIdentifier(drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name)))
+	return fmt.Sprintf(`%s AS %s`, unnestColName, alias), fmt.Sprintf(`, UNNEST(%s) AS %s`, expr, unnestColName), nil
+}
+
+// LateralUnnest returns a comma join with UNNEST. BigQuery exposes each element directly under the alias, so there is no tuple to index into.
+func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`UNNEST(%s) AS %s`, expr, d.EscapeIdentifier(colName)), false, false, nil
+}
+
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	elem = d.EscapeIdentifier(elemAlias)
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM UNNEST(%s) AS %s WHERE ", arrExpr, elem), elem, ")", true
+}
+
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {
 	// BigQuery requires plain equality for FULL joins
 	return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)
@@ -86,7 +109,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 	// BigQuery's bare WEEK specifier truncates to Sunday-start weeks. Rill's firstDayOfWeek follows ISO 8601
 	// (1=Monday, 7=Sunday, default 1), so map it to BigQuery's WEEK(<WEEKDAY>) form to keep them aligned.
 	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
@@ -104,6 +129,24 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 	// For DATE columns, explicitly cast to TIMESTAMP first to ensure the result is TIMESTAMP (not DATETIME).
 	if dim.DataType != nil && dim.DataType.Code == runtimev1.Type_CODE_DATE {
 		expr = fmt.Sprintf("TIMESTAMP(%s)", expr)
+	}
+	if n > 1 {
+		// Multiples floor the unit within its parent (minutes within the hour, hours within the day) in the given zone.
+		// TIMESTAMP_BUCKET is anchored on the UTC epoch, so it would misalign hour multiples in zones with a non-hour offset.
+		parent := "DAY"
+		if specifier == "MINUTE" {
+			parent = "HOUR"
+		}
+		if tz == "" {
+			return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s), INTERVAL DIV(EXTRACT(%s FROM %s), %d) * %d %s)", expr, parent, specifier, expr, n, n, specifier), nil
+		}
+		if specifier == "HOUR" {
+			// Hour multiples floor on the local wall clock, like the other dialects:
+			// adding hours to local midnight as absolute time would be off by the DST shift on transition days.
+			local := fmt.Sprintf("DATETIME(%s, '%s')", expr, tz)
+			return fmt.Sprintf("TIMESTAMP(DATETIME_ADD(DATETIME_TRUNC(%s, DAY), INTERVAL DIV(EXTRACT(HOUR FROM %s), %d) * %d HOUR), '%s')", local, local, n, n, tz), nil
+		}
+		return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s, '%s'), INTERVAL DIV(EXTRACT(%s FROM %s AT TIME ZONE '%s'), %d) * %d %s)", expr, parent, tz, specifier, expr, tz, n, n, specifier), nil
 	}
 	if tz == "" {
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
@@ -137,14 +180,24 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	startStr := start.Format(time.RFC3339)
 	endStr := end.Format(time.RFC3339)
 	tzStr := tz.String()
-	switch grain {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_SECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
-		runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+	unit, n := timeutil.TimeGrainBase(grain)
+	switch {
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
+		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		// They step from the bucket's wall-clock start, which is earlier than its local start time when it falls in a DST gap.
+		// BigQuery has no DATETIME array generator, so offset the local start by a generated index.
+		steps := int(end.Sub(start)/(time.Duration(n)*time.Hour)) + 2
 		return fmt.Sprintf(
-			"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL 1 %s)) AS ts WHERE ts < TIMESTAMP '%s'",
-			d.EscapeAlias(alias), startStr, endStr, d.ConvertToDateTruncSpecifier(grain), endStr,
+			"SELECT ts AS %s FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME '%s', INTERVAL i * %d HOUR), '%s') AS ts FROM UNNEST(GENERATE_ARRAY(0, %d)) AS i) WHERE ts < TIMESTAMP '%s'",
+			d.EscapeAlias(alias), timeutil.WallClockBucketStart(start, n, tz).Format(time.DateTime), n, tzStr, steps, endStr,
+		), nil, nil
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return fmt.Sprintf(
+			"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL %d %s)) AS ts WHERE ts < TIMESTAMP '%s'",
+			d.EscapeAlias(alias), startStr, endStr, n, d.ConvertToDateTruncSpecifier(unit), endStr,
 		), nil, nil
 	default:
 		return fmt.Sprintf(

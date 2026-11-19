@@ -216,10 +216,12 @@
           {#if $form["table"]}
             <div class="text-base px-4 py-2">SCHEMA</div>
             <TableSchema
-              connector={step.connector}
-              database={$form["database"]}
-              databaseSchema={$form["schema"]}
-              table={$form["table"]}
+              table={{
+                connector: step.connector,
+                database: $form["database"] ?? "",
+                databaseSchema: $form["schema"] ?? "",
+                tableName: $form["table"],
+              }}
               forcedLeftPadding="pl-4"
             />
           {/if}

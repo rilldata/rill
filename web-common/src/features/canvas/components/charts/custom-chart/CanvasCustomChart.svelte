@@ -4,6 +4,7 @@
   import AgenticChartPrompt from "./AgenticChartPrompt.svelte";
   import { clearComponentConversation } from "./chart-ai-agent";
   import type { CustomChartComponent, QueryFieldMeta } from "./index";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
 
   export let component: CustomChartComponent;
   export let editable: boolean = false;
@@ -12,7 +13,7 @@
     clearComponentConversation(component.id);
   });
 
-  $: ({ specStore, timeAndFilterStore } = component);
+  $: ({ specStore, timeAndFilterStore, usesTimeRange } = component);
 
   $: hasValidSpec = component.isValid($specStore);
   $: hasContent = component.hasContent($specStore);
@@ -31,11 +32,17 @@
     name={component.id}
     spec={$specStore.vega_spec}
     whereFilter={$timeAndFilterStore?.where}
-    timeRange={$timeAndFilterStore?.timeRange}
+    timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
+    onResults={(results: CustomChartExportResult[] | undefined) =>
+      component.exportPayload.set(
+        results ? { kind: "customChart", results } : undefined,
+      )}
   />
-{:else}
+{:else if editable}
+  <!-- The prompt edits the component by its YAML path, which only matches the file in the editor:
+       viewers get a canvas without the content hidden from them, so their positions can differ. -->
   <AgenticChartPrompt {component} />
 {/if}

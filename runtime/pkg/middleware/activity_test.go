@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // captureSink records emitted events for assertions.
@@ -78,6 +80,33 @@ func TestRequestMetric(t *testing.T) {
 			} else {
 				require.Nil(t, e.Data["user_id"])
 			}
+		})
+	}
+}
+
+func TestGRPCRequestSource(t *testing.T) {
+	tests := []struct {
+		method string
+		want   string
+	}{
+		{runtimev1.RuntimeService_Complete_FullMethodName, "chat"},
+		{runtimev1.RuntimeService_CompleteStreaming_FullMethodName, "chat"},
+		{runtimev1.RuntimeService_ListResources_FullMethodName, "ui"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.method, func(t *testing.T) {
+			sink := &captureSink{}
+			interceptor := ActivityUnaryServerInterceptor(activity.NewClient(sink, zap.NewNop()))
+
+			_, err := interceptor(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: tt.method}, func(ctx context.Context, req any) (any, error) {
+				require.Equal(t, tt.want, string(runtime.RequestSourceFromContext(ctx)))
+				return nil, nil
+			})
+			require.NoError(t, err)
+
+			require.Len(t, sink.events, 1)
+			require.Equal(t, tt.want, sink.events[0].Data["source"])
 		})
 	}
 }

@@ -79,7 +79,12 @@
       ? prettyFormatTimeRange($comparisonIntervalStore, $grainStore)
       : "",
   );
-  let exportTitle = $derived($spec?.title || $titleStore || component.id);
+  // A component reference's spec carries its param bindings, so `title` may be any scalar.
+  let exportTitle = $derived(
+    (typeof $spec?.title === "string" && $spec.title) ||
+      $titleStore ||
+      component.id,
+  );
   const generatedTime = new Date().toISOString();
 
   async function download() {

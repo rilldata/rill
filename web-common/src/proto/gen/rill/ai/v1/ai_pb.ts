@@ -190,6 +190,64 @@ export class ToolResult extends Message<ToolResult> {
 }
 
 /**
+ * The model's reasoning before its text or tool calls.
+ * Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ *
+ * @generated from message rill.ai.v1.Reasoning
+ */
+export class Reasoning extends Message<Reasoning> {
+  /**
+   * Readable reasoning. Often empty, since providers may omit it or return a summary.
+   *
+   * @generated from field: string text = 1;
+   */
+  text = "";
+
+  /**
+   * Opaque provider signature that lets the provider verify the reasoning.
+   *
+   * @generated from field: string signature = 2;
+   */
+  signature = "";
+
+  /**
+   * Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+   *
+   * @generated from field: string redacted_data = 3;
+   */
+  redactedData = "";
+
+  constructor(data?: PartialMessage<Reasoning>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.Reasoning";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "signature", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "redacted_data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Reasoning {
+    return new Reasoning().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Reasoning {
+    return new Reasoning().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Reasoning {
+    return new Reasoning().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Reasoning | PlainMessage<Reasoning> | undefined, b: Reasoning | PlainMessage<Reasoning> | undefined): boolean {
+    return proto3.util.equals(Reasoning, a, b);
+  }
+}
+
+/**
  * Content block within a message
  *
  * @generated from message rill.ai.v1.ContentBlock
@@ -216,6 +274,12 @@ export class ContentBlock extends Message<ContentBlock> {
      */
     value: ToolResult;
     case: "toolResult";
+  } | {
+    /**
+     * @generated from field: rill.ai.v1.Reasoning reasoning = 4;
+     */
+    value: Reasoning;
+    case: "reasoning";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<ContentBlock>) {
@@ -229,6 +293,7 @@ export class ContentBlock extends Message<ContentBlock> {
     { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "block_type" },
     { no: 2, name: "tool_call", kind: "message", T: ToolCall, oneof: "block_type" },
     { no: 3, name: "tool_result", kind: "message", T: ToolResult, oneof: "block_type" },
+    { no: 4, name: "reasoning", kind: "message", T: Reasoning, oneof: "block_type" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ContentBlock {

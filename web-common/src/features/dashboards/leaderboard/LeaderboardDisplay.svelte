@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
@@ -44,11 +45,13 @@
         leaderboardMeasures,
         leaderboardSortByMeasureName,
       },
+      exactMeasures: { exactMeasureContext, hasAnyExactVariant },
     },
     actions: {
       dimensions: { setPrimaryDimension },
       sorting: { toggleSort },
       comparison: { toggleComparisonDimension },
+      exactMeasures: { toggleExactMeasure },
     },
     exploreName,
     expressionFilterManager,
@@ -104,12 +107,23 @@
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
+            {@const dimensionName = dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasures={$leaderboardMeasures}
               ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+              exactContext={$hasAnyExactVariant
+                ? $exactMeasureContext(
+                    exploreExactSurface.leaderboard(dimensionName),
+                  )
+                : undefined}
+              onToggleExact={(measureName) =>
+                toggleExactMeasure(
+                  exploreExactSurface.leaderboard(dimensionName),
+                  measureName,
+                )}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {tableWidth}

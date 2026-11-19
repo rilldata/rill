@@ -263,6 +263,11 @@ func (u *URLs) GithubAuthCallback() string {
 	return urlutil.MustJoinURL(u.external, "/github/auth/callback") // NOTE: Always using the primary external URL.
 }
 
+// ConnectorOAuthCallback returns the redirect URI used when authorizing connectors on behalf of users.
+func (u *URLs) ConnectorOAuthCallback() string {
+	return urlutil.MustJoinURL(u.external, "/connectors/oauth/callback") // NOTE: Always using the primary external URL.
+}
+
 // GithubConnectUI returns the page in the Rill frontend for starting the Github connect flow.
 func (u *URLs) GithubConnectUI(redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect") // NOTE: Always using the primary frontend URL.
@@ -414,11 +419,19 @@ func (u *URLs) AlertEdit(org, project, alert string) string {
 }
 
 // AlertUnsubscribe returns the URL for unsubscribing from an alert.
-func (u *URLs) AlertUnsubscribe(org, project, alert, token string) string {
-	if token != "" {
-		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe"), map[string]string{"token": token})
+func (u *URLs) AlertUnsubscribe(org, project, alert, token, email string) string {
+	queryParams := map[string]string{
+		"org":     org,
+		"project": project,
+		"token":   token,
 	}
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe")
+	if email != "" {
+		queryParams["email"] = email
+	}
+	// Same as ReportUnsubscribe: the unsubscribe token has no access to org or project data,
+	// so it uses a path outside of the `/<org>/<project>` prefix, which fetches them.
+	// This is required for alerts created from an embed, whose recipients may have no access to the project.
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), "-", "unsubscribe", "alerts", alert), queryParams)
 }
 
 // Billing returns the landing page url that optionally shows the upgrade modal.

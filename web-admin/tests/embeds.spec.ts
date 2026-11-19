@@ -1,107 +1,6 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { EmbedMessageRecorder } from "@rilldata/web-common/tests/utils/embed-message-recorder.ts";
 import { test } from "./setup/base";
-
-/**
- * Captures the embed's `console.log` messages (the postMessage protocol echoes
- * its traffic to the console) and exposes web-first assertions over them. The
- * captured messages are encapsulated here rather than passed around as a shared
- * array, so it is clear that the listener owns and mutates them.
- */
-class EmbedMessageRecorder {
-  private readonly messages: string[] = [];
-  private readonly ready: Promise<void>;
-
-  constructor(embedPage: Page) {
-    this.ready = new Promise<void>((resolve) => {
-      embedPage.on("console", async (msg) => {
-        if (msg.type() !== "log") return;
-
-        try {
-          const args = await Promise.all(
-            msg.args().map((arg) => arg.jsonValue()),
-          );
-          const logMessage = JSON.stringify(args);
-          this.messages.push(logMessage);
-          if (logMessage.includes(`{"method":"ready"}`)) {
-            resolve();
-          }
-        } catch {
-          // Ignore errors in parsing. Any rogue log shouldn't break the test.
-          // There is also a race condition when browser/page is closed while we
-          // are extracting the values in the await.
-        }
-      });
-    });
-  }
-
-  /** Resolves once the embed has posted its `ready` message. */
-  waitForReady() {
-    return this.ready;
-  }
-
-  /** Asserts that at least one captured message contains the substring. */
-  async expectContaining(expectedSubstring: string) {
-    const found = await this.poll((msg) => msg.includes(expectedSubstring));
-    if (!found) {
-      expect
-        .soft(
-          found,
-          `No message containing expected substring.
-
-Expected substring:
-  ${expectedSubstring}
-
-Received messages:
-${this.formatMessages()}`,
-        )
-        .toBeTruthy();
-    }
-  }
-
-  /** Asserts that at least one captured message matches the predicate. */
-  async expectMatching(
-    predicate: (msg: string) => boolean,
-    description: string,
-  ) {
-    const found = await this.poll(predicate);
-    if (!found) {
-      expect
-        .soft(
-          found,
-          `No message matching expected condition.
-
-Expected:
-  ${description}
-
-Received messages:
-${this.formatMessages()}`,
-        )
-        .toBeTruthy();
-    }
-  }
-
-  /**
-   * Polls the captured messages until one satisfies the predicate, or the
-   * timeout elapses. Returns whether a matching message was found, so callers
-   * can emit a detailed, debuggable failure rather than a bare timeout.
-   */
-  private async poll(predicate: (msg: string) => boolean, timeout = 5_000) {
-    try {
-      await expect
-        .poll(() => this.messages.some(predicate), { timeout })
-        .toBe(true);
-    } catch {
-      // Timed out: fall through so the caller can report the captured messages.
-    }
-    return this.messages.some(predicate);
-  }
-
-  private formatMessages() {
-    return this.messages.length > 0
-      ? this.messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
-      : "  (no messages captured)";
-  }
-}
 
 test.describe("Embeds", () => {
   test.describe("embedded explore", () => {
@@ -123,7 +22,7 @@ test.describe("Embeds", () => {
       await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
 
       await recorder.expectContaining(
-        "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+        "tr=P7D&f=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
@@ -170,7 +69,7 @@ test.describe("Embeds", () => {
       });
 
       await recorder.expectContaining(
-        `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
+        `{"id":1337,"result":{"state":"tr=P7D&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
@@ -434,7 +333,7 @@ test.describe("Embeds", () => {
         );
 
         await recorder.expectContaining(
-          "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
@@ -602,7 +501,7 @@ test.describe("Embeds", () => {
         );
 
         await recorder.expectContaining(
-          "tr=PT6H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
@@ -627,7 +526,7 @@ test.describe("Embeds", () => {
 
       // The navigation bar is gone. Assert on DOM presence rather than
       // visibility, since Playwright's locators also match hidden elements.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
       await expect(frame.getByText("Home", { exact: true })).toHaveCount(0);
 
       // The component's drill-through to an explore dashboard is still offered.
@@ -656,7 +555,7 @@ test.describe("Embeds", () => {
       await expect(frame.getByLabel("Select time range")).toBeVisible();
 
       // The navigation bar stays hidden on the dashboard we drilled into.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
     });
   });
 
@@ -664,6 +563,12 @@ test.describe("Embeds", () => {
     const recorder = new EmbedMessageRecorder(embedPage);
     await recorder.waitForReady();
     const frame = embedPage.frameLocator("iframe");
+    // Clicking the current dashboard's breadcrumb opens the dashboard switcher.
+    const openDashboardSwitcher = (currentDashboard: string) =>
+      frame
+        .getByRole("navigation")
+        .getByRole("button", { name: currentDashboard, exact: true })
+        .click();
 
     // Time range is the default
     await expect(frame.getByText("Last 7 days")).toBeVisible();
@@ -679,7 +584,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", {
         name: "Programmatic Ads Auction",
@@ -694,7 +599,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Auction");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
@@ -717,7 +622,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Bids Canvas Dashboard");
     await frame
       .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
@@ -729,7 +634,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 14 days")).toBeVisible();
 
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()

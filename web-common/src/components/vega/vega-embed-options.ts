@@ -4,12 +4,23 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { EmbedOptions } from "svelte-vega";
 import { expressionInterpreter } from "vega-interpreter";
 import type { Config } from "vega-lite";
+import {
+  DEFAULT_OPTIONS as DEFAULT_TOOLTIP_OPTIONS,
+  Handler as TooltipHandlerFactory,
+  type Options as TooltipOptions,
+} from "vega-tooltip";
+import type { TooltipHandler } from "vega-typings";
 import type { ExpressionFunction } from "./types";
 import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
 export interface CreateBaseEmbedOptionsParams {
-  client: RuntimeClient;
+  /**
+   * Runtime client for the Vega loader (instance assets, auth header).
+   * Without one the view cannot load external resources, which standalone
+   * renderers such as the MCP chart widget never need.
+   */
+  client?: RuntimeClient | null;
   config?: Config;
   renderer?: "canvas" | "svg";
   themeMode?: "light" | "dark";
@@ -17,6 +28,11 @@ export interface CreateBaseEmbedOptionsParams {
   useExpressionInterpreter?: boolean;
   colorMapping: ColorMapping;
   hasComparison?: boolean;
+  /**
+   * The dashboard theme boundary class, when the chart renders inside one (see getThemeBoundaryClass).
+   * vega-tooltip appends its tooltip to document.body, so the tooltip needs the class to keep the theme.
+   */
+  themeBoundaryClass?: string;
 }
 
 /**
@@ -39,18 +55,29 @@ export function createBaseEmbedOptions({
   useExpressionInterpreter = true,
   colorMapping,
   hasComparison,
+  themeBoundaryClass,
 }: CreateBaseEmbedOptionsParams): EmbedOptions {
-  const jwt = client.getJwt();
+  const jwt = client?.getJwt();
+  const assetsBaseURL = client
+    ? `${client.host}/v1/instances/${client.instanceId}/assets/`
+    : undefined;
+  const tooltipOptions: TooltipOptions = {
+    theme: themeMode,
+    ...(hasComparison || colorMapping?.length
+      ? { formatTooltip: getTooltipFormatter(colorMapping) }
+      : {}),
+  };
 
   return {
     config: config || getRillTheme(themeMode === "dark"),
     renderer,
-    tooltip: {
-      theme: themeMode,
-      ...(hasComparison || colorMapping?.length
-        ? { formatTooltip: getTooltipFormatter(colorMapping) }
-        : {}),
-    },
+    tooltip: themeBoundaryClass
+      ? createThemedTooltipHandler(
+          // vega-embed adds the loader's base URL itself only when it builds the handler.
+          { ...tooltipOptions, baseURL: assetsBaseURL },
+          themeBoundaryClass,
+        )
+      : tooltipOptions,
     actions: false,
     logLevel: 0, // only show errors
     ...(useExpressionInterpreter && {
@@ -59,16 +86,36 @@ export function createBaseEmbedOptions({
       expr: expressionInterpreter,
     }),
     expressionFunctions,
-    loader: {
-      baseURL: `${client.host}/v1/instances/${client.instanceId}/assets/`,
-      ...(jwt && {
-        http: {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
+    ...(client && {
+      loader: {
+        baseURL: assetsBaseURL,
+        ...(jwt && {
+          http: {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
           },
-        },
-      }),
-    },
+        }),
+      },
+    }),
+  };
+}
+
+/**
+ * Wraps vega-tooltip's handler so its tooltip element carries the theme boundary class while it is shown.
+ * Every chart shares that one element, so the class is removed again on hide,
+ * the same way vega-tooltip toggles its own theme class.
+ */
+function createThemedTooltipHandler(
+  options: TooltipOptions,
+  themeBoundaryClass: string,
+): TooltipHandler {
+  const { call } = new TooltipHandlerFactory(options);
+  return (handler, event, item, value) => {
+    call(handler, event, item, value);
+    document
+      .getElementById(options.id ?? DEFAULT_TOOLTIP_OPTIONS.id)
+      ?.classList.toggle(themeBoundaryClass, value != null && value !== "");
   };
 }
 

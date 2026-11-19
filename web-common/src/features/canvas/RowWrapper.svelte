@@ -7,10 +7,16 @@
   export let height: number | undefined = undefined;
   export let heightUnit: string | undefined = undefined;
   export let id: string;
+  // The tab group and tab the row belongs to, when it renders inside a tab
+  // (set by the export render so captured blocks can be mapped to tabs).
+  export let tabGroupName: string | undefined = undefined;
+  export let tabName: string | undefined = undefined;
 </script>
 
 <section
   {id}
+  data-tab-group={tabGroupName}
+  data-tab={tabName}
   role="presentation"
   class="w-full grid canvas-row relative h-fit min-h-fit pointer-events-none"
   style:z-index={zIndex}

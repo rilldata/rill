@@ -1,9 +1,11 @@
 import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector.ts";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain.ts";
 
 /**
  * Corrects the final merged explore state.
@@ -14,14 +16,32 @@ export function correctExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreState: ExploreState,
 ) {
+  // The grain is resolved first since measure validation below compares against it.
+  if (exploreState.adaptiveTimeGrain) {
+    applyAdaptiveTimeGrain(exploreState, metricsViewSpec);
+  } else if (exploreState.selectedTimeRange) {
+    deriveIntervalFromRillTimeName(exploreState.selectedTimeRange);
+  }
+
   // Resuse code for now. We might want to consolidate more in the future.
   AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
 
   correctLeaderboardMeasures(exploreState);
+  correctPivotFields(exploreState);
+}
 
-  if (exploreState.selectedTimeRange) {
-    deriveIntervalFromRillTimeName(exploreState.selectedTimeRange);
-  }
+/**
+ * Drops a pivot field listed twice in a zone, or in both zones, and fields
+ * with an empty name. Every loaded state ends here, whatever its source
+ * (url, bookmark, legacy proto state, session or yaml defaults), and the
+ * pivot header keys its chips by field, so a repeat would break the view.
+ */
+function correctPivotFields(exploreState: ExploreState) {
+  exploreState.pivot.rows = dedupePivotChips(exploreState.pivot.rows);
+  exploreState.pivot.columns = dedupePivotChips(
+    exploreState.pivot.columns,
+    exploreState.pivot.rows.map((chip) => chip.id),
+  );
 }
 
 function correctLeaderboardMeasures(exploreState: ExploreState) {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -130,6 +131,52 @@ func TestDeploymentJWTs(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, c.Subject, decodeJWT(t, resp2.AccessToken).Subject)
+	})
+
+	t.Run("Service tokens without for", func(t *testing.T) {
+		svc, err := u1Client.CreateService(t.Context(), &adminv1.CreateServiceRequest{
+			Name:            "jwt-service",
+			Org:             "jwt-test",
+			Project:         "jwt-project",
+			ProjectRoleName: database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		tok, err := u1Client.IssueServiceAuthToken(t.Context(), &adminv1.IssueServiceAuthTokenRequest{
+			Org:         "jwt-test",
+			ServiceName: svc.Service.Name,
+		})
+		require.NoError(t, err)
+		svcClient := adm.NewClient(t, tok.Token)
+
+		// GetProject keeps the service as the subject.
+		proj, err := svcClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+		})
+		require.NoError(t, err)
+		require.Equal(t, svc.Service.Id, decodeJWT(t, proj.Jwt).Subject)
+
+		// Endpoints commonly used to issue tokens for end users must not share the service subject across them.
+		depl, err := svcClient.GetDeployment(t.Context(), &adminv1.GetDeploymentRequest{
+			DeploymentId: depl.ID,
+		})
+		require.NoError(t, err)
+		require.Empty(t, decodeJWT(t, depl.AccessToken).Subject)
+
+		creds, err := svcClient.GetDeploymentCredentials(t.Context(), &adminv1.GetDeploymentCredentialsRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+		})
+		require.NoError(t, err)
+		require.Empty(t, decodeJWT(t, creds.AccessToken).Subject)
+
+		iframe, err := svcClient.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:        "jwt-test",
+			Project:    "jwt-project",
+			Navigation: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, decodeJWT(t, iframe.AccessToken).Subject)
 	})
 }
 

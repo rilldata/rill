@@ -1,10 +1,19 @@
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenExpression,
+  maybeConvertEqualityToInExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  dropUnknownFieldsFromFilter,
+  getExploreFieldNames,
+  type ExploreFieldNames,
+} from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
   getDefaultTimeRange,
   getDefaultTimeZone,
 } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
-import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { ToURLParamTDDChartMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
@@ -16,12 +25,12 @@ import {
   V1ExploreWebView,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewSpec,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
@@ -43,6 +52,7 @@ export function getDefaultExplorePreset(
       explore.defaultPreset?.timeRange ||
       getDefaultTimeRange(metricsViewSpec.smallestTimeGrain, timeRangeSummary),
     timezone: getDefaultTimeZone(explore),
+    // No grain: the default is adaptive, so the grain follows the time range.
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
@@ -70,13 +80,11 @@ export function getDefaultExplorePreset(
 
     ...(explore.defaultPreset ?? {}),
   };
-
-  if (!defaultExplorePreset.timeGrain) {
-    defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
-      defaultExplorePreset,
-      timeRangeSummary,
-    );
-  }
+  // The spread above copied the default filter as the runtime parsed it.
+  // The preset is turned into url params and filter chips, which need the normalized shape.
+  defaultExplorePreset.where =
+    getExploreDefaultFilter(metricsViewSpec, explore) ??
+    createAndExpression([]);
 
   if (defaultExplorePreset.comparisonMode) {
     Object.assign(
@@ -92,31 +100,61 @@ export function getDefaultExplorePreset(
   return defaultExplorePreset;
 }
 
-function getDefaultPresetTimeGrain(
-  defaultExplorePreset: V1ExplorePreset,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
-  if (
-    !defaultExplorePreset.timeRange ||
-    !timeRangeSummary?.min ||
-    !timeRangeSummary?.max
-  )
-    return "";
+/**
+ * The default filter of an explore, from `defaults.filters`, in the shape the filter chips write.
+ *
+ * The runtime parses the filter from Metrics SQL, which nests ANDs, keeps the values of an IN as
+ * one list and keeps `=` as is. The chips flatten all of these, so the default is normalized the
+ * same way. Otherwise the same filter would have two url params, and the dashboard could not tell
+ * that it is showing its default.
+ */
+export function getExploreDefaultFilter(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  exploreFields = getExploreFieldNames(metricsViewSpec, exploreSpec),
+): V1Expression | undefined {
+  const where = exploreSpec.defaultPreset?.where;
+  if (!where) return undefined;
 
-  const fullTimeStart = new Date(timeRangeSummary.min);
-  const fullTimeEnd = new Date(timeRangeSummary.max);
-  const timeRange = isoDurationToFullTimeRange(
-    defaultExplorePreset.timeRange,
-    fullTimeStart,
-    fullTimeEnd,
-    defaultExplorePreset.timezone,
+  // The spec is shared through the query cache and flattenExpression edits its argument.
+  const flattened = flattenExpression(structuredClone(where));
+  flattened.cond!.exprs = flattened.cond!.exprs?.map(
+    maybeConvertEqualityToInExpressions,
   );
 
-  return (
-    V1TimeGrainToDateTimeUnit[
-      getDefaultTimeGrain(timeRange.start, timeRange.end)
-    ] ?? ""
+  // Only fields the metrics view still defines can be queried. See getExploreFieldNames.
+  return dropFilterFieldsOutsideExplore(
+    flattened,
+    metricsViewSpec,
+    exploreFields,
   );
+}
+
+/**
+ * Drops the conditions of a filter on fields other than the given fields of an explore.
+ * Returns undefined when no condition is left. The filter passed in is left as it is.
+ */
+export function dropFilterFieldsOutsideExplore(
+  filter: V1Expression,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreFields: ExploreFieldNames,
+): V1Expression | undefined {
+  const measures = new Set(exploreFields.measures);
+  const dimensions = new Set(exploreFields.dimensions);
+  const { expr } = dropUnknownFieldsFromFilter(
+    // A copy, since the subqueries of the filter are edited in place.
+    // It is made through JSON, which unlike structuredClone also takes the rune state of a filter bar.
+    JSON.parse(JSON.stringify(filter)) as V1Expression,
+    getMapFromArray(
+      metricsViewSpec.measures?.filter((m) => measures.has(m.name!)) ?? [],
+      (m) => m.name!,
+    ),
+    getMapFromArray(
+      metricsViewSpec.dimensions?.filter((d) => dimensions.has(d.name!)) ?? [],
+      (d) => d.name!,
+    ),
+  );
+  return expr.cond?.exprs?.length ? expr : undefined;
 }
 
 function getDefaultComparisonFields(

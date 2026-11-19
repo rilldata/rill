@@ -1103,7 +1103,12 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: bool exact = 17;
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+   * That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+   *
+   * @generated from field: bool exact = 17 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -1247,7 +1252,7 @@ export class MetricsViewAggregationDimension extends Message<MetricsViewAggregat
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1383,6 +1388,14 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     case: "expression";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
+  /**
+   * Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+   * No-op for measures without an `exact_expression`, which only simple measures define.
+   *
+   * @generated from field: bool exact = 14;
+   */
+  exact = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1404,6 +1417,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
     { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
     { no: 13, name: "expression", kind: "message", T: MetricsViewAggregationMeasureComputeExpression, oneof: "compute" },
+    { no: 14, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -2116,9 +2130,12 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   priority = 0;
 
   /**
-   * Optional, defaults to false
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+   * Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
    *
-   * @generated from field: bool exact = 13;
+   * @generated from field: bool exact = 13 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -2270,7 +2287,7 @@ export class TimeRange extends Message<TimeRange> {
   /**
    * @generated from field: rill.runtime.v1.TimeGrain round_to_grain = 5;
    */
-  roundToGrain = TimeGrain.UNSPECIFIED;
+  roundToGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -2588,6 +2605,14 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
 
   /**
+   * Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+   * No-op for measures without an `exact_expression`.
+   *
+   * @generated from field: repeated string exact_measure_names = 18;
+   */
+  exactMeasureNames: string[] = [];
+
+  /**
    * Optional. Defaults to min
    *
    * @generated from field: google.protobuf.Timestamp time_start = 4;
@@ -2606,7 +2631,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 6;
    */
-  timeGranularity = TimeGrain.UNSPECIFIED;
+  timeGranularity = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -2681,6 +2706,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
+    { no: 18, name: "exact_measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -2966,7 +2992,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
    */
-  timeGranularity = TimeGrain.UNSPECIFIED;
+  timeGranularity = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -3965,7 +3991,7 @@ export class ResolvedTimeRange extends Message<ResolvedTimeRange> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain grain = 3;
    */
-  grain = TimeGrain.UNSPECIFIED;
+  grain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * The time dimension that was used to resolve the time range.
@@ -4055,7 +4081,7 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Optional
@@ -4362,6 +4388,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   unsafe = false;
 
+  /**
+   * If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+   * Used by the visual editor, which maps canvas elements to their position in the YAML.
+   * Requires permission to edit the canvas.
+   *
+   * @generated from field: bool include_hidden = 5;
+   */
+  includeHidden = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4374,6 +4409,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
     { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "include_hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
@@ -4420,6 +4456,14 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
    */
   referencedMetricsViews: { [key: string]: Resource } = {};
 
+  /**
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * The paths follow the canvas YAML. Only set when include_hidden is true.
+   *
+   * @generated from field: repeated string hidden_paths = 4;
+   */
+  hiddenPaths: string[] = [];
+
   constructor(data?: PartialMessage<ResolveCanvasResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4431,6 +4475,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
     { no: 1, name: "canvas", kind: "message", T: Resource },
     { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
     { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 4, name: "hidden_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {
@@ -4516,6 +4561,13 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
    */
   rendererProperties?: Struct;
 
+  /**
+   * The effective args used for resolution: the component's declared param defaults merged with the provided args.
+   *
+   * @generated from field: google.protobuf.Struct resolved_args = 3;
+   */
+  resolvedArgs?: Struct;
+
   constructor(data?: PartialMessage<ResolveComponentResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4525,6 +4577,7 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 3, name: "resolved_args", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {
@@ -4750,7 +4803,7 @@ export class ColumnRollupIntervalResponse extends Message<ColumnRollupIntervalRe
    *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 3;
    */
-  interval = TimeGrain.UNSPECIFIED;
+  interval = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<ColumnRollupIntervalResponse>) {
     super();
@@ -5694,7 +5747,7 @@ export class ColumnTimeGrainResponse extends Message<ColumnTimeGrainResponse> {
   /**
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 1;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<ColumnTimeGrainResponse>) {
     super();
@@ -6467,7 +6520,7 @@ export class TimeSeriesTimeRange extends Message<TimeSeriesTimeRange> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 4;
    */
-  interval = TimeGrain.UNSPECIFIED;
+  interval = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   constructor(data?: PartialMessage<TimeSeriesTimeRange>) {
     super();

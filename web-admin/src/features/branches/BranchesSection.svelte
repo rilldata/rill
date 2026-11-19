@@ -10,6 +10,7 @@
     createAdminServiceStartDeployment,
     createAdminServiceStopDeployment,
     type V1Deployment,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import {
@@ -53,10 +54,17 @@
   let { organization, project }: { organization: string; project: string } =
     $props();
 
+  // Resolves deployment owners to names. Only users who can read the org's members may list
+  // them, so project admins who are not org admins see a placeholder instead.
+  let organizationPermissions = $derived(
+    page.data.organizationPermissions as V1OrganizationPermissions | undefined,
+  );
   let orgMembers = $derived(
-    createAdminServiceListOrganizationMemberUsers(organization, {
-      pageSize: 1000,
-    }),
+    createAdminServiceListOrganizationMemberUsers(
+      organization,
+      { pageSize: 1000 },
+      { query: { enabled: !!organizationPermissions?.readOrgMembers } },
+    ),
   );
   // Uses empty params `{}` so the cache key matches other unscoped consumers.
   let allDeployments = $derived(

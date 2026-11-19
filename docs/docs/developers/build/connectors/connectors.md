@@ -79,7 +79,7 @@ Rill offers flexible connection strategies to fit different data architectures a
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
-    referenceLink="ducklake"
+    referenceLink="duckdb"
   />
   
   <ConnectorIcon
@@ -204,7 +204,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
-    referenceLink="postgresql"
+    referenceLink="postgres"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
@@ -264,6 +264,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ## Table Formats
 ### Delta Lake
 ### Apache Iceberg
+### Amazon S3 Tables
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -278,6 +279,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     header="Apache Iceberg"
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-S3.svg" alt="Amazon S3 Tables" />}
+    header="Amazon S3 Tables"
+    content="Read Iceberg tables from Amazon S3 table buckets through the built-in Iceberg catalog."
+    link="/developers/build/connectors/data-source/s3-tables"
     linkLabel="Learn more"
   />
 </div>

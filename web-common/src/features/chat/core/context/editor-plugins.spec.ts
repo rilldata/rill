@@ -34,13 +34,20 @@ vi.mock("svelte", async (importOriginal) => {
 describe("editor plugins", () => {
   let editor: Editor;
   let onSubmit: Mock<() => void>;
+  let handleScrollToSelection: Mock<() => boolean>;
 
   beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: ["requestAnimationFrame", "cancelAnimationFrame"],
+    });
     mountedPickers.clear();
     onSubmit = vi.fn<() => void>();
+    handleScrollToSelection = vi.fn(() => true);
     const element = document.body.appendChild(document.createElement("div"));
     editor = new Editor({
       element,
+      // jsdom cannot measure the selection; browser scrolling is outside this spec.
+      editorProps: { handleScrollToSelection },
       extensions: getEditorPlugins({
         placeholder: "",
         onSubmit,
@@ -49,8 +56,13 @@ describe("editor plugins", () => {
       }),
     });
     return () => {
-      editor.destroy();
-      element.remove();
+      try {
+        vi.advanceTimersToNextFrame();
+      } finally {
+        editor.destroy();
+        element.remove();
+        vi.useRealTimers();
+      }
     };
   });
 
@@ -58,6 +70,7 @@ describe("editor plugins", () => {
   async function dispatch(tr: Transaction) {
     editor.view.dispatch(tr);
     await new Promise((resolve) => setTimeout(resolve));
+    vi.advanceTimersToNextFrame();
   }
 
   // Inserts text at the cursor the way typing does, without scrolling into view (not available in jsdom).
@@ -73,6 +86,18 @@ describe("editor plugins", () => {
   function openPickers() {
     return [...mountedPickers].map((c) => c.props as Record<string, unknown>);
   }
+
+  it("runs delayed focus while the editor is alive without measuring jsdom text", async () => {
+    await type("hola");
+    // An interior text position forces ProseMirror's Range geometry path.
+    editor.commands.focus(2);
+    document.getSelection()?.selectAllChildren(editor.view.dom);
+    vi.advanceTimersToNextFrame();
+    expect(editor.isDestroyed).toBe(false);
+    expect(handleScrollToSelection).toHaveBeenCalled();
+    expect(editor.state.selection.from).toBe(2);
+    expect(editor.getText()).toBe("hola");
+  });
 
   it("opens the skills picker with /", async () => {
     await type("/mon");
@@ -114,7 +139,10 @@ describe("editor plugins", () => {
   it("starts a skill after the word the cursor is on", async () => {
     await type("hola");
     editor.commands.startSkill();
+    // Keep a DOM selection inside the editor when its delayed focus frame runs.
+    document.getSelection()?.selectAllChildren(editor.view.dom);
     await dispatch(editor.state.tr);
+    expect(handleScrollToSelection).toHaveBeenCalled();
     expect(editor.getText()).toBe("hola /");
     expect(openPickers()).toHaveLength(1);
     expect(openPickers()[0].multiple).toBe(false);

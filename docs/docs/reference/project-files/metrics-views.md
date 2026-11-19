@@ -62,11 +62,15 @@ _[string]_ - A SQL expression that tells us the max timestamp that the measures 
 
 ### `data_time_range`
 
-_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
+_[string]_ - Optional [time range syntax](/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `smallest_time_grain`
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
+
+### `time_grains`
+
+_[array of string]_ - Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.
 
 ### `first_day_of_week`
 
@@ -110,6 +114,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
 
+  - **`lookup_group_by_key`** - _[boolean]_ - If true, queries that group by this dimension group by the lookup key first, resolve the lookup value once per key, and then regroup by value. Enable it for dictionaries with few keys (up to the low hundreds of thousands); it uses more memory and loses its advantage for very high-cardinality keys. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model
@@ -127,6 +133,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations
+
+  - **`exact_expression`** - _[string]_ - An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
 
@@ -211,6 +219,21 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`treat_nulls_as`** - _[string]_ - Configures the value to fill in for missing time buckets. This also works generally as COALESCE over non-empty time buckets.
 
   - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+
+### `tag_order`
+
+_[array of string]_ - Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+Each tag must be set on at least one dimension or measure.
+A derived metrics view uses the parent's order unless it sets its own.
+
+```yaml
+tag_order:
+  - Revenue
+  - Engagement
+  - Geography
+```
+
 
 ### `parent_dimensions`
 
@@ -316,7 +339,7 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here
 
-  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
+  - **`data_time_range`** - _[string]_ - Optional [time range syntax](/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `security`
 
@@ -544,6 +567,16 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
     - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension).
 
     - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
+
+    - **`filters`** - _[string]_ - Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view.
+
+  - **`filters`** - _[object]_ - Configures the filters of the explore view.
+
+    - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
 
   - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
 

@@ -252,6 +252,8 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			if text := blockType.Text; text != "" {
 				responseText += text
 			}
+		case *aiv1.ContentBlock_Reasoning:
+			// Skip the model's reasoning; only its response is needed.
 		default:
 			// For metrics view generation, we only expect text responses
 			return nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)

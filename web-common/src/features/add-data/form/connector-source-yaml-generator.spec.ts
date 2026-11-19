@@ -1,3 +1,5 @@
+import { postgresSchema } from "@rilldata/web-common/features/templates/schemas/postgres.ts";
+import { processFileContent } from "@rilldata/web-common/features/templates/file-encoding.ts";
 import { describe, expect, it } from "vitest";
 import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
@@ -697,5 +699,54 @@ describe("getConnectorYAML", () => {
         HTTPS_1_AUTHORIZATION: "my_token_2",
       });
     });
+  });
+});
+
+describe("PostgreSQL certificate secrets", () => {
+  it("stores uploaded contents in project variables and only references them in YAML", async () => {
+    const connector: V1ConnectorDriver = { name: "postgres" };
+    const schema = postgresSchema;
+    const { envEditSession, testEnvs } = await makeTestEnvEditSession(
+      connector.name,
+      schema,
+    );
+    const formValues: Record<string, unknown> = {
+      connection_mode: "parameters",
+      host: "db.example.com",
+      user: "rill",
+      dbname: "analytics",
+      sslmode: "verify-full",
+    };
+    const expected: Record<string, string> = {};
+    for (const [field, variable] of Object.entries({
+      sslrootcert_pem: "POSTGRES_SSLROOTCERT",
+      sslcert_pem: "POSTGRES_SSLCERT",
+      sslkey_pem: "POSTGRES_SSLKEY",
+    })) {
+      const contents = `-----BEGIN TEST-----\n${field}\n-----END TEST-----`;
+      const { encodedContent } = processFileContent(
+        contents,
+        schema.properties![field],
+      );
+      formValues[field] = encodedContent;
+      expected[variable] = encodedContent;
+    }
+    const yaml = getConnectorYAML({
+      connector,
+      schema,
+      formValues,
+      envEditSession,
+    });
+    for (const [field, variable] of Object.entries({
+      sslrootcert_pem: "POSTGRES_SSLROOTCERT",
+      sslcert_pem: "POSTGRES_SSLCERT",
+      sslkey_pem: "POSTGRES_SSLKEY",
+    })) {
+      expect(yaml).toContain(`${field}: "{{ .env.${variable} }}"`);
+      expect(yaml).not.toContain(expected[variable]);
+    }
+    expect(yaml).not.toContain("BEGIN TEST");
+    await envEditSession.commit();
+    expect(testEnvs).toEqual(expected);
   });
 });

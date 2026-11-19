@@ -1,7 +1,25 @@
 export const SHOW_MORE_BUTTON = "__rill_type_SHOW_MORE_BUTTON";
 export const LOADING_CELL = "__rill_type_LOADING_CELL";
+// Row id of the grand-totals row. It is rendered from a standalone tanstack row
+// that is not part of the table's row model, so it never collides with data row ids.
+export const PIVOT_TOTALS_ROW_ID = "__rill_totals_row";
 
 export const MAX_ROW_EXPANSION_LIMIT = 100;
+
+/**
+ * Column headers are built from at most this many values per column dimension,
+ * and from at most COLUMN_COMBINATIONS_LIMIT combinations of those values.
+ * Past either limit, the number of columns the data has is unknown.
+ */
+export const COLUMN_DIMENSION_VALUES_LIMIT = 100;
+export const COLUMN_COMBINATIONS_LIMIT = 300;
+
+/**
+ * Time comparison is switched off in the pivot once more measures than this
+ * are in its columns. Every compared measure fans out into three request
+ * measures (value, delta and delta percent), so the query cost grows quickly.
+ */
+export const MAX_PIVOT_COMPARISON_MEASURES = 20;
 
 /**
  * Allowed row limit values for the pivot table.
@@ -51,15 +69,4 @@ export function calculateEffectiveRowLimit(
 export function getNextRowLimit(currentLimit: number): number | undefined {
   const limits = [...PIVOT_ROW_LIMIT_OPTIONS]; // [5, 10, 25, 50, 100]
   return limits.find((limit) => limit > currentLimit) ?? undefined;
-}
-
-/**
- * Gets the display label for the next limit in the progression.
- *
- * @param currentLimit - The current row limit
- * @returns The label to display (e.g., "10", "25", "100")
- */
-export function getNextLimitLabel(currentLimit: number): string {
-  const nextLimit = getNextRowLimit(currentLimit);
-  return nextLimit ? nextLimit.toString() : "100";
 }

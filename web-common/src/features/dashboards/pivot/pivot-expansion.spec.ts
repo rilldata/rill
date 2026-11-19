@@ -1,10 +1,19 @@
-import { readable } from "svelte/store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { QueryClient } from "@tanstack/svelte-query";
+import { get, readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { buildExpandKey } from "./pivot-expand-keys";
 import {
   addExpandedDataToPivot,
+  createSubTableCellQuery,
   getValuesForExpandedKey,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
@@ -145,6 +154,69 @@ describe("pivot expansion (value-based keys)", () => {
     );
     expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
   });
+
+  it("ends a group that has more rows past the last limit step", () => {
+    const tableData: PivotDataRow[] = [
+      {
+        publisher: "A",
+        subRows: [{ publisher: LOADING_CELL }],
+      },
+    ];
+
+    addExpandedDataToPivot(
+      getConfig(true),
+      tableData,
+      ["publisher", "campaign"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: buildExpandKey(["A"]),
+          rowDimensionValues: ["A"],
+          totals: [{ campaign: "campaign-1", impressions: 10 }],
+          data: [],
+          hasMore: true,
+          effectiveLimit: 100,
+        },
+      ],
+    );
+
+    expect(tableData[0].subRows?.at(-1)).toEqual({
+      publisher: SHOW_MORE_BUTTON,
+      __currentLimit: 100,
+    });
+  });
+
+  it("does not end a group that has exactly the limit of rows", () => {
+    const tableData: PivotDataRow[] = [
+      {
+        publisher: "A",
+        subRows: [{ publisher: LOADING_CELL }],
+      },
+    ];
+
+    addExpandedDataToPivot(
+      getConfig(true),
+      tableData,
+      ["publisher", "campaign"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: buildExpandKey(["A"]),
+          rowDimensionValues: ["A"],
+          totals: [{ campaign: "campaign-1", impressions: 10 }],
+          data: [],
+          hasMore: false,
+          effectiveLimit: 100,
+        },
+      ],
+    );
+
+    expect(tableData[0].subRows?.at(-1)).toMatchObject({
+      campaign: "campaign-1",
+    });
+  });
 });
 
 describe("getValuesForExpandedKey", () => {
@@ -220,5 +292,45 @@ describe("queryExpandedRowMeasureValues", () => {
     // no longer matches a row at depth 1, so only "A" resolves.
     query(buildExpandKey(["A", "camp1"]));
     expect(getAxisForDimensions).not.toHaveBeenCalled();
+  });
+});
+
+describe("createSubTableCellQuery", () => {
+  // An expanded row whose sub rows query came back empty, for example after
+  // the filter or time range changed. There are no cells to fetch, and the row
+  // filter would be an `IN` with no values, which the runtime rejects.
+  it("skips the query for a row with no sub rows", () => {
+    const requests: unknown[] = [];
+    const ctx: PivotDashboardContext = {
+      runtimeClient: {
+        instanceId: "default",
+        queryService: {
+          metricsViewAggregation: (request: unknown) => {
+            requests.push(request);
+            return Promise.resolve({ toJson: () => ({ data: [] }) });
+          },
+        },
+      } as unknown as RuntimeClient,
+      metricsViewName: readable("metrics_view"),
+      queryClient: new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      }),
+      enabled: readable(true),
+    };
+    const config = { ...getConfig(false), colDimensionNames: ["country"] };
+
+    const query = createSubTableCellQuery(
+      ctx,
+      config,
+      "campaign",
+      { country: ["US"] },
+      { c0v0m0: 10, impressions: 10 },
+      [],
+      createAndExpression([createInExpression("publisher", ["A"])]),
+      [],
+    );
+
+    expect(get(query)).toBeNull();
+    expect(requests).toHaveLength(0);
   });
 });

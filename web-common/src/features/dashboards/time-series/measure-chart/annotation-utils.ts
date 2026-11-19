@@ -1,9 +1,9 @@
 import type { ChartScales, ChartConfig, TimeSeriesPoint } from "./types";
-import type {
-  V1MetricsViewAnnotationsResponseAnnotation,
+import {
   V1TimeGrain,
+  type V1MetricsViewAnnotationsResponseAnnotation,
 } from "@rilldata/web-common/runtime-client";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { floorToGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { dateToIndex } from "./utils";
 import type { DateTime } from "luxon";
 
@@ -41,9 +41,13 @@ export function groupAnnotations(
 ): AnnotationGroup[] {
   if (annotations.length === 0 || data.length === 0) return [];
 
-  const unit = timeGrain ? V1TimeGrainToDateTimeUnit[timeGrain] : "day";
+  const grain = timeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
   const diamondY =
     config.plotBounds.top + config.plotBounds.height - AnnotationHeight;
+
+  // Data time range — annotations outside this are not visible
+  const dataStartMs = data[0].ts.toMillis();
+  const dataEndMs = data[data.length - 1].ts.toMillis();
 
   // Bucket annotations by their grain-truncated start time.
   // Store the truncated millis so the visibility check and positioning
@@ -54,7 +58,22 @@ export function groupAnnotations(
   >();
 
   for (const a of annotations) {
-    const bucketStart = a.startTime.startOf(unit);
+    let bucketStart = floorToGrain(a.startTime, grain);
+
+    // A range annotation that starts before the visible data but ends inside it
+    // is anchored to the first data point so the visible part of its range is shown.
+    // The end check mirrors the query's `time_end > start` filter.
+    // It is still needed here because the annotations and the time series are fetched
+    // independently and keep their previous data while refetching,
+    // so a stale range from the previous time range must not be anchored to the new data.
+    if (
+      a.endTime &&
+      bucketStart.toMillis() < dataStartMs &&
+      a.endTime.toMillis() > dataStartMs
+    ) {
+      bucketStart = data[0].ts;
+    }
+
     const key =
       bucketStart.toISO() ??
       a.startTime.toISO() ??
@@ -75,10 +94,6 @@ export function groupAnnotations(
 
   // Convert buckets to groups with pixel positions
   const groups: AnnotationGroup[] = [];
-
-  // Data time range — annotations outside this are not visible
-  const dataStartMs = data[0].ts.toMillis();
-  const dataEndMs = data[data.length - 1].ts.toMillis();
 
   for (const [bucketKey, bucket] of buckets) {
     // Use the grain-truncated bucket time for visibility and positioning.

@@ -17,7 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
-	"github.com/snowflakedb/gosnowflake"
+	"github.com/snowflakedb/gosnowflake/v2"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -208,7 +208,7 @@ func (c *configProperties) resolveDSN() (string, error) {
 	return gosnowflake.DSN(cfg)
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}
@@ -357,6 +357,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
+}
+
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.

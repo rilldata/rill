@@ -190,9 +190,11 @@ function updateQualitativeColors() {
 }
 
 /**
- * Updates all palette colors
+ * Re-reads every palette color from the current CSS variables.
+ * `themeControl` triggers this on its own mode changes; call it when something else
+ * toggles the document's `dark` class, such as a host application that drives the theme.
  */
-function updateAllPaletteColors() {
+export function updateAllPaletteColors() {
   updateSequentialColors();
   updateDivergingColors();
   updateQualitativeColors();

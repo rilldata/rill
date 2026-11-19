@@ -10,6 +10,7 @@ import (
 func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var version string
 	var nightly bool
+	var force bool
 
 	upgradeCmd := &cobra.Command{
 		Use:   "upgrade",
@@ -24,19 +25,20 @@ func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				version = "v" + v.String()
 
-				return installscript.Install(cmd.Context(), version)
+				return installscript.Install(cmd.Context(), version, force)
 			}
 
 			if nightly {
-				return installscript.Install(cmd.Context(), "nightly")
+				return installscript.Install(cmd.Context(), "nightly", force)
 			}
 
-			return installscript.Install(cmd.Context(), "")
+			return installscript.Install(cmd.Context(), "", force)
 		},
 	}
 
 	upgradeCmd.Flags().StringVar(&version, "version", "", "Install a specific version of Rill")
 	upgradeCmd.Flags().BoolVar(&nightly, "nightly", false, "Install the latest nightly build")
+	upgradeCmd.Flags().BoolVar(&force, "force", false, "Reinstall even if the latest version is already installed")
 
 	return upgradeCmd
 }

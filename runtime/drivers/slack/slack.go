@@ -36,7 +36,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("slack driver can't be shared")
 	}
@@ -160,6 +160,11 @@ func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorO
 // AsModelManager implements drivers.Handle.
 func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (h *handle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {

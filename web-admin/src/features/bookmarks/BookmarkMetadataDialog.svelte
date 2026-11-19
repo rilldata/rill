@@ -1,9 +1,7 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import {
-    createAdminServiceUpdateBookmark,
-    type V1Bookmark,
-  } from "@rilldata/web-admin/client";
+  import type { V1Bookmark } from "@rilldata/web-admin/client";
+  import { bookmarkUpdateMutationFactory } from "@rilldata/web-admin/features/bookmarks/bookmark-client.ts";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
   import { invalidateBookmarkQueries } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -11,6 +9,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -23,9 +22,13 @@
   export let bookmark: V1Bookmark;
   // Link to the bookmark on its dashboard, where its filters can be changed.
   export let href: string | undefined = undefined;
+  // Embeds don't have managed bookmarks, so the category can't be changed there.
+  export let showSharedBookmarks = true;
   export let onClose = () => {};
 
-  const bookmarkUpdater = createAdminServiceUpdateBookmark();
+  const bookmarkUpdater = createMutationFromFactory(
+    bookmarkUpdateMutationFactory,
+  );
 
   const initialValues = {
     displayName: bookmark.displayName ?? "",
@@ -107,19 +110,21 @@
         label={m.bookmark_description()}
         optional
       />
-      <ProjectAccessControls {organization} {project}>
-        <Select
-          bind:value={$form["shared"]}
-          id="shared"
-          label={m.bookmark_category()}
-          options={[
-            { value: "false", label: m.bookmark_your_bookmarks() },
-            { value: "true", label: m.bookmark_managed_bookmarks() },
-          ]}
-          slot="manage-project"
-          tooltip={m.bookmark_category_tooltip()}
-        />
-      </ProjectAccessControls>
+      {#if showSharedBookmarks}
+        <ProjectAccessControls {organization} {project}>
+          <Select
+            bind:value={$form["shared"]}
+            id="shared"
+            label={m.bookmark_category()}
+            options={[
+              { value: "false", label: m.bookmark_your_bookmarks() },
+              { value: "true", label: m.bookmark_managed_bookmarks() },
+            ]}
+            slot="manage-project"
+            tooltip={m.bookmark_category_tooltip()}
+          />
+        </ProjectAccessControls>
+      {/if}
       {#if href}
         <div class="text-sm text-fg-secondary">
           {m.bookmark_filters()}:

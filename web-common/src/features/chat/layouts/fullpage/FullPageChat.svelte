@@ -13,6 +13,7 @@
   import ReadOnlyChatInput from "../../core/input/ReadOnlyChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
+  import McpServersPopover from "../../connect/McpServersPopover.svelte";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
   import {
@@ -90,15 +91,18 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if $adminServer && !readOnly}
+    {#if !readOnly}
       <div class="chat-header">
-        <ConnectClientPopover />
-        {#if currentConversation?.id}
-          <ShareChatPopover
-            conversationId={currentConversation.id}
-            {organization}
-            {project}
-          />
+        <McpServersPopover />
+        {#if $adminServer}
+          <ConnectClientPopover />
+          {#if currentConversation?.id}
+            <ShareChatPopover
+              conversationId={currentConversation.id}
+              {organization}
+              {project}
+            />
+          {/if}
         {/if}
       </div>
     {/if}

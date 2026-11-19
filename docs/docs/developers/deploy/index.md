@@ -14,6 +14,7 @@ Rill Developer is a great tool for building, testing, and viewing your data loca
 
 ### Deployment
 - [**Deploy your Dashboard**](/developers/deploy/deploy-dashboard) - Publish your dashboard to Rill Cloud
+- [**Cloud Editing**](/developers/deploy/cloud-editing) - Edit a deployed project in the browser and publish changes
 
 ### Post-Deployment Steps
 - [**Managing Project Errors**](/developers/deploy/project-errors) - Troubleshooting errors in Rill Cloud

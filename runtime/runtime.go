@@ -52,6 +52,7 @@ type Runtime struct {
 	queryCache     *queryCache
 	securityEngine *securityEngine
 	configReloader *configReloader
+	fatalErr       chan error
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -66,6 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		storage:    st,
 		activity:   ac,
 		queryCache: newQueryCache(opts.QueryCacheSizeBytes),
+		fatalErr:   make(chan error, 1),
 	}
 	rt.securityEngine = newSecurityEngine(opts.SecurityEngineCacheSize, logger, rt)
 
@@ -92,6 +94,12 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 	}
 
 	return rt, nil
+}
+
+// Fatal returns a channel that receives an error the runtime can't recover from in-process.
+// The caller should restart the process when it receives it.
+func (r *Runtime) Fatal() <-chan error {
+	return r.fatalErr
 }
 
 func (r *Runtime) AllowHostAccess() bool {
@@ -125,6 +133,18 @@ func (r *Runtime) ResolveSecurity(ctx context.Context, instanceID string, claims
 	}
 	vars := inst.ResolveVariables(false)
 	return r.securityEngine.resolveSecurity(ctx, instanceID, inst.Environment, vars, claims, res)
+}
+
+// ResolveConnectorSecurity resolves the security policy declared on an MCP connector for the given claims.
+// tools are the names of the tools the server exposes to the user; the policy's include/exclude rules gate them like fields of a metrics view.
+// Unlike ResolveSecurity, a connector without a security policy is open to every user who can use AI, not just admins.
+func (r *Runtime) ResolveConnectorSecurity(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource, tools []string) (*ResolvedSecurity, error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	vars := inst.ResolveVariables(false)
+	return r.securityEngine.resolveConnectorSecurity(ctx, instanceID, inst.Environment, vars, claims, res, tools)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -200,6 +220,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
+	inst.EmbedOpenURL = rillYAML.EmbedOpenURL
 	inst.AIInstructions = rillYAML.AIInstructions
 	// Clone the prompts so the instance doesn't share proto messages with the parser;
 	// marshalling mutates their internal state, which breaks the parser's rill.yaml change detection.

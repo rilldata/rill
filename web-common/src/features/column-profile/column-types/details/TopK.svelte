@@ -20,17 +20,20 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import type { Location } from "@rilldata/web-common/lib/place-element";
-  import type { TopKEntry } from "@rilldata/web-common/runtime-client";
+  import type { TopK_Entry } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
   import { format } from "d3-format";
   import TopKListItem from "./TopKListItem.svelte";
 
+  /** A `TopK_Entry` with its `value` unwrapped from the `Value` message. */
+  type TopKItem = { value: unknown; count: number };
+
   export let colorClass = "bg-primary-200";
-  export let topK: TopKEntry[] | undefined;
+  export let topK: TopK_Entry[] | undefined;
   export let totalRows: number;
   export let k = 15;
   export let type: string;
-  export let onFocusTopK: ((value: TopKEntry) => void) | undefined = undefined;
-  export let onBlurTopK: ((value: TopKEntry) => void) | undefined = undefined;
+  export let onFocusTopK: ((value: TopKItem) => void) | undefined = undefined;
+  export let onBlurTopK: ((value: TopKItem) => void) | undefined = undefined;
 
   $: smallestPercentage =
     topK && topK.length
@@ -48,7 +51,14 @@
   // We need this to get transition working properly.
   // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
   // This leads to unexpected issues when paired with transition
+  let topKCopy: TopK_Entry[] | undefined;
   $: topKCopy = topK ?? topKCopy;
+  // The entry's value is a `google.protobuf.Value`; unwrap it to the plain JS
+  // value the formatters expect.
+  $: topKNormalised = topKCopy?.map<TopKItem>((entry) => ({
+    value: entry.value?.kind.case ? entry.value.toJson() : null,
+    count: entry.count,
+  }));
 
   function ensureSpaces(str: string, n = 6) {
     const sanitized = DOMPurify.sanitize(str, { ALLOWED_TAGS: [] });
@@ -66,20 +76,20 @@
     distance: 16,
   };
 
-  function handleFocus(value: TopKEntry) {
+  function handleFocus(value: TopKItem) {
     return () => onFocusTopK?.(value);
   }
 
-  function handleBlur(value: TopKEntry) {
+  function handleBlur(value: TopKItem) {
     return () => onBlurTopK?.(value);
   }
 
   /** handle LISTs and STRUCTs */
 </script>
 
-{#if topKCopy && totalRows}
+{#if topKNormalised && totalRows}
   <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topKCopy.slice(0, k) as item (item.value)}
+    {#each topKNormalised.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"
@@ -135,7 +145,7 @@
               onclick={modified({
                 shift: () =>
                   copyToClipboard(
-                    item.count,
+                    String(item.count),
                     `copied ${item.count} to clipboard`,
                   ),
               })}

@@ -1,6 +1,6 @@
 ---
 title: When to use SQL vs YAML
-description: Create models from source data and apply SQL transformations
+description: Choose between a SQL file and a YAML file for a model
 sidebar_label: When to use SQL vs YAML
 sidebar_position: 03
 ---

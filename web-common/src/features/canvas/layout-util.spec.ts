@@ -1,6 +1,13 @@
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
 import { parseDocument } from "yaml";
-import { generateNewAssets, mapGuard, rowsGuard } from "./layout-util";
+import {
+  generateNewAssets,
+  getItemPropertiesExcept,
+  isHiddenPath,
+  mapGuard,
+  rowsGuard,
+} from "./layout-util";
 
 // A canvas with one free row followed by a tab group that contains a widget.
 const CANVAS = `type: canvas
@@ -16,6 +23,23 @@ rows:
 `;
 
 describe("mapGuard", () => {
+  it("keeps the `if` condition of plain rows", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    height: 320px
+    items:
+      - component: margin
+`);
+    const rows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+
+    expect(rows[0]).toEqual({
+      if: '{{ has "finance" .user.groups }}',
+      height: "320px",
+      items: [{ component: "margin" }],
+    });
+  });
+
   it("preserves tab group rows instead of coercing them to empty items", () => {
     const doc = parseDocument(CANVAS);
     const rows = mapGuard(rowsGuard(doc.getIn(["rows"])));
@@ -77,5 +101,255 @@ describe("generateNewAssets with a tab group present", () => {
     expect(
       specTabRow?.tabGroup?.tabs?.[0]?.rows?.[0]?.items?.[0]?.component,
     ).toBe("d1--component-g1-t0-0-0");
+  });
+});
+
+describe("generateNewAssets moving items between rows", () => {
+  const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    items:
+      - component: margin
+      - component: revenue
+        if: '{{ .user.admin }}'
+  - items:
+      - component: header
+`);
+  const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+  const specRows = [
+    { items: [{ component: "margin" }, { component: "revenue" }] },
+    { items: [{ component: "header" }] },
+  ];
+  const move = (col: number, insertRow: boolean) =>
+    generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "move",
+            insertRow,
+            source: { row: 0, col },
+            destination: { row: insertRow ? 2 : 1, col: 0 },
+          },
+        ],
+      },
+      yamlRows,
+      specRows,
+      resolvedComponents: {},
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "foo", metricsViewSpec: undefined },
+    }).newYamlRows;
+
+  it("keeps the source row's condition on an item moved to another row", () => {
+    const rows = move(0, false);
+    expect(rows[1].items?.[0]).toMatchObject({
+      component: "margin",
+      if: '{{ has "finance" .user.groups }}',
+    });
+  });
+
+  it("combines the source row's condition with the item's own condition in a new row", () => {
+    const rows = move(1, true);
+    expect(rows[2].items?.[0]).toMatchObject({
+      component: "revenue",
+      if: '({{ has "finance" .user.groups }}) AND ({{ .user.admin }})',
+    });
+  });
+});
+
+describe("getItemPropertiesExcept", () => {
+  it("returns the item's properties other than its component definition", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - width: 6
+        if: '{{ .user.admin }}'
+        bar_chart:
+          metrics_view: orders
+`);
+    expect(
+      getItemPropertiesExcept(doc, ["rows", 0, "items", 0], "bar_chart"),
+    ).toEqual({ width: 6, if: "{{ .user.admin }}" });
+  });
+});
+
+describe("isHiddenPath", () => {
+  const hiddenPaths = new Set(["rows.1", "rows.3.tabs.0.rows.0.items.1"]);
+
+  it("hides an element whose own path or an ancestor's path is hidden", () => {
+    expect(isHiddenPath(hiddenPaths, ["rows", 1, "items", 0])).toBe(true);
+    expect(
+      isHiddenPath(hiddenPaths, ["rows", 3, "tabs", 0, "rows", 0, "items", 1]),
+    ).toBe(true);
+  });
+
+  it("shows other elements", () => {
+    expect(isHiddenPath(hiddenPaths, ["rows", 0, "items", 0])).toBe(false);
+    expect(isHiddenPath(hiddenPaths, ["rows", 10, "items", 0])).toBe(false);
+    expect(
+      isHiddenPath(hiddenPaths, ["rows", 3, "tabs", 0, "rows", 0, "items", 0]),
+    ).toBe(false);
+  });
+});
+
+describe("generateNewAssets with component references", () => {
+  const REF_CANVAS = `type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          measure: total
+`;
+
+  const trendResource = {
+    meta: { name: { name: "trend", kind: "rill.runtime.v1.Component" } },
+    component: {
+      state: {
+        validSpec: {
+          renderer: "custom_chart",
+          rendererProperties: {
+            metrics_sql:
+              "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }}",
+            spec: {
+              chartType: "Bar Chart",
+              encodings: { y: { field: "{{ .params.measure }}" } },
+            },
+          },
+          params: [
+            { name: "metrics_view", type: "metrics_view", required: true },
+            {
+              name: "measure",
+              type: "measure",
+              required: true,
+              metricsViewParam: "metrics_view",
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const metricsViewSpec: V1MetricsViewSpec = {
+    timeDimension: "ts",
+    dimensions: [{ name: "country", type: "DIMENSION_TYPE_CATEGORICAL" }],
+    measures: [{ name: "total" }],
+  };
+
+  it("adds a reference item with default param bindings", () => {
+    const doc = parseDocument(REF_CANVAS);
+    const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+    const specRows = [
+      {
+        items: [
+          {
+            component: "trend",
+            definedInCanvas: false,
+            params: { metrics_view: "mv1", measure: "total" },
+          },
+        ],
+      },
+    ];
+
+    const { newYamlRows, newSpecRows, newResolvedComponents } =
+      generateNewAssets({
+        transaction: {
+          operations: [
+            {
+              type: "add",
+              insertRow: true,
+              componentType: "component_ref",
+              componentName: "trend",
+              destination: { row: 1, col: 0 },
+            },
+          ],
+        },
+        yamlRows,
+        specRows,
+        resolvedComponents: { trend: trendResource },
+        canvasName: "d1",
+        defaultMetrics: { metricsViewName: "mv1", metricsViewSpec },
+        componentResources: { trend: trendResource },
+      });
+
+    // The new YAML item references the component with default bindings.
+    expect(newYamlRows).toHaveLength(2);
+    expect(newYamlRows[1].items?.[0]).toEqual({
+      component: "trend",
+      params: { metrics_view: "mv1", measure: "total" },
+      // The touched row's widths are normalized across its (single) item.
+      width: 12,
+    });
+
+    // Both spec items keep the real component name (no positional rename).
+    expect(newSpecRows[0].items?.[0]?.component).toBe("trend");
+    expect(newSpecRows[1].items?.[0]?.component).toBe("trend");
+    expect(newSpecRows[1].items?.[0]?.definedInCanvas).toBe(false);
+    expect(newSpecRows[1].items?.[0]?.params).toEqual({
+      metrics_view: "mv1",
+      measure: "total",
+    });
+
+    // The optimistic resolved components map is keyed by the real resource name.
+    expect(newResolvedComponents["trend"]?.meta?.name?.name).toBe("trend");
+  });
+
+  it("keeps reference names intact when inline items are repositioned", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+      - markdown:
+          content: Hi
+`);
+    const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+    const specRows = [
+      {
+        items: [
+          {
+            component: "trend",
+            definedInCanvas: false,
+            params: { metrics_view: "mv1" },
+          },
+          { component: "d1--component-0-1", definedInCanvas: true },
+        ],
+      },
+    ];
+
+    const { newSpecRows } = generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "move",
+            source: { row: 0, col: 1 },
+            destination: { row: 0, col: 0 },
+          },
+        ],
+      },
+      yamlRows,
+      specRows,
+      resolvedComponents: {
+        trend: trendResource,
+        "d1--component-0-1": {
+          meta: { name: { name: "d1--component-0-1" } },
+          component: {
+            state: {
+              validSpec: {
+                renderer: "markdown",
+                rendererProperties: { content: "Hi" },
+              },
+            },
+          },
+        },
+      },
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "mv1", metricsViewSpec },
+    });
+
+    // The inline item was renamed to its new position; the reference kept its name.
+    expect(newSpecRows[0].items?.[0]?.component).toBe("d1--component-0-0");
+    expect(newSpecRows[0].items?.[1]?.component).toBe("trend");
+    expect(newSpecRows[0].items?.[1]?.params).toEqual({ metrics_view: "mv1" });
   });
 });

@@ -3,6 +3,7 @@ import { parseDocument } from "yaml";
 import {
   addTab,
   addTabGroup,
+  combineConditions,
   addTabGroupAt,
   convertRowToTabGroup,
   deleteTab,
@@ -232,6 +233,39 @@ rows:
     expect(json.rows[1]).toEqual({ items: [{ component: "a" }] });
     expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
     expect(isTabGroupRow(doc, 1)).toBe(false);
+  });
+
+  it("deleteTab keeps the visibility of the unwrapped rows", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    tabs:
+      - label: Only
+        if: '{{ .user.admin }}'
+        rows:
+          - items:
+              - component: a
+          - if: "'{{ .user.domain }}' = 'acme.com'"
+            items:
+              - component: b
+`);
+
+    expect(deleteTab(doc, 0, 0)).toBe("unwrapped-group");
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(2);
+    expect(json.rows[0].if).toBe(
+      `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`,
+    );
+    expect(json.rows[1].if).toBe(
+      `({{ has "finance" .user.groups }}) AND ({{ .user.admin }}) AND ('{{ .user.domain }}' = 'acme.com')`,
+    );
+  });
+
+  it("combineConditions skips empty conditions", () => {
+    expect(combineConditions(undefined, "", null)).toBeUndefined();
+    expect(combineConditions(undefined, "a")).toBe("a");
+    expect(combineConditions(false, "a")).toBe("(false) AND (a)");
   });
 
   it("addTabGroupAt inserts a group at the given index", () => {

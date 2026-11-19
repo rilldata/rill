@@ -81,7 +81,7 @@ export function generateVLMultiMetricChartSpec(
 
   const transforms: Transform[] = [
     {
-      fold: fieldsToFold,
+      fold: fieldsToFold.map((field) => sanitizeValueForVega(field)),
       as: [measureField, valueField],
     },
   ];
@@ -242,7 +242,7 @@ export function generateVLMultiMetricChartSpec(
   }
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: config.x?.field,
     defaultTooltip: [],
     multiValueTooltipChannel,
     primaryColor: data.theme.primary,

@@ -198,12 +198,20 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
+	FindMagicAuthTokenForUpdate(ctx context.Context, id string) (*MagicAuthToken, error)
 	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
+	UpdateMagicAuthToken(ctx context.Context, id string, opts *UpdateMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindMagicAuthTokenSession(ctx context.Context, id string) (*MagicAuthTokenSession, error)
+	InsertMagicAuthTokenSession(ctx context.Context, opts *InsertMagicAuthTokenSessionOptions) (*MagicAuthTokenSession, error)
+	DeleteMagicAuthTokenSession(ctx context.Context, id string) error
+	DeleteMagicAuthTokenSessionsForToken(ctx context.Context, magicAuthTokenID string) error
+	DeleteExpiredMagicAuthTokenSessions(ctx context.Context, retention time.Duration) error
 
 	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
 	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
@@ -304,6 +312,12 @@ type DB interface {
 	// FindBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
 	// resourceKind and resourceName are optional filters; when both are empty, all bookmarks in the project are returned.
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
+	// FindBookmarksByEmbedOwner returns the bookmarks in a project owned by the embed user.
+	// Unlike FindBookmarks, it never returns shared or default bookmarks.
+	// resourceKind and resourceName are optional filters; when both are empty, all of the embed user's bookmarks in the project are returned.
+	FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*Bookmark, error)
+	// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
+	CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
@@ -312,10 +326,21 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
+	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// LockEmbedUser locks the embed user's row until the current transaction ends.
+	// It must be called within a transaction started with NewTx.
+	// It serializes quota checks for an embed user across all admin processes, such as counting their bookmarks before inserting one.
+	LockEmbedUser(ctx context.Context, id string) error
+	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
+	// It doesn't write anything otherwise, since it's called on every embed load.
+	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error
+
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
+	// FindVirtualFilesByEmbedOwner TODO: pagination
+	FindVirtualFilesByEmbedOwner(ctx context.Context, projectID, environment, embedOwnerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -344,6 +369,26 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	// FindConnectorOAuthClient returns the client for a connector's OAuth configuration, identified by its hash.
+	FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*ConnectorOAuthClient, error)
+	FindConnectorOAuthClientByID(ctx context.Context, id string) (*ConnectorOAuthClient, error)
+	// FindConnectorOAuthClients returns the clients for all OAuth configurations a connector has had, such as before a scope change or on other branches.
+	FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*ConnectorOAuthClient, error)
+	// FindOrInsertConnectorOAuthClient inserts a client, unless a client for the same connector and configuration hash already exists
+	// (for example, because another request inserted one concurrently), in which case it returns the existing client instead.
+	FindOrInsertConnectorOAuthClient(ctx context.Context, opts *InsertConnectorOAuthClientOptions) (*ConnectorOAuthClient, error)
+	// DeleteConnectorOAuthClient deletes a client and the tokens obtained through it.
+	DeleteConnectorOAuthClient(ctx context.Context, id string) error
+	// DeleteConnectorOAuthClientsWithoutTokens deletes a connector's clients that hold no tokens, except the client for keepConfigHash.
+	DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error
+	// AcquireConnectorOAuthTokenLock takes an exclusive lock on a user's token for a client until the current transaction ends.
+	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
+	// take it first, so they are serialized across all admin processes.
+	AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error
+	FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*ConnectorOAuthToken, error)
+	UpsertConnectorOAuthToken(ctx context.Context, opts *UpsertConnectorOAuthTokenOptions) (*ConnectorOAuthToken, error)
+	DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error
 
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
@@ -838,6 +883,7 @@ type MagicAuthToken struct {
 	SecretHash             []byte            `db:"secret_hash"`
 	Secret                 []byte            `db:"secret"`
 	SecretEncryptionKeyID  string            `db:"secret_encryption_key_id"`
+	PasswordHash           []byte            `db:"password_hash"` // nil if the token is not password-protected
 	ProjectID              string            `db:"project_id"`
 	CreatedOn              time.Time         `db:"created_on"`
 	ExpiresOn              *time.Time        `db:"expires_on"`
@@ -868,6 +914,7 @@ type InsertMagicAuthTokenOptions struct {
 	ID                     string
 	SecretHash             []byte
 	Secret                 []byte
+	PasswordHash           []byte
 	ProjectID              string `validate:"required"`
 	ExpiresOn              *time.Time
 	CreatedByUserID        *string
@@ -878,6 +925,31 @@ type InsertMagicAuthTokenOptions struct {
 	State                  string
 	DisplayName            string
 	Internal               bool
+}
+
+// UpdateMagicAuthTokenOptions defines options for updating a MagicAuthToken.
+// It replaces all the fields it contains, so callers should populate unchanged fields from the current token.
+type UpdateMagicAuthTokenOptions struct {
+	DisplayName  string
+	PasswordHash []byte
+}
+
+// MagicAuthTokenSession is a short-lived token issued after a password-protected MagicAuthToken has been unlocked with its password.
+// It grants the same access as the MagicAuthToken it belongs to.
+type MagicAuthTokenSession struct {
+	ID               string
+	SecretHash       []byte    `db:"secret_hash"`
+	MagicAuthTokenID string    `db:"magic_auth_token_id"`
+	CreatedOn        time.Time `db:"created_on"`
+	ExpiresOn        time.Time `db:"expires_on"`
+}
+
+// InsertMagicAuthTokenSessionOptions defines options for creating a MagicAuthTokenSession.
+type InsertMagicAuthTokenSessionOptions struct {
+	ID               string
+	SecretHash       []byte
+	MagicAuthTokenID string `validate:"required"`
+	ExpiresOn        time.Time
 }
 
 type NotificationToken struct {
@@ -1204,6 +1276,8 @@ type InsertProjectAccessRequestOptions struct {
 	ProjectID string `validate:"required"`
 }
 
+// Bookmark is a saved dashboard state.
+// Exactly one of UserID and EmbedOwnerID is set.
 type Bookmark struct {
 	ID           string
 	DisplayName  string    `db:"display_name"`
@@ -1213,7 +1287,8 @@ type Bookmark struct {
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
-	UserID       string    `db:"user_id"`
+	UserID       *string   `db:"user_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
 	Default      bool      `db:"default"`
 	Shared       bool      `db:"shared"`
 	CreatedOn    time.Time `db:"created_on"`
@@ -1222,15 +1297,16 @@ type Bookmark struct {
 
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName  string `json:"display_name"`
-	URLSearch    string `json:"url_search"`
-	ResourceKind string `json:"resource_kind"`
-	ResourceName string `json:"resource_name"`
-	Description  string `json:"description"`
-	ProjectID    string `json:"project_id"`
-	UserID       string `json:"user_id"`
-	Default      bool   `json:"default"`
-	Shared       bool   `json:"shared"`
+	DisplayName  string  `json:"display_name"`
+	URLSearch    string  `json:"url_search"`
+	ResourceKind string  `json:"resource_kind"`
+	ResourceName string  `json:"resource_name"`
+	Description  string  `json:"description"`
+	ProjectID    string  `json:"project_id"`
+	UserID       *string `json:"user_id"`
+	EmbedOwnerID *string `json:"embed_owner_id"`
+	Default      bool    `json:"default"`
+	Shared       bool    `json:"shared"`
 }
 
 // UpdateBookmarkOptions defines options for updating an existing bookmark
@@ -1242,22 +1318,49 @@ type UpdateBookmarkOptions struct {
 	Shared      bool   `json:"shared"`
 }
 
+// EmbedUser is a user of embedded dashboards, identified by the external user ID passed to GetIFrame.
+// Its ID is the hash of the external user ID and project ID (see subjectForExternalUser in admin/server),
+// which is also the subject of the embed's runtime JWT.
+// The hash is unsalted, so anyone who knows the project ID can recover guessable external user IDs from it.
+// It stores the identity the user had in their latest iframe, which resources owned by the user (such as reports) run as.
+type EmbedUser struct {
+	ID             string         `db:"id"`
+	ProjectID      string         `db:"project_id"`
+	ExternalUserID string         `db:"external_user_id"`
+	Email          *string        `db:"email"`      // Nil if the iframe didn't set an email
+	Attributes     map[string]any `db:"attributes"` // Nil if the iframe didn't set attributes
+	LastSeenOn     time.Time      `db:"last_seen_on"`
+	CreatedOn      time.Time      `db:"created_on"`
+	UpdatedOn      time.Time      `db:"updated_on"`
+}
+
+// UpsertEmbedUserOptions defines options for upserting an EmbedUser.
+type UpsertEmbedUserOptions struct {
+	ID             string `validate:"required"`
+	ProjectID      string `validate:"required"`
+	ExternalUserID string `validate:"required"`
+	Email          *string
+	Attributes     map[string]any // An empty map is stored as NULL
+}
+
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)
 type VirtualFile struct {
-	Path      string    `db:"path"`
-	Data      []byte    `db:"data"`
-	OwnerID   *string   `db:"owner_id"`
-	Deleted   bool      `db:"deleted"`
-	UpdatedOn time.Time `db:"updated_on"`
+	Path         string    `db:"path"`
+	Data         []byte    `db:"data"`
+	OwnerID      *string   `db:"owner_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
+	Deleted      bool      `db:"deleted"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID   string
-	Environment string
-	Path        string  `validate:"required"`
-	OwnerID     *string `db:"owner_id"`
-	Data        []byte  `validate:"max=131072"` // 128kb
+	ProjectID    string
+	Environment  string
+	Path         string  `validate:"required"`
+	OwnerID      *string `db:"owner_id"`
+	EmbedOwnerID *string `db:"embed_owner_id"`
+	Data         []byte  `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.
@@ -1269,6 +1372,48 @@ type Asset struct {
 	OwnerID        string    `db:"owner_id"`
 	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// ConnectorOAuthClient is an OAuth client Rill uses with a connector's authorization server, shared by the users of a project's connector.
+// ConfigHash identifies the connector's OAuth configuration it was created for; a configuration change leads to a new client.
+// Clients are never modified, because tokens and pending authorizations are bound to them.
+// Client is the JSON encoding of runtime/pkg/oauthclient.Client; it is decrypted when read.
+type ConnectorOAuthClient struct {
+	ID                    string    `db:"id"`
+	ProjectID             string    `db:"project_id"`
+	Connector             string    `db:"connector"`
+	ConfigHash            string    `db:"config_hash"`
+	Client                []byte    `db:"client"`
+	ClientEncryptionKeyID string    `db:"client_encryption_key_id"`
+	CreatedOn             time.Time `db:"created_on"`
+}
+
+// InsertConnectorOAuthClientOptions defines options for creating a ConnectorOAuthClient.
+type InsertConnectorOAuthClientOptions struct {
+	ProjectID  string `validate:"required"`
+	Connector  string `validate:"required"`
+	ConfigHash string `validate:"required"`
+	Client     []byte `validate:"required"`
+}
+
+// ConnectorOAuthToken is a user's OAuth token obtained through a ConnectorOAuthClient. Tokens are never shared between users.
+// The token is only used and refreshed through the client that obtained it.
+// Token is the JSON encoding of golang.org/x/oauth2.Token; it is decrypted when read.
+type ConnectorOAuthToken struct {
+	ID                   string    `db:"id"`
+	OAuthClientID        string    `db:"oauth_client_id"`
+	UserID               string    `db:"user_id"`
+	Token                []byte    `db:"token"`
+	TokenEncryptionKeyID string    `db:"token_encryption_key_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+// UpsertConnectorOAuthTokenOptions defines options for creating or replacing a ConnectorOAuthToken.
+type UpsertConnectorOAuthTokenOptions struct {
+	OAuthClientID string `validate:"required"`
+	UserID        string `validate:"required"`
+	Token         []byte `validate:"required"`
 }
 
 // ProjectVariable represents a key-value variable for a project, possible for a specific environment (e.g. production or development).
@@ -1484,6 +1629,7 @@ type InsertProvisionerResourceOptions struct {
 type UpdateProvisionerResourceOptions struct {
 	Status        ProvisionerResourceStatus
 	StatusMessage string
+	Provisioner   string
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any

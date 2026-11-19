@@ -25,7 +25,6 @@ import {
   DEFAULT_LABELS_FORMAT,
   type LabelsConfig,
   OTHER_SORT_KEY_FIELD,
-  OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
   PERCENT_OF_TOTAL_FIELD,
   PERCENT_OF_TOTAL_TITLE,
@@ -104,7 +103,8 @@ export function generateVLPieChartSpec(
   const labelsNeedPercent =
     showLabels && (labelsFormat === "percent" || labelsThreshold > 0);
 
-  // Inject the synthetic "Other" row when the provider has set it.
+  // The provider appends the synthetic "Other" row to the chart's dataset when it
+  // has set this; the spec only has to pin that row to the end of the arc order.
   const otherValue = data.domainValues?.[OTHER_VALUE_DOMAIN_KEY]?.[0];
   const hasOther =
     typeof otherValue === "number" &&
@@ -171,18 +171,6 @@ export function generateVLPieChartSpec(
     },
   };
 
-  if (hasOther && config.color?.field && config.measure?.field) {
-    const colorField = config.color.field;
-    const measureField = config.measure.field;
-    const otherRow: Record<string, unknown> = {
-      [colorField]: OTHER_VALUE,
-      [measureField]: otherValue,
-    };
-    arcLayer.data = {
-      values: [...data.data, otherRow],
-    };
-  }
-
   const needsPercentOfTotal =
     (showPercentOfTotal || labelsNeedPercent) && !!config.measure?.field;
   if (needsPercentOfTotal && config.measure?.field) {
@@ -217,7 +205,7 @@ export function generateVLPieChartSpec(
       };
     } else {
       labelEncoding.text = {
-        field: measureFieldRaw,
+        field: sanitizeValueForVega(measureFieldRaw),
         type: "quantitative",
         formatType: sanitizeFieldName(measureFieldRaw),
         ...(measureMetaData &&
@@ -267,14 +255,9 @@ export function generateVLPieChartSpec(
     const spec = createMultiLayerBaseSpec();
     const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [arcLayer];
 
-    // When the label layer is present, lift the arc layer's data and
-    // transform to the top-level spec so both layers share the same
-    // dataset
+    // When the label layer is present, lift the arc layer's transform to the
+    // top-level spec so both layers share the same dataset
     if (labelLayer) {
-      if (arcLayer.data) {
-        spec.data = arcLayer.data;
-        delete arcLayer.data;
-      }
       if (arcLayer.transform) {
         spec.transform = arcLayer.transform;
         delete arcLayer.transform;
@@ -325,9 +308,6 @@ export function generateVLPieChartSpec(
     const spec = createSingleLayerBaseSpec("arc");
     spec.mark = arcLayer.mark;
     spec.encoding = arcLayer.encoding;
-    if (arcLayer.data) {
-      spec.data = arcLayer.data;
-    }
     if (arcLayer.transform) {
       spec.transform = arcLayer.transform;
     }

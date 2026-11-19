@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ColumnSettings } from "@rilldata/web-common/features/canvas/components/pivot/field-config";
   import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
   import ChipDragList from "../ChipDragList.svelte";
   import type { FieldType } from "../types";
@@ -14,6 +15,7 @@
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
   export let lowerIsBetterMap: Record<string, boolean> = {};
+  export let columnSettings: ColumnSettings | undefined = undefined;
 </script>
 
 {#if items?.length > 0}
@@ -27,6 +29,7 @@
         {measureFormatting}
         {setMeasureFormatting}
         {lowerIsBetterMap}
+        {columnSettings}
       />
     {/if}
   </div>

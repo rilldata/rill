@@ -15,7 +15,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { tryCopyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
@@ -38,7 +38,11 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import PasswordInput from "./PasswordInput.svelte";
+  import SavedPassword from "./SavedPassword.svelte";
+  import { isValidPublicURLPassword } from "./password-policy";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
 
   let {
     dashboardResource,
@@ -54,6 +58,9 @@
   let apiError: string = $state("");
   let popoverOpen = $state(false);
   let copied = $state(false);
+  let requirePassword = $state(false);
+  // Shown once after creation: the password is stored as a hash and can't be retrieved later.
+  let createdPassword = $state<string | null>(null);
 
   // svelte-ignore state_referenced_locally
   const { kind: dashboardKind, name: dashboardName } = dashboardResource;
@@ -69,11 +76,19 @@
 
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => dashboardConfigProvider.metricsViewsProvider.ready,
+  expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
+
+  // A public URL shows a canvas the way its creator sees it, so point out content that only some viewers see.
+  const canvasQuery = useCanvas(runtimeClient, dashboardName, {
+    enabled: !isExplore,
+  });
+  let canvasFilePath = $derived(
+    isExplore ? "" : ($canvasQuery.data?.filePath ?? ""),
   );
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(runtimeClient, canvasFilePath),
+  );
+  let hasConditionalContent = $derived(!!$conditionsCheck.data);
 
   const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
   const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
@@ -95,11 +110,17 @@
   const initialValues = {
     expiresAt: null,
     title: "",
+    password: "",
   };
 
   const validationSchema = object({
     expiresAt: string().nullable(),
     title: string().required(m.public_url_title_required()),
+    password: string().test(
+      "password-length",
+      m.public_url_password_length(),
+      (value) => !requirePassword || isValidPublicURLPassword(value ?? ""),
+    ),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -122,14 +143,18 @@
               metricsViewFilters: exprByMetricsView,
               fields,
               state: sanitizedState,
-              ttlMinutes: setExpiration
-                ? convertDateToMinutes(values.expiresAt).toString()
-                : undefined,
+              ttlMinutes:
+                setExpiration && values.expiresAt
+                  ? convertDateToMinutes(values.expiresAt).toString()
+                  : undefined,
               displayName: values.title,
+              password: requirePassword ? values.password : undefined,
             },
           });
 
-          url = _url;
+          url = _url ?? null;
+          createdPassword =
+            requirePassword && values.password ? values.password : null;
 
           void queryClient.invalidateQueries({
             queryKey: getAdminServiceListMagicAuthTokensQueryKey(
@@ -159,14 +184,21 @@
     }
   });
 
+  $effect(() => {
+    if (!requirePassword) $form.password = "";
+  });
+
+  // The password starts empty: the user either types one or generates one with the button below the field.
+  let isPasswordMissing = $derived(requirePassword && $form.password === "");
+
   let { length: allErrorsLength } = $derived($allErrors);
   let maxExpirationDate = $derived(
     DateTime.now().plus({ years: 1 }).startOf("day"),
   );
 
-  function onCopy() {
-    copyToClipboard(url, "URL copied to clipboard", false);
-    copied = true;
+  async function onCopy() {
+    if (!url) return;
+    copied = await tryCopyToClipboard(url);
 
     setTimeout(() => {
       copied = false;
@@ -199,14 +231,14 @@
       />
     </div>
 
-    <div class="mt-4" class:mb-4={!hasSomeFilter}>
+    <div class="mt-4">
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
         <Label class="text-xs" for="has-expiration"
           >{m.public_url_set_expiration()}</Label
         >
       </div>
-      {#if setExpiration}
+      {#if setExpiration && $form.expiresAt}
         <div class="flex items-center gap-x-1 pl-[30px]">
           <label for="expires-at" class="text-fg-secondary font-medium">
             {m.public_url_access_expires({
@@ -236,6 +268,28 @@
               />
             </PopoverContent>
           </Popover>
+        </div>
+      {/if}
+    </div>
+
+    <div class="mt-4" class:mb-4={!hasSomeFilter}>
+      <div class="flex items-center gap-x-2">
+        <Switch small id="require-password" bind:checked={requirePassword} />
+        <Label class="text-xs" for="require-password"
+          >{m.public_url_require_password()}</Label
+        >
+      </div>
+      {#if requirePassword}
+        <div class="flex flex-col items-start gap-y-1 pl-[30px] mt-2">
+          <PasswordInput
+            id="password-input"
+            bind:value={
+              () => $form.password ?? "",
+              (password) => {
+                $form.password = password;
+              }
+            }
+          />
         </div>
       {/if}
     </div>
@@ -281,9 +335,15 @@
       </div>
     {/if}
 
+    {#if hasConditionalContent}
+      <p class="text-xs text-fg-primary font-normal mb-4">
+        {m.canvas_visibility_public_url_note()}
+      </p>
+    {/if}
+
     <Button
       type="primary"
-      disabled={$submitting || isTitleEmpty}
+      disabled={$submitting || isTitleEmpty || isPasswordMissing}
       form={formId}
       submitForm
     >
@@ -313,6 +373,9 @@
         {m.public_url_copy_button()}
       {/if}
     </Button>
+    {#if createdPassword}
+      <SavedPassword password={createdPassword} />
+    {/if}
   </div>
 {/if}
 

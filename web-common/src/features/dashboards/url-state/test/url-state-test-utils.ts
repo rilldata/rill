@@ -6,6 +6,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_VIEW,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -50,6 +51,7 @@ export function useTestFilterManager(specs: MetricsViewSpecs) {
         new ExpressionFilterManager(
           metricsViewsProvider,
           new YAMLConfigProvider(),
+          true,
         ),
     );
     filterManager = created.value;
@@ -69,7 +71,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
   filterManager: ExpressionFilterManager,
 ) {
-  filterManager.setUrlParams(url.searchParams);
+  filterManager.storeSync.setUrlParams(url.searchParams);
 
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(
@@ -78,6 +80,8 @@ export function applyURLToExploreState(
       exploreSpec,
       defaultExplorePreset,
     );
+  // Derive the adaptive grain before merging, as correctExploreState does in DashboardStateDataLoader.
+  applyAdaptiveTimeGrain(partialExploreStateDefaultUrl, AD_BIDS_METRICS_VIEW);
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
     partialExploreStateDefaultUrl,

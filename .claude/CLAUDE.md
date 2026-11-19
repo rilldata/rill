@@ -16,6 +16,8 @@ Two deployment modes share the same codebase:
 - **Rill Developer** — local application for data engineers. A single Go binary that embeds the CLI, runtime, and `web-local` frontend. Code-first, version-controlled workflow.
 - **Rill Cloud** — hosted platform for teams. Runs the `admin` service, runtime(s), and `web-admin` frontend as separate services. Adds auth, billing, multi-tenancy, and collaboration.
 
+Hosted runtimes in Rill Cloud serve a single instance each. Multiple instances on one runtime is only used for local dev and testing; simplify designs accordingly.
+
 ### Key Directories
 
 - `runtime/` — data plane: orchestration, queries, connectors, access policies, reconcilers
@@ -79,6 +81,17 @@ Rules for contributing backend features in Rill:
 - Key concepts such as user management and provisioners are implemented in the `admin` package.
 - Key concepts such as connector drivers, reconcilers, and resolvers are implemented in the `runtime` package.
 - APIs used by the `cli/` package require long-term backwards compatibility.
+
+### Testing
+
+Tests must exercise real behavior, not restate the implementation.
+
+- For databases, OLAP engines, and object stores, test against the real service: an embedded instance (e.g. DuckDB), a testcontainer, or an external service configured via `.env`. Use `runtime/testruntime` (`AcquireConnector`, `NewInstance*`) and `admin/testadmin`; add a new connector to `testruntime.Connectors` instead of mocking a driver.
+- Keep tests lean; real services are slow and incur costs. Before adding a test, search for existing coverage and extend it (e.g. add a case to a table-driven test or reuse its fixture) rather than duplicating setup. One test per distinct behavior; skip trivial cases (getters, restating config) and cases already covered.
+- Do not use mocking libraries (gomock, `testify/mock`) or write mocks that only assert the code calls what it already calls.
+- For external APIs (GitHub, OpenAI, Claude), use the live test accounts wired into `testruntime`/`testadmin`. Use an `httptest` server only for cases the live service can't produce deterministically (pagination, errors, rate limits, exact request inspection) or services without a test account.
+- Pure logic (parsers, validation, transforms) needs no service; test it directly with input/output cases.
+- Gate tests that need cloud credentials or are slow with `testmode.Expensive(t)`.
 
 ### Frontend
 

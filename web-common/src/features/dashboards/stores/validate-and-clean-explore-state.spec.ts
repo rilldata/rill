@@ -1,5 +1,17 @@
-import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import {
+  createAndExpression,
+  createBinaryExpression,
+  createInExpression,
+  createSubQueryExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -10,10 +22,57 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
+  DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
+
+const publisherChip: PivotChipData = {
+  id: AD_BIDS_PUBLISHER_DIMENSION,
+  title: AD_BIDS_PUBLISHER_DIMENSION,
+  type: PivotChipType.Dimension,
+};
+const staleDimensionChip: PivotChipData = {
+  id: "stale_dimension",
+  title: "stale_dimension",
+  type: PivotChipType.Dimension,
+};
+const dayChip: PivotChipData = {
+  id: "TIME_GRAIN_DAY",
+  title: "day",
+  type: PivotChipType.Time,
+};
+const impressionsChip: PivotChipData = {
+  id: AD_BIDS_IMPRESSIONS_MEASURE,
+  title: AD_BIDS_IMPRESSIONS_MEASURE,
+  type: PivotChipType.Measure,
+};
+const staleMeasureChip: PivotChipData = {
+  id: "stale_measure",
+  title: "stale_measure",
+  type: PivotChipType.Measure,
+};
+function getPivotState(
+  rows: PivotChipData[],
+  columns: PivotChipData[],
+): PivotState {
+  return {
+    rows,
+    columns,
+    sorting: [],
+    expanded: {},
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    showTotalsColumn: true,
+    showTotalsRow: true,
+    totalsRowPosition: "top",
+    tableMode: "nest",
+  };
+}
 
 const TestCases: {
   title: string;
@@ -120,6 +179,133 @@ const TestCases: {
     expectedErrorMessages: [
       `Selected sort by measure: "invalid_measure_1" is not valid.`,
       `Selected leaderboard measures: "invalid_measure_1,invalid_measure_2" are not valid.`,
+    ],
+  },
+  {
+    title: "Filter on a stale dimension and a stale measure",
+    exploreState: {
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+        createInExpression("stale_dimension", ["Google"]),
+        createSubQueryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          ["stale_measure"],
+          createBinaryExpression("stale_measure", V1Operation.OPERATION_GT, 10),
+        ),
+        createSubQueryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          [AD_BIDS_BID_PRICE_MEASURE],
+          createBinaryExpression(
+            AD_BIDS_BID_PRICE_MEASURE,
+            V1Operation.OPERATION_GT,
+            10,
+          ),
+        ),
+      ]),
+    },
+    expectedState: {
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+        createSubQueryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          [AD_BIDS_BID_PRICE_MEASURE],
+          createBinaryExpression(
+            AD_BIDS_BID_PRICE_MEASURE,
+            V1Operation.OPERATION_GT,
+            10,
+          ),
+        ),
+      ]),
+    },
+    expectedErrorMessages: [
+      `Selected filter dimension: "stale_dimension" is not valid.`,
+      `Selected filter field: "stale_measure" is not valid.`,
+    ],
+  },
+  {
+    title: "Measure filter selecting a stale measure and a valid one",
+    exploreState: {
+      whereFilter: createAndExpression([
+        createSubQueryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          [AD_BIDS_IMPRESSIONS_MEASURE, "stale_measure"],
+          createAndExpression([
+            createBinaryExpression(
+              AD_BIDS_IMPRESSIONS_MEASURE,
+              V1Operation.OPERATION_GT,
+              10,
+            ),
+            createBinaryExpression(
+              "stale_measure",
+              V1Operation.OPERATION_GT,
+              5,
+            ),
+          ]),
+        ),
+      ]),
+    },
+    expectedState: {
+      // The runtime resolves every measure the subquery selects, so the stale one is dropped from the list too.
+      whereFilter: createAndExpression([
+        createSubQueryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          [AD_BIDS_IMPRESSIONS_MEASURE],
+          createAndExpression([
+            createBinaryExpression(
+              AD_BIDS_IMPRESSIONS_MEASURE,
+              V1Operation.OPERATION_GT,
+              10,
+            ),
+          ]),
+        ),
+      ]),
+    },
+    expectedErrorMessages: [
+      `Selected filter field: "stale_measure" is not valid.`,
+    ],
+  },
+  {
+    title: "Stale comparison, expanded and pivoted fields",
+    exploreState: {
+      activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+      selectedDimensionName: "stale_dimension",
+      selectedComparisonDimension: "stale_dimension",
+      pivot: getPivotState(
+        [publisherChip, staleDimensionChip],
+        [dayChip, staleMeasureChip, impressionsChip],
+      ),
+    },
+    expectedState: {
+      activePage: DashboardState_ActivePage.DEFAULT,
+      pivot: getPivotState([publisherChip], [dayChip, impressionsChip]),
+    },
+    expectedErrorMessages: [
+      `Selected compare dimension: "stale_dimension" is not valid.`,
+      `Selected expanded dimension: "stale_dimension" is not valid.`,
+      `Selected pivot row: "stale_dimension" is not valid.`,
+      `Selected pivot column: "stale_measure" is not valid.`,
+    ],
+  },
+  {
+    title: "Stale expanded measure",
+    exploreState: {
+      activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+      tdd: {
+        expandedMeasureName: "stale_measure",
+        chartType: TDDChart.DEFAULT,
+        pinIndex: -1,
+      },
+    },
+    expectedState: {
+      activePage: DashboardState_ActivePage.DEFAULT,
+      tdd: {
+        expandedMeasureName: "",
+        chartType: TDDChart.DEFAULT,
+        pinIndex: -1,
+      },
+    },
+    expectedErrorMessages: [
+      `Selected expanded measure: "stale_measure" is not valid.`,
     ],
   },
   {

@@ -25,8 +25,13 @@ import (
 // It is suitable for testing tool calls that do not require LLM completions.
 // If LLM completions are needed, use newEval instead.
 func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
+	return newSessionForUser(t, rt, instanceID, uuid.NewString())
+}
+
+// newSessionForUser is like newSession, but for a specific user. Sessions of the same user share the user's memories.
+func newSessionForUser(t *testing.T, rt *runtime.Runtime, instanceID, userID string) *ai.Session {
 	// Create test AI session
-	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
+	claims := &runtime.SecurityClaims{UserID: userID, SkipChecks: true}
 	r := ai.NewRunner(rt, activity.NewNoopClient())
 	s, err := r.Session(t.Context(), &ai.SessionOptions{
 		InstanceID: instanceID,
@@ -47,6 +52,11 @@ func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Sessio
 // - It records messages and LLM calls to the ./evals directory for later inspection.
 // - It ensures the test is skipped in CI (short mode).
 func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
+	return newEvalForUser(t, rt, instanceID, uuid.NewString())
+}
+
+// newEvalForUser is like newEval, but for a specific user. Use it to continue as the same user in a new session.
+func newEvalForUser(t *testing.T, rt *runtime.Runtime, instanceID, userID string) *ai.Session {
 	// Eval tests are expensive, but we don't use testmode.Expensive here because it should have already been called before ingesting data.
 	// Most of the time, the test should have been marked expensive when AIConnector was set, and we can check it wasn't forgotten by checking testing.Short().
 	if testing.Short() {
@@ -54,7 +64,7 @@ func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
 	}
 
 	// Create test runtime instance and AI session
-	s := newSession(t, rt, instanceID)
+	s := newSessionForUser(t, rt, instanceID, userID)
 
 	// Wrap the session's LLM with a recordingAIService to capture every LLM call.
 	ai, release, err := rt.AI(t.Context(), instanceID)

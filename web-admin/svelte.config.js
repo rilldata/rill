@@ -119,6 +119,11 @@ const config = {
     files: {
       assets: "../web-common/static",
     },
+    // Polls `_app/version.json` so that `updated.current` turns true once a new build is deployed;
+    // the root layout then turns the next navigation into a full page load (see `src/lib/reload-on-stale-build.ts`).
+    version: {
+      pollInterval: 60_000,
+    },
   },
 };
 

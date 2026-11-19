@@ -472,7 +472,10 @@ message MetricsViewAggregationRequest {
   int32 priority = 11;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
-  bool exact = 17;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+  // That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+  bool exact = 17 [deprecated = true];
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
@@ -519,6 +522,9 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
     MetricsViewAggregationMeasureComputeExpression expression = 13;
   }
+  // Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+  // No-op for measures without an `exact_expression`, which only simple measures define.
+  bool exact = 14;
 }
 
 message MetricsViewAggregationMeasureComputeCount {}
@@ -638,8 +644,10 @@ message MetricsViewComparisonRequest {
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   // Optional
   int32 priority = 11;
-  // Optional, defaults to false
-  bool exact = 13;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+  // Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
+  bool exact = 13 [deprecated = true];
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
   // Optional. If true, the response will include traces of spans captured during execution.
@@ -734,6 +742,9 @@ message MetricsViewTimeSeriesRequest {
   // Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
   // Only the `expression` compute is supported for time series.
   repeated MetricsViewAggregationMeasure ephemeral_measures = 17;
+  // Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+  // No-op for measures without an `exact_expression`.
+  repeated string exact_measure_names = 18;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max
@@ -1039,6 +1050,10 @@ message ResolveCanvasRequest {
   // Only for use by the visual editor in Rill Developer. Must never be sent by
   // Rill Cloud, read-only previews, shared token access, or embedded viewers.
   bool unsafe = 4;
+  // If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+  // Used by the visual editor, which maps canvas elements to their position in the YAML.
+  // Requires permission to edit the canvas.
+  bool include_hidden = 5;
 }
 
 message ResolveCanvasResponse {
@@ -1050,6 +1065,9 @@ message ResolveCanvasResponse {
   map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   map<string, Resource> referenced_metrics_views = 3;
+  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+  // The paths follow the canvas YAML. Only set when include_hidden is true.
+  repeated string hidden_paths = 4;
 }
 
 message ResolveComponentRequest {
@@ -1064,6 +1082,8 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+  // The effective args used for resolution: the component's declared param defaults merged with the provided args.
+  google.protobuf.Struct resolved_args = 3;
 }
 
 message ResolveTemplatedStringRequest {

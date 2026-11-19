@@ -7,6 +7,7 @@ import {
   ephemeralMeasureNameSet,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { canvasExactRequestNames } from "@rilldata/web-common/features/canvas/components/exact-measures";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
@@ -41,6 +42,11 @@ import {
 } from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
+import {
+  applyFieldConfigToMetricsView,
+  fieldNames,
+  splitComparisonColumnId,
+} from "./field-config";
 
 /**
  * Strips filters for the pivot's own dimensions from the where filter.
@@ -107,6 +113,8 @@ let lastKey: string | undefined = undefined;
 
 export function createPivotConfig(
   canvas: CanvasEntity,
+  // The exact-selection surface of the component; see `canvasExactSurface`.
+  surface: string,
   tableSpecStore: Readable<PivotSpec | TableSpec>,
   pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
@@ -121,6 +129,7 @@ export function createPivotConfig(
       pivotState,
       timeAndFilterStore,
       selfFilteredStore,
+      canvas.exactMeasures,
     ],
     ([
       $canvasData,
@@ -131,6 +140,10 @@ export function createPivotConfig(
     ]) => {
       const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const metricsViewName = $tableSpec.metrics_view;
+      // The exact selection of this component. Read through the entity so the
+      // context-key check applies; `canvas.exactMeasures` above re-runs this
+      // derivation when the selection changes.
+      const selectedExact = canvas.currentExactMeasures(surface);
       const metricsView =
         $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec;
       const ready =
@@ -160,6 +173,7 @@ export function createPivotConfig(
             pivotState,
             timeRange,
             ready,
+            selectedExact,
           )
         : processPivot(
             $tableSpec,
@@ -171,6 +185,7 @@ export function createPivotConfig(
             pivotState,
             timeRange,
             ready,
+            selectedExact,
           );
     },
   );
@@ -186,6 +201,7 @@ export function processPivot(
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
   ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
@@ -208,13 +224,29 @@ export function processPivot(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
 
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
+  const baseMeasureNames = fieldNames($tableSpec?.measures);
+  const exactMeasures = canvasExactRequestNames(
+    baseMeasureNames,
+    selectedExact,
+  );
+
   const config: PivotDataStoreConfig = {
     ready,
-    measureNames: ($tableSpec?.measures || []).flatMap((name) => {
+    exactMeasures,
+    measureNames: baseMeasureNames.flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.
       if (enableComparison && !ephemeralMeasureNames.has(name)) {
@@ -225,18 +257,15 @@ export function processPivot(
       }
       return group;
     }),
-    rowDimensionNames: $tableSpec?.row_dimensions || [],
-    colDimensionNames: $tableSpec?.col_dimensions || [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    rowDimensionNames: fieldNames($tableSpec?.row_dimensions),
+    colDimensionNames: fieldNames($tableSpec?.col_dimensions),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -277,6 +306,7 @@ export function processFlat(
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
   ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
@@ -296,7 +326,7 @@ export function processFlat(
     };
   }
 
-  const columns = $tableSpec?.columns || [];
+  const columns = fieldNames($tableSpec?.columns);
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
   const allMeasureNames = [
@@ -310,9 +340,21 @@ export function processFlat(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
+
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
+  const exactMeasures = canvasExactRequestNames(measures, selectedExact);
 
   const config: PivotDataStoreConfig = {
     ready,
+    exactMeasures,
     measureNames: (measures || []).flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.
@@ -326,16 +368,13 @@ export function processFlat(
     }),
     rowDimensionNames: dimensions || [],
     colDimensionNames: [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -364,6 +403,22 @@ export function processFlat(
   }
 
   return config;
+}
+
+/**
+ * A sort on a measure's delta or percent-change column cannot outlive the
+ * comparison columns (the comparison may be switched off after the sort was
+ * seeded or clicked), so it falls back to the measure's own value.
+ */
+function withoutStaleComparisonSort(
+  state: PivotState,
+  enableComparison: boolean,
+): PivotState {
+  const first = state.sorting[0];
+  if (enableComparison || !first) return state;
+  const split = splitComparisonColumnId(first.id);
+  if (!split) return state;
+  return { ...state, sorting: [{ ...first, id: split.measure }] };
 }
 
 export const usePivotForCanvas = (

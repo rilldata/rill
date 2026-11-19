@@ -39,7 +39,7 @@ annotations:
 
 Annotations appear as markers or ranges on the time series charts in your dashboard.
 - **Point Annotations**: Events with a single `time` timestamp appear as point markers.
-- **Range Annotations**: Events with both `time` and `time_end` timestamps appear as shaded regions spanning the duration.
+- **Range Annotations**: Events with both `time` and `time_end` timestamps appear as shaded regions spanning the duration. A range annotation is shown whenever it overlaps the selected time range, even if it starts before or ends after it. A row with an empty `time_end` is shown as a point annotation.
 - **Hover Details**: Hovering over an annotation marker reveals the text from the `description` column.
 
 :::info

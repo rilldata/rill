@@ -19,6 +19,8 @@
   export let organization: string;
   export let project: string;
   export let searchList: any[] = [];
+  // Whether the current user may list the org's members, which the search suggests.
+  export let readOrgMembers: boolean;
   export let onInvite: () => void = () => {};
 
   const queryClient = useQueryClient();
@@ -154,6 +156,10 @@
   }
 
   async function handleSearch(query: string) {
+    // The admin server rejects the search for users who cannot read the org's members.
+    // They can still invite anyone by typing an email.
+    if (!readOrgMembers) return [];
+
     // Server-side user search (top 5). Use prefix search when query provided; otherwise, omit searchPattern.
     const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
       organization,

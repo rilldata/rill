@@ -14,9 +14,6 @@ export const EXPAND_KEY_SEP = "\0";
 // both appear under the same parent; the dimKeys make the same trade-off.
 const NULL_SENTINEL = "<NULL>";
 
-// The leading separator can't occur in a real id, so this can't collide.
-export const PIVOT_TOTALS_ROW_ID = EXPAND_KEY_SEP + "totals";
-
 export function encodeExpandKeyValue(value: unknown): string {
   return value === null || value === undefined ? NULL_SENTINEL : String(value);
 }

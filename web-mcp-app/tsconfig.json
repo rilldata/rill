@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["vite/client", "svelte"],
+    "paths": {
+      "@rilldata/web-common/*": ["../web-common/src/*"],
+      "$app/environment": ["./src/stubs/app-environment.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "harness/**/*.ts",
+    "tests/**/*.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "tailwind.config.ts",
+    "vitest-setup.ts",
+    "scripts/**/*.mjs"
+  ]
+}

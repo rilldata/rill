@@ -1,12 +1,19 @@
 <script lang="ts">
-  import { splitTimeSeriesMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    applyExactMeasures,
+    exactTimeSeriesMeasureNames,
+    splitTimeSeriesMeasures,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    floorToGrain,
+    plusGrain,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -36,6 +43,8 @@
 
   export let measure: MetricsViewSpecMeasure;
   export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  export let exact = false;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -88,6 +97,13 @@
   $: measureName = measure.name ?? "";
   $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
     splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+  $: exactNames = exact ? new Set([measureName]) : undefined;
+  $: tsExactMeasureNames = exactTimeSeriesMeasureNames(
+    tsMeasureNames,
+    exactNames,
+  );
+  $: tsRequestEphemeralMeasures =
+    tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
   $: height = showTimeDimensionDetail ? tddChartHeight : 145;
 
   $: effectiveChartType = resolveEffectiveChartType(
@@ -130,7 +146,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart,
@@ -152,7 +169,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart: comparisonTimeStart,
@@ -207,6 +225,7 @@
         timeGranularity!,
         timeZone,
         $visible && ready && !!timeStart,
+        exact,
       )
     : undefined;
 
@@ -225,8 +244,8 @@
           comparisonTimeEnd,
           timeGranularity!,
           timeZone,
-
           $visible && ready && !!comparisonTimeStart,
+          exact,
         )
       : undefined;
 
@@ -303,11 +322,12 @@
     let endDt = DateTime.fromJSDate(end, { zone: timeZone });
 
     if (timeGranularity) {
-      const unit = V1TimeGrainToDateTimeUnit[timeGranularity];
-      const startFloor = startDt.startOf(unit);
+      const startFloor = floorToGrain(startDt, timeGranularity);
       startDt =
-        +startFloor < +startDt ? startFloor.plus({ [unit]: 1 }) : startDt;
-      endDt = endDt.startOf(unit);
+        +startFloor < +startDt
+          ? plusGrain(startFloor, timeGranularity)
+          : startDt;
+      endDt = floorToGrain(endDt, timeGranularity);
     }
 
     // Guard: if brush was within a single grain, snapping can invert the range
@@ -342,6 +362,7 @@
         {metricsViewName}
         {measure}
         {ephemeralMeasures}
+        {exact}
         {timeDimension}
         {interval}
         comparisonInterval={showComparison ? comparisonInterval : undefined}

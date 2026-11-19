@@ -15,16 +15,18 @@ Adhoc measures are ideal for one-off analysis and for sharing an idea with a col
 
 ## Create an adhoc measure
 
-1. Open the **All Measures** menu above the time series charts, and select **Create adhoc measure** at the bottom. In the pivot view, you can also select the **+** next to **Measures** in the sidebar.
+1. Open the **All Measures** menu above the time series charts, and select **New measure** next to the search box. In the pivot view, you can also select the **+** next to **Measures** in the sidebar, or **New measure** in the menu of the **+** at the end of the columns.
 2. Enter a **Name**, for example `Profit Margin`. This is the label shown in the dashboard.
-3. Write the **Expression**. Type `@` to open a picker of the dashboard's measures, then use the arrow keys and **Enter**, or click, to insert one. You can search the picker by display name or by measure name. You can also click a measure under **Insert a measure** to add it at the cursor.
-4. Optionally, add a **Description**. It is shown in the measure's tooltip instead of the expression.
+3. Optionally, add a **Description**. It is shown in the measure's tooltip instead of the expression.
+4. Write the **Expression**. Type `@` to open a picker of the dashboard's measures, then use the arrow keys and **Enter**, or click, to insert one. You can search the picker by display name or by measure name. You can also click a measure under **Insert a measure**, right below the expression, to add it at the cursor. Each inserted measure has an **×** that removes it.
 5. Choose a **Format**: **Humanize** (the default), **None**, **Currency (USD)**, **Currency (EUR)**, or **Percentage**.
 6. Select **Save**.
 
 ![Creating an adhoc measure, with the @ measure picker open](/img/explore/adhoc-measures/create-dialog.png)
 
-Rill validates the expression as you type and shows an error below the input if it references an unknown measure or uses unsupported syntax. The new measure is added to the dashboard's visible measures, or as a column when you create it from the pivot view.
+The text below the expression explains how to write one. Rill validates the expression as you type, and replaces that text with what to fix when the expression is incomplete, misses an operator between two measures, references an unknown measure or uses unsupported syntax.
+
+When you save, a confirmation appears and the new measure is added first: at the top of the dashboard's visible measures, or as the first measure column when you create it from the pivot view. In every measure list, adhoc measures are listed first, newest first.
 
 Once saved, you can select the adhoc measure anywhere you select a measure, for example in the leaderboard's **Showing** menu:
 
@@ -63,6 +65,7 @@ The following are not allowed: dimensions or column names, strings, comments, ag
 Adhoc measures are marked with an **ƒx** icon. To change one:
 
 - In the **All Measures** menu, select the pencil icon next to the measure to open **Edit adhoc measure**.
+- In the leaderboard's **Showing** menu, select the pencil icon next to the measure.
 - In the pivot view, click the measure's chip and select **Edit** or **Delete**.
 - In [Time Dimension Detail](/guide/dashboards/explore/tdd), use the edit action next to the measure in the measure selector.
 
@@ -85,7 +88,7 @@ Your browser also keeps a personal library of every adhoc measure you create for
 
 ## Limits and rules
 
-- **Up to 10 per dashboard.** A dashboard can hold at most 10 adhoc measures at a time.
+- **Up to 10 per dashboard.** A dashboard can hold at most 10 adhoc measures at a time, including hidden ones. Once it has 10, **New measure** is disabled and a note explains the limit; delete an adhoc measure to create another.
 - **Only the dashboard's measures can be referenced.** An expression can reference measures that are included in the dashboard, but not dimensions or other adhoc measures.
 - **Some measures can't be referenced.** Measures that use a window function, have required dimensions, or are time-comparison measures are not offered in the picker and can't be used in an expression. See [advanced measures](/developers/build/metrics-view/measures/windows) for how these are defined.
 - **Names are generated from the display name.** Rill derives the measure's internal name from its display name, for example `Profit Margin` becomes `profit_margin`, and adds a numeric suffix when it would collide with an existing field.

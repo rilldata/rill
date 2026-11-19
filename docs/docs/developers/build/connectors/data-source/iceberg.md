@@ -11,6 +11,7 @@ sidebar_position: 27
 
 :::note Direct file access only
 Rill reads Iceberg tables by scanning the table's metadata and data files directly from object storage. Catalog-based access (e.g., through a Hive Metastore, AWS Glue, or REST catalog) is not currently supported.
+For Amazon S3 table buckets, see [Amazon S3 Tables](/developers/build/connectors/data-source/s3-tables).
 :::
 
 ## Storage Backends

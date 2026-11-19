@@ -7,6 +7,7 @@ import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computePercentOfTotal,
   getDimensionFilterWithSearch,
+  getDimensionTableRowKey,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
 import { describe, it, expect } from "vitest";
@@ -163,5 +164,31 @@ describe("computePercentOfTotal", () => {
     }));
 
     expect(computedValues).toEqual(expected);
+  });
+});
+
+describe("getDimensionTableRowKey", () => {
+  it("gives the same key to the same value", () => {
+    expect(getDimensionTableRowKey("USA")).toBe(getDimensionTableRowKey("USA"));
+    expect(getDimensionTableRowKey(42)).toBe(getDimensionTableRowKey(42));
+    expect(getDimensionTableRowKey(null)).toBe(getDimensionTableRowKey(null));
+  });
+
+  it("keeps a null value apart from the string null and from row indices", () => {
+    const keys = [null, "null", 0, 1, "1", true, "true"].map(
+      getDimensionTableRowKey,
+    );
+    // The virtualizer keys a row that is not loaded yet by its index.
+    keys.push("row-0", "row-1");
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("keeps nested values apart", () => {
+    expect(getDimensionTableRowKey({ a: 1 })).not.toBe(
+      getDimensionTableRowKey({ a: 2 }),
+    );
+    expect(getDimensionTableRowKey(["a", "b"])).not.toBe(
+      getDimensionTableRowKey(["a,b"]),
+    );
   });
 });

@@ -33,13 +33,11 @@ export function copyWithAdditionalArguments(
   return newUrl;
 }
 
-export function unorderedParamsAreEqual(
-  src: URLSearchParams,
-  tar: URLSearchParams,
-) {
-  if (src.size !== tar.size) return false;
-  for (const [key, value] of src) {
-    if (value !== tar.get(key)) return false;
+export function copySubsetParams(src: URLSearchParams, keys: Set<string>) {
+  const newParams = new URLSearchParams();
+  for (const key of keys) {
+    if (!src.has(key)) continue;
+    newParams.set(key, src.get(key)!);
   }
-  return true;
+  return newParams;
 }

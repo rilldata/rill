@@ -96,6 +96,7 @@ type Config struct {
 	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
 	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	ClaudePromptCaching               bool   `envconfig:"claude_prompt_caching"`
 	GeminiAPIKey                      string `envconfig:"gemini_api_key"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
@@ -256,6 +257,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
 				}
 				aiConfig["api_key"] = conf.ClaudeAPIKey
+				aiConfig["prompt_caching"] = conf.ClaudePromptCaching
 			case "gemini":
 				if conf.GeminiAPIKey == "" {
 					logger.Fatal("RILL_ADMIN_GEMINI_API_KEY is required when AI driver is 'gemini'")
@@ -272,7 +274,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			default:
 				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
-			aiHandle, err := drivers.Open(aiDriver, "", "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			aiHandle, err := drivers.Open(cmd.Context(), aiDriver, "", "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 			if err != nil {
 				logger.Fatal("error creating AI client", zap.Error(err))
 			}
