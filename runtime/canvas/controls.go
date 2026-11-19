@@ -37,62 +37,48 @@ type ItemControls struct {
 // The frontend implements the same rules in web-common/src/features/canvas/controls/controls.ts; keep them in sync.
 func ResolveItemControls(spec *runtimev1.CanvasSpec) []ItemControls {
 	var res []ItemControls
-	walkItems(spec, func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) {
+	walkCanvas(spec, nil, func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) {
 		res = append(res, ItemControls{Item: item, Controls: resolveItem(item, enclosing)})
 	})
 	return res
 }
 
-// walkItems calls fn for each item of the canvas with the controls of its enclosing levels, nearest level first.
-func walkItems(spec *runtimev1.CanvasSpec, fn func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl)) {
+// walkCanvas walks the canvas in document order.
+// It calls onLevel with the list of controls of each level, from the canvas down to its items; onLevel can replace the list through the pointer.
+// It calls onItem with each item and the controls of its enclosing levels, nearest level first.
+// Either callback can be nil.
+func walkCanvas(spec *runtimev1.CanvasSpec, onLevel func(controls *[]*runtimev1.CanvasControl), onItem func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl)) {
+	if onLevel == nil {
+		onLevel = func(*[]*runtimev1.CanvasControl) {}
+	}
+	if onItem == nil {
+		onItem = func(*runtimev1.CanvasItem, [][]*runtimev1.CanvasControl) {}
+	}
 	var walk func(rows []*runtimev1.CanvasRow, enclosing [][]*runtimev1.CanvasControl)
 	walk = func(rows []*runtimev1.CanvasRow, enclosing [][]*runtimev1.CanvasControl) {
 		for _, row := range rows {
 			if g := row.GetTabGroup(); g != nil {
+				onLevel(&g.Controls)
 				for _, t := range g.Tabs {
+					onLevel(&t.Controls)
 					// Nearest level first: the tab, then its group, then what encloses the group.
 					walk(t.Rows, append([][]*runtimev1.CanvasControl{t.Controls, g.Controls}, enclosing...))
 				}
 				continue
 			}
 			if c := row.GetContainer(); c != nil {
+				onLevel(&c.Controls)
 				walk(c.Rows, append([][]*runtimev1.CanvasControl{c.Controls}, enclosing...))
 				continue
 			}
 			for _, item := range row.Items {
-				fn(item, enclosing)
+				onLevel(&item.Controls)
+				onItem(item, enclosing)
 			}
 		}
 	}
+	onLevel(&spec.Controls)
 	walk(spec.Rows, [][]*runtimev1.CanvasControl{spec.Controls})
-}
-
-// eachControlList calls fn with each list of controls the canvas declares, from the canvas down to its items, in document order.
-// fn can replace the list through the pointer.
-func eachControlList(spec *runtimev1.CanvasSpec, fn func(controls *[]*runtimev1.CanvasControl)) {
-	fn(&spec.Controls)
-	var walk func(rows []*runtimev1.CanvasRow)
-	walk = func(rows []*runtimev1.CanvasRow) {
-		for _, row := range rows {
-			if g := row.GetTabGroup(); g != nil {
-				fn(&g.Controls)
-				for _, t := range g.Tabs {
-					fn(&t.Controls)
-					walk(t.Rows)
-				}
-				continue
-			}
-			if c := row.GetContainer(); c != nil {
-				fn(&c.Controls)
-				walk(c.Rows)
-				continue
-			}
-			for _, item := range row.Items {
-				fn(&item.Controls)
-			}
-		}
-	}
-	walk(spec.Rows)
 }
 
 func resolveItem(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) []*runtimev1.CanvasControl {
@@ -188,89 +174,34 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 		}
 	}
 
-	// Check each control against the items it applies to.
 	// The fields of the canvas are only known when every item's metrics view is valid;
 	// they include the adhoc measures items define.
 	knownFields := true
 	adhocMeasures := make(map[string]bool)
-	for _, ic := range ResolveItemControls(spec) {
-		comp := components[ic.Item.Component]
+	walkCanvas(spec, nil, func(item *runtimev1.CanvasItem, _ [][]*runtimev1.CanvasControl) {
+		comp := components[item.Component]
 		if comp == nil || comp.RendererProperties == nil {
 			knownFields = false
-			continue
+			return
 		}
 		props := comp.RendererProperties.AsMap()
 		mvName, _ := props["metrics_view"].(string)
 		mv := metricsViews[mvName]
 		if mv == nil {
 			knownFields = knownFields && mvName == ""
-			continue
+			return
 		}
 		if names, err := ephemeralMeasureNames(props, mvName, mv); err == nil {
 			maps.Copy(adhocMeasures, names)
 		}
-		for _, c := range ic.Controls {
-			switch c.Kind {
-			case ControlKindMeasure, ControlKindDimension:
-				for _, opt := range c.Options {
-					if opt == c.Target {
-						continue
-					}
-					swapped, used := SwapField(props, c.Target, opt)
-					if !used {
-						break
-					}
-					if listsFieldTwice(swapped, opt) {
-						fail(c, fmt.Errorf("control %q option %q is already shown in component %q, so choosing it would show it twice", c.Name, opt, ic.Item.Component))
-						break
-					}
-					if err := ValidateRendererProperties(comp.Renderer, swapped, metricsViews, false); err != nil {
-						fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
-						break
-					}
-				}
-			case ControlKindSlot:
-				// The slot must name a property the item sets, since its default is the item's own value.
-				var cur any = props
-				for _, key := range strings.Split(c.Target, ".") {
-					m, _ := cur.(map[string]any)
-					cur = m[key]
-				}
-				if cur == nil {
-					fail(c, fmt.Errorf("control %q: component %q doesn't set %q", c.Name, ic.Item.Component, c.Target))
-					continue
-				}
-				for _, opt := range c.Options {
-					if !metricsViewHasMeasure(mv, opt) && !metricsViewHasDimension(mv, opt) {
-						fail(c, fmt.Errorf("control %q option %q is not a measure or dimension of metrics view %q (component %q)", c.Name, opt, mvName, ic.Item.Component))
-						break
-					}
-					var value any = opt
-					if c.Multiple {
-						value = []any{opt}
-					}
-					selected := setControlSlot(props, strings.Split(c.Target, "."), value)
-					if err := ValidateRendererProperties(comp.Renderer, selected, metricsViews, false); err != nil {
-						fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
-						break
-					}
-				}
-			case ControlKindFilter:
-				// A filter only applies to items whose metrics view has the dimension, so a missing one is fine
-				// unless the control explicitly maps the dimension for this metrics view.
-				if dim, mapped := c.Fields[mvName]; mapped && !metricsViewHasDimension(mv, dim) {
-					fail(c, fmt.Errorf("control %q maps to %q, which is not a dimension of metrics view %q", c.Name, dim, mvName))
-				}
-			}
-		}
-	}
+	})
 
 	// Check the fields each control names, including controls whose field no item uses.
 	if knownFields {
 		hasDimension := func(mv *runtimev1.MetricsViewSpec, name string) bool {
 			return metricsViewHasDimension(mv, name) || name == mv.TimeDimension || isEncodedTimeDimension(mv, name)
 		}
-		eachControlList(spec, func(controls *[]*runtimev1.CanvasControl) {
+		walkCanvas(spec, func(controls *[]*runtimev1.CanvasControl) {
 			for _, c := range *controls {
 				switch c.Kind {
 				case ControlKindMeasure, ControlKindDimension:
@@ -302,11 +233,28 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 					}
 				}
 			}
-		})
+		}, nil)
+	}
+
+	// Check each control against the items it applies to, and leave out the controls that fail.
+	// Leaving one out puts the control of an enclosing level it overrode in effect for its items,
+	// so check again until every control in effect works.
+	res := spec
+	for {
+		if len(invalid) > 0 {
+			res = withoutControls(res, invalid)
+			invalid = make(map[*runtimev1.CanvasControl]bool)
+		}
+		for _, ic := range ResolveItemControls(res) {
+			validateItemControls(ic, components, metricsViews, fail)
+		}
+		if len(invalid) == 0 {
+			break
+		}
 	}
 
 	// An item can only ignore controls of its enclosing levels.
-	walkItems(spec, func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) {
+	walkCanvas(spec, nil, func(item *runtimev1.CanvasItem, enclosing [][]*runtimev1.CanvasControl) {
 		for _, name := range item.IgnoreControls {
 			found := false
 			for _, level := range enclosing {
@@ -318,30 +266,100 @@ func ValidateControls(spec *runtimev1.CanvasSpec, components map[string]*runtime
 		}
 	})
 
-	if len(errs) == 0 {
-		return spec, nil
-	}
+	return res, errors.Join(errs...)
+}
 
-	// Leave the controls that failed out of a copy of the spec, which has the same lists in the same order.
-	var drop []bool
-	eachControlList(spec, func(controls *[]*runtimev1.CanvasControl) {
-		for _, c := range *controls {
-			drop = append(drop, invalid[c])
+// validateItemControls checks the controls in effect for an item against its component, and calls fail for each control that doesn't work in it.
+// Items whose component or metrics view is missing are skipped.
+func validateItemControls(ic ItemControls, components map[string]*runtimev1.ComponentSpec, metricsViews map[string]*runtimev1.MetricsViewSpec, fail func(c *runtimev1.CanvasControl, err error)) {
+	comp := components[ic.Item.Component]
+	if comp == nil || comp.RendererProperties == nil {
+		return
+	}
+	props := comp.RendererProperties.AsMap()
+	mvName, _ := props["metrics_view"].(string)
+	mv := metricsViews[mvName]
+	if mv == nil {
+		return
+	}
+	for _, c := range ic.Controls {
+		switch c.Kind {
+		case ControlKindMeasure, ControlKindDimension:
+			for _, opt := range c.Options {
+				if opt == c.Target {
+					continue
+				}
+				swapped, used := SwapField(props, c.Target, opt)
+				if !used {
+					break
+				}
+				if listsFieldTwice(swapped, opt) {
+					fail(c, fmt.Errorf("control %q option %q is already shown in component %q, so choosing it would show it twice", c.Name, opt, ic.Item.Component))
+					break
+				}
+				if err := ValidateRendererProperties(comp.Renderer, swapped, metricsViews, false); err != nil {
+					fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
+					break
+				}
+			}
+		case ControlKindSlot:
+			// The slot must name a property the item sets, since its default is the item's own value.
+			var cur any = props
+			for _, key := range strings.Split(c.Target, ".") {
+				m, _ := cur.(map[string]any)
+				cur = m[key]
+			}
+			if cur == nil {
+				fail(c, fmt.Errorf("control %q: component %q doesn't set %q", c.Name, ic.Item.Component, c.Target))
+				continue
+			}
+			for _, opt := range c.Options {
+				if !metricsViewHasMeasure(mv, opt) && !metricsViewHasDimension(mv, opt) {
+					fail(c, fmt.Errorf("control %q option %q is not a measure or dimension of metrics view %q (component %q)", c.Name, opt, mvName, ic.Item.Component))
+					break
+				}
+				var value any = opt
+				if c.Multiple {
+					value = []any{opt}
+				}
+				selected := setControlSlot(props, strings.Split(c.Target, "."), value)
+				if err := ValidateRendererProperties(comp.Renderer, selected, metricsViews, false); err != nil {
+					fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
+					break
+				}
+			}
+		case ControlKindFilter:
+			// A filter only applies to items whose metrics view has the dimension, so a missing one is fine
+			// unless the control explicitly maps the dimension for this metrics view.
+			if dim, mapped := c.Fields[mvName]; mapped && !metricsViewHasDimension(mv, dim) {
+				fail(c, fmt.Errorf("control %q maps to %q, which is not a dimension of metrics view %q", c.Name, dim, mvName))
+			}
 		}
-	})
+	}
+}
+
+// withoutControls returns a copy of the spec without the given controls.
+func withoutControls(spec *runtimev1.CanvasSpec, drop map[*runtimev1.CanvasControl]bool) *runtimev1.CanvasSpec {
+	// The copy has the same lists in the same order, so mark the controls to drop by position.
+	var dropAt []bool
+	walkCanvas(spec, func(controls *[]*runtimev1.CanvasControl) {
+		for _, c := range *controls {
+			dropAt = append(dropAt, drop[c])
+		}
+	}, nil)
 	res := proto.Clone(spec).(*runtimev1.CanvasSpec)
 	i := 0
-	eachControlList(res, func(controls *[]*runtimev1.CanvasControl) {
+	walkCanvas(res, func(controls *[]*runtimev1.CanvasControl) {
 		var kept []*runtimev1.CanvasControl
 		for _, c := range *controls {
-			if !drop[i] {
+			if !dropAt[i] {
 				kept = append(kept, c)
 			}
 			i++
 		}
 		*controls = kept
-	})
-	return res, errors.Join(errs...)
+	}, nil)
+	return res
 }
 
 // listsFieldTwice reports whether a list of fields in the renderer properties (see swapListKeys) names the field more than once.

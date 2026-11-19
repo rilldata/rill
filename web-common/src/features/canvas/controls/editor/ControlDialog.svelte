@@ -182,7 +182,13 @@
   let controlName = $derived(name.trim() || field);
   let affected = $derived(
     isSwap && field
-      ? countItemsUsingField($parsedContent, level.path, field, controlName)
+      ? countItemsUsingField(
+          $parsedContent,
+          level.path,
+          kind,
+          field,
+          controlName,
+        )
       : null,
   );
   // A swap to a field a widget already shows would show it twice; the runtime rejects that control.
@@ -191,6 +197,7 @@
       ? findRepeatedOption(
           $parsedContent,
           level.path,
+          kind,
           field,
           resolvedOptions,
           controlName,

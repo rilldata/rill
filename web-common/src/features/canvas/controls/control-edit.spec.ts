@@ -297,19 +297,32 @@ describe("countItemsUsingField", () => {
 
   it("counts the items a swap at each level would change", () => {
     // The second chart ignores controls of enclosing levels.
-    expect(countItemsUsingField(doc, [], "total_bids")).toBe(3);
-    expect(countItemsUsingField(doc, [], "publisher")).toBe(1);
-    expect(countItemsUsingField(doc, ["rows", 1], "domain")).toBe(1);
-    expect(countItemsUsingField(doc, ["rows", 1], "publisher")).toBe(0);
-    expect(countItemsUsingField(doc, ["rows", 2], "spend")).toBe(1);
-    expect(countItemsUsingField(doc, ["rows", 2, "tabs", 0], "spend")).toBe(1);
+    expect(countItemsUsingField(doc, [], "measure", "total_bids")).toBe(3);
+    expect(countItemsUsingField(doc, [], "dimension", "publisher")).toBe(1);
+    expect(countItemsUsingField(doc, ["rows", 1], "dimension", "domain")).toBe(
+      1,
+    );
+    expect(
+      countItemsUsingField(doc, ["rows", 1], "dimension", "publisher"),
+    ).toBe(0);
+    expect(countItemsUsingField(doc, ["rows", 2], "measure", "spend")).toBe(1);
+    expect(
+      countItemsUsingField(doc, ["rows", 2, "tabs", 0], "measure", "spend"),
+    ).toBe(1);
   });
 
   it("counts an item for its own control even if it ignores outer ones", () => {
     expect(
-      countItemsUsingField(doc, ["rows", 0, "items", 1], "total_bids"),
+      countItemsUsingField(
+        doc,
+        ["rows", 0, "items", 1],
+        "measure",
+        "total_bids",
+      ),
     ).toBe(1);
-    expect(countItemsUsingField(doc, ["rows", 0, "items", 1], "spend")).toBe(0);
+    expect(
+      countItemsUsingField(doc, ["rows", 0, "items", 1], "measure", "spend"),
+    ).toBe(0);
   });
 });
 
@@ -317,14 +330,71 @@ describe("findRepeatedOption", () => {
   it("finds an option an item already shows next to the field", () => {
     const doc = parseDocument(YAML);
     // The KPI grid in the Records tab shows both measures.
-    expect(findRepeatedOption(doc, [], "total_bids", ["spend"])).toEqual({
+    expect(
+      findRepeatedOption(doc, [], "measure", "total_bids", ["spend"]),
+    ).toEqual({
       option: "spend",
       item: "kpi_grid",
     });
     expect(
-      findRepeatedOption(doc, ["rows", 1], "total_bids", ["spend"]),
+      findRepeatedOption(doc, ["rows", 1], "measure", "total_bids", ["spend"]),
     ).toBeNull();
-    expect(findRepeatedOption(doc, [], "total_bids", ["clicks"])).toBeNull();
+    expect(
+      findRepeatedOption(doc, [], "measure", "total_bids", ["clicks"]),
+    ).toBeNull();
+  });
+
+  it("skips items under a nearer control of the same kind and field", () => {
+    const doc = parseDocument(`rows:
+  - items:
+      - name: own_kpis
+        controls:
+          - measure: total_bids
+            options: [total_bids, clicks]
+        kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+  - name: section
+    controls:
+      - measure: total_bids
+    rows:
+      - items:
+          - kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+  - name: views
+    tabs:
+      - label: Overridden
+        controls:
+          - measure: total_bids
+        rows:
+          - items:
+              - kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+      - label: Plain
+        rows:
+          - items:
+              - name: plain_kpis
+                kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
+`);
+    const plain = { option: "spend", item: "plain_kpis" };
+    expect(countItemsUsingField(doc, [], "measure", "total_bids")).toBe(1);
+    expect(
+      findRepeatedOption(doc, [], "measure", "total_bids", ["spend"]),
+    ).toEqual(plain);
+    expect(
+      findRepeatedOption(doc, ["rows", 2], "measure", "total_bids", ["spend"]),
+    ).toEqual(plain);
+    // A level's own control applies to its items.
+    expect(
+      findRepeatedOption(
+        doc,
+        ["rows", 0, "items", 0],
+        "measure",
+        "total_bids",
+        ["spend"],
+      ),
+    ).toEqual({ option: "spend", item: "own_kpis" });
+    expect(
+      findRepeatedOption(doc, ["rows", 2, "tabs", 0], "measure", "total_bids", [
+        "spend",
+      ]),
+    ).toEqual({ option: "spend", item: "kpi_grid" });
   });
 
   it("skips items that ignore the control by name", () => {
@@ -334,9 +404,11 @@ describe("findRepeatedOption", () => {
         kpi_grid: { metrics_view: bids, measures: [total_bids, spend] }
 `);
     expect(
-      findRepeatedOption(doc, [], "total_bids", ["spend"], "metric"),
+      findRepeatedOption(doc, [], "measure", "total_bids", ["spend"], "metric"),
     ).toBeNull();
-    expect(findRepeatedOption(doc, [], "total_bids", ["spend"])).toEqual({
+    expect(
+      findRepeatedOption(doc, [], "measure", "total_bids", ["spend"]),
+    ).toEqual({
       option: "spend",
       item: "kpi_grid",
     });

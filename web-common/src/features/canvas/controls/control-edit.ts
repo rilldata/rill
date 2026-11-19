@@ -332,17 +332,19 @@ export function controlLevelsForItem(
 
 /**
  * How many items under a level show the field, i.e. how many a swap of it would change.
- * Counts items that opt out of the control with `ignore_controls` as unaffected.
+ * Counts items that opt out of the control with `ignore_controls`, or that a nearer control
+ * of the same kind and field overrides, as unaffected.
  */
 export function countItemsUsingField(
   doc: Document | undefined,
   path: YAMLPath,
+  kind: EditableControlKind,
   field: string,
   controlName = field,
 ): number {
   if (!field) return 0;
-  return itemsUnderLevel(doc, path, controlName).filter(({ specs }) =>
-    specs.some((spec) => specUsesField(spec, field)),
+  return itemsUnderLevel(doc, path, kind, field, controlName).filter(
+    ({ specs }) => specs.some((spec) => specUsesField(spec, field)),
   ).length;
 }
 
@@ -354,12 +356,19 @@ export function countItemsUsingField(
 export function findRepeatedOption(
   doc: Document | undefined,
   path: YAMLPath,
+  kind: EditableControlKind,
   field: string,
   options: string[],
   controlName = field,
 ): { option: string; item: string } | null {
   if (!field) return null;
-  for (const { name, specs } of itemsUnderLevel(doc, path, controlName)) {
+  for (const { name, specs } of itemsUnderLevel(
+    doc,
+    path,
+    kind,
+    field,
+    controlName,
+  )) {
     for (const spec of specs) {
       if (!specUsesField(spec, field)) continue;
       const option = options.find(
@@ -373,17 +382,23 @@ export function findRepeatedOption(
 
 /**
  * The items a control declared on a level applies to: the item itself, or the items below a
- * block or the canvas, less those that opt out of the control with `ignore_controls`.
+ * block or the canvas, less those that opt out of the control with `ignore_controls` and those
+ * under a nearer level with a control of the same kind and field, which wins (see controlsForPath).
  * Each comes with its name (or component type) and its component specs as plain objects.
  */
 function itemsUnderLevel(
   doc: Document | undefined,
   path: YAMLPath,
+  kind: EditableControlKind,
+  field: string,
   controlName: string,
 ): { name: string; specs: Record<string, unknown>[] }[] {
   const root = toJSON(path.length ? doc?.getIn(path) : doc);
   if (!isRecord(root)) return [];
 
+  const overrides = (level: Record<string, unknown>) =>
+    Array.isArray(level.controls) &&
+    level.controls.some((c) => isRecord(c) && c[kind] === field);
   const own = isItemPath(path);
   const res: { name: string; specs: Record<string, unknown>[] }[] = [];
   const visitItem = (item: unknown) => {
@@ -391,7 +406,8 @@ function itemsUnderLevel(
     const ignore = item.ignore_controls;
     if (
       !own &&
-      (ignore === true ||
+      (overrides(item) ||
+        ignore === true ||
         (Array.isArray(ignore) && ignore.includes(controlName)))
     ) {
       return;
@@ -404,16 +420,18 @@ function itemsUnderLevel(
       specs: entries.map(([, value]) => value as Record<string, unknown>),
     });
   };
+  const visitTabs = (tabs: unknown) => {
+    if (!Array.isArray(tabs)) return;
+    for (const tab of tabs) {
+      if (isRecord(tab) && !overrides(tab)) visitRows(tab.rows);
+    }
+  };
   const visitRows = (rows: unknown) => {
     if (!Array.isArray(rows)) return;
     for (const row of rows) {
-      if (!isRecord(row)) continue;
+      if (!isRecord(row) || overrides(row)) continue;
       if (Array.isArray(row.items)) row.items.forEach(visitItem);
-      if (Array.isArray(row.tabs)) {
-        for (const tab of row.tabs) {
-          if (isRecord(tab)) visitRows(tab.rows);
-        }
-      }
+      visitTabs(row.tabs);
       visitRows(row.rows);
     }
   };
@@ -421,7 +439,7 @@ function itemsUnderLevel(
   if (own) {
     visitItem(root);
   } else if (Array.isArray(root.tabs)) {
-    visitRows([root]);
+    visitTabs(root.tabs);
   } else {
     visitRows(root.rows);
   }

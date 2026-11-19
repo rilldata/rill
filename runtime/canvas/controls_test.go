@@ -104,10 +104,13 @@ func TestValidateControls(t *testing.T) {
 		"table": {Renderer: "table", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "columns": []any{"device", "spend", "impressions"}})},
 		"kpis":  {Renderer: "kpi_grid", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "measures": []any{"spend", "impressions"}})},
 	}
-	mvs := map[string]*runtimev1.MetricsViewSpec{"bids": {
-		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{{Name: "device"}, {Name: "country"}},
-		Measures:   []*runtimev1.MetricsViewSpec_Measure{{Name: "spend"}, {Name: "impressions"}, {Name: "clicks"}},
-	}}
+	mvs := map[string]*runtimev1.MetricsViewSpec{
+		"bids": {
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{{Name: "device"}, {Name: "country"}},
+			Measures:   []*runtimev1.MetricsViewSpec_Measure{{Name: "spend"}, {Name: "impressions"}, {Name: "clicks"}},
+		},
+		"wins": {Measures: []*runtimev1.MetricsViewSpec_Measure{{Name: "win_rate"}}},
+	}
 	measure := func(target string, options ...string) *runtimev1.CanvasControl {
 		return &runtimev1.CanvasControl{Kind: ControlKindMeasure, Target: target, Name: target, Options: options}
 	}
@@ -116,16 +119,18 @@ func TestValidateControls(t *testing.T) {
 		name      string
 		component string
 		control   *runtimev1.CanvasControl
+		canvas    *runtimev1.CanvasControl // A canvas control that the item's control overrides.
 		ignore    []string
 		err       string
 	}{
 		{name: "valid swap", component: "chart", control: measure("spend", "spend", "impressions")},
-		{name: "option missing from the metrics view", component: "chart", control: measure("spend", "spend", "win_rate"), err: `option "win_rate" doesn't work`},
-		{name: "unused field with a missing option", component: "chart", control: measure("clicks", "clicks", "win_rate"), err: `option "win_rate" is not a measure of any metrics view`},
+		{name: "option missing from the item's metrics view", component: "chart", control: measure("spend", "spend", "win_rate"), err: `option "win_rate" doesn't work`},
+		{name: "unused field with a missing option", component: "chart", control: measure("clicks", "clicks", "nope"), err: `option "nope" is not a measure of any metrics view`},
 		{name: "unused field with existing options", component: "chart", control: measure("clicks", "clicks", "impressions")},
 		{name: "swap repeats a table column", component: "table", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "table"`},
 		{name: "swap repeats a kpi", component: "kpis", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "kpis"`},
 		{name: "swap to a new kpi", component: "kpis", control: measure("spend", "spend", "clicks")},
+		{name: "canvas control in effect once the item's control is left out", component: "table", control: measure("spend", "spend", "win_rate"), canvas: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "table"`},
 		{name: "slot", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "x.field", Name: "x_field", Options: []string{"device", "country"}}},
 		{name: "slot with a missing option", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "x.field", Name: "x_field", Options: []string{"device", "nope"}}, err: `option "nope"`},
 		{name: "slot the component doesn't set", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "color.field", Name: "color_field", Options: []string{"device"}}, err: `component "chart" doesn't set "color.field"`},
@@ -142,6 +147,9 @@ func TestValidateControls(t *testing.T) {
 				item.Controls = []*runtimev1.CanvasControl{tt.control}
 			}
 			spec := &runtimev1.CanvasSpec{Controls: []*runtimev1.CanvasControl{canvasControl}, Rows: []*runtimev1.CanvasRow{{Items: []*runtimev1.CanvasItem{item}}}}
+			if tt.canvas != nil {
+				spec.Controls = append(spec.Controls, tt.canvas)
+			}
 
 			valid, err := ValidateControls(spec, components, mvs)
 			if tt.err == "" {
