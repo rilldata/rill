@@ -115,7 +115,7 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		}
 		var ranges []string
 		for _, j := range formatColumns(ds, cf) {
-			r, err := cellRange(j+1, 2, len(ds.Rows))
+			r, err := cellRange(j+1, 2, len(ds.Rows), false)
 			if err != nil {
 				return err
 			}
@@ -156,13 +156,14 @@ func formatColumns(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookCondit
 	return res
 }
 
-// cellRange returns the range of rows cells down a grid column (1-based) from firstRow, like "B2:B10".
-func cellRange(col, firstRow, rows int) (string, error) {
-	from, err := excelize.CoordinatesToCellName(col, firstRow)
+// cellRange returns the range of rows cells down a grid column (1-based) from firstRow, like "B2:B10",
+// or like "$B$2:$B$10" when abs is set.
+func cellRange(col, firstRow, rows int, abs bool) (string, error) {
+	from, err := excelize.CoordinatesToCellName(col, firstRow, abs)
 	if err != nil {
 		return "", err
 	}
-	to, err := excelize.CoordinatesToCellName(col, firstRow+rows-1)
+	to, err := excelize.CoordinatesToCellName(col, firstRow+rows-1, abs)
 	if err != nil {
 		return "", err
 	}

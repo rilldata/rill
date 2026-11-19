@@ -230,6 +230,7 @@ func TestWrite(t *testing.T) {
 		require.Len(t, formats["B2:B3"], 1)
 		require.Equal(t, "data_bar", formats["B2:B3"][0].Type)
 		require.Equal(t, "638EC6", formats["B2:B3"][0].BarColor)
+		require.Equal(t, "MAX(MAX($B$2:$B$3),-MIN($B$2:$B$3))", formats["B2:B3"][0].MaxValue)
 
 		// A sheet without rows keeps its header but gets no table.
 		require.Equal(t, "a", cell("Data - Empty", "A1"))
@@ -305,7 +306,7 @@ func TestWrite(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, formats["D38:D39"], 1)
 		require.Equal(t, "data_bar", formats["D38:D39"][0].Type)
-		require.Equal(t, "MAX('Data - Line items'!$B$2:$B$3)", formats["D38:D39"][0].MaxValue)
+		require.Equal(t, "MAX(MAX('Data - Line items'!$B$2:$B$3),-MIN('Data - Line items'!$B$2:$B$3))", formats["D38:D39"][0].MaxValue)
 		require.Equal(t, "Full data: Data - Line items (2 rows)", cell(dashboard, "A40"))
 		ok, link, err := f.GetCellHyperLink(dashboard, "A40")
 		require.NoError(t, err)

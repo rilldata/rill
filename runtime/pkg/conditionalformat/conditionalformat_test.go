@@ -54,12 +54,16 @@ func TestApply(t *testing.T) {
 	require.NoError(t, Apply(f, "Sheet1", []string{"F2:F9"}, "", colorScale("#f7fcf5", "", "#00441b")))
 	// Rules are written relative to the first cell they cover and stop at the first match.
 	require.NoError(t, Apply(f, "Sheet1", []string{"G2:G9", "H2:H9"}, "", cellRule(runtimev1.ExportCellRuleOperator_EXPORT_CELL_RULE_OPERATOR_BETWEEN, -1.5, 1e21)))
+	// Data bars end at the largest absolute value of the cells they cover, or of the domain.
+	dataBar := &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_DataBar{DataBar: &runtimev1.ExportDataBar{Color: "#638ec6"}}}
+	require.NoError(t, Apply(f, "Sheet1", []string{"I2:I9", "J2:J9"}, "", dataBar))
+	require.NoError(t, Apply(f, "Sheet1", []string{"K2:K9"}, "'Data'!$C$2:$C$50", dataBar))
 	// No ranges, no format.
 	require.NoError(t, Apply(f, "Sheet1", nil, "", colorScale("#f7fcf5", "", "#00441b")))
 
 	formats, err := f.GetConditionalFormats("Sheet1")
 	require.NoError(t, err)
-	require.Len(t, formats, 3)
+	require.Len(t, formats, 5)
 
 	scale := formats["B2:B9 D2:D9"][0]
 	require.Equal(t, "3_color_scale", scale.Type)
@@ -71,6 +75,14 @@ func TestApply(t *testing.T) {
 	require.Equal(t, "2_color_scale", twoColor.Type)
 	require.Equal(t, "min", twoColor.MinType)
 	require.Equal(t, "max", twoColor.MaxType)
+
+	bar := formats["I2:I9 J2:J9"][0]
+	require.Equal(t, "data_bar", bar.Type)
+	require.Equal(t, "num", bar.MinType)
+	require.Equal(t, "0", bar.MinValue)
+	require.Equal(t, "formula", bar.MaxType)
+	require.Equal(t, "MAX(MAX($I$2:$I$9,$J$2:$J$9),-MIN($I$2:$I$9,$J$2:$J$9))", bar.MaxValue)
+	require.Equal(t, "MAX(MAX('Data'!$C$2:$C$50),-MIN('Data'!$C$2:$C$50))", formats["K2:K9"][0].MaxValue)
 
 	rule := formats["G2:G9 H2:H9"][0]
 	require.Equal(t, "formula", rule.Type)

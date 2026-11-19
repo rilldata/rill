@@ -141,16 +141,6 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		filename += "_filtered"
 	}
 
-	// Check the conditional formats before running the query, since the XLSX writer only applies them after writing every row.
-	if len(q.ConditionalFormats) > conditionalformat.MaxFormats {
-		return fmt.Errorf("the export has %d conditional formats, which exceeds the limit of %d", len(q.ConditionalFormats), conditionalformat.MaxFormats)
-	}
-	for _, cf := range q.ConditionalFormats {
-		if err := conditionalformat.Validate(cf.Format); err != nil {
-			return fmt.Errorf("invalid conditional format for measure %q: %w", cf.Measure, err)
-		}
-	}
-
 	// Resolve metrics view
 	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
@@ -191,11 +181,23 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	var format drivers.FileFormat
+	var conditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		format = drivers.FileFormatXLSX
+		// Only XLSX files keep the conditional formats, so other formats ignore them, even invalid ones.
+		// Check them before running the query, since the XLSX writer only applies them after writing every row.
+		if len(q.ConditionalFormats) > conditionalformat.MaxFormats {
+			return fmt.Errorf("the export has %d conditional formats, which exceeds the limit of %d", len(q.ConditionalFormats), conditionalformat.MaxFormats)
+		}
+		for _, cf := range q.ConditionalFormats {
+			if err := conditionalformat.Validate(cf.Format); err != nil {
+				return fmt.Errorf("invalid conditional format for measure %q: %w", cf.Measure, err)
+			}
+		}
+		conditionalFormats = q.ConditionalFormats
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		format = drivers.FileFormatParquet
 	default:
@@ -215,7 +217,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers, q.ConditionalFormats)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers, conditionalFormats)
 	if err != nil {
 		return err
 	}

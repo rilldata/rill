@@ -105,18 +105,30 @@ func Apply(f *excelize.File, sheet string, ranges []string, domain string, forma
 			}
 		}
 	case *runtimev1.ExportConditionalFormat_DataBar:
-		// Bars start at zero, so their lengths are proportional to the values as on the dashboard.
-		// A solid fill would need an extension list that stream writers drop, so the bars keep Excel's default gradient.
+		// As on the dashboard, bars run from zero to the largest absolute value, so a positive value's bar is proportional to it.
+		// The dashboard also sizes the bars of negative values by their absolute value,
+		// but Excel can't: it gives values at or below a data bar's lower end its shortest bar.
+		// Bars going left from an axis and solid fills need an extension list that stream writers drop,
+		// so the bars keep Excel's default gradient.
+		if domain == "" {
+			refs := make([]string, len(ranges))
+			for i, r := range ranges {
+				ref, err := absoluteRange(r)
+				if err != nil {
+					return err
+				}
+				refs[i] = ref
+			}
+			domain = strings.Join(refs, ",")
+		}
 		opts = excelize.ConditionalFormatOptions{
 			Type:     "data_bar",
 			Criteria: "=",
 			MinType:  "num",
 			MinValue: "0",
-			MaxType:  "max",
+			MaxType:  "formula",
+			MaxValue: fmt.Sprintf("MAX(MAX(%[1]s),-MIN(%[1]s))", domain),
 			BarColor: t.DataBar.Color,
-		}
-		if domain != "" {
-			opts.MaxType, opts.MaxValue = "formula", fmt.Sprintf("MAX(%s)", domain)
 		}
 	case *runtimev1.ExportConditionalFormat_CellRule:
 		style := &excelize.Style{Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{t.CellRule.FillColor}}}
@@ -158,6 +170,22 @@ func cellRuleFormula(cell string, r *runtimev1.ExportCellRule) string {
 		cond = cell + ">=" + value + "," + cell + "<=" + formatNumber(r.UpperValue)
 	}
 	return fmt.Sprintf("AND(ISNUMBER(%s),%s)", cell, cond)
+}
+
+// absoluteRange returns a cell range like "B2:B10" with absolute references, like "$B$2:$B$10".
+func absoluteRange(r string) (string, error) {
+	from, to, _ := strings.Cut(r, ":")
+	cells := []string{from, to}
+	for i, cell := range cells {
+		col, row, err := excelize.CellNameToCoordinates(cell)
+		if err != nil {
+			return "", err
+		}
+		if cells[i], err = excelize.CoordinatesToCellName(col, row, true); err != nil {
+			return "", err
+		}
+	}
+	return cells[0] + ":" + cells[1], nil
 }
 
 // formatNumber formats a number for a formula; Excel reads exponents like 1E+21.

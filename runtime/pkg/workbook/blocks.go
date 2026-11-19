@@ -447,7 +447,7 @@ func (w *writer) applyPreviewFormats(sheet string, ds *runtimev1.WorkbookDataShe
 			c := col
 			for k, shown := range columns {
 				if shown == j {
-					r, err := cellRange(c, firstRow, rows)
+					r, err := cellRange(c, firstRow, rows, false)
 					if err != nil {
 						return err
 					}

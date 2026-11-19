@@ -1344,7 +1344,7 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 		})
 	}
 
-	// Invalid formats are rejected before the query runs.
+	// Invalid formats fail an XLSX export before the query runs, and other formats ignore them.
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions:      []*runtimev1.MetricsViewAggregationDimension{{Name: "pub"}},
@@ -1360,6 +1360,11 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 		PreWriteHook: func(string) error { return nil },
 	})
 	require.ErrorContains(t, err, `invalid conditional format for measure "measure_0"`)
+	err = q.Export(t.Context(), rt, instanceID, &bytes.Buffer{}, &runtime.ExportOptions{
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+		PreWriteHook: func(string) error { return nil },
+	})
+	require.NoError(t, err)
 }
 
 func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
