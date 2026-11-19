@@ -71,18 +71,25 @@ async function focusInviteInput() {
   await new Promise((resolve) => setTimeout(resolve, 50));
 }
 
-/** Answers the form's requests; every list is empty unless a response is given for its URL. */
+/**
+ * Answers the form's requests; every list is empty unless a response is given for its URL.
+ * A response can be a function, called per request, to return a pending or rejected promise.
+ */
 function mockResponses(responses: Record<string, unknown> = {}) {
-  request.mockImplementation(((config: AxiosRequestConfig) =>
-    Promise.resolve(
+  request.mockImplementation(((config: AxiosRequestConfig) => {
+    const response = responses[config.url ?? ""];
+    if (typeof response === "function")
+      return (response as () => Promise<unknown>)();
+    return Promise.resolve(
       config.url === "/v1/users/current"
         ? { user: { email: "me@acme.com", displayName: "Me" } }
-        : (responses[config.url ?? ""] ?? {
-            members: [],
-            invites: [],
-            nextPageToken: "",
-          }),
-    )) as typeof httpClient);
+        : (response ?? { members: [], invites: [], nextPageToken: "" }),
+    );
+  }) as typeof httpClient);
+}
+
+function domainRemovals() {
+  return request.mock.calls.filter(([config]) => config.method === "DELETE");
 }
 
 beforeEach(() => {
@@ -146,11 +153,14 @@ describe("ShareProjectForm", () => {
     expect(urls).not.toContain(ORG_AUTOGROUP_MEMBERS_URL);
   });
 
-  it("shows a project admin the project's domain access, which adds users without an invite, and removes it", async () => {
+  it("shows a project admin the project's domain access, which adds users without an invite, and removes it once", async () => {
+    let finishRemoval = () => {};
     mockResponses({
       [PROJECT_DOMAINS_URL]: {
         domains: [{ domain: "example.com", role: "viewer" }],
       },
+      [`${PROJECT_DOMAINS_URL}/example.com`]: () =>
+        new Promise((resolve) => (finishRemoval = () => resolve({}))),
     });
     renderForm(false);
 
@@ -159,14 +169,33 @@ describe("ShareProjectForm", () => {
     ).toBeTruthy();
     expect(screen.getByText("Joins automatically as Viewer")).toBeTruthy();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Remove" }));
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          method: "DELETE",
-          url: `${PROJECT_DOMAINS_URL}/example.com`,
-        }),
+    // A second click while the removal is pending must not send another request.
+    const remove = screen.getByRole("button", { name: "Remove" });
+    await fireEvent.click(remove);
+    await fireEvent.click(remove);
+    await waitFor(() => expect(domainRemovals()).toHaveLength(1));
+    expect(domainRemovals()[0][0].url).toBe(
+      `${PROJECT_DOMAINS_URL}/example.com`,
+    );
+    finishRemoval();
+  });
+
+  it("says when the project's domain access could not be loaded, and retries", async () => {
+    mockResponses({
+      [PROJECT_DOMAINS_URL]: () => Promise.reject(new Error("unavailable")),
+    });
+    renderForm(false);
+
+    expect(
+      await screen.findByText(
+        "Couldn't load this project's domain access rules.",
       ),
+    ).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() =>
+      expect(
+        requestedUrls().filter((url) => url === PROJECT_DOMAINS_URL),
+      ).toHaveLength(2),
     );
   });
 
