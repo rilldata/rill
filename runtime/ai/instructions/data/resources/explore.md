@@ -107,6 +107,16 @@ time_ranges:
 defaults:
   time_range: P30D
   comparison_mode: time
+  # Default filter: one Metrics SQL filter expression (not a map by metrics view as in a canvas)
+  filters: "region = 'EMEA'"
+
+# Optional: filters that always stay in the filter bar (pinned),
+# and filters that must have a value before the dashboard renders (required)
+filters:
+  pinned:
+    - product_category
+  required:
+    - region
 
 # Optional: pin specific time zones to the top of the selector
 time_zones:
@@ -121,6 +131,19 @@ theme: my_theme
 security:
   access: "{{ .user.admin }} OR '{{ .user.email }}' LIKE '%@example.com'"
 ```
+
+## Default, pinned and required filters
+
+`filters.pinned` and `filters.required` list dimensions or measures by name. Every name must be shown in the explore, otherwise the explore fails to reconcile. They control different things:
+
+- **`pinned`**: keeps the filter in the filter bar, even without a value, so users can change it without opening the filter menu. Users cannot remove it.
+- **`required`**: the dashboard is not rendered until the filter has a value. Required filters are implicitly pinned; do not also list them under `pinned`.
+
+`defaults.filters` is a single Metrics SQL filter expression that is applied when the dashboard is first opened, for example `"region = 'EMEA' AND product_category IN ('Shoes', 'Bags')"`. It can only reference dimensions and measures shown in the explore. Filter on a measure with a subquery, for example `"region IN (SELECT region FROM metrics_view HAVING total_revenue > 1000)"`.
+
+Use `required` for filters that are unsafe or meaningless to omit (for example a tenant or customer scope), and pair it with a value in `defaults.filters` when the dashboard should open without prompting. These settings shape the dashboard only; use security policies on the metrics view to restrict the data a user can access.
+
+All three also work in a metrics view's inline `explore:` block.
 
 ## Minimal stand-alone example
 

@@ -6107,7 +6107,21 @@ definitions:
           The values should be valid IANA location identifiers.
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
-        description: Preset UI state to show by default.
+        description: |-
+          Preset UI state to show by default.
+          Its `where` holds the default filter, parsed from `defaults.filters`.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        description: Dimension or measure names whose filter chip is always shown in the filter bar.
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Dimension or measure names that must have a filter value before the explore renders.
+          Required filters are implicitly pinned.
       embedsHidePivot:
         type: boolean
         description: If true, the pivot tab will be hidden when the explore is embedded.

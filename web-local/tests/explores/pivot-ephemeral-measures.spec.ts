@@ -82,7 +82,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     );
 
     // The Measures section of the field sidebar offers a create CTA.
-    await page.getByRole("button", { name: "Create adhoc measure" }).click();
+    await page.getByRole("button", { name: "New measure" }).click();
 
     await page.getByLabel("Name", { exact: true }).fill("Doubled");
     await page
@@ -90,20 +90,25 @@ test.describe("pivot ephemeral measures from URL state", () => {
       .fill("total_records * 2");
     await page.getByRole("button", { name: "Save" }).click();
 
-    // Saving from the pivot view places the measure as a column chip...
+    // A toast confirms the save...
+    await expect(
+      page.getByText('Created adhoc measure "Doubled"'),
+    ).toBeVisible();
+
+    // ...the pivot view places the measure as a column chip...
     await expect(
       page.getByLabel("Doubled pivot chip", { exact: true }),
     ).toBeVisible();
 
-    // ...renders its computed values...
+    // ...as the first measure column, and renders its computed values...
     await validateTableContents(page, "table", [
       [], // dummy row added for virtualization
-      ["Total", "100.0k", "200.0k"],
-      ["null", "32.9k", "65.8k"],
-      ["Facebook", "19.3k", "38.7k"],
-      ["Google", "18.8k", "37.5k"],
-      ["Yahoo", "18.6k", "37.2k"],
-      ["Microsoft", "10.4k", "20.8k"],
+      ["Total", "200.0k", "100.0k"],
+      ["null", "65.8k", "32.9k"],
+      ["Facebook", "38.7k", "19.3k"],
+      ["Google", "37.5k", "18.8k"],
+      ["Yahoo", "37.2k", "18.6k"],
+      ["Microsoft", "20.8k", "10.4k"],
       [], // dummy row added for virtualization
     ]);
 
@@ -149,12 +154,18 @@ test.describe("pivot ephemeral measures from URL state", () => {
       `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records`,
     );
 
-    await page.getByRole("button", { name: "Create adhoc measure" }).click();
+    await page.getByRole("button", { name: "New measure" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Doubled");
+
+    // The placeholder is an example built from the dashboard's measures.
+    const expression = page.getByLabel("Expression", { exact: true });
+    await expect(expression.locator("p")).toHaveAttribute(
+      "data-placeholder",
+      "e.g. Total records / Sum of Bid Price",
+    );
 
     // Typing "@" opens a picker searchable by display name; the field name is
     // shown alongside so users learn it.
-    const expression = page.getByLabel("Expression", { exact: true });
     await expression.pressSequentially("@records");
     const picker = page.getByRole("listbox", { name: "Measures" });
     await expect(
@@ -163,9 +174,13 @@ test.describe("pivot ephemeral measures from URL state", () => {
     await expect(
       picker.getByRole("option", { name: "Sum of Bid Price bid_price_sum" }),
     ).toHaveCount(0);
-    // The "@" is not a valid expression character, but no error shows while
-    // the picker is open.
-    await expect(page.getByText('unexpected character "@"')).toHaveCount(0);
+    // The "@" is not a valid expression character, but the helper text stays
+    // in place of an error while the picker is open.
+    await expect(
+      page.getByText("Type @ or click a measure below to add it.", {
+        exact: false,
+      }),
+    ).toBeVisible();
 
     // Enter replaces the "@query" with a chip showing the display name, which
     // serializes to the measure's field name in the saved expression.
@@ -182,6 +197,28 @@ test.describe("pivot ephemeral measures from URL state", () => {
       .getByRole("button", { name: "Total records", exact: true })
       .click();
     await expect(expression.locator(".measure-chip")).toHaveCount(2);
+
+    // Each chip has a button that removes it.
+    await expression
+      .getByRole("button", { name: "Remove Total records" })
+      .last()
+      .click();
+    await expect(expression.locator(".measure-chip")).toHaveCount(1);
+    // With a dangling operator, the helper text gives way to an error.
+    await expect(
+      page.getByText(
+        "The expression is incomplete. End it with a measure or a number.",
+      ),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Total records", exact: true })
+      .click();
+    await expect(expression.locator(".measure-chip")).toHaveCount(2);
+    // Inserting focuses the editor on the next frame; wait for it, or the
+    // description below can be typed into the expression instead.
+    await expect(expression).toBeFocused();
+
     await page.getByLabel("Description").fill("Twice");
     await page.getByRole("button", { name: "Save" }).click();
 
@@ -195,7 +232,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     );
 
     // A second measure with the same display name gets a numeric suffix.
-    await page.getByRole("button", { name: "Create adhoc measure" }).click();
+    await page.getByRole("button", { name: "New measure" }).click();
     await page.getByLabel("Name", { exact: true }).fill("doubled");
     await page
       .getByLabel("Expression", { exact: true })
