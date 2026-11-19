@@ -18,7 +18,7 @@ import (
 var _ drivers.ModelManager = &Connection{}
 
 func (c *Connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {
-	return nil, nil
+	return res, nil
 }
 
 func (c *Connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool, error) {
