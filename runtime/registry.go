@@ -490,6 +490,13 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				iwc.logger.Error("controller failed", attrs...)
 			}
 
+			if errors.Is(err, errReconcileHung) {
+				select {
+				case r.rt.fatalErr <- err:
+				default: // A fatal error is already pending
+				}
+			}
+
 			// When an instance is edited, connector config may have changed.
 			// So we want to evict all open connections for that instance, but it's unsafe to do so while the controller is running.
 			// So this is the only place where we can do it safely.
