@@ -509,6 +509,9 @@ message ExploreSpec {
   // Dimension or measure names that must have a filter value before the explore renders.
   // Required filters are implicitly pinned.
   repeated string required_filters = 25;
+  // Dimensions whose filter holds at most one value at a time.
+  // Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+  repeated string single_select_filters = 23;
   // If true, the pivot tab will be hidden when the explore is embedded.
   bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
@@ -981,6 +984,9 @@ message CanvasSpec {
   // Array of dimension or measure names that must have a value before the canvas can render.
   // Required filters are implicitly pinned.
   repeated string required_filters = 19;
+  // Array of dimension names whose filter holds at most one value at a time.
+  // Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+  repeated string single_select_filters = 22;
   // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   map<string, string> annotations = 20;
   // Suggested prompts configured by the project author, shown as starters in the AI chat.

@@ -156,6 +156,7 @@ export class JoinerFilterManager {
             initExpr: expr,
             isInList: dimensionsWithInlistFilter.includes(ident),
             events,
+            yamlConfigProvider,
           },
         );
       }
@@ -193,12 +194,16 @@ export class JoinerFilterManager {
     };
 
     expr?.cond?.exprs?.forEach((e) => {
+      const op = e.cond?.op;
+      const isJoiner =
+        op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR;
       const manager = JoinerFilterManager.parse(
         metricsViewsProvider,
         e,
         dimensionsWithInlistFilter,
-        // Deeper parse should not add required/pinned filters. So pass undefined here.
-        undefined,
+        // A nested joiner should not add required/pinned filters, so it gets no config.
+        // A condition at this level does, since single-select filters apply to the chips.
+        isJoiner ? undefined : yamlConfigProvider,
         events,
       );
       if (!manager) return;
@@ -217,7 +222,7 @@ export class JoinerFilterManager {
             DimensionFilterManager.createForMetricsViews(
               metricsViewsProvider,
               requiredFilter,
-              { events },
+              { events, yamlConfigProvider },
             ) ??
             MeasureFilterManager.createForMetricsViews(
               metricsViewsProvider,
@@ -285,7 +290,7 @@ export class JoinerFilterManager {
         const dimensionManager = DimensionFilterManager.createForMetricsViews(
           this.metricsViewsProvider,
           name,
-          { events: this.events },
+          { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
         );
         if (dimensionManager) {
           this.maybeAddDimensionFilter(dimensionManager);
@@ -299,6 +304,11 @@ export class JoinerFilterManager {
         );
         if (measureManager) this.maybeAddMeasureFilter(measureManager);
       });
+  }
+
+  /** Narrows the filters that became single-select after the param was parsed. */
+  public enforceSingleSelectFilters() {
+    this.managers.dimensionManagers.forEach((dfm) => dfm.enforceSingleSelect());
   }
 
   public removeEmptyManagers() {

@@ -526,6 +526,9 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  /** Array of dimension names whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   annotations?: Record<string, string>;
   /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
   aiPrompts?: V1AIPrompt[];
@@ -1021,6 +1024,9 @@ Its `where` holds the default filter, parsed from `defaults.filters`. */
   /** Dimension or measure names that must have a filter value before the explore renders.
 Required filters are implicitly pinned. */
   requiredFilters?: string[];
+  /** Dimensions whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   /** If true, the pivot tab will be hidden when the explore is embedded. */
   embedsHidePivot?: boolean;
   /** Security for the explore dashboard.

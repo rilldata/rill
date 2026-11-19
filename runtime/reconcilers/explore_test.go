@@ -322,6 +322,7 @@ metrics_view: mv1
 filters:
   pinned: [bar, internal, x]
   required: [foo, internal]
+  single_select: [foo, internal]
 defaults:
   filters: >
     foo IN ('a', 'b') AND internal = 'c'
@@ -342,6 +343,7 @@ defaults:
 	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
 	require.Equal(t, []string{"bar", "internal", "x"}, e1.GetExplore().State.ValidSpec.PinnedFilters)
 	require.Equal(t, []string{"foo", "internal"}, e1.GetExplore().State.ValidSpec.RequiredFilters)
+	require.Equal(t, []string{"foo", "internal"}, e1.GetExplore().State.ValidSpec.SingleSelectFilters)
 	where := metricsview.NewExpressionFromProto(e1.GetExplore().State.ValidSpec.DefaultPreset.Where)
 	require.Equal(t, []string{"bar", "foo", "internal", "x", "y"}, metricsview.AnalyzeExpressionFields(where))
 
@@ -353,6 +355,7 @@ defaults:
 	require.True(t, access)
 	require.Equal(t, []string{"bar", "x"}, res.GetExplore().State.ValidSpec.PinnedFilters)
 	require.Equal(t, []string{"foo"}, res.GetExplore().State.ValidSpec.RequiredFilters)
+	require.Equal(t, []string{"foo"}, res.GetExplore().State.ValidSpec.SingleSelectFilters)
 	where = metricsview.NewExpressionFromProto(res.GetExplore().State.ValidSpec.DefaultPreset.Where)
 	sql, err := metricsview.ExpressionToSQL(where)
 	require.NoError(t, err)
@@ -390,6 +393,18 @@ defaults:
 		{
 			yaml:    "filters:\n  required: [t2]",
 			wantErr: `required filter "t2" is a time dimension, which can't be filtered`,
+		},
+		{
+			yaml:    "filters:\n  single_select: [x]",
+			wantErr: `single-select filter "x" is not a dimension in this explore`,
+		},
+		{
+			yaml:    "dimensions: [bar]\nfilters:\n  single_select: [foo]",
+			wantErr: `single-select filter "foo" is not a dimension in this explore`,
+		},
+		{
+			yaml:    "filters:\n  single_select: [t2]",
+			wantErr: `single-select filter "t2" is a time dimension, which can't be filtered`,
 		},
 		{
 			yaml:    "defaults:\n  filters: t2 = '2025-11-20'",

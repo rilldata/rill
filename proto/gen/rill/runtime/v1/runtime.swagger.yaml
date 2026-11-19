@@ -5011,6 +5011,13 @@ definitions:
         description: |-
           Array of dimension or measure names that must have a value before the canvas can render.
           Required filters are implicitly pinned.
+      singleSelectFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension names whose filter holds at most one value at a time.
+          Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
       annotations:
         type: object
         additionalProperties:
@@ -6014,6 +6021,13 @@ definitions:
         description: |-
           Dimension or measure names that must have a filter value before the explore renders.
           Required filters are implicitly pinned.
+      singleSelectFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Dimensions whose filter holds at most one value at a time.
+          Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
       embedsHidePivot:
         type: boolean
         description: If true, the pivot tab will be hidden when the explore is embedded.

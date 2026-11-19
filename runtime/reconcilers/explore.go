@@ -245,6 +245,16 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 	}
 
+	// Validate single-select filters, which must name dimensions of the explore that can be filtered.
+	for _, name := range spec.SingleSelectFilters {
+		if _, ok := timeDims[name]; ok {
+			return nil, nil, fmt.Errorf("single-select filter %q is a time dimension, which can't be filtered", name)
+		}
+		if !slices.Contains(spec.Dimensions, name) {
+			return nil, nil, fmt.Errorf("single-select filter %q is not a dimension in this explore", name)
+		}
+	}
+
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset

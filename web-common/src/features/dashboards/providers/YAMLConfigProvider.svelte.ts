@@ -17,6 +17,8 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<string[]>([]);
   public requiredFilters = $state<string[]>([]);
   public specRequiredFilters = $state<string[]>([]);
+  // Dimensions whose filter holds one value at a time. See `DimensionFilterManager.isSingleSelect`.
+  public singleSelectFilters = $state<Record<string, boolean>>({});
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
@@ -39,11 +41,13 @@ export class YAMLConfigProvider {
     defaultFilters: Record<string, V1Expression | undefined>,
     pinnedFilters: string[],
     requiredFilters: string[],
+    singleSelectFilters: string[] = [],
   ) {
     const config = JSON.stringify([
       defaultFilters,
       pinnedFilters,
       requiredFilters,
+      singleSelectFilters,
     ]);
     if (config === this.appliedConfig) return;
     this.appliedConfig = config;
@@ -56,7 +60,19 @@ export class YAMLConfigProvider {
     this.requiredFilters = [...new Set(requiredFilters)];
     this.specRequiredFilters = [...this.requiredFilters];
 
+    this.singleSelectFilters = Object.fromEntries(
+      singleSelectFilters.map((filter) => [filter, true]),
+    );
+
     this.events.emit("update");
+  }
+
+  /**
+   * Whether `name` is listed under `filters.single_select`.
+   * Compares to `true`, since a plain lookup also finds inherited properties like `constructor`.
+   */
+  public isSingleSelectFilter(name: string) {
+    return this.singleSelectFilters[name] === true;
   }
 
   public setEditable(newEditable: boolean) {

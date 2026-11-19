@@ -53,8 +53,8 @@ measures:
 # Inline explore configuration
 explore:
   display_name: Sales Dashboard
-  dimensions: '*'  # Optional: dimensions to expose ('*', a list, or {exclude: [...]}); defaults to all
-  measures: '*'    # Optional: measures to expose ('*', a list, or {exclude: [...]}); defaults to all
+  dimensions: "*" # Optional: dimensions to expose ('*', a list, or {exclude: [...]}); defaults to all
+  measures: "*" # Optional: measures to expose ('*', a list, or {exclude: [...]}); defaults to all
   time_ranges:
     - P7D
     - P30D
@@ -89,10 +89,10 @@ display_name: "Sales Performance"
 banner: "Data refreshes daily at 6 AM UTC"
 
 # Optional: which dimensions to expose (use '*' for all)
-dimensions: '*'
+dimensions: "*"
 
 # Optional: which measures to expose (use '*' for all)
-measures: '*'
+measures: "*"
 
 # Optional: customize the time range dropdown
 time_ranges:
@@ -111,11 +111,14 @@ defaults:
   filters: "region = 'EMEA'"
 
 # Optional: filters that always stay in the filter bar (pinned),
-# and filters that must have a value before the dashboard renders (required)
+# filters that must have a value before the dashboard renders (required),
+# and dimensions whose filter holds one value at a time (single_select)
 filters:
   pinned:
     - product_category
   required:
+    - region
+  single_select:
     - region
 
 # Optional: pin specific time zones to the top of the selector
@@ -143,6 +146,8 @@ security:
 
 Use `required` for filters that are unsafe or meaningless to omit (for example a tenant or customer scope), and pair it with a value in `defaults.filters` when the dashboard should open without prompting. These settings shape the dashboard only; use security policies on the metrics view to restrict the data a user can access.
 
+`filters.single_select` lists dimensions (not measures or time dimensions) whose filter holds one value at a time: picking a value replaces the current one, and the filter cannot exclude values or match on text. Combine it with `required` and a value in `defaults.filters` when the dashboard must always show exactly one value (for example one advertiser, when measures are wrong across several).
+
 All three also work in a metrics view's inline `explore:` block.
 
 ## Minimal stand-alone example
@@ -153,8 +158,8 @@ When a stand-alone file is warranted, a minimal explore is sufficient:
 type: explore
 metrics_view: sales_metrics
 display_name: "Sales Dashboard"
-dimensions: '*'
-measures: '*'
+dimensions: "*"
+measures: "*"
 ```
 
 ## Reference documentation

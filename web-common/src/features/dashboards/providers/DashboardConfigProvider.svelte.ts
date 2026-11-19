@@ -49,6 +49,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
           : {},
         exploreSpec.pinnedFilters ?? [],
         exploreSpec.requiredFilters ?? [],
+        exploreSpec.singleSelectFilters ?? [],
       );
     });
 
@@ -92,6 +93,7 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
           defaultFilters,
           canvasSpec.pinnedFilters ?? [],
           canvasSpec.requiredFilters ?? [],
+          canvasSpec.singleSelectFilters ?? [],
         );
       },
     );
