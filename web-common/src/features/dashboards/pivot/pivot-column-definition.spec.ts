@@ -101,6 +101,21 @@ describe("getColumnDefForPivot", () => {
     ]);
   });
 
+  it('labels the row-totals group "Grand Total" when a column value already reads "Total"', () => {
+    const defs = getColumnDefForPivot(
+      config({}),
+      { device: ["Desktop", "Total"] },
+      { impressions: 30, c0v0m0: 10, c0v1m0: 20 },
+    );
+
+    expect(headerTree(defs)).toStrictEqual([
+      ["Device", [["Country"]]],
+      ["Grand Total", [["Impressions"]]],
+      ["Desktop", [["Impressions"]]],
+      ["Total", [["Impressions"]]],
+    ]);
+  });
+
   it("leaves the row-totals group out when the totals column is hidden", () => {
     const defs = getColumnDefForPivot(
       config({ pivot: { showTotalsColumn: false } }),

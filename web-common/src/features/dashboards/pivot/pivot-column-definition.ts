@@ -136,6 +136,9 @@ function createColumnDefinitionForDimensions(
       .filter((column) => column.columns.length > 0);
   }
 
+  // Start the recursion
+  const nestedColumns = createNestedColumns(0, {});
+
   // Construct column def for Row Totals
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
   if (
@@ -150,6 +153,13 @@ function createColumnDefinitionForDimensions(
       ...leaf,
       meta: { ...leaf.meta, isRowTotal: true },
     }));
+    // A column dimension value can itself read "Total".
+    // The totals then take the longer label, so the two groups can be told apart.
+    const totalsHeader = nestedColumns.some(
+      (column) => column.header === m.pivot_totals_column_header(),
+    )
+      ? m.pivot_grand_total_column_header()
+      : m.pivot_totals_column_header();
     // The totals get one group per column dimension, so they sit under the same header rows as the other columns.
     // Only the outermost group is labeled:
     // the header rows have no lines between them, so the label reads as one header spanning all levels.
@@ -158,16 +168,13 @@ function createColumnDefinitionForDimensions(
 
       const headColumn = {
         id: name,
-        header: i === 0 ? m.pivot_totals_column_header() : "",
+        header: i === 0 ? totalsHeader : "",
         columns: acc,
       };
 
       return [headColumn];
     }, totalsLeafData);
   }
-
-  // Start the recursion
-  const nestedColumns = createNestedColumns(0, {});
 
   return [...rowTotalsColumns, ...nestedColumns];
 }

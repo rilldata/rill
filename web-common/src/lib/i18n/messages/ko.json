@@ -1814,6 +1814,7 @@
   "pivot_drop_split_hint": "놓아서 바꾸기",
   "pivot_drop_split_text": "여기에 놓아 분할: <strong>{dimCount}</strong>개 {dimLabel} → 행, <strong>{measureCount}</strong>개 {measureLabel} → 열",
   "pivot_expand_row": "행 펼치기",
+  "pivot_grand_total_column_header": "총합계",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

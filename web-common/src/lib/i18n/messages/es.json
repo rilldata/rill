@@ -1823,6 +1823,7 @@
   "pivot_drop_split_hint": "Soltar para reemplazar",
   "pivot_drop_split_text": "Soltar aquí para dividir: <strong>{dimCount}</strong> {dimLabel} → filas, <strong>{measureCount}</strong> {measureLabel} → columnas",
   "pivot_expand_row": "Expandir fila",
+  "pivot_grand_total_column_header": "Total general",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
