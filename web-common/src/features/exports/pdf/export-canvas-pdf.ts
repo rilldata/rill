@@ -43,7 +43,9 @@ export async function exportCanvasPdf(
         onProgress: (ratio) => opts.onProgress?.({ phase: "capturing", ratio }),
       });
 
-    if (!blocks.length) {
+    // Blocks whose capture failed carry no image, and a PDF of nothing but
+    // their notes isn't an export.
+    if (!blocks.some((block) => block.dataUrl)) {
       throw new Error("Nothing to export on this canvas.");
     }
 

@@ -22,6 +22,7 @@ import {
 import { marked, type Token, type Tokens } from "marked";
 import { get } from "svelte/store";
 import type { MeasuredBlock } from "../pdf/capture";
+import { CAPTURE_FAILED_NOTE } from "../rasterize";
 import { hasNativeChart, mapChart } from "./chart-mapping";
 import type { WorkbookHeader } from "./header";
 import { excelNumberFormat, PERCENT_FORMAT } from "./number-format";
@@ -315,10 +316,18 @@ async function blockFor(
     dataSheets.push(toDataSheet(id, sheetTitle || component.id, table));
     return id;
   };
-  const imageOr = (fallback: string): WorkbookBlock["content"] =>
-    image
-      ? { case: "image", value: new WorkbookImageBlock({ png: image }) }
-      : note(fallback);
+  // The block's snapshot. A block that is exported as one and has none lost it
+  // to a failed capture, and says so; any other block shows the fallback.
+  const imageOr = (fallback: string): WorkbookBlock["content"] => {
+    if (image) {
+      return { case: "image", value: new WorkbookImageBlock({ png: image }) };
+    }
+    return note(
+      needsImage(component, payload, input.chartMode)
+        ? CAPTURE_FAILED_NOTE
+        : fallback,
+    );
+  };
 
   if (!payload) {
     return { title, subtitle, content: imageOr("No data") };

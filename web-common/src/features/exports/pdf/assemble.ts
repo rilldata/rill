@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import chroma from "chroma-js";
 import { resolveCSSVariable } from "@rilldata/web-common/features/components/charts/util";
+import { CAPTURE_FAILED_NOTE } from "../rasterize";
 import type { PaginationResult, Placement } from "./layout";
 
 export interface AssembleMeta {
@@ -22,14 +23,14 @@ const TITLE_FONT_SIZE_PT = 13;
 // title text plus a gap before the content. Passed to paginate() as titleReservePt.
 export const TITLE_BAND_PT = 30;
 
-// PDF chrome (title, footer) colors, pulled from the app's theme tokens so the
+// PDF chrome (title, footer, notes) colors, pulled from the app's theme tokens so the
 // export matches the UI. The RGB fallbacks apply when the variable can't be
 // resolved (e.g. in a non-browser test environment).
 const TITLE_COLOR = {
   cssVar: "var(--fg-primary)",
   fallback: { r: 31, g: 35, b: 41 },
 };
-const FOOTER_TEXT_COLOR = {
+const MUTED_COLOR = {
   cssVar: "var(--fg-muted)",
   fallback: { r: 120, g: 120, b: 120 },
 };
@@ -38,11 +39,24 @@ const FOOTER_LINK_COLOR = {
   fallback: { r: 37, g: 99, b: 235 },
 };
 
+const NOTE_FONT_SIZE_PT = 8;
+const NOTE_PADDING_PT = 6;
+
 // Renders the paginated placements into a PDF and triggers a download.
 export async function assemblePdf(
   result: PaginationResult,
   meta: AssembleMeta,
 ): Promise<void> {
+  const doc = await renderPdf(result, meta);
+  doc.save(meta.filename);
+}
+
+// Draws the pages: the background, the title on the first page, each page's
+// placements and the footer.
+export async function renderPdf(
+  result: PaginationResult,
+  meta: AssembleMeta,
+): Promise<jsPDF> {
   const doc = new jsPDF({
     unit: "pt",
     format: [result.pageWidthPt, result.pageHeightPt],
@@ -80,7 +94,7 @@ export async function assemblePdf(
     drawFooter(doc, result, meta);
   }
 
-  doc.save(meta.filename);
+  return doc;
 }
 
 // Draws the dashboard title as vector text in the band reserved at the top of
@@ -126,7 +140,7 @@ function drawFooter(
   const linkText = "View in Rill";
 
   doc.setFontSize(8);
-  setTextColor(doc, FOOTER_TEXT_COLOR);
+  setTextColor(doc, MUTED_COLOR);
   doc.text(generatedText, contentLeftPt, yPt);
 
   const linkXPt =
@@ -140,14 +154,19 @@ function drawFooter(
   });
 }
 
-// Resolves a theme color token to RGB and applies it as the document's text
-// color, falling back to a fixed RGB when the token can't be resolved (e.g. in
-// a non-browser test environment).
-function setTextColor(
-  doc: jsPDF,
-  { cssVar, fallback }: { cssVar: string; fallback: RGB },
-): void {
-  const { r, g, b } = parseColor(resolveThemeColor(cssVar)) ?? fallback;
+interface ThemeColor {
+  cssVar: string;
+  fallback: RGB;
+}
+
+// Resolves a theme color token to RGB, falling back to a fixed RGB when the
+// token can't be resolved (e.g. in a non-browser test environment).
+function themeColor({ cssVar, fallback }: ThemeColor): RGB {
+  return parseColor(resolveThemeColor(cssVar)) ?? fallback;
+}
+
+function setTextColor(doc: jsPDF, color: ThemeColor): void {
+  const { r, g, b } = themeColor(color);
   doc.setTextColor(r, g, b);
 }
 
@@ -174,10 +193,14 @@ async function drawPlacement(
   imageCache: Map<string, HTMLImageElement>,
 ): Promise<void> {
   let dataUrl = placement.block.dataUrl;
+  if (!dataUrl) {
+    drawCaptureFailedNote(doc, placement);
+    return;
+  }
 
   // Sliced blocks: crop the source image to the requested vertical band.
   if (placement.srcHeightPx !== undefined && placement.srcYPx !== undefined) {
-    const img = await loadImage(placement.block.dataUrl, imageCache);
+    const img = await loadImage(dataUrl, imageCache);
     const ratio = img.naturalHeight / placement.block.heightPx;
     dataUrl = cropImage(
       img,
@@ -193,6 +216,24 @@ async function drawPlacement(
     placement.yPt,
     placement.wPt,
     placement.hPt,
+  );
+}
+
+// Outlines the place of a block whose capture failed and says so, so the page
+// shows that a widget is missing instead of an unexplained gap.
+function drawCaptureFailedNote(doc: jsPDF, placement: Placement): void {
+  const { r, g, b } = themeColor(MUTED_COLOR);
+  doc.setDrawColor(r, g, b);
+  doc.setLineWidth(0.5);
+  doc.rect(placement.xPt, placement.yPt, placement.wPt, placement.hPt, "S");
+
+  doc.setFontSize(NOTE_FONT_SIZE_PT);
+  doc.setTextColor(r, g, b);
+  doc.text(
+    CAPTURE_FAILED_NOTE,
+    placement.xPt + NOTE_PADDING_PT,
+    placement.yPt + NOTE_PADDING_PT + NOTE_FONT_SIZE_PT,
+    { maxWidth: Math.max(placement.wPt - 2 * NOTE_PADDING_PT, 1) },
   );
 }
 

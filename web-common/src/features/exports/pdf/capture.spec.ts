@@ -169,6 +169,50 @@ describe("captureCanvasBlocks", () => {
   it("probes without resolving web fonts", () => {
     expect(probeOptions.skipFonts).toBe(true);
   });
+
+  // A raster over the browser's canvas limits comes back as an empty data URL.
+  // The block keeps its place without an image, so the PDF can say a widget is
+  // missing there, and the other blocks are still captured.
+  it("keeps a block whose capture produced no image, without one", async () => {
+    const view = document.createElement("div");
+    view.id = "canvas-pdf-export-view";
+    view.dataset.instanceId = "inst";
+    view.dataset.canvasName = "failing";
+    view.innerHTML = `
+      <div class="row-container">
+        <section id="canvas-row-0">
+          <article id="fine" class="component-card"></article>
+          <article id="broken" class="component-card"></article>
+        </section>
+      </div>
+    `;
+    document.body.appendChild(view);
+    layOut(view.querySelector("#fine")!, { width: 400, height: 200 });
+    layOut(view.querySelector("#broken")!, {
+      left: 400,
+      width: 400,
+      height: 200,
+    });
+    vi.mocked(toJpeg)
+      .mockResolvedValueOnce("data:image/jpeg;base64,")
+      .mockResolvedValueOnce("data:,");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const { blocks } = await captureCanvasBlocks({
+      instanceId: "inst",
+      canvasName: "failing",
+      includeFilters: false,
+    });
+
+    expect(
+      blocks.map((b) => [b.id, b.dataUrl, b.xPx, b.widthPx]),
+    ).toStrictEqual([
+      ["fine", "data:image/jpeg;base64,", 0, 400],
+      ["broken", undefined, 400, 400],
+    ]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });
 
 describe("measureCanvasBlocks", () => {
@@ -183,6 +227,15 @@ describe("measureCanvasBlocks", () => {
         <article id="tab-a" class="component-card"></article>
       </section>
     `;
+    for (const target of captureTargetsIn(container)) layOut(target);
+    // The export render sits far off-screen; blocks are positioned within it.
+    layOut(container, { left: -99999, top: 40 });
+    layOut(container.querySelector("#free-a")!, {
+      left: -99989,
+      top: 50,
+      width: 580,
+      height: 300,
+    });
 
     const blocks = measureCanvasBlocks(container);
 
@@ -194,5 +247,81 @@ describe("measureCanvasBlocks", () => {
       ["tab-a", 2, false, "g", "overview"],
     ]);
     expect(blocks[0].element).toBe(container.querySelector("#free-a"));
+    expect(blocks[0]).toMatchObject({
+      xPx: 10,
+      yPx: 10,
+      widthPx: 580,
+      heightPx: 300,
+    });
+  });
+
+  // Canvas markdown can carry a <style> block, and the export render's rows and
+  // cards have the same ids as the dashboard's, so a rule that hides a widget
+  // on the dashboard hides it here too. Such a widget has nothing to capture
+  // (a zero-size raster is not an image) and must not show up in an export.
+  it("leaves out the targets the dashboard doesn't draw", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <section id="canvas-row-0">
+        <article id="shown" class="component-card"></article>
+        <article id="collapsed" class="component-card"></article>
+      </section>
+      <section id="canvas-row-1">
+        <article id="in-hidden-row" class="component-card"></article>
+      </section>
+      <section id="canvas-row-2">
+        <article id="no-height" class="component-card"></article>
+        <article id="invisible" class="component-card"></article>
+        <article id="transparent" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-hidden" class="pdf-tab-label-row"></section>
+      <section id="canvas-row-3">
+        <article id="after" class="component-card"></article>
+      </section>
+    `;
+    const el = (id: string) => container.querySelector<HTMLElement>(`#${id}`)!;
+    layOut(el("shown"));
+    layOut(el("after"));
+    // `width: 0; height: 0` on the card, and `display: none` on a row: no box.
+    layOut(el("collapsed"), { width: 0, height: 0 });
+    layOut(el("in-hidden-row"), { width: 0, height: 0 });
+    layOut(el("pdf-tab-label-g-hidden"), { width: 0, height: 0 });
+    // A card in a row too short for its padding: a width but no height.
+    layOut(el("no-height"), { width: 1180, height: 0 });
+    // `visibility: hidden` and `opacity: 0` keep the box. The browser reports
+    // them through checkVisibility, and only when asked to look at them.
+    layOut(el("invisible"));
+    el("invisible").checkVisibility = (options) => !options?.visibilityProperty;
+    layOut(el("transparent"));
+    el("transparent").checkVisibility = (options) => !options?.opacityProperty;
+
+    const blocks = measureCanvasBlocks(container);
+
+    // The blocks that remain keep the row they had.
+    expect(blocks.map((b) => [b.id, b.rowIndex])).toStrictEqual([
+      ["shown", 0],
+      ["after", 4],
+    ]);
   });
 });
+
+// jsdom has no layout: every element measures 0x0, which is how a browser
+// reports an element that isn't drawn. Gives an element the box a browser
+// would have laid out for it.
+function layOut(
+  element: Element,
+  box: { left?: number; top?: number; width?: number; height?: number } = {},
+): void {
+  const { left = 0, top = 0, width = 400, height = 200 } = box;
+  element.getBoundingClientRect = () =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+    }) as DOMRect;
+}
