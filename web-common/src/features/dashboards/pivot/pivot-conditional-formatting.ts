@@ -2,8 +2,16 @@ import {
   getDivergingColorsAsHex,
   getSequentialColorsAsHex,
 } from "@rilldata/web-common/features/themes/palette-store";
+import {
+  V1ExportCellRuleOperator,
+  type V1ExportConditionalFormat,
+} from "@rilldata/web-common/runtime-client";
 import chroma from "chroma-js";
-import type { PivotFormatRule, PivotMeasureFormatting } from "./types";
+import type {
+  PivotFormatRule,
+  PivotFormatRuleOperator,
+  PivotMeasureFormatting,
+} from "./types";
 
 /**
  * Conditional formatting color schemes available per measure. Theme-aware
@@ -183,11 +191,7 @@ export function makeCellFormatter(
     // Bar length is proportional to magnitude relative to the largest absolute
     // value, mirroring the leaderboard bar (LeaderboardRow.svelte).
     const absMax = Math.max(Math.abs(min), Math.abs(max)) || 1;
-    // Use the scheme's most saturated stop, lightened so right-aligned numbers
-    // stay legible over the bar.
-    const barColor = chroma(stops[stops.length - 1])
-      .luminance(0.72)
-      .hex();
+    const barColor = dataBarColor(stops);
     return (value: number) => {
       const pct = Math.min(100, (Math.abs(value) / absMax) * 100);
       return {
@@ -207,4 +211,88 @@ export function makeCellFormatter(
     color:
       scale(value).luminance() < LIGHT_TEXT_LUMINANCE ? "#ffffff" : "inherit",
   });
+}
+
+// The scheme's most saturated stop, lightened so right-aligned numbers stay
+// legible over the bar.
+function dataBarColor(stops: string[]): string {
+  return chroma(stops[stops.length - 1])
+    .luminance(0.72)
+    .hex("rgb");
+}
+
+const EXPORT_RULE_OPERATORS: Record<
+  PivotFormatRuleOperator,
+  V1ExportCellRuleOperator
+> = {
+  gt: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_GREATER_THAN,
+  gte: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL,
+  lt: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_LESS_THAN,
+  lte: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL,
+  eq: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_EQUAL,
+  between: V1ExportCellRuleOperator.EXPORT_CELL_RULE_OPERATOR_BETWEEN,
+};
+
+/**
+ * The Excel conditional formats that color a measure's cells in an export the
+ * way the dashboard colors them, with the theme's colors resolved. They are
+ * Excel's own color scales, data bars and cell rules, so the colors follow the
+ * values in the file. Excel interpolates a color scale between at most three
+ * colors, so a scheme with more stops is sampled at its ends and its middle,
+ * and it can't switch a color scale's text color on dark cells.
+ */
+export function toExportConditionalFormats(
+  fmt: PivotMeasureFormatting,
+  lowerIsBetter = false,
+): V1ExportConditionalFormat[] {
+  if (fmt.mode === "rules") {
+    // The YAML is hand-editable, so rules that wouldn't match a number on the
+    // dashboard either are left out.
+    return fmt.rules.flatMap((rule) => {
+      const operator = EXPORT_RULE_OPERATORS[rule.operator];
+      const value = Number(rule.value);
+      const upperValue =
+        rule.operator === "between" ? Number(rule.value2 ?? rule.value) : 0;
+      if (
+        !operator ||
+        !Number.isFinite(value) ||
+        !Number.isFinite(upperValue)
+      ) {
+        return [];
+      }
+      const { fill, text } = resolveRuleColor(rule.color);
+      return [
+        {
+          cellRule: {
+            operator,
+            value,
+            upperValue,
+            fillColor: chroma(fill).hex("rgb"),
+            // "inherit" keeps the cell's own text color.
+            textColor: chroma.valid(text) ? chroma(text).hex("rgb") : "",
+          },
+        },
+      ];
+    });
+  }
+
+  // As on the dashboard, data bars encode magnitude only, so direction
+  // doesn't apply to them.
+  const stops = getSchemeStops(
+    fmt.scheme,
+    fmt.mode === "heatmap" && lowerIsBetter,
+  );
+  if (fmt.mode === "data_bar") {
+    return [{ dataBar: { color: dataBarColor(stops) } }];
+  }
+  const scale = chroma.scale(stops);
+  return [
+    {
+      colorScale: {
+        minColor: scale(0).hex("rgb"),
+        midColor: stops.length > 2 ? scale(0.5).hex("rgb") : "",
+        maxColor: scale(1).hex("rgb"),
+      },
+    },
+  ];
 }

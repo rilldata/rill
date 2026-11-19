@@ -1,6 +1,7 @@
 package queries_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -14,11 +15,13 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
@@ -1243,6 +1246,120 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "Domain"))
+}
+
+func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	colorScale := &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_ColorScale{
+		ColorScale: &runtimev1.ExportColorScale{MinColor: "#f7fcf5", MidColor: "#74c476", MaxColor: "#00441b"},
+	}}
+	rule := &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_CellRule{
+		CellRule: &runtimev1.ExportCellRule{
+			Operator:  runtimev1.ExportCellRuleOperator_EXPORT_CELL_RULE_OPERATOR_GREATER_THAN,
+			Value:     3,
+			FillColor: "#c6efce",
+			TextColor: "#006100",
+		},
+	}}
+
+	tests := []struct {
+		name          string
+		pivotOn       []string
+		includeHeader bool
+		// Ranges by measure, from the first data row below the column headers to the last row.
+		want map[string]string
+	}{
+		{
+			name: "flat",
+			want: map[string]string{"measure_0": "C2:C%[1]d", "measure_1": "D2:D%[1]d"},
+		},
+		{
+			// Each month gets a column per measure, after the publisher.
+			name:    "pivot",
+			pivotOn: []string{"timestamp"},
+			want:    map[string]string{"measure_0": "B2:B%[1]d D2:D%[1]d F2:F%[1]d", "measure_1": "C2:C%[1]d E2:E%[1]d G2:G%[1]d"},
+		},
+		{
+			// The metadata lines above the table (title, filters and a blank line) push the column headers to row 4.
+			name:          "pivot with metadata",
+			pivotOn:       []string{"timestamp"},
+			includeHeader: true,
+			want:          map[string]string{"measure_0": "B5:B%[1]d D5:D%[1]d F5:F%[1]d", "measure_1": "C5:C%[1]d E5:E%[1]d G5:G%[1]d"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dims := []*runtimev1.MetricsViewAggregationDimension{{Name: "pub"}, {Name: "timestamp", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH}}
+			if tt.pivotOn == nil {
+				dims = dims[:1]
+				dims = append(dims, &runtimev1.MetricsViewAggregationDimension{Name: "dom"})
+			}
+			q := &queries.MetricsViewAggregation{
+				MetricsViewName: "ad_bids_metrics",
+				Dimensions:      dims,
+				Measures:        []*runtimev1.MetricsViewAggregationMeasure{{Name: "measure_0"}, {Name: "measure_1"}},
+				Sort:            []*runtimev1.MetricsViewAggregationSort{{Name: "pub"}},
+				PivotOn:         tt.pivotOn,
+				ConditionalFormats: []*runtimev1.MetricsViewAggregationConditionalFormat{
+					{Measure: "measure_0", Format: colorScale},
+					{Measure: "measure_1", Format: rule},
+					// Measures the query doesn't have are skipped.
+					{Measure: "measure_2", Format: colorScale},
+				},
+				SecurityClaims: testClaims(),
+			}
+			var buf bytes.Buffer
+			err := q.Export(t.Context(), rt, instanceID, &buf, &runtime.ExportOptions{
+				Format:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				IncludeHeader: tt.includeHeader,
+				PreWriteHook:  func(string) error { return nil },
+			})
+			require.NoError(t, err)
+
+			f, err := excelize.OpenReader(&buf)
+			require.NoError(t, err)
+			rows, err := f.GetRows("Sheet1")
+			require.NoError(t, err)
+			headerRow := 0
+			if tt.includeHeader {
+				headerRow = 3
+			}
+			require.Equal(t, "Publisher", rows[headerRow][0])
+			lastRow := len(rows)
+
+			formats, err := f.GetConditionalFormats("Sheet1")
+			require.NoError(t, err)
+			require.Len(t, formats, 2)
+			scale := formats[fmt.Sprintf(tt.want["measure_0"], lastRow)]
+			require.Len(t, scale, 1)
+			require.Equal(t, "3_color_scale", scale[0].Type)
+			require.Equal(t, "74C476", scale[0].MidColor)
+			cell := strings.SplitN(tt.want["measure_1"], ":", 2)[0]
+			rules := formats[fmt.Sprintf(tt.want["measure_1"], lastRow)]
+			require.Len(t, rules, 1)
+			require.Equal(t, "formula", rules[0].Type)
+			require.Equal(t, fmt.Sprintf("AND(ISNUMBER(%[1]s),%[1]s>3)", cell), rules[0].Criteria)
+			require.True(t, rules[0].StopIfTrue)
+		})
+	}
+
+	// Invalid formats are rejected before the query runs.
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions:      []*runtimev1.MetricsViewAggregationDimension{{Name: "pub"}},
+		Measures:        []*runtimev1.MetricsViewAggregationMeasure{{Name: "measure_0"}},
+		ConditionalFormats: []*runtimev1.MetricsViewAggregationConditionalFormat{{
+			Measure: "measure_0",
+			Format:  &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_DataBar{DataBar: &runtimev1.ExportDataBar{Color: "green"}}},
+		}},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Export(t.Context(), rt, instanceID, &bytes.Buffer{}, &runtime.ExportOptions{
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+		PreWriteHook: func(string) error { return nil },
+	})
+	require.ErrorContains(t, err, `invalid conditional format for measure "measure_0"`)
 }
 
 func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {

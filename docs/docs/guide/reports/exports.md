@@ -46,7 +46,7 @@ Exports are available from:
 
 - Leaderboards: expand a leaderboard in Explore and select Export on the top right
 - Time Dimension Detail: after choosing a comparison, select Export on the time series chart
-- Pivot Tables: _coming soon_ 
+- Pivot Tables: select Export above the pivot table. Excel files keep the pivot's conditional formatting (heatmaps, data bars and rules) as Excel conditional formatting, so the colors follow the values in the file.
 
 ## How to Schedule an Email Report
 

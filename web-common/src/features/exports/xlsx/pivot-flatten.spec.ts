@@ -84,18 +84,26 @@ describe("leafColumns", () => {
     ] as ColumnDef<PivotDataRow>[];
 
     expect(leafColumns(defs)).toStrictEqual([
-      { key: "country", groups: [], header: "Country", measure: undefined },
+      {
+        key: "country",
+        groups: [],
+        header: "Country",
+        measure: undefined,
+        formattedMeasure: undefined,
+      },
       {
         key: "impressions",
         groups: ["Total"],
         header: "Impressions",
         measure: undefined,
+        formattedMeasure: undefined,
       },
       {
         key: "mobile_impressions",
         groups: ["Mobile"],
         header: "Impressions",
         measure: undefined,
+        formattedMeasure: undefined,
       },
     ]);
   });
@@ -209,6 +217,78 @@ describe("flattenPivotData", () => {
     ]);
     expect(table.rows).toStrictEqual([["US", 117.50599999999999, -3, 0.5]]);
     expect(table.totals).toBeUndefined();
+  });
+
+  it("applies a measure's conditional formatting to its value columns only", () => {
+    // As on the dashboard, the columns that show a measure's values carry its
+    // formatting in their meta; comparison columns and the row totals don't.
+    const formatted = (measureName: string, isRowTotal = false) => ({
+      measureName,
+      conditionalFormat: { mode: "heatmap", scheme: "greens" },
+      isRowTotal,
+    });
+    const nestedDefs = [
+      { id: "country", accessorFn: () => null, header: "Country" },
+      ...["Mobile", "Desktop"].map((device, v) => ({
+        header: device,
+        columns: [
+          {
+            accessorKey: `c0v${v}m0`,
+            header: "Impressions",
+            name: "impressions",
+            meta: formatted("impressions"),
+          },
+          {
+            accessorKey: `c0v${v}m1`,
+            header: "Δ",
+            name: "impressions__delta_abs",
+            meta: { measureName: "impressions" },
+          },
+        ],
+      })),
+      {
+        header: "",
+        columns: [
+          {
+            accessorKey: "impressions",
+            header: "Impressions",
+            name: "impressions",
+            meta: formatted("impressions", true),
+          },
+        ],
+      },
+    ] as unknown as ColumnDef<PivotDataRow>[];
+    const table = flattenPivotData(
+      state(nestedDefs, [
+        { country: "US", c0v0m0: 1, c0v0m1: 0, c0v1m0: 2, impressions: 3 },
+      ]),
+      config({
+        colDimensionNames: ["device"],
+        pivot: {
+          expanded: {},
+          measureFormatting: {
+            impressions: { mode: "heatmap", scheme: "greens" },
+            ctr: {
+              mode: "rules",
+              rules: [{ operator: "gt", value: 0.5, color: "positive" }],
+            },
+          },
+        } as unknown as PivotDataStoreConfig["pivot"],
+      }),
+    );
+    // The CTR has formatting but no columns in the table, so it gets no format.
+    expect(table.conditionalFormats).toEqual([
+      {
+        columns: ["c0v0m0", "c0v1m0"],
+        format: {
+          colorScale: {
+            minColor: "#f7fcf5",
+            midColor: "#74c476",
+            maxColor: "#00441b",
+          },
+        },
+      },
+    ]);
   });
 
   it("labels nested time row headers and types flat time columns", () => {

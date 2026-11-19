@@ -15,6 +15,7 @@ import {
   type PivotDataState,
   type PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { toExportConditionalFormats } from "@rilldata/web-common/features/dashboards/pivot/pivot-conditional-formatting";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { ColumnDef, ExpandedState } from "tanstack-table-8-svelte-5";
@@ -25,7 +26,11 @@ import {
   localIsoInZone,
   timeColumnType,
 } from "./time-format";
-import type { ExportColumn, ExportTable } from "./payload";
+import type {
+  ExportColumn,
+  ExportTable,
+  ExportTableConditionalFormat,
+} from "./payload";
 
 interface LeafColumn {
   // The row field the column reads: a measure or dimension name, or a cell
@@ -37,6 +42,10 @@ interface LeafColumn {
   // The measure the column shows, with its comparison suffix if it has one;
   // undefined for dimension columns.
   measure?: string;
+  // The measure whose conditional formatting colors the column. As on the
+  // dashboard, only a measure's value columns have it, not its comparison
+  // columns or the row totals.
+  formattedMeasure?: string;
 }
 
 // Turns the pivot's rendered state into a flat table: the leaf columns of the
@@ -77,16 +86,42 @@ export function flattenPivotData(
     );
 
   const rows = visible.map(({ row, depth }) => toCells(row, depth));
+  const conditionalFormats = tableConditionalFormats(leaves, config);
   const totals = state.totalsRowData;
   if (!totals || config.pivot.showTotalsRow === false) {
-    return { columns, rows };
+    return { columns, rows, conditionalFormats };
   }
   return {
     columns,
     rows,
     totals: toCells(totalsRow(totals, leaves), 0),
     totalsLast: config.pivot.totalsRowPosition === "bottom",
+    conditionalFormats,
   };
+}
+
+// The conditional formatting of the table's measures. A measure's format spans
+// its value columns under every column dimension value, which share one color
+// domain on the dashboard.
+function tableConditionalFormats(
+  leaves: LeafColumn[],
+  config: PivotDataStoreConfig,
+): ExportTableConditionalFormat[] {
+  return Object.entries(config.pivot.measureFormatting ?? {}).flatMap(
+    ([measureName, fmt]) => {
+      const columns = leaves
+        .filter((leaf) => leaf.formattedMeasure === measureName)
+        .map((leaf) => leaf.key);
+      if (!columns.length) return [];
+      const lowerIsBetter =
+        config.allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
+        false;
+      return toExportConditionalFormats(fmt, lowerIsBetter).map((format) => ({
+        columns,
+        format,
+      }));
+    },
+  );
 }
 
 // The leaf columns in display order, each with the headers of the groups above
@@ -112,7 +147,12 @@ export function leafColumns(
     // Measure leaves carry the measure's name (see pivot-column-definition.ts),
     // which their key no longer holds under column dimensions.
     const measure = (def as { name?: string }).name;
-    return [{ key, groups, header: header || key, measure }];
+    const meta = def.meta;
+    const formattedMeasure =
+      meta?.conditionalFormat && !meta.isRowTotal
+        ? meta.measureName
+        : undefined;
+    return [{ key, groups, header: header || key, measure, formattedMeasure }];
   });
 }
 

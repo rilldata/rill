@@ -15,13 +15,26 @@ import (
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 	"github.com/xuri/excelize/v2"
 )
 
 const maxParquetRowGroupSize = 512 * int64(datasize.MB)
 
-func ResultToFile(res *drivers.Result, fw io.Writer, format drivers.FileFormat, headers []string) error {
+// XLSXConditionalFormat is a conditional format that an XLSX file applies to the data cells of some of its columns.
+type XLSXConditionalFormat struct {
+	// Column is the 0-based index of the first column the format applies to.
+	Column int
+	// Stride, if positive, also applies the format to every Stride-th column after Column,
+	// like the columns of a measure in a pivot, which repeat once per pivoted value.
+	Stride int
+	Format *runtimev1.ExportConditionalFormat
+}
+
+// ResultToFile writes a result to fw in the given format.
+// headers are lines written above the result in CSV and XLSX files; conditionalFormats only apply to XLSX files.
+func ResultToFile(res *drivers.Result, fw io.Writer, format drivers.FileFormat, headers []string, conditionalFormats []XLSXConditionalFormat) error {
 	switch format {
 	case drivers.FileFormatParquet:
 		return writeParquet(res, fw)
@@ -30,7 +43,7 @@ func ResultToFile(res *drivers.Result, fw io.Writer, format drivers.FileFormat, 
 	case drivers.FileFormatJSON:
 		return errors.New("json file output not currently supported")
 	case drivers.FileFormatXLSX:
-		return writeXLSX(res, fw, headers)
+		return writeXLSX(res, fw, headers, conditionalFormats)
 	default:
 		return fmt.Errorf("unsupported output format %q", format)
 	}
@@ -113,11 +126,12 @@ func writeCSV(res *drivers.Result, fw io.Writer, headers []string) error {
 	return nil
 }
 
-func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
+func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalFormats []XLSXConditionalFormat) error {
 	xf := excelize.NewFile()
 	defer func() { _ = xf.Close() }()
 
-	sw, err := xf.NewStreamWriter("Sheet1")
+	const sheet = "Sheet1"
+	sw, err := xf.NewStreamWriter(sheet)
 	if err != nil {
 		return err
 	}
@@ -148,6 +162,7 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
 		return err
 	}
 	idx++
+	firstDataRow := idx
 
 	vals := make([]any, len(res.Schema.Fields))
 	for i := range vals {
@@ -204,6 +219,28 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
 	}
 	if res.Err() != nil {
 		return res.Err()
+	}
+
+	// The stream writer writes the sheet's conditional formats when it is flushed.
+	if lastDataRow := idx - 1; lastDataRow >= firstDataRow {
+		for _, cf := range conditionalFormats {
+			step := cf.Stride
+			if step <= 0 {
+				// Only the first column.
+				step = len(res.Schema.Fields)
+			}
+			var ranges []string
+			for col := cf.Column; col < len(res.Schema.Fields); col += step {
+				name, err := excelize.ColumnNumberToName(col + 1)
+				if err != nil {
+					return err
+				}
+				ranges = append(ranges, fmt.Sprintf("%s%d:%s%d", name, firstDataRow, name, lastDataRow))
+			}
+			if err := conditionalformat.Apply(xf, sheet, ranges, "", cf.Format); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := sw.Flush(); err != nil {

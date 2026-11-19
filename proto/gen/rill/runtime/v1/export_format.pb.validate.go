@@ -34,3 +34,551 @@ var (
 	_ = anypb.Any{}
 	_ = sort.Sort
 )
+
+// Validate checks the field values on ExportConditionalFormat with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ExportConditionalFormat) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportConditionalFormat with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportConditionalFormatMultiError, or nil if none found.
+func (m *ExportConditionalFormat) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportConditionalFormat) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Format.(type) {
+	case *ExportConditionalFormat_ColorScale:
+		if v == nil {
+			err := ExportConditionalFormatValidationError{
+				field:  "Format",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColorScale()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "ColorScale",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "ColorScale",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColorScale()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportConditionalFormatValidationError{
+					field:  "ColorScale",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *ExportConditionalFormat_DataBar:
+		if v == nil {
+			err := ExportConditionalFormatValidationError{
+				field:  "Format",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetDataBar()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "DataBar",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "DataBar",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDataBar()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportConditionalFormatValidationError{
+					field:  "DataBar",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *ExportConditionalFormat_CellRule:
+		if v == nil {
+			err := ExportConditionalFormatValidationError{
+				field:  "Format",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetCellRule()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "CellRule",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportConditionalFormatValidationError{
+						field:  "CellRule",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetCellRule()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportConditionalFormatValidationError{
+					field:  "CellRule",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return ExportConditionalFormatMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportConditionalFormatMultiError is an error wrapping multiple validation
+// errors returned by ExportConditionalFormat.ValidateAll() if the designated
+// constraints aren't met.
+type ExportConditionalFormatMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportConditionalFormatMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportConditionalFormatMultiError) AllErrors() []error { return m }
+
+// ExportConditionalFormatValidationError is the validation error returned by
+// ExportConditionalFormat.Validate if the designated constraints aren't met.
+type ExportConditionalFormatValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportConditionalFormatValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportConditionalFormatValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportConditionalFormatValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportConditionalFormatValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportConditionalFormatValidationError) ErrorName() string {
+	return "ExportConditionalFormatValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExportConditionalFormatValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportConditionalFormat.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportConditionalFormatValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportConditionalFormatValidationError{}
+
+// Validate checks the field values on ExportColorScale with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExportColorScale) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportColorScale with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportColorScaleMultiError, or nil if none found.
+func (m *ExportColorScale) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportColorScale) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MinColor
+
+	// no validation rules for MidColor
+
+	// no validation rules for MaxColor
+
+	if len(errors) > 0 {
+		return ExportColorScaleMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportColorScaleMultiError is an error wrapping multiple validation errors
+// returned by ExportColorScale.ValidateAll() if the designated constraints
+// aren't met.
+type ExportColorScaleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportColorScaleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportColorScaleMultiError) AllErrors() []error { return m }
+
+// ExportColorScaleValidationError is the validation error returned by
+// ExportColorScale.Validate if the designated constraints aren't met.
+type ExportColorScaleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportColorScaleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportColorScaleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportColorScaleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportColorScaleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportColorScaleValidationError) ErrorName() string { return "ExportColorScaleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportColorScaleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportColorScale.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportColorScaleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportColorScaleValidationError{}
+
+// Validate checks the field values on ExportDataBar with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportDataBar) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportDataBar with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportDataBarMultiError, or
+// nil if none found.
+func (m *ExportDataBar) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportDataBar) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Color
+
+	if len(errors) > 0 {
+		return ExportDataBarMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportDataBarMultiError is an error wrapping multiple validation errors
+// returned by ExportDataBar.ValidateAll() if the designated constraints
+// aren't met.
+type ExportDataBarMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportDataBarMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportDataBarMultiError) AllErrors() []error { return m }
+
+// ExportDataBarValidationError is the validation error returned by
+// ExportDataBar.Validate if the designated constraints aren't met.
+type ExportDataBarValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportDataBarValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportDataBarValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportDataBarValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportDataBarValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportDataBarValidationError) ErrorName() string { return "ExportDataBarValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportDataBarValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportDataBar.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportDataBarValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportDataBarValidationError{}
+
+// Validate checks the field values on ExportCellRule with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportCellRule) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportCellRule with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportCellRuleMultiError,
+// or nil if none found.
+func (m *ExportCellRule) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportCellRule) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Operator
+
+	// no validation rules for Value
+
+	// no validation rules for UpperValue
+
+	// no validation rules for FillColor
+
+	// no validation rules for TextColor
+
+	if len(errors) > 0 {
+		return ExportCellRuleMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportCellRuleMultiError is an error wrapping multiple validation errors
+// returned by ExportCellRule.ValidateAll() if the designated constraints
+// aren't met.
+type ExportCellRuleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportCellRuleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportCellRuleMultiError) AllErrors() []error { return m }
+
+// ExportCellRuleValidationError is the validation error returned by
+// ExportCellRule.Validate if the designated constraints aren't met.
+type ExportCellRuleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportCellRuleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportCellRuleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportCellRuleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportCellRuleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportCellRuleValidationError) ErrorName() string { return "ExportCellRuleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportCellRuleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportCellRule.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportCellRuleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportCellRuleValidationError{}

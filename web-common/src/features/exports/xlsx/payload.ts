@@ -13,6 +13,7 @@ import type { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/run
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
+  V1ExportConditionalFormat,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -94,4 +95,14 @@ export interface ExportTable {
   // True when the source has more rows than the table holds (the component
   // had not loaded them, or the export's row cap trimmed them).
   moreRows?: boolean;
+  // The table's conditional formatting, in priority order; see
+  // WorkbookDataSheet.conditional_formats.
+  conditionalFormats?: ExportTableConditionalFormat[];
+}
+
+// A conditional format over some of a table's columns, by name. A color scale
+// or data bar spans all of them, like a measure's columns in a pivot.
+export interface ExportTableConditionalFormat {
+  columns: string[];
+  format: V1ExportConditionalFormat;
 }

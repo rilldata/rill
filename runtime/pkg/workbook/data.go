@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -105,6 +107,25 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		}
 	}
 
+	// The stream writer writes the sheet's conditional formats when it is flushed.
+	// They cover the data rows, below the header and above the totals row.
+	for _, cf := range ds.ConditionalFormats {
+		if len(ds.Rows) == 0 {
+			break
+		}
+		var ranges []string
+		for _, j := range formatColumns(ds, cf) {
+			r, err := cellRange(j+1, 2, len(ds.Rows))
+			if err != nil {
+				return err
+			}
+			ranges = append(ranges, r)
+		}
+		if err := conditionalformat.Apply(w.f, name, ranges, "", cf.Format); err != nil {
+			return err
+		}
+	}
+
 	// An Excel table needs at least one data row.
 	if n := len(ds.Rows); n > 0 {
 		lastCell, err := excelize.CoordinatesToCellName(len(ds.Columns), n+1)
@@ -122,6 +143,30 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		}
 	}
 	return sw.Flush()
+}
+
+// formatColumns returns the 0-based indexes of the columns a conditional format applies to, left to right.
+func formatColumns(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookConditionalFormat) []int {
+	var res []int
+	for j, c := range ds.Columns {
+		if slices.Contains(cf.Columns, c.Name) {
+			res = append(res, j)
+		}
+	}
+	return res
+}
+
+// cellRange returns the range of rows cells down a grid column (1-based) from firstRow, like "B2:B10".
+func cellRange(col, firstRow, rows int) (string, error) {
+	from, err := excelize.CoordinatesToCellName(col, firstRow)
+	if err != nil {
+		return "", err
+	}
+	to, err := excelize.CoordinatesToCellName(col, firstRow+rows-1)
+	if err != nil {
+		return "", err
+	}
+	return from + ":" + to, nil
 }
 
 // rowValue returns the value of a row in the given column, or nil when the row is shorter.

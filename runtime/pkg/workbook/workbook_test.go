@@ -81,6 +81,10 @@ func testRequest(t *testing.T) *runtimev1.CanvasWorkbookExportRequest {
 					row(t, "Display", 43196497, true, "2026-03-31T13:31:01Z"),
 					row(t, "Video", "1641148", "false", "2026-03-30T00:00:00"),
 				},
+				ConditionalFormats: []*runtimev1.WorkbookConditionalFormat{{
+					Columns: []string{"impressions"},
+					Format:  &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_DataBar{DataBar: &runtimev1.ExportDataBar{Color: "#638ec6"}}},
+				}},
 			},
 			{
 				Id:      "empty",
@@ -220,6 +224,13 @@ func TestWrite(t *testing.T) {
 		require.Equal(t, "FALSE", cell(lines, "C3"))
 		require.Equal(t, "2026-03-30 00:00:00", cell(lines, "D3"))
 
+		// The conditional format covers the column's data rows.
+		formats, err := f.GetConditionalFormats(lines)
+		require.NoError(t, err)
+		require.Len(t, formats["B2:B3"], 1)
+		require.Equal(t, "data_bar", formats["B2:B3"][0].Type)
+		require.Equal(t, "638EC6", formats["B2:B3"][0].BarColor)
+
 		// A sheet without rows keeps its header but gets no table.
 		require.Equal(t, "a", cell("Data - Empty", "A1"))
 		tables, err = f.GetTables("Data - Empty")
@@ -289,6 +300,12 @@ func TestWrite(t *testing.T) {
 		banded, err := f.GetStyle(first)
 		require.NoError(t, err)
 		require.Equal(t, []string{"D9E1F2"}, banded.Fill.Color)
+		// The preview's numbers get the data sheet's conditional format, scaled to the full sheet.
+		formats, err := f.GetConditionalFormats(dashboard)
+		require.NoError(t, err)
+		require.Len(t, formats["D38:D39"], 1)
+		require.Equal(t, "data_bar", formats["D38:D39"][0].Type)
+		require.Equal(t, "MAX('Data - Line items'!$B$2:$B$3)", formats["D38:D39"][0].MaxValue)
 		require.Equal(t, "Full data: Data - Line items (2 rows)", cell(dashboard, "A40"))
 		ok, link, err := f.GetCellHyperLink(dashboard, "A40")
 		require.NoError(t, err)
@@ -543,6 +560,14 @@ func TestWriteTotalsAndRowFormats(t *testing.T) {
 	require.Equal(t, "Display", cell(dashboard, "A12"))
 	require.Equal(t, "Full data: Data - Line items (2 rows)", cell(dashboard, "A14"))
 
+	// Conditional formats leave the totals row out, on the data sheet and in the preview.
+	formats, err := f.GetConditionalFormats(lines)
+	require.NoError(t, err)
+	require.Contains(t, formats, "B2:B3")
+	formats, err = f.GetConditionalFormats(dashboard)
+	require.NoError(t, err)
+	require.Contains(t, formats, "D12:D13")
+
 	// A row's format applies to number columns without a format of their own; the rest keep theirs.
 	const kpis = "Data - KPIs"
 	require.Equal(t, "$1,234.50", cell(kpis, "B2"))
@@ -730,6 +755,20 @@ func TestValidate(t *testing.T) {
 				req.DashboardSheets[0].Blocks[0].Geometry.YPx = maxBlockYPx + 1
 			},
 			want: "beyond the edge of the sheet",
+		},
+		{
+			name: "conditional format of an unknown column",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DataSheets[1].ConditionalFormats[0].Columns = []string{"clicks"}
+			},
+			want: `references unknown column "clicks"`,
+		},
+		{
+			name: "conditional format with a bad color",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DataSheets[1].ConditionalFormats[0].Format.GetDataBar().Color = "blue"
+			},
+			want: `color "blue" is not a hex RGB color`,
 		},
 		{
 			name:   "duplicate data sheet id",

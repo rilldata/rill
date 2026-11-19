@@ -7,6 +7,7 @@ import (
 	"image/png"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 )
 
 // Caps on the size of a request.
@@ -62,6 +63,7 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 
 	dataSheets := make(map[string]*runtimev1.WorkbookDataSheet, len(req.DataSheets))
 	cells := 0
+	conditionalFormats := 0
 	for _, ds := range req.DataSheets {
 		if ds.Id == "" {
 			return validationErrorf("data sheet %q has no id", ds.Title)
@@ -99,6 +101,23 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 		}
 		if len(ds.RowNumberFormats) > len(ds.Rows) {
 			return validationErrorf("data sheet %q has %d row number formats but %d rows", ds.Title, len(ds.RowNumberFormats), len(ds.Rows))
+		}
+		conditionalFormats += len(ds.ConditionalFormats)
+		if conditionalFormats > conditionalformat.MaxFormats {
+			return validationErrorf("the data sheets have more than %d conditional formats", conditionalformat.MaxFormats)
+		}
+		for _, cf := range ds.ConditionalFormats {
+			if len(cf.Columns) == 0 {
+				return validationErrorf("a conditional format of data sheet %q has no columns", ds.Title)
+			}
+			for _, c := range cf.Columns {
+				if !names[c] {
+					return validationErrorf("a conditional format of data sheet %q references unknown column %q", ds.Title, c)
+				}
+			}
+			if err := conditionalformat.Validate(cf.Format); err != nil {
+				return validationErrorf("data sheet %q: %v", ds.Title, err)
+			}
 		}
 		cells += len(ds.Rows) * len(ds.Columns)
 		if ds.Totals != nil {
