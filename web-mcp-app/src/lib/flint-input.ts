@@ -263,7 +263,7 @@ export function comparisonChannel(
   if (!fold) return undefined;
   const taken = (channel: string) =>
     encodingFields(chartSpec.encodings?.[channel]).length > 0;
-  // A grouped bar chart has no color channel, so a colored bar chart cannot become one.
+  // A grouped bar chart draws one series, here the periods, so a colored bar chart cannot become one.
   if (taken(fold.channel) || (fold.channel === "group" && taken("color"))) {
     return undefined;
   }

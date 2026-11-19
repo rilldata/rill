@@ -5,7 +5,13 @@ import { getEmbedHostConfig } from "./config.ts";
  * Their emails are suffixed variants of the e2e admin's email (or `EMBED_EMAIL` in `.env.test`), so Mailpit catches them,
  * but they don't match any project member.
  */
-export type EmbedUserKey = "none" | "alice" | "bob" | "carol" | "admin";
+export type EmbedUserKey =
+  | "none"
+  | "alice"
+  | "bob"
+  | "carol"
+  | "admin"
+  | "no-email";
 
 export type EmbedUser = {
   key: EmbedUserKey;
@@ -26,6 +32,7 @@ export function getEmbedUsers(): EmbedUser[] {
   const bob = withSuffix(getBaseEmail(), "embed-b");
   const carol = withSuffix(getBaseEmail(), "embed-c");
   const admin = withSuffix(getBaseEmail(), "embed-admin");
+  const noEmail = withSuffix(getBaseEmail(), "embed-no-email");
   users = [
     { key: "none", label: "No user", email: "" },
     {
@@ -41,6 +48,12 @@ export function getEmbedUsers(): EmbedUser[] {
       label: "Admin",
       email: admin,
       attributes: { email: admin, admin: true },
+    },
+    {
+      key: "no-email",
+      label: "No email",
+      email: noEmail,
+      passUserEmail: false,
     },
   ];
   return users;

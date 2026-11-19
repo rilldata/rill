@@ -368,6 +368,9 @@ message MetricsViewSpec {
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
   repeated Measure measures = 7;
+  // Display order of the tags set on dimensions and measures.
+  // Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+  repeated string tag_order = 39;
   // Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
   FieldSelector parent_dimensions = 31;
   // Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
@@ -499,7 +502,16 @@ message ExploreSpec {
   // The values should be valid IANA location identifiers.
   repeated string time_zones = 10;
   // Preset UI state to show by default.
+  // Its `where` holds the default filter, parsed from `defaults.filters`.
   ExplorePreset default_preset = 15;
+  // Dimension or measure names whose filter chip is always shown in the filter bar.
+  repeated string pinned_filters = 24;
+  // Dimension or measure names that must have a filter value before the explore renders.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 25;
+  // Dimensions whose filter holds at most one value at a time.
+  // Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+  repeated string single_select_filters = 23;
   // If true, the pivot tab will be hidden when the explore is embedded.
   bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
@@ -972,6 +984,9 @@ message CanvasSpec {
   // Array of dimension or measure names that must have a value before the canvas can render.
   // Required filters are implicitly pinned.
   repeated string required_filters = 19;
+  // Array of dimension names whose filter holds at most one value at a time.
+  // Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+  repeated string single_select_filters = 22;
   // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   map<string, string> annotations = 20;
   // Suggested prompts configured by the project author, shown as starters in the AI chat.

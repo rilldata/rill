@@ -47,15 +47,17 @@ export function hasTemplatingSyntax(content: string): boolean {
   return /\{\{[\s\S]*?\}\}/.test(content);
 }
 
+// A measure value the runtime wraps for formatting when `apply_formatting` is on;
+// see runtime/resolvers/text.go.
+const FORMAT_TOKEN = /__RILL__FORMAT__\(([^)]+)\)/g;
+
 export function formatResolvedContent(
   text: string,
   metricsViews: Record<string, V1MetricsView | undefined>,
 ): string {
   if (!text) return text;
 
-  const formatPattern = /__RILL__FORMAT__\(([^)]+)\)/g;
-
-  return text.replace(formatPattern, (fullMatch, tokenContent: string) => {
+  return text.replace(FORMAT_TOKEN, (fullMatch, tokenContent: string) => {
     try {
       const trimmed = tokenContent.trim();
       const {
@@ -93,6 +95,21 @@ export function formatResolvedContent(
 
       const formatter = createMeasureValueFormatter(measure);
       return formatter(numericValue);
+    } catch {
+      return fullMatch;
+    }
+  });
+}
+
+// Replaces each format token with the raw value it wraps,
+// so exported data keeps the full precision the formatted text rounds away.
+export function unformatResolvedContent(text: string): string {
+  return text.replace(FORMAT_TOKEN, (fullMatch, tokenContent: string) => {
+    try {
+      const { value } = JSON.parse(tokenContent.trim()) as {
+        value: number | string | null;
+      };
+      return value === null ? "" : String(value);
     } catch {
       return fullMatch;
     }

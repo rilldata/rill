@@ -46,7 +46,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare a range of dates with one click.
 
-- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
+- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`). A dashboard can open with a default filter already applied, and its author can [pin or require filters](/guide/dashboards/filters#pinned-and-required-filters): a required filter needs a value before the dashboard loads.
 
 - _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/explore/pivot) by selecting either option from the UI (see `pink` box).
 

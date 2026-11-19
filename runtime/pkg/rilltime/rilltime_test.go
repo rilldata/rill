@@ -438,6 +438,15 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 		{"inf", "2020-01-01T00:32:36Z", "2025-05-14T06:32:37Z", timeutil.TimeGrainUnspecified, 1, 1},
 		{"P2DT10H", "2025-05-10T21:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"P1Y2M3W4DT10H15M", "2024-02-17T20:18:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainMinute, 1, 1},
+
+		// Comparisons for legacy ISO durations, which offset the duration's range of the watermark.
+		// The previous period is the duration that ends where the range starts.
+		{"P1D offset -1D", "2025-05-12T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"P1D offset -1P", "2025-05-12T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"P7D offset -1W", "2025-04-30T00:00:00Z", "2025-05-07T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"P7D offset -1P", "2025-04-30T00:00:00Z", "2025-05-07T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"PT24H offset -1P", "2025-05-11T07:00:00Z", "2025-05-12T07:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"P3M offset -1P", "2024-12-01T00:00:00Z", "2025-03-01T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)

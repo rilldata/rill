@@ -57,9 +57,9 @@ export interface CollectInput {
 export const ROW_GAP_PX = 40;
 
 // Whether a component is exported as a PNG snapshot: charts in image mode and
-// chart types without a native Excel equivalent always; custom charts, maps and
-// images always; components without a payload (e.g. referenced components) as
-// a fallback, except static ones that would be captured as blank cards.
+// chart types without a native Excel equivalent always; custom charts (inline or
+// referenced), maps and images always; components without a payload as a
+// fallback, except static ones that would be captured as blank cards.
 export function needsImage(
   component: BaseCanvasComponent,
   payload: ComponentExportPayload | undefined,
