@@ -147,7 +147,7 @@ function useTrialCreditBalance(
       return createAdminServiceGetBillingCreditBalance(
         organization,
         { allowCached: true },
-        // The server already falls back to a cached balance, so retrying would only delay the banner.
+        // Retrying would only delay the banner; on failure it links to the billing page instead.
         { query: { retry: false } },
         queryClient,
       ).subscribe((balanceResp) =>

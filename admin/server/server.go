@@ -131,7 +131,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
-	creditBalance, err := newCreditBalanceCache(logger.Named("billing"))
+	creditBalance, err := newCreditBalanceCache()
 	if err != nil {
 		return nil, err
 	}
