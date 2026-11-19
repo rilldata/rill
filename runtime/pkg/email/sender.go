@@ -11,6 +11,7 @@ import (
 	"net/smtp"
 	"net/textproto"
 	"strconv"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -198,6 +199,7 @@ func (s *noopSender) Send(toEmail, toName, subject, body string, attachments []A
 }
 
 type TestSender struct {
+	mu     sync.Mutex
 	Emails []struct {
 		ToEmail     string
 		ToName      string
@@ -212,6 +214,8 @@ func NewTestSender() Sender {
 }
 
 func (s *TestSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Emails = append(s.Emails, struct {
 		ToEmail     string
 		ToName      string
