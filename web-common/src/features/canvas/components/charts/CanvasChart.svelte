@@ -38,7 +38,7 @@
   $: ({ instanceId } = runtimeClient);
 
   $: ({
-    specStore,
+    viewSpecStore: specStore,
     parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,

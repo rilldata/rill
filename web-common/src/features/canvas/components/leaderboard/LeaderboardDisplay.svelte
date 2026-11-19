@@ -40,7 +40,7 @@
   // BaseCanvasComponent.exportPayload.
   let exportRows = $state<Record<string, LeaderboardItemData[]>>({});
 
-  let specStore = $derived(component.specStore);
+  let specStore = $derived(component.viewSpecStore);
   let timeAndFilterStore = $derived(component.timeAndFilterStore);
   let leaderboardState = $derived(component.leaderboardState);
   let toggleSort = $derived(component.toggleSort);

@@ -70,14 +70,16 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
     };
     super(resource, parent, path, defaultSpec);
 
-    const { measures } = get(this.specStore);
+    // The sort follows the measures viewers see (their field controls applied), so swapping
+    // the sorted measure away doesn't leave the query sorting by a measure it no longer has.
+    const { measures } = get(this.viewSpecStore);
     this.leaderboardState = writable({
       sortType: SortType.VALUE,
       sortDirection: SortDirection.DESCENDING,
       leaderboardSortByMeasureName: measures?.[0] ?? null,
     });
 
-    this.specStore.subscribe((spec) => {
+    this.viewSpecStore.subscribe((spec) => {
       this.validateAndResetSortMeasure(spec);
     });
   }
@@ -87,7 +89,8 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const spec = get(this.specStore);
+    // The spec as viewers see it, with their field controls applied.
+    const spec = get(this.viewSpecStore);
     const leaderboardState = get(this.leaderboardState);
     return {
       visibleMeasures: spec.measures,

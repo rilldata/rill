@@ -5553,6 +5553,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   aiPrompts: AIPrompt[] = [];
 
+  /**
+   * Viewer controls that apply to every item on the canvas.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasControl controls = 22;
+   */
+  controls: CanvasControl[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5580,6 +5587,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
+    { no: 22, name: "controls", kind: "message", T: CanvasControl, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5752,6 +5760,13 @@ export class CanvasContainer extends Message<CanvasContainer> {
    */
   rows: CanvasRow[] = [];
 
+  /**
+   * Viewer controls that apply to every item in the container.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasControl controls = 3;
+   */
+  controls: CanvasControl[] = [];
+
   constructor(data?: PartialMessage<CanvasContainer>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5762,6 +5777,7 @@ export class CanvasContainer extends Message<CanvasContainer> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+    { no: 3, name: "controls", kind: "message", T: CanvasControl, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasContainer {
@@ -5800,6 +5816,13 @@ export class CanvasTabGroup extends Message<CanvasTabGroup> {
    */
   tabs: CanvasTab[] = [];
 
+  /**
+   * Viewer controls that apply to every item in every tab of the group.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasControl controls = 3;
+   */
+  controls: CanvasControl[] = [];
+
   constructor(data?: PartialMessage<CanvasTabGroup>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5810,6 +5833,7 @@ export class CanvasTabGroup extends Message<CanvasTabGroup> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "tabs", kind: "message", T: CanvasTab, repeated: true },
+    { no: 3, name: "controls", kind: "message", T: CanvasControl, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTabGroup {
@@ -5863,6 +5887,13 @@ export class CanvasTab extends Message<CanvasTab> {
    */
   conditionExpression = "";
 
+  /**
+   * Viewer controls that apply to every item in the tab.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasControl controls = 5;
+   */
+  controls: CanvasControl[] = [];
+
   constructor(data?: PartialMessage<CanvasTab>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5875,6 +5906,7 @@ export class CanvasTab extends Message<CanvasTab> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 4, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "controls", kind: "message", T: CanvasControl, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTab {
@@ -5942,6 +5974,34 @@ export class CanvasItem extends Message<CanvasItem> {
    */
   conditionExpression = "";
 
+  /**
+   * Stable identifier of the item, used for URL state. Required when the item declares controls.
+   *
+   * @generated from field: string name = 13;
+   */
+  name = "";
+
+  /**
+   * Viewer controls that apply to this item only.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasControl controls = 14;
+   */
+  controls: CanvasControl[] = [];
+
+  /**
+   * If true, the item ignores every control declared on an enclosing container, tab, tab group or canvas.
+   *
+   * @generated from field: bool ignore_all_controls = 15;
+   */
+  ignoreAllControls = false;
+
+  /**
+   * Names of enclosing controls the item ignores.
+   *
+   * @generated from field: repeated string ignore_controls = 16;
+   */
+  ignoreControls: string[] = [];
+
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5956,6 +6016,10 @@ export class CanvasItem extends Message<CanvasItem> {
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "controls", kind: "message", T: CanvasControl, repeated: true },
+    { no: 15, name: "ignore_all_controls", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "ignore_controls", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {
@@ -5972,6 +6036,114 @@ export class CanvasItem extends Message<CanvasItem> {
 
   static equals(a: CanvasItem | PlainMessage<CanvasItem> | undefined, b: CanvasItem | PlainMessage<CanvasItem> | undefined): boolean {
     return proto3.util.equals(CanvasItem, a, b);
+  }
+}
+
+/**
+ * CanvasControl is a viewer-adjustable setting declared on a canvas, container, tab group, tab or item.
+ * It applies to the item it is declared on, or to every item nested under the level it is declared on.
+ *
+ * @generated from message rill.runtime.v1.CanvasControl
+ */
+export class CanvasControl extends Message<CanvasControl> {
+  /**
+   * URL key of the control; unique within the list it is declared in.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Kind of control. One of: "measure", "dimension", "slot", "filter", "time_range", "time_grain".
+   *
+   * @generated from field: string kind = 2;
+   */
+  kind = "";
+
+  /**
+   * The swapped field name (measure, dimension), the renderer property path (slot), or the dimension name (filter).
+   * Empty for time controls.
+   *
+   * @generated from field: string target = 3;
+   */
+  target = "";
+
+  /**
+   * Label shown next to the control.
+   *
+   * @generated from field: string label = 4;
+   */
+  label = "";
+
+  /**
+   * Allowed values. For field kinds: field names. For time kinds: time ranges or grains.
+   * For filters: an optional fixed list; empty means the dimension's values are queried.
+   *
+   * @generated from field: repeated string options = 5;
+   */
+  options: string[] = [];
+
+  /**
+   * Default values. Empty means: no filter (filter), or inherit from the canvas (time).
+   *
+   * @generated from field: repeated string default = 6;
+   */
+  default: string[] = [];
+
+  /**
+   * Whether several values can be selected.
+   *
+   * @generated from field: bool multiple = 7;
+   */
+  multiple = false;
+
+  /**
+   * How the control is displayed. One of: "dropdown", "buttons". Empty means it is chosen automatically.
+   *
+   * @generated from field: string display = 8;
+   */
+  display = "";
+
+  /**
+   * For filters: the dimension's name per metrics view, when it differs from the target.
+   *
+   * @generated from field: map<string, string> fields = 9;
+   */
+  fields: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<CanvasControl>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasControl";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "target", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "options", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "multiple", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "display", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "fields", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasControl {
+    return new CanvasControl().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasControl {
+    return new CanvasControl().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasControl {
+    return new CanvasControl().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasControl | PlainMessage<CanvasControl> | undefined, b: CanvasControl | PlainMessage<CanvasControl> | undefined): boolean {
+    return proto3.util.equals(CanvasControl, a, b);
   }
 }
 

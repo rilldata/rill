@@ -67,7 +67,7 @@
   $: canvasEntity = component.parent;
   $: filterManager = canvasEntity.expressionFilterManager;
 
-  $: spec = component.specStore;
+  $: spec = component.viewSpecStore;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
 

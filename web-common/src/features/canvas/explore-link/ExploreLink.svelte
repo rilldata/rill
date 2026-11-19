@@ -16,7 +16,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: spec = component.specStore;
+  $: spec = component.viewSpecStore;
   $: metricsViewName = $spec?.metrics_view ?? "";
 
   // Check if component can be linked to explore

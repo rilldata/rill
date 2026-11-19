@@ -70,7 +70,8 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const spec = get(this.specStore);
+    // The spec as viewers see it, with their field controls applied.
+    const spec = get(this.viewSpecStore);
     return {
       visibleMeasures: spec.measures,
       ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),

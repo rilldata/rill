@@ -18,7 +18,7 @@ import { getFiltersForOtherDimensions } from "../../selectors";
 type DimensionSearchArgs = {
   mode: DimensionFilterMode;
   searchText: string;
-  values: string[];
+  values: (string | number | boolean | null)[];
   timeStart?: string;
   timeEnd?: string;
   timeDimension?: string;
@@ -205,7 +205,7 @@ function getFilterForSearchArgs(
   }: {
     mode: DimensionFilterMode;
     searchText: string;
-    values: string[];
+    values: (string | number | boolean | null)[];
     additionalFilter?: V1Expression;
   },
 ) {

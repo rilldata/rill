@@ -58,6 +58,45 @@ describe("captureTargetsIn", () => {
     ]);
   });
 
+  it("captures a level's viewer controls band and groups it with the row below", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <section id="pdf-controls-story" class="pdf-controls-row"></section>
+      <section id="canvas-row-story-0">
+        <article id="story-a" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-first" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-first" class="pdf-controls-row"></section>
+      <section id="canvas-row-g-first-0">
+        <article id="tab-a" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-empty" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-empty" class="pdf-controls-row"></section>
+      <section id="pdf-tab-label-g-last" class="pdf-tab-label-row"></section>
+    `;
+    const indexOf = (selector: string) =>
+      rowIndexFor(container.querySelector<HTMLElement>(selector)!, container);
+
+    expect(captureTargetsIn(container).map((el) => el.id)).toStrictEqual([
+      "pdf-controls-story",
+      "story-a",
+      "pdf-tab-label-g-first",
+      "pdf-controls-g-first",
+      "tab-a",
+      "pdf-tab-label-g-empty",
+      "pdf-controls-g-empty",
+      "pdf-tab-label-g-last",
+    ]);
+    // A container's controls go with its first row.
+    expect(indexOf("#pdf-controls-story")).toBe(indexOf("#story-a"));
+    // A tab's label and controls both go with the tab's first row.
+    expect(indexOf("#pdf-tab-label-g-first")).toBe(indexOf("#tab-a"));
+    expect(indexOf("#pdf-controls-g-first")).toBe(indexOf("#tab-a"));
+    // Bands of a tab without rows keep their own places.
+    expect(indexOf("#pdf-tab-label-g-empty")).toBe(5);
+    expect(indexOf("#pdf-controls-g-empty")).toBe(6);
+  });
+
   it("groups each tab's label with the tab's first row, between the free rows", () => {
     const container = renderExportDom();
     const indexOf = (selector: string) =>

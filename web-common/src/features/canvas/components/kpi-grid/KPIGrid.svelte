@@ -23,7 +23,7 @@
   }
 
   $: ({
-    specStore,
+    viewSpecStore: specStore,
     timeAndFilterStore,
     parent: { name: canvasName },
     dataEnabled: visible,

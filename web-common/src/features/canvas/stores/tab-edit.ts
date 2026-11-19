@@ -1,5 +1,5 @@
 import { isMap, isSeq, type Document } from "yaml";
-import { isBlockRow, unwrapRows } from "./block-edit";
+import { isBlockRow, renameCopiedItems, unwrapRows } from "./block-edit";
 
 // Pure YAML-document transforms for the tabs of a tab group in the visual editor.
 // Operations on whole blocks (tab groups and containers alike: add, move, duplicate,
@@ -125,7 +125,11 @@ export function duplicateTab(
   if (!isMap(original)) return -1;
 
   // Drop the name so the copy gets a fresh URL key; carry everything else (rows, etc.).
-  const { name, label, ...rest } = original.toJSON() as {
+  // Named items in the copy get names of their own (see renameCopiedItems).
+  const { name, label, ...rest } = renameCopiedItems(
+    doc,
+    original.toJSON(),
+  ) as {
     name?: string;
     label?: string;
     [key: string]: unknown;

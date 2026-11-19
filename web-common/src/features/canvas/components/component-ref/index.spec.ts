@@ -25,6 +25,7 @@ describe("ComponentRefComponent", () => {
     const parent = {
       allowUnvalidatedSpec: false,
       exportMode: writable(false),
+      controls: { forPath: () => writable([]) },
       timeManager: {
         createLocalTimeState: vi.fn(() => localTimeControls),
       },

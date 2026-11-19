@@ -3,6 +3,8 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import StaticRowsBlock from "./StaticRowsBlock.svelte";
+  import ChangedControls from "./controls/ChangedControls.svelte";
+  import LevelControls from "./controls/LevelControls.svelte";
   import CanvasTabGroupView from "./CanvasTabGroupView.svelte";
   import { layoutBlockKey } from "./stores/layout-blocks";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -76,6 +78,8 @@
 
 {#if canvasName}
   <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
+    <ChangedControls {canvasEntity} {maxWidth} />
+    <LevelControls {canvasEntity} scopes={[[]]} {maxWidth} />
     {#each blocks as block (layoutBlockKey(block))}
       {#if block.kind === "tab-group"}
         <CanvasTabGroupView
@@ -84,11 +88,18 @@
           {maxWidth}
           {navigationEnabled}
           {activeComponentId}
+          {canvasEntity}
           onSelect={(tabName) =>
             canvasEntity.setActiveTabInURL(block.group.name, tabName)}
         />
       {:else if block.kind === "container"}
-        <!-- A container has no visual element for viewers: its rows render like free rows. -->
+        <!-- A container has no visual element for viewers, except for its viewer controls:
+             its rows render like free rows. -->
+        <LevelControls
+          {canvasEntity}
+          scopes={[[block.container.name]]}
+          {maxWidth}
+        />
         <StaticRowsBlock
           block={block.container}
           {components}

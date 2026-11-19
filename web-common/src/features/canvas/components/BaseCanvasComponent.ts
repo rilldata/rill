@@ -1,3 +1,10 @@
+import { applyFieldControls } from "@rilldata/web-common/features/canvas/controls/apply-fields";
+import {
+  andControlFilters,
+  applyTimeControls,
+  controlFiltersExpression,
+} from "@rilldata/web-common/features/canvas/controls/apply-filters";
+import type { AppliedControl } from "@rilldata/web-common/features/canvas/controls/controls";
 import type {
   CanvasComponentType,
   ComponentSize,
@@ -58,6 +65,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   specStore: Writable<T>;
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
+  // Viewer controls in effect for this component, nearest level first, with their values
+  controls: Readable<AppliedControl[]>;
+  // The spec as viewers see it: the YAML spec with the field controls applied.
+  // Display and query code reads this; the editor reads and writes specStore.
+  viewSpecStore: Readable<T>;
   // Widget specific dimension and measure filters
   localExpressionFilters: ExpressionFilterManager;
   // Widget specific time filters
@@ -124,6 +136,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.metricsViewName = mergedSpec["metrics_view"] as string;
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
+    this.controls = parent.controls.forPath(() => this.pathInYAML);
+    this.viewSpecStore = derived(
+      [this.specStore, this.controls],
+      ([spec, controls]) => applyFieldControls(spec, controls),
+    );
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
@@ -138,7 +155,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         return new URLSearchParams((spec?.["time_filters"] ?? "") as string);
       });
       // The widget's own time state only sees real ranges; `inherit` is resolved here.
-      const store = derived(rawStore, stripInheritedTimeFilters);
+      // Viewers' time controls apply on top of the YAML; `set` below still writes the YAML only.
+      const store = derived([rawStore, this.controls], ([raw, controls]) =>
+        stripInheritedTimeFilters(applyTimeControls(raw.toString(), controls)),
+      );
       return {
         subscribe: store.subscribe,
         set: (map: Map<string, string | undefined>) => {
@@ -194,7 +214,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.metricsViewName,
       );
 
-    this.unsubscribeSpec = this.specStore.subscribe((spec) => {
+    // The time state follows the YAML's time filters with the viewers' time controls applied.
+    this.unsubscribeSpec = derived(
+      [this.specStore, this.controls],
+      ([spec, controls]) => ({ spec, controls }),
+    ).subscribe(({ spec, controls }) => {
       this.localExpressionFilters.setParamForMetricsView(
         this.metricsViewName,
         (spec["dimension_filters"] ?? "") as string,
@@ -202,7 +226,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
       this.localTimeControls.onUrlChange(
         stripInheritedTimeFilters(
-          new URLSearchParams((spec?.["time_filters"] ?? "") as string),
+          applyTimeControls((spec?.["time_filters"] ?? "") as string, controls),
         ),
       );
     });
@@ -250,6 +274,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.hasTimeSeriesMap,
         this.parent.timeManager.availableGrainsMap,
         this.specStore,
+        this.controls,
+        this.parent.metricsView.getMetricsViewFromName(this.metricsViewName),
       ],
       ([
         globalInterval,
@@ -268,13 +294,20 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         hasTimeSeriesMap,
         availableGrainsMap,
         componentSpec,
+        controls,
+        metricsView,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
         const {
           hasLocalTimeRange: usesLocalTimeRange,
           comparison: resolvedComparison,
-        } = resolveTimeFilters(componentSpec?.["time_filters"] as string);
+        } = resolveTimeFilters(
+          applyTimeControls(
+            (componentSpec?.["time_filters"] ?? "") as string,
+            controls,
+          ).toString(),
+        );
 
         // The grain in effect: the widget's own grain when it has a local range
         // (already validated against that range by its time state),
@@ -414,6 +447,20 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           dimensionOnlyWhere = mergeFilters(
             globalDimensionOnlyWhere,
             componentWhere,
+          );
+        }
+
+        const controlWhere = controlFiltersExpression(
+          controls,
+          this.metricsViewName,
+          (name) =>
+            !!metricsView.metricsView?.dimensions?.some((d) => d.name === name),
+        );
+        if (controlWhere) {
+          fullWhere = andControlFilters(fullWhere, controlWhere);
+          dimensionOnlyWhere = andControlFilters(
+            dimensionOnlyWhere,
+            controlWhere,
           );
         }
 
