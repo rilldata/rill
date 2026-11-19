@@ -103,14 +103,14 @@ export function measureCanvasBlocks(
 // rows and cards have the dashboard's ids, so the same rules apply to them.
 function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
   if (rect.width < 1 || rect.height < 1) return false;
-  // Safari before 17.4 has no checkVisibility; there, a block hidden with
-  // visibility or opacity is still exported.
-  return (
-    target.checkVisibility?.({
-      visibilityProperty: true,
-      opacityProperty: true,
-    }) ?? true
-  );
+  // Read from the computed styles rather than Element.checkVisibility, which
+  // Safari lacks before 17.4. visibility is inherited, so the target's value
+  // covers its ancestors; opacity is not, so each ancestor is looked at.
+  if (getComputedStyle(target).visibility !== "visible") return false;
+  for (let el: Element | null = target; el; el = el.parentElement) {
+    if (getComputedStyle(el).opacity === "0") return false;
+  }
+  return true;
 }
 
 // Rasterizes the filter bar (optional) and each canvas block into images

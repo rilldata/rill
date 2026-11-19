@@ -272,13 +272,24 @@ describe("measureCanvasBlocks", () => {
       <section id="canvas-row-2">
         <article id="no-height" class="component-card"></article>
         <article id="invisible" class="component-card"></article>
-        <article id="transparent" class="component-card"></article>
+      </section>
+      <section id="canvas-row-3">
+        <article id="in-invisible-row" class="component-card"></article>
+      </section>
+      <section id="canvas-row-4">
+        <article id="in-transparent-row" class="component-card"></article>
       </section>
       <section id="pdf-tab-label-g-hidden" class="pdf-tab-label-row"></section>
-      <section id="canvas-row-3">
+      <section id="canvas-row-5">
         <article id="after" class="component-card"></article>
       </section>
+      <style>
+        #invisible, #canvas-row-3 { visibility: hidden; }
+        #canvas-row-4 { opacity: 0; }
+      </style>
     `;
+    // The rules of a <style> block apply once it is in the document.
+    document.body.append(container);
     const el = (id: string) => container.querySelector<HTMLElement>(`#${id}`)!;
     layOut(el("shown"));
     layOut(el("after"));
@@ -288,20 +299,23 @@ describe("measureCanvasBlocks", () => {
     layOut(el("pdf-tab-label-g-hidden"), { width: 0, height: 0 });
     // A card in a row too short for its padding: a width but no height.
     layOut(el("no-height"), { width: 1180, height: 0 });
-    // `visibility: hidden` and `opacity: 0` keep the box. The browser reports
-    // them through checkVisibility, and only when asked to look at them.
+    // `visibility: hidden` and `opacity: 0` keep the box, on the card or on its
+    // row, so only the styles tell that nothing is drawn.
     layOut(el("invisible"));
-    el("invisible").checkVisibility = (options) => !options?.visibilityProperty;
-    layOut(el("transparent"));
-    el("transparent").checkVisibility = (options) => !options?.opacityProperty;
+    layOut(el("in-invisible-row"));
+    layOut(el("in-transparent-row"));
 
-    const blocks = measureCanvasBlocks(container);
+    try {
+      const blocks = measureCanvasBlocks(container);
 
-    // The blocks that remain keep the row they had.
-    expect(blocks.map((b) => [b.id, b.rowIndex])).toStrictEqual([
-      ["shown", 0],
-      ["after", 4],
-    ]);
+      // The blocks that remain keep the row they had.
+      expect(blocks.map((b) => [b.id, b.rowIndex])).toStrictEqual([
+        ["shown", 0],
+        ["after", 6],
+      ]);
+    } finally {
+      container.remove();
+    }
   });
 });
 
