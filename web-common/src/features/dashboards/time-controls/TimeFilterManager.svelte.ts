@@ -220,7 +220,7 @@ export class TimeFilterManager implements UrlParamsStore {
   public comparisonTimeRangeOptions: ComparisonTimeRangeOption[];
 
   public hasTimeSeries: boolean | undefined;
-  public ready = $state(false);
+  public ready: boolean;
 
   private events = new EventEmitter<TimeFilterManagerEvents>();
   public readonly on = this.events.on.bind(
@@ -294,15 +294,11 @@ export class TimeFilterManager implements UrlParamsStore {
       this.commitResolvedIntervals(false),
     );
 
-    this.ready = metricsViewsProvider.ready;
-    // The summaries for the new metrics views are loading, so params are queued until `time-specs-loaded`.
-    metricsViewsProvider.on("update-metrics-views", () => {
-      this.ready = metricsViewsProvider.ready;
-    });
-    metricsViewsProvider.on("time-specs-loaded", () => {
-      this.ready = true;
-      this.events.emit("ready");
-    });
+    // Params are queued while the provider loads the specs and time range summaries.
+    this.ready = $derived(metricsViewsProvider.ready);
+    metricsViewsProvider.on("time-specs-loaded", () =>
+      this.events.emit("ready"),
+    );
 
     this.timeRange = $derived(this.resolved?.timeRange);
     // The latest interval across the metrics views, and the smallest grain their ranges hint at.
@@ -938,7 +934,7 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   /**
-   * Commits the intervals for the current inputs once every metrics view has resolved them.
+   * Commits the intervals for the current inputs once every metrics view has settled them.
    * Reads the cache for the current query keys instead of the subscription's results,
    * so a response for earlier inputs is never committed for the current ones.
    * Unless `force` is set, it skips responses it has already committed,
@@ -955,9 +951,11 @@ export class TimeFilterManager implements UrlParamsStore {
       for (const { queryKey } of queryOptions) {
         const state =
           queryClient.getQueryState<V1MetricsViewTimeRangesResponse>(queryKey);
-        // On error the previous interval is kept.
-        if (state?.status !== "success" || state.fetchStatus !== "idle") return;
-        responses.push(state.data!);
+        if (state?.fetchStatus !== "idle") return;
+        // A metrics view that failed to resolve the range is left out,
+        // so it does not hold back the others.
+        if (state.status === "success") responses.push(state.data!);
+        else if (state.status !== "error") return;
       }
       if (!force && arrayOrderedEquals(responses, this.committedResponses))
         return;
@@ -966,7 +964,8 @@ export class TimeFilterManager implements UrlParamsStore {
       const intervals = responses.map((response) =>
         toDerivedInterval(response, expression, this.timeZone),
       );
-      // Keep the previous interval when none of the metrics views resolved the range.
+      // Keep the previous interval when none of the metrics views resolved the range,
+      // including when every request failed.
       if (!intervals.some(({ interval }) => interval.isValid)) return;
       this.resolved = {
         timeRange: expression,
