@@ -468,6 +468,9 @@ message MetricsViewAggregationRequest {
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   // Optional. Defaults to 0
   int64 offset = 10 [(validate.rules).int64.gte = 0];
+  // Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order.
+  // Ignored by queries and by other export formats.
+  repeated MetricsViewAggregationConditionalFormat conditional_formats = 24;
   // Optional
   int32 priority = 11;
   // Optional
@@ -481,6 +484,14 @@ message MetricsViewAggregationRequest {
   bool rows = 22;
   // Optional. If true, the response will include traces of spans captured during execution.
   bool trace = 23;
+}
+
+// MetricsViewAggregationConditionalFormat colors a measure's cells when the result is exported to Excel.
+message MetricsViewAggregationConditionalFormat {
+  // Name of the measure. Under pivot_on, the format spans all of the measure's columns,
+  // so a color scale or data bar compares the values across them.
+  string measure = 1;
+  ExportConditionalFormat format = 2;
 }
 
 message MetricsViewAggregationResponse {

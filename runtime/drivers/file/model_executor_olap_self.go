@@ -71,7 +71,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		fw = &limitedWriter{W: fw, N: outputProps.FileSizeLimitBytes}
 	}
 
-	err = driverutil.ResultToFile(res, fw, outputProps.Format, outputProps.Headers)
+	err = driverutil.ResultToFile(res, fw, outputProps.Format, outputProps.Headers, outputProps.ConditionalFormats)
 	if err != nil {
 		if errors.Is(err, io.ErrShortWrite) {
 			return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())

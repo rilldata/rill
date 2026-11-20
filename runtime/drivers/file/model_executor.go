@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/driverutil"
 )
 
 type ModelOutputProperties struct {
@@ -11,6 +12,8 @@ type ModelOutputProperties struct {
 	Format             drivers.FileFormat `mapstructure:"format"`
 	Headers            []string           `mapstructure:"headers"`
 	FileSizeLimitBytes int64              `mapstructure:"file_size_limit_bytes"`
+	// Conditional formats for XLSX output.
+	ConditionalFormats []driverutil.XLSXConditionalFormat `mapstructure:"conditional_formats"`
 }
 
 func (p *ModelOutputProperties) Validate() error {
