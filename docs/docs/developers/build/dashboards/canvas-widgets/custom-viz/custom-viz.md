@@ -330,9 +330,77 @@ rows:
 
 Bound values must be literals: strings, numbers or booleans. Params that have a default can be left out. A custom viz follows the canvas's time range, time grain and dimension filters like any other widget.
 
+## Move a Large Chart Out of the Canvas File
+
+Rill doesn't parse a project file larger than 128 KB, and reports it with an error such as `size 136050 bytes exceeds max size of 131072 bytes`. The limit applies to each file on its own. A canvas file reaches it when its widgets carry a lot of YAML, most often inline `custom_chart` widgets with long Vega-Lite specs.
+
+A component file is the way around it. Moving a chart into its own file takes the chart's YAML out of the canvas file, which keeps only a reference, and the component file has a 128 KB limit of its own.
+
+Create a file under `viz/` with `type: component`, and move the widget's `custom_chart` block into it unchanged:
+
+```yaml
+# viz/spend_by_advertiser.yaml
+type: component
+display_name: Spend by advertiser
+
+custom_chart:
+  metrics_sql:
+    - |
+      SELECT advertiser_name, overall_spend
+      FROM bids_metrics
+      ORDER BY overall_spend DESC
+      LIMIT 20
+  vega_spec: |-
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": { "type": "fit", "contains": "padding" },
+      "data": { "name": "query1" },
+      "mark": "bar",
+      "encoding": {
+        "x": { "field": "advertiser_name", "type": "nominal" },
+        "y": { "field": "overall_spend", "type": "quantitative" }
+      }
+    }
+```
+
+In the canvas, replace the widget with a reference to the component, which is named after its file:
+
+```yaml
+# dashboards/overview.yaml
+rows:
+  - items:
+      - component: spend_by_advertiser
+        width: 6
+```
+
+A component without params is drawn the same way as the inline widget: every query still runs, and the canvas's time range and filters apply to the metrics view in the first query's `FROM`.
+
+To draw the same chart for other metrics views or fields, declare [params](#params), replace the names in the query and the spec with `{{ .params.<name> }}`, and bind them in each canvas item:
+
+```yaml
+# dashboards/overview.yaml
+rows:
+  - items:
+      - component: ranked_bars
+        params:
+          metrics_view: bids_metrics
+          dimension: advertiser_name
+          measure: overall_spend
+        width: 6
+```
+
+A few things to know:
+
+- A component that declares params runs one query. A chart that reads several datasets, such as `query1` and `query2`, has to stay without params.
+- The preview in the component file's editor runs only the first query, so a chart that also reads `query2` looks incomplete there. The canvas draws it in full.
+- A component file that is itself larger than 128 KB fails the same way. Keep data out of the spec: read it from the query rather than inlining `values`.
+- [Personal canvases](/developers/embed/iframe#personal-canvases-in-embeds) can't reference component files. Every widget on a personal canvas is defined inline.
+
 ## Limits
 
-- A component runs one query, so a chart can't combine two datasets.
+- A component that declares params or a chart `spec` runs one query, so its chart can't combine two datasets.
 - When a category axis has more values than fit in the widget, the chart drops the extra rows and says so above the chart.
 - A custom viz doesn't draw time comparisons.
-- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` only after it has been converted.
+- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` after it has been converted, or when an inline chart has been [moved into it](#move-a-large-chart-out-of-the-canvas-file).

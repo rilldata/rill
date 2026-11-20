@@ -480,7 +480,17 @@ _[object]_ - Leaderboard
 
 _[object]_ - (no description)
 
-  - **`content`** - _[string]_ - Markdown content _(required)_
+  - **`content`** - _[string]_ - Markdown text to display. Supports templating, with the `metrics_sql` and `metrics_sql_rows` functions to insert the results of [Metrics SQL](/developers/build/metrics-view/metrics-sql) queries, which follow the canvas time range and filters. See [Dynamic Markdown](/developers/build/dashboards/canvas-widgets/misc#dynamic-markdown). _(required)_
+
+  - **`apply_formatting`** - _[boolean]_ - Format the measure values that `metrics_sql` and `metrics_sql_rows` return with each measure's `format_d3` or `format_preset` from the metrics view. Defaults to false.
+
+  - **`alignment`** - _[object]_ - Position of the text within the component
+
+    - **`horizontal`** - _[string]_ - Horizontal position of the text, one of `left` (default), `center` or `right`
+
+    - **`vertical`** - _[string]_ - Vertical position of the text, one of `top`, `middle` (default) or `bottom`
+
+  - **`time_filters`** - _[string]_ - Time range for the queries in `content`, as a `tr` URL parameter such as `tr=P7D`. Defaults to the canvas time range.
 
   - **`title`** - _[string]_ - Markdown title
 

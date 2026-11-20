@@ -54,7 +54,9 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
   - **`items`** - _[array of object]_ - List of components to display in the row
 
-    - **`component`** - _[string]_ - Name of the component to display. Each component type has its own set of properties.
+    - **`component`** - _[string]_ - Name of a component defined in its own file (`type: component`), such as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz). Bind its declared params with `params`.
+    Each project file is limited to 128 KB, so keeping a large chart in a component file also keeps the canvas file small; see [Move a Large Chart Out of the Canvas File](/developers/build/dashboards/canvas-widgets/custom-viz#move-a-large-chart-out-of-the-canvas-file).
+    To define a widget inline instead, leave out `component` and add a key named after the component type, with the widget's properties as its value. Each component type has its own set of properties.
     Available component types:
     
         - **markdown** - Text component, uses markdown formatting
