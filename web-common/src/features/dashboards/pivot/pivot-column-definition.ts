@@ -136,6 +136,9 @@ function createColumnDefinitionForDimensions(
       .filter((column) => column.columns.length > 0);
   }
 
+  // Start the recursion
+  const nestedColumns = createNestedColumns(0, {});
+
   // Construct column def for Row Totals
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
   if (
@@ -150,21 +153,28 @@ function createColumnDefinitionForDimensions(
       ...leaf,
       meta: { ...leaf.meta, isRowTotal: true },
     }));
-    rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
+    // A column dimension value can itself read "Total".
+    // The totals then take the longer label, so the two groups can be told apart.
+    const totalsHeader = nestedColumns.some(
+      (column) => column.header === m.pivot_totals_column_header(),
+    )
+      ? m.pivot_grand_total_column_header()
+      : m.pivot_totals_column_header();
+    // The totals get one group per column dimension, so they sit under the same header rows as the other columns.
+    // Only the outermost group is labeled:
+    // the header rows have no lines between them, so the label reads as one header spanning all levels.
+    rowTotalsColumns = colDimensions.reduceRight((acc, dimension, i) => {
       const { name } = dimension;
 
       const headColumn = {
         id: name,
-        header: "",
+        header: i === 0 ? totalsHeader : "",
         columns: acc,
       };
 
       return [headColumn];
     }, totalsLeafData);
   }
-
-  // Start the recursion
-  const nestedColumns = createNestedColumns(0, {});
 
   return [...rowTotalsColumns, ...nestedColumns];
 }
@@ -559,7 +569,7 @@ function getNestedColumnDef(
 
   let firstDimensionColumns: ColumnDef<PivotDataRow>[] = rowDefinitions;
   if (config.rowDimensionNames.length && config.colDimensionNames.length) {
-    firstDimensionColumns = colDimensions.reverse().reduce((acc, dimension) => {
+    firstDimensionColumns = colDimensions.reduceRight((acc, dimension) => {
       const { label, name, description } = dimension;
 
       const headColumn = {

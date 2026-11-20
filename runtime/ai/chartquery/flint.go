@@ -21,7 +21,7 @@ var polarChartTypes = []string{"Rose Chart", "Radar Chart"}
 // categoryXChartTypes are the chart types that draw one mark per value of x, so x must bind the time field or a dimension:
 // with a measure there, the query returns a single aggregated row and the chart is empty.
 // Bar, lollipop, bullet and bar table charts take a measure on x for their horizontal layout, so they are not among them.
-var categoryXChartTypes = []string{"Line Chart", "Area Chart", "Streamgraph", "Range Area Chart", "Sparkline", "Bump Chart", "Slope Chart", "Candlestick Chart", "Waterfall Chart"}
+var categoryXChartTypes = []string{"Line Chart", "Area Chart", "Streamgraph", "Range Area Chart", "Sparkline", "Bump Chart", "Slope Chart", "Candlestick Chart", "Waterfall Chart", "Calendar Heatmap"}
 
 // comparisonFolds maps the chart types that can draw a comparison to the channel the previous period becomes a second series on.
 // The widget draws a bar chart as a grouped bar chart for it. Keep in sync with COMPARISON_FOLDS in web-mcp-app/src/lib/flint-input.ts.
@@ -331,7 +331,8 @@ func checkFlintChart(s *FlintSpec, encodings map[string]any) error {
 	if !ok {
 		return fmt.Errorf("a %s cannot draw data.comparison_time_range, which adds the previous period as a second series; use one of %s, or remove data.comparison_time_range", s.ChartType, strings.Join(slices.Sorted(maps.Keys(comparisonFolds)), ", "))
 	}
-	// The previous period takes the series channel, so it must be free. A bar chart is drawn as a grouped bar chart, which has no color channel.
+	// The previous period takes the series channel, so it must be free.
+	// A bar chart is drawn as a grouped bar chart with the periods on group, which leaves no room for a series on color.
 	taken := []string{series}
 	if series == "group" {
 		taken = append(taken, "color")

@@ -669,6 +669,75 @@ rows:
 	require.Empty(t, c1.Meta.ReconcileError)
 }
 
+func TestCanvasValidateFilterConfig(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"c1.yaml": `
+type: canvas
+filters:
+  required: [foo, x]
+  single_select: [foo]
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.Equal(t, []string{"foo", "x"}, c1.GetCanvas().State.ValidSpec.RequiredFilters)
+	require.Equal(t, []string{"foo"}, c1.GetCanvas().State.ValidSpec.SingleSelectFilters)
+
+	// A measure cannot be a single-select filter
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+filters:
+  single_select: [x]
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.Contains(t, c1.Meta.ReconcileError, `single-select filter "x" is not a dimension on any metrics view referenced by this canvas`)
+
+	// Neither can a name that is not a field
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+filters:
+  required: [doesnt_exist]
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.Contains(t, c1.Meta.ReconcileError, `required filter "doesnt_exist" is not a dimension or measure on any metrics view referenced by this canvas`)
+}
+
 func TestCanvasAIPrompts(t *testing.T) {
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{

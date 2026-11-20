@@ -959,11 +959,11 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 }
 
 // validateTablePresentation validates the presentation properties shared by tables and pivots:
-// fit_to_width, wrap, wrap_headers, wrap_lines, sort_by, sort_dir and sort_comparison.
+// click_to_filter, fit_to_width, wrap, wrap_headers, wrap_lines, sort_by, sort_dir and sort_comparison.
 // sortable lists the field names that sort_by may reference;
 // hasComparison reports whether the pivot builds comparison columns for a field (a measure of the metrics view, not an adhoc one).
 func (v rendererValidator) validateTablePresentation(props map[string]any, sortable []string, hasComparison func(name string) bool) error {
-	for _, key := range []string{"fit_to_width", "wrap", "wrap_headers"} {
+	for _, key := range []string{"click_to_filter", "fit_to_width", "wrap", "wrap_headers"} {
 		if _, _, err := getOptionalPathBool(props, key); err != nil {
 			return err
 		}

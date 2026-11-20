@@ -7,15 +7,18 @@ import { allMeasures } from "./measures";
 import type { DashboardDataSources } from "./types";
 
 export const dimensionTagIndex = (dashData: DashboardDataSources): TagIndex =>
-  buildTagIndex(allDimensions(dashData));
+  buildTagIndex(allDimensions(dashData), dashData.validMetricsView?.tagOrder);
 
 export const measureTagIndex = (dashData: DashboardDataSources): TagIndex =>
-  buildTagIndex(allMeasures(dashData));
+  buildTagIndex(allMeasures(dashData), dashData.validMetricsView?.tagOrder);
 
 // Combined index over dimensions + measures, used by surfaces (e.g. the pivot
 // sidebar) where both kinds participate in a single tag-filtered list.
 export const combinedTagIndex = (dashData: DashboardDataSources): TagIndex =>
-  buildTagIndex([...allDimensions(dashData), ...allMeasures(dashData)]);
+  buildTagIndex(
+    [...allDimensions(dashData), ...allMeasures(dashData)],
+    dashData.validMetricsView?.tagOrder,
+  );
 
 export const tagSelectors = {
   dimensionTagIndex,

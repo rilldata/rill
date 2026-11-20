@@ -3,6 +3,7 @@ import type {
   PivotDataState,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { getColumnDefForPivot } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
 import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
@@ -69,17 +70,29 @@ function state(
 }
 
 describe("leafColumns", () => {
-  it("folds group headers into the leaf header and names the row-totals group", () => {
+  it("folds group headers into the leaf header and skips groups without one", () => {
+    // Two column dimensions: the row-totals group is labeled on its top level only.
     const defs = [
       { id: "country", accessorFn: () => null, header: "Country" },
       {
-        id: "device",
-        header: "",
-        columns: [{ accessorKey: "impressions", header: "Impressions" }],
+        id: "os",
+        header: "Total",
+        columns: [
+          {
+            id: "device",
+            header: "",
+            columns: [{ accessorKey: "impressions", header: "Impressions" }],
+          },
+        ],
       },
       {
         header: "Mobile",
-        columns: [{ accessorKey: "mobile_impressions", header: "Impressions" }],
+        columns: [
+          {
+            header: "Android",
+            columns: [{ accessorKey: "c0v0_c1v0m0", header: "Impressions" }],
+          },
+        ],
       },
     ] as ColumnDef<PivotDataRow>[];
 
@@ -92,8 +105,8 @@ describe("leafColumns", () => {
         measure: undefined,
       },
       {
-        key: "mobile_impressions",
-        groups: ["Mobile"],
+        key: "c0v0_c1v0m0",
+        groups: ["Mobile", "Android"],
         header: "Impressions",
         measure: undefined,
       },
@@ -209,6 +222,34 @@ describe("flattenPivotData", () => {
     ]);
     expect(table.rows).toStrictEqual([["US", 117.50599999999999, -3, 0.5]]);
     expect(table.totals).toBeUndefined();
+  });
+
+  it("names the row-totals columns like the pivot's own header does", () => {
+    const pivotConfig = config({
+      colDimensionNames: ["device"],
+      allDimensions: [
+        { name: "country", displayName: "Country" },
+        { name: "device", displayName: "Device" },
+      ],
+    });
+    const table = flattenPivotData(
+      state(
+        getColumnDefForPivot(
+          pivotConfig,
+          { device: ["Mobile"] },
+          { impressions: 10, ctr: 0.5, c0v0m0: 10, c0v0m1: 0.5 },
+        ),
+        [{ country: "US", impressions: 10, ctr: 0.5, c0v0m0: 10, c0v0m1: 0.5 }],
+      ),
+      pivotConfig,
+    );
+    expect(table.columns.map((c) => c.displayName)).toStrictEqual([
+      "Device / Country",
+      "Total / Impressions",
+      "Total / CTR",
+      "Mobile / Impressions",
+      "Mobile / CTR",
+    ]);
   });
 
   it("labels nested time row headers and types flat time columns", () => {

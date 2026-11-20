@@ -1,9 +1,12 @@
 package parser
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestJSONSchemaForRillYAML(t *testing.T) {
@@ -105,4 +108,23 @@ func TestJSONSchemaForResourceType(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestThemeSchemaExamples checks that the theme examples in the schema, which are published in the docs, parse as themes.
+func TestThemeSchemaExamples(t *testing.T) {
+	schema, err := JSONSchemaForResourceType(ResourceKindTheme)
+	require.NoError(t, err)
+	require.NotEmpty(t, schema.Examples)
+
+	files := map[string]string{"rill.yaml": ""}
+	for i, example := range schema.Examples {
+		data, err := yaml.Marshal(example)
+		require.NoError(t, err)
+		files[fmt.Sprintf("themes/example_%d.yaml", i)] = string(data)
+	}
+
+	p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+	require.Len(t, p.Resources, len(schema.Examples))
 }

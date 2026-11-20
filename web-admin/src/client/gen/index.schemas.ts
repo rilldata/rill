@@ -2038,6 +2038,11 @@ export type AdminServiceUpdateOrganizationBody = {
 };
 
 export type AdminServiceGetBillingCreditBalanceParams = {
+  /**
+ * If true, a recently fetched balance may be returned instead of querying the billing provider.
+If false, the balance is always fetched from the billing provider.
+ */
+  allowCached?: boolean;
   superuserForceAccess?: boolean;
 };
 

@@ -35,14 +35,10 @@
   );
 
   let pinned = $derived(
-    Boolean(
-      showPinned && yamlConfigProvider.pinnedFilters[dimensionManager.name],
-    ),
+    showPinned && yamlConfigProvider.isPinnedFilter(dimensionManager.name),
   );
   let required = $derived(
-    Boolean(
-      showPinned && yamlConfigProvider.requiredFilters[dimensionManager.name],
-    ),
+    showPinned && yamlConfigProvider.isRequiredFilter(dimensionManager.name),
   );
   let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
 
