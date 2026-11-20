@@ -1128,6 +1128,15 @@ export class WorkbookConditionalFormat extends Message<WorkbookConditionalFormat
    */
   format?: ExportConditionalFormat;
 
+  /**
+   * The values at the ends of a color scale or data bar, like the dashboard's color domain.
+   * A nested pivot takes them from its innermost rows, so the subtotals of expanded rows don't stretch the colors.
+   * When unset, they are the lowest and highest numbers in the columns.
+   *
+   * @generated from field: rill.runtime.v1.WorkbookValueRange domain = 3;
+   */
+  domain?: WorkbookValueRange;
+
   constructor(data?: PartialMessage<WorkbookConditionalFormat>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1138,6 +1147,7 @@ export class WorkbookConditionalFormat extends Message<WorkbookConditionalFormat
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "columns", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "format", kind: "message", T: ExportConditionalFormat },
+    { no: 3, name: "domain", kind: "message", T: WorkbookValueRange },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookConditionalFormat {
@@ -1154,6 +1164,51 @@ export class WorkbookConditionalFormat extends Message<WorkbookConditionalFormat
 
   static equals(a: WorkbookConditionalFormat | PlainMessage<WorkbookConditionalFormat> | undefined, b: WorkbookConditionalFormat | PlainMessage<WorkbookConditionalFormat> | undefined): boolean {
     return proto3.util.equals(WorkbookConditionalFormat, a, b);
+  }
+}
+
+/**
+ * WorkbookValueRange is a range of numbers.
+ *
+ * @generated from message rill.runtime.v1.WorkbookValueRange
+ */
+export class WorkbookValueRange extends Message<WorkbookValueRange> {
+  /**
+   * @generated from field: double min = 1;
+   */
+  min = 0;
+
+  /**
+   * @generated from field: double max = 2;
+   */
+  max = 0;
+
+  constructor(data?: PartialMessage<WorkbookValueRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WorkbookValueRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "min", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 2, name: "max", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WorkbookValueRange | PlainMessage<WorkbookValueRange> | undefined, b: WorkbookValueRange | PlainMessage<WorkbookValueRange> | undefined): boolean {
+    return proto3.util.equals(WorkbookValueRange, a, b);
   }
 }
 

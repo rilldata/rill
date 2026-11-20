@@ -15,7 +15,10 @@ import {
   type PivotDataState,
   type PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { toExportConditionalFormats } from "@rilldata/web-common/features/dashboards/pivot/pivot-conditional-formatting";
+import {
+  computeMeasureDomains,
+  toExportConditionalFormats,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-conditional-formatting";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { ColumnDef, ExpandedState } from "tanstack-table-8-svelte-5";
@@ -86,7 +89,11 @@ export function flattenPivotData(
     );
 
   const rows = visible.map(({ row, depth }) => toCells(row, depth));
-  const conditionalFormats = tableConditionalFormats(leaves, config);
+  const conditionalFormats = tableConditionalFormats(
+    leaves,
+    config,
+    state.data,
+  );
   const totals = state.totalsRowData;
   if (!totals || config.pivot.showTotalsRow === false) {
     return { columns, rows, conditionalFormats };
@@ -106,7 +113,9 @@ export function flattenPivotData(
 function tableConditionalFormats(
   leaves: LeafColumn[],
   config: PivotDataStoreConfig,
+  data: PivotDataRow[] | undefined,
 ): ExportTableConditionalFormat[] {
+  const domainOf = measureDomains(leaves, data);
   return Object.entries(config.pivot.measureFormatting ?? {}).flatMap(
     ([measureName, fmt]) => {
       const columns = leaves
@@ -116,12 +125,44 @@ function tableConditionalFormats(
       const lowerIsBetter =
         config.allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
         false;
+      const domain = fmt.mode === "rules" ? undefined : domainOf(measureName);
       return toExportConditionalFormats(fmt, lowerIsBetter).map((format) => ({
         columns,
         format,
+        ...(domain && { domain: { min: domain[0], max: domain[1] } }),
       }));
     },
   );
+}
+
+// The color domains of the formatted measures, as the dashboard computes them
+// (buildCellFormatters in PivotTable.svelte): from the leaf rows, or from the
+// parent rows when no leaf row has a value, so the subtotals of expanded rows
+// don't stretch the colors. As on the dashboard, the loaded rows under
+// collapsed rows count too.
+function measureDomains(
+  leaves: LeafColumn[],
+  data: PivotDataRow[] | undefined,
+): (measureName: string) => [number, number] | undefined {
+  const leafValues: { measureName: string; value: number }[] = [];
+  const parentValues: { measureName: string; value: number }[] = [];
+  const visit = (rows: PivotDataRow[] | undefined) => {
+    for (const row of rows ?? []) {
+      const target = row.subRows?.length ? parentValues : leafValues;
+      for (const { key, formattedMeasure } of leaves) {
+        const value = row[key];
+        if (formattedMeasure && typeof value === "number") {
+          target.push({ measureName: formattedMeasure, value });
+        }
+      }
+      visit(row.subRows);
+    }
+  };
+  visit(data);
+  const leafDomains = computeMeasureDomains(leafValues);
+  const parentDomains = computeMeasureDomains(parentValues);
+  return (measureName) =>
+    leafDomains.get(measureName) ?? parentDomains.get(measureName);
 }
 
 // The leaf columns in display order, each with the headers of the groups above

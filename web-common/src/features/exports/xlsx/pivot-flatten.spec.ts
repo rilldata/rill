@@ -3,7 +3,10 @@ import type {
   PivotDataState,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { describe, expect, it } from "vitest";
@@ -277,6 +280,7 @@ describe("flattenPivotData", () => {
       }),
     );
     // The CTR has formatting but no columns in the table, so it gets no format.
+    // The domain spans the value columns, not the row totals.
     expect(table.conditionalFormats).toEqual([
       {
         columns: ["c0v0m0", "c0v1m0"],
@@ -287,8 +291,70 @@ describe("flattenPivotData", () => {
             maxColor: "#00441b",
           },
         },
+        domain: { min: 1, max: 2 },
       },
     ]);
+  });
+
+  it("takes a nested pivot's color domain from its leaf rows, as the dashboard does", () => {
+    const barDefs = [
+      { id: "country", accessorFn: () => null, header: "Country" },
+      {
+        accessorKey: "impressions",
+        header: "Impressions",
+        name: "impressions",
+        meta: {
+          measureName: "impressions",
+          conditionalFormat: { mode: "data_bar", scheme: "blues" },
+        },
+      },
+    ] as unknown as ColumnDef<PivotDataRow>[];
+    const barConfig = config({
+      rowDimensionNames: ["country", "city"],
+      pivot: {
+        expanded: { "0": true },
+        measureFormatting: {
+          impressions: { mode: "data_bar", scheme: "blues" },
+        },
+      } as unknown as PivotDataStoreConfig["pivot"],
+    });
+    const domain = (data: PivotDataRow[]) =>
+      flattenPivotData(state(barDefs, data), barConfig).conditionalFormats?.[0]
+        .domain;
+
+    // The subtotals of the expanded and the collapsed country are left out.
+    expect(
+      domain([
+        {
+          country: "US",
+          impressions: 1000000,
+          subRows: [
+            { country: "NY", impressions: 52000 },
+            { country: "SF", impressions: -48000 },
+          ],
+        },
+        {
+          country: "CA",
+          impressions: 900000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+      ]),
+    ).toEqual({ min: -48000, max: 52000 });
+    // Without loaded leaf rows, the parent rows set it.
+    expect(
+      domain([
+        {
+          country: "US",
+          impressions: 1000000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+        {
+          country: "CA",
+          impressions: 900000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+      ]),
+    ).toEqual({ min: 900000, max: 1000000 });
   });
 
   it("labels nested time row headers and types flat time columns", () => {

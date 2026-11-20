@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image/png"
+	"math"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
@@ -117,6 +118,9 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 			}
 			if err := conditionalformat.Validate(cf.Format); err != nil {
 				return validationErrorf("data sheet %q: %v", ds.Title, err)
+			}
+			if d := cf.Domain; d != nil && !(d.Min <= d.Max && !math.IsInf(d.Min, 0) && !math.IsInf(d.Max, 0)) {
+				return validationErrorf("a conditional format of data sheet %q has an invalid domain: its ends must be finite and in order", ds.Title)
 			}
 		}
 		cells += len(ds.Rows) * len(ds.Columns)

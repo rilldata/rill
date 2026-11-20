@@ -105,4 +105,8 @@ export interface ExportTable {
 export interface ExportTableConditionalFormat {
   columns: string[];
   format: V1ExportConditionalFormat;
+  // The values at the ends of a color scale or data bar, when they aren't the
+  // lowest and highest numbers in the columns, like the leaf-row domain of a
+  // nested pivot.
+  domain?: { min: number; max: number };
 }

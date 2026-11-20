@@ -199,4 +199,14 @@ message WorkbookConditionalFormat {
   // as a pivot does for the columns of a measure under its column dimensions.
   repeated string columns = 1;
   ExportConditionalFormat format = 2;
+  // The values at the ends of a color scale or data bar, like the dashboard's color domain.
+  // A nested pivot takes them from its innermost rows, so the subtotals of expanded rows don't stretch the colors.
+  // When unset, they are the lowest and highest numbers in the columns.
+  WorkbookValueRange domain = 3;
+}
+
+// WorkbookValueRange is a range of numbers.
+message WorkbookValueRange {
+  double min = 1;
+  double max = 2;
 }

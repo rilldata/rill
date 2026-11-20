@@ -164,6 +164,20 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalF
 	idx++
 	firstDataRow := idx
 
+	// The columns of each conditional format, and the range of the numbers in them, which sets the ends of its color scale or data bar.
+	formatColumns := make([][]int, len(conditionalFormats))
+	domains := make([]conditionalformat.Domain, len(conditionalFormats))
+	for i, cf := range conditionalFormats {
+		step := cf.Stride
+		if step <= 0 {
+			// Only the first column.
+			step = len(res.Schema.Fields)
+		}
+		for col := cf.Column; col < len(res.Schema.Fields); col += step {
+			formatColumns[i] = append(formatColumns[i], col)
+		}
+	}
+
 	vals := make([]any, len(res.Schema.Fields))
 	for i := range vals {
 		vals[i] = new(any)
@@ -206,6 +220,18 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalF
 			}
 			row[i] = s
 		}
+		for i, cols := range formatColumns {
+			for _, col := range cols {
+				switch v := row[col].(type) {
+				case int64:
+					domains[i].Add(float64(v))
+				case uint64:
+					domains[i].Add(float64(v))
+				case float64:
+					domains[i].Add(v)
+				}
+			}
+		}
 
 		cell, err := excelize.CoordinatesToCellName(1, idx)
 		if err != nil {
@@ -223,21 +249,16 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalF
 
 	// The stream writer writes the sheet's conditional formats when it is flushed.
 	if lastDataRow := idx - 1; lastDataRow >= firstDataRow {
-		for _, cf := range conditionalFormats {
-			step := cf.Stride
-			if step <= 0 {
-				// Only the first column.
-				step = len(res.Schema.Fields)
-			}
-			var ranges []string
-			for col := cf.Column; col < len(res.Schema.Fields); col += step {
+		for i, cf := range conditionalFormats {
+			ranges := make([]string, len(formatColumns[i]))
+			for j, col := range formatColumns[i] {
 				name, err := excelize.ColumnNumberToName(col + 1)
 				if err != nil {
 					return err
 				}
-				ranges = append(ranges, fmt.Sprintf("%s%d:%s%d", name, firstDataRow, name, lastDataRow))
+				ranges[j] = fmt.Sprintf("%s%d:%s%d", name, firstDataRow, name, lastDataRow)
 			}
-			if err := conditionalformat.Apply(xf, sheet, ranges, "", cf.Format); err != nil {
+			if err := conditionalformat.Apply(xf, sheet, ranges, domains[i], cf.Format); err != nil {
 				return err
 			}
 		}

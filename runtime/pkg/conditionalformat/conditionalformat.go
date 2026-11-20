@@ -63,14 +63,35 @@ func validateColor(field, color string) error {
 	return nil
 }
 
+// Domain is the range of values that sets the ends of a color scale or data bar, like the dashboard's color domain.
+// The zero value is empty; Add widens it.
+type Domain struct {
+	Min, Max float64
+	valid    bool
+}
+
+// Add widens the domain to include v. It ignores NaN and infinite values, which Excel can't store.
+func (d *Domain) Add(v float64) {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return
+	}
+	if !d.valid {
+		d.Min, d.Max, d.valid = v, v, true
+		return
+	}
+	d.Min = math.Min(d.Min, v)
+	d.Max = math.Max(d.Max, v)
+}
+
 // Apply adds a format to a sheet as an Excel conditional format over the cell ranges, like "B2:B10".
 // The ranges must span the same rows and be listed left to right, since a cell rule's formula is written relative to the first cell of the first range.
-// A color scale or a data bar spans all the ranges, so it compares their values.
-// domain optionally references the cells whose lowest and highest values set the ends of a color scale or data bar,
-// for cells that show some of the values of other cells, like a table preview; it defaults to the ranges themselves.
+// domain sets the ends of a color scale or data bar.
+// They are written as numbers rather than formulas over the ranges,
+// since a pivot's measure can span more ranges than an Excel function takes arguments.
+// A color scale or data bar with an empty domain has no numbers to color, so Apply leaves it out.
 // When several formats cover a cell, the one applied first takes priority.
 // A stream writer writes the sheet's conditional formats when it is flushed, so Apply must be called before that.
-func Apply(f *excelize.File, sheet string, ranges []string, domain string, format *runtimev1.ExportConditionalFormat) error {
+func Apply(f *excelize.File, sheet string, ranges []string, domain Domain, format *runtimev1.ExportConditionalFormat) error {
 	if len(ranges) == 0 {
 		return nil
 	}
@@ -82,52 +103,42 @@ func Apply(f *excelize.File, sheet string, ranges []string, domain string, forma
 	var opts excelize.ConditionalFormatOptions
 	switch t := format.Format.(type) {
 	case *runtimev1.ExportConditionalFormat_ColorScale:
+		if !domain.valid {
+			return nil
+		}
 		opts = excelize.ConditionalFormatOptions{
 			Type:     "2_color_scale",
 			Criteria: "=",
-			MinType:  "min",
-			MaxType:  "max",
+			MinType:  "num",
+			MinValue: formatNumber(domain.Min),
+			MaxType:  "num",
+			MaxValue: formatNumber(domain.Max),
 			MinColor: t.ColorScale.MinColor,
 			MaxColor: t.ColorScale.MaxColor,
 		}
 		if t.ColorScale.MidColor != "" {
 			// The midpoint of the values, not their median, so the colors follow the values linearly as on the dashboard.
 			opts.Type = "3_color_scale"
-			opts.MidType = "percent"
-			opts.MidValue = "50"
+			opts.MidType = "num"
+			opts.MidValue = formatNumber(domain.Min + (domain.Max-domain.Min)/2)
 			opts.MidColor = t.ColorScale.MidColor
 		}
-		if domain != "" {
-			opts.MinType, opts.MinValue = "formula", fmt.Sprintf("MIN(%s)", domain)
-			opts.MaxType, opts.MaxValue = "formula", fmt.Sprintf("MAX(%s)", domain)
-			if opts.MidColor != "" {
-				opts.MidType, opts.MidValue = "formula", fmt.Sprintf("(MIN(%[1]s)+MAX(%[1]s))/2", domain)
-			}
-		}
 	case *runtimev1.ExportConditionalFormat_DataBar:
+		if !domain.valid {
+			return nil
+		}
 		// As on the dashboard, bars run from zero to the largest absolute value, so a positive value's bar is proportional to it.
 		// The dashboard also sizes the bars of negative values by their absolute value,
 		// but Excel can't: it gives values at or below a data bar's lower end its shortest bar.
 		// Bars going left from an axis and solid fills need an extension list that stream writers drop,
 		// so the bars keep Excel's default gradient.
-		if domain == "" {
-			refs := make([]string, len(ranges))
-			for i, r := range ranges {
-				ref, err := absoluteRange(r)
-				if err != nil {
-					return err
-				}
-				refs[i] = ref
-			}
-			domain = strings.Join(refs, ",")
-		}
 		opts = excelize.ConditionalFormatOptions{
 			Type:     "data_bar",
 			Criteria: "=",
 			MinType:  "num",
 			MinValue: "0",
-			MaxType:  "formula",
-			MaxValue: fmt.Sprintf("MAX(MAX(%[1]s),-MIN(%[1]s))", domain),
+			MaxType:  "num",
+			MaxValue: formatNumber(math.Max(math.Abs(domain.Min), math.Abs(domain.Max))),
 			BarColor: t.DataBar.Color,
 		}
 	case *runtimev1.ExportConditionalFormat_CellRule:
@@ -170,22 +181,6 @@ func cellRuleFormula(cell string, r *runtimev1.ExportCellRule) string {
 		cond = cell + ">=" + value + "," + cell + "<=" + formatNumber(r.UpperValue)
 	}
 	return fmt.Sprintf("AND(ISNUMBER(%s),%s)", cell, cond)
-}
-
-// absoluteRange returns a cell range like "B2:B10" with absolute references, like "$B$2:$B$10".
-func absoluteRange(r string) (string, error) {
-	from, to, _ := strings.Cut(r, ":")
-	cells := []string{from, to}
-	for i, cell := range cells {
-		col, row, err := excelize.CellNameToCoordinates(cell)
-		if err != nil {
-			return "", err
-		}
-		if cells[i], err = excelize.CoordinatesToCellName(col, row, true); err != nil {
-			return "", err
-		}
-	}
-	return cells[0] + ":" + cells[1], nil
 }
 
 // formatNumber formats a number for a formula; Excel reads exponents like 1E+21.

@@ -49,40 +49,39 @@ func TestValidate(t *testing.T) {
 func TestApply(t *testing.T) {
 	f := excelize.NewFile()
 	defer f.Close()
-	// A color scale over two columns, scaled to cells on another sheet, and two-color without a midpoint.
-	require.NoError(t, Apply(f, "Sheet1", []string{"B2:B9", "D2:D9"}, "'Data'!$B$2:$B$50", colorScale("#f7fcf5", "#74c476", "#00441b")))
-	require.NoError(t, Apply(f, "Sheet1", []string{"F2:F9"}, "", colorScale("#f7fcf5", "", "#00441b")))
+	var domain Domain
+	for _, v := range []float64{-150, 20, math.NaN(), 80} {
+		domain.Add(v)
+	}
+	// A color scale over two columns, and two-color without a midpoint; the ends are the domain's, written as numbers.
+	require.NoError(t, Apply(f, "Sheet1", []string{"B2:B9", "D2:D9"}, domain, colorScale("#f7fcf5", "#74c476", "#00441b")))
+	require.NoError(t, Apply(f, "Sheet1", []string{"F2:F9"}, domain, colorScale("#f7fcf5", "", "#00441b")))
 	// Rules are written relative to the first cell they cover and stop at the first match.
-	require.NoError(t, Apply(f, "Sheet1", []string{"G2:G9", "H2:H9"}, "", cellRule(runtimev1.ExportCellRuleOperator_EXPORT_CELL_RULE_OPERATOR_BETWEEN, -1.5, 1e21)))
-	// Data bars end at the largest absolute value of the cells they cover, or of the domain.
+	require.NoError(t, Apply(f, "Sheet1", []string{"G2:G9", "H2:H9"}, domain, cellRule(runtimev1.ExportCellRuleOperator_EXPORT_CELL_RULE_OPERATOR_BETWEEN, -1.5, 1e21)))
+	// Data bars run from zero to the largest absolute value.
 	dataBar := &runtimev1.ExportConditionalFormat{Format: &runtimev1.ExportConditionalFormat_DataBar{DataBar: &runtimev1.ExportDataBar{Color: "#638ec6"}}}
-	require.NoError(t, Apply(f, "Sheet1", []string{"I2:I9", "J2:J9"}, "", dataBar))
-	require.NoError(t, Apply(f, "Sheet1", []string{"K2:K9"}, "'Data'!$C$2:$C$50", dataBar))
+	require.NoError(t, Apply(f, "Sheet1", []string{"I2:I9", "J2:J9"}, domain, dataBar))
+	// Without numbers, a data bar or color scale has nothing to color.
+	require.NoError(t, Apply(f, "Sheet1", []string{"K2:K9"}, Domain{}, dataBar))
 	// No ranges, no format.
-	require.NoError(t, Apply(f, "Sheet1", nil, "", colorScale("#f7fcf5", "", "#00441b")))
+	require.NoError(t, Apply(f, "Sheet1", nil, domain, colorScale("#f7fcf5", "", "#00441b")))
 
 	formats, err := f.GetConditionalFormats("Sheet1")
 	require.NoError(t, err)
-	require.Len(t, formats, 5)
+	require.Len(t, formats, 4)
 
 	scale := formats["B2:B9 D2:D9"][0]
 	require.Equal(t, "3_color_scale", scale.Type)
-	require.Equal(t, "MIN('Data'!$B$2:$B$50)", scale.MinValue)
-	require.Equal(t, "(MIN('Data'!$B$2:$B$50)+MAX('Data'!$B$2:$B$50))/2", scale.MidValue)
-	require.Equal(t, "MAX('Data'!$B$2:$B$50)", scale.MaxValue)
+	require.Equal(t, []string{"num", "num", "num"}, []string{scale.MinType, scale.MidType, scale.MaxType})
+	require.Equal(t, []string{"-150", "-35", "80"}, []string{scale.MinValue, scale.MidValue, scale.MaxValue})
 
 	twoColor := formats["F2:F9"][0]
 	require.Equal(t, "2_color_scale", twoColor.Type)
-	require.Equal(t, "min", twoColor.MinType)
-	require.Equal(t, "max", twoColor.MaxType)
+	require.Equal(t, []string{"-150", "80"}, []string{twoColor.MinValue, twoColor.MaxValue})
 
 	bar := formats["I2:I9 J2:J9"][0]
 	require.Equal(t, "data_bar", bar.Type)
-	require.Equal(t, "num", bar.MinType)
-	require.Equal(t, "0", bar.MinValue)
-	require.Equal(t, "formula", bar.MaxType)
-	require.Equal(t, "MAX(MAX($I$2:$I$9,$J$2:$J$9),-MIN($I$2:$I$9,$J$2:$J$9))", bar.MaxValue)
-	require.Equal(t, "MAX(MAX('Data'!$C$2:$C$50),-MIN('Data'!$C$2:$C$50))", formats["K2:K9"][0].MaxValue)
+	require.Equal(t, []string{"num", "0", "num", "150"}, []string{bar.MinType, bar.MinValue, bar.MaxType, bar.MaxValue})
 
 	rule := formats["G2:G9 H2:H9"][0]
 	require.Equal(t, "formula", rule.Type)

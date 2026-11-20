@@ -593,7 +593,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	// The result has a column per dimension, followed by a column per measure.
+	// The result has a column per dimension, followed by a column per measure (see writeSelectWithDisplayNames).
+	// The columns are named by display name, which needn't be unique, so the formats find their measures' columns by position.
 	var xlsxFormats []driverutil.XLSXConditionalFormat
 	for _, cf := range conditionalFormats {
 		i := slices.IndexFunc(ast.Root.MeasureFields, func(f metricsview.FieldNode) bool { return f.Name == cf.Measure })

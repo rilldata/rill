@@ -20,6 +20,7 @@ import {
   WorkbookNoteBlock,
   WorkbookTableBlock,
   WorkbookTextBlock,
+  WorkbookValueRange,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { marked, type Token, type Tokens } from "marked";
 import { get } from "svelte/store";
@@ -722,6 +723,7 @@ export function toDataSheet(
         new WorkbookConditionalFormat({
           columns: cf.columns,
           format: ExportConditionalFormat.fromJson(cf.format as JsonValue),
+          domain: cf.domain && new WorkbookValueRange(cf.domain),
         }),
     ),
   });

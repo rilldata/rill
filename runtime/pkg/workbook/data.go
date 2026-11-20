@@ -113,15 +113,16 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		if len(ds.Rows) == 0 {
 			break
 		}
-		var ranges []string
-		for _, j := range formatColumns(ds, cf) {
+		columns := formatColumns(ds, cf)
+		ranges := make([]string, len(columns))
+		for i, j := range columns {
 			r, err := cellRange(j+1, 2, len(ds.Rows), false)
 			if err != nil {
 				return err
 			}
-			ranges = append(ranges, r)
+			ranges[i] = r
 		}
-		if err := conditionalformat.Apply(w.f, name, ranges, "", cf.Format); err != nil {
+		if err := conditionalformat.Apply(w.f, name, ranges, formatDomain(ds, cf, columns), cf.Format); err != nil {
 			return err
 		}
 	}
@@ -154,6 +155,28 @@ func formatColumns(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookCondit
 		}
 	}
 	return res
+}
+
+// formatDomain returns the values at the ends of a format's color scale or data bar:
+// the format's domain if it has one, or else the lowest and highest numbers in its columns.
+func formatDomain(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookConditionalFormat, columns []int) conditionalformat.Domain {
+	var d conditionalformat.Domain
+	if cf.Domain != nil {
+		d.Add(cf.Domain.Min)
+		d.Add(cf.Domain.Max)
+		return d
+	}
+	for _, r := range ds.Rows {
+		for _, j := range columns {
+			// The value as the sheet stores it, so values that aren't written as numbers don't count.
+			if v, err := cellValue(ds.Columns[j], rowValue(r, j)); err == nil {
+				if n, ok := v.(float64); ok {
+					d.Add(n)
+				}
+			}
+		}
+	}
+	return d
 }
 
 // cellRange returns the range of rows cells down a grid column (1-based) from firstRow, like "B2:B10",

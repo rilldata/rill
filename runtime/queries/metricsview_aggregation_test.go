@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1328,6 +1330,24 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 			require.Equal(t, "Publisher", rows[headerRow][0])
 			lastRow := len(rows)
 
+			// Each format covers its measure's columns, and a color scale's ends are the lowest and highest values in all of them.
+			labels := map[string]string{"measure_0": "Number of bids", "measure_1": "Average bid price"}
+			lowest, highest := math.Inf(1), math.Inf(-1)
+			for measure, ranges := range tt.want {
+				for _, r := range strings.Split(fmt.Sprintf(ranges, lastRow), " ") {
+					col, _, err := excelize.CellNameToCoordinates(strings.SplitN(r, ":", 2)[0])
+					require.NoError(t, err)
+					require.True(t, strings.HasSuffix(rows[headerRow][col-1], labels[measure]), "column %d has header %q", col, rows[headerRow][col-1])
+					for _, row := range rows[headerRow+1:] {
+						if measure == "measure_0" && col <= len(row) && row[col-1] != "" {
+							v, err := strconv.ParseFloat(row[col-1], 64)
+							require.NoError(t, err)
+							lowest, highest = math.Min(lowest, v), math.Max(highest, v)
+						}
+					}
+				}
+			}
+
 			formats, err := f.GetConditionalFormats("Sheet1")
 			require.NoError(t, err)
 			require.Len(t, formats, 2)
@@ -1335,6 +1355,8 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 			require.Len(t, scale, 1)
 			require.Equal(t, "3_color_scale", scale[0].Type)
 			require.Equal(t, "74C476", scale[0].MidColor)
+			require.Equal(t, strconv.FormatFloat(lowest, 'G', -1, 64), scale[0].MinValue)
+			require.Equal(t, strconv.FormatFloat(highest, 'G', -1, 64), scale[0].MaxValue)
 			cell := strings.SplitN(tt.want["measure_1"], ":", 2)[0]
 			rules := formats[fmt.Sprintf(tt.want["measure_1"], lastRow)]
 			require.Len(t, rules, 1)

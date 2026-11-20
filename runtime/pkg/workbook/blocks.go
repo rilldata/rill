@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
-	"strings"
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -412,7 +411,7 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 	if ds.Totals != nil && !ds.TotalsLast {
 		firstDataRow++
 	}
-	if err := w.applyPreviewFormats(sheet, ds, dsName, columns, spans, col, firstDataRow, len(dataRows)); err != nil {
+	if err := w.applyPreviewFormats(sheet, ds, columns, spans, col, firstDataRow, len(dataRows)); err != nil {
 		return err
 	}
 	link := fmt.Sprintf("Full data: %s (%d rows)", dsName, len(ds.Rows))
@@ -432,18 +431,14 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 // columns are the data sheet columns the preview shows, laid out from grid column col with the given spans.
 // A merged cell takes the format of its first cell. The ends of the color scales and data bars are those of the full
 // data sheet, so the preview's colors match the sheet's.
-func (w *writer) applyPreviewFormats(sheet string, ds *runtimev1.WorkbookDataSheet, dsName string, columns, spans []int, col, firstRow, rows int) error {
+func (w *writer) applyPreviewFormats(sheet string, ds *runtimev1.WorkbookDataSheet, columns, spans []int, col, firstRow, rows int) error {
 	if rows == 0 || len(ds.Rows) == 0 {
 		return nil
 	}
 	for _, cf := range ds.ConditionalFormats {
-		var ranges, domain []string
-		for _, j := range formatColumns(ds, cf) {
-			ref, err := columnRange(dsName, j+1, len(ds.Rows))
-			if err != nil {
-				return err
-			}
-			domain = append(domain, ref)
+		var ranges []string
+		formatted := formatColumns(ds, cf)
+		for _, j := range formatted {
 			c := col
 			for k, shown := range columns {
 				if shown == j {
@@ -457,7 +452,7 @@ func (w *writer) applyPreviewFormats(sheet string, ds *runtimev1.WorkbookDataShe
 				c += spans[k]
 			}
 		}
-		if err := conditionalformat.Apply(w.f, sheet, ranges, strings.Join(domain, ","), cf.Format); err != nil {
+		if err := conditionalformat.Apply(w.f, sheet, ranges, formatDomain(ds, cf, formatted), cf.Format); err != nil {
 			return err
 		}
 	}
