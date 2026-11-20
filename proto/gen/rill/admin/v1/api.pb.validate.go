@@ -3844,10 +3844,11 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetUserId()) < 1 {
-		err := ListProjectsForOrganizationAndUserRequestValidationError{
+	if err := m._validateUuid(m.GetUserId()); err != nil {
+		err = ListProjectsForOrganizationAndUserRequestValidationError{
 			field:  "UserId",
-			reason: "value length must be at least 1 runes",
+			reason: "value must be a valid UUID",
+			cause:  err,
 		}
 		if !all {
 			return err
@@ -3878,6 +3879,14 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListProjectsForOrganizationAndUserRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -6451,20 +6460,15 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 
-		if m.GetUserId() != "" {
-
-			if err := m._validateUuid(m.GetUserId()); err != nil {
-				err = GetDeploymentCredentialsRequestValidationError{
-					field:  "UserId",
-					reason: "value must be a valid UUID",
-					cause:  err,
-				}
-				if !all {
-					return err
-				}
-				errors = append(errors, err)
+		if utf8.RuneCountInString(m.GetUserId()) < 1 {
+			err := GetDeploymentCredentialsRequestValidationError{
+				field:  "UserId",
+				reason: "value length must be at least 1 runes",
 			}
-
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	case *GetDeploymentCredentialsRequest_UserEmail:
@@ -6591,14 +6595,6 @@ func (m *GetDeploymentCredentialsRequest) _validateEmail(addr string) error {
 	}
 
 	return m._validateHostname(parts[1])
-}
-
-func (m *GetDeploymentCredentialsRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
-	}
-
-	return nil
 }
 
 // GetDeploymentCredentialsRequestMultiError is an error wrapping multiple
@@ -6868,20 +6864,15 @@ func (m *GetIFrameRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 
-		if m.GetUserId() != "" {
-
-			if err := m._validateUuid(m.GetUserId()); err != nil {
-				err = GetIFrameRequestValidationError{
-					field:  "UserId",
-					reason: "value must be a valid UUID",
-					cause:  err,
-				}
-				if !all {
-					return err
-				}
-				errors = append(errors, err)
+		if utf8.RuneCountInString(m.GetUserId()) < 1 {
+			err := GetIFrameRequestValidationError{
+				field:  "UserId",
+				reason: "value length must be at least 1 runes",
 			}
-
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	case *GetIFrameRequest_UserEmail:
@@ -7008,14 +6999,6 @@ func (m *GetIFrameRequest) _validateEmail(addr string) error {
 	}
 
 	return m._validateHostname(parts[1])
-}
-
-func (m *GetIFrameRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
-	}
-
-	return nil
 }
 
 // GetIFrameRequestMultiError is an error wrapping multiple validation errors
@@ -10650,20 +10633,16 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.ArchiveAssetId != nil {
 
-		if m.GetArchiveAssetId() != "" {
-
-			if err := m._validateUuid(m.GetArchiveAssetId()); err != nil {
-				err = UpdateProjectRequestValidationError{
-					field:  "ArchiveAssetId",
-					reason: "value must be a valid UUID",
-					cause:  err,
-				}
-				if !all {
-					return err
-				}
-				errors = append(errors, err)
+		if err := m._validateUuid(m.GetArchiveAssetId()); err != nil {
+			err = UpdateProjectRequestValidationError{
+				field:  "ArchiveAssetId",
+				reason: "value must be a valid UUID",
+				cause:  err,
 			}
-
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -17110,19 +17089,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-
-		if err := m._validateUuid(m.GetUserId()); err != nil {
-			err = SudoGetResourceRequestValidationError{
-				field:  "UserId",
-				reason: "value must be a valid UUID",
-				cause:  err,
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
+		// no validation rules for UserId
 	case *SudoGetResourceRequest_OrgId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
@@ -17134,19 +17101,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-
-		if err := m._validateUuid(m.GetOrgId()); err != nil {
-			err = SudoGetResourceRequestValidationError{
-				field:  "OrgId",
-				reason: "value must be a valid UUID",
-				cause:  err,
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
+		// no validation rules for OrgId
 	case *SudoGetResourceRequest_ProjectId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
@@ -17158,19 +17113,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-
-		if err := m._validateUuid(m.GetProjectId()); err != nil {
-			err = SudoGetResourceRequestValidationError{
-				field:  "ProjectId",
-				reason: "value must be a valid UUID",
-				cause:  err,
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
+		// no validation rules for ProjectId
 	case *SudoGetResourceRequest_DeploymentId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
@@ -17182,19 +17125,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-
-		if err := m._validateUuid(m.GetDeploymentId()); err != nil {
-			err = SudoGetResourceRequestValidationError{
-				field:  "DeploymentId",
-				reason: "value must be a valid UUID",
-				cause:  err,
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
+		// no validation rules for DeploymentId
 	case *SudoGetResourceRequest_InstanceId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
@@ -17213,14 +17144,6 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return SudoGetResourceRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *SudoGetResourceRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -22674,10 +22597,11 @@ func (m *ListUsergroupsForOrganizationAndUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetUserId()) < 1 {
-		err := ListUsergroupsForOrganizationAndUserRequestValidationError{
+	if err := m._validateUuid(m.GetUserId()); err != nil {
+		err = ListUsergroupsForOrganizationAndUserRequestValidationError{
 			field:  "UserId",
-			reason: "value length must be at least 1 runes",
+			reason: "value must be a valid UUID",
+			cause:  err,
 		}
 		if !all {
 			return err
@@ -22704,6 +22628,14 @@ func (m *ListUsergroupsForOrganizationAndUserRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ListUsergroupsForOrganizationAndUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListUsergroupsForOrganizationAndUserRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -31425,28 +31357,10 @@ func (m *RevokeServiceAuthTokenRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetTokenId()); err != nil {
-		err = RevokeServiceAuthTokenRequestValidationError{
-			field:  "TokenId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for TokenId
 
 	if len(errors) > 0 {
 		return RevokeServiceAuthTokenRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RevokeServiceAuthTokenRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -33070,28 +32984,10 @@ func (m *RevokeMagicAuthTokenRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetTokenId()); err != nil {
-		err = RevokeMagicAuthTokenRequestValidationError{
-			field:  "TokenId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for TokenId
 
 	if len(errors) > 0 {
 		return RevokeMagicAuthTokenRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RevokeMagicAuthTokenRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -38620,20 +38516,16 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 
-		if m.GetQueryForUserId() != "" {
-
-			if err := m._validateUuid(m.GetQueryForUserId()); err != nil {
-				err = GetAlertMetaRequestValidationError{
-					field:  "QueryForUserId",
-					reason: "value must be a valid UUID",
-					cause:  err,
-				}
-				if !all {
-					return err
-				}
-				errors = append(errors, err)
+		if err := m._validateUuid(m.GetQueryForUserId()); err != nil {
+			err = GetAlertMetaRequestValidationError{
+				field:  "QueryForUserId",
+				reason: "value must be a valid UUID",
+				cause:  err,
 			}
-
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	case *GetAlertMetaRequest_QueryForUserEmail:
