@@ -1814,6 +1814,7 @@
   "pivot_drop_split_hint": "Drop to replace",
   "pivot_drop_split_text": "Drop here to split: <strong>{dimCount}</strong> {dimLabel} → rows, <strong>{measureCount}</strong> {measureLabel} → columns",
   "pivot_expand_row": "Expand row",
+  "pivot_grand_total_column_header": "Grand Total",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1831,6 +1832,7 @@
   "pivot_tags": "TAGS",
   "pivot_time_dimension_header": "Time {grain}",
   "pivot_time_prefix": "Time",
+  "pivot_totals_column_header": "Total",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
