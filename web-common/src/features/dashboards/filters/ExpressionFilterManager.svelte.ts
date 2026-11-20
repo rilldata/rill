@@ -20,7 +20,10 @@ import type {
   FilterChangeSource,
   FilterEvents,
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
-import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
+import {
+  mergeFilterParams,
+  narrowSingleSelectFilterParam,
+} from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
 import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import {
@@ -108,9 +111,10 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events.emit("ready");
     });
     // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
-    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
-      this.topLevelJoiner.addRequiredAndPinnedFilters(),
-    );
+    const unsubYamlConfig = yamlConfigProvider.on("update", () => {
+      this.topLevelJoiner.addRequiredAndPinnedFilters();
+      this.topLevelJoiner.enforceSingleSelectFilters();
+    });
     this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
     this.topLevelJoiner = $state(
@@ -186,7 +190,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   /**
-   * Folds the legacy singular `f` param into a param per metrics view.
+   * Folds the legacy singular `f` param into a param per metrics view,
+   * then narrows the single-select filters to the one value each can hold.
    *
    * A metrics view that already has a param of its own keeps it, since that is the newer state:
    * an embed host passes the singular param, and the dashboard then writes per metrics view params
@@ -195,14 +200,43 @@ export class ExpressionFilterManager implements UrlParamsStore {
    */
   public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
     const singularParam = urlParams.get(ExploreStateURLParams.Filters);
-    if (!singularParam || this.singleParamFormMv) return urlParams;
+    if (!singularParam || this.singleParamFormMv) {
+      return this.narrowSingleSelectParams(urlParams);
+    }
 
     const newUrlParams = new URLSearchParams();
     this.metricsViewsProvider.metricsViewNames.forEach((mvName) => {
       const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
       newUrlParams.set(paramKey, urlParams.get(paramKey) ?? singularParam);
     });
-    return newUrlParams;
+    return this.narrowSingleSelectParams(newUrlParams);
+  }
+
+  /**
+   * A url or bookmark can hold several values for a single-select filter, so the params are
+   * narrowed the way the chip narrows its value. See `narrowSingleSelectFilters`.
+   * A filter that only becomes single-select once the config loads is narrowed by `enforceSingleSelectFilters`.
+   */
+  private narrowSingleSelectParams(urlParams: URLSearchParams) {
+    if (!Object.keys(this.yamlConfigProvider.singleSelectFilters).length) {
+      return urlParams;
+    }
+
+    let narrowedParams: URLSearchParams | undefined;
+    for (const [key, param] of urlParams) {
+      const narrowedParam = narrowSingleSelectFilterParam(param, (name) =>
+        this.yamlConfigProvider.isSingleSelectFilter(name),
+      );
+      if (narrowedParam === undefined) continue;
+
+      narrowedParams ??= new URLSearchParams(urlParams);
+      if (narrowedParam) {
+        narrowedParams.set(key, narrowedParam);
+      } else {
+        narrowedParams.delete(key);
+      }
+    }
+    return narrowedParams ?? urlParams;
   }
 
   public setUrlParams(searchParams: URLSearchParams) {
@@ -265,7 +299,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       const dfm = DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
       if (!dfm) return;
 
@@ -297,7 +331,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 

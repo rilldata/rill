@@ -923,6 +923,7 @@
   "dashboard_dimensions": "차원",
   "dashboard_dimensions_count": "차원 {count}개",
   "dashboard_dimensions_label": "차원",
+  "dashboard_download_as_csv": "CSV로 다운로드",
   "dashboard_download_as_png": "PNG로 다운로드",
   "dashboard_download_png": "PNG 다운로드",
   "dashboard_drag_dimensions": "여기에 차원을 끌어다 놓으세요",
@@ -1462,6 +1463,7 @@
   "export_xlsx_description": "이 대시보드를 Excel 통합 문서로 내보냅니다.",
   "export_xlsx_failed": "Excel 내보내기에 실패했습니다",
   "export_xlsx_success": "대시보드가 Excel로 내보내졌습니다",
+  "export_xlsx_upload_failed": "내보내기({size})를 서버로 보내지 못했습니다. 다시 시도하거나, 기본 차트 또는 현재 탭만 내보내 크기를 줄이세요.",
   "field_list_add_fields": "{label} 필드 추가",
   "field_list_aria": "{label} 필드 목록",
   "field_list_dimensions": "차원",
@@ -1474,6 +1476,7 @@
   "filter_dimension": "차원",
   "filter_dimension_chip_aria": "{name} 필터",
   "filter_dimension_chip_tooltip": "클릭하면 이 차원의 필터를 편집합니다",
+  "filter_single_select_chip_tooltip": "클릭하여 값을 선택합니다. 이 필터는 한 번에 하나의 값만 가집니다.",
   "filter_dimension_result_count_aria": "{name} 결과 수",
   "filter_dimension_results_aria": "{name} 결과",
   "filter_dimension_search_list_aria": "{name} 검색 목록",
@@ -1811,6 +1814,7 @@
   "pivot_drop_split_hint": "놓아서 바꾸기",
   "pivot_drop_split_text": "여기에 놓아 분할: <strong>{dimCount}</strong>개 {dimLabel} → 행, <strong>{measureCount}</strong>개 {measureLabel} → 열",
   "pivot_expand_row": "행 펼치기",
+  "pivot_grand_total_column_header": "총합계",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1828,6 +1832,7 @@
   "pivot_tags": "태그",
   "pivot_time_dimension_header": "시간 {grain}",
   "pivot_time_prefix": "시간",
+  "pivot_totals_column_header": "합계",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

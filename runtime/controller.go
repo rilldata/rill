@@ -24,7 +24,16 @@ import (
 )
 
 // reconcileCancelationTimeout sets a timeout for how long to wait for a reconcile to cancel before stopping the controller with a critical error.
-const reconcileCancelationTimeout = 10 * time.Minute
+// It's a var so tests can override it.
+var reconcileCancelationTimeout = 10 * time.Minute
+
+// invocationShutdownTimeout sets how long a stopping controller waits for running reconciles to finish.
+// It's a var so tests can override it.
+var invocationShutdownTimeout = 30 * time.Second
+
+// errReconcileHung is returned by Controller.Run when a reconcile doesn't stop within reconcileCancelationTimeout after cancelation.
+// The hung goroutine can't be killed, so recovery requires a process restart.
+var errReconcileHung = errors.New("reconcile hung after cancelation")
 
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
@@ -192,7 +201,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	defer flushTicker.Stop()
 
 	// Ticker for periodically checking for hanging reconciles that don't respond to cancelation
-	hangingTicker := time.NewTicker(time.Minute)
+	hangingTicker := time.NewTicker(reconcileCancelationTimeout / 10)
 	defer hangingTicker.Stop()
 
 	// Timer for scheduling resources added to c.timeline.
@@ -286,7 +295,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.RUnlock()
 
 			if len(hanging) != 0 {
-				loopErr = fmt.Errorf("reconciles for resources %v have hung for more than %s after cancelation", hanging, reconcileCancelationTimeout.String())
+				loopErr = fmt.Errorf("%w: resources %v did not stop within %s", errReconcileHung, hanging, reconcileCancelationTimeout.String())
 				stop = true
 			}
 		case <-c.catalog.hasEventsCh: // The catalog has events to process
@@ -323,8 +332,8 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.RUnlock()
 
-	// Allow 30 seconds for closing invocations and reconcilers
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Allow some time for closing invocations and reconcilers
+	ctx, cancel := context.WithTimeout(context.Background(), invocationShutdownTimeout)
 	defer cancel()
 
 	// Need to consume all the cancelled invocation completions (otherwise, they will hang on sending to c.completed)

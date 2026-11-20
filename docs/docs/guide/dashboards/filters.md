@@ -35,7 +35,7 @@ If videos are more your jam, take a look at [our series of YouTube videos](https
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
 :::tip Human readable URL
-With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
+With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly.
 
 ../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
@@ -46,12 +46,12 @@ Users can add or hide dimensions and metrics to create a subset of fields they w
 
 ![Hide](/img/explore/filters/hide.png)
 
-
 :::tip hiding metrics and dimensions by default
 You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/developers/build/dashboards/customization#setting-default-views-for-dashboards).
 
-Or, an administrator can set the default view of a dashboard by [bookmarking the view](bookmarks) as Home. 
+Or, an administrator can set the default view of a dashboard by [bookmarking the view](bookmarks) as Home.
 :::
+
 ## Dimensions
 
 ### Filter by Dimensions
@@ -60,7 +60,7 @@ The primary and easiest way to filter data is by selecting values in the dimensi
 
 To add or remove dimensions on the page - select the All Dimensions picker above the Leaderboards. Next to the All Dimensions picker, you can also change which Metric is being highlighted to be able to update the entire page and cycle through each dimension table sorted by each metric.
 
-You can also expand each dimension table to see all metrics and full list of those dimensions. In the expanded Leaderboard, you can search for dimension values, select all values returned, or exclude values from the result. 
+You can also expand each dimension table to see all metrics and full list of those dimensions. In the expanded Leaderboard, you can search for dimension values, select all values returned, or exclude values from the result.
 
 Any filter applied in the Leaderboard will also show up in the filter bar next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
@@ -77,15 +77,13 @@ Deselect the comparison option or clear the filter bar to remove your comparison
 For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/guide/dashboards/explore/tdd) page.
 :::
 
-
 ## Measures
-
 
 ### Filter by Measures
 
-There are also use cases where you want to filter by the metric values returned. As an example - all customers over $1000 in revenue, all campaigns with at least 1 million impressions, all delivery locations with late times over 4%, etc. 
+There are also use cases where you want to filter by the metric values returned. As an example - all customers over $1000 in revenue, all campaigns with at least 1 million impressions, all delivery locations with late times over 4%, etc.
 
-To add or remove metrics on the page - select the All Measures picker above the Time Series charts. 
+To add or remove metrics on the page - select the All Measures picker above the Time Series charts.
 
 These metric filters can be applied from the filter bar. To apply a metric filter:
 
@@ -94,12 +92,10 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 - Select your Threshold Type (e.g. Greater Than)
 - Input your Threshold amount and Click Enter
 
-
 ![Image](/img/explore/filters/image.png)
 
-
 :::tip
-Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting. 
+Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting.
 
 As an example - to see the most active enterprise customers - filter all customers with revenue greater than $1000, then sort by number of users in descending order.
 :::
@@ -113,3 +109,7 @@ Dashboard authors can set a default filter, which is already applied when you op
 Authors can pin a filter so it always stays in the filter bar, or require a filter so the dashboard does not load until you select a value for it. Required filters are highlighted in the filter bar until they have a value, and **Clear filters** leaves pinned and required filters in the filter bar.
 
 To configure default, pinned and required filters, see [Pinned and required filters](/developers/build/dashboards/customization#pinned-and-required-filters) for explore dashboards and [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters) for canvas dashboards.
+
+## Single-Select Filters
+
+On canvas and explore dashboards, authors can limit a dimension filter to one value at a time. Its dropdown has no Exclude, Select all or mode options, and picking a value applies it right away. Clicking a value in a leaderboard, table or chart replaces the filter's value instead of adding to it. See [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters) for canvas dashboards and [Single-select filters](/developers/build/dashboards/customization#single-select-filters) for explore dashboards.

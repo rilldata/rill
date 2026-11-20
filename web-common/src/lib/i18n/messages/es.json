@@ -923,6 +923,7 @@
   "dashboard_dimensions": "Dimensiones",
   "dashboard_dimensions_count": "{count} dimensiones",
   "dashboard_dimensions_label": "DIMENSIONES",
+  "dashboard_download_as_csv": "Descargar como CSV",
   "dashboard_download_as_png": "Descargar como PNG",
   "dashboard_download_png": "Descargar PNG",
   "dashboard_drag_dimensions": "Arrastra dimensiones aquí",
@@ -1471,6 +1472,7 @@
   "export_xlsx_description": "Exporta este dashboard como libro de Excel.",
   "export_xlsx_failed": "No se pudo exportar el Excel",
   "export_xlsx_success": "Dashboard exportado como Excel",
+  "export_xlsx_upload_failed": "No se pudo enviar la exportación ({size}) al servidor. Vuelve a intentarlo o redúcela exportando gráficos nativos o solo la pestaña actual.",
   "field_list_add_fields": "Agregar campos de {label}",
   "field_list_aria": "Lista de campos de {label}",
   "field_list_dimensions": "DIMENSIONES",
@@ -1483,6 +1485,7 @@
   "filter_dimension": "dimensión",
   "filter_dimension_chip_aria": "filtro {name}",
   "filter_dimension_chip_tooltip": "Haz clic para editar los filtros de esta dimensión",
+  "filter_single_select_chip_tooltip": "Haz clic para elegir un valor. Este filtro admite un solo valor a la vez.",
   "filter_dimension_result_count_aria": "recuento de resultados de {name}",
   "filter_dimension_results_aria": "resultados de {name}",
   "filter_dimension_search_list_aria": "lista de búsqueda de {name}",
@@ -1820,6 +1823,7 @@
   "pivot_drop_split_hint": "Soltar para reemplazar",
   "pivot_drop_split_text": "Soltar aquí para dividir: <strong>{dimCount}</strong> {dimLabel} → filas, <strong>{measureCount}</strong> {measureLabel} → columnas",
   "pivot_expand_row": "Expandir fila",
+  "pivot_grand_total_column_header": "Total general",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1837,6 +1841,7 @@
   "pivot_tags": "ETIQUETAS",
   "pivot_time_dimension_header": "Tiempo {grain}",
   "pivot_time_prefix": "Tiempo",
+  "pivot_totals_column_header": "Total",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

@@ -166,8 +166,8 @@ function measureDomains(
 }
 
 // The leaf columns in display order, each with the headers of the groups above
-// it ("US" for a column dimension value). The row-totals group has an empty
-// header and is named "Total".
+// it ("US" for a column dimension value, "Total" for the row totals).
+// A group without a header, like the levels under the row-totals label, adds nothing.
 export function leafColumns(
   defs: ColumnDef<PivotDataRow>[],
   groups: string[] = [],
@@ -179,9 +179,7 @@ export function leafColumns(
     const rawHeader = typeof def.header === "string" ? def.header : "";
     const header = rawHeader.replace(/\u00A0/g, "").trim();
     if (group.columns) {
-      const label =
-        header || (group.columns.length && groups.length === 0 ? "Total" : "");
-      return leafColumns(group.columns, label ? [...groups, label] : groups);
+      return leafColumns(group.columns, header ? [...groups, header] : groups);
     }
     const accessor = (def as { accessorKey?: string }).accessorKey;
     const key = accessor ? String(accessor) : (def.id ?? "");

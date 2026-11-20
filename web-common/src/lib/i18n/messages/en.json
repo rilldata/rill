@@ -923,6 +923,7 @@
   "dashboard_dimensions": "Dimensions",
   "dashboard_dimensions_count": "{count} dimensions",
   "dashboard_dimensions_label": "DIMENSIONS",
+  "dashboard_download_as_csv": "Download as CSV",
   "dashboard_download_as_png": "Download as PNG",
   "dashboard_download_png": "Download PNG",
   "dashboard_drag_dimensions": "Drag dimensions here",
@@ -1462,6 +1463,7 @@
   "export_xlsx_description": "Export this dashboard as an Excel workbook.",
   "export_xlsx_failed": "Failed to export Excel",
   "export_xlsx_success": "Dashboard exported as Excel",
+  "export_xlsx_upload_failed": "Couldn't upload the export ({size}) to the server. Try again, or make it smaller by exporting native charts or only the current tab.",
   "field_list_add_fields": "Add {label} fields",
   "field_list_aria": "{label} field list",
   "field_list_dimensions": "DIMENSIONS",
@@ -1474,6 +1476,7 @@
   "filter_dimension": "dimension",
   "filter_dimension_chip_aria": "{name} filter",
   "filter_dimension_chip_tooltip": "Click to edit the filters in this dimension",
+  "filter_single_select_chip_tooltip": "Click to pick a value. This filter holds one value at a time.",
   "filter_dimension_result_count_aria": "{name} result count",
   "filter_dimension_results_aria": "{name} results",
   "filter_dimension_search_list_aria": "{name} search list",
@@ -1811,6 +1814,7 @@
   "pivot_drop_split_hint": "Drop to replace",
   "pivot_drop_split_text": "Drop here to split: <strong>{dimCount}</strong> {dimLabel} → rows, <strong>{measureCount}</strong> {measureLabel} → columns",
   "pivot_expand_row": "Expand row",
+  "pivot_grand_total_column_header": "Grand Total",
   "pivot_measure_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1828,6 +1832,7 @@
   "pivot_tags": "TAGS",
   "pivot_time_dimension_header": "Time {grain}",
   "pivot_time_prefix": "Time",
+  "pivot_totals_column_header": "Total",
   "pivot_trace_ids_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

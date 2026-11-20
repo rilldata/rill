@@ -87,6 +87,21 @@
     return () => clearTimeout(timer);
   });
 
+  // Each measure's Rill formatter by name, for its axis and tooltip labels and to size them.
+  const measureFormatters = $derived(
+    Object.fromEntries(
+      chart.measures.map((measure) => {
+        const formatter = createMeasureValueFormatter<null | undefined>(
+          measure,
+        );
+        return [
+          measure.name ?? "measure",
+          (value: number) => formatter(value) ?? String(value),
+        ];
+      }),
+    ),
+  );
+
   // Flint reads the rows and the box to make layout decisions, so the spec is compiled once
   // the box is measured and recompiled per settled size.
   const compiled = $derived(
@@ -97,6 +112,7 @@
           fields: chart.flint.fields,
           size: compileSize,
           measureFields: chart.flint.measureFields,
+          measureFormatters,
         })
       : undefined,
   );
@@ -117,11 +133,8 @@
           humanizeDataType(value, FormatPreset.HUMANIZE, "table"),
       },
     };
-    for (const measure of chart.measures) {
-      const formatter = createMeasureValueFormatter<null | undefined>(measure);
-      functions[sanitizeFieldName(measure.name ?? "measure")] = {
-        fn: (value: number) => formatter(value) ?? String(value),
-      };
+    for (const [measure, fn] of Object.entries(measureFormatters)) {
+      functions[sanitizeFieldName(measure)] = { fn };
     }
     return functions;
   });

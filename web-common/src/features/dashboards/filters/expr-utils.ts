@@ -1,8 +1,15 @@
 import {
   createAndExpression,
+  createInExpression,
+  getValuesInExpression,
   isAndOrExpression,
+  isSubqueryExpression,
+  maybeConvertEqualityToInExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import {
+  convertExpressionToFilterParam,
+  convertFilterParamToExpression,
+} from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   type V1Expression,
   V1Operation,
@@ -73,6 +80,74 @@ export function mergeFilterParams(
     inList: dimensionsWithInlistFilter,
     advanced,
   };
+}
+
+/**
+ * Narrows the top level conditions on single-select dimensions to the one value each can hold,
+ * the last value of an IN or NOT IN, included. A condition without such a value, a contains or a
+ * comparison for example, is dropped. Nested AND/ORs are left alone, since they have no chips.
+ *
+ * `DimensionFilterManager` narrows its own state the same way. This is for filters read before a
+ * manager holds them, so that the stored params and the explore state match the chips.
+ * Returns undefined when nothing needed narrowing.
+ */
+export function narrowSingleSelectFilters(
+  expr: V1Expression,
+  isSingleSelect: (dimension: string) => boolean,
+): V1Expression | undefined {
+  let narrowed = false;
+  const conditions: V1Expression[] = [];
+  for (const condition of topLevelConditions(expr)) {
+    const narrowedCondition = narrowSingleSelectCondition(
+      condition,
+      isSingleSelect,
+    );
+    if (narrowedCondition !== condition) narrowed = true;
+    if (narrowedCondition) conditions.push(narrowedCondition);
+  }
+  return narrowed ? createAndExpression(conditions) : undefined;
+}
+
+/**
+ * `narrowSingleSelectFilters` for a filter param.
+ * Returns the narrowed param, empty when nothing is left, or undefined when nothing needed narrowing.
+ */
+export function narrowSingleSelectFilterParam(
+  param: string,
+  isSingleSelect: (dimension: string) => boolean,
+): string | undefined {
+  const { expr, dimensionsWithInlistFilter } = parseFilterParam(param);
+  const narrowed = expr && narrowSingleSelectFilters(expr, isSingleSelect);
+  if (!narrowed) return undefined;
+  // A single-select filter is never in "In List" mode.
+  return convertExpressionToFilterParam(
+    narrowed,
+    dimensionsWithInlistFilter.filter((d) => !isSingleSelect(d)),
+  );
+}
+
+/** Returns the condition itself when it needs no narrowing, and undefined when it is dropped. */
+function narrowSingleSelectCondition(
+  condition: V1Expression,
+  isSingleSelect: (dimension: string) => boolean,
+): V1Expression | undefined {
+  const ident = condition.cond?.exprs?.[0]?.ident;
+  // A measure filter is a subquery keyed by a dimension, not a filter on its values.
+  if (!ident || !isSingleSelect(ident) || isSubqueryExpression(condition)) {
+    return condition;
+  }
+
+  // `=` and `!=` are a single value selection and its exclude form.
+  const inExpr = maybeConvertEqualityToInExpressions(condition);
+  const op = inExpr.cond?.op;
+  if (op !== V1Operation.OPERATION_IN && op !== V1Operation.OPERATION_NIN) {
+    return undefined;
+  }
+  const values = getValuesInExpression(inExpr);
+  if (op === V1Operation.OPERATION_IN && values.length === 1) return condition;
+  return values.length
+    ? createInExpression(ident, values.slice(-1))
+    : undefined;
 }
 
 /**
