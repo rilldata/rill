@@ -172,7 +172,7 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	return []*runtimev1.SecurityRule{{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				ConditionKinds:     []string{runtime.ResourceKindTheme},
+				ConditionKinds:     dashboardConditionKinds(claims),
 				ConditionResources: conditionResources,
 				Allow:              true,
 				Exclusive:          true,
