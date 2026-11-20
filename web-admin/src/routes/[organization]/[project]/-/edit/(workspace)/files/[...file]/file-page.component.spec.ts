@@ -1,6 +1,12 @@
 import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { FileIO } from "@rilldata/web-common/features/entity-management/file-io";
+import { RuntimeFileIO } from "@rilldata/web-common/features/entity-management/file-io";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  GetFileResponse,
+  type GetFileRequest,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { getRuntimeServiceGetFileQueryKey } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   cleanup,
@@ -11,15 +17,13 @@ import {
 } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const client = vi.hoisted(
-  () => ({ host: "http://runtime.test", instanceId: "default" }) as const,
-);
+const current = vi.hoisted(() => ({ runtime: undefined as unknown }));
 
 vi.mock("@rilldata/web-common/runtime-client/v2", async (original) => ({
   ...(await original<
     typeof import("@rilldata/web-common/runtime-client/v2")
   >()),
-  useRuntimeClient: () => client,
+  useRuntimeClient: () => current.runtime,
 }));
 // The real workspace needs a runtime; the stub records the editor content it mounted with.
 vi.mock(
@@ -31,49 +35,69 @@ vi.mock(
 
 import Page from "./+page.svelte";
 
-// Answers reads only when the test says so, like a runtime that is slow to respond.
-class HeldFileIO implements FileIO {
-  private readonly pending = new Map<
-    string,
-    (blob: string | undefined) => void
-  >();
+type PendingRead = {
+  resolve: (response: GetFileResponse) => void;
+  reject: (error: Error) => void;
+  signal?: AbortSignal;
+};
 
-  updateClient() {}
+// A runtime that answers GetFile only when the test says so, like one that is slow to respond.
+class HeldRuntime {
+  readonly host = "http://runtime.test";
+  readonly instanceId = "default";
+  private readonly pending = new Map<string, PendingRead>();
 
-  read(path: string) {
-    return new Promise<string | undefined>((resolve) =>
-      this.pending.set(path, resolve),
-    );
+  readonly runtimeService = {
+    getFile: (request: GetFileRequest, options?: { signal?: AbortSignal }) =>
+      new Promise<GetFileResponse>((resolve, reject) => {
+        const signal = options?.signal;
+        this.pending.set(request.path, { resolve, reject, signal });
+        signal?.addEventListener("abort", () => reject(signal.reason));
+      }),
+  };
+
+  respond(path: string, blob: string) {
+    this.pending.get(path)?.resolve(new GetFileResponse({ blob }));
   }
 
-  async write() {}
+  fail(path: string) {
+    this.pending.get(path)?.reject(new Error("runtime restarting"));
+  }
 
-  respond(path: string, blob: string | undefined) {
-    this.pending.get(path)?.(blob);
-    this.pending.delete(path);
+  aborted(path: string) {
+    return !!this.pending.get(path)?.signal?.aborted;
   }
 }
 
-function newArtifact(io: HeldFileIO, path: string) {
-  return new FileArtifact(client as unknown as RuntimeClient, path, io);
+function setup() {
+  const runtime = new HeldRuntime();
+  current.runtime = runtime;
+  const client = runtime as unknown as RuntimeClient;
+  const io = new RuntimeFileIO();
+  io.updateClient(client);
+  const newArtifact = (path: string) => new FileArtifact(client, path, io);
+  return { runtime, newArtifact };
 }
 
 function pageProps(fileArtifact: FileArtifact) {
   return { data: { fileArtifact } } as never;
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  queryClient.clear();
+});
 
 describe("cloud editor file page", () => {
   it("waits for the file content before mounting the workspace", async () => {
-    const io = new HeldFileIO();
-    const model = newArtifact(io, "/models/orders.yaml");
+    const { runtime, newArtifact } = setup();
+    const model = newArtifact("/models/orders.yaml");
 
     render(Page, pageProps(model));
 
     expect(screen.queryByTestId("workspace")).toBeNull();
 
-    io.respond(model.path, "type: model\nsql: select 1\n");
+    runtime.respond(model.path, "type: model\nsql: select 1\n");
 
     await waitFor(() =>
       expect(screen.getByTestId("workspace").textContent).toBe(
@@ -83,11 +107,11 @@ describe("cloud editor file page", () => {
   });
 
   it("shows a file whose content is loaded at once and waits for one that is not", async () => {
-    const io = new HeldFileIO();
-    const loaded = newArtifact(io, "/models/loaded.yaml");
-    const notLoaded = newArtifact(io, "/models/not_loaded.yaml");
+    const { runtime, newArtifact } = setup();
+    const loaded = newArtifact("/models/loaded.yaml");
+    const notLoaded = newArtifact("/models/not_loaded.yaml");
     const fetching = loaded.fetchContent();
-    io.respond(loaded.path, "loaded");
+    runtime.respond(loaded.path, "loaded");
     await fetching;
 
     const { rerender } = render(Page, pageProps(loaded));
@@ -96,46 +120,54 @@ describe("cloud editor file page", () => {
     await rerender(pageProps(notLoaded));
     expect(screen.queryByTestId("workspace")).toBeNull();
 
-    io.respond(notLoaded.path, "not loaded");
+    runtime.respond(notLoaded.path, "not loaded");
     await waitFor(() =>
       expect(screen.getByTestId("workspace").textContent).toBe("not loaded"),
     );
   });
 
   it("shows an error instead of an empty editor when the fetch fails, and Retry loads the file", async () => {
-    const io = new HeldFileIO();
-    const model = newArtifact(io, "/models/orders.yaml");
+    const { runtime, newArtifact } = setup();
+    const model = newArtifact("/models/orders.yaml");
 
     render(Page, pageProps(model));
-    io.respond(model.path, undefined);
+    runtime.fail(model.path);
 
     const retry = await screen.findByRole("button", { name: m.common_retry() });
     expect(screen.queryByTestId("workspace")).toBeNull();
 
     await fireEvent.click(retry);
     expect(screen.queryByRole("alert")).toBeNull();
-    io.respond(model.path, "type: model\n");
+    runtime.respond(model.path, "type: model\n");
 
     await waitFor(() =>
       expect(screen.getByTestId("workspace").textContent).toBe("type: model\n"),
     );
   });
 
-  it("ignores a slower fetch for the previous file", async () => {
-    const io = new HeldFileIO();
-    const slow = newArtifact(io, "/models/slow.yaml");
-    const failing = newArtifact(io, "/models/failing.yaml");
+  it("cancels the previous file's pending read when switching files", async () => {
+    const { runtime, newArtifact } = setup();
+    const slow = newArtifact("/models/slow.yaml");
+    const failing = newArtifact("/models/failing.yaml");
 
     const { rerender } = render(Page, pageProps(slow));
     await rerender(pageProps(failing));
-    io.respond(failing.path, undefined);
+    expect(runtime.aborted(slow.path)).toBe(true);
+
+    runtime.fail(failing.path);
     await screen.findByRole("alert");
 
-    io.respond(slow.path, undefined);
-    // Let the slow fetch's completion and any re-render run.
+    // A late answer for the cancelled read neither lands in the cache nor hides the error.
+    runtime.respond(slow.path, "late");
     await new Promise((resolve) => setTimeout(resolve));
 
+    expect(
+      queryClient.getQueryData(
+        getRuntimeServiceGetFileQueryKey(runtime.instanceId, {
+          path: slow.path,
+        }),
+      ),
+    ).toBeUndefined();
     expect(screen.getByRole("alert")).toBeTruthy();
-    expect(screen.queryByTestId("workspace")).toBeNull();
   });
 });

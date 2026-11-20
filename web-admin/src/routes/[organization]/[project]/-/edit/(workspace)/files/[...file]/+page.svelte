@@ -4,6 +4,8 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import WorkspaceDispatcher from "@rilldata/web-common/features/workspaces/WorkspaceDispatcher.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { getRuntimeServiceGetFileQueryKey } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
 
@@ -14,25 +16,10 @@
   let { fileArtifact } = $derived(data);
   let { remoteContent } = $derived(fileArtifact);
 
-  // The artifact whose latest content fetch failed.
+  // The artifact whose content fetch failed.
   let failedArtifact: FileArtifact | undefined = $state.raw();
-  // Counts fetches so that only the latest one reports a failure;
-  // a slower fetch from before a file switch or a retry is ignored.
-  let latestFetch = 0;
-
-  function fetchContent(artifact: FileArtifact) {
-    const fetchId = ++latestFetch;
-    void artifact.fetchContent().then((content) => {
-      if (fetchId === latestFetch && content === undefined) {
-        failedArtifact = artifact;
-      }
-    });
-  }
-
-  function retry() {
-    failedArtifact = undefined;
-    fetchContent(fileArtifact);
-  }
+  // Bumped by the Retry button to fetch again.
+  let retries = $state(0);
 
   // Fetch file content reactively once the runtime is available.
   // Unlike web-local, the runtime credentials aren't ready during +page.ts load.
@@ -40,12 +27,31 @@
   // a data preview instead, so skip fetching their (binary) content.
   $effect(() => {
     if (
-      client.host &&
-      client.instanceId &&
-      !fileArtifact.isPreviewableDataFile
+      !client.host ||
+      !client.instanceId ||
+      fileArtifact.isPreviewableDataFile
     ) {
-      fetchContent(fileArtifact);
+      return;
     }
+
+    void retries;
+    const artifact = fileArtifact;
+    let cancelled = false;
+    void artifact.fetchContent().then((content) => {
+      if (!cancelled && content === undefined) failedArtifact = artifact;
+    });
+
+    // On a file switch, a retry or leaving the page, cancel the pending read.
+    // A cancelled read also resolves to undefined, so don't report it as a failure.
+    return () => {
+      cancelled = true;
+      failedArtifact = undefined;
+      void queryClient.cancelQueries({
+        queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+          path: artifact.path,
+        }),
+      });
+    };
   });
 
   // Unlike web-local, the page renders before the content arrives,
@@ -71,7 +77,9 @@
     <span class="text-sm text-fg-secondary">
       {m.edit_failed_to_load_file()}
     </span>
-    <Button type="secondary" onClick={retry}>{m.common_retry()}</Button>
+    <Button type="secondary" onClick={() => retries++}>
+      {m.common_retry()}
+    </Button>
   </div>
 {:else}
   <div class="size-full flex items-center justify-center" aria-busy="true">
