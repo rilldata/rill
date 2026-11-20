@@ -1232,6 +1232,7 @@
   "edit_existing_branch": "Rama existente",
   "edit_exit": "Salir",
   "edit_failed_to_commit": "Error al confirmar y enviar los cambios",
+  "edit_failed_to_load_file": "Error al cargar este archivo.",
   "edit_failed_to_merge": "Error al fusionar",
   "edit_failed_to_publish": "Error al publicar",
   "edit_failed_to_start": "Error al iniciar la sesión de edición.",

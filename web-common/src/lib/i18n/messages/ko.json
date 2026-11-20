@@ -1223,6 +1223,7 @@
   "edit_existing_branch": "기존 브랜치",
   "edit_exit": "나가기",
   "edit_failed_to_commit": "변경 사항을 커밋하고 푸시하지 못했습니다",
+  "edit_failed_to_load_file": "이 파일을 불러오지 못했습니다.",
   "edit_failed_to_merge": "병합하지 못했습니다",
   "edit_failed_to_publish": "게시하지 못했습니다",
   "edit_failed_to_start": "편집 세션을 시작하지 못했습니다.",
