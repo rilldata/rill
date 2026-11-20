@@ -56,6 +56,11 @@ func TestApply(t *testing.T) {
 	// A color scale over two columns, and two-color without a midpoint; the ends are the domain's, written as numbers.
 	require.NoError(t, Apply(f, "Sheet1", []string{"B2:B9", "D2:D9"}, domain, colorScale("#f7fcf5", "#74c476", "#00441b")))
 	require.NoError(t, Apply(f, "Sheet1", []string{"F2:F9"}, domain, colorScale("#f7fcf5", "", "#00441b")))
+	// The midpoint of ends whose difference is past the largest float doesn't overflow.
+	var wide Domain
+	wide.Add(-8e307)
+	wide.Add(1.6e308)
+	require.NoError(t, Apply(f, "Sheet1", []string{"L2:L9"}, wide, colorScale("#f7fcf5", "#74c476", "#00441b")))
 	// Rules are written relative to the first cell they cover and stop at the first match.
 	require.NoError(t, Apply(f, "Sheet1", []string{"G2:G9", "H2:H9"}, domain, cellRule(runtimev1.ExportCellRuleOperator_EXPORT_CELL_RULE_OPERATOR_BETWEEN, -1.5, 1e21)))
 	// Data bars run from zero to the largest absolute value.
@@ -68,12 +73,14 @@ func TestApply(t *testing.T) {
 
 	formats, err := f.GetConditionalFormats("Sheet1")
 	require.NoError(t, err)
-	require.Len(t, formats, 4)
+	require.Len(t, formats, 5)
 
 	scale := formats["B2:B9 D2:D9"][0]
 	require.Equal(t, "3_color_scale", scale.Type)
 	require.Equal(t, []string{"num", "num", "num"}, []string{scale.MinType, scale.MidType, scale.MaxType})
 	require.Equal(t, []string{"-150", "-35", "80"}, []string{scale.MinValue, scale.MidValue, scale.MaxValue})
+
+	require.Equal(t, "4E+307", formats["L2:L9"][0].MidValue)
 
 	twoColor := formats["F2:F9"][0]
 	require.Equal(t, "2_color_scale", twoColor.Type)

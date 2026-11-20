@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeMeasureDomains,
+  computePivotMeasureDomains,
   getSchemeStops,
   makeCellFormatter,
   PIVOT_RULE_COLORS,
@@ -8,7 +9,7 @@ import {
   ruleMatches,
   toExportConditionalFormats,
 } from "./pivot-conditional-formatting";
-import type { PivotFormatRule } from "./types";
+import type { PivotFormatRule, PivotMeasureFormatting } from "./types";
 
 describe("computeMeasureDomains", () => {
   it("computes per-measure min/max independently", () => {
@@ -32,6 +33,38 @@ describe("computeMeasureDomains", () => {
     ]);
     expect(domains.has("a")).toBe(false);
     expect(domains.get("b")).toEqual([-2, 4]);
+  });
+});
+
+describe("computePivotMeasureDomains", () => {
+  it("spans a measure's columns over the leaf rows and skips rules", () => {
+    const domains = computePivotMeasureDomains(
+      [
+        {
+          country: "US",
+          c0v0m0: 900,
+          c0v1m0: 800,
+          c0v0m1: 0.9,
+          subRows: [
+            { country: "NY", c0v0m0: 10, c0v1m0: -20, c0v0m1: 0.1 },
+            { country: "SF", c0v0m0: 30, c0v1m0: null, c0v0m1: 0.2 },
+          ],
+        },
+      ],
+      [
+        { key: "c0v0m0", measureName: "impressions" },
+        { key: "c0v1m0", measureName: "impressions" },
+        { key: "c0v0m1", measureName: "ctr" },
+      ],
+      {
+        impressions: { mode: "data_bar", scheme: "blues" },
+        ctr: {
+          mode: "rules",
+          rules: [{ operator: "gt", value: 0.5, color: "positive" }],
+        },
+      } as Record<string, PivotMeasureFormatting>,
+    );
+    expect(domains).toEqual(new Map([["impressions", [-20, 30]]]));
   });
 });
 

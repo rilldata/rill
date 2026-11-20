@@ -16,7 +16,7 @@ import {
   type PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
-  computeMeasureDomains,
+  computePivotMeasureDomains,
   toExportConditionalFormats,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-conditional-formatting";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
@@ -115,7 +115,13 @@ function tableConditionalFormats(
   config: PivotDataStoreConfig,
   data: PivotDataRow[] | undefined,
 ): ExportTableConditionalFormat[] {
-  const domainOf = measureDomains(leaves, data);
+  const domains = computePivotMeasureDomains(
+    data,
+    leaves.flatMap(({ key, formattedMeasure }) =>
+      formattedMeasure ? [{ key, measureName: formattedMeasure }] : [],
+    ),
+    config.pivot.measureFormatting,
+  );
   return Object.entries(config.pivot.measureFormatting ?? {}).flatMap(
     ([measureName, fmt]) => {
       const columns = leaves
@@ -125,7 +131,7 @@ function tableConditionalFormats(
       const lowerIsBetter =
         config.allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
         false;
-      const domain = fmt.mode === "rules" ? undefined : domainOf(measureName);
+      const domain = domains.get(measureName);
       return toExportConditionalFormats(fmt, lowerIsBetter).map((format) => ({
         columns,
         format,
@@ -133,36 +139,6 @@ function tableConditionalFormats(
       }));
     },
   );
-}
-
-// The color domains of the formatted measures, as the dashboard computes them
-// (buildCellFormatters in PivotTable.svelte): from the leaf rows, or from the
-// parent rows when no leaf row has a value, so the subtotals of expanded rows
-// don't stretch the colors. As on the dashboard, the loaded rows under
-// collapsed rows count too.
-function measureDomains(
-  leaves: LeafColumn[],
-  data: PivotDataRow[] | undefined,
-): (measureName: string) => [number, number] | undefined {
-  const leafValues: { measureName: string; value: number }[] = [];
-  const parentValues: { measureName: string; value: number }[] = [];
-  const visit = (rows: PivotDataRow[] | undefined) => {
-    for (const row of rows ?? []) {
-      const target = row.subRows?.length ? parentValues : leafValues;
-      for (const { key, formattedMeasure } of leaves) {
-        const value = row[key];
-        if (formattedMeasure && typeof value === "number") {
-          target.push({ measureName: formattedMeasure, value });
-        }
-      }
-      visit(row.subRows);
-    }
-  };
-  visit(data);
-  const leafDomains = computeMeasureDomains(leafValues);
-  const parentDomains = computeMeasureDomains(parentValues);
-  return (measureName) =>
-    leafDomains.get(measureName) ?? parentDomains.get(measureName);
 }
 
 // The leaf columns in display order, each with the headers of the groups above

@@ -161,6 +161,10 @@ func formatColumns(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookCondit
 // the format's domain if it has one, or else the lowest and highest numbers in its columns.
 func formatDomain(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookConditionalFormat, columns []int) conditionalformat.Domain {
 	var d conditionalformat.Domain
+	if cf.Format.GetCellRule() != nil {
+		// Apply doesn't read a cell rule's domain.
+		return d
+	}
 	if cf.Domain != nil {
 		d.Add(cf.Domain.Min)
 		d.Add(cf.Domain.Max)

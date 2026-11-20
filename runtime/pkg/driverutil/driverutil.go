@@ -221,6 +221,10 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalF
 			row[i] = s
 		}
 		for i, cols := range formatColumns {
+			if conditionalFormats[i].Format.GetCellRule() != nil {
+				// Apply doesn't read a cell rule's domain.
+				continue
+			}
 			for _, col := range cols {
 				switch v := row[col].(type) {
 				case int64:

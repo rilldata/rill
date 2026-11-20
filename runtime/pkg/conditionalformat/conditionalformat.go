@@ -118,9 +118,10 @@ func Apply(f *excelize.File, sheet string, ranges []string, domain Domain, forma
 		}
 		if t.ColorScale.MidColor != "" {
 			// The midpoint of the values, not their median, so the colors follow the values linearly as on the dashboard.
+			// Halving the ends before adding them keeps the sum of two large ends from overflowing.
 			opts.Type = "3_color_scale"
 			opts.MidType = "num"
-			opts.MidValue = formatNumber(domain.Min + (domain.Max-domain.Min)/2)
+			opts.MidValue = formatNumber(domain.Min/2 + domain.Max/2)
 			opts.MidColor = t.ColorScale.MidColor
 		}
 	case *runtimev1.ExportConditionalFormat_DataBar:

@@ -26,8 +26,8 @@
   import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
   import {
+    type Column,
     type ExpandedState,
-    type Row,
     type SortingState,
     type TableOptions,
     createRow,
@@ -38,7 +38,7 @@
   import NestedTable from "./NestedTable.svelte";
   import {
     type CellFormatter,
-    computeMeasureDomains,
+    computePivotMeasureDomains,
     makeCellFormatter,
   } from "./pivot-conditional-formatting";
   import type {
@@ -173,14 +173,13 @@
     $config,
   );
 
-  // Per-measure conditional formatting. Domains prefer leaf data cells so
-  // aggregate magnitudes don't dominate the gradient, falling back to nested
-  // parent rows when no leaves are present (e.g. collapsed nested rows). The
-  // row-totals column is always excluded, and the grand-totals row is not part
-  // of the row model. Recomputes when the row model or the formatting config
-  // changes.
+  // Per-measure conditional formatting, with the color domains of
+  // computePivotMeasureDomains. The row-totals column is always excluded, and
+  // the grand-totals row is not part of the data. Recomputes when the data,
+  // the columns or the formatting config changes.
   $: cellFormatters = buildCellFormatters(
-    $table.getRowModel().flatRows,
+    $pivotDataStore.data,
+    $table.getAllLeafColumns(),
     $config.pivot.measureFormatting,
     $config.allMeasures,
   );
@@ -255,7 +254,8 @@
   }
 
   function buildCellFormatters(
-    flatRows: Row<PivotDataRow>[],
+    rows: PivotDataRow[],
+    leafColumns: Column<PivotDataRow>[],
     measureFormatting: PivotState["measureFormatting"],
     allMeasures: PivotDataStoreConfig["allMeasures"],
   ): Map<string, CellFormatter> {
@@ -264,48 +264,32 @@
       return formatters;
     }
 
-    // Rules formatters don't depend on the value domain, so only scan the row
-    // model when a scale-mode (heatmap/data bar) measure needs one.
-    const needsDomains = Object.values(measureFormatting).some(
-      (fmt) => fmt.mode !== "rules",
+    // The columns that show a formatted measure's values: not its comparison
+    // columns, which carry no format, nor the row totals.
+    const domains = computePivotMeasureDomains(
+      rows,
+      leafColumns.flatMap(({ columnDef }) => {
+        const meta = columnDef.meta;
+        return "accessorKey" in columnDef &&
+          meta?.conditionalFormat &&
+          !meta.isRowTotal &&
+          meta.measureName
+          ? [
+              {
+                key: String(columnDef.accessorKey),
+                measureName: meta.measureName,
+              },
+            ]
+          : [];
+      }),
+      measureFormatting,
     );
-    // Collect values from leaf rows and, separately, from nested parent rows.
-    // Leaf values are preferred for the domain so aggregate magnitudes don't
-    // dominate the gradient. But nested parent rows also render formatted
-    // measure cells, and when they're collapsed the leaf rows aren't in the row
-    // model at all: without a parent fallback the domain would be empty and no
-    // heatmap/data-bar formatter would be built until the user expands a row.
-    const leafValues: { measureName: string; value: number }[] = [];
-    const parentValues: { measureName: string; value: number }[] = [];
-    if (needsDomains) {
-      for (const row of flatRows) {
-        const target = row.subRows.length > 0 ? parentValues : leafValues;
-        for (const cell of row.getAllCells()) {
-          const meta = cell.column.columnDef.meta;
-          if (
-            !meta?.conditionalFormat ||
-            meta.isRowTotal ||
-            !meta.measureName
-          ) {
-            continue;
-          }
-          const value = cell.getValue();
-          if (typeof value === "number") {
-            target.push({ measureName: meta.measureName, value });
-          }
-        }
-      }
-    }
-
-    const leafDomains = computeMeasureDomains(leafValues);
-    const parentDomains = computeMeasureDomains(parentValues);
     for (const [measureName, fmt] of Object.entries(measureFormatting)) {
       if (fmt.mode === "rules") {
         formatters.set(measureName, makeCellFormatter(fmt));
         continue;
       }
-      const domain =
-        leafDomains.get(measureName) ?? parentDomains.get(measureName);
+      const domain = domains.get(measureName);
       if (domain) {
         // Heatmap gradients flip for lower-is-better measures so low values
         // get the "good" end of the scheme.
