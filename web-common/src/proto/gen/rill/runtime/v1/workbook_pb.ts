@@ -868,13 +868,24 @@ export class WorkbookTableBlock extends Message<WorkbookTableBlock> {
 }
 
 /**
+ * WorkbookTextBlock is the content of a markdown component.
+ *
  * @generated from message rill.runtime.v1.WorkbookTextBlock
  */
 export class WorkbookTextBlock extends Message<WorkbookTextBlock> {
   /**
+   * The text of a block that holds only text.
+   *
    * @generated from field: string text = 1;
    */
   text = "";
+
+  /**
+   * The text and tables of a block that holds tables, in reading order. Takes the place of text.
+   *
+   * @generated from field: repeated rill.runtime.v1.WorkbookTextPart parts = 2;
+   */
+  parts: WorkbookTextPart[] = [];
 
   constructor(data?: PartialMessage<WorkbookTextBlock>) {
     super();
@@ -885,6 +896,7 @@ export class WorkbookTextBlock extends Message<WorkbookTextBlock> {
   static readonly typeName = "rill.runtime.v1.WorkbookTextBlock";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "parts", kind: "message", T: WorkbookTextPart, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookTextBlock {
@@ -901,6 +913,60 @@ export class WorkbookTextBlock extends Message<WorkbookTextBlock> {
 
   static equals(a: WorkbookTextBlock | PlainMessage<WorkbookTextBlock> | undefined, b: WorkbookTextBlock | PlainMessage<WorkbookTextBlock> | undefined): boolean {
     return proto3.util.equals(WorkbookTextBlock, a, b);
+  }
+}
+
+/**
+ * WorkbookTextPart is a run of text or a table in a text block.
+ *
+ * @generated from message rill.runtime.v1.WorkbookTextPart
+ */
+export class WorkbookTextPart extends Message<WorkbookTextPart> {
+  /**
+   * @generated from oneof rill.runtime.v1.WorkbookTextPart.part
+   */
+  part: {
+    /**
+     * @generated from field: string text = 1;
+     */
+    value: string;
+    case: "text";
+  } | {
+    /**
+     * The data sheet of a table, previewed like a table block and linked to its full sheet.
+     *
+     * @generated from field: string data_sheet_id = 2;
+     */
+    value: string;
+    case: "dataSheetId";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<WorkbookTextPart>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WorkbookTextPart";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "part" },
+    { no: 2, name: "data_sheet_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "part" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookTextPart {
+    return new WorkbookTextPart().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WorkbookTextPart {
+    return new WorkbookTextPart().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WorkbookTextPart {
+    return new WorkbookTextPart().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WorkbookTextPart | PlainMessage<WorkbookTextPart> | undefined, b: WorkbookTextPart | PlainMessage<WorkbookTextPart> | undefined): boolean {
+    return proto3.util.equals(WorkbookTextPart, a, b);
   }
 }
 

@@ -1832,6 +1832,40 @@ func (m *WorkbookTextBlock) validate(all bool) error {
 
 	// no validation rules for Text
 
+	for idx, item := range m.GetParts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, WorkbookTextBlockValidationError{
+						field:  fmt.Sprintf("Parts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, WorkbookTextBlockValidationError{
+						field:  fmt.Sprintf("Parts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return WorkbookTextBlockValidationError{
+					field:  fmt.Sprintf("Parts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return WorkbookTextBlockMultiError(errors)
 	}
@@ -1911,6 +1945,135 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WorkbookTextBlockValidationError{}
+
+// Validate checks the field values on WorkbookTextPart with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *WorkbookTextPart) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkbookTextPart with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkbookTextPartMultiError, or nil if none found.
+func (m *WorkbookTextPart) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkbookTextPart) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Part.(type) {
+	case *WorkbookTextPart_Text:
+		if v == nil {
+			err := WorkbookTextPartValidationError{
+				field:  "Part",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for Text
+	case *WorkbookTextPart_DataSheetId:
+		if v == nil {
+			err := WorkbookTextPartValidationError{
+				field:  "Part",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for DataSheetId
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return WorkbookTextPartMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkbookTextPartMultiError is an error wrapping multiple validation errors
+// returned by WorkbookTextPart.ValidateAll() if the designated constraints
+// aren't met.
+type WorkbookTextPartMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkbookTextPartMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkbookTextPartMultiError) AllErrors() []error { return m }
+
+// WorkbookTextPartValidationError is the validation error returned by
+// WorkbookTextPart.Validate if the designated constraints aren't met.
+type WorkbookTextPartValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkbookTextPartValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkbookTextPartValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkbookTextPartValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkbookTextPartValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkbookTextPartValidationError) ErrorName() string { return "WorkbookTextPartValidationError" }
+
+// Error satisfies the builtin error interface
+func (e WorkbookTextPartValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkbookTextPart.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkbookTextPartValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkbookTextPartValidationError{}
 
 // Validate checks the field values on WorkbookNoteBlock with the rules defined
 // in the proto definition for this message. If any rules are violated, the

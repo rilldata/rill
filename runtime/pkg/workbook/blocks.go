@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
+	"strings"
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -33,6 +34,12 @@ const (
 	// Grid columns a table preview gives a text column and a number column.
 	previewTextCols   = 3
 	previewNumberCols = 2
+	// Characters of wrapping text that fit in one grid column.
+	textCharsPerCol = 8
+	// Rows a table preview takes besides the table's own: its header and the link to the data sheet.
+	previewExtraRows = 2
+	// Rows of a table that a text block always previews, growing if it must.
+	textTableMinRows = 5
 )
 
 // writeDashboardSheet writes a dashboard sheet: the header lines, then every block at the cell its geometry maps to.
@@ -50,8 +57,9 @@ func (w *writer) writeDashboardSheet(name string, sheet *runtimev1.WorkbookDashb
 		return err
 	}
 
-	for _, b := range sheet.Blocks {
-		g := clampGeometry(b.Geometry)
+	geometries := w.blockGeometries(sheet.Blocks)
+	for i, b := range sheet.Blocks {
+		g := geometries[i]
 		col := g.x/cellWidthPx + 1
 		row := bodyRow + g.y/cellHeightPx
 		offsetX := g.x % cellWidthPx
@@ -70,7 +78,7 @@ func (w *writer) writeDashboardSheet(name string, sheet *runtimev1.WorkbookDashb
 		case *runtimev1.WorkbookBlock_Table:
 			err = w.writeTablePreview(name, b, c.Table, col, row, g)
 		case *runtimev1.WorkbookBlock_Text:
-			err = w.writeText(name, b, c.Text.Text, col, row, g)
+			err = w.writeText(name, b, c.Text, col, row, g)
 		case *runtimev1.WorkbookBlock_Note:
 			err = w.writeNote(name, b, c.Note.Text, col, row, g)
 		}
@@ -94,6 +102,46 @@ func clampGeometry(g *runtimev1.WorkbookGeometry) geometry {
 		width:  max(1, min(int(g.WidthPx), maxBlockSidePx)-2*blockInsetPx),
 		height: max(1, min(int(g.HeightPx), maxBlockSidePx)-2*blockInsetPx),
 	}
+}
+
+// blockGeometries returns the geometry of each block on a dashboard sheet.
+// A text block whose content needs more rows than its height gives is made taller, and the blocks below it move down by
+// as much: unlike the dashboard's component, a cell can't scroll, so text that doesn't fit would be cut off.
+// Content that sits side by side in the component (cards, say) is stacked here, so this is common.
+// The block gets every row writeText fills, however many: the cap on a block's side bounds drawings, not rows of text,
+// and a block that stopped short of its text would have the blocks below it written over that text.
+func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
+	geometries := make([]geometry, len(blocks))
+	for i, b := range blocks {
+		geometries[i] = clampGeometry(b.Geometry)
+	}
+	for i, b := range blocks {
+		if b.GetText() == nil {
+			continue
+		}
+		g := geometries[i]
+		need := 0
+		if b.Title != "" {
+			need++
+		}
+		if b.Subtitle != "" {
+			need++
+		}
+		for _, p := range w.textParts(b.GetText(), max(1, g.width/cellWidthPx)) {
+			need += p.minRows
+		}
+		grow := need*cellHeightPx - g.height
+		if grow <= 0 {
+			continue
+		}
+		geometries[i].height += grow
+		for j := range geometries {
+			if geometries[j].y >= g.y+g.height {
+				geometries[j].y += grow
+			}
+		}
+	}
+	return geometries
 }
 
 // writeHeader writes the title, period, filters, generation time, link and notes at the top of a dashboard sheet.
@@ -314,7 +362,7 @@ func (w *writer) writeTablePreview(sheet string, b *runtimev1.WorkbookBlock, t *
 	}
 	row += used
 	// Rows available for data: the block's height minus the heading, the header row and the link row.
-	rows := max(1, g.height/cellHeightPx-(row-top)-2)
+	rows := max(1, g.height/cellHeightPx-(row-top)-previewExtraRows)
 	// Every data sheet gets an equal share of the block's width, with a gap column between them.
 	n := len(t.DataSheetIds)
 	share := max(1, (widthCols-(n-1))/n)
@@ -362,7 +410,9 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 	}
 	// The totals row keeps one of the preview's rows, before or after the data rows as the dashboard shows it.
 	type line struct {
-		values   *structpb.ListValue
+		values *structpb.ListValue
+		// The row's place on the data sheet, which its number format may depend on.
+		index    int
 		isTotals bool
 	}
 	var lines []line
@@ -371,13 +421,13 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 		dataRows = dataRows[:min(len(dataRows), max(0, rows-1))]
 	}
 	if ds.Totals != nil && !ds.TotalsLast {
-		lines = append(lines, line{values: ds.Totals, isTotals: true})
+		lines = append(lines, line{values: ds.Totals, index: len(ds.Rows), isTotals: true})
 	}
-	for _, r := range dataRows {
-		lines = append(lines, line{values: r})
+	for i, r := range dataRows {
+		lines = append(lines, line{values: r, index: i})
 	}
 	if ds.Totals != nil && ds.TotalsLast {
-		lines = append(lines, line{values: ds.Totals, isTotals: true})
+		lines = append(lines, line{values: ds.Totals, index: len(ds.Rows), isTotals: true})
 	}
 	banded := true
 	for i, l := range lines {
@@ -388,11 +438,12 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 			if err != nil {
 				return err
 			}
+			format := cellFormat(ds, column, l.index)
 			var style int
 			if l.isTotals {
-				style, err = w.styles.previewTotalsStyle(column)
+				style, err = w.styles.previewTotalsStyle(format)
 			} else {
-				style, err = w.styles.previewStyle(column, banded)
+				style, err = w.styles.previewStyle(format, banded)
 			}
 			if err != nil {
 				return err
@@ -428,8 +479,63 @@ func previewColumnSpan(column *runtimev1.WorkbookColumn) int {
 	}
 }
 
-// writeText writes free text over the block's whole area as one merged, wrapping cell.
-func (w *writer) writeText(sheet string, b *runtimev1.WorkbookBlock, text string, col, row int, g geometry) error {
+// textPart is a part of a text block with the grid rows it takes: a run of text or the preview of a table.
+type textPart struct {
+	text string
+	// The data sheet of a table.
+	dataSheetID string
+	// Rows of a table's part that don't show the table's rows:
+	// the preview's header and link, and a blank row that sets the part below it apart.
+	extraRows int
+	// A text needs a row per wrapped line. A table needs to show its first rows and can show all of them.
+	minRows, maxRows int
+}
+
+// textParts returns the parts of a text block that hold content, for a block that is cols grid columns wide.
+func (w *writer) textParts(t *runtimev1.WorkbookTextBlock, cols int) []textPart {
+	parts := t.Parts
+	if len(parts) == 0 {
+		parts = []*runtimev1.WorkbookTextPart{{Part: &runtimev1.WorkbookTextPart_Text{Text: t.Text}}}
+	}
+	var res []textPart
+	for _, p := range parts {
+		switch {
+		case p.GetDataSheetId() != "":
+			ds := w.dataSheets[p.GetDataSheetId()]
+			rows := max(1, len(ds.Rows))
+			if ds.Totals != nil {
+				rows++
+			}
+			extra := previewExtraRows + 1
+			res = append(res, textPart{
+				dataSheetID: p.GetDataSheetId(),
+				extraRows:   extra,
+				minRows:     extra + min(rows, textTableMinRows),
+				maxRows:     extra + rows,
+			})
+		case p.GetText() != "":
+			lines := 0
+			for _, line := range strings.Split(p.GetText(), "\n") {
+				lines += max(1, (utf8.RuneCountInString(line)+cols*textCharsPerCol-1)/(cols*textCharsPerCol))
+			}
+			res = append(res, textPart{text: p.GetText(), minRows: lines, maxRows: lines})
+		}
+	}
+	// Nothing follows the last part, so a table there needs no blank row below it.
+	if n := len(res); n > 0 && res[n-1].dataSheetID != "" {
+		res[n-1].extraRows--
+		res[n-1].minRows--
+		res[n-1].maxRows--
+	}
+	return res
+}
+
+// writeText writes a text block over its area, top to bottom in reading order:
+// each run of text as one merged, wrapping cell and each table as a preview that links to its data sheet.
+// A part takes the rows it can use, as long as the parts below it keep the rows they need (see blockGeometries),
+// and a text that comes last takes what is left, so a block of only text fills its whole area.
+// A block without text or tables writes nothing: an empty merged cell would only hide the grid.
+func (w *writer) writeText(sheet string, b *runtimev1.WorkbookBlock, t *runtimev1.WorkbookTextBlock, col, row int, g geometry) error {
 	cols := max(1, g.width/cellWidthPx)
 	used, err := w.writeHeading(sheet, b, col, row, cols)
 	if err != nil {
@@ -437,23 +543,48 @@ func (w *writer) writeText(sheet string, b *runtimev1.WorkbookBlock, text string
 	}
 	row += used
 	rows := max(1, g.height/cellHeightPx-used)
-	from, err := excelize.CoordinatesToCellName(col, row)
-	if err != nil {
-		return err
+
+	parts := w.textParts(t, cols)
+	// Rows the parts further down need at least.
+	reserved := 0
+	for _, p := range parts {
+		reserved += p.minRows
 	}
-	to, err := excelize.CoordinatesToCellName(col+cols-1, row+rows-1)
-	if err != nil {
-		return err
-	}
-	if from != to {
-		if err := w.f.MergeCell(sheet, from, to); err != nil {
-			return err
+	for i, p := range parts {
+		reserved -= p.minRows
+		n := max(p.minRows, min(p.maxRows, rows-reserved))
+		if p.dataSheetID != "" {
+			if err := w.writePreviewTable(sheet, p.dataSheetID, col, row, cols, n-p.extraRows); err != nil {
+				return err
+			}
+		} else {
+			if i == len(parts)-1 {
+				n = max(n, rows)
+			}
+			from, err := excelize.CoordinatesToCellName(col, row)
+			if err != nil {
+				return err
+			}
+			to, err := excelize.CoordinatesToCellName(col+cols-1, row+n-1)
+			if err != nil {
+				return err
+			}
+			if from != to {
+				if err := w.f.MergeCell(sheet, from, to); err != nil {
+					return err
+				}
+			}
+			if err := w.f.SetCellStr(sheet, from, p.text); err != nil {
+				return err
+			}
+			if err := w.f.SetCellStyle(sheet, from, from, w.styles.wrap); err != nil {
+				return err
+			}
 		}
+		row += n
+		rows -= n
 	}
-	if err := w.f.SetCellStr(sheet, from, text); err != nil {
-		return err
-	}
-	return w.f.SetCellStyle(sheet, from, from, w.styles.wrap)
+	return nil
 }
 
 // writeNote writes the block's heading across its width and the note below it.

@@ -148,10 +148,10 @@ func (s *styleSet) cachedStyle(cache map[string]int, key, format string, style *
 	return id, nil
 }
 
-// previewStyle returns the style of a column's cells in a table preview on a dashboard sheet:
+// previewStyle returns the style of a cell with the given number format in a table preview on a dashboard sheet:
 // numbers are shown compactly and every other row is banded like the data sheets' tables.
-func (s *styleSet) previewStyle(col *runtimev1.WorkbookColumn, banded bool) (int, error) {
-	format := compactNumberFormat(columnFormat(col))
+func (s *styleSet) previewStyle(format string, banded bool) (int, error) {
+	format = compactNumberFormat(format)
 	key := format
 	style := &excelize.Style{}
 	if banded {
@@ -161,9 +161,10 @@ func (s *styleSet) previewStyle(col *runtimev1.WorkbookColumn, banded bool) (int
 	return s.cachedStyle(s.preview, key, format, style)
 }
 
-// previewTotalsStyle returns the style of a column's cell in the totals row of a table preview: bold, compact numbers.
-func (s *styleSet) previewTotalsStyle(col *runtimev1.WorkbookColumn) (int, error) {
-	format := compactNumberFormat(columnFormat(col))
+// previewTotalsStyle returns the style of a cell with the given number format in the totals row of a table preview:
+// bold, compact numbers.
+func (s *styleSet) previewTotalsStyle(format string) (int, error) {
+	format = compactNumberFormat(format)
 	return s.cachedStyle(s.previewTotals, format, format, &excelize.Style{Font: &excelize.Font{Bold: true}})
 }
 
@@ -207,4 +208,14 @@ func columnFormat(col *runtimev1.WorkbookColumn) string {
 	default:
 		return ""
 	}
+}
+
+// cellFormat returns the number format of a cell in the given row of a data sheet (its totals row comes after the last one):
+// the column's format or, for a number column without one, the row's.
+func cellFormat(ds *runtimev1.WorkbookDataSheet, col *runtimev1.WorkbookColumn, row int) string {
+	format := columnFormat(col)
+	if format == "" && col.Type == runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER && row < len(ds.RowNumberFormats) {
+		return ds.RowNumberFormats[row]
+	}
+	return format
 }
