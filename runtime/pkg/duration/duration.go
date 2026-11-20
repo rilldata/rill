@@ -262,7 +262,9 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 	}
 	if d.Hour != 0 {
 		n := t.Hour() % d.Hour
-		return t.Truncate(time.Hour).Add(-time.Duration(n) * time.Hour)
+		// Build the boundary from local clock fields: time.Truncate aligns to UTC
+		// hour boundaries, which are not on the hour in zones with a fractional offset.
+		return time.Date(t.Year(), t.Month(), t.Day(), t.Hour()-n, 0, 0, 0, t.Location())
 	}
 	if d.Minute != 0 {
 		n := t.Minute() % d.Minute
