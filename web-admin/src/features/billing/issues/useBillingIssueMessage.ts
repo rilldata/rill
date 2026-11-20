@@ -125,6 +125,8 @@ export function useBillingIssueMessage(organization: string) {
   );
 }
 
+const TrialCreditBalanceRefreshMs = 15 * 60 * 1000;
+
 /**
  * Fetches the remaining credit balance for orgs on the credit trial, for display in the trial banner.
  * Allows a recently cached balance so the banner doesn't query the billing provider on every page load.
@@ -152,7 +154,10 @@ function useTrialCreditBalance(
             // Retrying would only delay the banner; on failure it links to the billing page instead.
             retry: false,
             // Refetch so long-open tabs pick up balance changes; matches the server's 15-minute cache.
-            refetchInterval: 15 * 60 * 1000,
+            // Interval ticks are skipped while the tab is hidden, so also refetch on return if the balance is stale.
+            refetchInterval: TrialCreditBalanceRefreshMs,
+            staleTime: TrialCreditBalanceRefreshMs,
+            refetchOnWindowFocus: true,
           },
         },
         queryClient,

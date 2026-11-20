@@ -45,6 +45,7 @@
   <div class="credit-section">
     {#if isLoading}
       <Spinner status={EntityStatus.Running} size="16px" />
+      <span class="sr-only" role="status">{m.status_loading()}</span>
     {:else if isUnavailable}
       <span class="text-sm text-fg-secondary">
         {m.billing_credit_balance_unavailable()}
