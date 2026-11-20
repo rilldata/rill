@@ -1982,6 +1982,14 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 		}
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	if org.DisableProjectDomainAccess {
+		return nil, status.Error(codes.FailedPrecondition, "domain access for projects is turned off for this organization")
+	}
+
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		return nil, err

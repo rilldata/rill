@@ -1106,6 +1106,9 @@ export interface V1Organization {
   thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
+  /** When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+Rules a project already has keep adding users. */
+  disableProjectDomainAccess?: boolean;
   defaultProvisioner?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
@@ -2035,6 +2038,7 @@ export type AdminServiceUpdateOrganizationBody = {
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
+  disableProjectDomainAccess?: boolean;
 };
 
 export type AdminServiceGetBillingCreditBalanceParams = {
