@@ -122,7 +122,7 @@ func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims 
 	}
 
 	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+	conditionKinds = append(conditionKinds, dashboardConditionKinds(claims)...)
 
 	// give access to the underlying metrics view
 	if spec.MetricsView != "" {
