@@ -539,14 +539,21 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		compareExpr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeAlias(m.Name))
+		baseCol := fmt.Sprintf("base.%s", a.Dialect.EscapeAlias(m.Name))
+		compCol := fmt.Sprintf("comparison.%s", a.Dialect.EscapeAlias(m.Name))
+
+		var expr string
 		if m.TreatNullsAs != "" {
-			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
+			baseExpr := fmt.Sprintf("COALESCE(%s, %s)", baseCol, m.TreatNullsAs)
+			compareExpr := fmt.Sprintf("COALESCE(%s, %s)", compCol, m.TreatNullsAs)
+			expr = fmt.Sprintf("%s - %s", baseExpr, compareExpr)
+		} else {
+			expr = fmt.Sprintf("CASE WHEN %s IS NULL AND %s IS NULL THEN NULL ELSE COALESCE(%s, 0) - COALESCE(%s, 0) END", baseCol, compCol, baseCol, compCol)
 		}
 
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("base.%s - %s", a.Dialect.EscapeAlias(m.Name), compareExpr),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			DisplayName:        fmt.Sprintf("%s (Δ)", m.DisplayName),
