@@ -56,13 +56,6 @@ export class DashboardStateSync {
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
-  // The latest navigation handleURLChange skipped because the lock was held.
-  // resolveTimeRange replays it with its own type, since going back restores different state than a goto.
-  private skippedNavigation:
-    | { search: string; type: AfterNavigate["type"] }
-    | undefined;
-  // Set once the dashboard is left, so a time range that resolves afterwards is dropped.
-  private tornDown = false;
 
   private readonly expressionFilterParamsTracker: UrlParamsChangeTracker;
 
@@ -77,6 +70,9 @@ export class DashboardStateSync {
     private readonly extraPrefix: string | undefined,
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
+    // Called once the store holds the initial state and the url matches it.
+    // Url changes made before that are not applied, see handleURLChange.
+    private readonly onInitialized: () => void,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -115,7 +111,6 @@ export class DashboardStateSync {
   }
 
   public teardown() {
-    this.tornDown = true;
     this.unsubInit?.();
     this.unsubExploreState?.();
   }
@@ -187,17 +182,27 @@ export class DashboardStateSync {
     if (!rillDefaultExploreURLParams) return;
     this.updating = true;
 
-    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-      const resolvedExploreState =
-        await this.resolveTimeRange(initExploreState);
-      // The dashboard was left while the time range resolved.
-      if (!resolvedExploreState) {
-        this.updating = false;
-        return;
-      }
-      initExploreState = resolvedExploreState;
-    }
     const pageState = get(page);
+
+    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
+      // Resolve start/end by making a network call.
+      [
+        initExploreState.selectedTimeRange,
+        // initExploreState.selectedComparisonTimeRange,
+      ] = await resolveTimeRanges(
+        this.client,
+        exploreSpec,
+        [
+          initExploreState.selectedTimeRange,
+          // initExploreState.selectedComparisonTimeRange,
+        ],
+        initExploreState.selectedTimezone,
+        undefined,
+        initExploreState.selectedTimeDimension,
+      );
+      // The grain can only be derived from the actual interval once start and end are known.
+      applyAdaptiveTimeGrain(initExploreState, metricsViewSpec);
+    }
 
     // Init the store with state we got from dataLoader
     metricsExplorerStore.init(this.exploreName, initExploreState);
@@ -237,6 +242,7 @@ export class DashboardStateSync {
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
       this.updating = false;
+      this.onInitialized();
       return;
     }
 
@@ -249,6 +255,7 @@ export class DashboardStateSync {
     });
     this.initialized = true;
     this.updating = false;
+    this.onInitialized();
   }
 
   /**
@@ -261,10 +268,7 @@ export class DashboardStateSync {
   ) {
     // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
     // Init already incorporates the url into the state so we can skip this processing.
-    if (this.updating || !this.initialized) {
-      this.skippedNavigation = { search: urlSearchParams.toString(), type };
-      return;
-    }
+    if (this.updating || !this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
@@ -276,7 +280,7 @@ export class DashboardStateSync {
     // Type-safety
     if (!rillDefaultExploreURLParams) return;
 
-    let partialExplore = this.dataLoader.getExploreStateFromURLParams(
+    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
       type,
     );
@@ -286,6 +290,8 @@ export class DashboardStateSync {
     // This shouldn't ideally happen.
     if (!partialExplore) return;
 
+    const pageState = get(page);
+
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
@@ -293,10 +299,22 @@ export class DashboardStateSync {
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-        const resolvedExplore = await this.resolveTimeRange(partialExplore);
-        // The dashboard was left while the time range resolved.
-        if (!resolvedExplore) return;
-        partialExplore = resolvedExplore;
+        // Resolve start/end by making a network call.
+        [
+          partialExplore.selectedTimeRange,
+          // partialExplore.selectedComparisonTimeRange,
+        ] = await resolveTimeRanges(
+          this.client,
+          exploreSpec,
+          [
+            partialExplore.selectedTimeRange,
+            // partialExplore.selectedComparisonTimeRange,
+          ],
+          partialExplore.selectedTimezone,
+          undefined,
+          partialExplore.selectedTimeDimension,
+        );
+        applyAdaptiveTimeGrain(partialExplore, metricsViewSpec);
       }
 
       // Merge the partial state from url into the store
@@ -347,7 +365,6 @@ export class DashboardStateSync {
 
     if (!redirectUrl) return; // type-safety
 
-    const pageState = get(page);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -359,59 +376,6 @@ export class DashboardStateSync {
       replaceState: true,
       state: pageState.state,
     });
-  }
-
-  /**
-   * Resolves the start and end of the state's time range, which takes a network call.
-   * Returns undefined when the dashboard was left during the call, so the caller drops the state.
-   *
-   * handleURLChange skips navigations while init or another url change holds the lock, as both do across this call.
-   * A navigation that lands meanwhile, like an embed's setValidState on a slow connection, would be lost,
-   * and applying the state, built from the url before it, would revert it.
-   * So when the url changes during the call, this starts over with the state for the new url,
-   * built the way handleURLChange would have built it for that navigation.
-   */
-  private async resolveTimeRange(
-    exploreState: ExploreState,
-  ): Promise<ExploreState | undefined> {
-    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const { url } = get(page);
-    [
-      exploreState.selectedTimeRange,
-      // exploreState.selectedComparisonTimeRange,
-    ] = await resolveTimeRanges(
-      this.client,
-      validSpecData?.explore ?? {},
-      [
-        exploreState.selectedTimeRange,
-        // exploreState.selectedComparisonTimeRange,
-      ],
-      exploreState.selectedTimezone,
-      undefined,
-      exploreState.selectedTimeDimension,
-    );
-
-    const latestUrl = get(page).url;
-    // Another page or dashboard is open now; the url is not ours to apply or change.
-    if (this.tornDown || latestUrl.pathname !== url.pathname) return undefined;
-
-    if (latestUrl.search !== url.search) {
-      const latestSearch = latestUrl.searchParams.toString();
-      const navigationType =
-        this.skippedNavigation?.search === latestSearch
-          ? this.skippedNavigation.type
-          : "goto";
-      this.skippedNavigation = undefined;
-      const latestExploreState = this.dataLoader.getExploreStateFromURLParams(
-        latestUrl.searchParams,
-        navigationType,
-      );
-      if (latestExploreState) return this.resolveTimeRange(latestExploreState);
-    }
-
-    // The grain can only be derived from the actual interval once start and end are known.
-    applyAdaptiveTimeGrain(exploreState, validSpecData?.metricsView ?? {});
-    return exploreState;
   }
 
   /**

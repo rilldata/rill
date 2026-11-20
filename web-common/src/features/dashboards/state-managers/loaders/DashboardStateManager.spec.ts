@@ -34,11 +34,9 @@ import {
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {
   type DashboardTimeControls,
@@ -60,8 +58,8 @@ import {
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
-import { readable } from "svelte/store";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { get, readable } from "svelte/store";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
@@ -79,28 +77,6 @@ vi.mock("$app/stores", () => {
     page: hoistedPage,
   };
 });
-
-// Stands in for the network call that resolves time ranges, so a test can hold it open.
-const hoistedTimeRanges = vi.hoisted(() => ({
-  pending: Promise.resolve(),
-}));
-vi.mock(
-  "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges",
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    resolveTimeRanges: vi.fn(
-      async (
-        _client: unknown,
-        _exploreSpec: unknown,
-        timeRanges: unknown[],
-      ) => {
-        await hoistedTimeRanges.pending;
-        return timeRanges;
-      },
-    ),
-  }),
-);
-const VitestEnv = String(import.meta.env.VITEST);
 
 // Contains basic tests for verifying order of selection.
 // In-depth tests for storing and retrieving state are separate.
@@ -400,101 +376,27 @@ describe("DashboardStateManager", () => {
       });
     });
 
-    describe("Url changes while a time range resolves", () => {
-      let releaseTimeRanges!: () => void;
+    it("Should call onLoad once the initial state is in the url", async () => {
+      const searchesAtLoad: string[] = [];
+      renderDashboardStateManager(undefined, false, false, () =>
+        searchesAtLoad.push(get(hoistedPage).url.searchParams.toString()),
+      );
 
-      beforeEach(() => {
-        // DashboardStateSync skips resolving time ranges under vitest.
-        vi.stubEnv("VITEST", "");
-        vi.mocked(resolveTimeRanges).mockClear();
-        hoistedTimeRanges.pending = new Promise(
-          (resolve) => (releaseTimeRanges = resolve),
-        );
-      });
+      await waitFor(() =>
+        expect(searchesAtLoad).toEqual([
+          new URLSearchParams(PageURLForRillDefaultState).toString(),
+        ]),
+      );
+    });
 
-      afterEach(() => {
-        vi.stubEnv("VITEST", VitestEnv);
-        hoistedTimeRanges.pending = Promise.resolve();
-      });
+    it("Should call onLoad when the dashboard fails to load", async () => {
+      // No time range summary: the dashboard has no data to show.
+      mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {});
+      const onLoad = vi.fn();
+      renderDashboardStateManager(undefined, false, false, onLoad);
 
-      it("Should keep a url change made while the dashboard initializes", async () => {
-        renderDashboardStateManager();
-        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledOnce());
-
-        // Like an embed's setValidState that lands before the dashboard has loaded.
-        pageMock.gotoSearch("tr=PT24H");
-        releaseTimeRanges();
-
-        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-        expect(
-          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
-        ).toEqual("PT24H");
-        pageMock.assertSearchParams("tr=PT24H");
-      });
-
-      it("Should keep a url change made while an earlier one is applied", async () => {
-        await startUrlChangeWithPendingTimeRange();
-        pageMock.gotoSearch("tr=P14D");
-        releaseTimeRanges();
-
-        await waitFor(() =>
-          expect(
-            getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
-          ).toEqual("P14D"),
-        );
-        pageMock.assertSearchParams("tr=P14D");
-      });
-
-      it("Should apply going back while an earlier url change is applied like any going back", async () => {
-        await startUrlChangeWithPendingTimeRange();
-        pageMock.popState("");
-        releaseTimeRanges();
-
-        // Going back to an empty url gives the rill defaults, not the session state.
-        await waitFor(() =>
-          assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
-        );
-        pageMock.assertSearchParams("");
-      });
-
-      it("Should drop a url change when another explore opens while it is applied", async () => {
-        await startUrlChangeWithPendingTimeRange();
-        hoistedPage.goto(
-          new URL("http://localhost/explore/other_explore?dims=other_dim"),
-        );
-        releaseTimeRanges();
-        await asyncWait(10);
-
-        pageMock.assertSearchParams("dims=other_dim");
-        expect(
-          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
-        ).toEqual("P7D");
-      });
-
-      it("Should drop a url change when the dashboard is torn down while it is applied", async () => {
-        const renderResults = await startUrlChangeWithPendingTimeRange();
-        renderResults.unmount();
-        releaseTimeRanges();
-        await asyncWait(10);
-
-        expect(
-          getCleanMetricsExploreForAssertion().selectedTimeRange?.name,
-        ).toEqual("P7D");
-      });
-
-      // Loads the dashboard, then starts a url change whose time range stays unresolved.
-      async function startUrlChangeWithPendingTimeRange() {
-        releaseTimeRanges();
-        const { renderResults } = renderDashboardStateManager();
-        await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-
-        hoistedTimeRanges.pending = new Promise(
-          (resolve) => (releaseTimeRanges = resolve),
-        );
-        pageMock.gotoSearch("tr=PT24H");
-        await waitFor(() => expect(resolveTimeRanges).toHaveBeenCalledTimes(2));
-        return renderResults;
-      }
+      await waitFor(() => expect(screen.getByText("Failed to load dashboard")));
+      expect(onLoad).toHaveBeenCalled();
     });
   });
 
@@ -833,6 +735,7 @@ function renderDashboardStateManager(
     | undefined = undefined,
   disableMostRecentDashboardState: boolean = false,
   disableInitSessionDashboardState: boolean = false,
+  onLoad: () => void = () => {},
 ) {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
@@ -840,6 +743,7 @@ function renderDashboardStateManager(
       bookmarkOrTokenExploreState,
       disableMostRecentDashboardState,
       disableInitSessionDashboardState,
+      onLoad,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.
