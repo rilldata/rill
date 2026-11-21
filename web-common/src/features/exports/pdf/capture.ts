@@ -68,15 +68,19 @@ export interface MeasuredBlock {
   tab?: string;
 }
 
-// Measures every capture target of the export render in document order.
+// Measures the capture targets of the export render that the dashboard draws,
+// in document order. A target the dashboard doesn't draw is left out, so no
+// export shows a widget its viewer can't see; see isDrawn.
 export function measureCanvasBlocks(
   rowContainer: HTMLElement,
 ): MeasuredBlock[] {
   const contentRect = rowContainer.getBoundingClientRect();
-  return captureTargetsIn(rowContainer).map((target) => {
+  const blocks: MeasuredBlock[] = [];
+  for (const target of captureTargetsIn(rowContainer)) {
     const rect = target.getBoundingClientRect();
+    if (!isDrawn(target, rect)) continue;
     const section = target.closest("section");
-    return {
+    blocks.push({
       id: target.id,
       element: target,
       xPx: rect.left - contentRect.left,
@@ -87,14 +91,36 @@ export function measureCanvasBlocks(
       isTabLabel: target.classList.contains("pdf-tab-label-row"),
       tabGroup: section?.dataset.tabGroup,
       tab: section?.dataset.tab,
-    };
-  });
+    });
+  }
+  return blocks;
+}
+
+// Whether a capture target shows on the dashboard. It doesn't when it has no
+// box of at least a pixel each way (display: none on it or on its row, a card
+// collapsed by its styles) or is hidden with visibility or opacity. Canvas
+// markdown can carry CSS that hides other widgets, and the export render's
+// rows and cards have the dashboard's ids, so the same rules apply to them.
+function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
+  if (rect.width < 1 || rect.height < 1) return false;
+  // Read from the computed styles rather than Element.checkVisibility, which
+  // Safari lacks before 17.4. visibility is inherited, so the target's value
+  // covers its ancestors; opacity is not, so each ancestor is looked at, as is
+  // content-visibility: hidden, which skips drawing an ancestor's contents.
+  if (getComputedStyle(target).visibility !== "visible") return false;
+  for (let el: Element | null = target; el; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    if (style.opacity === "0") return false;
+    if (el !== target && style.contentVisibility === "hidden") return false;
+  }
+  return true;
 }
 
 // Rasterizes the filter bar (optional) and each canvas block into images
 // positioned relative to the canvas content area: every component card plus the
-// label band above each exported tab (see captureTargetsIn). Per-block failures
-// degrade to a skipped block rather than aborting the whole export.
+// label band above each exported tab (see captureTargetsIn). A block whose
+// capture fails keeps its place without an image (see CapturedBlock.dataUrl)
+// rather than aborting the whole export.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
 ): Promise<CaptureResult> {
@@ -159,25 +185,26 @@ export async function captureCanvasBlocks(
   }
 
   for (const target of targets) {
+    let dataUrl: string | undefined;
     try {
-      const dataUrl = await rasterizeNode(target.element, {
+      dataUrl = await rasterizeNode(target.element, {
         backgroundColor,
         fontEmbedCSS,
         warmUpCanvas,
         format: opts.format,
       });
-      blocks.push({
-        id: target.id,
-        dataUrl,
-        xPx: target.xPx,
-        yPx: target.yPx,
-        widthPx: target.widthPx,
-        heightPx: target.heightPx,
-        rowIndex: target.rowIndex,
-      });
     } catch (e) {
       console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
+    blocks.push({
+      id: target.id,
+      dataUrl,
+      xPx: target.xPx,
+      yPx: target.yPx,
+      widthPx: target.widthPx,
+      heightPx: target.heightPx,
+      rowIndex: target.rowIndex,
+    });
     done += 1;
     reportProgress();
   }

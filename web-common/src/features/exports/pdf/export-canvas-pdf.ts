@@ -46,6 +46,11 @@ export async function exportCanvasPdf(
     if (!blocks.length) {
       throw new Error("Nothing to export on this canvas.");
     }
+    // Blocks whose capture failed carry no image, and a PDF of nothing but
+    // their notes isn't an export.
+    if (!blocks.some((block) => block.dataUrl)) {
+      throw new Error("This canvas could not be captured.");
+    }
 
     const title = get(canvasEntity.titleStore) || opts.canvasName;
 
