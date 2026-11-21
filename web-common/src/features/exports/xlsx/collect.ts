@@ -35,6 +35,7 @@ import type {
   ExportTable,
   KpiExportValue,
   LeaderboardExportTable,
+  MapExportLayer,
 } from "./payload";
 import { tableExportTable } from "./table-rows";
 import { excelDateFormat, localIsoInZone, timeColumnType } from "./time-format";
@@ -443,7 +444,15 @@ async function blockFor(
       return { title, subtitle, content: imageOr("No data") };
     }
     case "map": {
-      addSheet("", title, mapTable(payload));
+      // One data sheet per layer, so regions and points keep their own columns.
+      for (const layer of payload.layers) {
+        const suffix = payload.layers.length > 1 ? layer.name : "";
+        addSheet(
+          suffix,
+          [title || component.id, suffix].filter(Boolean).join(" "),
+          mapTable(layer),
+        );
+      }
       return { title, subtitle, content: imageOr("No data") };
     }
     case "text":
@@ -656,9 +665,7 @@ function columnTypeForCode(code: string | undefined): WorkbookColumnType {
   return WorkbookColumnType.STRING;
 }
 
-function mapTable(
-  payload: Extract<ComponentExportPayload, { kind: "map" }>,
-): ExportTable {
+function mapTable(payload: MapExportLayer): ExportTable {
   const columns: ExportColumn[] = [
     ...payload.dimensions.map((dimension) => ({
       name: dimension.name ?? "",
