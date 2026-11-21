@@ -70,7 +70,7 @@ export function getDimensionValuesForRow(
 
 /**
  * Like getDimensionValuesForRow but reads values directly from a PivotDataRow
- * instead of using positional rowId indexing. Stable across sorting.
+ * instead of resolving a rowId against the table data.
  */
 export function getDimensionValuesFromRowData(
   config: PivotDataStoreConfig,

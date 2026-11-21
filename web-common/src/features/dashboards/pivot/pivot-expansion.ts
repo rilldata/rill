@@ -4,6 +4,11 @@ import {
   PIVOT_TOTALS_ROW_ID,
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  encodeExpandKeySegment,
+  expandKeyDepth,
+  expandKeySegments,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -47,37 +52,82 @@ import type {
 } from "./types";
 
 /**
- * Extracts and organizes dimension values from a nested array structure
- * based on a given dimensions and an expanded key.
- *
- * This function iterates over a key in the `expanded` object, which
- * indicates whether a particular path in the nested array is expanded.
- * For each expanded path, it navigates through the table data
- * following the path defined by the key (split into indices) and extracts
- * the dimension values at each level.
+ * Returns the rows along the resolvable part of a (dimension, value) path.
+ * Callers that need a full match must compare its length with the key depth.
  */
+function getRowsForExpandedKey(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  key: string,
+): PivotDataRow[] {
+  const rows: PivotDataRow[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (key === PIVOT_TOTALS_ROW_ID) return rows;
+
+  // Each row stores its own value under rowDimensions[0] at every depth, so
+  // match key segments against that to resolve a key to the actual values.
+  const anchor = rowDimensions[0];
+  let currentRows: PivotDataRow[] | undefined = tableData;
+
+  for (const [depth, segment] of expandKeySegments(key).entries()) {
+    const node: PivotDataRow | undefined = currentRows?.find(
+      (row) =>
+        encodeExpandKeySegment(rowDimensions[depth], row[anchor]) === segment,
+    );
+    if (!node) break;
+    rows.push(node);
+    currentRows = node.subRows;
+  }
+  return rows;
+}
+
 export function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
 ): string[] {
-  const dimensionValues: string[] = [];
-  // The totals row is not part of the table data and has no dimension values.
-  if (key === PIVOT_TOTALS_ROW_ID) return dimensionValues;
+  return getRowsForExpandedKey(tableData, rowDimensions, key).map(
+    (row) => row[rowDimensions[0]] as string,
+  );
+}
 
-  const indices = key.split(".").map((index) => parseInt(index, 10));
+/**
+ * Returns the dimension values along an expanded key's path when the whole
+ * path is in the table data and there is a dimension below it to expand into.
+ * Otherwise returns undefined: the key is either waiting for its parent's sub
+ * rows to load, or stale because its dimensions no longer match the rows.
+ */
+function resolveExpandedKey(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  key: string,
+): string[] | undefined {
+  const depth = expandKeyDepth(key);
+  if (depth >= rowDimensions.length) return undefined;
+  const values = getValuesForExpandedKey(tableData, rowDimensions, key);
+  if (
+    values.length !== depth ||
+    values.some((v) => v === undefined || v === LOADING_CELL)
+  ) {
+    return undefined;
+  }
+  return values;
+}
 
-  // Retrieve the value from the nested array
-  let currentValue: PivotDataRow[] | undefined = tableData;
-
-  indices.forEach((index, i) => {
-    if (!currentValue?.[index]) {
-      return;
-    }
-    dimensionValues.push(currentValue[index]?.[rowDimensions[i]] as string);
-    currentValue = currentValue[index]?.subRows;
-  });
-  return dimensionValues;
+/**
+ * Counts the expanded keys that resolve against the table data. Filling in a
+ * parent's sub rows can make its expanded children resolvable, which raises
+ * the count.
+ */
+export function countResolvedExpandedKeys(
+  config: PivotDataStoreConfig,
+  tableData: PivotDataRow[],
+): number {
+  return Object.keys(config.pivot.expanded).filter(
+    (key) =>
+      resolveExpandedKey(tableData, config.rowDimensionNames, key) !==
+      undefined,
+  ).length;
 }
 
 /**
@@ -203,7 +253,7 @@ export function queryExpandedRowMeasureValues(
   }
   return derived(
     Object.keys(expanded)?.map((expandIndex) => {
-      const nestLevel = expandIndex?.split(".")?.length;
+      const nestLevel = expandKeyDepth(expandIndex);
 
       if (nestLevel >= rowDimensionNames.length)
         return readable({
@@ -214,17 +264,15 @@ export function queryExpandedRowMeasureValues(
           totals: [],
         });
       const anchorDimension = rowDimensionNames[nestLevel];
-      const values = getValuesForExpandedKey(
+      const values = resolveExpandedKey(
         tableData,
         rowDimensionNames,
         expandIndex,
       );
 
-      if (
-        !anchorDimension ||
-        !values.length ||
-        values.some((v) => v === undefined || v === LOADING_CELL)
-      )
+      // Don't query with a partial filter. The data store reruns this stage
+      // once a parent's sub rows fill in and make more keys resolvable.
+      if (!values)
         return readable({
           isFetching: true,
           expandIndex,
@@ -475,31 +523,31 @@ export function addExpandedDataToPivot(
   const pivotData = tableData;
   const numRowDimensions = rowDimensions.length;
 
-  expandedRowMeasureValues.forEach((expandedRowData) => {
+  // Fill parents before their children: a parent's sub rows are replaced
+  // wholesale, which would drop children filled in earlier. The order of
+  // `expanded` can't be relied on, e.g. after collapsing and re-expanding a
+  // parent its key comes after its children's.
+  const parentsFirst = [...expandedRowMeasureValues].sort(
+    (a, b) => expandKeyDepth(a.expandIndex) - expandKeyDepth(b.expandIndex),
+  );
+
+  parentsFirst.forEach((expandedRowData) => {
     const rowValues = expandedRowData.rowDimensionValues;
 
     if (rowValues.length === 0) return;
-    const indices = expandedRowData.expandIndex
-      .split(".")
-      .map((index) => parseInt(index, 10));
+    const segments = expandKeySegments(expandedRowData.expandIndex);
 
-    let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
-    let lastIdx = 0;
+    const rows = getRowsForExpandedKey(
+      pivotData,
+      rowDimensions,
+      expandedRowData.expandIndex,
+    );
+    if (rows.length !== segments.length) return;
+    const node = rows.at(-1);
 
-    // Traverse the data array to the right position
-    for (let i = 0; i < indices.length; i++) {
-      if (!parent[indices[i]]) break;
-      if (i < indices.length - 1) {
-        const subRows = parent[indices[i]].subRows;
-        if (!subRows) break;
-        parent = subRows;
-      }
-      lastIdx = indices[i];
-    }
-
-    // Update the specific array at the position
-    if (parent[lastIdx] && parent[lastIdx].subRows) {
-      const anchorDimension = rowDimensions[indices.length];
+    // Update the node's subRows in place
+    if (node && node.subRows) {
+      const anchorDimension = rowDimensions[segments.length];
 
       let skeletonSubTable: PivotDataRow[] = [
         { [anchorDimension]: LOADING_CELL },
@@ -533,7 +581,7 @@ export function addExpandedDataToPivot(
            * is greater than number of nest levels expanded except
            * for the last level
            */
-          if (numRowDimensions - 1 > indices.length) {
+          if (numRowDimensions - 1 > segments.length) {
             newRow.subRows = [{ [rowDimensions[0]]: LOADING_CELL }];
           }
           return newRow;
@@ -548,7 +596,7 @@ export function addExpandedDataToPivot(
         } as PivotDataRow);
       }
 
-      parent[lastIdx].subRows = mappedSubRows;
+      node.subRows = mappedSubRows;
     }
   });
   return pivotData;

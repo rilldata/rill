@@ -742,3 +742,93 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectSortedDeltaCol, 4);
   });
 });
+
+test.describe("pivot expansion persistence", () => {
+  test.use({ project: "AdBids" });
+
+  // Expanded rows are keyed by dimension values, so they survive config
+  // changes that keep the same rows.
+  // https://github.com/rilldata/rill/issues/9781
+  test("deeply expanded rows survive adding a measure, sorting, and a refresh", async ({
+    page,
+  }) => {
+    test.setTimeout(45_000);
+    const watcher = new ResourceWatcher(page);
+
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+    await watcher.updateAndWaitForDashboard(pivotDashboard, "AdBids_metrics");
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("link", { name: "Pivot", exact: true }).click();
+
+    const columnZone = page.locator(".dnd-zone.horizontal").nth(1);
+    const totalRecords = page.getByLabel("Total records pivot chip", {
+      exact: true,
+    });
+    const addRowField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(1);
+    const addColumnField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(2);
+
+    // Rows = Time (month) > Publisher > Domain, columns = Total records.
+    await dragPivotChip(page, totalRecords, columnZone);
+    await addRowField.click();
+    await clickMenuButton(page, "month");
+    await addRowField.click();
+    await clickMenuButton(page, "Publisher");
+    await addRowField.click();
+    await clickMenuButton(page, "Domain");
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    // Expand a month; a nested publisher row becomes visible.
+    await page.locator("td").filter({ hasText: "Jan" }).first().click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(
+      page.locator("td").filter({ hasText: "Facebook" }).first(),
+    ).toBeVisible();
+
+    // Open the publisher as well. Its domain rows require a second query
+    // pass when the table is rebuilt before the month's children have loaded.
+    const publisher = page
+      .locator("td")
+      .filter({ hasText: /^\s*Facebook\s*$/ });
+    await publisher.getByRole("button", { name: "Expand row" }).click();
+    const domain = page
+      .locator("td")
+      .filter({ hasText: /^\s*facebook\.com\s*$/ });
+    await expect(domain).toBeVisible();
+
+    // The grandchild row must stay visible after adding a measure.
+    await addColumnField.click();
+    await clickMenuButton(page, "Sum of Bid Price");
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(domain).toBeVisible();
+    // Wait for the new measure on the grandchild, not a stale row from before
+    // the table was rebuilt while its new queries were still loading.
+    await expect(domain.locator("..").locator("td")).toHaveCount(3);
+    await expect(domain.locator("..").locator("td").nth(2)).toHaveText(/\d/);
+
+    // And it must stay visible after sorting by a measure.
+    await page
+      .locator(".header-cell")
+      .filter({ hasText: "Total records" })
+      .first()
+      .click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(domain).toBeVisible();
+
+    // And after a data refresh: a wider time range re-queries every row but
+    // still includes January.
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: /Last 12 months/i }).click();
+    });
+    await expect(page.getByLabel("Select time range")).toContainText(
+      /Last 12 months/i,
+    );
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(domain).toBeVisible();
+  });
+});
