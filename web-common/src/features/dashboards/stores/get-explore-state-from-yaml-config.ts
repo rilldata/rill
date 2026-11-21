@@ -9,6 +9,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getExploreDefaultFilter } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -54,6 +55,11 @@ export function getExploreStateFromYAMLConfig(
       metricsViewSpec.timeGrains,
     ),
     ...getExploreViewStateFromYAMLConfig(exploreSpec, exploreFields),
+    ...getExploreFilterStateFromYAMLConfig(
+      metricsViewSpec,
+      exploreSpec,
+      exploreFields,
+    ),
   };
 }
 
@@ -205,6 +211,26 @@ function getDefaultComparisonTimeRangeName(
   );
 
   return comparisonTimeRangeName;
+}
+
+function getExploreFilterStateFromYAMLConfig(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  exploreFields: ExploreFieldNames,
+): Partial<ExploreState> {
+  const whereFilter = getExploreDefaultFilter(
+    metricsViewSpec,
+    exploreSpec,
+    exploreFields,
+  );
+  // Left unset without a default filter, so that the cascading merge fills it from the next source.
+  if (!whereFilter) return {};
+
+  return {
+    whereFilter,
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: [],
+  };
 }
 
 function getExploreViewStateFromYAMLConfig(

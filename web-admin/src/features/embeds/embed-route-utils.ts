@@ -3,7 +3,9 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 
 export type DashboardInfo = {
   name: string;
-  kind: ResourceKind;
+  kind: ResourceKind.Explore | ResourceKind.Canvas;
+  // Personal canvases are canvases created by the embed user.
+  personal: boolean;
 };
 
 export function getDashboardFromEmbedRoute(
@@ -13,12 +15,15 @@ export function getDashboardFromEmbedRoute(
   if (!routeId || !params?.name) return null;
 
   if (routeId.includes("/explore/")) {
-    return { name: params.name, kind: ResourceKind.Explore };
+    return { name: params.name, kind: ResourceKind.Explore, personal: false };
   }
 
-  // Personal canvases are canvases created by the embed user.
-  if (routeId.includes("/canvas/") || routeId.includes("/personal/")) {
-    return { name: params.name, kind: ResourceKind.Canvas };
+  if (routeId.includes("/canvas/")) {
+    return { name: params.name, kind: ResourceKind.Canvas, personal: false };
+  }
+
+  if (routeId.includes("/personal/")) {
+    return { name: params.name, kind: ResourceKind.Canvas, personal: true };
   }
 
   return null;

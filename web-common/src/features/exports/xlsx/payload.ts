@@ -13,6 +13,7 @@ import type { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/run
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
+  V1ExportConditionalFormat,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -33,7 +34,9 @@ export type ComponentExportPayload =
   | { kind: "leaderboard"; tables: LeaderboardExportTable[] }
   | { kind: "customChart"; results: CustomChartExportResult[] }
   | { kind: "map"; layers: MapExportLayer[] }
-  | { kind: "text"; text: string }
+  // The markdown as shown, and as resolved before measure values were
+  // formatted (for the CSV download of its tables; see csv.ts).
+  | { kind: "text"; text: string; unformattedText: string }
   | { kind: "imageUrl"; url: string }
   | { kind: "error"; message: string };
 
@@ -97,4 +100,18 @@ export interface ExportTable {
   // True when the source has more rows than the table holds (the component
   // had not loaded them, or the export's row cap trimmed them).
   moreRows?: boolean;
+  // The table's conditional formatting, in priority order; see
+  // WorkbookDataSheet.conditional_formats.
+  conditionalFormats?: ExportTableConditionalFormat[];
+}
+
+// A conditional format over some of a table's columns, by name. A color scale
+// or data bar spans all of them, like a measure's columns in a pivot.
+export interface ExportTableConditionalFormat {
+  columns: string[];
+  format: V1ExportConditionalFormat;
+  // The values at the ends of a color scale or data bar, when they aren't the
+  // lowest and highest numbers in the columns, like the leaf-row domain of a
+  // nested pivot.
+  domain?: { min: number; max: number };
 }

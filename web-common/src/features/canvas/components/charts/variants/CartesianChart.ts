@@ -242,7 +242,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   updateProperty = (
     key: keyof CartesianCanvasChartSpec,
     value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
-  ) => {
+  ): Promise<boolean> => {
     const currentSpec = get(this.specStore);
 
     if ((key as string) === ORIENTATION_PARAM) {
@@ -253,10 +253,9 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
         (value as ChartOrientation) !== chartOrientation(currentSpec);
       const spec = { ...currentSpec };
       delete (spec as Record<string, unknown>)[ORIENTATION_PARAM];
-      this.setSpec(
+      return this.setSpec(
         changed ? (swapAxes(spec) as CartesianCanvasChartSpec) : spec,
       );
-      return;
     }
 
     if (key === measureChannel(currentSpec)) {
@@ -273,8 +272,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
           };
         }
 
-        this.setSpec(newSpec);
-        return;
+        return this.setSpec(newSpec);
       } else if (!isMultiMeasure) {
         const newSpec = { ...currentSpec, [key]: updatedMeasureField };
 
@@ -285,12 +283,11 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
           newSpec.color = "primary";
         }
 
-        this.setSpec(newSpec);
-        return;
+        return this.setSpec(newSpec);
       }
     }
 
-    super.updateProperty(key, value);
+    return super.updateProperty(key, value);
   };
 
   protected specForChartTypeSwitch(

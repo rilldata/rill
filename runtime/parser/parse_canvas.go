@@ -33,9 +33,10 @@ type CanvasYAML struct {
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
-		Enable   *bool    `yaml:"enable"`
-		Pinned   []string `yaml:"pinned"`
-		Required []string `yaml:"required"`
+		Enable       *bool    `yaml:"enable"`
+		Pinned       []string `yaml:"pinned"`
+		Required     []string `yaml:"required"`
+		SingleSelect []string `yaml:"single_select"`
 	}
 	Defaults *struct {
 		TimeRange           string            `yaml:"time_range"`
@@ -172,6 +173,19 @@ func (p *Parser) parseCanvas(node *Node) error {
 		return err
 	}
 
+	// Admin-managed canvases (e.g. personal canvases) can only use inline components for now.
+	if adminManaged, _ := strconv.ParseBool(tmp.Annotations["admin_managed"]); adminManaged {
+		inlineNames := make(map[string]bool, len(inlineComponentDefs))
+		for _, def := range inlineComponentDefs {
+			inlineNames[def.name] = true
+		}
+		for _, ref := range node.Refs {
+			if ref.Kind == ResourceKindComponent && !inlineNames[ref.Name] {
+				return fmt.Errorf("personal canvases cannot reference the component %q: only inline components are supported", ref.Name)
+			}
+		}
+	}
+
 	// Build and validate presets
 	var defaultPreset *runtimev1.CanvasPreset
 	if tmp.Defaults != nil {
@@ -254,6 +268,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
+	r.CanvasSpec.SingleSelectFilters = tmp.Filters.SingleSelect
 	r.CanvasSpec.Annotations = tmp.Annotations
 	r.CanvasSpec.AiPrompts = aiPrompts
 

@@ -25,8 +25,9 @@ const outPath = fileURLToPath(
 );
 
 // Chart types that need data a metrics view query cannot provide: geographic coordinates
-// or region ids, and a single metric tile the canvas already has a native widget for.
-const EXCLUDED = new Set(["Map", "Choropleth", "KPI Card"]);
+// or region ids; a single metric tile the canvas already has a native widget for; and Flint's
+// table, which takes no channels and prints the rows it is given, so there is nothing to query.
+const EXCLUDED = new Set(["Map", "Choropleth", "KPI Card", "Table"]);
 
 function property(def) {
   const out = { key: def.key, label: def.label ?? def.key, type: def.type };

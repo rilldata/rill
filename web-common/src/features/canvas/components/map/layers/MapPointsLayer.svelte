@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type {
     V1MetricsViewAggregationMeasure,
@@ -62,6 +63,7 @@
   const OUTLINE_LAYER = "polygons-outline";
 
   const runtimeClient = useRuntimeClient();
+  const themeBoundaryClass = getThemeBoundaryClass();
   const { specStore } = untrack(() => component);
 
   const mapSpec = $derived($specStore ?? ({} as Partial<MapSpec>));
@@ -152,7 +154,7 @@
         value: formatMeasure(measure, properties[measure]),
       });
     }
-    showTooltip(e, buildTooltipHTML(title, tooltipRows));
+    showTooltip(e, buildTooltipHTML(title, tooltipRows), themeBoundaryClass);
   }
 
   function handleMouseLeave() {

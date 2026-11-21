@@ -79,7 +79,20 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 					fileName = sanitizeFileName(resTitle) + ".md"
 				}
 
-				resourceFilebuf.WriteString(ensureTrailingNewline(generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID)))
+				doc := generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID)
+				if resID == "themes" {
+					// The variables a theme can set are defined by the parser instead of the schema, so their reference is generated separately.
+					variables, err := themeVariablesDoc()
+					if err != nil {
+						return fmt.Errorf("theme variables error: %w", err)
+					}
+					before, after, ok := strings.Cut(doc, "\n\n## Examples")
+					if !ok {
+						return fmt.Errorf("theme variables error: no examples section to insert the variables before")
+					}
+					doc = before + "\n\n" + variables + "\n\n## Examples" + after
+				}
+				resourceFilebuf.WriteString(ensureTrailingNewline(doc))
 
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {

@@ -88,7 +88,7 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 	}
 
 	// Embed users are untrusted outside users, so we cap how many personal files they can create.
-	if owner.embedUserID != "" {
+	if owner.isEmbed() {
 		existing, err := s.findPersonalFiles(ctx, proj.ID, owner)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list personal files: %w", err)
@@ -170,7 +170,7 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if !owner.owns(vf) {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read file")
 	}
 
@@ -221,7 +221,7 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if !owner.owns(vf) {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update file")
 	}
 
@@ -286,7 +286,7 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if !owner.owns(vf) {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete file")
 	}
 
@@ -305,8 +305,8 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 }
 
 // findPersonalFiles returns the non-deleted personal files owned by the owner in the project's prod environment.
-func (s *Server) findPersonalFiles(ctx context.Context, projectID string, owner *personalFileOwner) ([]*database.VirtualFile, error) {
-	if owner.embedUserID != "" {
+func (s *Server) findPersonalFiles(ctx context.Context, projectID string, owner *owner) ([]*database.VirtualFile, error) {
+	if owner.isEmbed() {
 		return s.admin.DB.FindVirtualFilesByEmbedOwner(ctx, projectID, "prod", owner.embedUserID)
 	}
 	return s.admin.DB.FindVirtualFilesByOwner(ctx, projectID, "prod", owner.userID)
@@ -315,20 +315,14 @@ func (s *Server) findPersonalFiles(ctx context.Context, projectID string, owner 
 // maxPersonalFilesPerEmbedUser caps the number of live personal files an embed user can have in a project.
 const maxPersonalFilesPerEmbedUser = 50
 
-// personalFileOwner identifies the owner of a personal file.
-// Exactly one of userID and embedUserID is set.
-type personalFileOwner struct {
-	userID      string
-	embedUserID string
-}
-
 // personalFileOwnerFromClaims resolves the personal file owner for the caller.
 // Only Rill users and embed users can own personal files.
-func personalFileOwnerFromClaims(claims auth.Claims) (*personalFileOwner, error) {
-	switch claims.OwnerType() {
-	case auth.OwnerTypeUser:
-		return &personalFileOwner{userID: claims.OwnerID()}, nil
-	case auth.OwnerTypeEmbed:
+func personalFileOwnerFromClaims(claims auth.Claims) (*owner, error) {
+	o, err := ownerFromClaims(claims)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, "only users can manage personal files")
+	}
+	if o.isEmbed() {
 		// Embeds with fixed resources issue runtime JWTs that only grant access to those resources,
 		// so a personal canvas created from them could never be opened.
 		tkn, ok := claims.AuthTokenModel().(*admin.EmbedToken)
@@ -338,32 +332,8 @@ func personalFileOwnerFromClaims(claims auth.Claims) (*personalFileOwner, error)
 		if len(tkn.Resources) > 0 {
 			return nil, status.Error(codes.FailedPrecondition, "personal files are not available for embeds limited to specific resources")
 		}
-		return &personalFileOwner{embedUserID: claims.OwnerID()}, nil
-	default:
-		return nil, status.Error(codes.PermissionDenied, "only users can manage personal files")
 	}
-}
-
-// owns returns true if the virtual file is owned by the owner.
-func (o *personalFileOwner) owns(vf *database.VirtualFile) bool {
-	if o.embedUserID != "" {
-		return vf.EmbedOwnerID != nil && *vf.EmbedOwnerID == o.embedUserID
-	}
-	return vf.OwnerID != nil && *vf.OwnerID == o.userID
-}
-
-func (o *personalFileOwner) userIDPtr() *string {
-	if o.userID == "" {
-		return nil
-	}
-	return &o.userID
-}
-
-func (o *personalFileOwner) embedUserIDPtr() *string {
-	if o.embedUserID == "" {
-		return nil
-	}
-	return &o.embedUserID
+	return o, nil
 }
 
 // personalFileBlockedKeys are top-level properties that personal files may not set.
@@ -386,7 +356,7 @@ var personalFileBlockedKeys = map[string]bool{
 // yamlForPersonalFile builds the YAML stored for a personal file.
 // If data is empty, it creates a blank file.
 // It strips any client-supplied admin_* annotations and sets the server-controlled ones for the owner.
-func yamlForPersonalFile(displayName string, owner *personalFileOwner, kind, data string) ([]byte, error) {
+func yamlForPersonalFile(displayName string, owner *owner, kind, data string) ([]byte, error) {
 	if kind != runtime.ResourceKindCanvas {
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind: %s", kind)
 	}
@@ -419,7 +389,7 @@ func yamlForPersonalFile(displayName string, owner *personalFileOwner, kind, dat
 			sanitized[k] = v
 		}
 	}
-	if owner.embedUserID != "" {
+	if owner.isEmbed() {
 		// Sharing is not supported for embed-owned files.
 		sanitized["admin_embed_owner_id"] = owner.embedUserID
 	} else {

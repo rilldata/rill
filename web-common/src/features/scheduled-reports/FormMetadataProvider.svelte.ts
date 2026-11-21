@@ -45,23 +45,34 @@ export interface FormMetadataProvider<M, D> {
   // True until the current user has loaded.
   isLoading: boolean;
   // The emails of the project's members, which the recipients of a report that runs as the recipient must be part of.
-  // Undefined when the current user is not allowed to list the project's members, so the recipients cannot be checked.
+  // Undefined when the current user is not allowed to list the project's members, so the recipients cannot be checked,
+  // or when the form doesn't check its recipients (see loadProjectMembers in createFormMetadataProvider).
   projectMembersSet: Set<string> | undefined;
   hasSlackNotifier: boolean;
 
   cleanup(): void;
 }
 
+/**
+ * Set loadProjectMembers for forms that check their recipients against the project's members (see projectMembersSet).
+ * It's off by default, since listing the members of a large project is expensive.
+ */
 export function createFormMetadataProvider<M, D>(
   client: RuntimeClient,
   mutationFactory: MutationFactory<M>,
   deleteMutationFactory: MutationFactory<D>,
+  { loadProjectMembers = false }: { loadProjectMembers?: boolean } = {},
 ): FormMetadataProvider<M, D> {
   const mutation = createMutationFromFactory(mutationFactory);
   const deleteMutation = createMutationFromFactory(deleteMutationFactory);
   return EmbedStore.isEmbedded()
     ? new EmbedFormMetadataProvider(client, mutation, deleteMutation)
-    : new AdminFormMetadataProvider(client, mutation, deleteMutation);
+    : new AdminFormMetadataProvider(
+        client,
+        mutation,
+        deleteMutation,
+        loadProjectMembers,
+      );
 }
 
 class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
@@ -81,7 +92,12 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   private readonly projectMembersUnsub: () => void;
   private readonly notifiersUnsub: () => void;
 
-  public constructor(client: RuntimeClient, mutation: M, deleteMutation: D) {
+  public constructor(
+    client: RuntimeClient,
+    mutation: M,
+    deleteMutation: D,
+    loadProjectMembers: boolean,
+  ) {
     this.mutation = mutation;
     this.deleteMutation = deleteMutation;
 
@@ -101,7 +117,7 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
     const projectPermissions = page.data.projectPermissions as
       | V1ProjectPermissions
       | undefined;
-    if (projectPermissions?.readProjectMembers) {
+    if (loadProjectMembers && projectPermissions?.readProjectMembers) {
       const listProjectMemberUsersQuery =
         createAdminServiceListProjectMemberUsers(
           this.organization,

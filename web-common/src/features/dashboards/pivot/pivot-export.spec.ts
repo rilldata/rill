@@ -1,4 +1,7 @@
-import { getPivotAggregationRequest } from "@rilldata/web-common/features/dashboards/pivot/pivot-export";
+import {
+  getPivotAggregationRequest,
+  getPivotExportConditionalFormats,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-export";
 import {
   type PivotChipData,
   PivotChipType,
@@ -98,5 +101,38 @@ describe("getPivotAggregationRequest", () => {
     expect(
       flatRequestSort([{ id: "bid_price", desc: true }], false, timeOnly),
     ).toEqual([{ name: "timestamp_rill_TIME_GRAIN_DAY", desc: false }]);
+  });
+});
+
+describe("getPivotExportConditionalFormats", () => {
+  it("resolves the formatting of the pivot's measures for Excel", () => {
+    const pivotState = {
+      measureFormatting: {
+        impressions: { mode: "heatmap", scheme: "greens" },
+        // Formatting of a measure that is no longer in the pivot is left out.
+        bid_price: { mode: "data_bar", scheme: "blues" },
+      },
+    } as unknown as PivotState;
+    expect(
+      getPivotExportConditionalFormats(
+        pivotState,
+        [
+          chip(PivotChipType.Measure, "impressions"),
+          chip(PivotChipType.Measure, "clicks"),
+        ],
+        [{ name: "impressions", lowerIsBetter: true }],
+      ),
+    ).toEqual([
+      {
+        measure: "impressions",
+        format: {
+          colorScale: {
+            minColor: "#00441b",
+            midColor: "#74c476",
+            maxColor: "#f7fcf5",
+          },
+        },
+      },
+    ]);
   });
 });

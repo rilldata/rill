@@ -19,7 +19,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	sf "github.com/snowflakedb/gosnowflake"
+	sf "github.com/snowflakedb/gosnowflake/v2"
+	"github.com/snowflakedb/gosnowflake/v2/arrowbatches"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
@@ -77,7 +78,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	ctx = sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator)
+	ctx = sf.WithArrowAllocator(arrowbatches.WithArrowBatches(ctx), memory.DefaultAllocator)
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -103,7 +104,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	batches, err := rows.(sf.SnowflakeRows).GetArrowBatches()
+	batches, err := arrowbatches.GetArrowBatches(rows.(sf.SnowflakeRows))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ type fileIterator struct {
 	db      *sql.DB
 	conn    *sql.Conn
 	rows    sqld.Rows
-	batches []*sf.ArrowBatch
+	batches []*arrowbatches.ArrowBatch
 	logger  *zap.Logger
 	tempDir string
 	// Computed while iterating
@@ -212,10 +213,17 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		return nil, drivers.ErrNoRows
 	}
 
+	releaseFirstBatch := func() {
+		for _, rec := range *firstBatch {
+			rec.Release()
+		}
+	}
+
 	// common schema
 	schema := (*firstBatch)[0].Schema()
 	for _, f := range schema.Fields() {
 		if f.Type.ID() == arrow.TIME32 || f.Type.ID() == arrow.TIME64 {
+			releaseFirstBatch()
 			return nil, fmt.Errorf("TIME data type (column %q) is not currently supported, "+
 				"consider excluding it or casting it to another data type", f.Name)
 		}
@@ -231,6 +239,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
+		releaseFirstBatch()
 		return nil, err
 	}
 	defer writer.Close()
@@ -249,12 +258,18 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	batchesLeft := len(f.batches)
 	start := time.Now()
 
-	for _, batch := range f.batches {
+	for i, batch := range f.batches {
 		b := batch
+		isFirst := i == 0
 		errGrp.Go(func() error {
-			records, err := b.Fetch()
-			if err != nil {
-				return err
+			// Fetch consumes the batch, so the first batch (already fetched for the schema) must not be fetched again.
+			records := firstBatch
+			if !isFirst {
+				var err error
+				records, err = b.Fetch()
+				if err != nil {
+					return err
+				}
 			}
 			mu.Lock()
 			defer mu.Unlock()

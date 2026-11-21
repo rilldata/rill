@@ -28,7 +28,10 @@ import type {
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
-import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import {
+  SortDirection,
+  SortType,
+} from "web-common/src/features/dashboards/proto-state/derived-types";
 import { dedupePivotChips } from "../pivot/pivot-chip-utils";
 import {
   PivotChipType,
@@ -39,9 +42,11 @@ import {
 } from "../pivot/types";
 import { isMinimizedAccessor, pivotHasSortField } from "../pivot/pivot-sorting";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
+import { notifyEphemeralMeasureChange } from "../ephemeral-measures/notify";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -279,6 +284,7 @@ const metricsViewReducers = {
     name: string,
     partialExploreState: Partial<ExploreState>,
     expressionFilterManager?: ExpressionFilterManager,
+    timeFilterManager?: TimeFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -298,6 +304,9 @@ const metricsViewReducers = {
             expressionFilterManager.inList;
         }
       }
+
+      if (timeFilterManager)
+        setFromTimeManager(exploreState, timeFilterManager);
 
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
@@ -330,21 +339,44 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       const mvName =
         expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        const newWhereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        // Read before whereFilter is replaced, since the pin moves with the values it points at.
-        exploreState.tdd.pinIndex = getUpdatedPinIndex(
-          exploreState.tdd.pinIndex,
-          exploreState.selectedComparisonDimension,
-          exploreState.whereFilter,
-          newWhereFilter,
-        );
+      if (!mvName) return;
 
-        exploreState.whereFilter = newWhereFilter;
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
+      const newWhereFilter =
+        expressionFilterManager.topLevelJoiner.expr[mvName] ??
+        createAndExpression([]);
+      // Read before whereFilter is replaced, since the pin moves with the values it points at.
+      exploreState.tdd.pinIndex = getUpdatedPinIndex(
+        exploreState.tdd.pinIndex,
+        exploreState.selectedComparisonDimension,
+        exploreState.whereFilter,
+        newWhereFilter,
+      );
+
+      exploreState.whereFilter = newWhereFilter;
+      exploreState.dimensionsWithInlistFilter = expressionFilterManager.inList;
+    });
+  },
+
+  syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
+    if (!name) return;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      const showedComparison = exploreState.showTimeComparison;
+      setFromTimeManager(exploreState, timeFilterManager);
+
+      // Delta sorts need a comparison, so turning it off resets them;
+      // turning it on resets a percent of total sort, as the comparison toggle always has.
+      const sortType = exploreState.dashboardSortType;
+      if (
+        (showedComparison &&
+          !exploreState.showTimeComparison &&
+          (sortType === SortType.DELTA_PERCENT ||
+            sortType === SortType.DELTA_ABSOLUTE)) ||
+        (!showedComparison &&
+          exploreState.showTimeComparison &&
+          sortType === SortType.PERCENT)
+      ) {
+        exploreState.dashboardSortType = SortType.VALUE;
+        exploreState.sortDirection = SortDirection.DESCENDING;
       }
     });
   },
@@ -659,17 +691,6 @@ const metricsViewReducers = {
     });
   },
 
-  /**
-   * Switches the time grain to adaptive mode: the grain follows the selected time range
-   * until the user fixes one again with `setTimeGrain`.
-   */
-  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.adaptiveTimeGrain = true;
-      correctExploreState(metricsViewSpec, exploreState);
-    });
-  },
-
   remove(name: string) {
     update((state) => {
       delete state.entities[name];
@@ -757,29 +778,45 @@ const metricsViewReducers = {
     });
   },
 
+  // Ephemeral measure changes confirm themselves with a toast, so every entry
+  // point (the dialog, the pivot sidebar and header chips) confirms alike.
   addEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.ephemeralMeasures = [
         ...(exploreState.ephemeralMeasures ?? []),
         def,
       ];
+      // The new measure goes first, where the user looks for it: the first
+      // shown measure (and so the first big number and chart) of the explore
+      // view, and in Pivot also the first measure column.
+      exploreState.visibleMeasures = [
+        def.name,
+        ...exploreState.visibleMeasures,
+      ];
+      exploreState.allMeasuresVisible = false;
       if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
         exploreState.pivot.rowPage = 1;
         exploreState.pivot.activeCell = null;
-        exploreState.pivot.columns.push({
-          id: def.name,
-          title: def.displayName,
-          type: PivotChipType.Measure,
-        });
-      } else {
-        // Make the new measure visible in the explore view.
-        exploreState.visibleMeasures = [
-          ...exploreState.visibleMeasures,
-          def.name,
-        ];
-        exploreState.allMeasuresVisible = false;
+        const firstMeasure = exploreState.pivot.columns.findIndex(
+          (col) => col.type === PivotChipType.Measure,
+        );
+        // A nested table's sort on a measure under a column value names the
+        // measure by position, which inserting before it shifts.
+        if (firstMeasure !== -1 && exploreState.pivot.tableMode !== "flat") {
+          exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+            (sort) => !isMinimizedAccessor(sort.id),
+          );
+        }
+        exploreState.pivot.columns.splice(
+          firstMeasure === -1
+            ? exploreState.pivot.columns.length
+            : firstMeasure,
+          0,
+          { id: def.name, title: def.displayName, type: PivotChipType.Measure },
+        );
       }
     });
+    notifyEphemeralMeasureChange("created", def.displayName);
   },
 
   updateEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
@@ -794,14 +831,21 @@ const metricsViewReducers = {
         col.id === def.name ? { ...col, title: def.displayName } : col,
       );
     });
+    notifyEphemeralMeasureChange("updated", def.displayName);
   },
 
+  // Removes every use of the measure even when its definition is already
+  // gone, and confirms the removal of a definition.
   removeEphemeralMeasure(
     name: string,
     measureName: string,
     explore: V1ExploreSpec | undefined,
   ) {
+    let removed: EphemeralMeasureDef | undefined;
     updateMetricsExplorerByName(name, (exploreState) => {
+      removed = exploreState.ephemeralMeasures?.find(
+        (d) => d.name === measureName,
+      );
       exploreState.ephemeralMeasures = (
         exploreState.ephemeralMeasures ?? []
       ).filter((d) => d.name !== measureName);
@@ -809,11 +853,16 @@ const metricsViewReducers = {
       // Remove all usages across views.
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
+      const columnCount = exploreState.pivot.columns.length;
       exploreState.pivot.columns = exploreState.pivot.columns.filter(
         (col) => col.id !== measureName,
       );
+      const columnRemoved = exploreState.pivot.columns.length !== columnCount;
+      // A sort on a measure under a column value names the measure by
+      // position, which removing a measure column before it shifts.
       exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
-        (s) => s.id !== measureName,
+        (s) =>
+          s.id !== measureName && !(columnRemoved && isMinimizedAccessor(s.id)),
       );
       if (exploreState.pivot.measureFormatting?.[measureName]) {
         const measureFormatting = { ...exploreState.pivot.measureFormatting };
@@ -847,6 +896,7 @@ const metricsViewReducers = {
       // measure; restore the spec defaults so views never end up measure-less.
       if (explore) syncMeasures(explore, exploreState);
     });
+    if (removed) notifyEphemeralMeasureChange("deleted", removed.displayName);
   },
 
   setPivotRowLimitForExpandedRow(
@@ -935,6 +985,51 @@ function setSelectedScrubRange(
   }
 
   exploreState.selectedScrubRange = scrubRange;
+}
+
+function setFromTimeManager(
+  exploreState: ExploreState,
+  timeFilterManager: TimeFilterManager,
+) {
+  exploreState.selectedTimezone = timeFilterManager.timeZone;
+  exploreState.selectedTimeDimension = timeFilterManager.timeDimension;
+  if (!timeFilterManager.timeRange) return;
+
+  exploreState.selectedTimeRange = {
+    name: timeFilterManager.timeRange,
+    start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
+    end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
+    interval: timeFilterManager.timeGrain,
+  } as any;
+  // Without an explicit grain the manager derives it from the time range,
+  // so explore has to keep it out of the url as well.
+  exploreState.adaptiveTimeGrain = !timeFilterManager.urlTimeGrain;
+  exploreState.showTimeComparison = timeFilterManager.showComparison;
+  exploreState.selectedComparisonTimeRange = {
+    name: timeFilterManager.comparisonTimeRange,
+    start:
+      timeFilterManager.comparisonInterval?.start?.toJSDate() ?? new Date(),
+    end: timeFilterManager.comparisonInterval?.end?.toJSDate() ?? new Date(),
+  };
+
+  if (timeFilterManager.scrubInterval) {
+    exploreState.selectedScrubRange = {
+      start: timeFilterManager.scrubInterval.start.toJSDate(),
+      end: timeFilterManager.scrubInterval.end.toJSDate(),
+      isScrubbing: timeFilterManager.scrubInterval.isScrubbing,
+    };
+  } else {
+    exploreState.selectedScrubRange = undefined;
+  }
+  if (timeFilterManager.lastDefinedScrubInterval) {
+    exploreState.lastDefinedScrubRange = {
+      start: timeFilterManager.lastDefinedScrubInterval.start.toJSDate(),
+      end: timeFilterManager.lastDefinedScrubInterval.end.toJSDate(),
+      isScrubbing: false,
+    };
+  } else {
+    exploreState.lastDefinedScrubRange = undefined;
+  }
 }
 
 function getPinIndexForDimension(

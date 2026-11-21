@@ -1149,6 +1149,24 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
   }
 
+  // UpdateMagicAuthToken updates the display name or password of a magic auth token.
+  rpc UpdateMagicAuthToken(UpdateMagicAuthTokenRequest) returns (UpdateMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      patch: "/v1/magic-tokens/{token_id}",
+      body: "*"
+    };
+  }
+
+  // UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+  // It must be called with the magic auth token as the bearer token.
+  // On success, it returns a short-lived session token that grants the same access as the magic auth token.
+  rpc UnlockMagicAuthToken(UnlockMagicAuthTokenRequest) returns (UnlockMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/magic-tokens/current/unlock",
+      body: "*"
+    };
+  }
+
   // UpdateUserPreferences updates the preferences for the user
   rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
     option (google.api.http) = {
@@ -1157,7 +1175,8 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+  // Embed users only see their own personal bookmarks.
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -1794,6 +1813,7 @@ message GetIFrameRequest {
   }
   // Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
   // Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+  // Must be at most 2048 bytes.
   string external_user_id = 16;
   // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
   string type = 14;
@@ -2755,7 +2775,9 @@ message RevokeCurrentAuthTokenResponse {
 
 // ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
 // the caller's own bookmarks plus shared and default bookmarks.
+// Embed users only see their own personal bookmarks.
 message ListBookmarksRequest {
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 1;
   // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
   // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
@@ -2782,6 +2804,7 @@ message CreateBookmarkRequest {
   string url_search = 9;
   string resource_kind = 4;
   string resource_name = 5;
+  // ID of the project. Optional for embed users, where it defaults to the embed's project.
   string project_id = 6;
   bool default = 7;
   bool shared = 8;
@@ -2866,6 +2889,9 @@ message IssueMagicAuthTokenRequest {
   string display_name = 10;
   // list of resources to grant access to.
   repeated ResourceName resources = 11;
+  // Optional password that recipients must enter before the token grants access.
+  // Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
+  string password = 13;
   reserved 5;
 }
 
@@ -2895,6 +2921,9 @@ message GetCurrentMagicAuthTokenRequest {}
 
 message GetCurrentMagicAuthTokenResponse {
   MagicAuthToken token = 1;
+  // True when the bearer is a password-protected token that has not been unlocked.
+  // In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+  bool locked = 2;
 }
 
 message RevokeMagicAuthTokenRequest {
@@ -2902,6 +2931,30 @@ message RevokeMagicAuthTokenRequest {
 }
 
 message RevokeMagicAuthTokenResponse {}
+
+message UpdateMagicAuthTokenRequest {
+  string token_id = 1;
+  // New display name. Unchanged if not set.
+  optional string display_name = 2;
+  // New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+  optional string password = 3;
+  // Removes the password. Can't be combined with password.
+  bool remove_password = 4;
+}
+
+message UpdateMagicAuthTokenResponse {
+  MagicAuthToken token = 1;
+}
+
+message UnlockMagicAuthTokenRequest {
+  string password = 1;
+}
+
+message UnlockMagicAuthTokenResponse {
+  // Session token to use as the bearer token instead of the magic auth token.
+  string session_token = 1;
+  google.protobuf.Timestamp expires_on = 2;
+}
 
 message GetGithubRepoStatusRequest {
   string remote = 1;
@@ -3206,9 +3259,19 @@ message GetAlertMetaResponse {
     string open_url = 1;
     string edit_url = 2;
     string unsubscribe_url = 3;
+    // If true, the recipient is the embed user who created the alert.
+    // Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+    bool embed_owner = 4;
   }
   map<string, URLs> recipient_urls = 2;
   google.protobuf.Struct query_for_attributes = 3;
+  // ID of the user to run the alert's queries as.
+  // Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+  string query_for_user_id = 4;
+  // If true, the alert's data must only be accessed through the resources listed in `resources`.
+  // Set for alerts created from an embed that was limited to specific resources.
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
   reserved 1;
 }
 
@@ -3434,6 +3497,9 @@ message GetPaymentsPortalURLResponse {
 
 message GetBillingCreditBalanceRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
+  // If true, a recently fetched balance may be returned instead of querying the billing provider.
+  // If false, the balance is always fetched from the billing provider.
+  bool allow_cached = 3;
   bool superuser_force_access = 2;
 }
 
@@ -3792,6 +3858,8 @@ message Bookmark {
   string user_id = 6;
   bool default = 11;
   bool shared = 12;
+  // Whether the caller can update and remove the bookmark.
+  bool can_manage = 14;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }
@@ -3835,6 +3903,8 @@ message MagicAuthToken {
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;
+  // True if recipients must enter a password before the token grants access.
+  bool password_protected = 19;
   reserved 10;
 }
 
@@ -3898,10 +3968,16 @@ message AlertOptions {
   rill.runtime.v1.ExportFormat export_format = 19;
   bool export_include_header = 20;
   uint64 export_limit = 21;
+  uint32 notify_rows_limit = 22 [(validate.rules).uint32.lte = 50]; // Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;
   repeated string email_recipients = 8;
+  // Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+  // Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+  // It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+  // If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+  string embed_owner_email = 23;
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;

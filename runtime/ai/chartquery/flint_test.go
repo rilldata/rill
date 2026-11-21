@@ -387,8 +387,10 @@ func TestFlintSpecFields(t *testing.T) {
 	require.Equal(t, "__time", spec.TimeField())
 	require.Equal(t, "TIME_GRAIN_DAY", spec.TimeGrainName())
 
-	require.Equal(t, "0.4.1", Catalog().FlintVersion)
+	require.Equal(t, "1.0.1", Catalog().FlintVersion)
 	require.NotNil(t, Catalog().ChartType("Waterfall Chart"))
+	require.NotNil(t, Catalog().ChartType("Calendar Heatmap"))
 	require.Nil(t, Catalog().ChartType("Map"), "geographic charts are left out of the catalog")
+	require.Nil(t, Catalog().ChartType("Table"), "Flint's table takes no channels, so there is nothing to query for it")
 	require.True(t, Catalog().ChartType("Bar Chart").AcceptsChannel(DetailChannel))
 }

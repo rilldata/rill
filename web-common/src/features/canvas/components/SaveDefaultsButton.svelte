@@ -6,7 +6,7 @@
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-  import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
   import { page } from "$app/state";
 
   let {
@@ -35,17 +35,17 @@
 
   let viewingDefaults = $derived.by(() => {
     if (
-      !arrayUnorderedEquals(
-        Object.keys(dashboardProvider.yamlConfigProvider.specRequiredFilters),
-        Object.keys(dashboardProvider.yamlConfigProvider.requiredFilters),
+      !arrayOrderedEquals(
+        dashboardProvider.yamlConfigProvider.specRequiredFilters,
+        dashboardProvider.yamlConfigProvider.requiredFilters,
       )
     ) {
       return false;
     }
     if (
-      !arrayUnorderedEquals(
-        Object.keys(dashboardProvider.yamlConfigProvider.specPinnedFilters),
-        Object.keys(dashboardProvider.yamlConfigProvider.pinnedFilters),
+      !arrayOrderedEquals(
+        dashboardProvider.yamlConfigProvider.specPinnedFilters,
+        dashboardProvider.yamlConfigProvider.pinnedFilters,
       )
     ) {
       return false;

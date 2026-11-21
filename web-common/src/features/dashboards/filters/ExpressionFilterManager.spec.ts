@@ -6,6 +6,7 @@ import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options.ts";
+import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
@@ -547,12 +548,14 @@ describe("setUrlParams", () => {
 });
 
 describe("single param form", () => {
-  function createSingleParamFilterManager() {
+  function createSingleParamFilterManager(
+    yamlConfigProvider: YAMLConfigProvider = new YAMLConfigProvider(),
+  ) {
     const { value, destroy } = createInEffectRoot(
       () =>
         new ExpressionFilterManager(
           metricsViewsProvider,
-          new YAMLConfigProvider(),
+          yamlConfigProvider,
           true,
         ),
     );
@@ -585,6 +588,44 @@ describe("single param form", () => {
     const searchParams = new URLSearchParams();
     filterManager.applyFilterToParams(searchParams);
     expect(searchParams.toString()).toEqual(sharedParam(filter).toString());
+  });
+
+  it("keeps an explore's required and pinned chips through a clear and reports the required filter as missing", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({
+      pinnedFilters: [AD_BIDS_DOMAIN_DIMENSION],
+      requiredFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+    });
+    const filterManager = createSingleParamFilterManager(yamlConfigProvider);
+    const missingRequiredFilters = () =>
+      getMissingRequiredFilters(
+        filterManager,
+        metricsViewsProvider,
+        yamlConfigProvider,
+      );
+
+    // Without a value for the required filter, the explore is not shown.
+    expect(missingRequiredFilters()).toEqual([AD_BIDS_PUBLISHER_DIMENSION]);
+
+    // The explore's default filter arrives through the singular param.
+    filterManager.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Contoso')`),
+    );
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(missingRequiredFilters()).toEqual([]);
+
+    filterManager.clear();
+
+    // The chips stay, without a value, and the required filter is missing again.
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(filterManager.hasSomeFilter).toBe(false);
+    expect(missingRequiredFilters()).toEqual([AD_BIDS_PUBLISHER_DIMENSION]);
   });
 });
 
@@ -692,11 +733,10 @@ describe("yaml config change", () => {
     expect(filterManager.ready).toBe(true);
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
 
-    yamlConfigProvider.update(
-      {},
-      [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
-      [AD_BIDS_DOMAIN_DIMENSION],
-    );
+    yamlConfigProvider.update({
+      pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
+      requiredFilters: [AD_BIDS_DOMAIN_DIMENSION],
+    });
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
       AD_BIDS_DOMAIN_DIMENSION,
@@ -710,7 +750,10 @@ describe("yaml config change", () => {
 
   it("keeps the chips it has when the config is applied again", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    yamlConfigProvider.update({
+      pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+      requiredFilters: [],
+    });
     const filterManager = createFilterManager(yamlConfigProvider);
     filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
@@ -723,7 +766,10 @@ describe("yaml config change", () => {
       AD_BIDS_DOMAIN_DIMENSION,
     ]);
 
-    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    yamlConfigProvider.update({
+      pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+      requiredFilters: [],
+    });
 
     const chipsAfter = filterManager.sortedFilterManagers.dimensions;
     expect(chipsAfter.length).toBe(chipsBefore.length);
@@ -734,10 +780,199 @@ describe("yaml config change", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
     const filterManager = createFilterManager(yamlConfigProvider);
 
-    yamlConfigProvider.update({}, ["not_a_field"], []);
+    yamlConfigProvider.update({
+      pinnedFilters: ["not_a_field"],
+      requiredFilters: [],
+    });
 
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
     expect(filterManager.sortedFilterManagers.measures).toEqual([]);
+  });
+});
+
+describe("single-select filters", () => {
+  function createSingleSelectFilterManager() {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({
+      singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+    });
+    return createFilterManager(yamlConfigProvider);
+  }
+
+  function publisherParam(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.get(
+      `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+    );
+  }
+
+  it("replaces the value when another one is picked", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleValue("Google", false),
+    );
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleValue("Facebook", false),
+    );
+
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+  });
+
+  it("keeps one of the values appended at once and reports only that one", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    const added = filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (dfm) => dfm.appendSelectedValues(["Google", "Facebook"]),
+    );
+
+    expect(added).toEqual(["Facebook"]);
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+  });
+
+  it("narrows a param with several values, an exclude or a contains to one included value", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google','Facebook')`,
+      }),
+    );
+    const dfm = filterManager.sortedFilterManagers.dimensions[0];
+    expect(dfm.exclude).toBe(false);
+    expect(dfm.selectedValues).toEqual(["Facebook"]);
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+      }),
+    );
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toBeUndefined();
+  });
+
+  it("leaves the other dimensions multi-select", () => {
+    const filterManager = createSingleSelectFilterManager();
+
+    filterManager.dimensionFilterAction(AD_BIDS_DOMAIN_DIMENSION, (dfm) =>
+      dfm.appendSelectedValues(["google.com", "facebook.com"]),
+    );
+
+    expect(
+      (
+        filterManager.filterManagersMap[
+          AD_BIDS_DOMAIN_DIMENSION
+        ] as DimensionFilterManager
+      ).selectedValues,
+    ).toEqual(["google.com", "facebook.com"]);
+  });
+
+  it("narrows the params when the config is loaded before them", () => {
+    const filterManager = createSingleSelectFilterManager();
+    const urlParams = perMetricsViewParams({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+    });
+
+    filterManager.storeSync.setUrlParams(urlParams);
+
+    // The params the next state change is compared against hold the value the chip shows.
+    expect(
+      filterManager.storeSync.searchParams?.get(
+        `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+      ),
+    ).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+    );
+    expect(
+      (
+        filterManager.filterManagersMap[
+          AD_BIDS_PUBLISHER_DIMENSION
+        ] as DimensionFilterManager
+      ).selectedValues,
+    ).toEqual(["Facebook"]);
+
+    // The same url again normalizes to the current params, so it is not parsed again.
+    const joinerBefore = filterManager.topLevelJoiner;
+    filterManager.storeSync.setUrlParams(urlParams);
+    expect(filterManager.topLevelJoiner).toBe(joinerBefore);
+  });
+
+  it("does not publish a param that already holds a single value", async () => {
+    const filterManager = createSingleSelectFilterManager();
+    const internalChange = vi.fn();
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", internalChange),
+    );
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    await Promise.resolve();
+
+    expect(internalChange).not.toHaveBeenCalled();
+  });
+
+  it("applies a config that only changes the single-select filters", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({ singleSelectFilters: [] });
+
+    yamlConfigProvider.update({
+      singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+    });
+
+    expect(
+      yamlConfigProvider.isSingleSelectFilter(AD_BIDS_PUBLISHER_DIMENSION),
+    ).toBe(true);
+  });
+
+  it("only treats the listed names as single-select", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({
+      singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+    });
+
+    expect(
+      yamlConfigProvider.isSingleSelectFilter(AD_BIDS_PUBLISHER_DIMENSION),
+    ).toBe(true);
+    // Inherited properties of a plain object must not match.
+    expect(yamlConfigProvider.isSingleSelectFilter("constructor")).toBe(false);
+    expect(yamlConfigProvider.isSingleSelectFilter("toString")).toBe(false);
+  });
+
+  it("narrows the filter and writes the param when the config lands after the params", async () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const filterManager = createFilterManager(yamlConfigProvider);
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      }),
+    );
+    const notify = vi.fn();
+    const unsub = eventBus.on("notification", notify);
+    cleanups.push(unsub);
+
+    yamlConfigProvider.update({
+      singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+    });
+
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+    // `stateChanged` writes the param in a microtask.
+    await Promise.resolve();
+    expect(
+      filterManager.storeSync.searchParams?.get(
+        `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+      ),
+    ).toEqual(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`);
+    expect(notify).not.toHaveBeenCalled();
   });
 });
 
@@ -1081,30 +1316,83 @@ describe("setExprForMetricsView / setParamForMetricsView", () => {
 });
 
 describe("chip order", () => {
-  it("leads with required filters, then pinned, then the param filters by name", () => {
+  it("shows pinned chips in the order of the pinned list, then the param filters by name", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
-    yamlConfigProvider.pinnedFilters = { [AD_BIDS_PUBLISHER_DIMENSION]: true };
+    yamlConfigProvider.pinnedFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
-        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
       }),
     );
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
       AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_COUNTRY_DIMENSION,
+    ]);
+  });
+
+  it("leads with the required filters that are not pinned, in the order of the required list", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.requiredFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_COUNTRY_DIMENSION];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_COUNTRY_DIMENSION,
+    ]);
+  });
+
+  it("places a filter that is both required and pinned by the pinned list", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
+    yamlConfigProvider.pinnedFilters = [
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+  });
+
+  it("moves a filter pinned in the editor after the pinned ones", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_PUBLISHER_DIMENSION];
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
+      }),
+    );
+    yamlConfigProvider.togglePinnedFilter(AD_BIDS_COUNTRY_DIMENSION);
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
       AD_BIDS_PUBLISHER_DIMENSION,
       AD_BIDS_COUNTRY_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
     ]);
   });
 
   it("gives required and pinned filters a chip without a value", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
-    yamlConfigProvider.pinnedFilters = { [AD_BIDS_IMPRESSIONS_MEASURE]: true };
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
+    yamlConfigProvider.pinnedFilters = [AD_BIDS_IMPRESSIONS_MEASURE];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
@@ -1121,7 +1409,7 @@ describe("chip order", () => {
 
   it("skips required filters that no metrics view defines", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { not_a_field: true };
+    yamlConfigProvider.requiredFilters = ["not_a_field"];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
@@ -1479,7 +1767,7 @@ describe("clear", () => {
 
   it("keeps the required and pinned chips", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
+    yamlConfigProvider.requiredFilters = [AD_BIDS_DOMAIN_DIMENSION];
     const filterManager = createFilterManager(yamlConfigProvider);
 
     filterManager.storeSync.setUrlParams(
@@ -1562,7 +1850,7 @@ describe("getOtherDimensionsFilter", () => {
 describe("createLocalFilterStore", () => {
   it("scopes a new manager to a single metrics view and shares the yaml config", async () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    // The local store builds its own MetricsViewsProvider, which calls createQuery,
+    // MetricsViewsProvider calls createQuery,
     // so it has to be created inside a component rather than a bare effect root.
     const rendered = renderInRuntimeContext(({ runtimeClient }) => {
       const provider = new MetricsViewsProvider(runtimeClient, [
@@ -1576,7 +1864,9 @@ describe("createLocalFilterStore", () => {
       return {
         provider,
         filterManager,
-        local: filterManager.createLocalFilterStore(AD_BIDS_METRICS_NAME),
+        local: filterManager.createLocalFilterStore(
+          new MetricsViewsProvider(runtimeClient, [AD_BIDS_METRICS_NAME]),
+        ),
       };
     });
     cleanups.push(() => {

@@ -116,6 +116,17 @@ func (q *Query) Validate() error {
 		}
 	}
 
+	// A result holds one column per name, so two different computations under one name are ambiguous:
+	// ClickHouse rejects the query, while DuckDB returns both columns and one overwrites the other when the rows are read.
+	// Identical repeats are allowed since they yield the same values, e.g. a chart that uses one dimension for both its axis and its color.
+	seen := make(map[string]Dimension, len(q.Dimensions))
+	for _, d := range q.Dimensions {
+		if prev, ok := seen[d.Name]; ok && !reflect.DeepEqual(prev, d) {
+			return fmt.Errorf("dimension %q is requested more than once with different computations; give each a unique name, for example by aliasing the time floor", d.Name)
+		}
+		seen[d.Name] = d
+	}
+
 	if q.ComparisonTimeRange != nil && !q.ComparisonTimeRange.IsZero() && (q.TimeRange == nil || q.TimeRange.IsZero()) {
 		return fmt.Errorf("comparison_time_range requires time_range to be set")
 	}

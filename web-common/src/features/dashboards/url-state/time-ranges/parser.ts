@@ -1,6 +1,7 @@
 import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import grammar from "./rill-time.js";
 import nearley from "nearley";
+import type { DateTime } from "luxon";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function parseRillTime(rillTimeRange: string): RillTime {
@@ -61,4 +62,13 @@ export function overrideRillTimeRef(rt: RillTime, refOverride: string) {
   const overriddenPoint = overriddenRillTime.anchorOverrides[0];
   if (!overriddenPoint) throw new Error("No anchor overrides found");
   rt.overrideRef(overriddenPoint);
+}
+
+/**
+ * Formats an instant as an absolute rill time point, written as the wall-clock time in `timeZone`.
+ * The backend reads absolute times in the request's time zone and ignores the `Z`,
+ * which the rill time parser requires on times with seconds.
+ */
+export function formatRillTimeWallClock(dt: DateTime, timeZone: string) {
+  return dt.setZone(timeZone).toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 }

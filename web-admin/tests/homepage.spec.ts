@@ -6,7 +6,9 @@ test.describe("Homepage", () => {
     page,
   }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "e2e" })).toBeVisible();
+    await expect(page.locator('nav [aria-current="page"]')).toContainText(
+      "e2e",
+    ); // Organization breadcrumb
     await expect(page.getByRole("link", { name: "Projects" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Users" })).toBeVisible();
   });

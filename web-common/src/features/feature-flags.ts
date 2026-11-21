@@ -85,6 +85,7 @@ class FeatureFlags {
   customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);
   personalCanvases = new FeatureFlag("user", false);
+  embeddedBookmarks = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 
@@ -162,6 +163,16 @@ export const reportsEnabled = derived(
   ],
   ([reports, adminServer, embedAdminActions]) =>
     reports && (adminServer || embedAdminActions),
+);
+
+export const alertsEnabled = derived(
+  [
+    featureFlags.alerts,
+    featureFlags.adminServer,
+    featureFlags.embedAdminActions,
+  ],
+  ([alerts, adminServer, embedAdminActions]) =>
+    alerts && (adminServer || embedAdminActions),
 );
 
 export async function getFeatureFlags(

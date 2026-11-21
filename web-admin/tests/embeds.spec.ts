@@ -526,7 +526,7 @@ test.describe("Embeds", () => {
 
       // The navigation bar is gone. Assert on DOM presence rather than
       // visibility, since Playwright's locators also match hidden elements.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
       await expect(frame.getByText("Home", { exact: true })).toHaveCount(0);
 
       // The component's drill-through to an explore dashboard is still offered.
@@ -555,7 +555,7 @@ test.describe("Embeds", () => {
       await expect(frame.getByLabel("Select time range")).toBeVisible();
 
       // The navigation bar stays hidden on the dashboard we drilled into.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
     });
   });
 
@@ -563,6 +563,12 @@ test.describe("Embeds", () => {
     const recorder = new EmbedMessageRecorder(embedPage);
     await recorder.waitForReady();
     const frame = embedPage.frameLocator("iframe");
+    // Clicking the current dashboard's breadcrumb opens the dashboard switcher.
+    const openDashboardSwitcher = (currentDashboard: string) =>
+      frame
+        .getByRole("navigation")
+        .getByRole("button", { name: currentDashboard, exact: true })
+        .click();
 
     // Time range is the default
     await expect(frame.getByText("Last 7 days")).toBeVisible();
@@ -578,7 +584,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", {
         name: "Programmatic Ads Auction",
@@ -593,7 +599,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Auction");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
@@ -616,7 +622,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Bids Canvas Dashboard");
     await frame
       .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
@@ -628,7 +634,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 14 days")).toBeVisible();
 
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()

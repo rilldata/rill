@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { portal } from "../../../lib/actions/portal";
   import PivotChip from "./PivotChip.svelte";
   import { type PivotChipData, PivotChipType } from "./types";
@@ -10,6 +11,9 @@
   export let width: number | undefined = undefined;
   export let onRelease: () => void = () => {};
   export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
+
+  // The dragged chip is portalled out of the dashboard's theme boundary.
+  const themeBoundaryClass = getThemeBoundaryClass();
 
   function trackDragItem(e: MouseEvent) {
     requestAnimationFrame(() => {
@@ -24,7 +28,7 @@
 <svelte:window onmousemove={trackDragItem} onmouseup={onRelease} />
 
 <div
-  class="portal-item"
+  class="portal-item {themeBoundaryClass ?? ''}"
   class:rounded-full={item.type !== PivotChipType.Measure}
   style:left="{position.left}px"
   style:top="{position.top}px"

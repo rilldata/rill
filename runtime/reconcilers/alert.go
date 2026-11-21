@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"sort"
+	"strconv"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -16,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -543,12 +546,35 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ownerID = a.Spec.Annotations["admin_owner_user_id"]
 	}
 	adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
-		return fmt.Errorf("failed to get alert metadata: %w", err)
+	var executeErr error
+	if err != nil {
+		switch {
+		case isEmbedCreatedAlert(a):
+			// Alerts created from an embed run as the identity that the admin service resolves for the embed user.
+			// Without it, they would run without any identity, so they fail instead (e.g. if the embed user is missing or inactive).
+			// The failure is added to the execution history, so the owner sees why the alert didn't run.
+			executeErr = fmt.Errorf("failed to get alert metadata: %w", err)
+		case !errors.Is(err, drivers.ErrNotImplemented):
+			return fmt.Errorf("failed to get alert metadata: %w", err)
+		}
+	}
+
+	// Embed users can only use alerts if the project enables the "alerts" feature flag for them (it's disabled for embeds by default).
+	// The UI hides alerts otherwise, but this check also covers alerts created directly through the API.
+	if executeErr == nil && isEmbedCreatedAlert(a) {
+		flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)})
+		if err != nil {
+			return fmt.Errorf("failed to resolve feature flags: %w", err)
+		}
+		if !flags["alerts"] {
+			executeErr = errors.New(`alerts created from an embed require the "alerts" feature flag to be enabled for embed users`)
+		}
 	}
 
 	// Run alert queries and send notifications
-	executeErr := r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
+	if executeErr == nil {
+		executeErr = r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
+	}
 	if executeErr == nil {
 		return nil
 	}
@@ -581,7 +607,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ErrorMessage: executeErr.Error(),
 	}
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, a, adminMeta)
+	err = r.popCurrentExecution(ctx, self, a, adminMeta, alertFailRows{})
 	if err != nil {
 		return err
 	}
@@ -661,7 +687,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	}
 
 	// Check the alert and get the result
-	res, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
+	res, failRows, executeErr := r.executeSingleWrapped(ctx, self, a, adminMeta, executionTime)
 
 	// If the error is a cancellation/timeout, return (will be retried)
 	if errors.Is(executeErr, context.Canceled) || errors.Is(executeErr, context.DeadlineExceeded) {
@@ -681,21 +707,24 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 	// Finalize and pop current execution.
 	a.State.CurrentExecution.Result = res
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, a, adminMeta)
+	err = r.popCurrentExecution(ctx, self, a, adminMeta, failRows)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// checkAlert runs the alert query and returns the result.
-func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
+// executeSingleWrapped runs the alert query and returns the result.
+// For a failed check, it also returns the rows that matched the alert criteria (up to the alert's rows limit) for inclusion in notifications.
+func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, alertFailRows, error) {
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
-		return nil, fmt.Errorf("alert has no resolver")
+		return nil, alertFailRows{}, fmt.Errorf("alert has no resolver")
 	}
+
+	rowsLimit := int(a.Spec.NotifyRowsLimit)
 
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
@@ -709,12 +738,12 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
 			"format":         true,
-			"limit":          1,
+			"limit":          rowsLimit + 1, // The extra row tells whether more rows matched than the notifications include.
 		},
-		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
+		Claims: alertQueryClaims(a, adminMeta, nil),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve alert: %w", err)
+		return nil, alertFailRows{}, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 	defer res.Close()
 
@@ -723,32 +752,41 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		warnings = info.Warnings
 	}
 
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, nil
+	var rows []map[string]any
+	for len(rows) <= rowsLimit {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, alertFailRows{}, fmt.Errorf("failed to get row from alert resolver: %w", err)
 		}
-		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
+		rows = append(rows, row)
+	}
+
+	if len(rows) == 0 {
+		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS, Warnings: warnings}, alertFailRows{}, nil
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
-	// Return fail row
-	failRow, err := structpb.NewStruct(row)
+	// Return the first row as the fail row, which is stored in the execution history
+	failRow, err := structpb.NewStruct(rows[0])
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		return nil, alertFailRows{}, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
 	return &runtimev1.AssertionResult{
 		Status:   runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 		FailRow:  failRow,
 		Warnings: warnings,
-	}, nil
+	}, newAlertFailRows(res.Schema(), rows, rowsLimit), nil
 }
 
 // popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
 // At a certain limit, it trims old executions from the history to prevent it from growing unboundedly.
-func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata) error {
+// For a failed check, failRows are the rows to include in notifications.
+func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, failRows alertFailRows) error {
 	if a.State.CurrentExecution == nil {
 		panic(fmt.Errorf("attempting to pop current execution when there is none"))
 	}
@@ -850,10 +888,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				DisplayName:   a.Spec.DisplayName,
-				ExecutionTime: executionTime,
-				Status:        current.Result.Status,
-				FailRow:       current.Result.FailRow.AsMap(),
+				DisplayName:       a.Spec.DisplayName,
+				ExecutionTime:     executionTime,
+				Status:            current.Result.Status,
+				FailColumns:       failRows.columns,
+				FailRows:          failRows.rows,
+				FailRowsTruncated: failRows.truncated,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {
@@ -868,6 +908,31 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 		default:
 			return fmt.Errorf("unexpected assertion result status: %v", current.Result.Status)
+		}
+	}
+
+	// Alerts created from an embed don't notify without admin metadata,
+	// since it's only missing if their owner couldn't be resolved (see executeAll), and the alert is effectively paused.
+	embedCreated := isEmbedCreatedAlert(a)
+	if embedCreated && adminMeta == nil {
+		msg = nil
+	}
+
+	// Alerts created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no edit link; they have an unsubscribe link,
+	// and the creator's notification has an open link to the embedder's app if rill.yaml configures `embeds.open_url`.
+	// The open link only works for the embed user who created the alert, since the embedder's app opens it with their external user ID.
+	var embedLink string
+	if msg != nil && embedCreated {
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+		if err != nil {
+			return err
+		}
+		if inst.EmbedOpenURL != "" {
+			embedLink, err = embedopen.Link(inst.EmbedOpenURL, &embedopen.Payload{Kind: embedopen.KindAlert, Name: self.Meta.Name.Name, ExecutionTime: executionTime})
+			if err != nil {
+				return fmt.Errorf("failed to build open link: %w", err)
+			}
 		}
 	}
 
@@ -908,7 +973,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						ExecutionTime:      msg.ExecutionTime,
 						Status:             msg.Status,
 						IsRecover:          msg.IsRecover,
-						FailRow:            msg.FailRow,
+						FailColumns:        msg.FailColumns,
+						FailRows:           msg.FailRows,
+						FailRowsTruncated:  msg.FailRowsTruncated,
 						ExecutionError:     msg.ExecutionError,
 						Attachment:         attachment,
 						AttachmentTooLarge: attachmentTooLarge,
@@ -917,7 +984,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					// Set recipient-specific URLs if available from admin metadata.
 					// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
-						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
+						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok && embedCreated {
+							if recipientURLs.EmbedOwner {
+								opts.OpenLink = embedLink
+							}
+							opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
+						} else if ok {
 							// Use recipient-specific URLs (with magic token)
 							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
 							if err != nil {
@@ -1023,14 +1095,11 @@ func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
 		Annotations:        a.Spec.Annotations,
 		ExecutionTime:      executionTime,
-		Claims: &runtime.SecurityClaims{
-			UserAttributes: alertQueryForAttributes(a, adminMeta),
-			Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
-		},
-		Format:        a.Spec.ExportFormat,
-		IncludeHeader: a.Spec.ExportIncludeHeader,
-		Limit:         a.Spec.ExportLimit,
-		Priority:      alertQueryPriority,
+		Claims:             alertQueryClaims(a, adminMeta, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics}),
+		Format:             a.Spec.ExportFormat,
+		IncludeHeader:      a.Spec.ExportIncludeHeader,
+		Limit:              a.Spec.ExportLimit,
+		Priority:           alertQueryPriority,
 	})
 	if errors.Is(err, context.Canceled) {
 		return nil, false, err
@@ -1154,6 +1223,93 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// alertQueryClaims returns the security claims that the alert's queries run with.
+// For alerts created from an embed, the claims also include the user ID and resource restrictions that the admin service resolved for the embed user.
+func alertQueryClaims(a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, perms []runtime.Permission) *runtime.SecurityClaims {
+	claims := &runtime.SecurityClaims{
+		UserAttributes: alertQueryForAttributes(a, adminMeta),
+		Permissions:    perms,
+	}
+	if adminMeta != nil {
+		claims.UserID = adminMeta.QueryForUserID
+		claims.AdditionalRules = runtime.SecurityRulesForResources(adminMeta.RestrictResources, adminMeta.Resources)
+	}
+	return claims
+}
+
+// isEmbedCreatedAlert returns true if the alert was created from an embed.
+// The embed owner annotation is only set by the admin service for alerts created from an embed.
+func isEmbedCreatedAlert(a *runtimev1.Alert) bool {
+	return a.Spec.Annotations["admin_embed_owner_id"] != ""
+}
+
+// alertFailRows are the rows that matched an alert's criteria, formatted for inclusion in notifications.
+// It's passed by value, so code that sends notifications never has to check it for nil.
+type alertFailRows struct {
+	columns   []string
+	rows      [][]string
+	truncated bool
+}
+
+// newAlertFailRows formats rows that matched an alert's criteria for inclusion in notifications.
+// It orders the columns like the schema's fields if the schema has a field for every key of the first row,
+// and otherwise by name; a row that lacks a column shows it as null.
+// If there are more than limit rows, it keeps the first limit rows and marks the result as truncated.
+func newAlertFailRows(schema *runtimev1.StructType, rows []map[string]any, limit int) alertFailRows {
+	res := alertFailRows{}
+	if len(rows) > limit {
+		rows = rows[:limit]
+		res.truncated = true
+	}
+	if len(rows) == 0 {
+		return res
+	}
+
+	fieldNames := make(map[string]bool, len(schema.GetFields()))
+	for _, f := range schema.GetFields() {
+		fieldNames[f.Name] = true
+	}
+	describesRows := len(fieldNames) > 0
+	for k := range rows[0] {
+		if !fieldNames[k] {
+			describesRows = false
+			break
+		}
+	}
+	if describesRows {
+		for _, f := range schema.GetFields() {
+			res.columns = append(res.columns, f.Name)
+		}
+	} else {
+		for k := range rows[0] {
+			res.columns = append(res.columns, k)
+		}
+		sort.Strings(res.columns)
+	}
+
+	res.rows = make([][]string, len(rows))
+	for i, row := range rows {
+		res.rows[i] = make([]string, len(res.columns))
+		for j, c := range res.columns {
+			res.rows[i][j] = alertValueString(row[c])
+		}
+	}
+	return res
+}
+
+// alertValueString formats a value of a row that matched an alert's criteria for display in notifications.
+func alertValueString(v any) string {
+	switch v := v.(type) {
+	case nil:
+		return "null"
+	case float64:
+		// Avoid the exponent notation that fmt uses for large numbers, which is common for numbers decoded from JSON.
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 // alertQueryForAttributes returns the user attributes that the alert's query runs with.

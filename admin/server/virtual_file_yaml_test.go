@@ -48,10 +48,10 @@ annotations:
 		{name: "sql", data: "rows: []\nsql: SELECT 1\n", wantErr: true},
 	}
 
-	owner := &personalFileOwner{embedUserID: "ext_abc"}
+	o := &owner{embedUserID: "ext_abc"}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := yamlForPersonalFile("", owner, runtime.ResourceKindCanvas, tc.data)
+			out, err := yamlForPersonalFile("", o, runtime.ResourceKindCanvas, tc.data)
 			if tc.wantErr {
 				require.Equal(t, codes.InvalidArgument, status.Code(err))
 				return

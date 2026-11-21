@@ -2,22 +2,39 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns, Download } from "lucide-svelte";
+  import { Copy, Columns, Download, FileSpreadsheet } from "lucide-svelte";
+  import { buildExportFilename } from "@rilldata/web-common/features/exports/filename";
+  import { componentCsv } from "@rilldata/web-common/features/exports/csv";
+  import { downloadBlob } from "@rilldata/web-common/features/exports/xlsx/client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { get } from "svelte/store";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
 
-  export let dropdownOpen = false;
-  export let onDelete: () => void;
-  export let onDuplicate: () => void;
-  export let onDownloadPng: () => void;
-  // Optional: convert this component's row into a tab group. Only provided for
-  // top-level rows (a tab's rows cannot be nested into another tab group).
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
-  export let editable = false;
-  export let component: BaseCanvasComponent;
-  export let navigationEnabled: boolean = true;
+  interface Props {
+    dropdownOpen?: boolean;
+    onDelete: () => void;
+    onDuplicate: () => void;
+    onDownloadPng: () => void;
+    // Optional: convert this component's row into a tab group. Only provided for
+    // top-level rows (a tab's rows cannot be nested into another tab group).
+    onConvertToTabGroup?: () => void;
+    editable?: boolean;
+    component: BaseCanvasComponent;
+    navigationEnabled?: boolean;
+  }
+
+  let {
+    dropdownOpen = $bindable(false),
+    onDelete,
+    onDuplicate,
+    onDownloadPng,
+    onConvertToTabGroup,
+    editable = false,
+    component,
+    navigationEnabled = true,
+  }: Props = $props();
 
   // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
@@ -37,12 +54,42 @@
     "custom_chart",
   ] as const;
 
-  $: showExplore =
+  let showExplore = $derived(
     navigationEnabled &&
-    EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
-  $: exploreComponent = showExplore
-    ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
-    : null;
+      EXPLORE_SUPPORTED_TYPES.includes(component.type as any),
+  );
+  let exploreComponent = $derived(
+    showExplore
+      ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
+      : null,
+  );
+
+  // The data the component shows, as CSV with values unformatted;
+  // undefined when it has none to download. Worked out only while the menu is open.
+  let exportPayload = $derived(component.exportPayload);
+  let csv = $derived(
+    dropdownOpen
+      ? componentCsv(
+          $exportPayload,
+          get(component.timeAndFilterStore)?.timeGrain,
+          component.localTimeFilterManager.timeZone,
+        )
+      : undefined,
+  );
+
+  function downloadCsv() {
+    if (csv === undefined) return;
+    const { title } = get(component.specStore) as { title?: unknown };
+    downloadBlob(
+      new Blob([csv], { type: "text/csv" }),
+      buildExportFilename(
+        (typeof title === "string" && title) ||
+          get(component.parent.titleStore) ||
+          component.id,
+        "csv",
+      ),
+    );
+  }
 </script>
 
 <div
@@ -83,6 +130,12 @@
           <Download size="14px" />
           {m.dashboard_download_as_png()}
         </DropdownMenu.Item>
+        {#if csv !== undefined}
+          <DropdownMenu.Item onclick={downloadCsv}>
+            <FileSpreadsheet size="14px" />
+            {m.dashboard_download_as_csv()}
+          </DropdownMenu.Item>
+        {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           onclick={onDelete}
@@ -114,6 +167,12 @@
           <Download size="14px" />
           {m.dashboard_download_as_png()}
         </DropdownMenu.Item>
+        {#if csv !== undefined}
+          <DropdownMenu.Item onclick={downloadCsv}>
+            <FileSpreadsheet size="14px" />
+            {m.dashboard_download_as_csv()}
+          </DropdownMenu.Item>
+        {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
     {#if showExplore && exploreComponent}

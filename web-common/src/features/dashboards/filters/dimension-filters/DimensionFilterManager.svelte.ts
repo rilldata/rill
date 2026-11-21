@@ -19,6 +19,7 @@ import type {
   FilterChangeSource,
   FilterEventEmitter,
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
+import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
@@ -48,8 +49,22 @@ export class DimensionFilterManager {
     // Emitter shared by every manager under an `ExpressionFilterManager`.
     // A manager built outside one, the ephemeral clone for the dropdown for example, has none.
     private readonly events: FilterEventEmitter | undefined = undefined,
+    // Dashboard config the filter follows. Only `singleSelect` reads it.
+    private readonly yamlConfigProvider:
+      | YAMLConfigProvider
+      | undefined = undefined,
   ) {
     this.reconcile(initExpr, isInList ? [name] : []);
+  }
+
+  /**
+   * A single-select filter holds at most one value, in Select mode and not excluded.
+   * `commit` narrows any other state to that, so every way of changing the filter respects it:
+   * picking a value from a chart, leaderboard or table replaces the current one,
+   * and a URL or bookmark with several values keeps the last one.
+   */
+  public isSingleSelect() {
+    return Boolean(this.yamlConfigProvider?.isSingleSelectFilter(this.name));
   }
 
   public static createForMetricsViews(
@@ -59,10 +74,12 @@ export class DimensionFilterManager {
       initExpr,
       isInList,
       events,
+      yamlConfigProvider,
     }: {
       initExpr?: V1Expression;
       isInList?: boolean;
       events?: FilterEventEmitter;
+      yamlConfigProvider?: YAMLConfigProvider;
     } = {},
   ) {
     const dimensionSpecs = metricsViewsProvider.dimensionSpecs[name];
@@ -77,6 +94,7 @@ export class DimensionFilterManager {
       isInList,
       false, // not ephemeral
       events,
+      yamlConfigProvider,
     );
   }
 
@@ -125,6 +143,8 @@ export class DimensionFilterManager {
       this.expr,
       this.mode === DimensionFilterMode.InList,
       true,
+      undefined,
+      this.yamlConfigProvider,
     );
     if (!this.expr) {
       // If expr is empty then these fields get lost
@@ -177,7 +197,8 @@ export class DimensionFilterManager {
     );
     this.selectedValues = [...this.selectedValues, ...newValues];
     this.commit();
-    return newValues;
+    // A single-select filter keeps only one of them.
+    return newValues.filter((v) => this.selectedValues.includes(v));
   }
 
   public removeSelectedValues(dimensionValues: string[]) {
@@ -245,7 +266,35 @@ export class DimensionFilterManager {
     }
   }
 
+  /**
+   * Narrows a single-select filter the config arrived for after it was parsed, and reports the change.
+   */
+  public enforceSingleSelect() {
+    if (!this.isSingleSelect() || this.holdsSingleValue()) return;
+    // This happens when the dashboard config loads, so keep it quiet.
+    this.oldMode = DimensionFilterMode.Select;
+    this.commit();
+  }
+
+  private holdsSingleValue() {
+    return (
+      !this.rawExpr &&
+      this.mode === DimensionFilterMode.Select &&
+      !this.exclude &&
+      this.selectedValues.length <= 1
+    );
+  }
+
   public commit(notify: boolean = true) {
+    if (this.isSingleSelect()) {
+      // The value picked last wins: click to filter appends the clicked value.
+      this.rawExpr = undefined;
+      this.mode = DimensionFilterMode.Select;
+      this.selectedValues = this.selectedValues.slice(-1);
+      this.inputText = "";
+      this.exclude = false;
+    }
+
     switch (this.mode) {
       case DimensionFilterMode.Select:
         if (

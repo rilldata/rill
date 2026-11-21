@@ -167,7 +167,9 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 
 // assetHandler serves a previously uploaded file asset.
 // If the asset is marked as public, it sets caching headers that allows CDNs and browsers to cache the asset.
-// If the asset is not marked as public, it guarantees that the asset can only be accessed by authenticated users with read access to the asset's organization.
+// If the asset is not marked as public, access depends on what the asset is used for:
+// private branding assets of the organization (e.g. logos uploaded before assets could be marked public) are readable by anyone who can see the organization,
+// while all other private assets (e.g. project archives) are only readable by users who can manage the organization's projects.
 func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	// Params
 	assetID := r.PathValue("asset_id")
@@ -182,13 +184,34 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Check permissions
-	claims := auth.GetClaims(r.Context())
-	if !asset.Public && !claims.OrganizationPermissions(r.Context(), *asset.OrganizationID).ReadOrg {
-		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(r.Context(), *asset.OrganizationID)
+	if !asset.Public {
+		org, err := s.admin.DB.FindOrganization(r.Context(), *asset.OrganizationID)
 		if err != nil {
 			return err
 		}
-		if !ok {
+
+		isBranding := false
+		for _, id := range []*string{org.LogoAssetID, org.LogoDarkAssetID, org.FaviconAssetID, org.ThumbnailAssetID} {
+			if id != nil && *id == asset.ID {
+				isBranding = true
+				break
+			}
+		}
+
+		// Note: users are granted ReadOrg (but not ManageProjects) on organizations with public projects,
+		// so ReadOrg alone must not be used to authorize access to non-branding assets.
+		perms := auth.GetClaims(r.Context()).OrganizationPermissions(r.Context(), org.ID)
+		if isBranding {
+			if !perms.ReadOrg {
+				ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(r.Context(), org.ID)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return httputil.Errorf(http.StatusForbidden, "does not have permission to access the asset")
+				}
+			}
+		} else if !perms.ManageProjects {
 			return httputil.Errorf(http.StatusForbidden, "does not have permission to access the asset")
 		}
 	}

@@ -1,7 +1,4 @@
-import {
-  MAX_ROW_EXPANSION_LIMIT,
-  SHOW_MORE_BUTTON,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import {
   getFiltersForCell,
@@ -9,9 +6,16 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { mergeFilters } from "./pivot-merge-filters";
 import { reduceTableCellDataIntoRows } from "./pivot-table-transformations";
-import type { PivotDataRow, PivotDataStoreConfig, PivotFilter } from "./types";
+import type {
+  PivotColumnTruncation,
+  PivotDataRow,
+  PivotDataStoreConfig,
+  PivotFilter,
+} from "./types";
 
 export interface PivotDataCache {
+  // Column truncation of the last assembled table, keyed by its config key.
+  columnTruncationMap: Record<string, PivotColumnTruncation | undefined>;
   expandedTableMap: Record<string, PivotDataRow[]>;
   lastPivotColumnDef: ColumnDef<PivotDataRow>[];
   lastPivotData: PivotDataRow[];
@@ -34,6 +38,7 @@ export interface FinalPivotStateDetails {
 
 export function createPivotDataCache(): PivotDataCache {
   return {
+    columnTruncationMap: {},
     expandedTableMap: {},
     lastPivotColumnDef: [],
     lastPivotData: [],
@@ -165,6 +170,7 @@ export function buildFinalPivotStateDetails(args: {
     anchorDimension,
     config.pivot.outermostRowLimit ?? config.pivot.rowLimit,
     hasMoreRows,
+    rowOffset + rowDimensionValues.length,
   );
 
   const activeCellFilters = getActiveCellFilters(
@@ -185,16 +191,23 @@ export function buildFinalPivotStateDetails(args: {
   };
 }
 
+/**
+ * Add a "Show more" row once the rows reach the limit and more are left.
+ * Past the last limit step the row only notes that the rest is left out.
+ * A limit above the page size fills over several pages, and the earlier pages
+ * also report more rows, so the row waits for the limit to be reached.
+ */
 function addOutermostShowMoreRow(
   data: PivotDataRow[],
   anchorDimension: string,
   effectiveOutermostLimit: number | undefined,
   hasMoreRows: boolean,
+  loadedRows: number,
 ) {
   if (
     !hasMoreRows ||
     !effectiveOutermostLimit ||
-    effectiveOutermostLimit >= MAX_ROW_EXPANSION_LIMIT
+    loadedRows < effectiveOutermostLimit
   ) {
     return data;
   }
@@ -253,6 +266,8 @@ export function updatePivotDataCache(
   cache: PivotDataCache,
   args: {
     columnDef: ColumnDef<PivotDataRow>[];
+    columnTruncation: PivotColumnTruncation | undefined;
+    configKey: string;
     data: PivotDataRow[];
     rowPage: number;
     totalColumns: number;
@@ -261,5 +276,6 @@ export function updatePivotDataCache(
   cache.lastPivotData = args.data;
   cache.lastProcessedRowPage = args.rowPage;
   cache.lastPivotColumnDef = args.columnDef;
+  cache.columnTruncationMap = { [args.configKey]: args.columnTruncation };
   cache.lastTotalColumns = args.totalColumns;
 }

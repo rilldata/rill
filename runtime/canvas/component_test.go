@@ -1106,6 +1106,7 @@ table:
 type: component
 table:
   metrics_view: mv1
+  click_to_filter: false
   fit_to_width: true
   wrap: true
   wrap_headers: true

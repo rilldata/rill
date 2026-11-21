@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -73,6 +74,7 @@
   const MAX_LISTED_UNMATCHED = 10;
 
   const runtimeClient = useRuntimeClient();
+  const themeBoundaryClass = getThemeBoundaryClass();
   const { specStore } = untrack(() => component);
 
   const regions = $derived(
@@ -228,6 +230,7 @@
           value: typeof value === "number" ? formatValue(value) : "No data",
         },
       ]),
+      themeBoundaryClass,
     );
   }
 

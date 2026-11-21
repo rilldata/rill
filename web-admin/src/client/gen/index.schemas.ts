@@ -9,6 +9,9 @@ export interface GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
   unsubscribeUrl?: string;
+  /** If true, the recipient is the embed user who created the alert.
+Only set for alerts created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export type GetGithubPullRequestResponseState =
@@ -136,10 +139,17 @@ export interface V1AlertOptions {
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
   exportLimit?: string;
+  /** Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used. */
+  notifyRowsLimit?: number;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   emailRecipients?: string[];
+  /** Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -304,6 +314,8 @@ export interface V1Bookmark {
   userId?: string;
   default?: boolean;
   shared?: boolean;
+  /** Whether the caller can update and remove the bookmark. */
+  canManage?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -376,6 +388,7 @@ export interface V1CreateBookmarkRequest {
   urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
+  /** ID of the project. Optional for embed users, where it defaults to the embed's project. */
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -575,6 +588,13 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  /** ID of the user to run the alert's queries as.
+Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe. */
+  queryForUserId?: string;
+  /** If true, the alert's data must only be accessed through the resources listed in `resources`.
+Set for alerts created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -637,6 +657,9 @@ export interface V1GetConnectorOAuthTokenResponse {
 
 export interface V1GetCurrentMagicAuthTokenResponse {
   token?: V1MagicAuthToken;
+  /** True when the bearer is a password-protected token that has not been unlocked.
+In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token. */
+  locked?: boolean;
 }
 
 export interface V1GetCurrentUserResponse {
@@ -1056,6 +1079,8 @@ export interface V1MagicAuthToken {
   fields?: string[];
   state?: string;
   displayName?: string;
+  /** True if recipients must enter a password before the token grants access. */
+  passwordProtected?: boolean;
 }
 
 export interface V1MemberUsergroup {
@@ -1755,6 +1780,16 @@ export interface V1TriggerReportResponse {
   [key: string]: unknown;
 }
 
+export interface V1UnlockMagicAuthTokenRequest {
+  password?: string;
+}
+
+export interface V1UnlockMagicAuthTokenResponse {
+  /** Session token to use as the bearer token instead of the magic auth token. */
+  sessionToken?: string;
+  expiresOn?: string;
+}
+
 export interface V1UnsubscribeAlertResponse {
   [key: string]: unknown;
 }
@@ -1779,6 +1814,10 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBookmarkResponse {
   [key: string]: unknown;
+}
+
+export interface V1UpdateMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
 }
 
 export interface V1UpdateOrganizationMemberUserAttributesResponse {
@@ -1968,6 +2007,15 @@ export type AdminServiceGetGithubRepoStatusParams = {
   remote?: string;
 };
 
+export type AdminServiceUpdateMagicAuthTokenBody = {
+  /** New display name. Unchanged if not set. */
+  displayName?: string;
+  /** New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set. */
+  password?: string;
+  /** Removes the password. Can't be combined with password. */
+  removePassword?: boolean;
+};
+
 export type AdminServiceListOrganizationsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1990,6 +2038,11 @@ export type AdminServiceUpdateOrganizationBody = {
 };
 
 export type AdminServiceGetBillingCreditBalanceParams = {
+  /**
+ * If true, a recently fetched balance may be returned instead of querying the billing provider.
+If false, the balance is always fetched from the billing provider.
+ */
+  allowCached?: boolean;
   superuserForceAccess?: boolean;
 };
 
@@ -2245,7 +2298,8 @@ export type AdminServiceGetIFrameBody = {
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
   /** Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
-Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+Must be at most 2048 bytes. */
   externalUserId?: string;
   /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
   type?: string;
@@ -2362,6 +2416,9 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   displayName?: string;
   /** list of resources to grant access to. */
   resources?: V1ResourceName[];
+  /** Optional password that recipients must enter before the token grants access.
+Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced. */
+  password?: string;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {
@@ -2640,6 +2697,9 @@ This is only allowed for superusers. */
 };
 
 export type AdminServiceListBookmarksParams = {
+  /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   */
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
