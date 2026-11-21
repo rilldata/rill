@@ -62,6 +62,7 @@
       message: {
         type: "default",
         message: $explore.data.explore.explore.state.validSpec.banner,
+        includesMarkdown: true,
         iconType: "alert",
       },
     });

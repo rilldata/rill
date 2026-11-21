@@ -98,7 +98,32 @@ For more information on Metrics SQL syntax and capabilities, see the [Metrics SQ
 
 ## Image
 
-Image widgets let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
+Image widgets let you embed images, logos, and visual elements into your dashboards. The `url` is either an absolute URL or the path of an image file in your project.
+
+<ImageCodeToggle
+  image="/img/build/dashboard/canvas/components/image.png"
+  imageAlt="Image component showing embedded logo"
+  code={`- image:
+      url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
+    width: 6`}
+  codeLanguage="yaml"
+/>
+
+### Images from Your Project
+
+Put image files in the `public/` folder of your project, in any subfolder, and reference them by their path from the project root:
+
+```yaml
+- image:
+    url: public/img/brand/logo.svg
+  width: 6
+```
+
+Rill loads these files with the viewer's access to the project, so the same path works in Rill Developer, on Rill Cloud, and in embedded dashboards. PNG, JPEG, GIF, WebP, AVIF, and SVG images are supported.
+
+To serve files from other folders, list them in [`public_paths`](/reference/project-files/rill-yaml#public_paths) in `rill.yaml`.
+
+### Dark Mode
 
 To show a different image when the dashboard is viewed in dark mode, set `dark_url`. When `dark_url` is not set, `url` is used in both modes.
 
@@ -109,14 +134,18 @@ To show a different image when the dashboard is viewed in dark mode, set `dark_u
   width: 6
 ```
 
-<ImageCodeToggle
-  image="/img/build/dashboard/canvas/components/image.png"
-  imageAlt="Image component showing embedded logo"
-  code={`- image:
-      url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
-    width: 6`}
-  codeLanguage="yaml"
-/>
+### Images in Markdown
+
+Project images also work in [Text/Markdown](#textmarkdown) widgets, with markdown or HTML syntax. Use HTML when you need to set a size or place a logo inline with text:
+
+```yaml
+- markdown:
+    content: |-
+      ![Logo](public/img/brand/logo.svg)
+
+      <img src="public/img/brand/logo.svg" height="32" alt="Logo" /> **Quarterly review**
+  width: 6
+```
 
 ### Alignment
 

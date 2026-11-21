@@ -1,11 +1,13 @@
 <script lang="ts">
-  import DOMPurify from "dompurify";
   import { marked } from "marked";
+  import { onDestroy } from "svelte";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { ProjectAssetLoader } from "../project-assets";
+  import { loadAssetImages, sanitizeMarkdownHtml } from "./asset-images";
   import {
     getPositionClasses,
     hasTemplatingSyntax,
@@ -17,6 +19,10 @@
   export let component: MarkdownCanvasComponent;
 
   const runtimeClient = useRuntimeClient();
+
+  // Loads images that point at project assets, such as `<img src="public/logo.svg" />`.
+  const assets = new ProjectAssetLoader(runtimeClient);
+  onDestroy(() => assets.destroy());
 
   $: specStore = component?.specStore;
   $: spec = specStore ? $specStore : undefined;
@@ -105,14 +111,17 @@
 <div
   class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-card"
 >
-  <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
+  <div
+    class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min"
+    use:loadAssetImages={assets}
+  >
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
         <p>{errorMessage}</p>
       </div>
     {:else}
       {#await renderPromise then htmlContent}
-        {@html DOMPurify.sanitize(htmlContent)}
+        {@html sanitizeMarkdownHtml(htmlContent)}
       {/await}
     {/if}
   </div>
@@ -194,6 +203,10 @@
   }
   :global(.canvas-markdown img) {
     @apply max-w-full h-auto my-3;
+  }
+  /* A project asset that is still loading; see loadAssetImages. */
+  :global(.canvas-markdown img[data-asset-src]) {
+    @apply invisible;
   }
   .markdown-error {
     @apply bg-red-50 border border-red-200 rounded px-3 py-2 my-2 text-sm text-red-700;
