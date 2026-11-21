@@ -35,6 +35,10 @@ func (q *TableHead) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *TableHead) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *TableHead) MarshalResult() *runtime.QueryResult {
 	var size int64
 	if len(q.Result) > 0 {

@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -116,4 +117,21 @@ func TestConnectorOAuthToken(t *testing.T) {
 		_, err = deplClient.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})
 		require.NoError(t, err)
 	})
+}
+
+func TestConnectorOAuthConnectRejectsAssumedUser(t *testing.T) {
+	adm := testadmin.New(t)
+	ctx := t.Context()
+	su, _ := adm.NewSuperuser(t)
+	u, _ := adm.NewUser(t)
+	tkn, err := adm.Admin.IssueUserAuthToken(ctx, su.ID, database.AuthClientIDRillSupport, "Assume", &u.ID, nil, false)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, adm.ExternalURL()+"/connectors/oauth/connect?org=o&project=p&connector=c", http.NoBody)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+tkn.Token().String())
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	require.Equal(t, http.StatusForbidden, res.StatusCode)
 }

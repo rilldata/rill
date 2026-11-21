@@ -240,6 +240,11 @@ func (s *Server) connectorOAuthConnect(w http.ResponseWriter, r *http.Request) {
 		s.redirectLogin(w, r)
 		return
 	}
+	// The flow would store the superuser's own connector account as the assumed user's.
+	if _, ok := claims.AssumedByUserID(); ok {
+		http.Error(w, "cannot sign in to a connector while assuming another user", http.StatusForbidden)
+		return
+	}
 
 	qry := r.URL.Query()
 	orgName, projectName, connector := qry.Get("org"), qry.Get("project"), qry.Get("connector")
@@ -584,6 +589,7 @@ func (s *Server) connectorOAuthClient(ctx context.Context, proj *database.Projec
 	oauthClient, err := oauthclient.Discover(ctx, &oauthclient.DiscoverOptions{
 		ServerURL:           cfg.Config.ResourceUrl,
 		RedirectURL:         redirectURL,
+		Issuer:              cfg.Config.Issuer,
 		ClientID:            cfg.Config.ClientId,
 		ClientSecret:        cfg.Config.ClientSecret,
 		Scopes:              cfg.Config.Scopes,

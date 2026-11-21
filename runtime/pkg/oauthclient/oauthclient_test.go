@@ -294,3 +294,71 @@ func TestRefreshKeepsGrantedScopes(t *testing.T) {
 	// The scope is omitted so the new token keeps the scopes of the original grant, which may be fewer than configured.
 	require.Empty(t, form.Get("scope"))
 }
+
+func TestDiscoverWithIssuer(t *testing.T) {
+	var srv *httptest.Server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/oauth-protected-resource", func(w http.ResponseWriter, r *http.Request) {
+		t.Error("protected resource metadata must not be requested")
+	})
+	mux.HandleFunc("/oidc/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"issuer":                           srv.URL + "/oidc",
+			"authorization_endpoint":           srv.URL + "/oidc/v1/authorize",
+			"token_endpoint":                   srv.URL + "/oidc/v1/token",
+			"response_types_supported":         []string{"code"},
+			"code_challenge_methods_supported": []string{"S256"},
+		})
+	})
+	srv = httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	c, err := Discover(t.Context(), &DiscoverOptions{
+		ServerURL:    srv.URL,
+		RedirectURL:  "http://localhost:9009/callback",
+		Issuer:       srv.URL + "/oidc",
+		ClientID:     "id",
+		ClientSecret: "s",
+		Scopes:       []string{"sql", "offline_access"},
+		HTTPClient:   safehttp.NewHTTPClient(true, 5*time.Second),
+	})
+	require.NoError(t, err)
+	require.Equal(t, srv.URL+"/oidc", c.Issuer)
+	require.Equal(t, srv.URL+"/oidc/v1/authorize", c.AuthorizationEndpoint)
+	require.Equal(t, "", c.Resource)
+}
+
+func TestNoResourceParam(t *testing.T) {
+	var forms []url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseForm())
+		forms = append(forms, r.PostForm)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "a", "token_type": "Bearer", "refresh_token": "r", "expires_in": 3600})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := &Client{
+		ClientID:              "id",
+		ClientSecret:          "s",
+		RedirectURL:           "http://localhost:9009/callback",
+		AuthorizationEndpoint: srv.URL + "/authorize",
+		TokenEndpoint:         srv.URL + "/token",
+	}
+	hc := srv.Client()
+
+	u, err := url.Parse(c.AuthCodeURL("state", "verifier"))
+	require.NoError(t, err)
+	require.False(t, u.Query().Has("resource"))
+
+	tok, err := c.Exchange(t.Context(), "code", "verifier", hc)
+	require.NoError(t, err)
+	_, err = c.Refresh(t.Context(), tok, hc)
+	require.NoError(t, err)
+
+	require.Len(t, forms, 2)
+	for _, f := range forms {
+		require.False(t, f.Has("resource"))
+	}
+}

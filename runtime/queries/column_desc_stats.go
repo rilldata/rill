@@ -32,6 +32,10 @@ func (q *ColumnDescriptiveStatistics) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnDescriptiveStatistics) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,

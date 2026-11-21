@@ -34,6 +34,10 @@ func (q *ColumnCardinality) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *ColumnCardinality) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *ColumnCardinality) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,

@@ -170,11 +170,14 @@ func (s *Server) GetConnectorOAuthConfig(ctx context.Context, req *runtimev1.Get
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to open connector %q: %s", req.Connector, err)
 	}
 	defer release()
-	svc, ok := handle.AsMCP()
-	if !ok {
+	var cfg *drivers.OAuthConfig
+	if svc, ok := handle.AsMCP(); ok {
+		cfg = svc.OAuthConfig()
+	} else if oc, ok := handle.(drivers.OAuthConfigurer); ok {
+		cfg = oc.OAuthConfig()
+	} else {
 		return nil, status.Errorf(codes.FailedPrecondition, "connector %q does not support OAuth", req.Connector)
 	}
-	cfg := svc.OAuthConfig()
 	if cfg == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "connector %q does not use per-user OAuth", req.Connector)
 	}
@@ -183,6 +186,7 @@ func (s *Server) GetConnectorOAuthConfig(ctx context.Context, req *runtimev1.Get
 		ConfigHash: cfg.Hash,
 		Config: &runtimev1.ConnectorOAuthConfig{
 			ResourceUrl:         cfg.ServerURL,
+			Issuer:              cfg.Issuer,
 			ClientId:            cfg.ClientID,
 			ClientSecret:        cfg.ClientSecret,
 			Scopes:              cfg.Scopes,
