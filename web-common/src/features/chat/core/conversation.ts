@@ -489,7 +489,7 @@ export class Conversation {
       this.addMessageToCache(response.message);
       if (response.message.type === MessageType.CALL) {
         const config = getToolConfig(response.message.tool);
-        config?.onCall?.(response.message);
+        config?.onCall?.(response.message, this.client, this.conversationId);
       } else if (response.message.type === MessageType.RESULT) {
         const config = getToolConfig(response.message.tool);
         config?.onResult?.(
