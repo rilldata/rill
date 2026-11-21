@@ -28,27 +28,17 @@ export function buildWorkbookHeader(
   fallbackTitle: string,
   includeFilters: boolean,
 ): WorkbookHeader {
-  const {
-    interval,
-    grainStore,
-    timeZoneStore,
-    comparisonIntervalStore,
-    showTimeComparisonStore,
-  } = canvasEntity.timeManager.state;
-  const grain = get(grainStore);
-  const currentInterval = get(interval);
-  const comparisonInterval = get(comparisonIntervalStore);
+  const { interval, timeGrain, timeZone, showComparison, comparisonInterval } =
+    get(canvasEntity.timeFilterManager.getTimeControlStore());
 
   return {
     title: get(canvasEntity.titleStore) || fallbackTitle,
-    timeRangeText: currentInterval
-      ? prettyFormatTimeRange(currentInterval, grain)
-      : "",
+    timeRangeText: interval ? prettyFormatTimeRange(interval, timeGrain) : "",
     comparisonText:
-      get(showTimeComparisonStore) && comparisonInterval
-        ? prettyFormatTimeRange(comparisonInterval, grain)
+      showComparison && comparisonInterval
+        ? prettyFormatTimeRange(comparisonInterval, timeGrain)
         : "",
-    timeZone: get(timeZoneStore) ?? "",
+    timeZone: timeZone ?? "",
     filterLines: includeFilters
       ? describeFilters(canvasEntity.expressionFilterManager)
       : [],

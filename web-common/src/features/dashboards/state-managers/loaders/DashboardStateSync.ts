@@ -12,8 +12,6 @@ import {
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
-import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
   createTimeControlStoreFromName,
   type TimeControlStore,
@@ -30,6 +28,7 @@ import type { CompoundQueryResult } from "@rilldata/web-common/features/compound
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -58,6 +57,7 @@ export class DashboardStateSync {
   private updating = false;
 
   private readonly expressionFilterParamsTracker: UrlParamsChangeTracker;
+  private readonly timeFilterParamsTracker: UrlParamsChangeTracker;
 
   public static getFromContext() {
     return getContext<DashboardStateSync>(DASHBOARD_STATE_SYNC_KEY);
@@ -70,6 +70,7 @@ export class DashboardStateSync {
     private readonly extraPrefix: string | undefined,
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
+    private readonly timeFilterManager: TimeFilterManager,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -84,6 +85,7 @@ export class DashboardStateSync {
     );
 
     this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
+    this.timeFilterParamsTracker = timeFilterManager.storeSync;
 
     this.unsubInit = derived(
       [dataLoader.initExploreState],
@@ -181,26 +183,6 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-      // Resolve start/end by making a network call.
-      [
-        initExploreState.selectedTimeRange,
-        // initExploreState.selectedComparisonTimeRange,
-      ] = await resolveTimeRanges(
-        this.client,
-        exploreSpec,
-        [
-          initExploreState.selectedTimeRange,
-          // initExploreState.selectedComparisonTimeRange,
-        ],
-        initExploreState.selectedTimezone,
-        undefined,
-        initExploreState.selectedTimeDimension,
-      );
-      // The grain can only be derived from the actual interval once start and end are known.
-      applyAdaptiveTimeGrain(initExploreState, metricsViewSpec);
-    }
-
     // Init the store with state we got from dataLoader
     metricsExplorerStore.init(this.exploreName, initExploreState);
     // Get time controls state after explore state is initialized.
@@ -235,6 +217,7 @@ export class DashboardStateSync {
     this.lastEphemeralMeasures = initExploreState.ephemeralMeasures;
 
     this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
+    this.timeFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -245,10 +228,14 @@ export class DashboardStateSync {
     // Else navigate to the new url.
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    await goto(redirectUrl, {
-      replaceState: true,
-      state: pageState.state,
-    });
+    try {
+      await goto(redirectUrl, {
+        replaceState: true,
+        state: pageState.state,
+      });
+    } catch {
+      // A failed navigation leaves the url behind the state; the lock below must still be released.
+    }
     this.initialized = true;
     this.updating = false;
   }
@@ -287,79 +274,57 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    // Take the lock only once the guards have passed;
-    // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
-    let redirectUrl: URL | undefined = undefined;
-    // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
-    try {
-      if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-        // Resolve start/end by making a network call.
-        [
-          partialExplore.selectedTimeRange,
-          // partialExplore.selectedComparisonTimeRange,
-        ] = await resolveTimeRanges(
-          this.client,
-          exploreSpec,
-          [
-            partialExplore.selectedTimeRange,
-            // partialExplore.selectedComparisonTimeRange,
-          ],
-          partialExplore.selectedTimezone,
-          undefined,
-          partialExplore.selectedTimeDimension,
-        );
-        applyAdaptiveTimeGrain(partialExplore, metricsViewSpec);
-      }
 
-      // Merge the partial state from url into the store
-      metricsExplorerStore.mergePartialExplorerEntity(
-        this.exploreName,
-        partialExplore,
-      );
-      // Get time controls state after explore state is updated.
-      const timeControlsState = get(this.timeControlStore);
-      // Get the updated URL, this could be different from the page url if we added extra state.
-      // The extra state could come from session storage, home bookmark or yaml defaults
-      redirectUrl = this.getUrlForExploreState(partialExplore);
+    // Merge the partial state from url into the store.
+    // The partial can carry state the url does not, like filters restored from session storage,
+    // so the filter managers are fed the redirect url below rather than the page url.
+    metricsExplorerStore.mergePartialExplorerEntity(
+      this.exploreName,
+      partialExplore,
+    );
 
-      // Get the full updated state and save to session storage
-      const updatedExploreState =
-        get(metricsExplorerStore).entities[this.exploreName];
-      updateExploreSessionStore(
+    // Get the updated URL, this could be different from the page url if we added extra state.
+    // The extra state could come from session storage, home bookmark or yaml defaults
+    const redirectUrl = this.getUrlForExploreState(partialExplore);
+    this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
+    this.timeFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
+    // Pull the state the managers derive, like the inlist dimensions and the resolved time range, back into the store.
+    metricsExplorerStore.mergePartialExplorerEntity(
+      this.exploreName,
+      partialExplore,
+      this.expressionFilterManager,
+      this.timeFilterManager,
+    );
+
+    // Get time controls state after explore state is updated.
+    const timeControlsState = get(this.timeControlStore);
+
+    // Get the full updated state and save to session storage
+    const updatedExploreState =
+      get(metricsExplorerStore).entities[this.exploreName];
+    updateExploreSessionStore(
+      this.exploreName,
+      this.extraPrefix,
+      updatedExploreState,
+      exploreSpec,
+      metricsViewSpec,
+      timeControlsState,
+    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state from url
+      saveMostRecentPartialExploreState(
         this.exploreName,
         this.extraPrefix,
         updatedExploreState,
-        exploreSpec,
-        metricsViewSpec,
-        timeControlsState,
       );
-      if (!this.dataLoader.disableMostRecentDashboardState) {
-        // Update "most recent explore state" with updated state from url
-        saveMostRecentPartialExploreState(
-          this.exploreName,
-          this.extraPrefix,
-          updatedExploreState,
-        );
-        this.syncEphemeralMeasureLibrary(
-          exploreSpec,
-          updatedExploreState.ephemeralMeasures,
-        );
-      }
-    } finally {
-      // Release before the goto below: state changes made while the navigation is in flight
-      // must still be picked up by gotoNewState.
-      this.updating = false;
-      if (redirectUrl) {
-        this.expressionFilterParamsTracker.setUrlParams(
-          redirectUrl.searchParams,
-        );
-      }
+      this.syncEphemeralMeasureLibrary(
+        exploreSpec,
+        updatedExploreState.ephemeralMeasures,
+      );
     }
-    // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
-    if (!redirectUrl) return; // type-safety
-
+    this.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -385,51 +350,52 @@ export class DashboardStateSync {
     if (this.updating) return;
     this.updating = true;
 
-    try {
-      const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-      const exploreSpec = validSpecData?.explore ?? {};
-      const metricsViewSpec = validSpecData?.metricsView ?? {};
-      const timeControlsState = get(this.timeControlStore);
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
+    const timeControlsState = get(this.timeControlStore);
 
-      const pageState = get(page);
+    const pageState = get(page);
 
-      // Get the new url params for the updated state
-      const newUrl = this.getUrlForExploreState(exploreState);
+    // Get the new url params for the updated state
+    const newUrl = this.getUrlForExploreState(exploreState);
 
-      // Update the session storage with the new explore state.
-      updateExploreSessionStore(
+    // Update the session storage with the new explore state.
+    updateExploreSessionStore(
+      this.exploreName,
+      this.extraPrefix,
+      exploreState,
+      exploreSpec,
+      metricsViewSpec,
+      timeControlsState,
+    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state.
+      // Since we do not update the state per action we do it here as blanket update.
+      saveMostRecentPartialExploreState(
         this.exploreName,
         this.extraPrefix,
         exploreState,
-        exploreSpec,
-        metricsViewSpec,
-        timeControlsState,
       );
-      if (!this.dataLoader.disableMostRecentDashboardState) {
-        // Update "most recent explore state" with updated state.
-        // Since we do not update the state per action we do it here as blanket update.
-        saveMostRecentPartialExploreState(
-          this.exploreName,
-          this.extraPrefix,
-          exploreState,
-        );
-        this.syncEphemeralMeasureLibrary(
-          exploreSpec,
-          exploreState.ephemeralMeasures,
-        );
-      }
-
-      this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
-      // If the state didnt result in a new url then skip goto.
-      // This avoids adding redundant urls to the history.
-      if (newUrl.search === pageState.url.search) {
-        return;
-      }
-
-      // dashboard changed so we should update the url
-      await goto(newUrl);
-    } finally {
-      this.updating = false;
+      this.syncEphemeralMeasureLibrary(
+        exploreSpec,
+        exploreState.ephemeralMeasures,
+      );
     }
+
+    this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
+    this.timeFilterParamsTracker.setUrlParams(newUrl.searchParams);
+    // If the state didnt result in a new url then skip goto.
+    // This avoids adding redundant urls to the history.
+    if (newUrl.search !== pageState.url.search) {
+      try {
+        // dashboard changed so we should update the url
+        await goto(newUrl);
+      } catch {
+        // A failed navigation leaves the url behind the state; the lock below must still be released.
+      }
+    }
+
+    this.updating = false;
   }
 }

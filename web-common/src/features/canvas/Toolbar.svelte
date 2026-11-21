@@ -12,16 +12,29 @@
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
 
-  export let dropdownOpen = false;
-  export let onDelete: () => void;
-  export let onDuplicate: () => void;
-  export let onDownloadPng: () => void;
-  // Optional: convert this component's row into a tab group. Only provided for
-  // top-level rows (a tab's rows cannot be nested into another tab group).
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
-  export let editable = false;
-  export let component: BaseCanvasComponent;
-  export let navigationEnabled: boolean = true;
+  interface Props {
+    dropdownOpen?: boolean;
+    onDelete: () => void;
+    onDuplicate: () => void;
+    onDownloadPng: () => void;
+    // Optional: convert this component's row into a tab group. Only provided for
+    // top-level rows (a tab's rows cannot be nested into another tab group).
+    onConvertToTabGroup?: () => void;
+    editable?: boolean;
+    component: BaseCanvasComponent;
+    navigationEnabled?: boolean;
+  }
+
+  let {
+    dropdownOpen = $bindable(false),
+    onDelete,
+    onDuplicate,
+    onDownloadPng,
+    onConvertToTabGroup,
+    editable = false,
+    component,
+    navigationEnabled = true,
+  }: Props = $props();
 
   // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
@@ -41,23 +54,28 @@
     "custom_chart",
   ] as const;
 
-  $: showExplore =
+  let showExplore = $derived(
     navigationEnabled &&
-    EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
-  $: exploreComponent = showExplore
-    ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
-    : null;
+      EXPLORE_SUPPORTED_TYPES.includes(component.type as any),
+  );
+  let exploreComponent = $derived(
+    showExplore
+      ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
+      : null,
+  );
 
   // The data the component shows, as CSV with values unformatted;
   // undefined when it has none to download. Worked out only while the menu is open.
-  $: exportPayload = component.exportPayload;
-  $: csv = dropdownOpen
-    ? componentCsv(
-        $exportPayload,
-        get(component.timeAndFilterStore)?.timeGrain,
-        get(component.parent.timeManager.state.timeZoneStore) || "UTC",
-      )
-    : undefined;
+  let exportPayload = $derived(component.exportPayload);
+  let csv = $derived(
+    dropdownOpen
+      ? componentCsv(
+          $exportPayload,
+          get(component.timeAndFilterStore)?.timeGrain,
+          component.localTimeFilterManager.timeZone,
+        )
+      : undefined,
+  );
 
   function downloadCsv() {
     if (csv === undefined) return;

@@ -3,7 +3,6 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
@@ -13,10 +12,13 @@
   import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
   import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
-  export let filters: ExpressionFilterManager;
-  export let timeControls: TimeControls;
+  export let expressionFilterManager: ExpressionFilterManager;
+  export let timeFilterManager: TimeFilterManager;
+  export let dashboardConfigProvider: DashboardConfigProvider;
 
   const runtimeClient = useRuntimeClient();
 
@@ -24,7 +26,6 @@
 
   // memoise to avoid rerenders
   $: metricsViewName = $form["metricsViewName"];
-  $: exploreName = $form["exploreName"];
   $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
   // Ephemeral measures have no spec entry; synthesize one so they can be
@@ -61,10 +62,9 @@
 <div class="flex flex-col gap-y-3">
   <FormSection title={m.alert_form_data_filters()}>
     <FiltersForm
-      {filters}
-      {metricsViewName}
-      {exploreName}
-      {timeControls}
+      {expressionFilterManager}
+      {timeFilterManager}
+      {dashboardConfigProvider}
       maxWidth={750}
     />
   </FormSection>
@@ -102,6 +102,10 @@
     title={m.alert_form_data_preview()}
     description={m.alert_form_data_preview_desc()}
   >
-    <DataPreview formValues={$form} {filters} {timeControls} />
+    <DataPreview
+      formValues={$form}
+      {expressionFilterManager}
+      {timeFilterManager}
+    />
   </FormSection>
 </div>

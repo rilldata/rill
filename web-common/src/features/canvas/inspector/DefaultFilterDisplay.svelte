@@ -4,42 +4,64 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
+  import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
+  import { getDefaultComparisonRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+  import { untrack } from "svelte";
 
   let { canvasName }: { canvasName: string } = $props();
 
   const runtimeClient = useRuntimeClient();
 
   let {
-    canvasEntity: {
-      specStore,
-      clearDefaultFilters,
-      timeManager: {
-        state: { interval: _interval },
-        defaultTimeRangeStore,
-        defaultComparisonRangeStore,
-      },
-      dashboardProvider,
-    },
+    canvasEntity: { specStore, clearDefaultFilters, dashboardProvider },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
-  let interval = $derived($_interval);
+  let defaultTimeFilterManager = $derived(
+    new TimeFilterManager(
+      runtimeClient,
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+      // Only a range set in the defaults is shown, not the fallback the canvas would open with.
+      { skipDefaultTimeRange: true },
+    ),
+  );
+  $effect(() => {
+    const manager = defaultTimeFilterManager;
+    return () => manager.cleanup();
+  });
 
-  let defaultTimeRange: V1TimeRange | undefined = $derived(
-    $defaultTimeRangeStore
-      ? {
-          expression: $defaultTimeRangeStore,
-        }
-      : undefined,
-  );
-  let defaultComparisonRange: V1TimeRange | undefined = $derived(
-    $defaultComparisonRangeStore
-      ? {
-          expression: $defaultComparisonRangeStore,
-        }
-      : undefined,
-  );
+  // The default time range is passed as a param since the manager skips its own default.
+  let defaultTimeParams = $derived.by(() => {
+    const params = new URLSearchParams();
+    const defaultTimeRange =
+      dashboardProvider.yamlConfigProvider.defaultTimeRange;
+    if (defaultTimeRange) {
+      params.set(ExploreStateURLParams.TimeRange, defaultTimeRange);
+    }
+
+    const defaultPreset = $specStore.data?.canvas?.defaultPreset;
+    if (
+      defaultPreset?.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    ) {
+      params.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        getDefaultComparisonRange(
+          defaultPreset.timeRange,
+          $specStore.data?.canvas?.timeRanges,
+        ),
+      );
+    }
+    return params;
+  });
+  $effect(() => {
+    const manager = defaultTimeFilterManager;
+    const params = defaultTimeParams;
+    untrack(() => manager.storeSync.setUrlParams(params));
+  });
 
   let defaultFiltersManager = $derived(
     new ExpressionFilterManager(
@@ -65,12 +87,9 @@
       automatically apply each time you open this dashboard in Rill Cloud.
     </p>
 
-    <ReadonlyExpressionFilters
+    <ReadonlyFilters
       expressionFilterManager={defaultFiltersManager}
-      displayTimeRange={defaultTimeRange}
-      displayComparisonTimeRange={defaultComparisonRange}
-      queryTimeStart={interval?.start?.toUTC().toISO()}
-      queryTimeEnd={interval?.end?.toUTC().toISO()}
+      timeFilterManager={defaultTimeFilterManager}
     />
   </div>
 

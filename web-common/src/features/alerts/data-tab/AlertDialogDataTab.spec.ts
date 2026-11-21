@@ -4,7 +4,8 @@ import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import { fireEvent, render, screen } from "@testing-library/svelte";
@@ -86,8 +87,9 @@ function renderDataTab() {
         form,
         errors: writable({}),
       } as unknown as SuperForm<AlertFormValues>,
-      filters: {} as ExpressionFilterManager,
-      timeControls: {} as TimeControls,
+      expressionFilterManager: {} as ExpressionFilterManager,
+      timeFilterManager: {} as TimeFilterManager,
+      dashboardConfigProvider: {} as DashboardConfigProvider,
     },
   });
   return form;
