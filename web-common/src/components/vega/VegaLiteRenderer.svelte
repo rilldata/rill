@@ -16,6 +16,7 @@
   import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import { pickViewDatasets } from "./view-datasets";
+  import { refitOnPlotResize } from "./view-refit";
   import "./vega.css";
 
   // Null outside a RuntimeProvider (e.g. the MCP chart widget); the view then has no loader.
@@ -120,6 +121,14 @@
   function withEmbedSize(base: EmbedOptions, hasSize: boolean): EmbedOptions {
     if (!hasSize) return base;
     return { ...base, width, height };
+  }
+
+  // Each view, from its first embed and from every re-embed, is fitted again whenever a fit
+  // leaves its plot at a new size (see `refitOnPlotResize`).
+  let refittedView: View | undefined;
+  $: if (viewVL !== refittedView) {
+    refittedView = viewVL;
+    if (viewVL) refitOnPlotResize(viewVL);
   }
 
   $: if (viewVL && measured) applySize(viewVL, width, height);
