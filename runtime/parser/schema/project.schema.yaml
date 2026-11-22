@@ -2746,6 +2746,12 @@ definitions:
             type: integer
             description: Vertical gap in pixels of the canvas
             minimum: 0
+          text_size:
+            type: string
+            enum: ["small", "medium", "large", "xlarge"]
+            description: |
+              Size of the text in the canvas's components: chart axes, legends and data labels, table and pivot cells, leaderboards, markdown, and component titles. One of `small`, `medium`, `large` or `xlarge`. Defaults to `medium`.
+              Each size multiplies the sizes that Rill and the theme set, so it works with a theme's fonts. A component's own `text_size` takes precedence. KPI cards, the filter bar and tooltips keep their size.
           filters:
             type: object
             description: Indicates if filters should be enabled for the canvas.
@@ -3650,6 +3656,8 @@ definitions:
           and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
           Template values are JSON-escaped, so place placeholders inside JSON strings.
           See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
+      text_size:
+        $ref: '#/definitions/component_text_size'
     additionalProperties: false
 
   # Flint Chart Spec
@@ -3718,6 +3726,8 @@ definitions:
       description:
         type: string
         description: Chart description
+      text_size:
+        $ref: '#/definitions/component_text_size'
     required:
       - config
     additionalProperties: false
@@ -3953,6 +3963,8 @@ definitions:
       description:
         type: string
         description: Table description
+      text_size:
+        $ref: '#/definitions/component_text_size'
     required:
       - metrics_view
       - measures
@@ -3972,6 +3984,8 @@ definitions:
       description:
         type: string
         description: Markdown description
+      text_size:
+        $ref: '#/definitions/component_text_size'
     required:
       - content
     additionalProperties: false
@@ -4607,6 +4621,10 @@ definitions:
                 expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
+  component_text_size:
+    type: string
+    enum: ["small", "medium", "large", "xlarge"]
+    description: Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
   canvas_if_condition:
     type:
       - string

@@ -10997,6 +10997,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for GapY
 
+	// no validation rules for TextSize
+
 	// no validation rules for Theme
 
 	if all {

@@ -955,6 +955,9 @@ message CanvasSpec {
   uint32 gap_x = 9;
   // Vertical gap in pixels of the canvas.
   uint32 gap_y = 10;
+  // Size preset for the text of the canvas's components: "small", "medium", "large" or "xlarge".
+  // Empty means the default, "medium". A component's own "text_size" renderer property takes precedence.
+  string text_size = 23;
   // Name of the theme to use. Only one of theme and embedded_theme can be set.
   string theme = 7;
   // Theme to use, provided inline. Only one of theme and embedded_theme can be set.

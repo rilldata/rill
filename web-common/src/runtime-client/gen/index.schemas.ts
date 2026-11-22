@@ -504,6 +504,9 @@ export interface V1CanvasSpec {
   gapX?: number;
   /** Vertical gap in pixels of the canvas. */
   gapY?: number;
+  /** Size preset for the text of the canvas's components: "small", "medium", "large" or "xlarge".
+Empty means the default, "medium". A component's own "text_size" renderer property takes precedence. */
+  textSize?: string;
   /** Name of the theme to use. Only one of theme and embedded_theme can be set. */
   theme?: string;
   embeddedTheme?: V1ThemeSpec;

@@ -5469,6 +5469,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
   gapY = 0;
 
   /**
+   * Size preset for the text of the canvas's components: "small", "medium", "large" or "xlarge".
+   * Empty means the default, "medium". A component's own "text_size" renderer property takes precedence.
+   *
+   * @generated from field: string text_size = 23;
+   */
+  textSize = "";
+
+  /**
    * Name of the theme to use. Only one of theme and embedded_theme can be set.
    *
    * @generated from field: string theme = 7;
@@ -5592,6 +5600,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 9, name: "gap_x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "gap_y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 23, name: "text_size", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
