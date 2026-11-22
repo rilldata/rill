@@ -219,7 +219,7 @@ Rill tells Flint what each selected field means, based on the metrics view:
 | A time dimension | A date at the grain it was bucketed at, from year down to day, or a timestamp below a day |
 | Any other dimension | A category |
 
-These decide zero baselines, tick spacing and the kind of color scale. Axis labels and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
+These decide zero baselines, tick spacing and the kind of color scale. Axis labels, legends and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
 
 ### Colors
 

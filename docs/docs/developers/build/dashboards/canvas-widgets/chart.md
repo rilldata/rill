@@ -308,3 +308,5 @@ The legend is laid out to fit the widget, and follows it as the widget is resize
 - Above or below the chart, the entries wrap to the chart's width and take up to about a third of its height, or six entries where a narrow chart holds fewer than that. Labels are shown in full where every entry fits, and are cut at 140px where they don't.
 - Beside the chart, the entries are listed in one column as tall as the chart, with labels cut so that the legend takes up to about a third of the chart's width, and at 140px at most.
 - When the entries don't all fit, the legend ends with the number left out, such as `…12 entries`. Enlarge the widget, or lower the `limit` on the `color` field, to see them all.
+
+The legend of a measure, such as a heat map's colors, shows its values in the measure's format.

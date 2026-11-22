@@ -124,6 +124,7 @@ export function compileFlintSpec({
       break;
   }
   labelDerivedEncodings(vegaSpec, fields, measureFields);
+  formatMeasureLegends(vegaSpec);
   labelFoldedSeries(vegaSpec, fields);
   formatDiscreteTimeAxes(vegaSpec, fields.semantic_types);
   formatNormalizedStackAxes(vegaSpec);
@@ -1612,6 +1613,34 @@ function labelDerivedEncodings(
       ) {
         encoding.title = fields.field_display_names[encoding.field];
       }
+    }
+  }
+}
+
+/**
+ * A legend of a measure's values, the sizes of a bubble chart or the colors of a heatmap, printed
+ * them in Vega's own number format: a rate of 0.5% read "5m" beside an axis that read "0.5%".
+ * Vega-Lite takes a legend's format from the legend alone, so each legend of an encoding that was
+ * given a measure's formatter states it too. Flint's own `format` goes, as it does on an axis.
+ */
+function formatMeasureLegends(spec: Record<string, unknown>): void {
+  for (const view of layersOf(spec)) {
+    for (const [channel, encoding] of channelsOf(view)) {
+      if (
+        Array.isArray(encoding) ||
+        !(LEGEND_CHANNELS.has(channel) || COLOR_CHANNELS.has(channel)) ||
+        encoding.type !== "quantitative" ||
+        typeof encoding.formatType !== "string" ||
+        encoding.legend === null
+      ) {
+        continue;
+      }
+      const legend: Record<string, unknown> = {
+        ...encoding.legend,
+        formatType: encoding.formatType,
+      };
+      delete legend.format;
+      encoding.legend = legend;
     }
   }
 }

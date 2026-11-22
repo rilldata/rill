@@ -418,6 +418,60 @@ describe("compileFlintSpec", () => {
     expect(labels.map((label) => label.text)).toEqual(publishers);
   });
 
+  /** The labels of a compiled chart's legends, in the order Vega lists them. */
+  async function legendLabels(spec: unknown): Promise<string[]> {
+    vega.expressionFunction(
+      "rill_bid_price_sum",
+      (value: number) => `USD ${value}`,
+    );
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: SceneNode[] = [];
+    const visit = (node: SceneNode) => {
+      if (node.role === "legend-label") labels.push(...(node.items ?? []));
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    return labels.map((label) => String(label.text));
+  }
+
+  it("formats a legend of a measure's values as the measure's axis is", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Scatter Plot",
+        encodings: {
+          x: { field: "total_records" },
+          y: { field: "impressions" },
+          color: { field: "publisher" },
+          size: { field: "bid_price_sum" },
+        },
+      },
+      rows: rows.map((row, i) => ({ ...row, impressions: 10 * (i + 1) })),
+      fields: deriveFlintFields(
+        ["publisher", "bid_price_sum", "total_records", "impressions"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Vega-Lite takes a legend's format from the legend alone. Left to Vega's own, the sizes of
+    // a currency measure read "1.0k" beside an axis that read "$1,000".
+    const size = viewOf(spec).encoding?.size;
+    expect(size?.formatType).toBeDefined();
+    expect(size?.legend?.formatType).toBe(size?.formatType);
+    expect(size?.legend?.format).toBeUndefined();
+    const labels = await legendLabels(spec);
+    expect(labels.some((label) => label.startsWith("USD "))).toBe(true);
+    // The publishers' legend is not a measure's.
+    expect(viewOf(spec).encoding?.color?.legend?.formatType).toBeUndefined();
+  });
+
   it("keeps a color scheme the author chose", () => {
     const { spec } = compileFlintSpec({
       spec: {
