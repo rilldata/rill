@@ -51,6 +51,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "name", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
+	deployCmd.Flags().StringSliceVar(&opts.Tags, "tag", nil, "Tags for a new project, such as prod or sandbox (repeat or separate with commas)")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner (superuser-only)")
 	if err := deployCmd.Flags().MarkHidden("provisioner"); err != nil {
@@ -170,6 +171,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Org:           ch.Org,
 		Project:       opts.Name,
 		Description:   opts.Description,
+		Tags:          opts.Tags,
 		Provisioner:   opts.Provisioner,
 		ProdVersion:   opts.ProdVersion,
 		ProdSlots:     int64(opts.Slots),

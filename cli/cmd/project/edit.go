@@ -10,6 +10,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, primaryBranch, subpath, path, gitRemote string
+	var addTags, removeTags []string
 	var public bool
 	var prodTTL, devTTL int64
 	var prodSlots, devSlots int
@@ -42,6 +43,14 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if cmd.Flags().Changed("description") {
 				flagSet = true
 				req.Description = &description
+			}
+			if cmd.Flags().Changed("add-tag") {
+				flagSet = true
+				req.AddTags = addTags
+			}
+			if cmd.Flags().Changed("remove-tag") {
+				flagSet = true
+				req.RemoveTags = removeTags
 			}
 			if cmd.Flags().Changed("primary-branch") {
 				flagSet = true
@@ -103,6 +112,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
+	editCmd.Flags().StringSliceVar(&addTags, "add-tag", nil, "Tags to add, such as prod or sandbox (repeat or separate with commas)")
+	editCmd.Flags().StringSliceVar(&removeTags, "remove-tag", nil, "Tags to remove (repeat or separate with commas)")
 	editCmd.Flags().StringVar(&primaryBranch, "primary-branch", "", "Primary branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
