@@ -895,25 +895,36 @@ export class CanvasEntity {
   };
 
   // Select a tab in a group and reflect every group's active tab in the URL.
-  // Groups left on their first tab are omitted to keep the URL short.
+  // Groups left on their first tab are omitted to keep the URL short, unless
+  // omitting them would leave the query string empty — handleCanvasRedirect
+  // treats an empty query as a fresh visit and would bounce back to the
+  // last-visited state, home bookmark, or default params.
   setActiveTabInURL = (groupName: string, tabName: string) => {
     const group = this.tabGroups.get(groupName);
     if (group) group.setActiveByName(tabName);
 
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const pairs: string[] = [];
+    const nonDefaultPairs: string[] = [];
+    const allActivePairs: string[] = [];
     this.tabGroups.forEach((g, name) => {
       const index = get(g.activeTabIndex);
       const tab = get(g.tabs)[index];
       // Reference the active tab as `tabgroup_name.tab_name`, encoding each part.
-      if (tab && index > 0) {
-        pairs.push(`${encodeTabKey(name)}.${encodeTabKey(tab.name)}`);
-      }
+      if (!tab) return;
+      const encoded = `${encodeTabKey(name)}.${encodeTabKey(tab.name)}`;
+      allActivePairs.push(encoded);
+      if (index > 0) nonDefaultPairs.push(encoded);
     });
 
-    if (pairs.length) params.set(CANVAS_TABS_URL_PARAM, pairs.join(","));
-    else params.delete(CANVAS_TABS_URL_PARAM);
+    if (nonDefaultPairs.length) {
+      params.set(CANVAS_TABS_URL_PARAM, nonDefaultPairs.join(","));
+    } else {
+      params.delete(CANVAS_TABS_URL_PARAM);
+      if (params.size === 0 && allActivePairs.length) {
+        params.set(CANVAS_TABS_URL_PARAM, allActivePairs.join(","));
+      }
+    }
 
     goto(`?${params.toString()}`, { replaceState: true }).catch(console.error);
   };
