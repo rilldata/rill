@@ -7,22 +7,56 @@ import type {
 
 export { default as KPI } from "./KPI.svelte";
 
-export const SPARKLINE_MIN_WIDTH = 128;
-export const BIG_NUMBER_MIN_WIDTH = 160;
-export const padding = 32;
-export const SPARK_RIGHT_MIN =
-  SPARKLINE_MIN_WIDTH + 8 + BIG_NUMBER_MIN_WIDTH + padding;
+export const KPI_SIZES = ["small", "medium", "large", "xlarge"] as const;
+export type KPISize = (typeof KPI_SIZES)[number];
+export const DEFAULT_KPI_SIZE: KPISize = "medium";
+
+/**
+ * The size preset a KPI renders at. An absent or unknown value (the runtime
+ * rejects unknown ones, but an unvalidated draft can still carry one) renders
+ * at the default size.
+ */
+export function resolveKPISize(size: unknown): KPISize {
+  return KPI_SIZES.includes(size as KPISize)
+    ? (size as KPISize)
+    : DEFAULT_KPI_SIZE;
+}
+
+/**
+ * Minimum widths in pixels that a KPI card needs per size preset, used to pick
+ * the grid's column count. They track the font sizes and padding that
+ * KPI.svelte and KPIGrid.svelte apply for the same preset.
+ */
+const KPI_SIZE_MIN_WIDTHS: Record<
+  KPISize,
+  { bigNumber: number; sparkline: number; padding: number }
+> = {
+  small: { bigNumber: 120, sparkline: 96, padding: 24 },
+  medium: { bigNumber: 160, sparkline: 128, padding: 32 },
+  large: { bigNumber: 224, sparkline: 160, padding: 40 },
+  xlarge: { bigNumber: 304, sparkline: 192, padding: 48 },
+};
+
+export function getBigNumberMinWidth(size?: KPISize): number {
+  return KPI_SIZE_MIN_WIDTHS[size ?? DEFAULT_KPI_SIZE].bigNumber;
+}
 
 export function getMinWidth(
   sparkline: "none" | "bottom" | "right" | undefined,
+  size?: KPISize,
 ): number {
+  const {
+    bigNumber,
+    sparkline: sparklineWidth,
+    padding,
+  } = KPI_SIZE_MIN_WIDTHS[size ?? DEFAULT_KPI_SIZE];
   switch (sparkline) {
     case "right":
-      return SPARK_RIGHT_MIN;
+      return sparklineWidth + 8 + bigNumber + padding;
     case "none":
     case "bottom":
     default:
-      return BIG_NUMBER_MIN_WIDTH + padding;
+      return bigNumber + padding;
   }
 }
 
@@ -100,6 +134,8 @@ export interface KPISpec
   adhoc_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
+  // Scales the card's text, spacing and minimum footprint. Defaults to "medium"
+  size?: KPISize;
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
   hide_time_range?: boolean;

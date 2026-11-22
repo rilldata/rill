@@ -17,6 +17,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import type { KPISize } from "../kpi";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
@@ -43,6 +44,8 @@ export interface KPIGridSpec
   adhoc_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
+  // Size preset of the KPI cards. Defaults to "medium"
+  size?: KPISize;
   // Defaults to false if undefined;
   hide_time_range?: boolean;
   // Defaults to "delta" and "percent_change"

@@ -2,7 +2,12 @@
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";
-  import { getMinWidth, getOptimalColumns, type KPISpec } from "../kpi";
+  import {
+    getMinWidth,
+    getOptimalColumns,
+    resolveKPISize,
+    type KPISpec,
+  } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
   import { canvasExactSurface } from "../exact-measures";
   import { validateKPIGridSchema } from "./selector";
@@ -37,6 +42,7 @@
     measure,
     adhoc_measures: kpiGridProperties.adhoc_measures,
     sparkline: kpiGridProperties.sparkline,
+    size: kpiGridProperties.size,
     hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
     dimension_filters: kpiGridProperties.dimension_filters,
@@ -58,8 +64,9 @@
   );
 
   $: sparkline = kpiGridProperties.sparkline;
+  $: size = resolveKPISize(kpiGridProperties.size);
 
-  $: minWidth = getMinWidth(sparkline);
+  $: minWidth = getMinWidth(sparkline, size);
 
   let containerWidth = 0;
 
@@ -80,6 +87,7 @@
   <div
     class="h-fit p-0 grow relative"
     class:!p-0={kpis.length === 1}
+    data-size={size}
     bind:clientWidth={containerWidth}
   >
     <span class="border-overlay"></span>
@@ -88,7 +96,7 @@
       class="grid-wrapper gap-px overflow-hidden size-full"
     >
       {#each kpis as kpi, i (i)}
-        <div class="min-h-32 kpi-wrapper">
+        <div class="kpi-wrapper">
           {#if $timeAndFilterStore}
             <KPIProvider
               spec={kpi}
@@ -115,12 +123,33 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid outline outline-1 outline-border;
+    @apply relative p-4 min-h-32 grid outline outline-1 outline-border;
   }
 
   .border-overlay {
     @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
     z-index: 50;
+  }
+
+  /*
+   * Size presets: the card's padding and minimum height follow the text sizes
+   * KPI.svelte applies for the same preset.
+   */
+  [data-size="small"] .kpi-wrapper {
+    @apply p-3 min-h-20;
+  }
+
+  /* The overlay covers the cards' outer padding, so it shrinks with it. */
+  [data-size="small"] .border-overlay {
+    @apply border-[8.5px];
+  }
+
+  [data-size="large"] .kpi-wrapper {
+    @apply p-5 min-h-40;
+  }
+
+  [data-size="xlarge"] .kpi-wrapper {
+    @apply p-6 min-h-48;
   }
 
   @container component-container (inline-size < 440px) {
