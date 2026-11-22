@@ -63,6 +63,12 @@ Files save automatically while **Auto-save** is on. Rill reconciles each change 
 
 To see a dashboard as your users will, open its file and click **Preview** (or **Go to dashboard** from a metrics view). The preview runs against the branch's deployment, so it reflects your unpublished changes. Click **Edit** in the preview header to jump back to the dashboard's file or, for explore dashboards, its metrics view.
 
+### Delete files
+
+To delete a file or folder, open its menu in the file explorer and click **Delete**. Rill asks you to confirm and names what will be removed. The file is deleted on your branch only; production keeps it until you publish.
+
+Until then, you can bring back a file that exists in production. Click **Publish** (or **Merge to production**), expand the list of changed files, and click the revert icon next to the deleted file. A file that was never published can't be recovered once you delete it.
+
 ## Publish your changes
 
 How you ship changes depends on how the project's repository is hosted.

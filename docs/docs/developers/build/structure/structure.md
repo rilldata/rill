@@ -45,3 +45,15 @@ For developers who prefer to use the CLI, the project structure can still be con
 Rather than creating a parent folder and moving it into another folder manually, there is a shortcut to create a nested folder by directly hovering over an existing folder in the file explorer, clicking on the "triple dots," and selecting `New folder`.
 
 ![Adding Nested Folder](/img/build/structure/adding-nested-folder.png)
+
+## Deleting files and folders
+
+To delete a resource, hover over its file in the file explorer, click on the "triple dots," and select `Delete`. Rill asks you to confirm first, and the dialog names the resource and the file that will be removed. Nothing is deleted until you click `Delete` in the dialog.
+
+Folders work the same way: deleting a folder that has contents lists the files that will be removed with it, while an empty folder is deleted right away.
+
+:::warning Deleting can't be undone in Rill Developer
+
+Deleting removes the file from your project directory. Rill Developer can't restore it, so you can only get it back from version control or a backup. When you [edit in Rill Cloud](/developers/deploy/cloud-editing#delete-files) instead, you can restore a deleted file until you publish.
+
+:::
