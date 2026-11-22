@@ -35,6 +35,8 @@ Set `size` to make the KPI cards larger or smaller: `small`, `medium` (the defau
     size: large
 ```
 
+![The same KPI at the small, medium, large and xlarge sizes](/img/build/dashboard/canvas/kpi-sizes.png)
+
 Widgets follow the canvas time range and time comparison by default. Override either one with `time_filters`, which takes the same `tr` and `compare_tr` parameters as an explore URL. `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` turns delta and comparison off for that widget only. `compare_tr=inherit` follows the canvas comparison, and a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
 
 The aggregation grain works the same way with `grain`. Time-series charts and KPI sparklines bucket by the grain chosen in the canvas filter bar, and `grain=week` on its own keeps the canvas time range while bucketing that widget by week. A grain the time range cannot hold, such as `grain=month` on a seven day range, falls back to the canvas grain. Tables and pivots pick their grain through their time dimension instead.
