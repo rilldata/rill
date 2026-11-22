@@ -93,7 +93,7 @@ describe("getComponentInstanceType", () => {
 
 // A canvas entity with only the state the component constructors touch.
 // Every store is a real store: `derived` rejects a falsy input when it is built.
-function viewerCanvasEntity(): CanvasEntity {
+function viewerCanvasEntity(textSize?: string): CanvasEntity {
   const store = () => writable(undefined);
   const localExpressionFilters = {
     setParamForMetricsView: vi.fn(),
@@ -104,6 +104,7 @@ function viewerCanvasEntity(): CanvasEntity {
     specStore: store(),
     exactMeasures: store(),
     exportMode: writable(false),
+    textSize: writable(textSize),
     currentExactMeasures: () => [],
     dashboardProvider: { yamlConfigProvider: {} },
     timeFilterManager: {},
@@ -175,5 +176,41 @@ describe("createComponent", () => {
     expect(component).toBeInstanceOf(COMPONENT_CLASS_MAP.bar_chart);
     expect(component.type).toBe("bar_chart");
     component.destroy();
+  });
+
+  it("scales a component's text by its own `text_size`, else by the canvas's", () => {
+    const table = (text_size?: string) =>
+      ({
+        meta: { name: { name: "table_1" } },
+        component: {
+          state: {
+            validSpec: {
+              renderer: "table",
+              rendererProperties: {
+                metrics_view: "mv",
+                columns: ["country"],
+                ...(text_size && { text_size }),
+              },
+            },
+          },
+        },
+      }) as V1Resource;
+    const largeCanvas = viewerCanvasEntity("large");
+
+    const inheriting = createComponent(table(), largeCanvas, path);
+    const overriding = createComponent(table("small"), largeCanvas, path);
+    const standard = createComponent(table(), viewerCanvasEntity(), path);
+
+    expect(get(inheriting.textScale)).toBe(1.25);
+    expect(get(overriding.textScale)).toBe(0.875);
+    expect(get(standard.textScale)).toBe(1);
+
+    // The canvas's size changing, as when its YAML is edited, reaches the
+    // components that follow it and not the one with its own.
+    largeCanvas.textSize.set("xlarge");
+    expect(get(inheriting.textScale)).toBe(1.5);
+    expect(get(overriding.textScale)).toBe(0.875);
+
+    [inheriting, overriding, standard].forEach((c) => c.destroy());
   });
 });

@@ -31,6 +31,7 @@ import type {
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
+import { resolveTextScale } from "../text-size";
 import { normalizeTimeFilters, timeFiltersToParams } from "./time-filters";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
@@ -61,6 +62,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // visible or while the canvas is exporting to PDF. Export uses this rather than
   // forcing `visible` so it never mutates the live lazy-load state.
   dataEnabled: Readable<boolean>;
+
+  // Multiplier for the component's font sizes, from its `text_size` preset or
+  // else the canvas's. The component card exposes it to styles as
+  // `--text-scale`; charts and tables also take it as a number, for the text
+  // they draw or size rows for themselves. See features/canvas/text-size.ts.
+  textScale: Readable<number>;
 
   // The data the component currently renders, published by its display
   // component for the workbook export (see features/exports/xlsx). Undefined
@@ -122,6 +129,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.dataEnabled = derived(
       [this.visible, this.parent.exportMode],
       ([visible, exportMode]) => visible || exportMode,
+    );
+
+    this.textScale = derived(
+      [this.specStore, this.parent.textSize],
+      ([spec, canvasTextSize]) =>
+        resolveTextScale(spec?.["text_size"], canvasTextSize),
     );
 
     this.metricsViewsProvider = new MetricsViewsProvider(this.parent.client, [

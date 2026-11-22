@@ -119,27 +119,31 @@
 </div>
 
 <style lang="postcss">
+  /* Every font size is multiplied by `--text-scale`, the component's text
+     size preset, set on its card. Text without a rule of its own, such as
+     h5 and h6, takes the scaled base size. */
   :global(.canvas-markdown) {
+    font-size: calc(12px * var(--text-scale, 1));
     @apply text-fg-primary;
   }
   :global(.canvas-markdown h1) {
-    font-size: 24px;
+    font-size: calc(24px * var(--text-scale, 1));
     @apply font-medium;
   }
   :global(.canvas-markdown h2) {
-    font-size: 20px;
+    font-size: calc(20px * var(--text-scale, 1));
     @apply font-medium;
   }
   :global(.canvas-markdown h3) {
-    font-size: 18px;
+    font-size: calc(18px * var(--text-scale, 1));
     @apply font-medium;
   }
   :global(.canvas-markdown h4) {
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     @apply font-medium;
   }
   :global(.canvas-markdown p) {
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     @apply my-2;
   }
 
@@ -150,14 +154,22 @@
   :global(.canvas-markdown.items-end p) {
     @apply text-right w-full;
   }
+  /* Tailwind's `text-sm`, scaled. */
+  :global(.canvas-markdown th),
+  :global(.canvas-markdown td),
+  :global(.canvas-markdown li),
+  :global(.canvas-markdown code) {
+    font-size: calc(0.875rem * var(--text-scale, 1));
+    line-height: calc(1.25rem * var(--text-scale, 1));
+  }
   :global(.canvas-markdown table) {
     @apply w-full border-collapse my-4;
   }
   :global(.canvas-markdown th) {
-    @apply bg-surface-background border px-4 py-2 text-left text-sm font-medium;
+    @apply bg-surface-background border px-4 py-2 text-left font-medium;
   }
   :global(.canvas-markdown td) {
-    @apply border px-4 py-2 text-sm;
+    @apply border px-4 py-2;
   }
   :global(.canvas-markdown tr:nth-child(even)) {
     @apply bg-surface-background;
@@ -175,19 +187,19 @@
     @apply list-decimal pl-6 my-3;
   }
   :global(.canvas-markdown li) {
-    @apply text-sm my-1;
+    @apply my-1;
   }
   :global(.canvas-markdown blockquote) {
     @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-fg-secondary;
   }
   :global(.canvas-markdown code) {
-    @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
+    @apply bg-gray-100 px-1 py-0.5 rounded font-mono;
   }
   :global(.canvas-markdown pre) {
     @apply bg-gray-100 p-3 rounded my-3 overflow-x-auto;
   }
   :global(.canvas-markdown pre code) {
-    @apply bg-transparent p-0 text-sm;
+    @apply bg-transparent p-0;
   }
   :global(.canvas-markdown hr) {
     @apply my-3 border-t border-gray-300 w-full;

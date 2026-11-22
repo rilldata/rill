@@ -11,6 +11,7 @@ import type { LeaderboardSpec } from "./leaderboard";
 import type { MapSpec } from "./map";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
+import type { TextSize } from "../text-size";
 
 export type ComponentWithMetricsView =
   | CartesianCanvasChartSpec
@@ -34,6 +35,14 @@ export interface ComponentCommonProperties {
   title?: string;
   description?: string;
   show_description_as_tooltip?: boolean;
+}
+
+export interface ComponentTextProperties {
+  /**
+   * Size preset for the component's text.
+   * Defaults to the canvas's `text_size`, which defaults to "medium".
+   */
+  text_size?: TextSize;
 }
 
 export type VeriticalAlignment = "top" | "middle" | "bottom";
