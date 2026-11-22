@@ -17,7 +17,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
-import type { KPISize } from "../kpi";
+import { DEFAULT_KPI_SIZE, type KPISize } from "../kpi";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
@@ -119,6 +119,21 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
           showInUI: false,
         },
         ...(hasTimeSeries ? timeSeriesOptions : {}),
+        size: {
+          type: "switcher_tab",
+          optional: true,
+          label: m.canvas_size_label(),
+          meta: {
+            default: DEFAULT_KPI_SIZE,
+            omitDefault: true,
+            options: [
+              { label: m.canvas_size_small_option(), value: "small" },
+              { label: m.canvas_size_medium_option(), value: "medium" },
+              { label: m.canvas_size_large_option(), value: "large" },
+              { label: m.canvas_size_xlarge_option(), value: "xlarge" },
+            ],
+          },
+        },
         ...getCommonOptions(),
       },
       filter: getFilterOptions(),

@@ -104,6 +104,11 @@ export interface ComponentInputParam {
      */
     value?: string;
     /**
+     * For a switcher: picking the `default` option removes the property from
+     * the spec instead of writing the default value.
+     */
+    omitDefault?: boolean;
+    /**
      * Marks a measure/dimension field as removable, showing a remove button on
      * the selected chip. On removal the property is cleared from the spec.
      */

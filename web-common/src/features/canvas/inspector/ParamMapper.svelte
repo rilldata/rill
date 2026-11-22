@@ -299,7 +299,12 @@
               localParamValues[key] ??
               config.meta?.default}
             onChange={(newValue) => {
-              component.updateProperty(key, newValue);
+              component.updateProperty(
+                key,
+                config.meta?.omitDefault && newValue === config.meta?.default
+                  ? undefined
+                  : newValue,
+              );
             }}
           />
 
