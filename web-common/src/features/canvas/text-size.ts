@@ -1,3 +1,6 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import type { ComponentInputParam } from "./inspector/types";
+
 /**
  * Text size presets for canvas components, set with `text_size` on a component
  * or on the canvas, which is then the default for its components.
@@ -43,4 +46,37 @@ export function resolveTextScale(
  */
 export function textScaleStyle(scale: number): string | undefined {
   return scale === 1 ? undefined : String(scale);
+}
+
+/**
+ * The presets as select options, smallest first.
+ * Built per call, so that the labels follow the active locale.
+ */
+export function textSizeOptions(): { value: TextSize; label: string }[] {
+  return [
+    { value: "small", label: m.canvas_text_size_small() },
+    { value: "medium", label: m.canvas_text_size_medium() },
+    { value: "large", label: m.canvas_text_size_large() },
+    { value: "xlarge", label: m.canvas_text_size_xlarge() },
+  ];
+}
+
+/**
+ * The "Text size" select of a component's inspector. Its first choice has an
+ * empty value, which removes the key, so the component follows the canvas.
+ */
+export function getTextSizeOption(): ComponentInputParam {
+  return {
+    type: "select",
+    optional: true,
+    label: m.canvas_text_size_label(),
+    meta: {
+      default: "",
+      placeholder: m.canvas_text_size_canvas_default(),
+      options: [
+        { value: "", label: m.canvas_text_size_canvas_default() },
+        ...textSizeOptions(),
+      ],
+    },
+  };
 }

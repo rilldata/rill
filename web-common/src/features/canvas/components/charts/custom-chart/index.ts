@@ -3,8 +3,10 @@ import {
   type CanvasComponentType,
   type ComponentCommonProperties,
   type ComponentFilterProperties,
+  type ComponentTextProperties,
 } from "@rilldata/web-common/features/canvas/components/types";
 import { getCommonOptions } from "@rilldata/web-common/features/canvas/components/util";
+import { getTextSizeOption } from "@rilldata/web-common/features/canvas/text-size";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   CanvasEntity,
@@ -32,7 +34,8 @@ import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export interface CustomChart
   extends ComponentCommonProperties,
-    ComponentFilterProperties {
+    ComponentFilterProperties,
+    ComponentTextProperties {
   metrics_view?: string;
   prompt?: string;
   metrics_sql: string[];
@@ -186,6 +189,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
           label: m.canvas_vega_lite_spec_label(),
         },
         ...getCommonOptions(),
+        text_size: getTextSizeOption(),
       },
       filter: {},
     };
