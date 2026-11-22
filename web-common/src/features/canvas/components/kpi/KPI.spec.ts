@@ -12,14 +12,20 @@ const measure = {
 
 const idle = { isError: false, isLoading: false, isFetching: false };
 
-function renderKPI(size?: unknown) {
+function renderKPI(
+  size?: unknown,
+  {
+    sparkline = "none",
+    comparisonOptions = [],
+  }: { sparkline?: string; comparisonOptions?: string[] } = {},
+) {
   render(KPITest, {
     kpiProps: {
       measure,
       size,
-      sparkline: "none",
-      comparisonOptions: [],
-      showTimeComparison: false,
+      sparkline,
+      comparisonOptions,
+      showTimeComparison: comparisonOptions.length > 0,
       hasTimeSeries: true,
       hideTimeRange: true,
       comparisonLabel: undefined,
@@ -59,4 +65,21 @@ describe("KPI size", () => {
   it("falls back to the medium size for an unknown value", () => {
     expect(renderKPI("huge").card).toHaveAttribute("data-size", "medium");
   });
+
+  // The column beside a right-hand sparkline must widen with the value, or a
+  // value that fits at medium is clipped at a larger size.
+  it.each([
+    ["medium", "150px"],
+    ["large", "220px"],
+    ["xlarge", "320px"],
+  ])(
+    "widens the value column beside a right-hand sparkline at the %s size",
+    (size, width) => {
+      const { data } = renderKPI(size, {
+        sparkline: "right",
+        comparisonOptions: ["delta", "percent_change"],
+      });
+      expect(data.getAttribute("style")).toContain(`min(${width}, 100%)`);
+    },
+  );
 });

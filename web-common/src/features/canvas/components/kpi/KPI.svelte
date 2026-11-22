@@ -110,9 +110,8 @@
       ? (currentValue - comparisonVal) / comparisonVal
       : null;
 
-  $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
   // Capped at the card's width, so the value stays centered in a narrow card.
-  $: dataMinWidth = `min(${getBigNumberMinWidth(kpiSize) - adjustment}px, 100%)`;
+  $: dataMinWidth = `min(${getBigNumberMinWidth(kpiSize, comparisonOptions?.length ?? 0)}px, 100%)`;
 
   // Single source of truth for all computed values
   $: computedValues = {
@@ -434,10 +433,12 @@
 
   /*
    * The larger values shrink with the card (cqi is relative to `.wrapper`)
-   * once it is too narrow for about eight digits, instead of being clipped.
+   * once it is narrower than their value column (see getBigNumberMinWidth),
+   * instead of being clipped. 18.75cqi is the medium ratio of a 30px value
+   * to its 160px column, so whatever fits a medium column fits here too.
    */
   .wrapper[data-size="large"] {
-    --kpi-value-size: min(2.75rem, 20cqi);
+    --kpi-value-size: min(2.75rem, 18.75cqi);
     --kpi-value-height: 3.25rem;
     --kpi-text-size: 1rem;
     --kpi-text-height: 1.5rem;
@@ -449,7 +450,7 @@
   }
 
   .wrapper[data-size="xlarge"] {
-    --kpi-value-size: min(4rem, 20cqi);
+    --kpi-value-size: min(4rem, 18.75cqi);
     --kpi-value-height: 4.5rem;
     --kpi-text-size: 1.125rem;
     --kpi-text-height: 1.75rem;
@@ -552,9 +553,10 @@
 
   /*
    * The larger presets need a wider value column, so their side sparkline
-   * gives way earlier. These query the card itself (`.wrapper`).
+   * gives way earlier: once the card cannot fit the value column, the gap
+   * and about 100px of sparkline. These query the card itself (`.wrapper`).
    */
-  @container (inline-size < 320px) {
+  @container (inline-size < 352px) {
     [data-size="large"].spark-right .sparkline-wrapper {
       display: none;
     }
@@ -570,7 +572,7 @@
     }
   }
 
-  @container (inline-size < 400px) {
+  @container (inline-size < 464px) {
     [data-size="xlarge"].spark-right .sparkline-wrapper {
       display: none;
     }

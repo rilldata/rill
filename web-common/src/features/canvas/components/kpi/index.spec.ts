@@ -3,6 +3,8 @@ import {
   getBigNumberMinWidth,
   getMinWidth,
   getOptimalColumns,
+  KPI_SIZES,
+  KPI_VALUE_FONT_SIZES,
   resolveKPISize,
 } from "./index";
 
@@ -37,6 +39,33 @@ describe("getMinWidth", () => {
       expect(widths).toEqual([...widths].sort((a, b) => a - b));
       expect(new Set(widths).size).toBe(widths.length);
     }
+  });
+});
+
+describe("getBigNumberMinWidth", () => {
+  it("keeps today's medium column widths for each number of comparison values", () => {
+    expect([0, 1, 2, 3].map((n) => getBigNumberMinWidth("medium", n))).toEqual([
+      130, 140, 150, 160,
+    ]);
+  });
+
+  // A formatted value's width is proportional to its font size, so a column
+  // that grows at least as fast as the font fits every value the medium
+  // column fits. Before, the xlarge column with two comparison values was
+  // 294px, too narrow for "1,234,567" (142px at 30px, so 303px at 64px).
+  it("grows at least in proportion to the value's font size", () => {
+    for (const size of KPI_SIZES) {
+      for (const n of [0, 1, 2, 3]) {
+        expect(
+          getBigNumberMinWidth(size, n) / KPI_VALUE_FONT_SIZES[size],
+        ).toBeGreaterThanOrEqual(
+          getBigNumberMinWidth("medium", n) / KPI_VALUE_FONT_SIZES.medium,
+        );
+      }
+    }
+    expect(getBigNumberMinWidth("xlarge", 2)).toBeGreaterThanOrEqual(
+      (142 * 64) / 30,
+    );
   });
 });
 
