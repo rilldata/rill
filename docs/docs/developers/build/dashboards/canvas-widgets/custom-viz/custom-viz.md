@@ -225,6 +225,10 @@ These decide zero baselines, tick spacing and the kind of color scale. Axis labe
 
 Series colors come from the `tableau10` scheme, and a measure bound to `color` is drawn with a sequential scheme such as `blues`. Set `scheme` on the `color` encoding to choose another. Charts drawn in a single color use the dashboard theme's primary color. To color series with the [theme's palette](/developers/build/dashboards/customization#changing-themes--colors) instead, [convert the component](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#use-the-theme-palette) and remove the scheme.
 
+### Legends
+
+A chart's legend sits above the plot and is laid out to fit the widget, the same way as a [built-in chart's legend](/developers/build/dashboards/canvas-widgets/chart#legends): its entries wrap to the plot's width and take up to about a third of the chart's height, and where they don't all fit the legend ends with the number left out, such as `…12 entries`. The legends of a chart with two, such as the colors and sizes of a bubble chart, stand one above the other.
+
 ### Chart Properties
 
 `chartProperties` adjusts choices a chart type exposes: line interpolation, stacking, bar corner radius, the size of a donut's hole, and so on. [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) lists the properties of each type. Properties a chart type doesn't have are ignored, and an invalid value falls back to the property's default with a notice above the chart.

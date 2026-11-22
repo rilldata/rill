@@ -12,6 +12,7 @@
     type VisualizationSpec,
   } from "svelte-vega";
   import type { Config } from "vega-lite";
+  import { fitLegends, setContainerSize } from "./legend-layout";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
@@ -123,6 +124,10 @@
     return { ...base, width, height };
   }
 
+  // Every legend is laid out to fit the chart, from the labels in its data and the theme's
+  // legend settings.
+  $: fittedSpec = fitLegends(spec, data, baseOptions.config as Config);
+
   // Each view, from its first embed and from every re-embed, is fitted again whenever a fit
   // leaves its plot at a new size (see `refitOnPlotResize`).
   let refittedView: View | undefined;
@@ -144,6 +149,9 @@
 
     // Resize the existing view in place. vega-embed applies `options.width`/`height` the same
     // way, so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
+    // The legends are sized against the container too, which Vega's signals only hold the
+    // plot's share of once the chart is fitted.
+    setContainerSize(view, w, h);
     view.width(w);
     view.height(h);
     void view.runAsync();
@@ -194,7 +202,7 @@
       {#if measured}
         <VegaLite
           data={viewData}
-          {spec}
+          spec={fittedSpec}
           {signalListeners}
           {options}
           bind:view={viewVL}

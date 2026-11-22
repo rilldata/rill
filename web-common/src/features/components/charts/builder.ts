@@ -393,16 +393,13 @@ export function createDefaultTooltipEncoding(
   return tooltip;
 }
 
+/**
+ * Where a chart's legend goes. Its columns, and how many entries and how much of each label it
+ * shows, follow the chart's size: `fitLegends` lays every chart's legends out when it is rendered.
+ */
 export function getLegendConfig(
   orientation: ChartLegend,
 ): Config<ExprRef | SignalRef> {
-  let columns: number | ExprRef = 1;
-  let symbolLimit: number | ExprRef = 40;
-  if (orientation === "top" || orientation === "bottom") {
-    columns = { expr: "floor(width / 140)" };
-  } else if (orientation === "right" || orientation === "left") {
-    symbolLimit = { expr: "floor(height / 13 )" };
-  }
   if (orientation === "none") {
     return {
       legend: {
@@ -413,9 +410,6 @@ export function getLegendConfig(
   return {
     legend: {
       orient: orientation,
-      columns: columns,
-      labelLimit: 140,
-      symbolLimit: symbolLimit,
     },
   };
 }
