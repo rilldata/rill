@@ -5,6 +5,9 @@ import {
 import { SortOrderField } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+import { formatSpecifier } from "d3-format";
 import type { VisualizationSpec } from "svelte-vega";
 import type {
   Field,
@@ -23,7 +26,7 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../types";
+import type { ChartDataResult, ChartFieldsMap } from "../types";
 import type { CartesianChartSpec } from "./CartesianChartProvider";
 import {
   isHorizontal,
@@ -166,6 +169,7 @@ export function generateVLMultiMetricChartSpec(
     type: "quantitative" as const,
     title: "Value",
     axis: {
+      ...createSharedAxisFormat(measures, data.fields),
       ...(!config.y?.showAxisTitle && { title: null }),
     },
     scale: {
@@ -386,4 +390,51 @@ export function generateVLMultiMetricChartSpec(
   };
 
   return horizontal ? transposeCartesianSpec(result) : result;
+}
+
+// SI prefixes below one, from yocto to milli, as d3 writes them.
+const SI_FRACTION_PREFIXES = "yzafpn\u00b5m";
+
+/**
+ * Tick label format for the value axis that the measures share.
+ *
+ * The axis has no single measure to take a formatter from, so its labels come from
+ * the theme's SI number format, which writes fractions with milli and micro prefixes:
+ * a 90% share reads "900m", and the labels change style once a value reaches 1.
+ * Percentages are the one format that scales the number itself, so when every measure
+ * is one the axis is formatted in percent; leaving the precision out lets Vega pick it
+ * from the tick step, which keeps neighboring ticks distinct at any magnitude.
+ * Other axes keep the theme format, except that a label with a fractional SI prefix
+ * is written as a plain decimal instead.
+ */
+function createSharedAxisFormat(
+  measures: string[],
+  fields: ChartFieldsMap,
+): { format: string } | { labelExpr: string } {
+  if (
+    measures.length > 0 &&
+    measures.every((measure) => isPercentage(fields[measure]))
+  ) {
+    return { format: ",%" };
+  }
+  return {
+    labelExpr: `indexof('${SI_FRACTION_PREFIXES}', slice(datum.label, -1)) >= 0 ? format(datum.value, '~g') : datum.label`,
+  };
+}
+
+/**
+ * Whether a measure's values are shown multiplied by 100, as percentages.
+ * A d3 format wins over the preset, as it does in `createMeasureValueFormatter`.
+ */
+function isPercentage(field: ChartFieldsMap[string]): boolean {
+  const measure = field as MetricsViewSpecMeasure | undefined;
+  if (!measure?.formatD3) {
+    return measure?.formatPreset === FormatPreset.PERCENTAGE;
+  }
+  try {
+    return ["%", "p"].includes(formatSpecifier(measure.formatD3).type);
+  } catch {
+    // The value formatter ignores a format that d3 cannot parse, preset included.
+    return false;
+  }
 }
