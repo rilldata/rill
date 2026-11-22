@@ -266,7 +266,8 @@
   }
 
   th {
-    @apply p-0 text-right h-8;
+    @apply p-0 text-right;
+    height: calc(2rem * var(--text-scale, 1));
   }
 
   th[data-dimension-header] {

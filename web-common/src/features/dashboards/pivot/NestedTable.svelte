@@ -80,6 +80,8 @@
   export let fillWidth = false;
   export let containerWidth = 0;
   export let headerHeight = 30;
+  // Multiplier of the table's font size; the column width estimates grow with it.
+  export let textScale = 1;
   // Per-column presentation overrides keyed by measure name, or by the first
   // row dimension name for the merged row-header column.
   export let columnStyles: PivotColumnStyles = {};
@@ -172,6 +174,7 @@
       rowDimensionName,
       timeDimension,
       dataRows,
+      textScale,
     );
     rowHeaderEstimate = estimatedWidth;
     const configured = columnStyles[firstRowDimensionName]?.width;
@@ -205,6 +208,7 @@
           totalsRow?.original,
           dataRows,
           hasColumnDimension ? maxColumnDimensionHeader : undefined,
+          textScale,
         );
         measureEstimates.set(name, estimatedWidth);
         const configured = columnStyles[name]?.width;
@@ -288,6 +292,17 @@
     ),
     ...draggedIds,
   ]);
+
+  // The estimates, and any width dragged since, were made for the previous
+  // text scale. Dropping them makes the seeding above estimate again.
+  let estimateScale = textScale;
+  $: if (estimateScale !== textScale) {
+    estimateScale = textScale;
+    measureEstimates.clear();
+    draggedIds = new Set();
+    measureLengths.set(new Map());
+    rowDimensionLengths.set(new Map());
+  }
 
   $: rowHeaderWrap =
     hasRowDimension &&
@@ -955,7 +970,7 @@
   }
 
   th {
-    @apply p-0 m-0 text-xs;
+    @apply p-0 m-0;
     @apply relative;
   }
 
@@ -968,9 +983,12 @@
     @apply border-r-0;
   }
 
+  /* Tailwind's `text-xs`, multiplied by the table's text scale (see PivotTable). */
   th,
   td {
-    @apply whitespace-nowrap text-xs;
+    @apply whitespace-nowrap;
+    font-size: calc(0.75rem * var(--text-scale, 1));
+    line-height: calc(1rem * var(--text-scale, 1));
   }
 
   td {
@@ -1001,7 +1019,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--wrap-lines, 2);
     overflow-wrap: anywhere;
-    line-height: 1rem;
+    line-height: calc(1rem * var(--text-scale, 1));
   }
 
   /* Conditional formatting (heatmap / data bar). Placed before the

@@ -113,7 +113,7 @@
   td {
     @apply text-right p-0;
     @apply px-2 relative;
-    height: 22px;
+    height: calc(22px * var(--text-scale, 1));
   }
 
   td.comparison-cell {

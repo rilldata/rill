@@ -342,13 +342,16 @@
 </tr>
 
 <style lang="postcss">
+  /* `--text-scale` is the text size preset of a canvas leaderboard; the row
+     height follows the text. It is unset, so 1, in an Explore dashboard. */
   td {
-    @apply h-[22px] p-0 px-1 truncate text-right;
+    @apply p-0 px-1 truncate text-right;
+    height: calc(22px * var(--text-scale, 1));
   }
 
   tr {
     @apply cursor-pointer;
-    max-height: 22px;
+    max-height: calc(22px * var(--text-scale, 1));
   }
 
   tr:hover {
