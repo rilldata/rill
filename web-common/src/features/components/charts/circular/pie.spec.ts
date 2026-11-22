@@ -1,3 +1,5 @@
+import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
+import * as vega from "vega";
 import { compile, type TopLevelSpec } from "vega-lite";
 import { describe, expect, it } from "vitest";
 import {
@@ -91,4 +93,89 @@ describe('generateVLPieChartSpec with an "Other" slice', () => {
       expect(sources).toContain("metrics-view");
     });
   }
+});
+
+describe("generateVLPieChartSpec with a text scale", () => {
+  const measure = "order_count";
+  const dimension = "region";
+  const rows = [
+    { [dimension]: "North", [measure]: 60 },
+    { [dimension]: "South", [measure]: 40 },
+  ];
+
+  /**
+   * Draws a donut of the given size at a text scale and returns the font
+   * sizes Vega draws its slice labels and its center total with.
+   */
+  async function drawnFontSizes(textScale: number, size: number) {
+    stubCanvasContext();
+    // The total is formatted with the measure's own formatter, which the
+    // chart renderer registers under the measure's sanitized name.
+    vega.expressionFunction(sanitizeFieldName(measure), (value: number) =>
+      String(value),
+    );
+    const config: CircularChartSpec = {
+      metrics_view: "orders",
+      innerRadius: 50,
+      measure: { field: measure, type: "quantitative", showTotal: true },
+      color: { field: dimension, type: "nominal" },
+      labels: { show: true, format: "percent" },
+    };
+    const data = { ...chartData(), textScale };
+    data.data = rows;
+    data.fields = {
+      [measure]: { name: measure, displayName: "Orders" },
+      [dimension]: { name: dimension, displayName: "Region" },
+    };
+    data.domainValues = {
+      [TOTAL_DOMAIN_KEY]: [100],
+      [dimension]: ["North", "South"],
+    };
+
+    const spec = {
+      ...(generateVLPieChartSpec(config, data) as TopLevelSpec),
+      width: size,
+      height: size,
+    } as TopLevelSpec;
+    const view = new vega.View(vega.parse(compile(spec).spec), {
+      renderer: "none",
+    });
+    view.data("metrics-view", rows);
+    await view.runAsync();
+
+    type Node = { items?: Node[]; text?: string; fontSize?: number };
+    const sizes: Record<string, number> = {};
+    const visit = (node: Node) => {
+      if (node.text !== undefined && node.fontSize !== undefined) {
+        sizes[node.text] = node.fontSize;
+      }
+      node.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: Node }).root);
+    return { label: sizes["60%"], total: sizes["100"] };
+  }
+
+  it("scales the slice labels with the text", async () => {
+    const standard = await drawnFontSizes(1, 300);
+    const xlarge = await drawnFontSizes(1.5, 300);
+
+    expect(xlarge.label).toBeCloseTo(standard.label * 1.5, 5);
+  });
+
+  it("scales the center total where the donut's hole has room for it", async () => {
+    const standard = await drawnFontSizes(1, 800);
+    const xlarge = await drawnFontSizes(1.5, 800);
+
+    // 32px is the cap at the standard size.
+    expect(standard.total).toBe(32);
+    expect(xlarge.total).toBe(48);
+  });
+
+  it("keeps the center total inside a hole it already fills", async () => {
+    const standard = await drawnFontSizes(1, 300);
+    const xlarge = await drawnFontSizes(1.5, 300);
+
+    expect(standard.total).toBeLessThan(32);
+    expect(xlarge.total).toBe(standard.total);
+  });
 });

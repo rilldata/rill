@@ -187,7 +187,7 @@ export function createAxisLabelLayout(
   }
 
   const widestLabel = Math.ceil(
-    Math.max(0, ...labels.map(estimateAxisLabelWidth)) +
+    Math.max(0, ...labels.map(estimateAxisLabelWidth)) * (data.textScale ?? 1) +
       UPRIGHT_LABEL_PADDING_PX,
   );
   const fitsUpright = `${band} >= ${widestLabel}`;

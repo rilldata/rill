@@ -2,6 +2,7 @@
   import type { PartialMessage, Struct } from "@bufbuild/protobuf";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import { scaleVegaText } from "@rilldata/web-common/components/vega/text-scale";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
@@ -25,6 +26,8 @@
   export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
+  // Multiplier for every font size in the chart, the spec's own included.
+  export let textScale = 1;
   export let onMetaChange:
     | ((meta: Record<string, unknown> | undefined) => void)
     | undefined = undefined;
@@ -172,9 +175,9 @@
         {:else if rows && parsedSpec}
           <VegaLiteRenderer
             {renderer}
-            spec={parsedSpec}
+            spec={scaleVegaText(parsedSpec, textScale)}
             canvasDashboard
-            config={getRillTheme(true)}
+            config={getRillTheme(true, undefined, { textScale })}
             data={vegaData}
             bind:viewVL
           />

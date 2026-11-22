@@ -13,7 +13,7 @@
     clearComponentConversation(component.id);
   });
 
-  $: ({ specStore, timeAndFilterStore, usesTimeRange } = component);
+  $: ({ specStore, timeAndFilterStore, usesTimeRange, textScale } = component);
 
   $: hasValidSpec = component.isValid($specStore);
   $: hasContent = component.hasContent($specStore);
@@ -35,6 +35,7 @@
     timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
+    textScale={$textScale}
     onMetaChange={handleMetaChange}
     onResults={(results: CustomChartExportResult[] | undefined) =>
       component.exportPayload.set(

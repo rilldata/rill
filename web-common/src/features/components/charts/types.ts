@@ -112,6 +112,12 @@ export type ChartDataResult = {
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
   hasComparison?: boolean;
+  /**
+   * Multiplier for the chart's font sizes. The renderer multiplies the fixed
+   * font sizes in the spec, so builders only need it where they measure text
+   * or write a size as an expression.
+   */
+  textScale?: number;
 };
 
 export interface ChartDomainValues {

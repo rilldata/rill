@@ -9,7 +9,7 @@
   export let component: ComponentRefComponent;
   export let editable: boolean = false;
 
-  $: ({ specStore, timeAndFilterStore, resource } = component);
+  $: ({ specStore, timeAndFilterStore, resource, textScale } = component);
 
   $: ({
     parent: { theme, hasTimeSeriesMap },
@@ -49,6 +49,7 @@
   showDataTable={editable}
   {themeMode}
   theme={currentTheme}
+  textScale={$textScale}
   onResults={(results: CustomChartExportResult[] | undefined) =>
     component.exportPayload.set(
       results ? { kind: "customChart", results } : undefined,
