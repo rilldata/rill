@@ -1471,6 +1471,39 @@
   "field_list_dimensions": "DIMENSIONS",
   "field_list_measures": "MEASURES",
   "field_list_time": "TIME",
+  "file_explorer_delete_file_description": "The file {path} will be deleted from the project.",
+  "file_explorer_delete_folder_description": "The folder {path} and everything in it will be deleted from the project.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "The canvas dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=explore": "The explore dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=metrics_view": "The metrics view {name} and its file {path} will be deleted from the project.",
+        "kind=model": "The model {name} and its file {path} will be deleted from the project.",
+        "kind=source": "The source {name} and its file {path} will be deleted from the project.",
+        "kind=*": "{name} and its file {path} will be deleted from the project."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "Delete canvas dashboard?",
+        "kind=explore": "Delete explore dashboard?",
+        "kind=metrics_view": "Delete metrics view?",
+        "kind=model": "Delete model?",
+        "kind=source": "Delete source?",
+        "kind=folder": "Delete folder?",
+        "kind=*": "Delete file?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "Until you publish, you can restore the production version of a deleted file by reverting the change. Files that aren't in production yet can't be recovered.",
+  "file_explorer_delete_undo_developer": "This can't be undone in Rill. Deleted files can only be recovered from version control or a backup.",
   "filter_advanced_beta": "Advanced (BETA)",
   "filter_advanced_remove": "Remove",
   "filter_advanced_warning": "Advanced filters are a bleeding edge feature! There may be bugs.",

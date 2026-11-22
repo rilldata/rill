@@ -15,7 +15,7 @@
     getTopLevelFolder,
     splitFolderAndFileName,
   } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
+  import DeleteConfirmationDialog from "@rilldata/web-common/features/file-explorer/DeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
@@ -25,12 +25,17 @@
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { ChevronsDownUp, ChevronsUpDown } from "lucide-svelte";
+  import { get } from "svelte/store";
   import NavDirectory from "./NavDirectory.svelte";
+  import {
+    type DeleteTarget,
+    getFileDeleteTarget,
+    getFolderDeleteTarget,
+  } from "./delete-target";
   import { directoryState, isDirectoryExpanded } from "./directory-store";
   import { useProjectScopeId } from "./project-scope";
   import {
     collectDirectoryPaths,
-    findDirectory,
     transformFileList,
   } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
@@ -129,30 +134,39 @@
     }
   }
 
-  let forceDeletePath: string;
-  let showForceDelete = false;
+  // The delete awaiting confirmation. It stays set after the dialog closes, so the dialog keeps its text while it animates out.
+  let deleteTarget: DeleteTarget | undefined;
+  let showDeleteConfirmation = false;
 
+  // Deleting a file or a non-empty folder loses work, so it asks for confirmation first.
+  // An empty folder holds nothing that could be lost and is deleted right away.
   async function onDelete(filePath: string, isDir: boolean) {
     if (!$getFileTree.data) return;
 
-    if (isDir) {
-      const dir = findDirectory($getFileTree.data, filePath);
-      if (dir?.directories?.length || dir?.files?.length) {
-        forceDeletePath = filePath;
-        showForceDelete = true;
-        return;
-      }
+    const target = isDir
+      ? getFolderDeleteTarget($getFileTree.data, filePath)
+      : getFileDeleteTarget(
+          filePath,
+          get(fileArtifacts.getFileArtifact(filePath).resourceName),
+        );
+    if (!target) {
+      await deleteEntry(filePath, isDir, false);
+      return;
     }
-    await deleteFileArtifact(runtimeClient, filePath);
-    if (isCurrentActivePage(filePath, isDir)) {
-      await navigateToHome();
-    }
+
+    deleteTarget = target;
+    showDeleteConfirmation = true;
   }
 
-  async function onForceDelete() {
-    await deleteFileArtifact(runtimeClient, forceDeletePath, true);
-    // onForceDelete is only called on folders, so isDir is always true
-    if (isCurrentActivePage(forceDeletePath, true)) {
+  async function onConfirmDelete(target: DeleteTarget) {
+    const isDir = target.type === "folder";
+    // Only non-empty folders are confirmed, and the runtime refuses to delete those without force.
+    await deleteEntry(target.path, isDir, isDir);
+  }
+
+  async function deleteEntry(filePath: string, isDir: boolean, force: boolean) {
+    await deleteFileArtifact(runtimeClient, filePath, force);
+    if (isCurrentActivePage(filePath, isDir)) {
       await navigateToHome();
     }
   }
@@ -267,7 +281,11 @@
   <NavEntryPortal position={$position} dragData={$dragData} />
 {/if}
 
-<ForceDeleteConfirmation bind:open={showForceDelete} onDelete={onForceDelete} />
+<DeleteConfirmationDialog
+  bind:open={showDeleteConfirmation}
+  target={deleteTarget}
+  onConfirm={onConfirmDelete}
+/>
 
 <QuickView />
 

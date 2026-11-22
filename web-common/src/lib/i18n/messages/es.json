@@ -1480,6 +1480,39 @@
   "field_list_dimensions": "DIMENSIONES",
   "field_list_measures": "MEDIDAS",
   "field_list_time": "TIEMPO",
+  "file_explorer_delete_file_description": "El archivo {path} se eliminará del proyecto.",
+  "file_explorer_delete_folder_description": "La carpeta {path} y todo su contenido se eliminarán del proyecto.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "El dashboard de canvas {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=explore": "El dashboard Explore {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=metrics_view": "La vista de métricas {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=model": "El modelo {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=source": "La fuente {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=*": "{name} y su archivo {path} se eliminarán del proyecto."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "¿Eliminar dashboard de canvas?",
+        "kind=explore": "¿Eliminar dashboard Explore?",
+        "kind=metrics_view": "¿Eliminar vista de métricas?",
+        "kind=model": "¿Eliminar modelo?",
+        "kind=source": "¿Eliminar fuente?",
+        "kind=folder": "¿Eliminar carpeta?",
+        "kind=*": "¿Eliminar archivo?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "Hasta que publiques, puedes restaurar la versión de producción de un archivo eliminado revirtiendo el cambio. Los archivos que aún no están en producción no se pueden recuperar.",
+  "file_explorer_delete_undo_developer": "Esta acción no se puede deshacer en Rill. Los archivos eliminados solo se pueden recuperar desde el control de versiones o una copia de seguridad.",
   "filter_advanced_beta": "Avanzado (BETA)",
   "filter_advanced_remove": "Eliminar",
   "filter_advanced_warning": "Los filtros avanzados son una funcionalidad experimental. Puede haber errores.",
