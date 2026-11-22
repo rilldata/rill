@@ -105,6 +105,7 @@ export function compileFlintSpec({
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
   deferToTheme(vegaSpec, authored);
+  orderSeries(vegaSpec);
   applyMeasureFormatters(vegaSpec, measureFields);
   switch (spec.chartType) {
     case "Bump Chart":
@@ -1398,6 +1399,64 @@ function dropFlintLegendLayout(legend: Record<string, unknown>): void {
     FLINT_WRAPPED_LEGEND_LABELS.test(legend.labelExpr)
   ) {
     delete legend.labelExpr;
+  }
+}
+
+/** The channels a series is drawn on apart from its color: the bars of a group, a line's dash, a point's shape. */
+const SERIES_CHANNELS = [
+  "color",
+  "fill",
+  "stroke",
+  "xOffset",
+  "yOffset",
+  "strokeDash",
+  "shape",
+];
+
+/**
+ * Flint lists a chart's series in the order their rows arrive (`sort: null`), in the legend and so
+ * in the colors they take. The query of a chart over time is ordered by time, which leaves the
+ * order of each bucket's rows to the database: it changed from one load to the next, and every
+ * series changed color with it.
+ *
+ * Where the author gave the series no order (`sortBy`, `sortOrder`), they are ordered by their
+ * total of the measure the chart draws, largest first, as a built-in chart orders the values it
+ * splits by. A chart with a measure on both axes, or on neither, keeps the rows' order, and so
+ * does a pie, whose slices are drawn in that order. So do the series of Flint's own columns.
+ */
+function orderSeries(spec: Record<string, unknown>): void {
+  for (const view of layersOf(spec)) {
+    const mark = view.mark as string | Record<string, unknown> | undefined;
+    if ((typeof mark === "object" ? mark.type : mark) === "arc") continue;
+    const encodings = encodingsOf(view);
+    const measures = [encodings.x, encodings.y].filter(
+      (encoding) =>
+        encoding &&
+        !Array.isArray(encoding) &&
+        encoding.type === "quantitative" &&
+        typeof encoding.field === "string" &&
+        !encoding.field.startsWith("__") &&
+        !encoding.bin,
+    );
+    if (measures.length !== 1) continue;
+    for (const channel of SERIES_CHANNELS) {
+      const encoding = encodings[channel];
+      if (
+        !encoding ||
+        Array.isArray(encoding) ||
+        !isDiscrete(encoding) ||
+        encoding.sort !== null ||
+        typeof encoding.field !== "string" ||
+        encoding.field.startsWith("__")
+      ) {
+        continue;
+      }
+      encoding.sort = {
+        field: measures[0].field,
+        op: "sum",
+        order: "descending",
+      };
+    }
   }
 }
 

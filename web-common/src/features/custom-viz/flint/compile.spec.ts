@@ -83,6 +83,7 @@ type Encoding = {
   title?: unknown;
   format?: string;
   formatType?: string;
+  sort?: unknown;
   stack?: unknown;
   scale?: Record<string, unknown>;
   axis?: Record<string, unknown> | null;
@@ -415,7 +416,10 @@ describe("compileFlintSpec", () => {
       for (const item of node.items ?? []) item.items?.forEach(visit);
     };
     visit((view.scenegraph() as unknown as { root: SceneNode }).root);
-    expect(labels.map((label) => label.text)).toEqual(publishers);
+    // The series are listed by their total, the last of these publishers' the largest.
+    expect(labels.map((label) => label.text)).toEqual(
+      [...publishers].reverse(),
+    );
   });
 
   /** The labels of a compiled chart's legends, in the order Vega lists them. */
@@ -439,6 +443,123 @@ describe("compileFlintSpec", () => {
     visit((view.scenegraph() as unknown as { root: SceneNode }).root);
     return labels.map((label) => String(label.text));
   }
+
+  describe("series order", () => {
+    const totals: Record<string, number> = {
+      Yahoo: 100,
+      Google: 300,
+      Microsoft: 200,
+    };
+    // One row per publisher and day, each day's rows in the given order: a query ordered by
+    // time leaves that order to the database, and it changes from one run to the next.
+    const rowsInOrder = (publishers: string[]) =>
+      Array.from({ length: 4 }, (_, day) =>
+        publishers.map((publisher) => ({
+          timestamp: new Date(2026, 9, 1 + day),
+          publisher,
+          bid_price_sum: totals[publisher] + day,
+        })),
+      ).flat();
+    const lineChart = (
+      publishers: string[],
+      color: Record<string, unknown> = {},
+    ) =>
+      compileFlintSpec({
+        spec: {
+          chartType: "Line Chart",
+          encodings: {
+            x: { field: "timestamp" },
+            y: { field: "bid_price_sum" },
+            color: { field: "publisher", ...color },
+          },
+        },
+        rows: rowsInOrder(publishers),
+        fields: deriveFlintFields(
+          ["timestamp", "publisher", "bid_price_sum"],
+          metricsView,
+          V1TimeGrain.TIME_GRAIN_DAY,
+        ),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      }).spec;
+
+    it("lists a chart's series by their total, whatever order their rows arrive in", async () => {
+      // Flint lists them as the rows arrive, so each of these drew its own order, and gave
+      // every publisher another color.
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(lineChart(arrival))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("orders the bars of a group as it orders their legend", () => {
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Grouped Bar Chart",
+          encodings: {
+            x: { field: "device" },
+            y: { field: "bid_price_sum" },
+            group: { field: "publisher" },
+          },
+        },
+        rows: ["Phone", "Desktop"].flatMap((device) =>
+          Object.entries(totals).map(([publisher, bid_price_sum]) => ({
+            device,
+            publisher,
+            bid_price_sum,
+          })),
+        ),
+        fields: deriveFlintFields(
+          ["device", "publisher", "bid_price_sum"],
+          metricsView,
+        ),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      });
+      const byTotal = {
+        field: "bid_price_sum",
+        op: "sum",
+        order: "descending",
+      };
+      expect(viewOf(spec).encoding?.color?.sort).toEqual(byTotal);
+      expect(viewOf(spec).encoding?.xOffset?.sort).toEqual(byTotal);
+    });
+
+    it("keeps an order the author gave the series", async () => {
+      const spec = lineChart(["Yahoo", "Microsoft", "Google"], {
+        sortOrder: "descending",
+      });
+      expect(viewOf(spec).encoding?.color?.sort).toBe("descending");
+      expect(await legendLabels(spec)).toEqual([
+        "Yahoo",
+        "Microsoft",
+        "Google",
+      ]);
+    });
+
+    it("keeps the rows' order for a pie, whose slices are drawn in it", () => {
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Donut Chart",
+          encodings: {
+            color: { field: "publisher" },
+            size: { field: "bid_price_sum" },
+          },
+        },
+        rows,
+        fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      });
+      expect(viewOf(spec).encoding?.color?.sort).toBeNull();
+    });
+  });
 
   it("formats a legend of a measure's values as the measure's axis is", async () => {
     const { spec } = compileFlintSpec({
