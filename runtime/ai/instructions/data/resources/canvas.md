@@ -1386,6 +1386,24 @@ kpi_grid:
   hide_local_filters: true
 ```
 
+### Text Size
+
+Set `text_size` to make text larger or smaller. On the canvas (top level) it applies to every component; on a component it applies to that component and takes precedence. The values are `small`, `medium` (the default), `large` and `xlarge`. It scales chart axes, legends and data labels, table, pivot and leaderboard text, markdown, and component titles. KPI cards keep their size. Only set it when the user asks for larger or smaller text:
+
+```yaml
+type: canvas
+text_size: large # every component
+
+rows:
+  - items:
+      - table:
+          metrics_view: sales_metrics
+          text_size: medium # this table keeps the standard size
+          columns:
+            - region
+            - total_revenue
+```
+
 ### Vega-Lite Configuration
 
 Customize chart appearance with Vega-Lite config:

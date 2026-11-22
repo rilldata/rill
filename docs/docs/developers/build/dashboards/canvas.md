@@ -61,6 +61,43 @@ You can move or copy a whole tab group in the visual editor:
 
 The copy doesn't keep the original's `name`, so it gets its own deep-link key in the dashboard URL. Rename it in the **Tab group name** field if you want a stable key.
 
+### Text Size
+
+A canvas draws its text at Rill's standard sizes. To make a dashboard easier to read, for example on a shared screen, choose a larger **Text size**:
+
+- **For the whole canvas:** click outside any widget and set **Text size** in the Canvas properties, or set `text_size` at the top of the YAML.
+- **For one widget:** select it and set **Text size** in its properties panel, or set `text_size` in the widget's YAML. A widget's own size takes precedence over the canvas's. Choose **Canvas default** to follow the canvas again.
+
+The sizes are `small`, `medium` (the default), `large` and `xlarge`.
+
+```yaml
+type: canvas
+text_size: large # every widget on this canvas
+
+rows:
+  - items:
+      - bar_chart:
+          metrics_view: orders_metrics
+          text_size: xlarge # this chart only
+          # ...
+      - table:
+          metrics_view: orders_metrics
+          text_size: medium # this table keeps the standard size
+          # ...
+```
+
+| Widget | Text that follows the size |
+| --- | --- |
+| Charts, including custom charts | Axis labels and titles, legends and data labels |
+| Table and pivot | Headers and cells. Rows get taller and columns wider to fit the text. |
+| Leaderboard | Headers and rows |
+| Markdown | Headings, paragraphs, lists and tables |
+| Every widget | Title and description |
+
+A text size multiplies the sizes that Rill and your [theme](/developers/build/dashboards/customization#changing-themes--colors) set: `small` by 0.875, `large` by 1.25 and `xlarge` by 1.5. A chart's own `vl_config` sizes and a custom chart's font sizes are multiplied as well, so a text size works with a theme or a chart's styling instead of replacing it.
+
+KPI cards, the filter bar and tooltips keep their size. Larger text takes more room: give a row more height if a widget starts to scroll.
+
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 
