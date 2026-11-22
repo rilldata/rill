@@ -1502,7 +1502,7 @@
       }
     }
   ],
-  "file_explorer_delete_undo_cloud": "Until you publish, you can restore the production version of a deleted file by reverting the change. Files that aren't in production yet can't be recovered.",
+  "file_explorer_delete_undo_cloud": "Until you publish, you can revert this deletion from the list of changed files. Rill restores the file as it was when your branch last synced with production, so later edits to it are lost. Files added on this branch can't be restored in Rill; if you committed them, recover them from Git history.",
   "file_explorer_delete_undo_developer": "This can't be undone in Rill. Deleted files can only be recovered from version control or a backup.",
   "filter_advanced_beta": "Advanced (BETA)",
   "filter_advanced_remove": "Remove",

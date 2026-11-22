@@ -105,7 +105,7 @@ describe("DeleteConfirmationDialog", () => {
 
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent(
-      "Until you publish, you can restore the production version of a deleted file by reverting the change.",
+      "Until you publish, you can revert this deletion from the list of changed files. Rill restores the file as it was when your branch last synced with production, so later edits to it are lost.",
     );
     expect(dialog).not.toHaveTextContent("This can't be undone in Rill.");
   });

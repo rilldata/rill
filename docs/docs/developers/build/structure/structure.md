@@ -54,6 +54,6 @@ Folders work the same way: deleting a folder that has contents lists the files t
 
 :::warning Deleting can't be undone in Rill Developer
 
-Deleting removes the file from your project directory. Rill Developer can't restore it, so you can only get it back from version control or a backup. When you [edit in Rill Cloud](/developers/deploy/cloud-editing#delete-files) instead, you can restore a deleted file until you publish.
+Deleting removes the file from your project directory. Rill Developer can't restore it, so you can only get it back from version control or a backup. When you [edit in Rill Cloud](/developers/deploy/cloud-editing#delete-files) instead, you can revert the deletion of a file that production also has until you publish.
 
 :::

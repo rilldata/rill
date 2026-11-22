@@ -1502,7 +1502,7 @@
       }
     }
   ],
-  "file_explorer_delete_undo_cloud": "게시하기 전까지는 변경 사항을 되돌려 삭제된 파일의 프로덕션 버전을 복원할 수 있습니다. 아직 프로덕션에 없는 파일은 복구할 수 없습니다.",
+  "file_explorer_delete_undo_cloud": "게시하기 전까지는 변경된 파일 목록에서 이 삭제를 되돌릴 수 있습니다. Rill은 브랜치가 마지막으로 프로덕션과 동기화된 시점의 파일을 복원하므로 이후의 편집 내용은 사라집니다. 이 브랜치에서 추가한 파일은 Rill에서 복원할 수 없으며, 커밋한 경우 Git 기록에서 복구할 수 있습니다.",
   "file_explorer_delete_undo_developer": "이 작업은 Rill에서 되돌릴 수 없습니다. 삭제된 파일은 버전 관리 시스템이나 백업에서만 복구할 수 있습니다.",
   "filter_advanced_beta": "고급 (베타)",
   "filter_advanced_remove": "제거",

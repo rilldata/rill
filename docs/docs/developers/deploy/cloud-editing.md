@@ -67,7 +67,9 @@ To see a dashboard as your users will, open its file and click **Preview** (or *
 
 To delete a file or folder, open its menu in the file explorer and click **Delete**. Rill asks you to confirm and names what will be removed. The file is deleted on your branch only; production keeps it until you publish.
 
-Until then, you can bring back a file that exists in production. Click **Publish** (or **Merge to production**), expand the list of changed files, and click the revert icon next to the deleted file. A file that was never published can't be recovered once you delete it.
+Until then, you can bring back a deleted file. Click **Publish** (or **Merge to production**), expand the list of changed files, and click the revert icon next to the deleted file. Rill restores the file as it was when your branch last synced with production, that is, when you created the branch or last pulled the latest changes. Edits made to the file since then, on your branch or in production, are not restored.
+
+A file you added on the branch can't be restored this way, because once deleted it no longer appears in the list of changed files. If it was committed to the branch, for example with **Commit** or by a checkpoint commit when the session hibernated, you can still recover it from the branch's Git history.
 
 ## Publish your changes
 
