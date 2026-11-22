@@ -774,6 +774,33 @@ kpi_grid:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
+	// Valid: a size preset.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures:
+  - y
+  size: xlarge
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: size isn't one of the presets.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures:
+  - y
+  size: huge
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `"size" must be one of [small medium large xlarge]`)
+
 	// Invalid: empty measures array.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
