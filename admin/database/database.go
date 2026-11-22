@@ -78,11 +78,16 @@ type DB interface {
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*Project, error)
-	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
+	// FindProjectsForOrganization lists the projects in the org.
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindProjectsForOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user.
 	// When includeGroups is true, projects accessible through usergroup membership are also included.
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*Project, error)
-	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, tags []string, afterProjectName string, limit int) ([]*Project, error)
+	// FindPublicProjectsInOrganization lists the public projects in the org.
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
@@ -91,6 +96,9 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	// UpdateProjectTags replaces a project's tags.
+	// Tags are not part of UpdateProjectOptions, so updates that write the other project fields from a stale copy never revert them.
+	UpdateProjectTags(ctx context.Context, id string, tags []string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -516,6 +524,9 @@ type Project struct {
 	Name string
 	// Description is a human-readable description of the project.
 	Description string
+	// Tags are user-defined labels for organizing projects, such as "prod" or "sandbox".
+	// They are normalized (see NormalizeProjectTags) and, unlike Annotations, do not propagate to deployments.
+	Tags []string `db:"tags"`
 	// Public indicates if the project is publicly accessible to anyone with the link.
 	Public bool
 	// CreatedByUserID is the ID of the user that created this project (if any).
@@ -582,6 +593,7 @@ type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
 	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
+	Tags                 []string
 	Public               bool
 	CreatedByUserID      *string
 	DirectoryName        string

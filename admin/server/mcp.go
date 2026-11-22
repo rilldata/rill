@@ -367,7 +367,7 @@ func (s *Server) mcpListProjects(ctx context.Context, req *mcp.CallToolRequest) 
 		// A service belongs to exactly one organization.
 		// If it can manage the organization's projects, it has access to all of them, not just those it's a member of.
 		if claims.OrganizationPermissions(ctx, svc.OrgID).ManageProjects {
-			projs, err = s.admin.DB.FindProjectsForOrganization(ctx, svc.OrgID, "", mcpListProjectsLimit)
+			projs, err = s.admin.DB.FindProjectsForOrganization(ctx, svc.OrgID, nil, "", mcpListProjectsLimit)
 			if err != nil {
 				return nil, err
 			}

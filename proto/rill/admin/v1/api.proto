@@ -1519,6 +1519,8 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
+  // If set, only projects that have at least one of these tags are returned.
+  repeated string tags = 4;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -1959,6 +1961,9 @@ message CreateProjectRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
+  // Tags for organizing the project, such as "prod" or "sandbox".
+  // Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores.
+  repeated string tags = 18;
   bool public = 4;
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.
@@ -1998,6 +2003,11 @@ message UpdateProjectRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   optional string description = 3;
+  // Tags to add to the project. Tags the project already has are kept.
+  repeated string add_tags = 19;
+  // Tags to remove from the project. Tags the project doesn't have are ignored.
+  // A tag can't be in both add_tags and remove_tags.
+  repeated string remove_tags = 20;
   optional bool public = 4;
   optional string directory_name = 15;
   optional string primary_branch = 5;
@@ -3673,6 +3683,8 @@ message Project {
   string org_id = 3;
   string org_name = 4;
   string description = 5;
+  // User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase.
+  repeated string tags = 29;
   bool public = 6;
   string created_by_user_id = 22;
   string directory_name = 26;
