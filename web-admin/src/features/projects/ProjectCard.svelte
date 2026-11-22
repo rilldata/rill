@@ -19,9 +19,14 @@
   let { organization, project }: { organization: string; project: string } =
     $props();
 
+  // The card has room for this many tags; the rest are summarized in a "+N" chip.
+  const VISIBLE_TAGS = 2;
+
   // Check whether project is public or private
   let proj = $derived(createAdminServiceGetProject(organization, project));
   let primaryBranch = $derived($proj.data?.project?.primaryBranch);
+  let tags = $derived($proj.data?.project?.tags ?? []);
+  let hiddenTags = $derived(tags.slice(VISIBLE_TAGS));
 
   let hovering = $state(false);
   let actionsOpen = $state(false);
@@ -108,6 +113,19 @@
         >
       </ProjectAccessControls>
     </Tag>
+    <!-- Project tags -->
+    {#if tags.length > 0}
+      <ul class="tags" aria-label={m.project_card_tags_label()}>
+        {#each tags.slice(0, VISIBLE_TAGS) as tag (tag)}
+          <li class="tag" title={tag}>{tag}</li>
+        {/each}
+        {#if hiddenTags.length > 0}
+          <li class="tag shrink-0" title={hiddenTags.join(", ")}>
+            {m.project_card_tags_more({ count: hiddenTags.length })}
+          </li>
+        {/if}
+      </ul>
+    {/if}
     <!-- Public vs Private indicator -->
     <div class="absolute bottom-2.5 right-2.5 text-fg-secondary">
       <Tooltip distance={10}>
@@ -145,3 +163,19 @@
     {primaryBranch}
   />
 {/if}
+
+<style lang="postcss">
+  .tags {
+    @apply absolute bottom-2.5 left-2.5 right-10;
+    @apply flex flex-row items-center gap-x-1 overflow-hidden;
+  }
+
+  .tag {
+    @apply h-[21px] max-w-[76px] truncate px-2 rounded-[20px] border;
+    @apply bg-gray-100 border-gray-300 text-fg-secondary text-xs leading-[19px];
+  }
+
+  :global(.dark) .tag {
+    @apply border-gray-400 bg-surface-active;
+  }
+</style>
