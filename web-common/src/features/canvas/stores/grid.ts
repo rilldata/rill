@@ -101,10 +101,9 @@ export class Grid {
     canvasRows.forEach((canvasRow, i) => {
       const row = currentRows[i] ?? this.addRow();
 
-      if (
-        canvasRow.height !== undefined &&
-        get(row.height) !== canvasRow.height
-      ) {
+      // Rows are reused by position, so a row without a height also has to
+      // clear the height of the row that was here before.
+      if (get(row.height) !== canvasRow.height) {
         row.height.set(canvasRow.height);
       }
 

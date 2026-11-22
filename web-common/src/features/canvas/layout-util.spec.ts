@@ -4,7 +4,9 @@ import { parseDocument } from "yaml";
 import {
   generateNewAssets,
   getItemPropertiesExcept,
+  getMinHeight,
   isHiddenPath,
+  isRowHeightSet,
   mapGuard,
   rowsGuard,
 } from "./layout-util";
@@ -50,6 +52,49 @@ rows:
     expect(rows[1].items).toBeUndefined();
     expect(rows[1].name).toBe("deep_dive");
     expect(rows[1].tabs).toBeDefined();
+  });
+});
+
+describe("isRowHeightSet", () => {
+  it("treats a missing height as no height", () => {
+    expect(isRowHeightSet(undefined)).toBe(false);
+    expect(isRowHeightSet(0)).toBe(false);
+  });
+
+  it("treats the height the editor fills into rows without one as no height", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: orders
+`);
+    const [row] = mapGuard(rowsGuard(doc.getIn(["rows"])));
+
+    expect(row.height).toBe("40px");
+    expect(isRowHeightSet(parseInt(row.height ?? ""))).toBe(false);
+  });
+
+  it("accepts every height above that placeholder", () => {
+    expect(isRowHeightSet(41)).toBe(true);
+    expect(isRowHeightSet(300)).toBe(true);
+  });
+});
+
+describe("getMinHeight", () => {
+  it("keeps tables and pivots at their default height in a row without a height", () => {
+    expect(getMinHeight("table", false)).toBe(300);
+    expect(getMinHeight("pivot", false)).toBe(224);
+  });
+
+  it("lets a row height take tables and pivots below their default height", () => {
+    expect(getMinHeight("table", true)).toBe(114);
+    expect(getMinHeight("pivot", true)).toBe(114);
+  });
+
+  it("does not lower the floor of other components", () => {
+    for (const type of ["bar_chart", "map", "image", "leaderboard"]) {
+      expect(getMinHeight(type, true)).toBe(getMinHeight(type, false));
+    }
+    expect(getMinHeight("bar_chart", true)).toBe(320);
   });
 });
 

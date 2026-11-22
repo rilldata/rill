@@ -10,6 +10,8 @@
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
     COLUMN_COUNT,
+    DEFAULT_ROW_HEIGHT,
+    isRowHeightSet,
     MIN_HEIGHT,
     MIN_WIDTH,
     mousePosition,
@@ -63,7 +65,11 @@
   export let idPrefix: string = "";
   export let zoneScope = "canvas";
 
-  let rowHeight = get(row.height) ?? MIN_HEIGHT;
+  // The row's height: from the YAML, or from the resize handle while that
+  // change is on its way there. Undefined when the row has no height.
+  let rowHeight = get(row.height);
+  // True while the row's resize handle is dragged.
+  let resizingHeight = false;
   let hasLocalChange = false;
   let initialMousePosition: { x: number; y: number };
   let initialHeight: number;
@@ -80,6 +86,7 @@
   // Either kind of drag suspends component and divider interaction in this row.
   $: interactionSuspended = activelyDragging || blockDragging;
   $: allowBlockDrop = blockDragging && zoneScope === "canvas";
+  $: rowHasHeight = resizingHeight || isRowHeightSet(rowHeight);
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
@@ -89,6 +96,7 @@
   function onRowResizeStart() {
     initialMousePosition = $mousePosition;
     hasLocalChange = true;
+    resizingHeight = true;
 
     initialHeight =
       document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
@@ -108,10 +116,12 @@
         unsubscriber = undefined;
         const actualHeight = Math.floor(
           document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
-            rowHeight,
+            rowHeight ??
+            initialHeight,
         );
 
         rowHeight = actualHeight;
+        resizingHeight = false;
         updateRowHeight(actualHeight, rowIndex);
       },
       { once: true },
@@ -119,8 +129,6 @@
   }
 
   function updateHeightFromSpec(newSpecHeight: number | undefined) {
-    if (newSpecHeight === undefined) return;
-
     const matchesLocal = newSpecHeight === rowHeight;
 
     if (hasLocalChange && matchesLocal) {
@@ -196,7 +204,7 @@
 <RowWrapper
   {zIndex}
   {maxWidth}
-  height={rowHeight}
+  height={rowHeight ?? DEFAULT_ROW_HEIGHT}
   {heightUnit}
   {id}
   gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
@@ -204,7 +212,7 @@
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
     {@const itemCount = itemIds.length}
-    <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
+    <ItemWrapper type={component?.type} zIndex={4 - columnIndex} {rowHasHeight}>
       {#if columnIndex === 0}
         <ElementDivider
           {rowIndex}
