@@ -68,6 +68,34 @@ rows:
 `;
 }
 
+// The same two KPIs in a small grid and in a grid of the default size.
+const TWO_GRIDS_CANVAS_YAML = `type: canvas
+display_name: "KPI size canvas"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: AdBids_metrics
+          measures:
+            - total_records
+            - bid_price_sum
+          sparkline: none
+          size: small
+        width: 12
+    height: 128px
+  - items:
+      - kpi_grid:
+          metrics_view: AdBids_metrics
+          measures:
+            - total_records
+            - bid_price_sum
+          sparkline: none
+        width: 12
+    height: 128px
+`;
+
 // Replaces the canvas YAML through the code editor and returns to the visual editor.
 async function setCanvasYaml(page: Page, yaml: string) {
   await page.getByRole("button", { name: "Switch to code editor" }).click();
@@ -88,6 +116,34 @@ function valueOverflow(data: Locator) {
       columnBox.left - valueBox.left,
     );
   });
+}
+
+// Width in pixels of the widget holding a KPI card:
+// the query container that decides whether the grid stacks its cards.
+function widgetWidth(card: Locator) {
+  return card.evaluate((element) => {
+    let node: Element | null = element;
+    while (
+      node &&
+      getComputedStyle(node).containerName !== "component-container"
+    ) {
+      node = node.parentElement;
+    }
+    if (!node) throw new Error("KPI card is not inside a canvas widget");
+    return node.getBoundingClientRect().width;
+  });
+}
+
+// The number of columns a grid's cards are laid out in.
+function columnCount(cards: Locator) {
+  return cards.evaluateAll(
+    (elements) =>
+      new Set(
+        elements.map((element) =>
+          Math.round(element.getBoundingClientRect().left),
+        ),
+      ).size,
+  );
 }
 
 test.describe("canvas kpi grid size", () => {
@@ -131,6 +187,27 @@ test.describe("canvas kpi grid size", () => {
       await expect(card.locator(".sparkline-wrapper")).toBeVisible();
       expect(await valueOverflow(data), `value clipped at ${size}`).toBe(0);
     }
+  });
+
+  test("a small grid keeps its cards side by side in a narrow widget", async ({
+    page,
+  }) => {
+    await gotoNavEntry(page, CANVAS_FILE);
+    await setCanvasYaml(page, TWO_GRIDS_CANVAS_YAML);
+    await page.getByRole("button", { name: "Preview" }).click();
+    // On a phone-width viewport the canvas stays at its minimum width,
+    // which is wide enough for two cards of either size
+    // but under the 440px at which a grid of any other size stacks its cards.
+    await page.setViewportSize({ width: 400, height: 900 });
+
+    const smallCards = page.locator('.wrapper[data-size="small"]');
+    const mediumCards = page.locator('.wrapper[data-size="medium"]');
+    await expect(smallCards).toHaveCount(2, { timeout: 60_000 });
+    await expect(mediumCards).toHaveCount(2);
+    expect(await widgetWidth(smallCards.first())).toBeLessThan(440);
+
+    await expect.poll(() => columnCount(smallCards)).toBe(2);
+    await expect.poll(() => columnCount(mediumCards)).toBe(1);
   });
 
   test("the Size switcher writes larger sizes and drops the key for medium", async ({

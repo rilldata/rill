@@ -152,8 +152,13 @@
     @apply p-6 min-h-48;
   }
 
+  /*
+   * A narrow widget stacks its cards in one column.
+   * The small preset is exempt: its cards are narrow enough to sit side by side there,
+   * so its column count follows getMinWidth at every width.
+   */
   @container component-container (inline-size < 440px) {
-    .grid-wrapper {
+    :not([data-size="small"]) > .grid-wrapper {
       grid-template-columns: repeat(1, 1fr) !important;
     }
   }
