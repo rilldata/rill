@@ -11,14 +11,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
+	"github.com/rilldata/rill/runtime/pkg/xlsxutil"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
-)
-
-// Column widths of data sheets, in characters.
-const (
-	minDataColWidth = 10
-	maxDataColWidth = 60
 )
 
 // writeDataSheet fills a data sheet: a header row of display names, typed rows with their number formats,
@@ -44,7 +39,7 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 			if err != nil {
 				return validationErrorf("data sheet %q, row %d, column %q: %v", ds.Title, i+1, col.Name, err)
 			}
-			if l := cellWidth(cell); l > widths[j] {
+			if l := xlsxutil.CellWidth(cell); l > widths[j] {
 				widths[j] = l
 			}
 		}
@@ -55,8 +50,7 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		return err
 	}
 	for j := range ds.Columns {
-		width := math.Min(math.Max(float64(widths[j])+2, minDataColWidth), maxDataColWidth)
-		if err := sw.SetColWidth(j+1, j+1, width); err != nil {
+		if err := sw.SetColWidth(j+1, j+1, xlsxutil.ColumnWidth(widths[j])); err != nil {
 			return err
 		}
 	}
@@ -208,23 +202,13 @@ func rowValue(r *structpb.ListValue, j int) *structpb.Value {
 // uniqueHeaders returns the display names of the columns, made unique and non-empty: Excel table headers must be both.
 func uniqueHeaders(columns []*runtimev1.WorkbookColumn) []string {
 	headers := make([]string, len(columns))
-	used := make(map[string]bool, len(columns))
 	for i, c := range columns {
-		h := c.DisplayName
-		if h == "" {
-			h = c.Name
+		headers[i] = c.DisplayName
+		if headers[i] == "" {
+			headers[i] = c.Name
 		}
-		if h == "" {
-			h = fmt.Sprintf("Column %d", i+1)
-		}
-		candidate := h
-		for n := 2; used[candidate]; n++ {
-			candidate = fmt.Sprintf("%s (%d)", h, n)
-		}
-		used[candidate] = true
-		headers[i] = candidate
 	}
-	return headers
+	return xlsxutil.UniqueNames(headers)
 }
 
 // cellValue converts a JSON value to the Go value excelize writes for a column of the given type.
@@ -301,24 +285,4 @@ func parseTime(s string) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
-}
-
-// cellWidth estimates the width of a value in characters, for sizing columns.
-func cellWidth(v any) int {
-	switch t := v.(type) {
-	case nil:
-		return 0
-	case string:
-		return utf8.RuneCountInString(t)
-	case float64:
-		// Digits, two decimals, thousands separators and a currency symbol.
-		digits := len(strconv.FormatFloat(t, 'f', 2, 64))
-		return digits + digits/3 + 1
-	case bool:
-		return 5
-	case time.Time:
-		return 19
-	default:
-		return 10
-	}
 }

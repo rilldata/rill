@@ -5,6 +5,9 @@ export const PERCENT_FORMAT = "0.0%";
 const INTEGER_FORMAT = "#,##0";
 const DECIMAL_FORMAT = "#,##0.00";
 
+// Keep in sync with runtime/pkg/driverutil/xlsx_number_format.go, which ports
+// these rules to the XLSX exports written by the runtime.
+
 // The Excel number format for a measure's cells. Presets map directly; d3
 // format strings are translated where Excel has an equivalent; anything else
 // falls back to a grouped integer or two-decimal format depending on the values.

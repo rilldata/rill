@@ -510,7 +510,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-// The conditional formats color the cells of the query's measures in XLSX exports; other formats ignore them.
+// In XLSX exports, the measures' cells take the measures' number formats, and the conditional formats color them;
+// time dimensions truncated to a day or a coarser grain are shown as dates. Other formats ignore all three.
 func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, executionTime *time.Time, format drivers.FileFormat, headers []string, conditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
@@ -594,23 +595,36 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	}
 
 	// The result has a column per dimension, followed by a column per measure (see writeSelectWithDisplayNames).
-	// The columns are named by display name, which needn't be unique, so the formats find their measures' columns by position.
-	var xlsxFormats []driverutil.XLSXConditionalFormat
+	// The columns are named by display name, which needn't be unique, so the formats find their columns by position.
+	opts := driverutil.FileOptions{Headers: headers}
 	for _, cf := range conditionalFormats {
 		i := slices.IndexFunc(ast.Root.MeasureFields, func(f metricsview.FieldNode) bool { return f.Name == cf.Measure })
 		if i < 0 {
 			continue
 		}
-		xlsxFormats = append(xlsxFormats, driverutil.XLSXConditionalFormat{
+		opts.ConditionalFormats = append(opts.ConditionalFormats, driverutil.XLSXConditionalFormat{
 			Column: len(ast.Root.DimFields) + i,
 			Format: cf.Format,
 		})
+	}
+	for i, f := range ast.Root.MeasureFields {
+		if format, ok := e.xlsxMeasureFormat(qry, f.Name); ok {
+			opts.NumberFormats = append(opts.NumberFormats, driverutil.XLSXNumberFormat{
+				Column: len(ast.Root.DimFields) + i,
+				Format: format,
+			})
+		}
+	}
+	for i, f := range ast.Root.DimFields {
+		if c, ok := xlsxTimeColumn(qry, f.Name, i); ok {
+			opts.TimeColumns = append(opts.TimeColumns, c)
+		}
 	}
 
 	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
 		"sql":  sql,
 		"args": args,
-	}, headers, xlsxFormats)
+	}, opts)
 }
 
 // Search executes the provided query against the metrics view.

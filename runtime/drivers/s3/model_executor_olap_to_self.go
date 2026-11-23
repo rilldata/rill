@@ -85,7 +85,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// Make sure to clean up the file after we're done
 	defer os.Remove(f.Name())
 
-	err = driverutil.ResultToFile(res, f, drivers.FileFormatParquet, nil, nil)
+	err = driverutil.ResultToFile(res, f, drivers.FileFormatParquet, driverutil.FileOptions{})
 	if err != nil {
 		return nil, err
 	}
