@@ -67,6 +67,7 @@
   }
 
   async function save() {
+    const submitted = editedTags;
     try {
       await $updateProjectMutation.mutateAsync({
         org: organization,
@@ -90,8 +91,11 @@
           getAdminServiceListProjectsForOrganizationQueryKey(organization),
       }),
     ]);
-    editedTags = undefined;
-    error = "";
+    // Keep edits made while saving: they aren't saved yet.
+    if (editedTags === submitted) {
+      editedTags = undefined;
+      error = "";
+    }
     eventBus.emit("notification", {
       message: m.settings_project_tags_updated_notification(),
     });
