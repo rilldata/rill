@@ -73,7 +73,11 @@ describe("d3ToExcelFormat", () => {
     expect(d3ToExcelFormat(".1%")).toBe("0.0%");
     expect(d3ToExcelFormat("%")).toBe("0%");
     expect(d3ToExcelFormat(",d")).toBe("#,##0");
-    expect(d3ToExcelFormat(".3s", [12345])).toBe("0.000");
+    // The precision of s, e, g, r and no type counts significant digits, not
+    // decimals: the number is shown in full, grouped.
+    expect(d3ToExcelFormat(".3s", [12345])).toBe("#,##0");
+    expect(d3ToExcelFormat(".2s", [1.5])).toBe("#,##0.00");
+    expect(d3ToExcelFormat("r", [12345])).toBe("#,##0");
   });
 
   it("rejects specifiers it can't express", () => {

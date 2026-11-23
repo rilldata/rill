@@ -102,9 +102,11 @@ export function d3ToExcelFormat(
     case "g":
     case "r":
     case undefined:
-      // SI prefixes and significant digits have no Excel equivalent; keep the
-      // grouping and show decimals only when the values need them.
-      format = grouped + decimals(digits ?? (allIntegers(values) ? 0 : 2));
+      // These types' precision counts significant digits, and their SI
+      // prefixes have no Excel equivalent, so the precision is ignored: the
+      // number is shown in full, grouped, with decimals only when the values
+      // need them.
+      format = "#,##0" + decimals(allIntegers(values) ? 0 : 2);
       break;
     default:
       return undefined;

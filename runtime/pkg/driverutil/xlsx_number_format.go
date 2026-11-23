@@ -101,12 +101,11 @@ func d3ToExcelFormat(spec string, integers bool, currency *[2]string) (string, b
 	case "f":
 		format = grouped + decimals(2)
 	case "s", "e", "g", "r", "":
-		// SI prefixes and significant digits have no Excel equivalent;
-		// keep the grouping and show decimals only when the column needs them.
+		// These types' precision counts significant digits, and their SI prefixes have no Excel equivalent,
+		// so the precision is ignored: the number is shown in full, grouped, with decimals only if the column holds them.
+		format = xlsxDecimalFormat
 		if integers {
-			format = grouped + decimals(0)
-		} else {
-			format = grouped + decimals(2)
+			format = xlsxIntegerFormat
 		}
 	default:
 		return "", false

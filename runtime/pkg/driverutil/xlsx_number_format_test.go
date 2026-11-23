@@ -81,7 +81,10 @@ func TestD3ToExcelFormat(t *testing.T) {
 		{".1%", false, "0.0%", true},
 		{"%", false, "0%", true},
 		{",d", false, "#,##0", true},
-		{".3s", true, "0.000", true},
+		// The precision of s, e, g, r and no type counts significant digits, not decimals: the number is shown in full, grouped.
+		{".3s", true, "#,##0", true},
+		{".2s", false, "#,##0.00", true},
+		{"r", true, "#,##0", true},
 		// d3 clamps the precision to 20.
 		{".25f", false, "0." + strings.Repeat("0", 20), true},
 		// Specifiers it can't express.
