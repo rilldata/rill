@@ -151,7 +151,7 @@ A rollup is eligible for a given query only if **all** of the following hold:
 
 1. **Grain derivable.** The query's time grain can be aggregated up from the rollup's grain. For example, a `month` query can be derived from a `day` rollup, but a `week` query cannot be derived from a `month` rollup, and a `month` query cannot be derived from a `week` rollup. Sub-day grains form one chain (`ms → s → min → hour → day`); calendar grains form another (`day → month → quarter → year`); `week` sits on its own branch and can only be derived from `day` or finer.
 2. **Timezone matches** (day grain and coarser). The query's timezone must equal the rollup's `time_zone`. UTC variants (`""`, `"UTC"`, `"Etc/UTC"`) are treated as equivalent. Sub-day grains are timezone-agnostic, so this check is skipped for them.
-3. **Start aligned.** The query's time-range start must fall exactly on a rollup-grain boundary in the rollup's timezone. A query starting at `2024-01-01 12:00` cannot use a daily rollup, because the noon boundary doesn't line up with a day bucket.
+3. **Start aligned.** The query's time-range start must fall exactly on a rollup-grain boundary in the rollup's timezone. A query starting at `2024-01-01 12:00` cannot use a daily rollup, because the noon boundary doesn't line up with a day bucket. If the metrics view sets `base_time_grain`, the start is first rounded up to the next boundary of that grain; see [Base tables stored at a coarse grain](#base-tables-stored-at-a-coarse-grain).
 4. **All queried dimensions present.** Every dimension in the query (group-by, time floor, or WHERE filter) must be in the rollup's `dimensions` list. The primary time dimension is always considered present.
 5. **All queried measures present.** Every measure named in the query must be in the rollup's `measures` list. Computed measures like `COUNT(*)` or `COUNT(DISTINCT …)` are rejected outright — they would produce wrong results when applied on top of pre-aggregated rows.
 
@@ -176,7 +176,7 @@ The base table is used if no rollup is eligible.
 
 - **Time grain must be derivable.** `week` and the calendar grains (`month`, `quarter`, `year`) live on separate branches. A weekly rollup cannot answer monthly queries, and a monthly rollup cannot answer weekly queries. Define rollups at the grain you actually query.
 - **Day-and-above rollups are timezone-specific.** A rollup bucketed in UTC cannot serve a dashboard query in `America/New_York`, because the day boundaries are different. If your users query in multiple timezones, either materialize a rollup per timezone or keep the rollup at hour grain (which is timezone-agnostic).
-- **Misaligned starts disqualify the rollup.** A query starting mid-bucket (e.g. `2024-01-01 12:00` against a daily rollup) silently falls back to the base table. Dashboard time-range pickers typically snap to grain boundaries; ad-hoc API queries may not.
+- **Misaligned starts disqualify the rollup.** A query starting mid-bucket (e.g. `2024-01-01 12:00` against a daily rollup) silently falls back to the base table. Dashboard time-range pickers typically snap to grain boundaries; ad-hoc API queries may not. If the base table itself stores time at the rollup's grain, set `base_time_grain` to lift this; see [Base tables stored at a coarse grain](#base-tables-stored-at-a-coarse-grain).
 - **Computed measures fall back.** `count` and `count_distinct` measures bypass rollups even if the rollup looks otherwise suitable, because counting pre-aggregated rows is not the same as counting raw rows. Define an explicit `SUM(...)` measure on a pre-aggregated counter column in the rollup if you want this case to route.
 - **Derived measures fall back.** A measure of type `derived` (one with `requires` or `per`) cannot match a rollup's measure list — only `simple` measures can. The base table is used.
 - **Rollups require a `timeseries`.** Metrics views without a primary time dimension cannot define rollups.
@@ -184,6 +184,24 @@ The base table is used if no rollup is eligible.
 - **The rollup is responsible for being correct.** Rill does not validate that the rollup's measure values are consistent with the base — it trusts the model. If the rollup model uses the wrong aggregation (e.g. `AVG` where the base measure is `SUM`), queries routed to it will return wrong numbers.
 - **Rollups are assumed to be roughly caught up with the base table.** Coverage is measured against the base table's latest timestamp. A rollup that lags behind the base will be silently skipped for any query that reaches the tail of the data — including common "last 24 hours" queries and queries without a time range — even if it has the right grain, dimensions, and measures. Refresh rollups in step with the base model so selection actually happens.
 - **Rollups must not extend beyond the base table.** Routing assumes the rollup's max timestamp is no later than the base's. A rollup that gets ahead of the base (e.g. ingested through a separate path) may return incorrect results at the tail of the data.
+
+## Base tables stored at a coarse grain
+
+Some base tables only hold rows on grain boundaries, for example a Druid datasource ingested with `queryGranularity: DAY`, where every row's timestamp is midnight UTC. Declare this with `base_time_grain` (and `base_time_zone` if the boundaries are not in UTC):
+
+```yaml
+timeseries: __time
+base_time_grain: day
+rollups:
+  - model: events_daily
+    time_grain: day
+```
+
+The base table then has no rows between two boundaries, so a time bound inside a day selects the same rows as the next midnight. Rollup routing rounds the start and end of the query's time ranges up to the next boundary before the alignment checks. A query from `2024-10-15 12:55` to `2024-11-14 12:55`, such as an AI agent's "last 30 days", uses the daily rollup instead of the base table. The query results are the same either way.
+
+Rounding only helps rollups whose boundaries the rounded bounds fall on. In the example above, a monthly rollup is still skipped for that query, because `2024-10-16` is not the start of a month. The timezone check is unchanged.
+
+Only set `base_time_grain` if every row is on a boundary. Rill checks the base table's earliest and latest timestamps and ignores the setting if either is off a boundary, but it does not scan the other rows. If they are off a boundary, queries routed to a rollup return different numbers than the base table would.
 
 :::info
 The full configuration schema is in the [metrics view reference](/reference/project-files/metrics-views#rollups).

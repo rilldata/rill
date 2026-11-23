@@ -55,6 +55,8 @@ const (
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
 //     b. For day+ grains, the query timezone matches the rollup timezone.
 //     c. Both the base and (when present) comparison time range starts are aligned to the rollup grain.
+//        When the metrics view sets base_time_grain, the alignment checks here and in step 3 use bounds rounded up to that grain,
+//        since the base table has no rows between its boundaries.
 //     d. All queried dimensions are present in the rollup.
 //     e. The base and comparison time range time dimensions are available in the rollup.
 //     f. All queried measures are present. Computed measures are rejected except for comparison-derived
@@ -162,6 +164,40 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	var ts metricsview.TimestampsResult
 	var baseMin, baseMax time.Time
 	tsFetched := false
+
+	// When the base table stores time at base_time_grain, it has no rows between two boundaries of that grain,
+	// so a time bound between two boundaries selects the same rows as the next boundary.
+	// Route on a copy of the query with its bounds rounded up to the next boundary, so the alignment checks below accept them.
+	// The query keeps its own bounds, which select the same rows from the base table and from the selected rollup.
+	if e.metricsView.BaseTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		baseLoc := time.UTC
+		if e.metricsView.BaseTimeZone != "" {
+			loc, err := time.LoadLocation(e.metricsView.BaseTimeZone)
+			if err != nil {
+				return nil, fmt.Errorf("invalid base time zone %q: %w", e.metricsView.BaseTimeZone, err)
+			}
+			baseLoc = loc
+		}
+		rounded := roundQueryTimeRanges(qry, e.metricsView.BaseTimeGrain, baseLoc, e.metricsView.FirstDayOfWeek)
+		if rounded != qry {
+			var err error
+			ts, err = e.Timestamps(ctx, "")
+			if err != nil {
+				return nil, err
+			}
+			tsFetched = true
+			baseMin, baseMax = ts.Min, ts.Max
+
+			// Rounding returns wrong results if the base table has rows between boundaries.
+			// Checking the base table's min and max timestamps catches some wrong declarations for free.
+			if timeAligned(baseMin, e.metricsView.BaseTimeGrain, baseLoc, e.metricsView.FirstDayOfWeek) && timeAligned(baseMax, e.metricsView.BaseTimeGrain, baseLoc, e.metricsView.FirstDayOfWeek) {
+				qry = rounded
+				selectionSpan.SetAttributes(attribute.Bool("rollup.base_time_grain_rounded", true))
+			} else {
+				selectionSpan.SetAttributes(attribute.Bool("rollup.base_time_grain_mismatch", true))
+			}
+		}
+	}
 
 	var best *rollupCandidate
 	for i, rollup := range e.metricsView.Rollups {
@@ -496,6 +532,32 @@ func extractQueryTimeGrain(qry *metricsview.Query) runtimev1.TimeGrain {
 		}
 	}
 	return smallest
+}
+
+// roundQueryTimeRanges returns a shallow copy of qry with the start and end of its time ranges rounded up to boundaries of the given grain.
+// It returns qry itself when every bound is already on a boundary.
+func roundQueryTimeRanges(qry *metricsview.Query, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) *metricsview.Query {
+	round := func(tr *metricsview.TimeRange) *metricsview.TimeRange {
+		if tr == nil {
+			return nil
+		}
+		start := ceilTime(tr.Start, grain, tz, firstDayOfWeek)
+		end := ceilTime(tr.End, grain, tz, firstDayOfWeek)
+		if start.Equal(tr.Start) && end.Equal(tr.End) {
+			return tr
+		}
+		res := *tr
+		res.Start, res.End = start, end
+		return &res
+	}
+	tr := round(qry.TimeRange)
+	ctr := round(qry.ComparisonTimeRange)
+	if tr == qry.TimeRange && ctr == qry.ComparisonTimeRange {
+		return qry
+	}
+	res := *qry
+	res.TimeRange, res.ComparisonTimeRange = tr, ctr
+	return &res
 }
 
 // collectWhereDimensions recursively collects dimension names referenced in a WHERE expression.

@@ -72,6 +72,14 @@ _[string]_ - Refers to the smallest time granularity the user is allowed to view
 
 _[array of string]_ - Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.
 
+### `base_time_grain`
+
+_[string]_ - Optional time grain the base table stores `timeseries` at, for example `day` for a Druid datasource ingested with a day query granularity. It declares that every row's timestamp is on a boundary of this grain in `base_time_zone`. Rollup routing then rounds query time bounds up to the next boundary, so a time range that starts or ends inside a day can still use a day rollup. Rill only checks that the base table's earliest and latest timestamps are on a boundary; if other rows are not, queries routed to a rollup return wrong results. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
+
+### `base_time_zone`
+
+_[string]_ - IANA time zone of the `base_time_grain` boundaries (e.g. America/New_York). Defaults to UTC. Requires `base_time_grain`.
+
 ### `first_day_of_week`
 
 _[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7

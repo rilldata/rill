@@ -7377,6 +7377,15 @@ definitions:
         description: |-
           Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
           Empty means the standard grains at or above smallest_time_grain.
+      baseTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: |-
+          Time grain the base table stores time_dimension at: every row's timestamp is on a boundary of this grain in base_time_zone.
+          Rollup routing uses it to round query time bounds up to the next boundary, since the base table has no rows between the two.
+          This lets a time range that is not aligned to a rollup's grain use the rollup when the rounded range is aligned.
+      baseTimeZone:
+        type: string
+        description: IANA time zone of base_time_grain's boundaries. Defaults to UTC.
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
