@@ -14,6 +14,30 @@ import {
   getComponentInstanceType,
 } from "./util";
 
+// The components build their own metrics views provider and time filter manager,
+// which would subscribe to runtime queries; stub them with the parts the constructors touch.
+vi.mock(
+  "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts",
+  () => ({
+    MetricsViewsProvider: vi.fn(function () {
+      return { setMetricsViewNames: vi.fn(), cleanup: vi.fn() };
+    }),
+  }),
+);
+vi.mock(
+  "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    TimeFilterManager: vi.fn(function () {
+      return {
+        storeSync: { on: vi.fn(() => () => {}), setUrlParams: vi.fn() },
+        getTimeControlStore: () => writable({}),
+        cleanup: vi.fn(),
+      };
+    }),
+  }),
+);
+
 function resource(
   renderer: string,
   rendererProperties: Record<string, unknown> = {},
@@ -77,18 +101,8 @@ function viewerCanvasEntity(
   controls: Writable<AppliedControl[]> = writable([]),
 ): CanvasEntity {
   const store = () => writable(undefined);
-  const localTimeControls = {
-    metricsViewName: undefined,
-    onUrlChange: vi.fn(),
-    interval: store(),
-    grainStore: store(),
-    urlGrainStore: store(),
-    rangeStore: store(),
-  };
   const localExpressionFilters = {
     setParamForMetricsView: vi.fn(),
-    metricsViewsProvider: { setMetricsViewNames: vi.fn(), cleanup: vi.fn() },
-    yamlConfigProvider: { cleanup: vi.fn() },
   };
   return {
     allowUnvalidatedSpec: false,
@@ -101,21 +115,8 @@ function viewerCanvasEntity(
     metricsView: {
       getMetricsViewFromName: () => writable({ metricsView: undefined }),
     },
-    timeManager: {
-      createLocalTimeState: () => localTimeControls,
-      largestMinTimeGrain: store(),
-      hasTimeSeriesMap: writable(new Map()),
-      availableGrainsMap: writable(new Map()),
-      state: {
-        interval: store(),
-        grainStore: store(),
-        showTimeComparisonStore: store(),
-        comparisonRangeStore: store(),
-        comparisonIntervalStore: store(),
-        timeZoneStore: store(),
-        rangeStore: store(),
-      },
-    },
+    dashboardProvider: { yamlConfigProvider: {} },
+    timeFilterManager: {},
     expressionFilterManager: {
       createLocalFilterStore: () => localExpressionFilters,
       getExprStoreForMetricsView: () => store(),

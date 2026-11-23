@@ -75,3 +75,27 @@ export function applyTimeControls(
   }
   return params;
 }
+
+/**
+ * The time filter params to write back to a component's YAML after its time state changed,
+ * without what its time controls applied: a param a control set keeps its YAML value,
+ * unless the change replaced the control's value.
+ * `shown` are the params the time state was given, and `yaml` the params from the YAML alone.
+ */
+export function withoutTimeControls(
+  changed: URLSearchParams,
+  shown: URLSearchParams,
+  yaml: URLSearchParams,
+): URLSearchParams {
+  const params = new URLSearchParams(changed);
+  for (const key of new Set([...shown.keys(), ...yaml.keys()])) {
+    const shownValue = shown.get(key);
+    if (shownValue === yaml.get(key) || changed.get(key) !== shownValue) {
+      continue;
+    }
+    const value = yaml.get(key);
+    if (value === null) params.delete(key);
+    else params.set(key, value);
+  }
+  return params;
+}

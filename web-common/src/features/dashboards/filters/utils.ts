@@ -14,16 +14,14 @@ export function getMissingRequiredFilters(
   metricsViewsProvider: MetricsViewsProvider,
   yamlConfigProvider: YAMLConfigProvider,
 ) {
-  return Object.keys(yamlConfigProvider.requiredFilters).filter(
-    (filterName) => {
-      const isValidDimensionOrMeasure =
-        filterName in metricsViewsProvider.dimensionSpecs ||
-        filterName in metricsViewsProvider.measureSpecs;
-      const hasNoFilter =
-        !expressionFilterManager.filterManagersMap[filterName]?.expr;
-      return isValidDimensionOrMeasure && hasNoFilter;
-    },
-  );
+  return yamlConfigProvider.requiredFilters.filter((filterName) => {
+    const isValidDimensionOrMeasure =
+      filterName in metricsViewsProvider.dimensionSpecs ||
+      filterName in metricsViewsProvider.measureSpecs;
+    const hasNoFilter =
+      !expressionFilterManager.filterManagersMap[filterName]?.expr;
+    return isValidDimensionOrMeasure && hasNoFilter;
+  });
 }
 
 /**

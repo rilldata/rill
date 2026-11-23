@@ -54,12 +54,12 @@
     undefined;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
-  // When provided, the menu ends with the blocks that can be added here: "Tab group" and,
-  // behind the canvasContainers flag, "Container". Only passed at the top level (blocks
-  // cannot be nested inside a tab, a container or a column).
+  // When provided, the menu ends with the blocks that can be added here: "Tab group" and
+  // "Container". Only passed at the top level (blocks cannot be nested inside a tab, a
+  // container or a column).
   export let onAddBlock: ((kind: BlockKind) => void) | undefined = undefined;
 
-  const { canvasContainers, customCharts, customComponents } = featureFlags;
+  const { customCharts, customComponents } = featureFlags;
 
   const client = useRuntimeClient();
 
@@ -222,15 +222,13 @@
           <Layers size="16px" />
           {m.canvas_tab_group()}
         </DropdownMenu.Item>
-        {#if $canvasContainers}
-          <DropdownMenu.Item
-            class="flex flex-row gap-x-2 text-fg-primary"
-            onclick={() => onAddBlock?.("container")}
-          >
-            <BoxSelect size="16px" />
-            {m.canvas_container()}
-          </DropdownMenu.Item>
-        {/if}
+        <DropdownMenu.Item
+          class="flex flex-row gap-x-2 text-fg-primary"
+          onclick={() => onAddBlock?.("container")}
+        >
+          <BoxSelect size="16px" />
+          {m.canvas_container()}
+        </DropdownMenu.Item>
       {/if}
     </div>
   </DropdownMenu.Content>

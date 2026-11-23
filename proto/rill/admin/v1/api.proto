@@ -1503,10 +1503,10 @@ message UpdateOrganizationRequest {
   optional string description = 2;
   optional string new_name = 3;
   optional string display_name = 5;
-  optional string logo_asset_id = 6;
-  optional string logo_dark_asset_id = 18;
-  optional string favicon_asset_id = 7;
-  optional string thumbnail_asset_id = 9;
+  optional string logo_asset_id = 6 [(validate.rules).string = {uuid: true, ignore_empty: true}];
+  optional string logo_dark_asset_id = 18 [(validate.rules).string = {uuid: true, ignore_empty: true}];
+  optional string favicon_asset_id = 7 [(validate.rules).string = {uuid: true, ignore_empty: true}];
+  optional string thumbnail_asset_id = 9 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
   // Reserved for backwards compatibility (default_provisioner, which is now only settable via SudoUpdateOrganizationDefaultProvisioner)
@@ -1528,7 +1528,7 @@ message ListDeploymentsRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3;
   string branch = 5;
-  string user_id = 4;
+  string user_id = 4 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   bool superuser_force_access = 6;
 }
 
@@ -1555,7 +1555,7 @@ message CreateDeploymentResponse {
 
 message GetDeploymentRequest {
   // ID of the deployment to get credentials for.
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
   // Optional TTL for the returned access token in seconds.
   uint32 access_token_ttl_seconds = 2;
   // User attributes to use for security policy evaluation.
@@ -1582,7 +1582,7 @@ message GetDeploymentResponse {
 }
 
 message StartDeploymentRequest {
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
   bool superuser_force_access = 2;
 }
 
@@ -1591,7 +1591,7 @@ message StartDeploymentResponse {
 }
 
 message StopDeploymentRequest {
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
   bool superuser_force_access = 2;
 }
 
@@ -1600,7 +1600,7 @@ message StopDeploymentResponse {
 }
 
 message DeleteDeploymentRequest {
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
 }
 
 message DeleteDeploymentResponse {
@@ -1614,7 +1614,7 @@ message ListProjectsForOrganizationResponse {
 
 message ListProjectsForOrganizationAndUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.uuid = true];
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
   // Only return projects where the user has a direct membership (exclude usergroup-inherited access).
@@ -1670,7 +1670,7 @@ message ListProjectsForUserByNameResponse {
 }
 
 message GetProjectByIDRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.uuid = true];
 }
 
 message GetProjectByIDResponse {
@@ -1772,7 +1772,7 @@ message GetDeploymentCredentialsRequest {
   // User attributes to use for security policy evaluation.
   oneof for {
     // If set, will use the attributes of the Rill user with this ID.
-    string user_id = 4;
+    string user_id = 4 [(validate.rules).string.min_len = 1];
     // If set, will generate attributes corresponding to a user with this email.
     string user_email = 6 [(validate.rules).string.email = true];
     // If set, will use the provided attributes outright.
@@ -1805,7 +1805,7 @@ message GetIFrameRequest {
   // User attributes to use for security policy evaluation.
   oneof for {
     // If set, will use the attributes of the Rill user with this ID.
-    string user_id = 9;
+    string user_id = 9 [(validate.rules).string.min_len = 1];
     // If set, will generate attributes corresponding to a user with this email.
     string user_email = 10 [(validate.rules).string.email = true];
     // If set, will use the provided attributes outright.
@@ -1979,7 +1979,7 @@ message CreateProjectRequest {
   // Either git_remote or archive_asset_id should be set.
   string git_remote = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-  string archive_asset_id = 14;
+  string archive_asset_id = 14 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   string prod_version = 13;
   int64 dev_slots = 17;
   bool skip_deploy = 15;
@@ -2009,7 +2009,7 @@ message UpdateProjectRequest {
   optional string primary_branch = 5;
   optional string git_remote = 6;
   optional string subpath = 13;
-  optional string archive_asset_id = 12;
+  optional string archive_asset_id = 12 [(validate.rules).string.uuid = true];
   optional int64 prod_slots = 7;
   // Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
   // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
@@ -2059,13 +2059,13 @@ message HibernateProjectRequest {
 message HibernateProjectResponse {}
 
 message TriggerReconcileRequest {
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
 }
 
 message TriggerReconcileResponse {}
 
 message TriggerRefreshSourcesRequest {
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string.uuid = true];
   repeated string sources = 2;
 }
 
@@ -2076,7 +2076,7 @@ message TriggerRedeployRequest {
   // (To enable rehydrating hibernated projects.)
   string org = 2;
   string project = 3;
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string = {uuid: true, ignore_empty: true}];
 }
 
 message TriggerRedeployResponse {}
@@ -2084,7 +2084,7 @@ message TriggerRedeployResponse {}
 message ProvisionRequest {
   // Deployment to provision a resource for.
   // If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
-  string deployment_id = 1;
+  string deployment_id = 1 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   // Type of resource to provision.
   string type = 2;
   // Name of the resource to provision.
@@ -2099,7 +2099,7 @@ message ProvisionResponse {
 }
 
 message GetDeploymentConfigRequest {
-  string deployment_id = 1; 
+  string deployment_id = 1 [(validate.rules).string = {uuid: true, ignore_empty: true}];
 }
 
 message GetDeploymentConfigResponse {
@@ -2500,7 +2500,7 @@ message SetProjectMemberUserRoleResponse {}
 
 message ListUsergroupsForOrganizationAndUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
-  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.uuid = true];
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
@@ -2784,7 +2784,7 @@ message RevokeCurrentAuthTokenResponse {
 // Embed users only see their own personal bookmarks.
 message ListBookmarksRequest {
   // ID of the project. Optional for embed users, where it defaults to the embed's project.
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
   // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
   optional string resource_kind = 2;
@@ -2797,7 +2797,7 @@ message ListBookmarksResponse {
 }
 
 message GetBookmarkRequest {
-  string bookmark_id = 1;
+  string bookmark_id = 1 [(validate.rules).string.uuid = true];
 }
 
 message GetBookmarkResponse {
@@ -2811,7 +2811,7 @@ message CreateBookmarkRequest {
   string resource_kind = 4;
   string resource_name = 5;
   // ID of the project. Optional for embed users, where it defaults to the embed's project.
-  string project_id = 6;
+  string project_id = 6 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   bool default = 7;
   bool shared = 8;
 }
@@ -2821,7 +2821,7 @@ message CreateBookmarkResponse {
 }
 
 message UpdateBookmarkRequest {
-  string bookmark_id = 1;
+  string bookmark_id = 1 [(validate.rules).string.uuid = true];
   string display_name = 2;
   string description = 4;
   string url_search = 7;
@@ -2832,7 +2832,7 @@ message UpdateBookmarkRequest {
 message UpdateBookmarkResponse {}
 
 message RemoveBookmarkRequest {
-  string bookmark_id = 1;
+  string bookmark_id = 1 [(validate.rules).string.uuid = true];
 }
 
 message RemoveBookmarkResponse {}
@@ -2939,7 +2939,7 @@ message RevokeMagicAuthTokenRequest {
 message RevokeMagicAuthTokenResponse {}
 
 message UpdateMagicAuthTokenRequest {
-  string token_id = 1;
+  string token_id = 1 [(validate.rules).string.uuid = true];
   // New display name. Unchanged if not set.
   optional string display_name = 2;
   // New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
@@ -3130,7 +3130,7 @@ message ListProjectWhitelistedDomainsResponse {
 
 message GetRepoMetaRequest {
   // The project ID to get repository metadata for.
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
 }
 
 message GetRepoMetaResponse {
@@ -3161,7 +3161,7 @@ message GetRepoMetaResponse {
 
 message PullVirtualRepoRequest {
   // The project ID to pull virtual files for.
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
   // The environment to pull virtual files for.
   // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
   string environment = 5;
@@ -3183,7 +3183,7 @@ message PullVirtualRepoResponse {
 
 message GetVirtualFileRequest {
   // The project ID to get the virtual file for.
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
   // The environment to get the virtual file for.
   // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
   string environment = 4;
@@ -3200,7 +3200,7 @@ message GetVirtualFileResponse {
 
 message DeleteVirtualFileRequest {
   // The project ID to delete the virtual file from.
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
   // The environment to delete the virtual file from.
   // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
   string environment = 2;
@@ -3213,9 +3213,9 @@ message DeleteVirtualFileRequest {
 message DeleteVirtualFileResponse {}
 
 message GetReportMetaRequest {
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
   string report = 3;
-  string owner_id = 5;
+  string owner_id = 5 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
@@ -3247,14 +3247,14 @@ message GetReportMetaResponse {
 }
 
 message GetAlertMetaRequest {
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.uuid = true];
   string alert = 3;
   map<string, string> annotations = 4;
   oneof query_for {
-    string query_for_user_id = 5;
+    string query_for_user_id = 5 [(validate.rules).string.uuid = true];
     string query_for_user_email = 6;
   }
-  string owner_id = 7;
+  string owner_id = 7 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   repeated string email_recipients = 8;
   bool anon_recipients = 9;
   reserved 2;
@@ -3503,6 +3503,9 @@ message GetPaymentsPortalURLResponse {
 
 message GetBillingCreditBalanceRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
+  // If true, a recently fetched balance may be returned instead of querying the billing provider.
+  // If false, the balance is always fetched from the billing provider.
+  bool allow_cached = 3;
   bool superuser_force_access = 2;
 }
 
@@ -3547,7 +3550,7 @@ message RequestProjectAccessRequest {
 message RequestProjectAccessResponse {}
 
 message GetProjectAccessRequestRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.uuid = true];
 }
 
 message GetProjectAccessRequestResponse {
@@ -3555,14 +3558,14 @@ message GetProjectAccessRequestResponse {
 }
 
 message ApproveProjectAccessRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.uuid = true];
   string role = 2;
 }
 
 message ApproveProjectAccessResponse {}
 
 message DenyProjectAccessRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.uuid = true];
 }
 
 message DenyProjectAccessResponse {}

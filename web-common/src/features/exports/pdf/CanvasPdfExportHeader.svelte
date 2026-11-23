@@ -1,7 +1,7 @@
 <script lang="ts">
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CanvasPdfExportControls from "./CanvasPdfExportControls.svelte";
 
@@ -18,28 +18,19 @@
   let { canvasEntity } = $derived(getCanvasStore(canvasName, instanceId));
 
   let {
-    canvasEntity: {
-      timeManager: {
-        state: {
-          interval: intervalStore,
-          grainStore,
-          timeZoneStore,
-          comparisonIntervalStore,
-          showTimeComparisonStore,
-        },
-      },
-      expressionFilterManager,
-    },
+    canvasEntity: { timeFilterManager, expressionFilterManager },
   } = $derived(getCanvasStore(canvasName, instanceId));
 
-  let grain = $derived($grainStore);
+  let { interval, timeGrain, timeZone, showComparison, comparisonInterval } =
+    $derived(timeFilterManager);
+
   // Exact, resolved range (e.g. "Jan 1 – Jan 7, 2024"), never the relative alias.
   let formattedTimeRange = $derived(
-    $intervalStore ? prettyFormatTimeRange($intervalStore, grain) : "",
+    interval ? prettyFormatTimeRange(interval, timeGrain) : "",
   );
   let formattedComparisonRange = $derived(
-    $showTimeComparisonStore && $comparisonIntervalStore
-      ? prettyFormatTimeRange($comparisonIntervalStore, grain)
+    showComparison && comparisonInterval
+      ? prettyFormatTimeRange(comparisonInterval, timeGrain)
       : "",
   );
 </script>
@@ -55,15 +46,12 @@
       {#if formattedComparisonRange}
         <span> {m.time_vs()} {formattedComparisonRange}</span>
       {/if}
-      <span class="text-fg-muted">· {$timeZoneStore}</span>
+      <span class="text-fg-muted">· {timeZone}</span>
     </div>
   {/if}
 
   {#if expressionFilterManager.hasSomeFilter}
-    <ReadonlyExpressionFilters
-      {expressionFilterManager}
-      ariaLabel={undefined}
-    />
+    <ReadonlyFilters {expressionFilterManager} ariaLabel={undefined} />
   {/if}
 
   <!-- The canvas's viewer controls, as text. -->

@@ -38,26 +38,28 @@
 
   const blockIndex = $derived(builder.blockIndex);
   // The chip shows a name the author chose, not a generated one such as "container-2".
-  // Renaming happens in the inspector, which a click on the chip opens.
+  // Renaming happens in the inspector, which a click on the header opens.
   const name = $derived(
     isGeneratedBlockName("container", container.name) ? "" : container.name,
   );
-
-  let grip = $state<HTMLDivElement>();
 
   function select() {
     onSelectBlock(container.name);
   }
 
-  // Pressing the grip or the chip's own background starts a drag of the whole container;
-  // the menu keeps its own behavior.
-  function handleChipMouseDown(event: MouseEvent) {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    if (target.closest("button")) return;
-    if (target === event.currentTarget || grip?.contains(target)) {
-      onBlockMouseDown(blockIndex, event);
-    }
+  // The header band is one control, like a tab group's strip: a press anywhere on it, the
+  // chip included, starts a drag of the whole container, and a click without a drag selects
+  // it. The chip's menu button keeps its own behavior.
+  function onMenuButton(event: MouseEvent) {
+    return event.target instanceof Element && !!event.target.closest("button");
+  }
+
+  function handleHeaderMouseDown(event: MouseEvent) {
+    if (!onMenuButton(event)) onBlockMouseDown(blockIndex, event);
+  }
+
+  function handleHeaderClick(event: MouseEvent) {
+    if (!onMenuButton(event)) select();
   }
 </script>
 
@@ -75,15 +77,14 @@
   onSelect={select}
 >
   {#snippet header()}
-    <div class="header">
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div
-        class={["chip", { selected }]}
-        role="presentation"
-        onmousedown={handleChipMouseDown}
-        onclick={select}
-      >
-        <BlockGrip kind="container" bind:element={grip} />
+    <div
+      class="header"
+      role="presentation"
+      onmousedown={handleHeaderMouseDown}
+      onclick={handleHeaderClick}
+    >
+      <div class={["chip", { selected }]}>
+        <BlockGrip kind="container" />
         <span class="label" title={m.canvas_container_viewer_note()}>
           {m.canvas_container()}
         </span>
@@ -124,11 +125,12 @@
   /* The band above the rows that holds the chip; px-2.5 lines the chip up with the cards. */
   .header {
     @apply flex min-h-7 w-full flex-none items-center px-2.5;
+    @apply cursor-grab active:cursor-grabbing;
   }
 
   .chip {
     @apply flex h-5 items-center gap-x-1 rounded-sm border border-gray-200 bg-surface-card pl-0.5 pr-0.5;
-    @apply cursor-grab text-xs font-medium text-fg-secondary;
+    @apply text-xs font-medium text-fg-secondary;
   }
 
   .chip:hover {

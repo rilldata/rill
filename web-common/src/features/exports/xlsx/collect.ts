@@ -3,11 +3,13 @@ import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/c
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { ExportConditionalFormat } from "@rilldata/web-common/proto/gen/rill/runtime/v1/export_format_pb";
 import {
   CanvasWorkbookExportRequest,
   WorkbookBlock,
   WorkbookColumn,
   WorkbookColumnType,
+  WorkbookConditionalFormat,
   WorkbookDashboardSheet,
   WorkbookDataSheet,
   WorkbookGeometry,
@@ -18,6 +20,7 @@ import {
   WorkbookNoteBlock,
   WorkbookTableBlock,
   WorkbookTextBlock,
+  WorkbookValueRange,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { marked, type Token, type Tokens } from "marked";
 import { get } from "svelte/store";
@@ -57,9 +60,9 @@ export interface CollectInput {
 export const ROW_GAP_PX = 40;
 
 // Whether a component is exported as a PNG snapshot: charts in image mode and
-// chart types without a native Excel equivalent always; custom charts, maps and
-// images always; components without a payload (e.g. referenced components) as
-// a fallback, except static ones that would be captured as blank cards.
+// chart types without a native Excel equivalent always; custom charts (inline or
+// referenced), maps and images always; components without a payload as a
+// fallback, except static ones that would be captured as blank cards.
 export function needsImage(
   component: BaseCanvasComponent,
   payload: ComponentExportPayload | undefined,
@@ -715,6 +718,14 @@ export function toDataSheet(
     totalsLast: table.totalsLast ?? false,
     rowNumberFormats: table.rowNumberFormats ?? [],
     moreRows: table.moreRows ?? false,
+    conditionalFormats: (table.conditionalFormats ?? []).map(
+      (cf) =>
+        new WorkbookConditionalFormat({
+          columns: cf.columns,
+          format: ExportConditionalFormat.fromJson(cf.format as JsonValue),
+          domain: cf.domain && new WorkbookValueRange(cf.domain),
+        }),
+    ),
   });
 }
 

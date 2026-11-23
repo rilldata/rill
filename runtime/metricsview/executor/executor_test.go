@@ -73,7 +73,7 @@ query_attributes:
 			Dimensions:  []metricsview.Dimension{{Name: "dim1"}},
 			Measures:    []metricsview.Measure{{Name: "count"}},
 			PivotOn:     pivotOn,
-		}, nil, drivers.FileFormatCSV, nil)
+		}, nil, drivers.FileFormatCSV, nil, nil)
 		require.NoError(t, err)
 		defer os.Remove(path)
 		data, err := os.ReadFile(path)

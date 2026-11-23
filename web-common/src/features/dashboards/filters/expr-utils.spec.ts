@@ -1,4 +1,7 @@
-import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
+import {
+  mergeFilterParams,
+  narrowSingleSelectFilters,
+} from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import {
   createAndExpression,
   createInExpression,
@@ -166,5 +169,55 @@ describe("mergeFilterParams", () => {
     );
     expect(merged.inList).toEqual(["country", "publisher"]);
     expect(merged.advanced).toBe(false);
+  });
+});
+
+describe("narrowSingleSelectFilters", () => {
+  const isSingleSelect = (name: string) => name === "country";
+
+  it.each([
+    [
+      "keeps the last value of an IN",
+      createAndExpression([countryUSCA, publisherYahoo]),
+      createAndExpression([
+        createInExpression("country", ["CA"]),
+        publisherYahoo,
+      ]),
+    ],
+    [
+      "includes the last value of a NOT IN",
+      createInExpression("country", ["US", "CA"], true),
+      createAndExpression([createInExpression("country", ["CA"])]),
+    ],
+    [
+      "includes the value of a !=",
+      createBinaryExpression("country", V1Operation.OPERATION_NEQ, "US"),
+      createAndExpression([countryUS]),
+    ],
+    [
+      "drops a contains",
+      createAndExpression([
+        createBinaryExpression("country", V1Operation.OPERATION_LIKE, "%U%"),
+        publisherYahoo,
+      ]),
+      createAndExpression([publisherYahoo]),
+    ],
+  ])("%s", (_, expr, expected) => {
+    expect(narrowSingleSelectFilters(expr, isSingleSelect)).toEqual(expected);
+  });
+
+  it.each([
+    ["a single value", createAndExpression([countryUS, publisherYahoo])],
+    [
+      "a single value written as =",
+      createBinaryExpression("country", V1Operation.OPERATION_EQ, "US"),
+    ],
+    ["a measure filter grouped by the dimension", impressionsGt10],
+    [
+      "a nested OR",
+      createAndExpression([createOrExpression([countryUSCA, publisherYahoo])]),
+    ],
+  ])("leaves %s alone", (_, expr) => {
+    expect(narrowSingleSelectFilters(expr, isSingleSelect)).toBeUndefined();
   });
 });

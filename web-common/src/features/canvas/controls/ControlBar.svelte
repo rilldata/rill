@@ -47,7 +47,8 @@
         ),
     );
   });
-  let interval = $derived(canvasEntity.timeManager.state.interval);
+  // Filter controls search their values within the canvas time range, like the filter bar.
+  let { timeStart, timeEnd } = $derived(canvasEntity.timeFilterManager);
 
   // Controls the embedding page locked apply, but viewers don't see them.
   let controls = $derived(allControls.filter((c) => !c.locked));
@@ -135,8 +136,8 @@
         {control}
         {fieldLabel}
         metricsViewNames={metricsViewsFor(control)}
-        timeStart={$interval?.start.toUTC().toISO() ?? undefined}
-        timeEnd={$interval?.end.toUTC().toISO() ?? undefined}
+        {timeStart}
+        {timeEnd}
         onChange={(values) => canvasEntity.controls.set(control, values)}
       />
     </div>

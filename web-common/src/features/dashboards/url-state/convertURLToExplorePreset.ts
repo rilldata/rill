@@ -9,6 +9,7 @@ import {
   toPivotFormattingParam,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import { narrowSingleSelectFilters } from "@rilldata/web-common/features/dashboards/filters/expr-utils";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
@@ -243,6 +244,20 @@ export function convertURLToExplorePreset(
     } else {
       errors.push(getSingleFieldError("dynamic y-axis scale", raw ?? ""));
     }
+  }
+
+  // A link or bookmark can hold several values for a single-select filter. Narrow them here,
+  // so the explore state and the url it is written back to match the chip.
+  const singleSelectFilters = new Set(explore.singleSelectFilters ?? []);
+  if (preset.where && singleSelectFilters.size) {
+    preset.where =
+      narrowSingleSelectFilters(preset.where, (name) =>
+        singleSelectFilters.has(name),
+      ) ?? preset.where;
+    preset.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter?.filter(
+        (name) => !singleSelectFilters.has(name),
+      );
   }
 
   return { preset, errors };

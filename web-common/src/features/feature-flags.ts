@@ -81,9 +81,6 @@ class FeatureFlags {
   deploy = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
   cloudEditing = new FeatureFlag("user", false);
-  // Gates the visual editor's options that create canvas containers (add one, wrap a
-  // row in one). Containers already in the YAML render and can be managed regardless.
-  canvasContainers = new FeatureFlag("user", false);
   // Gates viewer controls on canvases: the control bars and the editor's options for them.
   // With the flag off, controls in the YAML stay on their defaults.
   canvasControls = new FeatureFlag("user", false);

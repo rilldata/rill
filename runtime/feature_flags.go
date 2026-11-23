@@ -73,9 +73,6 @@ var defaultFeatureFlags = map[string]string{
 	"disable_persistent_dashboard_state": "false",
 	// Controls visibility of the cloud editing feature (Edit button and edit routes)
 	"cloud_editing": "false",
-	// Controls visibility of the canvas editor's options that create containers (add a container, wrap a row in one);
-	// containers already in the YAML render and can be managed regardless
-	"canvas_containers": "false",
 	// Controls visibility of viewer controls on canvas dashboards (the control bars and the editor's options for them);
 	// with the flag off, controls in the YAML still parse and their defaults apply
 	"canvas_controls": "false",

@@ -6,7 +6,16 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
-import { andControlFilters, controlFiltersExpression } from "./apply-filters";
+import {
+  normalizeTimeFilters,
+  timeFiltersToParams,
+} from "../components/time-filters";
+import {
+  andControlFilters,
+  applyTimeControls,
+  controlFiltersExpression,
+  withoutTimeControls,
+} from "./apply-filters";
 import type { AppliedControl, ControlValue } from "./controls";
 
 function filterControl(
@@ -98,4 +107,53 @@ it("retains the primitive types selected in filter controls", () => {
       createInExpression("country", [1, true, null, "null"]),
     ]),
   );
+});
+
+describe("withoutTimeControls", () => {
+  const range: AppliedControl = {
+    control: { name: "range", kind: "time_range" },
+    level: "canvas",
+    scope: [],
+    urlKey: "c.range",
+    targetKey: "time_range:",
+    values: ["P7D"],
+  };
+
+  // The `time_filters` written back when the widget's time state, given the YAML's time filters
+  // with the controls applied, changes to `changed`.
+  function writeBack(
+    yaml: string,
+    controls: AppliedControl[],
+    changed: (shown: URLSearchParams) => void,
+  ) {
+    const shown = timeFiltersToParams(
+      applyTimeControls(yaml, controls).toString(),
+    );
+    const params = new URLSearchParams(shown);
+    changed(params);
+    return normalizeTimeFilters(
+      withoutTimeControls(params, shown, timeFiltersToParams(yaml)),
+    );
+  }
+
+  it("keeps the control's range out of the YAML when another param changes", () => {
+    expect(writeBack("", [range], (p) => p.set("grain", "week"))).toBe(
+      "grain=week",
+    );
+    expect(
+      writeBack("tr=P30D&grain=day", [range], (p) => p.set("grain", "week")),
+    ).toBe("tr=P30D&grain=week");
+  });
+
+  it("writes a range picked over the control's", () => {
+    expect(writeBack("", [range], (p) => p.set("tr", "P14D"))).toBe(
+      "tr=P14D&compare_tr=inherit",
+    );
+  });
+
+  it("writes the change as is without time controls", () => {
+    expect(writeBack("tr=P30D", [], (p) => p.set("grain", "week"))).toBe(
+      "tr=P30D&grain=week",
+    );
+  });
 });

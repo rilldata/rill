@@ -36,6 +36,8 @@ filters:
     - product_category
   required:
     - customer_id      # Dashboard refuses to render until this filter has a value
+  single_select:
+    - customer_id      # Filter holds one value at a time
 
 # Optional time range presets
 time_ranges:
@@ -108,6 +110,8 @@ rows:
 - **`required`**: the dashboard refuses to render until every required filter has a value. Set a default value in `defaults.filters` to satisfy a required filter automatically; otherwise the user is prompted to pick one. Required filters are implicitly pinned — do not also list them under `pinned`.
 
 Use `required` for filters that are unsafe or meaningless to omit (e.g. tenant ID, customer scope, region when results would otherwise mix incompatible data).
+
+`filters.single_select` lists dimensions (not measures) whose filter holds one value at a time: picking a value replaces the current one, and the filter cannot exclude values or match on text. Combine it with `required` and a default in `defaults.filters` when the dashboard must always show exactly one value (e.g. one advertiser or one employee, when measures are wrong across several). It is a UI setting, not an access restriction.
 
 #### Default filters
 

@@ -1,5 +1,6 @@
 import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
 import { guidGenerator } from "@rilldata/web-common/lib/guid.ts";
+import { writable } from "svelte/store";
 
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
@@ -40,6 +41,13 @@ export class EmbedStore {
    * But the moment the user moves away to another page within the parent page, then it will be cleared next time the user comes back to the dashboard.
    */
   public readonly visibleExplores = new Set<string>();
+
+  /**
+   * Set once an explore dashboard has loaded, or has failed to load.
+   * On an explore, the `ready` notification waits for it:
+   * the explore applies its initial state when it loads, which would overwrite a state the host sent before that.
+   */
+  public readonly exploreLoaded = writable(false);
 
   private static _instance: EmbedStore | null = null;
 

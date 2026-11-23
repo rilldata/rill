@@ -7,11 +7,7 @@ import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/ex
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import {
-  type TimeControlState,
-  useTimeControlStore,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { mapTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { getTimeDimensionForComparison } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import type {
   V1ExploreSpec,
@@ -31,9 +27,16 @@ export function getTDDExportQuery(
 ): V1Query {
   const metricsViewName = get(ctx.metricsViewName);
   const exploreState = get(ctx.dashboardStore);
-  const timeControlState = get(useTimeControlStore(ctx));
   const validSpec = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
+  const timeFilterManager = ctx.timeFilterManager;
+
+  let timeRange: V1TimeRange | undefined;
+  if (timeFilterManager.ready) {
+    timeRange = isScheduled
+      ? mapTimeManagerRangeToV1TimeRange(timeFilterManager)
+      : { start: timeFilterManager.timeStart, end: timeFilterManager.timeEnd };
+  }
 
   // A one-shot export downloads what is on screen, so it carries the viewer's
   // exact selection. A scheduled report must not: exact values are only
@@ -53,11 +56,10 @@ export function getTDDExportQuery(
       instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       exploreState,
-      timeControlState,
+      timeRange,
       metricsViewSpec: validSpec.data?.metricsView,
       exploreSpec: validSpec.data?.explore,
       dimensionSearchText,
-      isScheduled,
       exactMeasures,
     }),
   };
@@ -69,46 +71,30 @@ export function getTDDAggregationRequest({
   instanceId,
   metricsViewName,
   exploreState,
-  timeControlState,
+  timeRange,
   metricsViewSpec,
   exploreSpec,
   dimensionSearchText,
-  isScheduled,
   exactMeasures,
 }: {
   instanceId: string;
   metricsViewName: string;
   exploreState: ExploreState;
-  timeControlState: TimeControlState;
+  // Undefined until the time filters are ready.
+  timeRange: V1TimeRange | undefined;
   metricsViewSpec: V1MetricsViewSpec | undefined;
   exploreSpec: V1ExploreSpec | undefined;
   dimensionSearchText: string;
-  isScheduled: boolean;
   // Measures to request with `exact: true`; see `requestExactNames`.
   exactMeasures?: ReadonlySet<string>;
 }): undefined | V1MetricsViewAggregationRequest {
   if (
     !metricsViewSpec ||
     !exploreSpec ||
-    !timeControlState.ready ||
+    !timeRange ||
     !exploreState.tdd.expandedMeasureName
   )
     return undefined;
-
-  let timeRange: V1TimeRange | undefined;
-  if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState.selectedTimeRange,
-      exploreState.selectedTimezone,
-      exploreSpec,
-    );
-  } else {
-    timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
-    };
-  }
-  if (!timeRange) return undefined;
 
   const measures: V1MetricsViewAggregationMeasure[] = applyExactMeasures(
     mapEphemeralMeasuresForRequest(

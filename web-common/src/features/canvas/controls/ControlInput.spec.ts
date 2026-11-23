@@ -200,7 +200,7 @@ it("queries values only from widgets affected by this level control", async () =
         ["ignored", { metricsViewName: "outside", controls: writable([]) }],
       ]),
     ),
-    timeManager: { state: { interval: writable(undefined) } },
+    timeFilterManager: { timeStart: undefined, timeEnd: undefined },
   } as unknown as CanvasEntity;
   render(ControlBar, { controls: [publisher], canvasEntity: entity });
   await open();

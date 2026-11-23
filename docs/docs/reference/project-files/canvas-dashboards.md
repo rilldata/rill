@@ -275,9 +275,11 @@ _[object]_ - Indicates if filters should be enabled for the canvas.
 
   - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard.
 
-  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
 
-  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+
+  - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and a default value in `defaults.filters` so a value is always set. Each name must be a dimension on a metrics view referenced by the canvas.
 
 ### `allow_custom_time_range`
 
@@ -370,7 +372,7 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-      - **`variables`** - _[object]_ - Custom CSS variables for light theme
+      - **`variables`** - _[object]_ - CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
     - **`dark`** - _[object]_ - Dark theme color configuration
 
@@ -382,7 +384,7 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-      - **`variables`** - _[object]_ - Custom CSS variables for dark theme
+      - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
 ### `security`
 

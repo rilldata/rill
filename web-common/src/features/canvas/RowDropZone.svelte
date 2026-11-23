@@ -38,9 +38,8 @@
   class:top={resolvedPosition === "top"}
   class:bottom={resolvedPosition === "bottom"}
   class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
-  onmouseenter={() => {
+  onmousemove={() => {
     if (!allowDrop) return;
-
     dropZone.set(dropId);
   }}
   onmouseleave={() => {
@@ -49,6 +48,9 @@
   }}
   onmouseup={() => {
     if (!allowDrop) return;
+    // A drag starts after a short hold, so the pointer can already rest on this zone when
+    // the drop becomes allowed; no mouseenter fires then, so the zone claims the drop here.
+    dropZone.set(dropId);
     onDrop(dropIndex, null);
   }}
 >
