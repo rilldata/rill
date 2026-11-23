@@ -36,6 +36,8 @@ filters:
     - product_category
   required:
     - customer_id      # Dashboard refuses to render until this filter has a value
+  single_select:
+    - customer_id      # Filter holds one value at a time
 
 # Optional time range presets
 time_ranges:
@@ -108,6 +110,8 @@ rows:
 - **`required`**: the dashboard refuses to render until every required filter has a value. Set a default value in `defaults.filters` to satisfy a required filter automatically; otherwise the user is prompted to pick one. Required filters are implicitly pinned — do not also list them under `pinned`.
 
 Use `required` for filters that are unsafe or meaningless to omit (e.g. tenant ID, customer scope, region when results would otherwise mix incompatible data).
+
+`filters.single_select` lists dimensions (not measures) whose filter holds one value at a time: picking a value replaces the current one, and the filter cannot exclude values or match on text. Combine it with `required` and a default in `defaults.filters` when the dashboard must always show exactly one value (e.g. one advertiser or one employee, when measures are wrong across several). It is a UI setting, not an access restriction.
 
 #### Default filters
 
@@ -193,7 +197,7 @@ rows:
 
 ### Tab groups
 
-A row entry can be a tab group instead of a plain row. A tab group has a `name` (URL key) and a list of `tabs`, each with a `label`, optional `name`, and its own `rows`. Only the active tab loads data. Allowed only at the top level, not nested inside a tab.
+A row entry can be a tab group instead of a plain row. A tab group has a `name` (URL key) and a list of `tabs`, each with a `label`, optional `name`, and its own `rows`. Only the active tab loads data. Allowed only at the top level, not nested inside a tab or a container.
 
 ```yaml
 rows:
@@ -211,9 +215,33 @@ rows:
                 bar_chart: # ...
 ```
 
+### Containers
+
+A row entry can be a container instead of a plain row: a named list of `rows` that keeps related charts together, such as the charts of one story. Viewers see its rows as plain rows; a container has no title, border or other visual element. Allowed only at the top level, and holds plain rows only (no tab groups or other containers). A container's `if` hides everything inside it.
+
+```yaml
+rows:
+  - items: # ... plain row, unchanged
+  - name: revenue_story # container: an entry with `rows`
+    if: '{{ has "finance" .user.groups }}' # everything inside inherits it
+    rows:
+      - items:
+          - kpi_grid:
+              metrics_view: orders
+              measures: [revenue, margin]
+      - height: 320px
+        items:
+          - width: 8
+            line_chart: # ...
+          - width: 4
+            table: # ...
+  - name: deep_dives # tab group, unchanged
+    tabs: # ...
+```
+
 ### Conditional content (`if`)
 
-Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+Rows, tab groups, tabs, containers and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of the rows, tab groups, tabs and containers that hold it are true.
 
 ```yaml
 rows:

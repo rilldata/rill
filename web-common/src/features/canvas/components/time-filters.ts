@@ -96,18 +96,19 @@ export function normalizeTimeFilters(
   return ordered.toString();
 }
 
-/** The params a widget's own time state understands: `inherit` is not a range it can resolve. */
-export function stripInheritedTimeFilters(
-  params: URLSearchParams,
+/**
+ * The params a widget's time filter manager reads from its `time_filters`.
+ * A missing `tr` follows the canvas range, and with neither `tr` nor `compare_tr` the comparison follows too.
+ */
+export function timeFiltersToParams(
+  timeFilters: string | undefined,
 ): URLSearchParams {
-  const local = new URLSearchParams(params);
-  if (local.get(ExploreStateURLParams.TimeRange) === TIME_FILTER_INHERIT) {
-    local.delete(ExploreStateURLParams.TimeRange);
+  const params = new URLSearchParams(timeFilters ?? "");
+  if (params.has(ExploreStateURLParams.TimeRange)) return params;
+
+  if (!params.has(ExploreStateURLParams.ComparisonTimeRange)) {
+    params.set(ExploreStateURLParams.ComparisonTimeRange, TIME_FILTER_INHERIT);
   }
-  if (
-    local.get(ExploreStateURLParams.ComparisonTimeRange) === TIME_FILTER_INHERIT
-  ) {
-    local.delete(ExploreStateURLParams.ComparisonTimeRange);
-  }
-  return local;
+  params.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
+  return params;
 }

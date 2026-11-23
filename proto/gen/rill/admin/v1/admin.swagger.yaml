@@ -633,6 +633,13 @@ paths:
           in: path
           required: true
           type: string
+        - name: allowCached
+          description: |-
+            If true, a recently fetched balance may be returned instead of querying the billing provider.
+            If false, the balance is always fetched from the billing provider.
+          in: query
+          required: false
+          type: boolean
         - name: superuserForceAccess
           in: query
           required: false

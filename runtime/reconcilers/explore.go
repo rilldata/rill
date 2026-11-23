@@ -103,10 +103,6 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 }
 
 func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
-
 	explore := res.GetExplore()
 	if explore == nil {
 		return nil, fmt.Errorf("resource is not an explore")
@@ -121,28 +117,20 @@ func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims 
 		return nil, fmt.Errorf("explore does not reference a metrics view")
 	}
 
-	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
-
-	// give access to the underlying metrics view
-	if spec.MetricsView != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView})
-	}
-
-	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
+	// Give access to the explore and its underlying metrics view.
+	return []*runtimev1.SecurityRule{{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				ConditionKinds: dashboardConditionKinds(claims),
+				ConditionResources: []*runtimev1.ResourceName{
+					res.Meta.Name,
+					{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView},
 				},
+				Allow:     true,
+				Exclusive: true,
 			},
-		})
-	}
-
-	return rules, nil
+		},
+	}}, nil
 }
 
 // validateAndRewrite validates the explore spec and rewrites it with the following rules:
@@ -242,6 +230,16 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 			if !slices.Contains(spec.Dimensions, name) && !slices.Contains(spec.Measures, name) {
 				return nil, nil, fmt.Errorf("%s filter %q is not a dimension or measure in this explore", filters.kind, name)
 			}
+		}
+	}
+
+	// Validate single-select filters, which must name dimensions of the explore that can be filtered.
+	for _, name := range spec.SingleSelectFilters {
+		if _, ok := timeDims[name]; ok {
+			return nil, nil, fmt.Errorf("single-select filter %q is a time dimension, which can't be filtered", name)
+		}
+		if !slices.Contains(spec.Dimensions, name) {
+			return nil, nil, fmt.Errorf("single-select filter %q is not a dimension in this explore", name)
 		}
 	}
 

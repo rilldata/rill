@@ -8,6 +8,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
   V1ResolveCanvasResponse,
+  V1ResolvedTimeRange,
   V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -19,6 +20,8 @@ export class DashboardFetchMocks {
   // Every resource mocked so far, keyed by name. GetResource serves one of these,
   // ListResources serves all of them.
   private resources = new Map<string, V1Resource>();
+  // Error message per metrics view whose time range summary request fails.
+  private timeRangeErrors = new Map<string, string>();
   private aggregationRequestMocks: {
     regex: RegExp;
     response: V1MetricsViewAggregationResponse;
@@ -171,6 +174,11 @@ export class DashboardFetchMocks {
     );
   }
 
+  /** Fails both `MetricsViewTimeRange` and `MetricsViewTimeRanges` for the metrics view, like a failed timestamp lookup in the runtime. */
+  public mockTimeRangeError(metricsViewName: string, message: string) {
+    this.timeRangeErrors.set(metricsViewName, message);
+  }
+
   public mockMetricsViewAggregation(
     regex: RegExp,
     response: V1MetricsViewAggregationResponse,
@@ -189,6 +197,19 @@ export class DashboardFetchMocks {
         timeRanges: [{ start, end }],
         resolvedTimeRanges: [{ expression: "PT6H", start, end }],
       },
+    );
+  }
+
+  public mockResolvedRillTimes(
+    metricsViewName: string,
+    resolvedRillTimes: Record<string, V1ResolvedTimeRange>,
+  ) {
+    this.responses.set(
+      `queries__metrics-views__time-ranges__${metricsViewName}`,
+      Object.entries(resolvedRillTimes).map(([expression, tr]) => ({
+        expression,
+        ...tr,
+      })),
     );
   }
 
@@ -283,6 +304,30 @@ export class DashboardFetchMocks {
       responseData = { resources };
     } else if (service === "QueryService" && method === "ResolveCanvas") {
       responseData = this.responses.get(`canvas__${parsed.canvas}`);
+    } else if (
+      service === "QueryService" &&
+      (method === "MetricsViewTimeRanges" ||
+        method === "MetricsViewTimeRange") &&
+      this.timeRangeErrors.has(parsed.metricsViewName)
+    ) {
+      return Response.json(
+        {
+          code: "internal",
+          message: this.timeRangeErrors.get(parsed.metricsViewName),
+        },
+        { status: 500 },
+      );
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewTimeRanges"
+    ) {
+      const resolvedTimeRanges =
+        (this.responses.get(
+          `queries__metrics-views__time-ranges__${parsed.metricsViewName}`,
+        ) as V1ResolvedTimeRange[]) ?? [];
+      responseData = {
+        resolvedTimeRanges,
+      };
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"

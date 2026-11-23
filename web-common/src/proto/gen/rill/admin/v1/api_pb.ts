@@ -16225,6 +16225,14 @@ export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBala
   org = "";
 
   /**
+   * If true, a recently fetched balance may be returned instead of querying the billing provider.
+   * If false, the balance is always fetched from the billing provider.
+   *
+   * @generated from field: bool allow_cached = 3;
+   */
+  allowCached = false;
+
+  /**
    * @generated from field: bool superuser_force_access = 2;
    */
   superuserForceAccess = false;
@@ -16238,6 +16246,7 @@ export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBala
   static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "allow_cached", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

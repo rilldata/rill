@@ -102,7 +102,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
    */
   get usesTimeRange(): Readable<boolean> {
     return derived(
-      [this.specStore, this.parent.timeManager.hasTimeSeriesMap],
+      [this.specStore, this.parent.hasTimeSeriesMap],
       ([spec, hasTimeSeriesMap]) =>
         metricsSQLUsesTimeRange(
           (spec.metrics_sql ?? []).map(metricsViewFromSQL),

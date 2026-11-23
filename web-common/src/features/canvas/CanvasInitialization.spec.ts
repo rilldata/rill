@@ -226,17 +226,25 @@ describe("Custom charts and the time range", () => {
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (url, init) => {
         const method = String(url).split("/rill.runtime.v1.")[1];
-        if (method === "RuntimeService/QueryResolver") {
-          const body =
+        const readBody = () =>
+          JSON.parse(
             typeof init?.body === "string"
               ? init.body
-              : new TextDecoder().decode(init?.body as Uint8Array);
-          chartQueries.push(JSON.parse(body).resolverProperties);
+              : new TextDecoder().decode(init?.body as Uint8Array),
+          );
+        if (method === "RuntimeService/QueryResolver") {
+          chartQueries.push(readBody().resolverProperties);
         }
         if (method === "QueryService/MetricsViewTimeRanges") {
+          // The time filters match a resolved range to the expression they requested.
+          const { expressions = [] } = readBody() as { expressions?: string[] };
           return Response.json({
             fullTimeRange: { min: START, max: END },
-            resolvedTimeRanges: [{ start: START, end: END }],
+            resolvedTimeRanges: expressions.map((expression) => ({
+              expression,
+              start: START,
+              end: END,
+            })),
           });
         }
         return serveMock(url, init);
@@ -250,6 +258,9 @@ describe("Custom charts and the time range", () => {
   // Renders a canvas whose only component is a custom chart on the given metrics view.
   function renderChartCanvas(metricsView: V1MetricsViewSpec) {
     const componentName = `${TIME_RANGE_CANVAS}--component-0-0`;
+    // The time filters read the metrics view from ListResources, and its time range from the summary.
+    mocks.mockMetricsView("ads_metrics", metricsView);
+    mocks.mockTimeRangeSummary("ads_metrics", { min: START, max: END });
     mocks.mockCanvas(
       TIME_RANGE_CANVAS,
       {

@@ -491,3 +491,29 @@ describe("legacy state url param", () => {
     );
   });
 });
+
+describe("single-select filters", () => {
+  it("narrows a filter with several values to the last one", () => {
+    const { partialExploreState } = convertURLSearchParamsToExploreState(
+      new URLSearchParams({
+        f: `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google','Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+      }),
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      {
+        ...AD_BIDS_EXPLORE_INIT,
+        singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+      },
+      {},
+    );
+
+    expect(partialExploreState.whereFilter).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
+          "google.com",
+          "facebook.com",
+        ]),
+      ]),
+    );
+  });
+});

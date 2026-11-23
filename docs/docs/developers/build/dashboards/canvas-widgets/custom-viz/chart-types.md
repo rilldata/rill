@@ -6,7 +6,7 @@ sidebar_position: 10
 
 import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
 
-The chart spec of a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz) can draw 32 chart types, in the six families of the **Chart types** gallery. This page lists, for each type, what it is for, the channels it takes and the `chartProperties` it accepts. Channels in **bold** are required; the rest are optional.
+The chart spec of a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz) can draw 35 chart types, in the six families of the **Chart types** gallery. This page lists, for each type, what it is for, the channels it takes and the `chartProperties` it accepts. Channels in **bold** are required; the rest are optional.
 
 ## The Gallery
 
@@ -26,16 +26,19 @@ The examples below are bound to the `bids_metrics` metrics view of the [OpenRTB 
 
 ## Points
 
-Charts that draw a point per row: scatter plots and their variants for the relationship between two measures, and dot and strip plots for values per category. Scatter plots, regressions and strip plots plot individual observations, so their components select a `detail` dimension that sets what each point represents.
+Charts that draw a point per row: scatter plots and their variants for the relationship between two measures, and dot and strip plots for values per category. Scatter plots, marginal plots, regressions and strip plots plot individual observations, so their components select a `detail` dimension that sets what each point represents.
 
 | Chart type | Use it for | Channels | Chart properties |
 |---|---|---|---|
-| Scatter Plot | The relationship between two measures | **x**, **y**, color, size, shape, opacity, column, row | `opacity` |
+| Scatter Plot | The relationship between two measures | **x**, **y**, color, size, shape, detail, opacity, column, row | `opacity` |
+| Marginal Plot | A scatter plot with the distribution of each measure along its axis | **x**, **y**, color, size, shape, opacity | `marginal`, `opacity`, `stackMode`, `bandwidth`, `binCount`, `whiskerMethod`, `showOutliers` |
 | Regression | A scatter plot with a fitted trend line | **x**, **y**, color, size, column, row | `regressionMethod`, `polyOrder` |
 | Connected Scatter Plot | How two measures move together over time | **x**, **y**, order, color, detail, column, row | |
 | Ranged Dot Plot | The gap between two values per category, drawn as a dumbbell | **x**, **y**, **color** | |
 | Strip Plot | The spread of individual values per category | **x**, **y**, color, size, column, row | `stepWidth`, `pointSize`, `opacity` |
 
+- **Scatter Plot**: a field on `detail` is not drawn; it names each point in its tooltip.
+- **Marginal Plot**: `marginal` draws the distributions as density curves (the default), as a `histogram` or as a `boxplot`; the other properties tune that drawing as they do on a density plot, histogram or box plot.
 - **Regression**: `regressionMethod` is `linear` (the default), `log`, `exp`, `pow`, `quad` or `poly`; `polyOrder` sets the degree of a `poly` fit, from 2 to 10.
 - **Connected Scatter Plot**: `order` is the sequence the points are connected in, usually a time dimension.
 - **Ranged Dot Plot**: bind `color` to a dimension with exactly two values, one for each end of the dumbbell.
@@ -65,15 +68,15 @@ A bubble chart of advertisers: average bid price against win rate, sized by impr
 
 ## Bars
 
-Charts that compare a measure across categories. Put the category on `x` and the measure on `y` for vertical bars, or the other way around for horizontal bars.
+Charts that compare a measure across categories. Put the category on `x` and the measure on `y` for vertical bars, or the other way around for horizontal bars. With the time dimension on `x`, up to eight time buckets are drawn as bars of their own, each labeled; more than that are placed on a time axis.
 
 | Chart type | Use it for | Channels | Chart properties |
 |---|---|---|---|
-| Bar Chart | Comparing a measure across categories | **x**, **y**, color, opacity, column, row | `cornerRadius` |
-| Grouped Bar Chart | Side-by-side bars for a second category | **x**, **y**, **group**, column, row | `dodge` |
-| Stacked Bar Chart | The parts that make up each bar | **x**, **y**, **color**, column, row | `stackMode` |
-| Lollipop Chart | A lighter alternative to a bar chart | **x**, **y**, color, column, row | `dotSize` |
-| Waterfall Chart | How a sequence of increases and decreases adds up | **x**, **y**, color, column, row | `totals`, `cornerRadius`, `showTextLabels` |
+| Bar Chart | Comparing a measure across categories | **x**, **y**, color, opacity, column, row | `cornerRadius`, `showValueLabels` |
+| Grouped Bar Chart | Side-by-side bars for a second category | **x**, **y**, **group**, color, column, row | `dodge`, `showValueLabels` |
+| Stacked Bar Chart | The parts that make up each bar | **x**, **y**, **color**, column, row | `stackMode`, `showValueLabels` |
+| Lollipop Chart | A lighter alternative to a bar chart | **x**, **y**, color, column, row | `dotSize`, `showValueLabels` |
+| Waterfall Chart | How a sequence of increases and decreases adds up | **x**, **y**, color, column, row | `totals`, `cornerRadius`, `showValueLabels` |
 | Gantt Chart | Intervals on a shared axis | **y**, **x**, **x2**, color, detail, column, row | `taskHeight`, `cornerRadius`, `intervalLabels` |
 | Bullet Chart | A measure against a target | **y**, **x**, **goal**, color, column, row | |
 
@@ -105,21 +108,25 @@ A bullet chart of average bid price by device type, with the average bid floor a
 
 ## Distributions
 
-Charts that summarize how values are spread. Histograms, density plots, ECDF plots, box plots and violin plots summarize individual observations, so their components select a `detail` dimension.
+Charts that summarize how values are spread. Histograms, density plots, ridgeline plots, ECDF plots, box plots and violin plots summarize individual observations, so their components select a `detail` dimension.
 
 | Chart type | Use it for | Channels | Chart properties |
 |---|---|---|---|
 | Histogram | The distribution of a measure, in bins | **x**, color, column, row | `binCount` |
-| Density Plot | The distribution of a measure, as a smooth curve | **x**, color, column, row | `bandwidth` |
+| Density Plot | The distribution of a measure, as a smooth curve | **x**, color, column, row | `bandwidth`, `stackMode`, `opacity` |
+| Ridgeline Plot | The distribution of a measure per category, as a stack of overlapping curves | **x**, **y**, color | `overlap`, `order`, `colorBy`, `tailCut`, `interpolate`, `opacity`, `bandwidth`, `perspective` |
 | ECDF Plot | The share of values at or below each value | **x**, color, detail, column, row | `showPoints` |
-| Boxplot | Medians, quartiles and outliers per category | **x**, **y**, color, opacity, column, row | `whiskerMethod`, `showOutliers`, `dodge` |
-| Violin Plot | The shape of a distribution per category | **x**, **y**, color, row | `bandwidth` |
-| Pyramid Chart | Two groups compared side by side across categories | **x**, **y**, **color** | |
+| Boxplot | Medians, quartiles and outliers per category | **x**, **y**, color, opacity, column, row | `whiskerMethod`, `showOutliers`, `showPoints`, `dodge` |
+| Violin Plot | The shape of a distribution per category | **x**, **y**, color, row | `bandwidth`, `widths`, `showPoints`, `showMedian`, `showContour` |
+| Pyramid Chart | Two groups compared side by side across categories | **x**, **y**, **color** | `showValueLabels` |
 | Candlestick Chart | Open, high, low and close over time | **x**, **open**, **high**, **low**, **close**, column, row | |
 
 - **Histogram**: `binCount` caps the number of bins, from 5 to 50.
-- **Density Plot** and **Violin Plot**: `bandwidth` sets the smoothing, from 0.05 to 2; leave it unset to pick one from the data.
-- **Boxplot**: `whiskerMethod` is `iqr` (1.5 times the interquartile range, the default) or `minmax`.
+- **Density Plot**, **Ridgeline Plot** and **Violin Plot**: `bandwidth` sets the smoothing, from 0.05 to 2; leave it unset to pick one from the data.
+- **Density Plot**: with a series on `color`, the curves are stacked; `stackMode` is `normalize` for shares or `layered` to overlap them.
+- **Ridgeline Plot**: the measure goes on `x` and the category that names each curve on `y`. `overlap` sets how far a curve may rise into the one above it, from 0.5 to 4; `order: mean` sorts the curves by their mean; `colorBy` is `series` or `x`; `tailCut` trims the thin ends of each curve.
+- **Boxplot**: `whiskerMethod` is `iqr` (1.5 times the interquartile range, the default) or `minmax`; `showPoints` draws the observations over each box.
+- **Violin Plot**: `widths` is `auto` (the default), `area` or `band`; `showPoints`, `showMedian` and `showContour` add the observations, a median line and an outline.
 - **Pyramid Chart**: bind `color` to a dimension with exactly two values, one for each side.
 
 The spread of average bid price across advertisers, per device type, with `detail` bound to `advertiser_name`.
@@ -143,14 +150,16 @@ The spread of average bid price across advertisers, per device type, with `detai
 
 ## Tables & Maps
 
-Grids that show a measure for each combination of two categories, or rank categories in a compact table. Maps are not offered here; use the [Map widget](/developers/build/dashboards/canvas-widgets/map) instead.
+Grids that show a measure for each combination of two categories or for each day of a calendar, or rank categories in a compact table. Maps are not offered here; use the [Map widget](/developers/build/dashboards/canvas-widgets/map) instead.
 
 | Chart type | Use it for | Channels | Chart properties |
 |---|---|---|---|
-| Heatmap | A measure across two categories, or a category over time | **x**, **y**, **color**, column, row | `showTextLabels` |
+| Heatmap | A measure across two categories, or a category over time | **x**, **y**, **color**, column, row | `showValueLabels` |
+| Calendar Heatmap | A measure per day, in a grid of weeks and weekdays | **x**, **color** | `cornerRadius` |
 | Bar Table | A ranked list with inline bars and values | **y**, **x**, color, column, row | `maxRows`, `showPercent` |
 
 - **Heatmap**: the measure goes on `color`.
+- **Calendar Heatmap**: the time dimension goes on `x` and the measure on `color`. Truncate the time dimension to a day in the query, as the heatmap example below does.
 - **Bar Table**: `maxRows` caps the rows shown, from 5 to 100, and `showPercent` adds each row's share of the total.
 
 Daily spend by device type. The query truncates the time dimension to a day, so the heatmap stays daily whatever the dashboard's time grain.
@@ -182,8 +191,8 @@ Charts that follow a measure along an ordered axis, usually time.
 |---|---|---|---|
 | Line Chart | A measure over time, optionally split into series | **x**, **y**, color, strokeDash, detail, opacity, column, row | `interpolate`, `showPoints` |
 | Sparkline | Compact trend lines, one row per series | **x**, **y**, color, detail, column, row | `interpolate`, `baseline`, `trendWidth` |
-| Bump Chart | How the rank of each series changes over time | **x**, **y**, color, detail, column, row | |
-| Slope Chart | Change between two periods, one line per category | **x**, **y**, color, detail, column, row | |
+| Bump Chart | How the rank of each series changes over time | **x**, **y**, color, detail, column, row | `interpolate` |
+| Slope Chart | Change between two periods, one line per category | **x**, **y**, color, detail, column, row | `showText`, `showSeriesInLabel` |
 | Area Chart | A measure over time, stacked by series | **x**, **y**, color, opacity, column, row | `interpolate`, `opacity`, `stackMode` |
 | Streamgraph | Stacked series around a center line | **x**, **y**, **color**, column, row | `interpolate` |
 | Range Area Chart | A band between a low and a high measure | **x**, **y**, **y2**, color, column, row | `interpolate`, `opacity` |
@@ -191,7 +200,7 @@ Charts that follow a measure along an ordered axis, usually time.
 - `interpolate` is `linear` (the default), `monotone`, `step`, `step-before`, `step-after`, `basis`, `cardinal` or `catmull-rom`.
 - **Sparkline**: `baseline` draws a reference line in each row at the `mean` (the default), `median` or `zero`, or `none`; `trendWidth` sets the width of each line in pixels.
 - **Bump Chart**: `y` must already hold ranks, with 1 as the best. The chart reverses the axis to put rank 1 on top but doesn't rank values itself, and Metrics SQL can't compute ranks.
-- **Slope Chart**: bind `x` to a dimension with exactly two values, the two periods.
+- **Slope Chart**: bind `x` to a dimension with exactly two values, the two periods. `showText` prints the value at each end of a line, and `showSeriesInLabel` adds the category's name to it.
 - **Area Chart**: `stackMode` is `normalize` for 100% stacks, `center`, or `layered` to overlap the series instead of stacking them.
 
 The band between the average bid floor and the average bid price, by day.
@@ -220,9 +229,9 @@ Charts drawn around a center. Pie and donut charts read best with a handful of s
 
 | Chart type | Use it for | Channels | Chart properties |
 |---|---|---|---|
-| Pie Chart | Shares of a total | **size**, **color**, column, row | `innerRadius`, `sortSlices` |
-| Donut Chart | Shares of a total, with a hole in the middle | **size**, **color**, column, row | `innerRadius`, `sortSlices` |
-| Rose Chart | A measure per category, as wedges of varying length | **x**, **y**, color, column, row | `alignment`, `padAngle`, `sortSlices` |
+| Pie Chart | Shares of a total | **size**, **color**, column, row | `innerRadius`, `sortSlices`, `showValueLabels` |
+| Donut Chart | Shares of a total, with a hole in the middle | **size**, **color**, column, row | `innerRadius`, `sortSlices`, `showValueLabels` |
+| Rose Chart | A measure per category, as wedges of varying length | **x**, **y**, color, column, row | `alignment`, `padAngle`, `sortSlices`, `showValueLabels` |
 | Radar Chart | Several measures or categories compared as a polygon | **x**, **y**, color, column, row | `filled`, `fillOpacity`, `strokeWidth` |
 
 - **Pie Chart** and **Donut Chart**: the measure goes on `size` and the category on `color`. `innerRadius` is the size of the hole as a percentage of the radius, from 0 to 100; a `Pie Chart` with an `innerRadius` above 0 is a donut. `sortSlices` is `none` (the default), `descending` or `ascending`.
@@ -259,4 +268,5 @@ These properties are shared by many chart types; a chart type that doesn't suppo
 | `logScale_x`, `logScale_y` | `true` or `false` | Use a logarithmic scale on the axis. |
 | `includeZero_x`, `includeZero_y` | `true` or `false` | Force the axis to include zero, or not. |
 | `independentYAxis` | `true` or `false` | With small multiples, give each panel its own y scale. |
+| `showValueLabels` | `true` or `false` | Print each mark's value on the chart. Bar, lollipop, waterfall, pyramid, heatmap, pie, donut and rose charts. A pie or donut that prints its values draws its legend at the right. |
 | `xAxisType`, `yAxisType` | `temporal` or `nominal` | Draw a time axis as discrete bands, or the reverse. Bar, lollipop, line, area and heatmap charts. |

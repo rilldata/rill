@@ -3,12 +3,28 @@
  * this file should be deprecated in favor of the other time utils.
  *
  * */
-import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  TimeComparisonOption,
+  type TimeRange,
+} from "@rilldata/web-common/lib/time/types";
+import {
+  type MetricsViewSpecDimension,
+  MetricsViewSpecDimensionType,
+  type V1ExploreTimeRange,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { TimeRangeName_DEPRECATE } from "./time-control-types";
 
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  TIME_COMPARISON,
+  TIME_GRAIN,
+} from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  RillLegacyDaxInterval,
+  RillPeriodToGrainInterval,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {
@@ -236,3 +252,103 @@ export function makeRelativeTimeRange(
     end: allTimeRange.end,
   };
 }
+
+export function getTimeDimensionOptions(
+  dimensions: MetricsViewSpecDimension[],
+  restrictedDimensions: string[] | undefined,
+) {
+  const timeDimensions = dimensions.filter(
+    (d) =>
+      d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME &&
+      (!restrictedDimensions || restrictedDimensions.includes(d.name!)),
+  );
+
+  if (restrictedDimensions) {
+    timeDimensions.sort(
+      (a, b) =>
+        restrictedDimensions.indexOf(a.name!) -
+        restrictedDimensions.indexOf(b.name!),
+    );
+  }
+
+  return timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.displayName || timeDim.name!,
+      description: timeDim.description,
+    };
+  });
+}
+
+/**
+ * The comparison a canvas opens with when its default comparison mode is time.
+ * A range in `time_ranges` can declare its comparisons with `comparison_offsets`;
+ * the first one the canvas URL state understands (a `rill-P*` alias) wins.
+ * Without `defaults.time_range`, the canvas opens on the first `time_ranges` entry,
+ * so that entry's comparisons apply.
+ * Without a declared comparison, it is derived from the range's grain.
+ */
+export function getDefaultComparisonRange(
+  range: string | undefined,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+): string {
+  const openingRange = range ?? timeRanges?.[0]?.range;
+  const declared = timeRanges
+    ?.find((tr) => tr.range === openingRange)
+    ?.comparisonTimeRanges?.find(
+      (comparison) =>
+        !!comparison.offset && comparison.offset in TIME_COMPARISON,
+    )?.offset;
+
+  return declared ?? getComparisonTypeFromRangeString(range);
+}
+
+export function getComparisonTypeFromRangeString(
+  range: string | undefined,
+): TimeComparisonOption {
+  if (!range) {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+  try {
+    const { interval, rangeGrain } = parseRillTime(range);
+
+    if (
+      interval instanceof RillLegacyDaxInterval ||
+      interval instanceof RillPeriodToGrainInterval
+    ) {
+      return rangeGrain && rangeGrain in timeGrainToComparisonOptionMap
+        ? timeGrainToComparisonOptionMap[rangeGrain]
+        : TimeComparisonOption.CONTIGUOUS;
+    } else {
+      return TimeComparisonOption.CONTIGUOUS;
+    }
+  } catch {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+}
+
+const timeGrainToComparisonOptionMap: Record<
+  V1TimeGrain,
+  TimeComparisonOption
+> = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_DAY]: TimeComparisonOption.DAY,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: TimeComparisonOption.WEEK,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: TimeComparisonOption.MONTH,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: TimeComparisonOption.QUARTER,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
+};

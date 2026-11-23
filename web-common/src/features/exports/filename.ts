@@ -1,8 +1,8 @@
 // Builds a download filename from a title plus a local timestamp, e.g.
-// "sales-overview-20260619-130412.pdf". Shared by the PDF, PNG and Excel exports.
+// "sales-overview-20260619-130412.pdf". Shared by the PDF, PNG, Excel and CSV exports.
 export function buildExportFilename(
   title: string,
-  extension: "pdf" | "png" | "xlsx",
+  extension: "pdf" | "png" | "xlsx" | "csv",
 ): string {
   const slug =
     title

@@ -51,10 +51,20 @@ describe("stripFlintChartSpec", () => {
 describe("stripFlintChartSpec channels", () => {
   it("drops the server's detail extension where the chart type has no detail channel", () => {
     const stripped = stripFlintChartSpec({
+      chartType: "Histogram",
+      encodings: { x: "win_rate", detail: "advertiser_name" },
+    });
+    expect(stripped.encodings).toEqual({ x: "win_rate" });
+    // A scatter plot has a detail channel of its own: the field names each point in its tooltip.
+    const scatter = stripFlintChartSpec({
       chartType: "Scatter Plot",
       encodings: { x: "total_bids", y: "win_rate", detail: "advertiser_name" },
     });
-    expect(stripped.encodings).toEqual({ x: "total_bids", y: "win_rate" });
+    expect(scatter.encodings).toEqual({
+      x: "total_bids",
+      y: "win_rate",
+      detail: "advertiser_name",
+    });
     const kept = stripFlintChartSpec({
       chartType: "Line Chart",
       encodings: { x: "__time", y: "total_bids", detail: "advertiser_name" },

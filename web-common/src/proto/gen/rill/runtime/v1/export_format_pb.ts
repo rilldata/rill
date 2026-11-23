@@ -3,7 +3,8 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { proto3 } from "@bufbuild/protobuf";
+import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
+import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
  * @generated from enum rill.runtime.v1.ExportFormat
@@ -42,4 +43,277 @@ proto3.util.setEnumType(ExportFormat, "rill.runtime.v1.ExportFormat", [
   { no: 3, name: "EXPORT_FORMAT_PARQUET" },
   { no: 4, name: "EXPORT_FORMAT_PDF" },
 ]);
+
+/**
+ * @generated from enum rill.runtime.v1.ExportCellRuleOperator
+ */
+export enum ExportCellRuleOperator {
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_GREATER_THAN = 1;
+   */
+  GREATER_THAN = 1,
+
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL = 2;
+   */
+  GREATER_THAN_OR_EQUAL = 2,
+
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_LESS_THAN = 3;
+   */
+  LESS_THAN = 3,
+
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL = 4;
+   */
+  LESS_THAN_OR_EQUAL = 4,
+
+  /**
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_EQUAL = 5;
+   */
+  EQUAL = 5,
+
+  /**
+   * Between value and upper_value, both inclusive.
+   *
+   * @generated from enum value: EXPORT_CELL_RULE_OPERATOR_BETWEEN = 6;
+   */
+  BETWEEN = 6,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExportCellRuleOperator)
+proto3.util.setEnumType(ExportCellRuleOperator, "rill.runtime.v1.ExportCellRuleOperator", [
+  { no: 0, name: "EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED" },
+  { no: 1, name: "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN" },
+  { no: 2, name: "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL" },
+  { no: 3, name: "EXPORT_CELL_RULE_OPERATOR_LESS_THAN" },
+  { no: 4, name: "EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL" },
+  { no: 5, name: "EXPORT_CELL_RULE_OPERATOR_EQUAL" },
+  { no: 6, name: "EXPORT_CELL_RULE_OPERATOR_BETWEEN" },
+]);
+
+/**
+ * ExportConditionalFormat colors cells of an Excel export the way a pivot or table colors them on its dashboard.
+ * It is written as one of Excel's own conditional formats, so the colors follow the values in the file.
+ * Colors are hex RGB strings like "#1a9850"; the caller resolves theme colors before sending them.
+ *
+ * @generated from message rill.runtime.v1.ExportConditionalFormat
+ */
+export class ExportConditionalFormat extends Message<ExportConditionalFormat> {
+  /**
+   * @generated from oneof rill.runtime.v1.ExportConditionalFormat.format
+   */
+  format: {
+    /**
+     * @generated from field: rill.runtime.v1.ExportColorScale color_scale = 1;
+     */
+    value: ExportColorScale;
+    case: "colorScale";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ExportDataBar data_bar = 2;
+     */
+    value: ExportDataBar;
+    case: "dataBar";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ExportCellRule cell_rule = 3;
+     */
+    value: ExportCellRule;
+    case: "cellRule";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<ExportConditionalFormat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportConditionalFormat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "color_scale", kind: "message", T: ExportColorScale, oneof: "format" },
+    { no: 2, name: "data_bar", kind: "message", T: ExportDataBar, oneof: "format" },
+    { no: 3, name: "cell_rule", kind: "message", T: ExportCellRule, oneof: "format" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportConditionalFormat {
+    return new ExportConditionalFormat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportConditionalFormat {
+    return new ExportConditionalFormat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportConditionalFormat {
+    return new ExportConditionalFormat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportConditionalFormat | PlainMessage<ExportConditionalFormat> | undefined, b: ExportConditionalFormat | PlainMessage<ExportConditionalFormat> | undefined): boolean {
+    return proto3.util.equals(ExportConditionalFormat, a, b);
+  }
+}
+
+/**
+ * ExportColorScale shades each cell by where its value falls between the lowest and the highest value of the cells it covers.
+ *
+ * @generated from message rill.runtime.v1.ExportColorScale
+ */
+export class ExportColorScale extends Message<ExportColorScale> {
+  /**
+   * @generated from field: string min_color = 1;
+   */
+  minColor = "";
+
+  /**
+   * Color of the midpoint between the lowest and the highest value. Optional; without it the scale has two colors.
+   *
+   * @generated from field: string mid_color = 2;
+   */
+  midColor = "";
+
+  /**
+   * @generated from field: string max_color = 3;
+   */
+  maxColor = "";
+
+  constructor(data?: PartialMessage<ExportColorScale>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportColorScale";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "min_color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "mid_color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "max_color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportColorScale {
+    return new ExportColorScale().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportColorScale {
+    return new ExportColorScale().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportColorScale {
+    return new ExportColorScale().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportColorScale | PlainMessage<ExportColorScale> | undefined, b: ExportColorScale | PlainMessage<ExportColorScale> | undefined): boolean {
+    return proto3.util.equals(ExportColorScale, a, b);
+  }
+}
+
+/**
+ * ExportDataBar draws a bar in each cell, its length proportional to the value relative to the highest value of the cells it covers.
+ *
+ * @generated from message rill.runtime.v1.ExportDataBar
+ */
+export class ExportDataBar extends Message<ExportDataBar> {
+  /**
+   * @generated from field: string color = 1;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<ExportDataBar>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportDataBar";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportDataBar {
+    return new ExportDataBar().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportDataBar {
+    return new ExportDataBar().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportDataBar {
+    return new ExportDataBar().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportDataBar | PlainMessage<ExportDataBar> | undefined, b: ExportDataBar | PlainMessage<ExportDataBar> | undefined): boolean {
+    return proto3.util.equals(ExportDataBar, a, b);
+  }
+}
+
+/**
+ * ExportCellRule fills the cells whose value matches a condition. Cells without a number never match.
+ * When several rules cover a cell, the first one that matches applies.
+ *
+ * @generated from message rill.runtime.v1.ExportCellRule
+ */
+export class ExportCellRule extends Message<ExportCellRule> {
+  /**
+   * @generated from field: rill.runtime.v1.ExportCellRuleOperator operator = 1;
+   */
+  operator = ExportCellRuleOperator.UNSPECIFIED;
+
+  /**
+   * @generated from field: double value = 2;
+   */
+  value = 0;
+
+  /**
+   * Upper bound of the between operator, inclusive.
+   *
+   * @generated from field: double upper_value = 3;
+   */
+  upperValue = 0;
+
+  /**
+   * @generated from field: string fill_color = 4;
+   */
+  fillColor = "";
+
+  /**
+   * Optional. Leaves the text color as it is if empty.
+   *
+   * @generated from field: string text_color = 5;
+   */
+  textColor = "";
+
+  constructor(data?: PartialMessage<ExportCellRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportCellRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "operator", kind: "enum", T: proto3.getEnumType(ExportCellRuleOperator) },
+    { no: 2, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "upper_value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "fill_color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "text_color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportCellRule {
+    return new ExportCellRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportCellRule {
+    return new ExportCellRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportCellRule {
+    return new ExportCellRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportCellRule | PlainMessage<ExportCellRule> | undefined, b: ExportCellRule | PlainMessage<ExportCellRule> | undefined): boolean {
+    return proto3.util.equals(ExportCellRule, a, b);
+  }
+}
 
