@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PartialMessage, Struct } from "@bufbuild/protobuf";
+  import { resolveTextScale } from "@rilldata/web-common/features/canvas/text-size";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
   import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
@@ -27,6 +28,9 @@
   // Shown when there is no spec to render.
   export let missingError: string;
   export let metricsViewName: string | undefined;
+  // The `text_size` of the canvas the component is shown on, if any.
+  // It applies when the component sets no `text_size` of its own.
+  export let canvasTextSize: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -72,6 +76,8 @@
   $: flintSpec = resolvedProps?.spec as FlintChartSpec | undefined;
   // An ejected component carries the Vega-Lite it used to compile to instead of a chart spec.
   $: vegaSpec = resolvedProps?.vega_spec as string | undefined;
+  // Read from the resolved properties, since the component may template its `text_size`.
+  $: textScale = resolveTextScale(resolvedProps?.text_size, canvasTextSize);
 </script>
 
 {#if !componentSpec}
@@ -98,6 +104,7 @@
     {vegaSpec}
     {metricsSQL}
     {metricsViewName}
+    {textScale}
     {...$$restProps}
   />
 {/if}

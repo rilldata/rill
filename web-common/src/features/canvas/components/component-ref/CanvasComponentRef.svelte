@@ -9,10 +9,12 @@
   export let component: ComponentRefComponent;
   export let editable: boolean = false;
 
-  $: ({ specStore, timeAndFilterStore, resource, textScale } = component);
+  $: ({ specStore, timeAndFilterStore, resource } = component);
 
+  // The component's own `text_size` is a renderer property of its file, not one of the
+  // item's bindings in specStore, so the chart resolves it and takes the canvas's as the default.
   $: ({
-    parent: { theme, hasTimeSeriesMap },
+    parent: { theme, hasTimeSeriesMap, textSize: canvasTextSize },
   } = component);
 
   // The component's metrics view is the one its item binds (see ComponentRefComponent.syncMetricsViewName).
@@ -49,7 +51,7 @@
   showDataTable={editable}
   {themeMode}
   theme={currentTheme}
-  textScale={$textScale}
+  canvasTextSize={$canvasTextSize}
   onResults={(results: CustomChartExportResult[] | undefined) =>
     component.exportPayload.set(
       results ? { kind: "customChart", results } : undefined,
