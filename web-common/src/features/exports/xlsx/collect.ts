@@ -102,10 +102,18 @@ export async function buildWorkbookRequest(
   const usedIds = new Set<string>();
 
   const sheetFor = async (blocks: MeasuredBlock[], title: string) => {
-    const positions = stackRows(blocks);
-    const sheet = new WorkbookDashboardSheet({ title });
+    const built: { measured: MeasuredBlock; block: BlockContent }[] = [];
     for (const measured of blocks) {
       const component = components.get(measured.id);
+      const block = component
+        ? await blockFor(component, input, dataSheets, kpis, usedIds)
+        : { title: "", subtitle: "", content: note("No valid component") };
+      if (block) built.push({ measured, block });
+    }
+    // Stacked without the components that show nothing, so they leave no gap.
+    const positions = stackRows(built.map(({ measured }) => measured));
+    const sheet = new WorkbookDashboardSheet({ title });
+    for (const { measured, block } of built) {
       const position = positions.get(measured.id) ?? {
         x: measured.xPx,
         y: measured.yPx,
@@ -116,10 +124,6 @@ export async function buildWorkbookRequest(
         widthPx: Math.max(1, Math.round(measured.widthPx)),
         heightPx: Math.max(1, Math.round(measured.heightPx)),
       });
-      const block = component
-        ? await blockFor(component, input, dataSheets, kpis, usedIds)
-        : { title: "", subtitle: "", content: note("No valid component") };
-      if (!block) continue;
       sheet.blocks.push(
         new WorkbookBlock({
           component: measured.id,

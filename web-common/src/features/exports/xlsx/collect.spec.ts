@@ -3,9 +3,11 @@ import {
   unformatResolvedContent,
 } from "@rilldata/web-common/features/canvas/components/markdown/util";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
+import { readable } from "svelte/store";
 import { describe, expect, it } from "vitest";
 import type { MeasuredBlock } from "../pdf/capture";
 import {
+  buildWorkbookRequest,
   customChartTable,
   groupBySheet,
   jsonCell,
@@ -22,6 +24,7 @@ import {
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
 function block(
   id: string,
@@ -75,6 +78,55 @@ describe("stackRows", () => {
     expect(positions.get("b")).toStrictEqual({ x: 420, y: 10 });
     // Row 0 spans 0..310, so row 3 starts after it plus the gap.
     expect(positions.get("c")).toStrictEqual({ x: 0, y: 326 });
+  });
+});
+
+describe("buildWorkbookRequest", () => {
+  it("leaves no gap for a markdown component that shows nothing", async () => {
+    const markdown = (id: string, text: string) =>
+      ({
+        id,
+        type: "markdown",
+        exportPayload: readable({ kind: "text", text, unformattedText: text }),
+        specStore: readable({}),
+      }) as unknown as BaseCanvasComponent;
+    const components = new Map([
+      ["intro", markdown("intro", "Intro")],
+      ["styles", markdown("styles", "<style>.card { color: red }</style>")],
+      ["outro", markdown("outro", "Outro")],
+    ]);
+    const request = await buildWorkbookRequest({
+      canvasName: "canvas",
+      canvasEntity: {
+        componentsStore: readable(components),
+        layout: readable([]),
+      } as unknown as CanvasEntity,
+      blocks: [
+        block("intro", 0, 0, 0),
+        block("styles", 1, 0, 220),
+        block("outro", 2, 0, 440),
+      ],
+      images: new Map(),
+      chartMode: "native",
+      header: {
+        title: "Canvas",
+        timeRangeText: "",
+        comparisonText: "",
+        timeZone: "UTC",
+        filterLines: [],
+      },
+      generatedAt: "",
+      dashboardUrl: "",
+    });
+    expect(
+      request.dashboardSheets[0].blocks.map((b) => [
+        b.component,
+        b.geometry?.yPx,
+      ]),
+    ).toStrictEqual([
+      ["intro", 0],
+      ["outro", 240],
+    ]);
   });
 });
 
