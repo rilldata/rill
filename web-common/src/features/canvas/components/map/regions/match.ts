@@ -11,8 +11,11 @@ export interface RegionValue {
 }
 
 export interface RegionMatch {
-  /** Measure value per region id. */
-  values: Map<string, RegionValue>;
+  /**
+   * Measure values per region id, sorted by label.
+   * A region has several values when different dimension values refer to it, such as "US" and "USA".
+   */
+  values: Map<string, RegionValue[]>;
   /** Distinct dimension values that did not match any region. */
   unmatched: string[];
 }
@@ -26,7 +29,9 @@ export interface RegionMatch {
 export function normalizeRegionValue(value: unknown): string {
   const normalized = String(value)
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    // Accents are stripped from Latin letters only;
+    // in other scripts they can tell letters apart, such as Cyrillic "Й" and "И".
+    .replace(/(\p{Script=Latin})\p{M}+/gu, "$1")
     .toLowerCase()
     .replace(/[^\p{L}\p{M}\p{N}]/gu, "");
   return /^\d+$/.test(normalized)
@@ -68,7 +73,8 @@ export function buildRegionIndex(
 
 /**
  * Joins aggregation rows to regions through the dimension value.
- * When several rows match the same region (e.g. both "US" and "USA" are present), the first row wins.
+ * When several rows match the same region (e.g. both "US" and "USA" are present), the region keeps all of them;
+ * their measure values can't be combined since the measure may not be additive, such as a ratio or a distinct count.
  */
 export function matchRegions(
   rows: V1MetricsViewAggregationResponseDataItem[],
@@ -76,7 +82,7 @@ export function matchRegions(
   measure: string,
   index: RegionIndex,
 ): RegionMatch {
-  const values = new Map<string, RegionValue>();
+  const values = new Map<string, RegionValue[]>();
   const unmatched = new Set<string>();
   for (const row of rows) {
     const label = row[dimension];
@@ -88,11 +94,16 @@ export function matchRegions(
       unmatched.add(String(label));
       continue;
     }
+    const entry = { value: Number(value), label: String(label) };
     for (const id of ids) {
-      if (!values.has(id)) {
-        values.set(id, { value: Number(value), label: String(label) });
-      }
+      const entries = values.get(id);
+      if (entries) entries.push(entry);
+      else values.set(id, [entry]);
     }
+  }
+  // Keeps the result independent of the row order, which the query doesn't fix.
+  for (const entries of values.values()) {
+    entries.sort((a, b) => a.label.localeCompare(b.label));
   }
   return { values, unmatched: [...unmatched] };
 }

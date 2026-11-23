@@ -62,6 +62,10 @@ describe("normalizeRegionValue", () => {
     expect(normalizeRegionValue("東京")).toBe("東京");
     expect(normalizeRegionValue("Москва")).toBe("москва");
   });
+
+  it("keeps marks that tell non-Latin letters apart", () => {
+    expect(normalizeRegionValue("Й-01")).not.toBe(normalizeRegionValue("И-01"));
+  });
 });
 
 describe("matchRegions", () => {
@@ -79,9 +83,9 @@ describe("matchRegions", () => {
       "revenue",
       index,
     );
-    expect(values.get("USA")).toEqual({ value: 10, label: "us" });
-    expect(values.get("CIV")?.value).toBe(5);
-    expect(values.get("AUS")?.value).toBe(3);
+    expect(values.get("USA")).toEqual([{ value: 10, label: "us" }]);
+    expect(values.get("CIV")?.[0].value).toBe(5);
+    expect(values.get("AUS")?.[0].value).toBe(3);
     expect(unmatched).toEqual([]);
   });
 
@@ -105,17 +109,19 @@ describe("matchRegions", () => {
     expect([...values.keys()]).toEqual(["SVK"]);
   });
 
-  it("keeps the first row when several rows match a region", () => {
-    const { values } = matchRegions(
-      [
-        { country: "US", revenue: 1 },
-        { country: "USA", revenue: 2 },
-      ],
-      "country",
-      "revenue",
-      index,
-    );
-    expect(values.get("USA")?.value).toBe(1);
+  it("keeps every row that matches a region, regardless of row order", () => {
+    const rows = [
+      { country: "USA", revenue: 2 },
+      { country: "US", revenue: 1 },
+    ];
+    const expected = [
+      { value: 1, label: "US" },
+      { value: 2, label: "USA" },
+    ];
+    for (const ordered of [rows, [...rows].reverse()]) {
+      const { values } = matchRegions(ordered, "country", "revenue", index);
+      expect(values.get("USA")).toEqual(expected);
+    }
   });
 
   it("reports distinct unmatched values and skips nulls", () => {

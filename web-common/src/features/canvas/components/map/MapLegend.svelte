@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { MapLegendNote } from "./map-utils";
+
   type Props = {
     title: string;
     /** Names the layer the scale belongs to, when several layers show a legend. */
@@ -7,33 +9,42 @@
     min: string;
     max: string;
     /** Shown below the scale, e.g. to report dimension values that matched no region. */
-    note?: string;
-    noteTooltip?: string;
+    notes?: MapLegendNote[];
   };
 
-  let { title, layer, colors, min, max, note, noteTooltip }: Props = $props();
-
-  const fullTitle = $derived(layer ? `${layer} · ${title}` : title);
+  let { title, layer, colors, min, max, notes = [] }: Props = $props();
 
   const gradient = $derived(`linear-gradient(to right, ${colors.join(", ")})`);
 </script>
 
 <div class="legend">
-  <div class="title" title={fullTitle}>{fullTitle}</div>
+  {#if layer}
+    <div class="layer" title={layer}>{layer}</div>
+  {/if}
+  <div class="title" {title}>{title}</div>
   <div class="scale" style:background={gradient}></div>
   <div class="labels">
     <span>{min}</span>
     <span>{max}</span>
   </div>
-  {#if note}
-    <div class="note" title={noteTooltip}>{note}</div>
-  {/if}
+  {#each notes as note (note.text)}
+    <div class="note" title={note.tooltip}>
+      {#if note.color}
+        <span class="swatch" style:background={note.color}></span>
+      {/if}
+      <span class="note-text">{note.text}</span>
+    </div>
+  {/each}
 </div>
 
 <style lang="postcss">
   .legend {
     @apply flex flex-col gap-1 w-40 px-2 py-1.5 rounded;
     @apply bg-surface-background/90 text-fg-secondary text-[11px] shadow-sm;
+  }
+
+  .layer {
+    @apply text-fg-muted truncate;
   }
 
   .title {
@@ -49,6 +60,14 @@
   }
 
   .note {
-    @apply text-fg-muted truncate;
+    @apply flex items-center gap-1 text-fg-muted;
+  }
+
+  .note-text {
+    @apply truncate;
+  }
+
+  .swatch {
+    @apply shrink-0 size-2 rounded-sm;
   }
 </style>

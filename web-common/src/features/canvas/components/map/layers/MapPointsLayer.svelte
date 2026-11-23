@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type {
@@ -132,11 +133,6 @@
     return measure
       ? createMeasureValueFormatter(measure)(value)
       : String(value);
-  }
-
-  function getDimensionDisplayName(name: string): string {
-    const spec = metricsViewSpec?.dimensions?.find((d) => d.name === name);
-    return spec?.displayName || name;
   }
 
   function getMeasureDisplayName(name: string): string {
@@ -301,7 +297,9 @@
   <MapLegend
     title={getMeasureDisplayName(colorMeasure)}
     layer={showLayerInLegend
-      ? getDimensionDisplayName(geoDimension)
+      ? getDimensionDisplayName(
+          metricsViewSpec?.dimensions?.find((d) => d.name === geoDimension),
+        ) || geoDimension
       : undefined}
     {colors}
     min={formatMeasure(colorMeasure, colorDomain[0])}

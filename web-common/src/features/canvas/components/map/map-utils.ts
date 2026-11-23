@@ -228,6 +228,16 @@ export function detectPolygonMode(
   });
 }
 
+// ── Legend ──────────────────────────────────────────────────────
+
+export interface MapLegendNote {
+  text: string;
+  /** Shown on hover, e.g. to list the values the note is about. */
+  tooltip?: string;
+  /** Swatch shown before the text, for notes about regions drawn in a color outside the scale. */
+  color?: string;
+}
+
 // ── Tooltip ─────────────────────────────────────────────────────
 
 const MAP_TOOLTIP_ID = "rill-map-tooltip";

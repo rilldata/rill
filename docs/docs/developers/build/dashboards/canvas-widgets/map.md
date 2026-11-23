@@ -212,6 +212,20 @@ Regions without data are drawn in gray. Regions are drawn below the basemap's la
 
 Boundaries come from [Natural Earth](https://www.naturalearthdata.com/), which draws de facto borders for disputed territories. For other regions, such as DMAs, use [custom regions](#custom-regions).
 
+### Values that match the same region
+
+When a column mixes formats, several of its values can match the same region, such as `US` and `USA`. The metrics view aggregates each value separately, and the map can't combine their measure values into one: a sum would be wrong for non-additive measures such as averages, ratios, or distinct counts. Instead, the region is drawn in a separate color outside the color scale, its tooltip lists the measure for each dimension value, and the legend reports how many regions this affects; hover over the message to see the regions and their values.
+
+To color these regions by value, normalize the dimension in your model so that each region has a single value, for example by mapping every format to the ISO code:
+
+```sql
+SELECT
+  CASE WHEN country IN ('USA', 'United States') THEN 'US' ELSE country END AS country,
+  ...
+```
+
+Setting `key` to a single key also avoids it, but values in other formats then no longer match any region.
+
 ## Custom regions
 
 To shade regions that aren't built in, such as Nielsen DMAs, sales territories, or store trade areas, add a GeoJSON or TopoJSON boundary file to your project's `public` folder and point `boundaries` to it:
@@ -304,7 +318,7 @@ initial_view:
 ## Interacting with a map
 
 - **Pan and zoom:** Drag to pan, scroll or pinch to zoom, and use the zoom and compass buttons in the top-right corner. A scale bar is shown in the bottom-left corner.
-- **Tooltips:** Hover over a point or polygon to see its tooltip dimension value, the color measure, and the size measure. Hover over a region to see its name and value.
+- **Tooltips:** Hover over a point or polygon to see its tooltip dimension value, the color measure, and the size measure. Hover over a region to see its name and value, or its values when [several dimension values match it](#values-that-match-the-same-region).
 - **Legend:** The top-left corner shows the color scale of each layer.
 - **Filters:** The map follows the canvas time range and filters. Changing a filter updates the data without moving the map, so the area you zoomed into stays in view.
 - **Dark mode:** The basemap switches between a light and a dark style with the dashboard's theme mode.

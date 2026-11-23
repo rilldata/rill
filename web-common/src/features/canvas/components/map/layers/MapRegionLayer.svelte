@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
@@ -18,6 +19,7 @@
   import {
     buildTooltipHTML,
     calculateWrappedBounds,
+    type MapLegendNote,
     removeTooltip,
     showTooltip,
   } from "../map-utils";
@@ -69,12 +71,19 @@
     ["typeof", VALUE_STATE],
     "number",
   ];
+  // Set on regions that several dimension values match, such as "US" and "USA".
+  // Their values can't be combined into one color, so they get a color outside the scale.
+  const IS_AMBIGUOUS: ExpressionSpecification = [
+    "boolean",
+    ["feature-state", "ambiguous"],
+    false,
+  ];
   const IS_HOVERED: ExpressionSpecification = [
     "boolean",
     ["feature-state", "hover"],
     false,
   ];
-  const MAX_LISTED_UNMATCHED = 10;
+  const MAX_LISTED_VALUES = 10;
 
   const runtimeClient = useRuntimeClient();
   const themeBoundaryClass = getThemeBoundaryClass();
@@ -158,8 +167,13 @@
 
   const colors = $derived(resolveColorRange(colorRange, theme));
   const colorDomain = $derived(
-    computeValueRange([...(match?.values.values() ?? [])].map((v) => v.value)),
+    computeValueRange(
+      [...(match?.values.values() ?? [])]
+        .filter((entries) => entries.length === 1)
+        .map(([entry]) => entry.value),
+    ),
   );
+  const ambiguousColor = $derived(isThemeModeDark ? "#78716c" : "#a8a29e");
 
   const measureSpec = $derived(
     metricsViewSpec?.measures?.find((m) => m.name === colorMeasure),
@@ -170,20 +184,42 @@
     measureSpec ? createMeasureValueFormatter(measureSpec) : String,
   );
   const dimensionLabel = $derived(
-    metricsViewSpec?.dimensions?.find((d) => d.name === dimension)
-      ?.displayName || dimension,
+    getDimensionDisplayName(
+      metricsViewSpec?.dimensions?.find((d) => d.name === dimension),
+    ) || dimension,
   );
 
-  const unmatchedNote = $derived.by(() => {
+  const unmatchedNote = $derived.by((): MapLegendNote | undefined => {
     const unmatched = match?.unmatched ?? [];
     if (unmatched.length === 0) return undefined;
     return {
-      note: `${unmatched.length} ${unmatched.length === 1 ? "value" : "values"} did not match a region`,
-      tooltip:
-        unmatched.slice(0, MAX_LISTED_UNMATCHED).join(", ") +
-        (unmatched.length > MAX_LISTED_UNMATCHED ? ", …" : ""),
+      text: `${unmatched.length} ${unmatched.length === 1 ? "value" : "values"} did not match a region`,
+      tooltip: listValues(unmatched),
     };
   });
+
+  const ambiguousNote = $derived.by((): MapLegendNote | undefined => {
+    if (!match || !boundaries) return undefined;
+    const ambiguous = boundaries.features.flatMap((f) => {
+      const entries = match.values.get(f.properties?.id as string);
+      if (!entries || entries.length < 2) return [];
+      const name = (f.properties?.name as string | undefined) ?? "";
+      return [`${name}: ${entries.map((e) => e.label).join(", ")}`];
+    });
+    if (ambiguous.length === 0) return undefined;
+    return {
+      text: `${ambiguous.length} ${ambiguous.length === 1 ? "region matches" : "regions match"} several values`,
+      tooltip: `${listValues(ambiguous, "; ")}\nThese regions aren't colored by value. Normalize the dimension so that each region has a single value.`,
+      color: ambiguousColor,
+    };
+  });
+
+  function listValues(values: string[], separator = ", ") {
+    return (
+      values.slice(0, MAX_LISTED_VALUES).join(separator) +
+      (values.length > MAX_LISTED_VALUES ? `${separator}…` : "")
+    );
+  }
 
   $effect(() => {
     if ($dataQuery.isPending || !colorMeasure) {
@@ -225,16 +261,23 @@
     setHovered(feature?.id);
     if (!feature) return removeTooltip();
 
-    const value = feature.state?.value as number | undefined;
-    map.getCanvas().style.cursor = typeof value === "number" ? "pointer" : "";
+    const entries = match?.values.get(feature.id as string) ?? [];
+    map.getCanvas().style.cursor = entries.length > 0 ? "pointer" : "";
     showTooltip(
       e,
-      buildTooltipHTML(feature.properties?.name as string | undefined, [
-        {
-          label: measureLabel,
-          value: typeof value === "number" ? formatValue(value) : "No data",
-        },
-      ]),
+      buildTooltipHTML(
+        feature.properties?.name as string | undefined,
+        entries.length === 0
+          ? [{ label: measureLabel, value: "No data" }]
+          : entries.map((entry) => ({
+              // Names the dimension value each value comes from when the region has several.
+              label:
+                entries.length === 1
+                  ? measureLabel
+                  : `${measureLabel} (${entry.label})`,
+              value: formatValue(entry.value),
+            })),
+      ),
       themeBoundaryClass,
     );
   }
@@ -311,8 +354,13 @@
 
     onDraw();
     map.removeFeatureState({ source: SOURCE_ID });
-    for (const [id, { value }] of match.values) {
-      map.setFeatureState({ source: SOURCE_ID, id }, { value });
+    for (const [id, entries] of match.values) {
+      map.setFeatureState(
+        { source: SOURCE_ID, id },
+        entries.length === 1
+          ? { value: entries[0].value }
+          : { ambiguous: true },
+      );
     }
     hoveredId = undefined;
 
@@ -323,11 +371,13 @@
       "case",
       HAS_VALUE,
       buildColorExpression(VALUE_STATE, colorDomain[0], colorDomain[1], colors),
+      IS_AMBIGUOUS,
+      ambiguousColor,
       noDataColor,
     ]);
     map.setPaintProperty(FILL_LAYER, "fill-opacity", [
       "case",
-      HAS_VALUE,
+      ["any", HAS_VALUE, IS_AMBIGUOUS],
       ["case", IS_HOVERED, 0.95, 0.75],
       0.5,
     ]);
@@ -364,12 +414,13 @@
     {colors}
     min={formatValue(colorDomain[0])}
     max={formatValue(colorDomain[1])}
-    note={unmatchedNote?.note}
-    noteTooltip={unmatchedNote?.tooltip}
+    notes={[unmatchedNote, ambiguousNote].filter(
+      (note): note is MapLegendNote => !!note,
+    )}
   />
 {:else if canRender && unmatchedNote}
   <div class="no-match" title={unmatchedNote.tooltip}>
-    {unmatchedNote.note}
+    {unmatchedNote.text}
   </div>
 {/if}
 
