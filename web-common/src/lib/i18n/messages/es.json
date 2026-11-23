@@ -725,7 +725,7 @@
   "canvas_teals": "Verdeazulados",
   "canvas_text_markdown": "Texto/Markdown",
   "canvas_text_size_canvas_default": "Predeterminado del canvas",
-  "canvas_text_size_hint": "Escala el texto de todos los componentes de este canvas. Un componente puede definir su propio tamaño.",
+  "canvas_text_size_hint": "Escala los títulos de los widgets y el texto de gráficos, tablas, rankings y Markdown. Los valores de KPI y las leyendas de los mapas conservan su tamaño.",
   "canvas_text_size_label": "Tamaño del texto",
   "canvas_text_size_large": "Grande",
   "canvas_text_size_medium": "Mediano",

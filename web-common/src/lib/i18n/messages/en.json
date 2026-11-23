@@ -725,7 +725,7 @@
   "canvas_teals": "Teals",
   "canvas_text_markdown": "Text/Markdown",
   "canvas_text_size_canvas_default": "Canvas default",
-  "canvas_text_size_hint": "Scales the text of every component on this canvas. A component can set its own size.",
+  "canvas_text_size_hint": "Scales widget titles and the text of charts, tables, leaderboards and markdown. KPI values and map legends keep their size.",
   "canvas_text_size_label": "Text size",
   "canvas_text_size_large": "Large",
   "canvas_text_size_medium": "Medium",
