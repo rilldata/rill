@@ -139,7 +139,7 @@ test.describe("File Explorer", () => {
       await page.getByRole("menuitem", { name: "Delete" }).click();
       const dialog = page.getByRole("alertdialog");
       await expect(dialog).toContainText(
-        "The folder /my-directory and everything in it will be deleted from the project.",
+        "The folder /my-directory and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
       );
       await dialog.getByRole("button", { name: "Delete" }).click();
       await expect(
