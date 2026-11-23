@@ -244,7 +244,9 @@ export function groupBySheet(blocks: MeasuredBlock[]): {
 
 // Lays the rows of one sheet out top to bottom with a fixed gap, keeping each
 // block's offset within its row, so the sheet has no gap where other sheets'
-// content (a tab group) sat in the export render.
+// content (a tab group) sat in the export render. On a canvas narrower than
+// 768 px a row stacks its items, so each band of items side by side is laid
+// out as a row of its own: an item left out leaves no gap there either.
 export function stackRows(
   blocks: MeasuredBlock[],
   gapPx = ROW_GAP_PX,
@@ -255,13 +257,21 @@ export function stackRows(
     row.push(block);
     rows.set(block.rowIndex, row);
   }
+  const bands: MeasuredBlock[][] = [];
+  for (const rowIndex of Array.from(rows.keys()).sort((a, b) => a - b)) {
+    let bottom = -Infinity;
+    for (const block of rows.get(rowIndex)!.sort((a, b) => a.yPx - b.yPx)) {
+      if (block.yPx >= bottom) bands.push([]);
+      bands[bands.length - 1].push(block);
+      bottom = Math.max(bottom, block.yPx + block.heightPx);
+    }
+  }
   const positions = new Map<string, { x: number; y: number }>();
   let cursor = 0;
-  for (const rowIndex of Array.from(rows.keys()).sort((a, b) => a - b)) {
-    const row = rows.get(rowIndex)!;
-    const top = Math.min(...row.map((b) => b.yPx));
-    const bottom = Math.max(...row.map((b) => b.yPx + b.heightPx));
-    for (const block of row) {
+  for (const band of bands) {
+    const top = Math.min(...band.map((b) => b.yPx));
+    const bottom = Math.max(...band.map((b) => b.yPx + b.heightPx));
+    for (const block of band) {
       positions.set(block.id, { x: block.xPx, y: cursor + (block.yPx - top) });
     }
     cursor += bottom - top + gapPx;

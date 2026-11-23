@@ -79,6 +79,17 @@ describe("stackRows", () => {
     // Row 0 spans 0..310, so row 3 starts after it plus the gap.
     expect(positions.get("c")).toStrictEqual({ x: 0, y: 326 });
   });
+
+  it("lays out the items a narrow canvas stacks in one row as rows of their own", () => {
+    // The row's middle item, at 220..420, was left out.
+    const positions = stackRows(
+      [block("a", 0, 0, 0), block("c", 0, 0, 440), block("d", 1, 0, 660)],
+      16,
+    );
+    expect(positions.get("a")).toStrictEqual({ x: 0, y: 0 });
+    expect(positions.get("c")).toStrictEqual({ x: 0, y: 216 });
+    expect(positions.get("d")).toStrictEqual({ x: 0, y: 432 });
+  });
 });
 
 describe("buildWorkbookRequest", () => {
