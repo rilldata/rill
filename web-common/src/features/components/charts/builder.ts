@@ -81,10 +81,15 @@ export function createSingleLayerBaseSpec(
 type PositionChannel = "x" | "y" | "theta";
 type AxisProps = NonNullable<PositionFieldDef<Field>["axis"]>;
 
+/**
+ * The encoding of a position channel for a field. `config` is the chart's own config, with the
+ * widget's `vl_config`; the layout of a categorical x-axis's labels takes it into account.
+ */
 export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
   channel: PositionChannel,
+  config?: Config<ExprRef | SignalRef>,
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
@@ -113,7 +118,7 @@ export function createPositionEncoding(
       field.axisOrient === "none"
         ? null
         : {
-            ...createAxisLabelLayout(field, data, channel),
+            ...createAxisLabelLayout(field, data, channel, config),
             ...(field.axisOrient && { orient: field.axisOrient }),
             ...(field.type === "quantitative" && {
               formatType: sanitizeFieldName(field.field),
@@ -143,6 +148,20 @@ const ROTATED_LABEL_MIN_LIMIT_PX = 60;
 // when the label is drawn, because the side can be set on the field (`axisOrient`) as well as in
 // the chart's or the theme's config.
 const AXIS_ON_TOP = `item.mark.group.orient === "top"`;
+// The sections of a chart's config that Vega-Lite reads the properties of a categorical x-axis
+// from. Which of them apply to a chart depends on its scale and on the side its axis is on.
+const CATEGORICAL_X_AXIS_CONFIGS = [
+  "axis",
+  "axisX",
+  "axisTop",
+  "axisBottom",
+  "axisDiscrete",
+  "axisBand",
+  "axisPoint",
+  "axisXDiscrete",
+  "axisXBand",
+  "axisXPoint",
+] as const;
 
 /**
  * Axis label angle, truncation and overlap handling for a position field.
@@ -157,12 +176,15 @@ const AXIS_ON_TOP = `item.mark.group.orient === "top"`;
  * the chart. Categorical labels are never thinned: a reader cannot infer a hidden category.
  * Every label is anchored on the center of its band: an upright label is centered on it, and a
  * rotated label meets it with the end of its text nearest the axis, through the middle of the line.
+ * A `labelAlign` or `labelBaseline` that `config` (the chart's own config, with the widget's
+ * `vl_config`) sets for the axis is left to it, because a property on the encoding overrides it.
  * Other channels and field types only pass through an explicit `labelAngle`.
  */
 export function createAxisLabelLayout(
   field: FieldConfig,
   data: ChartDataResult,
   channel: PositionChannel,
+  config?: Config<ExprRef | SignalRef>,
 ): Partial<AxisProps> {
   const isCategoricalX =
     channel === "x" && (field.type === "nominal" || field.type === "ordinal");
@@ -181,6 +203,10 @@ export function createAxisLabelLayout(
   const band = `(width / ${Math.max(1, labels.length)})`;
   const uprightLimit = `${band} - 4`;
   const rotatedLimit = `max(${ROTATED_LABEL_MIN_LIMIT_PX}, height * ${ROTATED_LABEL_MAX_HEIGHT_FRACTION})`;
+  const setInConfig = (property: "labelAlign" | "labelBaseline") =>
+    CATEGORICAL_X_AXIS_CONFIGS.some(
+      (section) => config?.[section]?.[property] !== undefined,
+    );
 
   if (field.labelAngle !== undefined) {
     const upright = field.labelAngle % 180 === 0;
@@ -188,7 +214,8 @@ export function createAxisLabelLayout(
       labelAngle: field.labelAngle,
       // Vega-Lite aligns a label of a fixed angle on its tick. For a rotated one it may pick the
       // top or bottom baseline, which hangs the label from a corner, so only that is overridden.
-      ...(!upright && { labelBaseline: "middle" as const }),
+      ...(!upright &&
+        !setInConfig("labelBaseline") && { labelBaseline: "middle" as const }),
       labelLimit: { expr: upright ? uprightLimit : rotatedLimit },
       labelOverlap: false,
     };
@@ -208,12 +235,16 @@ export function createAxisLabelLayout(
     // a signal: the alignment it derives yields `null` for an upright label, and Vega draws a
     // text mark without an alignment from its left edge. The label then starts at the center of
     // its bar instead of being centered under it.
-    labelAlign: {
-      expr: `${fitsUpright} ? "center" : (${AXIS_ON_TOP} ? "left" : "right")`,
-    },
-    labelBaseline: {
-      expr: `${fitsUpright} ? (${AXIS_ON_TOP} ? "bottom" : "top") : "middle"`,
-    },
+    ...(!setInConfig("labelAlign") && {
+      labelAlign: {
+        expr: `${fitsUpright} ? "center" : (${AXIS_ON_TOP} ? "left" : "right")`,
+      },
+    }),
+    ...(!setInConfig("labelBaseline") && {
+      labelBaseline: {
+        expr: `${fitsUpright} ? (${AXIS_ON_TOP} ? "bottom" : "top") : "middle"`,
+      },
+    }),
     labelLimit: { expr: `${fitsUpright} ? ${uprightLimit} : ${rotatedLimit}` },
     labelOverlap: false,
   };

@@ -14,7 +14,7 @@ import chroma from "chroma-js";
 import type { VisualizationSpec } from "svelte-vega";
 import { splitAccessPath } from "vega-util";
 import { parseExpression } from "vega-expression";
-import type { TopLevelSpec } from "vega-lite";
+import type { Config, TopLevelSpec } from "vega-lite";
 import { describe, expect, it } from "vitest";
 
 function chartDataForDimensionValue(value: string): ChartDataResult {
@@ -384,6 +384,53 @@ describe("axis label layout", () => {
         }
       },
     );
+  });
+
+  // Properties on the encoding would override the widget's `vl_config`, so they are left out.
+  it.each([
+    { orientation: "auto, upright", labelAngle: undefined, width: 900 },
+    { orientation: "auto, angled", labelAngle: undefined, width: 260 },
+    { orientation: "angled", labelAngle: -45, width: 400 },
+  ])(
+    "draws $orientation labels with the alignment and baseline that a widget's `vl_config` sets",
+    async ({ labelAngle, width }) => {
+      const config: ChartSpec = {
+        metrics_view: "stores",
+        vl_config: '{"axisX":{"labelAlign":"right","labelBaseline":"bottom"}}',
+        x: { field: "store", type: "nominal", labelAngle },
+        y: { field: "post_count", type: "quantitative" },
+      };
+      const spec = generateVLBarChartSpec(config, drawnData);
+      const { labels } = await drawBars(spec, storeRows, width);
+
+      expect(labels.map((label) => label.category)).toEqual(stores);
+      for (const label of labels) {
+        expect([label.align, label.baseline]).toEqual(["right", "bottom"]);
+      }
+    },
+  );
+
+  it("keeps its own anchor for whichever of alignment and baseline the chart's config leaves unset", () => {
+    const axisWith = (config: Config) =>
+      createPositionEncoding(
+        { field: "store", type: "nominal" },
+        storeData,
+        "x",
+        config,
+      ).axis as Record<string, unknown>;
+
+    const alignSet = axisWith({ axisDiscrete: { labelAlign: "left" } });
+    expect(alignSet).not.toHaveProperty("labelAlign");
+    expect(alignSet).toHaveProperty("labelBaseline");
+
+    const baselineSet = axisWith({ axis: { labelBaseline: "bottom" } });
+    expect(baselineSet).toHaveProperty("labelAlign");
+    expect(baselineSet).not.toHaveProperty("labelBaseline");
+
+    // A section for the y-axis does not reach the x-axis.
+    const yAxisOnly = axisWith({ axisY: { labelAlign: "left" } });
+    expect(yAxisOnly).toHaveProperty("labelAlign");
+    expect(yAxisOnly).toHaveProperty("labelBaseline");
   });
 
   it("keeps the bar widths that a widget's offset padding gives while centering the group", async () => {

@@ -145,7 +145,12 @@ export function generateVLStackedBarNormalizedSpec(
   // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
     x: {
-      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      ...createPositionEncoding(
+        config.x,
+        data,
+        horizontal ? "y" : "x",
+        vegaConfig,
+      ),
       bandPosition: 0,
     },
   };
