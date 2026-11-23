@@ -105,7 +105,7 @@ describe("DeleteConfirmationDialog", () => {
 
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent(
-      "Until you publish, you can revert this deletion from the list of changed files. Rill restores the file as it was when your branch last synced with production, so later edits to it are lost.",
+      "Until you publish, a file that existed when your branch last synced with production can be restored from the list of changed files, as it was at that sync; later edits to it are lost. A file added on this branch can't be restored in Rill",
     );
     expect(dialog).not.toHaveTextContent("This can't be undone in Rill.");
   });

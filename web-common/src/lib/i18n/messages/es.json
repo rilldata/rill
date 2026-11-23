@@ -1511,7 +1511,7 @@
       }
     }
   ],
-  "file_explorer_delete_undo_cloud": "Hasta que publiques, puedes revertir esta eliminación desde la lista de archivos modificados. Rill restaura el archivo tal como estaba la última vez que tu rama se sincronizó con producción, por lo que se pierden las ediciones posteriores. Los archivos añadidos en esta rama no se pueden restaurar en Rill; si los confirmaste, recupéralos del historial de Git.",
+  "file_explorer_delete_undo_cloud": "Hasta que publiques, un archivo que ya existía la última vez que tu rama se sincronizó con producción se puede restaurar desde la lista de archivos modificados, tal como estaba en ese momento; se pierden las ediciones posteriores. Un archivo añadido en esta rama no se puede restaurar en Rill; si se confirmó, recupéralo del historial de Git.",
   "file_explorer_delete_undo_developer": "Esta acción no se puede deshacer en Rill. Los archivos eliminados solo se pueden recuperar desde el control de versiones o una copia de seguridad.",
   "filter_advanced_beta": "Avanzado (BETA)",
   "filter_advanced_remove": "Eliminar",
