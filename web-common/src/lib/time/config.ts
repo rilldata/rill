@@ -1053,6 +1053,7 @@ export const DEFAULT_TIMEZONES = [
   "Asia/Tokyo",
   "Australia/Sydney",
 ];
+export const DEFAULT_TIMEZONE = "UTC";
 
 /**
  * Mapping of {@link Period} to the unit in {@link Duration}

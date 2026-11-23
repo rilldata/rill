@@ -71,31 +71,23 @@ export function saveMostRecentPartialExploreState(
     return;
   }
 
-  try {
-    setMostRecentExploreStateInLocalStorage(
-      exploreName,
-      storageNamespacePrefix,
-      {
-        selectedTimezone: exploreState.selectedTimezone,
+  setMostRecentExploreStateInLocalStorage(exploreName, storageNamespacePrefix, {
+    selectedTimezone: exploreState.selectedTimezone,
 
-        // Ad-hoc measure definitions are stored per metrics view instead; see
-        // ephemeral-measures/library.ts.
-        visibleMeasures: exploreState.visibleMeasures,
-        allMeasuresVisible: exploreState.allMeasuresVisible,
-        visibleDimensions: exploreState.visibleDimensions,
-        allDimensionsVisible: exploreState.allDimensionsVisible,
+    // Ad-hoc measure definitions are stored per metrics view instead; see
+    // ephemeral-measures/library.ts.
+    visibleMeasures: exploreState.visibleMeasures,
+    allMeasuresVisible: exploreState.allMeasuresVisible,
+    visibleDimensions: exploreState.visibleDimensions,
+    allDimensionsVisible: exploreState.allDimensionsVisible,
 
-        leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
-        leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
-        leaderboardShowContextForAllMeasures:
-          exploreState.leaderboardShowContextForAllMeasures,
-        sortDirection: exploreState.sortDirection,
-        dashboardSortType: exploreState.dashboardSortType,
-      },
-    );
-  } catch {
-    // no-op
-  }
+    leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
+    leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
+    leaderboardShowContextForAllMeasures:
+      exploreState.leaderboardShowContextForAllMeasures,
+    sortDirection: exploreState.sortDirection,
+    dashboardSortType: exploreState.dashboardSortType,
+  });
 }
 
 export function clearMostRecentExploreState(
@@ -111,8 +103,12 @@ export function setMostRecentExploreStateInLocalStorage(
   storageNamespacePrefix: string | undefined,
   exploreState: Partial<ExploreState>,
 ) {
-  localStorage.setItem(
-    getKeyForLocalStore(exploreName, storageNamespacePrefix),
-    JSON.stringify(exploreState),
-  );
+  try {
+    localStorage.setItem(
+      getKeyForLocalStore(exploreName, storageNamespacePrefix),
+      JSON.stringify(exploreState),
+    );
+  } catch {
+    // Writing storage throws when the quota is exceeded or the browser blocks it, e.g. in an embed.
+  }
 }

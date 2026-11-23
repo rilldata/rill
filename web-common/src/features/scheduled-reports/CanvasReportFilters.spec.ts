@@ -1,9 +1,5 @@
-import {
-  getCanvasStore,
-  removeCanvasStore,
-} from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import IsolatedCanvasFiltersTest from "@rilldata/web-common/features/dashboards/filters/test/IsolatedCanvasFiltersTest.svelte";
+import { getCanvasFilters } from "@rilldata/web-common/features/canvas/filters/canvas-filter-expressions";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import {
   getFilterChip,
   mockPointerEventsForComponentTesting,
@@ -25,7 +21,10 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import CanvasReportFiltersTest from "@rilldata/web-common/features/scheduled-reports/test/CanvasReportFiltersTest.svelte";
+import { applyReportFiltersToParams } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
@@ -49,8 +48,6 @@ vi.mock("$app/navigation", () => {
     beforeNavigate: () => {},
   };
 });
-// The rune based url stores read `page` from here, and SvelteKit only populates it through its
-// client router, which a component test does not boot.
 vi.mock("$app/state", async () => {
   return {
     page: (
@@ -74,7 +71,6 @@ vi.mock("$app/stores", () => {
 
 const INSTANCE_ID = "test";
 const AD_BIDS_CANVAS_NAME = "AdBids_canvas";
-// A canvas with no rows, so the filter bar is all that renders.
 const AD_BIDS_CANVAS_INIT: V1CanvasSpec = {
   displayName: "AdBids canvas",
   filtersEnabled: true,
@@ -82,25 +78,21 @@ const AD_BIDS_CANVAS_INIT: V1CanvasSpec = {
 const FilterParamKey = `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`;
 
 /**
- * Covers the report form's filter bar: an isolated `CanvasProvider` fed the report's captured
- * state, with no `CanvasDashboardWrapper` and so no `syncStoreWithSource` to replay the params
- * `CanvasEntity.onUrlChange` holds back until the metrics views are ready. The filters the
- * dialog saves as the report's row restrictions are read off this manager, so a manager left
- * empty here silently drops them.
+ * Covers the canvas report form's filters: in-memory managers seeded with the report's canvas state.
+ * The dialog saves the report's state and row restrictions from these managers,
+ * so a manager left empty here silently drops the filters.
  */
-describe("IsolatedCanvasExpressionFilters", () => {
+describe("CanvasReportFilters", () => {
   mockAnimationsForComponentTesting();
   mockPointerEventsForComponentTesting();
   mockResizeObserverForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
 
   beforeEach(() => {
-    // Nothing here asserts on the url, but the canvas still reads it as it loads.
     new PageMockForComponentTests(hoistedPage);
 
     // The metrics view has a time dimension, so its time range summary is a second request that
-    // only lands after the specs. That gap is what leaves `metricsViewsProvider.ready` false
-    // while the canvas state is first applied.
+    // only lands after the specs, which keeps the managers from being ready while they are seeded.
     mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT_WITH_TIME);
     mocks.mockCanvas(AD_BIDS_CANVAS_NAME, AD_BIDS_CANVAS_INIT, {
       [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -113,25 +105,32 @@ describe("IsolatedCanvasExpressionFilters", () => {
     localStorage.clear();
     sessionStorage.clear();
     queryClient.clear();
-    removeCanvasStore(AD_BIDS_CANVAS_NAME, INSTANCE_ID);
-    lastVisitedState.clear();
   });
 
   afterAll(waitForBodyScrollCleanup);
 
-  const CapturedState = `${FilterParamKey}=${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook','Google')`;
+  const CapturedFilterParam = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook','Google')`;
+  const CapturedState = new URLSearchParams({
+    [FilterParamKey]: CapturedFilterParam,
+    [ExploreStateURLParams.TimeRange]: "P7D",
+    tabs: "deep_dive.detail",
+  }).toString();
   const CapturedFilter = createAndExpression([
     createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
   ]);
 
-  function renderFilterBar() {
-    return render(IsolatedCanvasFiltersTest, {
+  async function renderFilters() {
+    let expressionFilterManager: ExpressionFilterManager | undefined;
+    let timeFilterManager: TimeFilterManager | undefined;
+    render(CanvasReportFiltersTest, {
       props: {
         canvasName: AD_BIDS_CANVAS_NAME,
-        canvasStateOverride: CapturedState,
+        canvasState: CapturedState,
+        onManagersCreated: (efm, tfm) => {
+          expressionFilterManager = efm;
+          timeFilterManager = tfm;
+        },
       },
-      // TODO: we need to make sure every single query uses an explicit queryClient instead of the
-      //       global one. Only then we can use a fresh client here.
       context: new Map<string | symbol, unknown>([
         ["$$_queryClient", queryClient],
         [
@@ -143,39 +142,41 @@ describe("IsolatedCanvasExpressionFilters", () => {
         ],
       ]),
     });
-  }
 
-  async function assertCapturedFilterApplied() {
     await waitFor(() =>
       expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
         "publisher Facebook +1 other",
       ),
     );
-
-    // This is what the report dialog saves as the report's `metricsViewFilters`.
-    expect(
-      getCanvasStore(AD_BIDS_CANVAS_NAME, INSTANCE_ID).canvasEntity
-        .expressionFilterManager.topLevelJoiner.expr[AD_BIDS_METRICS_NAME],
-    ).toEqual(CapturedFilter);
+    await waitFor(() => expect(timeFilterManager?.ready).toBe(true));
+    return {
+      expressionFilterManager: expressionFilterManager!,
+      timeFilterManager: timeFilterManager!,
+    };
   }
 
   it("Should apply the captured filters once the metrics views are ready", async () => {
-    renderFilterBar();
+    const { expressionFilterManager } = await renderFilters();
 
-    await assertCapturedFilterApplied();
+    // This is what the report dialog saves as the report's `metricsViewFilters`.
+    expect(getCanvasFilters(expressionFilterManager)).toEqual({
+      [AD_BIDS_METRICS_NAME]: CapturedFilter,
+    });
   });
 
-  it("Should apply the captured filters when only the time range summary is pending", async () => {
-    // Opening the dialog from a page that already loaded the metrics view resources leaves the
-    // specs cached and the time range summary as the only request still in flight, which is
-    // enough to keep `metricsViewsProvider.ready` false while the state is first applied.
-    const { unmount } = renderFilterBar();
-    await assertCapturedFilterApplied();
-    unmount();
-    removeCanvasStore(AD_BIDS_CANVAS_NAME, INSTANCE_ID);
+  it("Should write edited filters over the captured state and keep the other params", async () => {
+    const { expressionFilterManager, timeFilterManager } =
+      await renderFilters();
 
-    renderFilterBar();
+    timeFilterManager.onSelectRange("P30D");
+    const params = applyReportFiltersToParams(
+      new URLSearchParams(CapturedState),
+      expressionFilterManager,
+      timeFilterManager,
+    );
 
-    await assertCapturedFilterApplied();
+    expect(params.get(FilterParamKey)).toEqual(CapturedFilterParam);
+    expect(params.get(ExploreStateURLParams.TimeRange)).toEqual("P30D");
+    expect(params.get("tabs")).toEqual("deep_dive.detail");
   });
 });

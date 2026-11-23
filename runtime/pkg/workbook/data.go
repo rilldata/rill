@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -102,6 +104,26 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		}
 	}
 
+	// The stream writer writes the sheet's conditional formats when it is flushed.
+	// They cover the data rows, below the header and above the totals row.
+	for _, cf := range ds.ConditionalFormats {
+		if len(ds.Rows) == 0 {
+			break
+		}
+		columns := formatColumns(ds, cf)
+		ranges := make([]string, len(columns))
+		for i, j := range columns {
+			r, err := cellRange(j+1, 2, len(ds.Rows), false)
+			if err != nil {
+				return err
+			}
+			ranges[i] = r
+		}
+		if err := conditionalformat.Apply(w.f, name, ranges, formatDomain(ds, cf, columns), cf.Format); err != nil {
+			return err
+		}
+	}
+
 	// An Excel table needs at least one data row.
 	if n := len(ds.Rows); n > 0 {
 		lastCell, err := excelize.CoordinatesToCellName(len(ds.Columns), n+1)
@@ -119,6 +141,57 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		}
 	}
 	return sw.Flush()
+}
+
+// formatColumns returns the 0-based indexes of the columns a conditional format applies to, left to right.
+func formatColumns(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookConditionalFormat) []int {
+	var res []int
+	for j, c := range ds.Columns {
+		if slices.Contains(cf.Columns, c.Name) {
+			res = append(res, j)
+		}
+	}
+	return res
+}
+
+// formatDomain returns the values at the ends of a format's color scale or data bar:
+// the format's domain if it has one, or else the lowest and highest numbers in its columns.
+func formatDomain(ds *runtimev1.WorkbookDataSheet, cf *runtimev1.WorkbookConditionalFormat, columns []int) conditionalformat.Domain {
+	var d conditionalformat.Domain
+	if cf.Format.GetCellRule() != nil {
+		// Apply doesn't read a cell rule's domain.
+		return d
+	}
+	if cf.Domain != nil {
+		d.Add(cf.Domain.Min)
+		d.Add(cf.Domain.Max)
+		return d
+	}
+	for _, r := range ds.Rows {
+		for _, j := range columns {
+			// The value as the sheet stores it, so values that aren't written as numbers don't count.
+			if v, err := cellValue(ds.Columns[j], rowValue(r, j)); err == nil {
+				if n, ok := v.(float64); ok {
+					d.Add(n)
+				}
+			}
+		}
+	}
+	return d
+}
+
+// cellRange returns the range of rows cells down a grid column (1-based) from firstRow, like "B2:B10",
+// or like "$B$2:$B$10" when abs is set.
+func cellRange(col, firstRow, rows int, abs bool) (string, error) {
+	from, err := excelize.CoordinatesToCellName(col, firstRow, abs)
+	if err != nil {
+		return "", err
+	}
+	to, err := excelize.CoordinatesToCellName(col, firstRow+rows-1, abs)
+	if err != nil {
+		return "", err
+	}
+	return from + ":" + to, nil
 }
 
 // rowValue returns the value of a row in the given column, or nil when the row is shorter.

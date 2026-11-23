@@ -3,11 +3,13 @@ import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/c
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { ExportConditionalFormat } from "@rilldata/web-common/proto/gen/rill/runtime/v1/export_format_pb";
 import {
   CanvasWorkbookExportRequest,
   WorkbookBlock,
   WorkbookColumn,
   WorkbookColumnType,
+  WorkbookConditionalFormat,
   WorkbookDashboardSheet,
   WorkbookDataSheet,
   WorkbookGeometry,
@@ -19,6 +21,7 @@ import {
   WorkbookTableBlock,
   WorkbookTextBlock,
   WorkbookTextPart,
+  WorkbookValueRange,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import { get } from "svelte/store";
 import { markdownParts, markdownTables } from "../markdown-content";
@@ -725,6 +728,14 @@ export function toDataSheet(
     totalsLast: table.totalsLast ?? false,
     rowNumberFormats: table.rowNumberFormats ?? [],
     moreRows: table.moreRows ?? false,
+    conditionalFormats: (table.conditionalFormats ?? []).map(
+      (cf) =>
+        new WorkbookConditionalFormat({
+          columns: cf.columns,
+          format: ExportConditionalFormat.fromJson(cf.format as JsonValue),
+          domain: cf.domain && new WorkbookValueRange(cf.domain),
+        }),
+    ),
   });
 }
 

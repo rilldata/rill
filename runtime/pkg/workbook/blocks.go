@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -457,6 +458,13 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 			banded = !banded
 		}
 	}
+	firstDataRow := row + 1
+	if ds.Totals != nil && !ds.TotalsLast {
+		firstDataRow++
+	}
+	if err := w.applyPreviewFormats(sheet, ds, columns, spans, col, firstDataRow, len(dataRows)); err != nil {
+		return err
+	}
 	link := fmt.Sprintf("Full data: %s (%d rows)", dsName, len(ds.Rows))
 	if ds.MoreRows {
 		link = fmt.Sprintf("Data: %s (first %d rows)", dsName, len(ds.Rows))
@@ -468,6 +476,38 @@ func (w *writer) writePreviewTable(sheet, id string, col, row, width, rows int) 
 		link += fmt.Sprintf(", %d more columns", hidden)
 	}
 	return w.setLink(sheet, col, row+1+len(lines), link, quoteSheet(dsName)+"!A1", "Location")
+}
+
+// applyPreviewFormats applies a data sheet's conditional formats to its preview, whose data rows start at firstRow.
+// columns are the data sheet columns the preview shows, laid out from grid column col with the given spans.
+// A merged cell takes the format of its first cell. The ends of the color scales and data bars are those of the full
+// data sheet, so the preview's colors match the sheet's.
+func (w *writer) applyPreviewFormats(sheet string, ds *runtimev1.WorkbookDataSheet, columns, spans []int, col, firstRow, rows int) error {
+	if rows == 0 || len(ds.Rows) == 0 {
+		return nil
+	}
+	for _, cf := range ds.ConditionalFormats {
+		var ranges []string
+		formatted := formatColumns(ds, cf)
+		for _, j := range formatted {
+			c := col
+			for k, shown := range columns {
+				if shown == j {
+					r, err := cellRange(c, firstRow, rows, false)
+					if err != nil {
+						return err
+					}
+					ranges = append(ranges, r)
+					break
+				}
+				c += spans[k]
+			}
+		}
+		if err := conditionalformat.Apply(w.f, sheet, ranges, formatDomain(ds, cf, formatted), cf.Format); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func previewColumnSpan(column *runtimev1.WorkbookColumn) int {

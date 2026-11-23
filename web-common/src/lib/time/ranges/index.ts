@@ -35,8 +35,17 @@ import {
   type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
-import { DateTime, type DateTimeUnit } from "luxon";
-import { floorToGrain, plusGrain } from "../new-grains";
+import {
+  DateTime,
+  type DateTimeUnit,
+  type DurationLike,
+  Interval,
+} from "luxon";
+import {
+  floorToGrain,
+  plusGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "../new-grains";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -215,6 +224,36 @@ export function getAdjustedFetchTime(
     };
   } catch {
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
+  }
+}
+
+/**
+ * Return Interval such that the results include extra data points for extrapolating the chart on both ends.
+ * Variant of {@link getAdjustedFetchTime} that takes and returns luxon Interval
+ */
+export function getAdjustedInterval(
+  interval: Interval,
+  grain: V1TimeGrain | undefined,
+  zone: string,
+): Interval | undefined {
+  if (!interval?.isValid || !interval.start || !interval.end || !grain) {
+    return undefined;
+  }
+
+  const luxonUnit = V1TimeGrainToDateTimeUnit[grain];
+  const duration: DurationLike = { [luxonUnit]: 1 };
+
+  // Should only fail if somehow the Luxon unit is invalid
+  try {
+    const start = interval.start
+      .setZone(zone)
+      .minus(duration)
+      .startOf(luxonUnit);
+    const end = interval.end.setZone(zone).plus(duration).startOf(luxonUnit);
+
+    return Interval.fromDateTimes(start, end);
+  } catch {
+    return undefined;
   }
 }
 

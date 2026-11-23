@@ -72,7 +72,7 @@ export function getAllowedEndingGrains(
  * Multiples such as TIME_GRAIN_10_MINUTE sit between their base unit and the next standard grain.
  * A grain's index in this list is its order.
  */
-export const aggregationGrainOrder: V1TimeGrain[] = [
+export const AggregationGrainOrder: V1TimeGrain[] = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_5_MINUTE,
   V1TimeGrain.TIME_GRAIN_10_MINUTE,
@@ -192,6 +192,11 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
+// We don't want to support small grains like sec/milli-sec.
+export const MinSupportedGrain = V1TimeGrain.TIME_GRAIN_MINUTE;
+export const MinSupportedDateTimeUnit =
+  V1TimeGrainToDateTimeUnit[MinSupportedGrain];
+
 /** Luxon unit to the standard grain of that unit. */
 export const DateTimeUnitToV1TimeGrain = reverseMap(
   Object.fromEntries(
@@ -299,7 +304,7 @@ export function getAvailableTimeGrains(
     | undefined,
 ): V1TimeGrain[] {
   if (metricsViewSpec?.timeGrains?.length) return metricsViewSpec.timeGrains;
-  return allowedAggregationGrains.filter((grain) =>
+  return AllowedAggregationGrains.filter((grain) =>
     isGrainAllowed(grain, metricsViewSpec?.smallestTimeGrain),
   );
 }
@@ -316,8 +321,8 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
  * The standard aggregation grains, which a metrics view offers unless it declares `time_grains`.
  * Seconds and milliseconds are never offered.
  */
-export const allowedAggregationGrains =
-  aggregationGrainOrder.filter(isStandardGrain);
+export const AllowedAggregationGrains =
+  AggregationGrainOrder.filter(isStandardGrain);
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -399,17 +404,17 @@ export function getGrainOrder(
 }
 
 export function getAllowedGrainsFromOrder(order: Order) {
-  return aggregationGrainOrder.slice(order).filter(isStandardGrain);
+  return AggregationGrainOrder.slice(order).filter(isStandardGrain);
 }
 
 export function getLargerGrainsFromOrder(order: Order) {
-  return aggregationGrainOrder.slice(order + 1).filter(isStandardGrain);
+  return AggregationGrainOrder.slice(order + 1).filter(isStandardGrain);
 }
 
 export function getSmallerGrainsFromOrders(maxOrder: Order, minOrder = 0) {
-  return aggregationGrainOrder
-    .slice(minOrder, maxOrder + 1)
-    .filter(isStandardGrain);
+  return AggregationGrainOrder.slice(minOrder, maxOrder + 1).filter(
+    isStandardGrain,
+  );
 }
 
 export function getOptionsFromSmallestToLargest(
@@ -604,7 +609,7 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
 export function allowedGrainsForInterval(
   interval: Interval<true> | undefined,
   minTimeGrain?: V1TimeGrain,
-  availableGrains: V1TimeGrain[] = allowedAggregationGrains,
+  availableGrains: V1TimeGrain[] = AllowedAggregationGrains,
 ): V1TimeGrain[] {
   minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
   if (!interval) return [];

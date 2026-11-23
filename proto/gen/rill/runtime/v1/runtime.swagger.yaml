@@ -2433,6 +2433,14 @@ paths:
                 type: string
                 format: int64
                 title: Optional. Defaults to 0
+              conditionalFormats:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationConditionalFormat'
+                description: |-
+                  Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order.
+                  Ignored by queries and by other export formats.
               priority:
                 type: integer
                 format: int32
@@ -6092,6 +6100,68 @@ definitions:
       - EXPLORE_WEB_VIEW_PIVOT
       - EXPLORE_WEB_VIEW_CANVAS
     default: EXPLORE_WEB_VIEW_UNSPECIFIED
+  v1ExportCellRule:
+    type: object
+    properties:
+      operator:
+        $ref: '#/definitions/v1ExportCellRuleOperator'
+      value:
+        type: number
+        format: double
+      upperValue:
+        type: number
+        format: double
+        description: Upper bound of the between operator, inclusive.
+      fillColor:
+        type: string
+      textColor:
+        type: string
+        description: Optional. Leaves the text color as it is if empty.
+    description: |-
+      ExportCellRule fills the cells whose value matches a condition. Cells without a number never match.
+      When several rules cover a cell, the first one that matches applies.
+  v1ExportCellRuleOperator:
+    type: string
+    enum:
+      - EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED
+      - EXPORT_CELL_RULE_OPERATOR_GREATER_THAN
+      - EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL
+      - EXPORT_CELL_RULE_OPERATOR_LESS_THAN
+      - EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL
+      - EXPORT_CELL_RULE_OPERATOR_EQUAL
+      - EXPORT_CELL_RULE_OPERATOR_BETWEEN
+    default: EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED
+    description: ' - EXPORT_CELL_RULE_OPERATOR_BETWEEN: Between value and upper_value, both inclusive.'
+  v1ExportColorScale:
+    type: object
+    properties:
+      minColor:
+        type: string
+      midColor:
+        type: string
+        description: Color of the midpoint between the lowest and the highest value. Optional; without it the scale has two colors.
+      maxColor:
+        type: string
+    description: ExportColorScale shades each cell by where its value falls between the lowest and the highest value of the cells it covers.
+  v1ExportConditionalFormat:
+    type: object
+    properties:
+      colorScale:
+        $ref: '#/definitions/v1ExportColorScale'
+      dataBar:
+        $ref: '#/definitions/v1ExportDataBar'
+      cellRule:
+        $ref: '#/definitions/v1ExportCellRule'
+    description: |-
+      ExportConditionalFormat colors cells of an Excel export the way a pivot or table colors them on its dashboard.
+      It is written as one of Excel's own conditional formats, so the colors follow the values in the file.
+      Colors are hex RGB strings like "#1a9850"; the caller resolves theme colors before sending them.
+  v1ExportDataBar:
+    type: object
+    properties:
+      color:
+        type: string
+    description: ExportDataBar draws a bar in each cell, its length proportional to the value relative to the highest value of the cells it covers.
   v1ExportFormat:
     type: string
     enum:
@@ -6798,6 +6868,17 @@ definitions:
         $ref: '#/definitions/v1MetricsViewSpec'
       state:
         $ref: '#/definitions/v1MetricsViewState'
+  v1MetricsViewAggregationConditionalFormat:
+    type: object
+    properties:
+      measure:
+        type: string
+        description: |-
+          Name of the measure. Under pivot_on, the format spans all of the measure's columns,
+          so a color scale or data bar compares the values across them.
+      format:
+        $ref: '#/definitions/v1ExportConditionalFormat'
+    description: MetricsViewAggregationConditionalFormat colors a measure's cells when the result is exported to Excel.
   v1MetricsViewAggregationDimension:
     type: object
     properties:
@@ -6972,6 +7053,14 @@ definitions:
         type: string
         format: int64
         title: Optional. Defaults to 0
+      conditionalFormats:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationConditionalFormat'
+        description: |-
+          Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order.
+          Ignored by queries and by other export formats.
       priority:
         type: integer
         format: int32

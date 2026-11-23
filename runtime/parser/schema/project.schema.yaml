@@ -3404,7 +3404,7 @@ definitions:
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
-      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+      To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard.
     examples:
       - # Example: Basic theme with light and dark mode colors
         type: theme
@@ -3415,37 +3415,58 @@ definitions:
           primary: "#818CF8"  # Indigo-400
           secondary: "#A78BFA"  # Purple-400
 
-      - # Example: Advanced theme with custom color palettes
+      - # Example: Branded surfaces, text, borders and corners
+        type: theme
+        light:
+          primary: "#0F766E"  # Teal-700
+          secondary: "#F59E0B"  # Amber-500
+          variables:
+            surface-background: "#F8FAFC"  # Page behind the components
+            surface-card: "#FFFFFF"  # Canvas components
+            fg-primary: "#0F172A"  # Main text
+            border: "#CBD5E1"
+            radius: 1rem  # Rounder corners; use 0 for square ones
+        dark:
+          primary: "#2DD4BF"  # Teal-400
+          secondary: "#FBBF24"  # Amber-400
+          variables:
+            surface-background: "#0B1120"
+            surface-card: "#111827"
+            fg-primary: "#F1F5F9"
+            border: "#334155"
+            radius: 1rem
+
+      - # Example: Custom chart color palettes
         type: theme
         light:
           primary: "#14B8A6"  # Teal
           secondary: "#10B981"  # Emerald
-          
-          color-sequential-1: "hsl(180deg 80% 95%)"
-          color-sequential-5: "hsl(180deg 80% 50%)"
-          color-sequential-9: "hsl(180deg 80% 25%)"
-          color-qualitative-1: "hsl(156deg 56% 52%)"
-          color-qualitative-2: "hsl(27deg 100% 65%)"
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
         dark:
           primary: "2DD4BF"
           secondary: "34D399"
-          
-          color-sequential-1: "hsl(180deg 40% 30%)"
-          color-sequential-5: "hsl(180deg 50% 50%)"
-          color-sequential-9: "hsl(180deg 60% 70%)"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
 
-      - # Example: Theme with KPI delta colors (green for positive, red for negative)
+      - # Example: KPI delta colors, with the variables set directly in the block instead of under `variables`
         type: theme
         light:
-            primary: "#6366f1"
-            secondary: "#8b5cf6"
-            kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-            kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+          primary: "#6366f1"
+          secondary: "#8b5cf6"
+          kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
+          kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
         dark:
-            primary: "#818cf8"
-            secondary: "#a78bfa"
-            kpi-positive: "#4ade80"  # Brighter green for dark mode
-            kpi-negative: "#f87171"  # Brighter red for dark mode
+          primary: "#818cf8"
+          secondary: "#a78bfa"
+          kpi-positive: "#4ade80"  # Brighter green for dark mode
+          kpi-negative: "#f87171"  # Brighter red for dark mode
     allOf:
       - title: Properties
         type: object
@@ -3483,7 +3504,7 @@ definitions:
                 description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for light theme
+                description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
           dark:
@@ -3504,7 +3525,7 @@ definitions:
                 description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for dark theme
+                description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
 
@@ -4219,7 +4240,7 @@ definitions:
             description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for light theme
+            description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
       dark:
@@ -4240,7 +4261,7 @@ definitions:
             description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for dark theme
+            description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
   api_data_properties:

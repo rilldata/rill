@@ -97,7 +97,7 @@ describe("ExploreDashboardConfigProvider", () => {
     provider.cleanup?.();
   });
 
-  it("keeps unsaved pin and required toggles until the filter config itself changes", async () => {
+  it("keeps each unsaved pin and required toggle until the file changes its list", async () => {
     mocks.mockMetricsExplore(
       FILTERED_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT,
@@ -121,10 +121,11 @@ describe("ExploreDashboardConfigProvider", () => {
     yamlConfigProvider.togglePinnedFilter(AD_BIDS_PUBLISHER_DIMENSION);
     yamlConfigProvider.toggleRequiredFilter(AD_BIDS_PUBLISHER_DIMENSION);
 
-    // An unrelated edit to the file gives the explore a new spec with the same filter config.
+    // An edit to the file that leaves the pinned and required lists as they are.
     mocks.mockMetricsExplore(FILTERED_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
       ...FILTERED_EXPLORE,
       displayName: "Renamed",
+      timeZones: ["Asia/Kolkata"],
     });
     await queryClient.refetchQueries();
     // The query notifies its subscribers on a later tick.
@@ -135,8 +136,10 @@ describe("ExploreDashboardConfigProvider", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
     ]);
     expect(yamlConfigProvider.requiredFilters).toEqual([]);
+    expect(yamlConfigProvider.timeZones).toEqual(["Asia/Kolkata"]);
 
-    // Once the filter config changes, the file is the source of truth again.
+    // Once the file changes the pinned list, it is the source of truth for that list again.
+    // The required toggle is kept, since the required list is unchanged.
     mocks.mockMetricsExplore(FILTERED_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
       ...FILTERED_EXPLORE,
       pinnedFilters: [],
@@ -144,9 +147,7 @@ describe("ExploreDashboardConfigProvider", () => {
     await queryClient.refetchQueries();
     await asyncWait(10);
     expect(yamlConfigProvider.pinnedFilters).toEqual([]);
-    expect(yamlConfigProvider.requiredFilters).toEqual([
-      AD_BIDS_PUBLISHER_DIMENSION,
-    ]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([]);
 
     destroy();
     provider.cleanup?.();
