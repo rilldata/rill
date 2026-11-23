@@ -3,7 +3,6 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { BoxSelect, Copy, Columns, Download } from "lucide-svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { BlockKind } from "./stores/block-edit";
@@ -38,8 +37,6 @@
     "combo_chart",
     "custom_chart",
   ] as const;
-
-  const { canvasContainers } = featureFlags;
 
   $: showExplore =
     navigationEnabled &&
@@ -78,12 +75,10 @@
             <Columns size="14px" />
             {m.canvas_component_convert_to_tab_group()}
           </DropdownMenu.Item>
-          {#if $canvasContainers}
-            <DropdownMenu.Item onclick={() => onWrapRow?.("container")}>
-              <BoxSelect size="14px" />
-              {m.canvas_component_wrap_in_container()}
-            </DropdownMenu.Item>
-          {/if}
+          <DropdownMenu.Item onclick={() => onWrapRow?.("container")}>
+            <BoxSelect size="14px" />
+            {m.canvas_component_wrap_in_container()}
+          </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />
         {#if showExplore && exploreComponent}

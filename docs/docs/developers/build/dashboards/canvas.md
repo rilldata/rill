@@ -86,7 +86,7 @@ Containers are top-level entries that hold plain rows: they can't be placed insi
 
 You can also manage containers in the visual editor:
 
-- **Add:** Choose **Container** in the add menu between rows, or select **Wrap row in container** in a component's menu. These options appear when the `canvas_containers` [feature flag](/developers/build/project-configuration#feature-flags) is on.
+- **Add:** Choose **Container** in the add menu between rows, or select **Wrap row in container** in a component's menu.
 - **Fill:** Drag widgets into the container, or click **Add widget to container** in an empty one. Drag them out the same way.
 - **Move:** Drag the grip handle on the container's label and drop the container between two rows.
 - **Rename:** Click the container's label and change **Container name** in the right-hand panel.
