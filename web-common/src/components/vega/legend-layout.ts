@@ -305,18 +305,24 @@ function legendLayout(
   const entries = (columns: string) =>
     `max(${maxRows} * ${columns}, ${MIN_ENTRIES})`;
 
-  const widths = labelsOf(definition, legend, rows)?.map((label) =>
-    labelWidth(label, font),
-  );
-  const leftOutWidth = labelWidth(LEFT_OUT_LABEL, font);
-  const crowded = columnsByWidth(widths, LABEL_LIMIT, leftOutWidth);
+  const labels = labelsOf(definition, legend, rows);
+  const widths: LabelWidths | undefined = labels && {
+    count: labels.length,
+    // Sorted once, for every number of columns and every label limit tried.
+    widest: labels
+      .map((label) => labelWidth(label, font))
+      .sort((a, b) => b - a)
+      .slice(0, MAX_COLUMNS),
+    leftOut: labelWidth(LEFT_OUT_LABEL, font),
+  };
+  const crowded = columnsByWidth(widths, LABEL_LIMIT);
   let columns = crowded;
   let labelLimit = `${LABEL_LIMIT}`;
   // Where every entry fits with its label in full, none is cut short: three long names in a wide
   // chart read better on two rows than as three stubs on one.
-  if (widths?.some((width) => width > LABEL_LIMIT)) {
-    const inFull = columnsByWidth(widths, FULL_LABEL_LIMIT, leftOutWidth);
-    const roomy = `${entries(inFull)} >= ${widths.length}`;
+  if (widths && widths.widest[0] > LABEL_LIMIT) {
+    const inFull = columnsByWidth(widths, FULL_LABEL_LIMIT);
+    const roomy = `${entries(inFull)} >= ${widths.count}`;
     columns = `(${roomy} ? ${inFull} : ${crowded})`;
     labelLimit = `(${roomy} ? ${FULL_LABEL_LIMIT} : ${LABEL_LIMIT})`;
   }
@@ -332,56 +338,51 @@ function legendLayout(
   };
 }
 
-/**
- * An expression for the most columns a legend fits across the plot's `width`, given the widths
- * of its labels. Without them, every column is taken to be as wide as a label may run.
- */
-function columnsByWidth(
-  labelWidths: number[] | undefined,
-  limit: number,
-  leftOutWidth: number,
-): string {
-  if (!labelWidths) {
-    const column = SYMBOL_WIDTH + limit + COLUMN_PADDING;
-    return `max(1, floor((width + ${COLUMN_PADDING}) / ${column}))`;
-  }
-  let expr = "1";
-  const most = Math.min(labelWidths.length, MAX_COLUMNS);
-  for (let columns = 2; columns <= most; columns++) {
-    const room = widthOfColumns(labelWidths, limit, columns, leftOutWidth);
-    expr = `(width >= ${room} ? ${columns} : ${expr})`;
-  }
-  return expr;
+/** The widths of a legend's labels, in pixels, as far as they set the widths of its columns. */
+interface LabelWidths {
+  /** How many labels the legend has. */
+  count: number;
+  /** Its widest labels, widest first: one for each column a legend may have. */
+  widest: number[];
+  /** The label that stands for the entries left out. */
+  leftOut: number;
 }
 
 /**
- * The most width a legend takes when laid out in a number of columns, in pixels, given the
- * widths of its labels. Vega sizes each column to its widest label, and which labels share a
- * column follows the legend's order, which is the data's. The widest label of each column is at
- * most one of the widest labels overall, so their sum holds for any order.
+ * An expression for the most columns a legend fits across the plot's `width`, given the widths
+ * of its labels. Without them, every column is taken to be as wide as a label may run.
+ *
+ * Vega sizes each column to its widest label, and which labels share a column follows the
+ * legend's order, which is the data's. The widest label of each column is at most one of the
+ * widest labels overall, so their sum holds for any order.
  */
-function widthOfColumns(
-  labelWidths: number[],
+function columnsByWidth(
+  labels: LabelWidths | undefined,
   limit: number,
-  columns: number,
-  leftOutWidth: number,
-): number {
-  // Once entries are left out, the label that says so takes a place of its own. How many rows
-  // the chart's height allows is not known here, so it is counted wherever the fewest would
-  // leave entries out.
-  const shown =
-    labelWidths.length > Math.max(MIN_ROWS * columns, MIN_ENTRIES)
-      ? [...labelWidths, leftOutWidth]
-      : labelWidths;
-  const widest = shown
-    .map((width) => Math.min(width, limit))
-    .sort((a, b) => b - a)
-    .slice(0, columns);
-  return (
-    widest.reduce((sum, width) => sum + width, 0) +
-    columns * SYMBOL_WIDTH +
-    (columns - 1) * COLUMN_PADDING
-  );
+): string {
+  if (!labels) {
+    const column = SYMBOL_WIDTH + limit + COLUMN_PADDING;
+    return `max(1, floor((width + ${COLUMN_PADDING}) / ${column}))`;
+  }
+  const leftOut = Math.min(labels.leftOut, limit);
+  let expr = "1";
+  // The widest labels, one for each column so far. Cutting them at the limit keeps their order.
+  let labelsWidth = Math.min(labels.widest[0] ?? 0, limit);
+  for (let columns = 2; columns <= labels.widest.length; columns++) {
+    const narrowest = Math.min(labels.widest[columns - 1], limit);
+    labelsWidth += narrowest;
+    // Once entries are left out, the label that says so takes a place of its own, in place of
+    // the narrowest of these where it is the wider. How many rows the chart's height allows is
+    // not known here, so it is counted wherever the fewest would leave entries out.
+    const leavesOut = labels.count > Math.max(MIN_ROWS * columns, MIN_ENTRIES);
+    const room =
+      labelsWidth +
+      (leavesOut ? Math.max(0, leftOut - narrowest) : 0) +
+      columns * SYMBOL_WIDTH +
+      (columns - 1) * COLUMN_PADDING;
+    expr = `(width >= ${room} ? ${columns} : ${expr})`;
+  }
+  return expr;
 }
 
 /**
