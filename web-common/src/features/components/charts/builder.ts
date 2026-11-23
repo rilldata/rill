@@ -218,6 +218,58 @@ export function createStackOverride(
   return field?.zeroBasedOrigin === false && !colorField ? { stack: null } : {};
 }
 
+/**
+ * Centers the bars that share a category's band on the middle of that band, where the axis label
+ * is anchored. Such bars are spread side by side by the `xOffset` channel: one per color value,
+ * measure or comparison period.
+ *
+ * The builders size a bar as a share of its band and leave the rest as the gap to its neighbors.
+ * With an offset channel, Vega-Lite takes the bar's width from its slot inside the band but the
+ * inset that centers it from the whole band. Every bar is then pushed right by more than its own
+ * gap, so the group sits right of its label and overhangs the band. The gap is moved into the
+ * offset scale's padding instead, which draws the same bars evenly around the middle of the band.
+ * It is added to the padding that `config` (the chart's own config, with the widget's `vl_config`)
+ * already gives the offset scale, so the bars keep the width they had.
+ *
+ * A layer without an offset channel is returned as is.
+ */
+export function centerGroupedBars(
+  barLayer: UnitSpec<Field>,
+  config: Config<ExprRef | SignalRef> | undefined,
+): UnitSpec<Field> {
+  const { mark, encoding } = barLayer;
+  const xOffset = encoding?.xOffset;
+  if (typeof mark !== "object" || mark.type !== "bar") return barLayer;
+  if (!xOffset || !("field" in xOffset)) return barLayer;
+  const { width } = mark;
+  if (typeof width !== "object" || !("band" in width)) return barLayer;
+
+  const inner = config?.scale?.offsetBandPaddingInner ?? 0;
+  const outer = config?.scale?.offsetBandPaddingOuter ?? 0;
+  // Padding driven by a signal cannot be added to here; such a chart is left as it was.
+  if (typeof inner !== "number" || typeof outer !== "number") return barLayer;
+
+  // The bar's gap as a share of a slot's step: the band it is cut from is what the padding leaves.
+  const gap = (1 - width.band) * (1 - inner);
+  // Rounded so that 1 - 0.9 reads as 0.1 in the spec.
+  const round = (value: number) => Number(value.toFixed(4));
+  return {
+    ...barLayer,
+    mark: { ...mark, width: { band: 1 } },
+    encoding: {
+      ...encoding,
+      xOffset: {
+        ...xOffset,
+        scale: {
+          ...xOffset.scale,
+          paddingInner: round(inner + gap),
+          paddingOuter: round(outer + gap / 2),
+        },
+      },
+    },
+  };
+}
+
 export function getTemporalAxisLabelExpr(format: string | undefined) {
   if (format !== "%H:%M") return undefined;
 

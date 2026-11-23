@@ -18,6 +18,7 @@ import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
+  centerGroupedBars,
   createColorEncoding,
   createConfigWithLegend,
   createMultiLayerBaseSpec,
@@ -319,10 +320,13 @@ export function generateVLMultiMetricChartSpec(
 
       spec.layer = [
         hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: stackedBarEncoding,
-        },
+        centerGroupedBars(
+          {
+            mark: { type: "bar", clip: true, width: { band: 0.9 } },
+            encoding: stackedBarEncoding,
+          },
+          vegaConfig,
+        ),
       ];
       break;
     }
@@ -343,10 +347,13 @@ export function generateVLMultiMetricChartSpec(
 
       spec.layer = [
         hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: normalizedBarEncoding,
-        },
+        centerGroupedBars(
+          {
+            mark: { type: "bar", clip: true, width: { band: 0.9 } },
+            encoding: normalizedBarEncoding,
+          },
+          vegaConfig,
+        ),
       ];
       break;
     }
@@ -371,10 +378,13 @@ export function generateVLMultiMetricChartSpec(
 
       spec.layer = [
         hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: barEncoding,
-        },
+        centerGroupedBars(
+          {
+            mark: { type: "bar", clip: true, width: { band: 0.9 } },
+            encoding: barEncoding,
+          },
+          vegaConfig,
+        ),
       ];
       break;
     }
