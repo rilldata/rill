@@ -60,14 +60,6 @@ rows:
         height: 40px
 `;
 
-// The editor's container affordances are behind the canvas_containers flag.
-const RILL_YAML = `compiler: rillv1
-display_name: Containers e2e
-features:
-  chat: false
-  canvas_containers: true
-`;
-
 test.describe("canvas containers", () => {
   test.use({ project: "AdBids" });
 
@@ -94,10 +86,8 @@ test.describe("canvas containers", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 1600 });
-    await putProjectFile(page, "/rill.yaml", RILL_YAML);
     await putProjectFile(page, CANVAS, CANVAS_YAML);
     await waitForReconciliation(page);
-    await page.reload();
     await gotoNavEntry(page, CANVAS);
     await expect(page.getByText("Header row")).toBeVisible();
 
@@ -137,10 +127,11 @@ test.describe("canvas containers", () => {
       ["rows: []"],
     );
 
-    // Move the story container above the header container by its grip.
+    // Move the story container above the header container by its label: the whole chip
+    // is a drag handle, not only the grip.
     await dragTo(
       page,
-      blockRegion(page, 1).locator(".chip .grip"),
+      blockRegion(page, 1).locator(".chip .label"),
       page.locator("#block-row-0"),
     );
     await expectProjectFile(page, CANVAS, [
@@ -212,10 +203,8 @@ test.describe("canvas containers", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 1600 });
-    await putProjectFile(page, "/rill.yaml", RILL_YAML);
     await putProjectFile(page, SHIFT_CANVAS, SHIFT_YAML);
     await waitForReconciliation(page);
-    await page.reload();
     await gotoNavEntry(page, SHIFT_CANVAS);
     await expect(page.getByText("Story row")).toBeVisible();
 

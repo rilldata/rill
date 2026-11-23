@@ -42,21 +42,17 @@
     isGeneratedBlockName("container", container.name) ? "" : container.name,
   );
 
-  let grip = $state<HTMLDivElement>();
-
   function select() {
     onSelectBlock(container.name);
   }
 
-  // Pressing the grip or the chip's own background starts a drag of the whole container;
-  // the menu keeps its own behavior.
-  function handleChipMouseDown(event: MouseEvent) {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    if (target.closest("button")) return;
-    if (target === event.currentTarget || grip?.contains(target)) {
-      onBlockMouseDown(blockIndex, event);
-    }
+  // A press anywhere on the header band, the chip's label and name included, starts a drag
+  // of the whole container; a press without a drag still selects it. The chip's menu keeps
+  // its own behavior.
+  function handleHeaderMouseDown(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.closest("button"))
+      return;
+    onBlockMouseDown(blockIndex, event);
   }
 </script>
 
@@ -74,15 +70,10 @@
   onSelect={select}
 >
   {#snippet header()}
-    <div class="header">
+    <div class="header" role="presentation" onmousedown={handleHeaderMouseDown}>
       <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div
-        class={["chip", { selected }]}
-        role="presentation"
-        onmousedown={handleChipMouseDown}
-        onclick={select}
-      >
-        <BlockGrip kind="container" bind:element={grip} />
+      <div class={["chip", { selected }]} role="presentation" onclick={select}>
+        <BlockGrip kind="container" />
         <span class="label" title={m.canvas_container_viewer_note()}>
           {m.canvas_container()}
         </span>
@@ -121,11 +112,12 @@
   /* The band above the rows that holds the chip; px-2.5 lines the chip up with the cards. */
   .header {
     @apply flex h-7 w-full flex-none items-center px-2.5;
+    @apply cursor-grab active:cursor-grabbing;
   }
 
   .chip {
     @apply flex h-5 items-center gap-x-1 rounded-sm border border-gray-200 bg-surface-card pl-0.5 pr-0.5;
-    @apply cursor-grab text-xs font-medium text-fg-secondary;
+    @apply cursor-grab text-xs font-medium text-fg-secondary active:cursor-grabbing;
   }
 
   .chip:hover {
