@@ -17,9 +17,7 @@ const PROJECT_TAG_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}_-]*$/u;
 export function sanitizeProjectTag(input: string): string {
   const tag = input.normalize("NFC").trim().toLowerCase();
   if (isValidProjectTag(tag)) return tag;
-  return tag
-    .replace(/[^\p{L}\p{M}\p{N}_-]+/gu, "-")
-    .replace(/^[-_]+|-+$/g, "");
+  return tag.replace(/[^\p{L}\p{M}\p{N}_-]+/gu, "-").replace(/^[-_]+|-+$/g, "");
 }
 
 /** Returns whether a sanitized tag is accepted by the admin service. */
