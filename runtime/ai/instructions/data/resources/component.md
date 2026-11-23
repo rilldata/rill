@@ -231,6 +231,8 @@ to substituting it textually as `{{ .params.<name> }}`.
   so encode it as `"type": "temporal"` and let the query drive the bucket.
 - Include a tooltip covering the encoded fields, titled with `display_name` and formatted with
   `format_type`.
+- Put every placeholder inside a JSON string. Values are JSON-escaped on substitution, so quotes in
+  display names are safe, and a string param cannot inject a JSON fragment.
 
 ```yaml
 custom_chart:

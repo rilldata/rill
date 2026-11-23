@@ -9,10 +9,8 @@ import {
   createBinaryExpression,
   isBetweenExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  type V1Expression,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
 export type MeasureFilterEntry = {
   measure: string;

@@ -13,6 +13,7 @@
   import MeasureFormatChip from "./MeasureFormatChip.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
+  import { insertPivotChipAt } from "./pivot-chip-utils";
   import { swapListener } from "./swapListener";
   import TimeDropdownChip from "./TimeDropdownChip.svelte";
   import {
@@ -206,26 +207,28 @@
           if (additions.length > 0) onUpdate([...items, ...additions]);
         }
       } else if (dragChip && ghostIndex !== null) {
-        const temp = [...items];
+        let chipToAdd: PivotChipData | undefined = dragChip;
 
-        let chipToAdd = dragChip;
-
-        if (isNewTimeChip(chipToAdd)) {
-          const timeChipsInZone = temp.filter(
+        if (isNewTimeChip(dragChip)) {
+          const timeChipsInZone = items.filter(
             (chip) => chip.type === PivotChipType.Time,
           );
 
           chipToAdd = handleTimeChipDrop(
-            dragChip,
             ghostIndex,
             timeChipsInZone,
             availableTimeGrains,
           );
         }
 
-        temp.splice(ghostIndex, 0, chipToAdd);
-        items = temp;
-        onUpdate(items);
+        // Nothing to add when no time grain is available for the time chip.
+        if (chipToAdd) {
+          // `items` may still hold the dragged chip: the parent resets it from
+          // the store whenever the explore state changes mid-drag. Move the
+          // chip to the drop position instead of splicing in a second copy.
+          items = insertPivotChipAt(items, chipToAdd, ghostIndex);
+          onUpdate(items);
+        }
       }
       swap = false;
     }
@@ -323,20 +326,14 @@
     swap = false;
   }
 
-  function handleRowClick(item: PivotChipData) {
-    let itemToAdd = item;
-    if (item.type === PivotChipType.Time) {
-      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
-    }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, true);
-  }
-
-  function handleColumnClick(item: PivotChipData) {
-    let itemToAdd = item;
-    if (item.type === PivotChipType.Time) {
-      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
-    }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, false);
+  function addField(item: PivotChipData, rows: boolean) {
+    const itemToAdd =
+      item.type === PivotChipType.Time
+        ? handleTimeChipClick(availableTimeGrains)
+        : item;
+    // Nothing to add when no time grain is available for the time chip.
+    if (!itemToAdd) return;
+    metricsExplorerStore.addPivotField($exploreName, itemToAdd, rows);
   }
 
   function handleTimeGrainSelect(item: PivotChipData, timeGrain: V1TimeGrain) {
@@ -485,7 +482,7 @@
             <Tooltip distance={8} location="top" alignment="start">
               <button
                 class="icon-wrapper"
-                onclick={() => handleRowClick(item)}
+                onclick={() => addField(item, true)}
                 aria-label={m.dashboard_add_row()}
                 type="button"
               >
@@ -500,7 +497,7 @@
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
-              onclick={() => handleColumnClick(item)}
+              onclick={() => addField(item, false)}
               aria-label={m.dashboard_add_column()}
               type="button"
             >

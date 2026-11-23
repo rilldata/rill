@@ -409,6 +409,111 @@ var _ interface {
 	ErrorName() string
 } = ToolResultValidationError{}
 
+// Validate checks the field values on Reasoning with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Reasoning) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Reasoning with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ReasoningMultiError, or nil
+// if none found.
+func (m *Reasoning) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Reasoning) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Text
+
+	// no validation rules for Signature
+
+	// no validation rules for RedactedData
+
+	if len(errors) > 0 {
+		return ReasoningMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReasoningMultiError is an error wrapping multiple validation errors returned
+// by Reasoning.ValidateAll() if the designated constraints aren't met.
+type ReasoningMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReasoningMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReasoningMultiError) AllErrors() []error { return m }
+
+// ReasoningValidationError is the validation error returned by
+// Reasoning.Validate if the designated constraints aren't met.
+type ReasoningValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReasoningValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReasoningValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReasoningValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReasoningValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReasoningValidationError) ErrorName() string { return "ReasoningValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ReasoningValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReasoning.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReasoningValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReasoningValidationError{}
+
 // Validate checks the field values on ContentBlock with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -520,6 +625,47 @@ func (m *ContentBlock) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return ContentBlockValidationError{
 					field:  "ToolResult",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *ContentBlock_Reasoning:
+		if v == nil {
+			err := ContentBlockValidationError{
+				field:  "BlockType",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetReasoning()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ContentBlockValidationError{
+						field:  "Reasoning",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ContentBlockValidationError{
+						field:  "Reasoning",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetReasoning()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ContentBlockValidationError{
+					field:  "Reasoning",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

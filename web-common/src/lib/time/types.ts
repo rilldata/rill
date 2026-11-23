@@ -25,7 +25,17 @@ export enum Period {
   MILLISECOND = "PT0.001S",
   SECOND = "PT1S",
   MINUTE = "PT1M",
+  FIVE_MINUTES = "PT5M",
+  TEN_MINUTES = "PT10M",
+  FIFTEEN_MINUTES = "PT15M",
+  THIRTY_MINUTES = "PT30M",
   HOUR = "PT1H",
+  TWO_HOURS = "PT2H",
+  THREE_HOURS = "PT3H",
+  FOUR_HOURS = "PT4H",
+  SIX_HOURS = "PT6H",
+  EIGHT_HOURS = "PT8H",
+  TWELVE_HOURS = "PT12H",
   DAY = "P1D",
   WEEK = "P1W",
   MONTH = "P1M",
@@ -173,6 +183,8 @@ export interface TimeGrain {
   grain: V1TimeGrain;
   /** the locale-independent Luxon unit used for date arithmetic. */
   unit: DateTimeUnit;
+  /** the number of `unit`s in one bucket: 1 for standard grains, 10 for TIME_GRAIN_10_MINUTE. */
+  count: number;
   /** the localized human-readable name. */
   label: string;
   /** the ISO8601 duration, e.g. P1D, PT6H */

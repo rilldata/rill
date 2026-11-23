@@ -76,6 +76,7 @@ definitions:
       - [**Claude**](#claude) - Claude connector for chat with your own API key
       - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
       - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
+      - [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
       - [**Slack**](#slack) - Slack data
 
       ### _Other_
@@ -703,7 +704,7 @@ definitions:
               description: "Maximum number of tokens to generate in the completion (default: 8192)"
             reasoning_effort:
               type: string
-              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')"
+              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject."
             base_url:
               type: string
               description: The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
@@ -745,10 +746,13 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (e.g., 0.0)
+              description: Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
             base_url:
               type: string
               description: The base URL for the Claude API
+            prompt_caching:
+              type: boolean
+              description: Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
           examples:
             - # Example: Claude connector configuration
               type: connector
@@ -781,7 +785,7 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (0.0-2.0)
+              description: Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
             top_p:
               type: number
               description: Nucleus sampling parameter
@@ -797,6 +801,65 @@ definitions:
               model: gemini-2.5-pro-preview-05-06
           required:
             - api_key
+        - type: object
+          title: Bedrock
+          properties:
+            driver:
+              type: string
+              description: The driver type, must be set to "bedrock"
+              const: bedrock
+            model:
+              type: string
+              description: The Bedrock model ID, inference profile ID, or ARN to use (e.g., 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'). The model must support tool use and structured outputs in the Bedrock Converse API.
+            region:
+              type: string
+              description: Optional AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
+            api_key:
+              type: string
+              description: Amazon Bedrock API key. Use either an API key or AWS access keys; they cannot be combined.
+            aws_access_key_id:
+              type: string
+              description: AWS Access Key ID used for authentication. Required unless using an API key or running locally with host credentials.
+            aws_secret_access_key:
+              type: string
+              description: AWS Secret Access Key paired with the Access Key ID.
+            aws_access_token:
+              type: string
+              description: AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of temporary session credentials.
+            aws_role_arn:
+              type: string
+              description: ARN of the IAM role to assume. When specified, the base credentials are used to call STS AssumeRole and obtain temporary credentials scoped to this role.
+            aws_role_session_name:
+              type: string
+              description: Session name to associate with the STS AssumeRole session. Used only if 'aws_role_arn' is specified.
+            aws_external_id:
+              type: string
+              description: External ID required by some roles when assuming them, typically for cross-account access. Used only if 'aws_role_arn' is specified.
+            max_tokens:
+              type: number
+              description: Maximum number of tokens in the response. Defaults to the model's maximum.
+            temperature:
+              type: number
+              description: Sampling temperature to use (e.g., 0.1). Defaults to the model's default. Leave unset for models that don't support it, such as reasoning models.
+          examples:
+            - # Example: Bedrock connector configuration
+              type: connector
+              driver: bedrock
+
+              model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+              region: us-east-1
+              aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+              aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
+            - # Example: Bedrock connector configuration using an API key
+              type: connector
+              driver: bedrock
+
+              model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+              region: us-east-1
+              api_key: "{{ .env.BEDROCK_API_KEY }}"
+          required:
+            - driver
+            - model
         - type: object
           title: Pinot
           properties:
@@ -956,7 +1019,29 @@ definitions:
               description: Password for authentication
             sslmode:
               type: string
-              description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+              description: |
+                SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+                When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+            sslrootcert_pem:
+              type: string
+              description: |
+                CA certificate contents as raw PEM or standard base64-encoded PEM.
+                Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+                Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+            sslcert_pem:
+              type: string
+              description: |
+                Client certificate contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+            sslkey_pem:
+              type: string
+              description: |
+                Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+                Store this value in a secret project variable.
+
+                See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+                for upload and Cloud configuration instructions.
             max_open_conns:
               type: integer
               description: Maximum number of open connections to the database (defaults to 1)
@@ -1182,6 +1267,11 @@ definitions:
               items:
                 type: string
               description: Scopes to request during authorization. Defaults to all scopes the server advertises
+            oauth_authorization_params:
+              type: object
+              additionalProperties:
+                type: string
+              description: 'Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again'
             headers:
               type: object
               additionalProperties:
@@ -2232,6 +2322,11 @@ definitions:
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+          time_grains:
+            type: array
+            description: 'Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.'
+            items:
+              type: string
           first_day_of_week:
             type: integer
             description: Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
@@ -2327,6 +2422,9 @@ definitions:
                 expression:
                   type: string
                   description: a combination of operators and functions for aggregations
+                exact_expression:
+                  type: string
+                  description: 'An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.'
                 window:
                   description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
                   anyOf:
@@ -2402,6 +2500,22 @@ definitions:
               required:
                 - name
 
+          tag_order:
+            type: array
+            description: |
+              Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+              Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+              Each tag must be set on at least one dimension or measure.
+              A derived metrics view uses the parent's order unless it sets its own.
+
+              ```yaml
+              tag_order:
+                - Revenue
+                - Engagement
+                - Geography
+              ```
+            items:
+              type: string
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
             $ref: '#/definitions/field_selector_properties'
@@ -2641,12 +2755,17 @@ definitions:
                 description: Toggles filtering functionality for the canvas dashboard.
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and a default value in `defaults.filters` so a value is always set. Each name must be a dimension on a metrics view referenced by the canvas.
                 items:
                   type: string
           allow_custom_time_range:
@@ -2670,6 +2789,8 @@ definitions:
                   - rill-TD // Today
                   - rill-WTD // Week-To-date
                 ```
+
+              When `defaults.comparison_mode` is `time`, the canvas opens with the first `comparison_offsets` entry declared for the default time range, or for the first entry in this list when `defaults.time_range` is not set. Only comparison aliases such as `rill-PW`, `rill-PM` and `rill-PY` are used for this default; other offsets are skipped. If none is declared, the default comparison is derived from the default time range. The comparison menu still lists every option.
             items:
               $ref: '#/definitions/explore_time_range_properties'
           time_zones:
@@ -2839,6 +2960,7 @@ definitions:
                   time_range: P1M
                   comparison_mode: dimension #time, none
                   comparison_dimension: filename
+                  filters: "country = 'US' AND device IN ('mobile', 'tablet')"
                 ```
             properties:
               dimensions:
@@ -2860,6 +2982,39 @@ definitions:
               comparison_dimension:
                 description: 'For dimension mode, specify the comparison dimension by name.'
                 type: string
+              filters:
+                description: "Default filter applied when a user initially loads the dashboard, written as a Metrics SQL `WHERE` expression, for example `country = 'US' AND device IN ('mobile', 'tablet')`. It can only reference dimensions and measures shown in the explore. An explore has a single metrics view, so this is one expression and not a map keyed by metrics view as on a canvas dashboard."
+                type: string
+            additionalProperties: false
+          filters:
+            type: object
+            description: |
+              Configures the filters of the explore dashboard.
+                ```yaml
+                filters:
+                  pinned:
+                    - device
+                  required:
+                    - advertiser
+                  single_select:
+                    - advertiser
+                ```
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and `defaults.filters` so a value is always set. Each name must be a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object
@@ -2984,6 +3139,27 @@ definitions:
                 required:
                   - attributes
                 additionalProperties: false
+          export:
+            type: object
+            description: Configuration for attaching the rows that triggered the alert to email notifications. Only supported for alerts created from a dashboard (which use the `query` property).
+            properties:
+              attach:
+                type: boolean
+                description: If true, attaches an export of the rows that triggered the alert to email notifications for failed checks. Files larger than 10 MB are not attached; the email says so instead.
+              format:
+                type: string
+                enum:
+                  - csv
+                  - xlsx
+                  - parquet
+                description: Format of the attached file. Required if `attach` is true.
+              include_header:
+                type: boolean
+                description: Whether to include header rows in the attached file
+              limit:
+                type: integer
+                description: Maximum number of rows to include in the attached file
+                minimum: 0
           on_recover:
             type: boolean
             description: Send an alert when a previously failing alert recovers. Defaults to false.
@@ -3000,8 +3176,17 @@ definitions:
             type: string
             description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
           notify:
-            $ref: '#/definitions/notify_properties'
-            description: Notification configuration
+            type: object
+            description: Notification configuration for email and Slack delivery
+            allOf:
+              - $ref: '#/definitions/notify_properties'
+              - type: object
+                properties:
+                  rows_limit:
+                    type: integer
+                    description: Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
+                    minimum: 0
+                    maximum: 50
           annotations:
             type: object
             description: Key-value pairs used for annotations.
@@ -3219,7 +3404,7 @@ definitions:
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
-      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+      To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard.
     examples:
       - # Example: Basic theme with light and dark mode colors
         type: theme
@@ -3230,37 +3415,58 @@ definitions:
           primary: "#818CF8"  # Indigo-400
           secondary: "#A78BFA"  # Purple-400
 
-      - # Example: Advanced theme with custom color palettes
+      - # Example: Branded surfaces, text, borders and corners
+        type: theme
+        light:
+          primary: "#0F766E"  # Teal-700
+          secondary: "#F59E0B"  # Amber-500
+          variables:
+            surface-background: "#F8FAFC"  # Page behind the components
+            surface-card: "#FFFFFF"  # Canvas components
+            fg-primary: "#0F172A"  # Main text
+            border: "#CBD5E1"
+            radius: 1rem  # Rounder corners; use 0 for square ones
+        dark:
+          primary: "#2DD4BF"  # Teal-400
+          secondary: "#FBBF24"  # Amber-400
+          variables:
+            surface-background: "#0B1120"
+            surface-card: "#111827"
+            fg-primary: "#F1F5F9"
+            border: "#334155"
+            radius: 1rem
+
+      - # Example: Custom chart color palettes
         type: theme
         light:
           primary: "#14B8A6"  # Teal
           secondary: "#10B981"  # Emerald
-          
-          color-sequential-1: "hsl(180deg 80% 95%)"
-          color-sequential-5: "hsl(180deg 80% 50%)"
-          color-sequential-9: "hsl(180deg 80% 25%)"
-          color-qualitative-1: "hsl(156deg 56% 52%)"
-          color-qualitative-2: "hsl(27deg 100% 65%)"
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
         dark:
           primary: "2DD4BF"
           secondary: "34D399"
-          
-          color-sequential-1: "hsl(180deg 40% 30%)"
-          color-sequential-5: "hsl(180deg 50% 50%)"
-          color-sequential-9: "hsl(180deg 60% 70%)"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
 
-      - # Example: Theme with KPI delta colors (green for positive, red for negative)
+      - # Example: KPI delta colors, with the variables set directly in the block instead of under `variables`
         type: theme
         light:
-            primary: "#6366f1"
-            secondary: "#8b5cf6"
-            kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-            kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+          primary: "#6366f1"
+          secondary: "#8b5cf6"
+          kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
+          kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
         dark:
-            primary: "#818cf8"
-            secondary: "#a78bfa"
-            kpi-positive: "#4ade80"  # Brighter green for dark mode
-            kpi-negative: "#f87171"  # Brighter red for dark mode
+          primary: "#818cf8"
+          secondary: "#a78bfa"
+          kpi-positive: "#4ade80"  # Brighter green for dark mode
+          kpi-negative: "#f87171"  # Brighter red for dark mode
     allOf:
       - title: Properties
         type: object
@@ -3298,7 +3504,7 @@ definitions:
                 description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for light theme
+                description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
           dark:
@@ -3319,7 +3525,7 @@ definitions:
                 description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for dark theme
+                description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
 
@@ -3422,6 +3628,7 @@ definitions:
       A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
       Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
       metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+      See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
     properties:
       metrics_sql:
         type: string
@@ -3440,7 +3647,9 @@ definitions:
           derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
           Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
           and size the chart to its container with `"width": "container"`, `"height": "container"`
-          and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+          and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+          Template values are JSON-escaped, so place placeholders inside JSON strings.
+          See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
     additionalProperties: false
 
   # Flint Chart Spec
@@ -3449,11 +3658,11 @@ definitions:
     properties:
       chartType:
         type: string
-        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`. See [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) for the full list.
       encodings:
         type: object
         description: |
-          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          Maps a visual channel (`x`, `y`, `x2`, `y2`, `color`, `size`, `column`, `row`, `group`, `goal`, ...)
           to a field. Each value is either a field name or an encoding object.
         additionalProperties:
           oneOf:
@@ -3706,6 +3915,9 @@ definitions:
       row_limit:
         type: string
         description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+      click_to_filter:
+        type: boolean
+        description: Whether clicking a cell or header filters the whole canvas by its values. Set to false to keep the table read-only, so selecting a row does not filter the other components. Defaults to true.
       fit_to_width:
         type: boolean
         description: When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
@@ -3754,9 +3966,6 @@ definitions:
       content:
         type: string
         description: Markdown content
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Markdown title
@@ -3777,9 +3986,6 @@ definitions:
       dark_url:
         type: string
         description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-      css:
-        type: object
-        description: CSS styles
       title:
         type: string
         description: Image title
@@ -4034,7 +4240,7 @@ definitions:
             description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for light theme
+            description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
       dark:
@@ -4055,7 +4261,7 @@ definitions:
             description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for dark theme
+            description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
   api_data_properties:
@@ -4173,6 +4379,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status
@@ -4296,6 +4507,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status
@@ -4767,6 +4983,29 @@ definitions:
               comparison_dimension:
                 type: string
                 description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+              filters:
+                type: string
+                description: "Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view."
+            additionalProperties: false
+          filters:
+            type: object
+            description: Configures the filters of the explore view.
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object

@@ -156,6 +156,7 @@ export class JoinerFilterManager {
             initExpr: expr,
             isInList: dimensionsWithInlistFilter.includes(ident),
             events,
+            yamlConfigProvider,
           },
         );
       }
@@ -193,12 +194,16 @@ export class JoinerFilterManager {
     };
 
     expr?.cond?.exprs?.forEach((e) => {
+      const op = e.cond?.op;
+      const isJoiner =
+        op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR;
       const manager = JoinerFilterManager.parse(
         metricsViewsProvider,
         e,
         dimensionsWithInlistFilter,
-        // Deeper parse should not add required/pinned filters. So pass undefined here.
-        undefined,
+        // A nested joiner should not add required/pinned filters, so it gets no config.
+        // A condition at this level does, since single-select filters apply to the chips.
+        isJoiner ? undefined : yamlConfigProvider,
         events,
       );
       if (!manager) return;
@@ -210,14 +215,14 @@ export class JoinerFilterManager {
     // yamlConfigProvider is only provided for the top level manager.
     // TODO: handle advanced filters
     if (yamlConfigProvider) {
-      Object.keys(yamlConfigProvider.requiredFilters)
-        .concat(Object.keys(yamlConfigProvider.pinnedFilters))
+      yamlConfigProvider.requiredFilters
+        .concat(yamlConfigProvider.pinnedFilters)
         .forEach((requiredFilter) => {
           const manager =
             DimensionFilterManager.createForMetricsViews(
               metricsViewsProvider,
               requiredFilter,
-              { events },
+              { events, yamlConfigProvider },
             ) ??
             MeasureFilterManager.createForMetricsViews(
               metricsViewsProvider,
@@ -277,15 +282,15 @@ export class JoinerFilterManager {
   public addRequiredAndPinnedFilters() {
     if (!this.yamlConfigProvider) return;
 
-    Object.keys(this.yamlConfigProvider.requiredFilters)
-      .concat(Object.keys(this.yamlConfigProvider.pinnedFilters))
+    this.yamlConfigProvider.requiredFilters
+      .concat(this.yamlConfigProvider.pinnedFilters)
       .forEach((name) => {
         if (this.managerLookup[name]) return;
 
         const dimensionManager = DimensionFilterManager.createForMetricsViews(
           this.metricsViewsProvider,
           name,
-          { events: this.events },
+          { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
         );
         if (dimensionManager) {
           this.maybeAddDimensionFilter(dimensionManager);
@@ -301,20 +306,23 @@ export class JoinerFilterManager {
       });
   }
 
+  /** Narrows the filters that became single-select after the param was parsed. */
+  public enforceSingleSelectFilters() {
+    this.managers.dimensionManagers.forEach((dfm) => dfm.enforceSingleSelect());
+  }
+
   public removeEmptyManagers() {
     this.managers = {
       ...this.managers,
       dimensionManagers: this.managers.dimensionManagers.filter(
         (dfm) =>
           !!dfm.expr ||
-          this.yamlConfigProvider?.requiredFilters[dfm.name] ||
-          this.yamlConfigProvider?.pinnedFilters[dfm.name],
+          this.yamlConfigProvider?.isPinnedOrRequiredFilter(dfm.name),
       ),
       measureManagers: this.managers.measureManagers.filter(
         (mfm) =>
           !!mfm.expr ||
-          this.yamlConfigProvider?.requiredFilters[mfm.name] ||
-          this.yamlConfigProvider?.pinnedFilters[mfm.name],
+          this.yamlConfigProvider?.isPinnedOrRequiredFilter(mfm.name),
       ),
     };
   }

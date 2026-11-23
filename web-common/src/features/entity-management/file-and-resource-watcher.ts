@@ -101,7 +101,12 @@ export class FileAndResourceWatcher {
         maxRetryAttempts: MAX_RETRIES,
         retryOnError: true,
         retryOnClose: true,
-        onBeforeReconnect: options.onBeforeReconnect,
+        onBeforeReconnect: async () => {
+          await options.onBeforeReconnect?.();
+          // .env and OLAP changes restart the controller. Opening the stream
+          // while it is closed consumes retries and can leave a fatal page.
+          await waitForControllerRestart(this.runtimeClient, this.queryClient);
+        },
       },
       decoders: {
         file: (data) => JSON.parse(data) as V1WatchFilesResponse,
@@ -150,12 +155,15 @@ export class FileAndResourceWatcher {
     // On reconnect, re-run the post-connect bootstrap: events emitted while
     // disconnected may have been dropped, so we force a full re-fetch of
     // runtime-scoped queries and refresh the file-artifacts index.
-    this.stream.onConnection("reconnect", async () => {
-      // Safeguard to make sure controller is actuall restarted
-      await waitForControllerRestart(this.runtimeClient, this.queryClient);
-      void this.invalidateAll().then(() =>
-        fileArtifacts.init(this.runtimeClient, this.queryClient),
-      );
+    this.stream.onConnection("reconnect", () => {
+      void this.invalidateAll()
+        .then(() => fileArtifacts.init(this.runtimeClient, this.queryClient))
+        .catch((error: unknown) => {
+          console.warn(
+            "Failed to refresh runtime state after reconnect",
+            error,
+          );
+        });
     });
   }
 

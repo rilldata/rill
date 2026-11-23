@@ -67,7 +67,7 @@ export function generateVLStackedBarChartSpec(
   const isInteractive = !!config.isInteractive && !horizontal;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField: sanitizedXField,
+    xField: config.x?.field,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: defaultTooltipChannel,

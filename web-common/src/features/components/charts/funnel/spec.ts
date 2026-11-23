@@ -29,7 +29,9 @@ function createModeTransforms(
         window: [{ op: "row_number", as: "funnel_rank" }],
         sort: [
           {
-            field: isMultiMeasure ? "value" : measureField!,
+            field: isMultiMeasure
+              ? "value"
+              : sanitizeValueForVega(measureField!),
             order: "descending",
           },
         ],
@@ -98,8 +100,16 @@ function createPercentageTransforms(
       { calculate: positionExpr, as: "funnel_position" },
       {
         window: [
-          { op: "first_value", field: measureField!, as: "top_value" },
-          { op: "lag", field: measureField!, as: "prev_value" },
+          {
+            op: "first_value",
+            field: sanitizeValueForVega(measureField!),
+            as: "top_value",
+          },
+          {
+            op: "lag",
+            field: sanitizeValueForVega(measureField!),
+            as: "prev_value",
+          },
         ],
         sort: [{ field: "funnel_position", order: "ascending" }],
       },
@@ -109,8 +119,16 @@ function createPercentageTransforms(
     // row is the top of the funnel and lag returns the immediately prior stage.
     transforms.push({
       window: [
-        { op: "first_value", field: measureField!, as: "top_value" },
-        { op: "lag", field: measureField!, as: "prev_value" },
+        {
+          op: "first_value",
+          field: sanitizeValueForVega(measureField!),
+          as: "top_value",
+        },
+        {
+          op: "lag",
+          field: sanitizeValueForVega(measureField!),
+          as: "prev_value",
+        },
       ],
     });
   }
@@ -155,6 +173,13 @@ export function generateVLFunnelChartSpec(
   const textColor = data.isDarkMode ? "#eeeeee" : "#353535";
 
   const isMultiMeasure = config.breakdownMode === "measures";
+  // Vega field references for the configured measure and stage.
+  const measureRef = config.measure?.field
+    ? sanitizeValueForVega(config.measure.field)
+    : undefined;
+  const stageRef = config.stage?.field
+    ? sanitizeValueForVega(config.stage.field)
+    : undefined;
 
   const measureDisplayNames: Record<string, string> = {};
   if (isMultiMeasure && config.measure?.field) {
@@ -232,7 +257,7 @@ export function generateVLFunnelChartSpec(
     // Transform data for multi-measure funnel
     transforms.push(
       {
-        fold: measures,
+        fold: measures.map((measure) => sanitizeValueForVega(measure)),
         as: ["Measure", "value"],
       },
       {
@@ -300,7 +325,7 @@ export function generateVLFunnelChartSpec(
         },
       },
       color: {
-        field: colorField,
+        field: colorField ? sanitizeValueForVega(colorField) : undefined,
         type: (colorType === "value" ? "nominal" : colorType) as
           | "quantitative"
           | "ordinal"
@@ -364,7 +389,7 @@ export function generateVLFunnelChartSpec(
         stack: "center",
       },
       text: {
-        field: isMultiMeasure ? "value" : config.measure?.field,
+        field: isMultiMeasure ? "value" : measureRef,
         type: isMultiMeasure
           ? "quantitative"
           : config.measure?.type === "value"
@@ -397,7 +422,7 @@ export function generateVLFunnelChartSpec(
             type: "nominal",
           }
         : {
-            field: config.stage?.field,
+            field: stageRef,
             type: "nominal",
           },
     },

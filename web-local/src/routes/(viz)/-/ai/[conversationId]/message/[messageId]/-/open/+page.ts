@@ -8,7 +8,7 @@ import { openQuery } from "@rilldata/web-common/features/explore-mappers/open-qu
 export async function load({ parent }) {
   const { message, result } = await parent();
 
-  const query = maybeGetMetricsResolverQueryFromMessage(message);
+  const query = maybeGetMetricsResolverQueryFromMessage(message, result);
   const resolvedTimeRanges = getResolvedTimeRangesFromMessage(result);
   const client = getLocalRuntimeClient();
 

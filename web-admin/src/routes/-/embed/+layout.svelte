@@ -33,13 +33,16 @@
     navigationBarEnabled,
     runtimeHost,
     accessToken,
+    embedAdminActions,
   } = data;
 
   const { dashboardChat } = featureFlags;
 
-  // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
-  // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
+  // Embedded dashboards communicate directly with the project runtime and have no user session with the admin server.
+  // One by-product of this is that they have no access to control plane features like bookmarks.
+  // When given an admin token, they can call a scoped set of admin APIs, like creating scheduled reports.
   featureFlags.set(false, "adminServer");
+  featureFlags.set(embedAdminActions, "embedAdminActions");
 
   // Extract active resource info from current route
   // Falls back to Canvas if route doesn't match a dashboard pattern (e.g., project page)
@@ -62,8 +65,6 @@
           | ResourceKind.Explore
           | ResourceKind.Canvas
           | undefined);
-
-  $: showTopBar = navigationBarEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -145,16 +146,9 @@
     jwt={accessToken}
     authContext="embed"
   >
-    {#if showTopBar}
-      <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
-        <div
-          class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
-          class:border-b={!onProjectPage}
-        >
-          <EmbedHeader {activeResource} {navigationBarEnabled} />
-        </div>
-      </ThemeProvider>
-    {/if}
+    <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+      <EmbedHeader {activeResource} {navigationBarEnabled} />
+    </ThemeProvider>
 
     <div class="flex h-full overflow-hidden">
       <div class="flex-1 overflow-hidden">

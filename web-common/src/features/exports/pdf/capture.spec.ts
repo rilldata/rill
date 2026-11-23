@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { getFontEmbedCSS, toJpeg } from "html-to-image";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { captureCanvasBlocks, captureTargetsIn, rowIndexFor } from "./capture";
+import {
+  captureCanvasBlocks,
+  captureTargetsIn,
+  measureCanvasBlocks,
+  rowIndexFor,
+} from "./capture";
 
 vi.mock("html-to-image", () => ({
   toJpeg: vi.fn(() => Promise.resolve("data:image/jpeg;base64,")),
@@ -163,5 +168,31 @@ describe("captureCanvasBlocks", () => {
   // latency on the first export in every browser, affected or not.
   it("probes without resolving web fonts", () => {
     expect(probeOptions.skipFonts).toBe(true);
+  });
+});
+
+describe("measureCanvasBlocks", () => {
+  it("reports each target's row, kind and tab in document order", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <section id="canvas-row-0">
+        <article id="free-a" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-overview" class="pdf-tab-label-row"></section>
+      <section id="canvas-row-g-overview-0" data-tab-group="g" data-tab="overview">
+        <article id="tab-a" class="component-card"></article>
+      </section>
+    `;
+
+    const blocks = measureCanvasBlocks(container);
+
+    expect(
+      blocks.map((b) => [b.id, b.rowIndex, b.isTabLabel, b.tabGroup, b.tab]),
+    ).toStrictEqual([
+      ["free-a", 0, false, undefined, undefined],
+      ["pdf-tab-label-g-overview", 2, true, undefined, undefined],
+      ["tab-a", 2, false, "g", "overview"],
+    ]);
+    expect(blocks[0].element).toBe(container.querySelector("#free-a"));
   });
 });

@@ -1,3 +1,4 @@
+import type { ExactSelection } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
@@ -41,6 +42,18 @@ export interface ExploreState {
    * available in the measure menus until explicitly deleted.
    */
   ephemeralMeasures?: EphemeralMeasureDef[];
+
+  /**
+   * Measures the viewer switched to their `exact_expression`, per surface
+   * (the big-number row, each leaderboard, the dimension table, the Time
+   * Dimension Detail, the pivot; see `exploreExactSurface`), tied to the query
+   * context (filters, time controls, view, sorting) they were selected in; see
+   * `getQueryContextKey`. The store drops the selection as soon as the context
+   * changes, so exact values are only fetched after an explicit click. Tab
+   * memory only: never written to the URL, session storage, bookmarks, public
+   * URLs, reports or alerts.
+   */
+  exactMeasures?: ExactSelection;
 
   /**
    * While the `visibleMeasureKeys` has the list of visible measures,

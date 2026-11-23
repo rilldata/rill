@@ -1,4 +1,5 @@
 import {
+  getBaseGrain,
   V1TimeGrainToOrder,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
@@ -47,7 +48,7 @@ const dayGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
 function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
   if (!interval.start?.isValid || !interval.end?.isValid) return ""; // type safety
 
-  const grainOrder = V1TimeGrainToOrder[grain] ?? 0;
+  const grainOrder = V1TimeGrainToOrder[getBaseGrain(grain)] ?? 0;
   const hasSameMonth = interval.start.month === interval.end.month;
   const showMonth =
     !hasSameMonth || grainOrder < yearGrainOrder || interval.start.month !== 1;
@@ -109,13 +110,15 @@ function formatTimePartOfTimeRange(
   return ` (${formattedStart}-${formattedEnd})`;
 }
 
+// Multiples such as TIME_GRAIN_10_MINUTE use the order of their base unit,
+// so a 10-minute bucket shows minutes and a 6-hour bucket shows the hour.
 function getCorrectGrainOrder(grain: V1TimeGrain) {
   if (
     grain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
     !(grain in V1TimeGrainToOrder)
   )
     return yearGrainOrder + 1;
-  return V1TimeGrainToOrder[grain];
+  return V1TimeGrainToOrder[getBaseGrain(grain)];
 }
 
 const quarterGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER];

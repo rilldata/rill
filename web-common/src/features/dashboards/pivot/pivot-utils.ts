@@ -25,7 +25,8 @@ import type {
 import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import type { Row } from "tanstack-table-8-svelte-5";
+import type { Column, Row } from "tanstack-table-8-svelte-5";
+import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import {
   MAX_PIVOT_COMPARISON_MEASURES,
@@ -34,8 +35,12 @@ import {
 } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import { canSortPivotBy } from "./pivot-sorting";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
-import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -104,8 +109,11 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   // Ephemeral measure definitions are part of the key so editing an
   // expression (without renaming) refetches instead of serving cached data.
   const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
+  // The exact selection is part of the key so switching a measure to exact
+  // refetches instead of serving cached approximate rows.
+  const exactMeasuresKey = JSON.stringify(config.exactMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}_${exactMeasuresKey}`;
 }
 
 /**
@@ -150,6 +158,22 @@ export function getTimeForQuery(
   });
 
   return { start: timeStart, end: timeEnd };
+}
+
+/**
+ * Time filter spanning the given buckets of a time dimension,
+ * from the first bucket through the end of the last one.
+ */
+export function getTimeFilterSpanningValues(
+  dimension: string,
+  values: string[],
+): TimeFilters {
+  const dates = values.map((d) => new Date(d).getTime());
+  return {
+    timeStart: new Date(Math.min(...dates)).toISOString(),
+    timeEnd: new Date(Math.max(...dates)).toISOString(),
+    interval: getTimeGrainFromDimension(dimension),
+  };
 }
 
 /**
@@ -444,8 +468,11 @@ export function getSortForAccessor(
     end: config.time.timeEnd,
   };
 
-  // Return un-changed filter if no sorting is applied or in flat mode
-  if (config.pivot?.sorting?.length === 0 || config.isFlat) {
+  const sorting = config.pivot?.sorting?.[0];
+  // No sort to apply for a flat table (its cell query sorts) or when the
+  // sort's field is no longer in the pivot: a sort outlives its field in
+  // URLs, bookmarks and reports, and the runtime rejects unknown names.
+  if (!sorting || config.isFlat || !canSortPivotBy(sorting.id, config)) {
     return {
       sortPivotBy,
       timeRange: defaultTimeRange,
@@ -453,14 +480,14 @@ export function getSortForAccessor(
   }
 
   const { rowDimensionNames, measureNames } = config;
-  const accessor = config.pivot.sorting[0].id;
+  const accessor = sorting.id;
 
   // For the first column, the accessor is the row dimension name
   const firstDimension = rowDimensionNames?.[0];
   if (firstDimension === accessor) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: anchorDimension,
       },
     ];
@@ -474,7 +501,7 @@ export function getSortForAccessor(
   if (measureNames.includes(accessor)) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: accessor,
       },
     ];
@@ -496,7 +523,7 @@ export function getSortForAccessor(
   if (measureName) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: measureName,
       },
     ];
@@ -551,17 +578,40 @@ export function prepareMeasureForComparison(
 
 /**
  * Maps plain measure names to request measures: comparison-suffixed names get
- * their comparison compute, and ephemeral measure names get the `expression`
- * compute carrying their definition.
+ * their comparison compute, ephemeral measure names get the `expression`
+ * compute carrying their definition, and exact measures (and the comparison
+ * measures derived from them) get `exact: true`.
  */
 export function prepareMeasuresForRequest(
   measures: V1MetricsViewAggregationMeasure[],
   ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+  exactMeasures?: Iterable<string>,
 ): V1MetricsViewAggregationMeasure[] {
-  return mapEphemeralMeasuresForRequest(
-    prepareMeasureForComparison(measures),
-    ephemeralMeasures,
+  return applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      prepareMeasureForComparison(measures),
+      ephemeralMeasures,
+    ),
+    exactMeasures ? new Set(exactMeasures) : undefined,
   );
+}
+
+/**
+ * The precision chip of a pivot column header. Only the main measure columns
+ * get one: their delta and percent companions share the base measure in their
+ * column meta but are named with a comparison suffix.
+ */
+export function precisionForColumn(
+  column: Column<PivotDataRow, unknown>,
+  precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined,
+): PrecisionChipProps | undefined {
+  if (!precisionFor) return undefined;
+  const measureName = column.columnDef.meta?.measureName;
+  const columnName = (column.columnDef as { name?: string }).name;
+  if (!measureName || columnName !== measureName) return undefined;
+  return precisionFor(measureName);
 }
 
 export function canEnablePivotComparison(

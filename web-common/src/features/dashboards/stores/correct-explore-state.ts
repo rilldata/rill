@@ -1,4 +1,5 @@
 import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector.ts";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
@@ -26,6 +27,21 @@ export function correctExploreState(
   AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
 
   correctLeaderboardMeasures(exploreState);
+  correctPivotFields(exploreState);
+}
+
+/**
+ * Drops a pivot field listed twice in a zone, or in both zones, and fields
+ * with an empty name. Every loaded state ends here, whatever its source
+ * (url, bookmark, legacy proto state, session or yaml defaults), and the
+ * pivot header keys its chips by field, so a repeat would break the view.
+ */
+function correctPivotFields(exploreState: ExploreState) {
+  exploreState.pivot.rows = dedupePivotChips(exploreState.pivot.rows);
+  exploreState.pivot.columns = dedupePivotChips(
+    exploreState.pivot.columns,
+    exploreState.pivot.rows.map((chip) => chip.id),
+  );
 }
 
 function correctLeaderboardMeasures(exploreState: ExploreState) {

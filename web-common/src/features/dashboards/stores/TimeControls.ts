@@ -14,6 +14,7 @@ import {
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
+import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Settings } from "luxon";
 import {
@@ -50,6 +51,8 @@ export class TimeControls {
    */
   public readonly allTimeRange: Readable<TimeRange | undefined>;
   public readonly minTimeGrain: Readable<V1TimeGrain>;
+  // The grains the metrics view offers, see getAvailableTimeGrains
+  public readonly availableTimeGrains: Readable<V1TimeGrain[]>;
   public readonly hasTimeSeries: Readable<boolean>;
   public readonly timeRangeStateStore: Readable<TimeRangeState | undefined>;
   public readonly comparisonRangeStateStore: Readable<
@@ -101,6 +104,12 @@ export class TimeControls {
       },
     );
 
+    this.availableTimeGrains = derived(
+      metricsViewMetadata.validSpecQuery,
+      (validSpecResp) =>
+        getAvailableTimeGrains(validSpecResp.data?.metricsView),
+    );
+
     this.timeRangeStateStore = derived(
       [
         metricsViewMetadata.validSpecQuery,
@@ -108,6 +117,7 @@ export class TimeControls {
         this.selectedTimeRange,
         this.selectedTimezone,
         this.minTimeGrain,
+        this.availableTimeGrains,
       ],
       ([
         validSpecResp,
@@ -115,6 +125,7 @@ export class TimeControls {
         selectedTimeRange,
         selectedTimezone,
         minTimeGrain,
+        availableTimeGrains,
       ]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
@@ -148,6 +159,8 @@ export class TimeControls {
           selectedTimezone,
           defaultTimeRange,
           minTimeGrain,
+          false,
+          availableTimeGrains,
         );
         if (!timeRangeState) return undefined;
         return { ...timeRangeState };

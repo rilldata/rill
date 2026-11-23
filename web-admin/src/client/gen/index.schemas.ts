@@ -9,6 +9,9 @@ export interface GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
   unsubscribeUrl?: string;
+  /** If true, the recipient is the embed user who created the alert.
+Only set for alerts created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export type GetGithubPullRequestResponseState =
@@ -33,6 +36,13 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
+  /** If true, the recipient is the embed user who created the report.
+Only set for reports created from an embed, for the recipient that matches the creator's saved email. */
+  embedOwner?: boolean;
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -124,10 +134,22 @@ export interface V1AlertOptions {
   queryName?: string;
   /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
+  /** Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used. */
+  notifyRowsLimit?: number;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   emailRecipients?: string[];
+  /** Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -292,6 +314,8 @@ export interface V1Bookmark {
   userId?: string;
   default?: boolean;
   shared?: boolean;
+  /** Whether the caller can update and remove the bookmark. */
+  canManage?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -305,6 +329,9 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Whether the response may include reasoning blocks.
+Older clients don't support them, so they are removed from the response unless this is set. */
+  includeReasoning?: boolean;
 }
 
 export interface V1CompleteResponse {
@@ -315,6 +342,8 @@ export interface V1CompleteResponse {
   outputTokens?: number;
   /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
   /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
   provider?: string;
 }
@@ -338,6 +367,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1CreateAlertResponse {
@@ -358,6 +388,7 @@ export interface V1CreateBookmarkRequest {
   urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
+  /** ID of the project. Optional for embed users, where it defaults to the embed's project. */
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -557,6 +588,13 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  /** ID of the user to run the alert's queries as.
+Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe. */
+  queryForUserId?: string;
+  /** If true, the alert's data must only be accessed through the resources listed in `resources`.
+Set for alerts created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -619,6 +657,9 @@ export interface V1GetConnectorOAuthTokenResponse {
 
 export interface V1GetCurrentMagicAuthTokenResponse {
   token?: V1MagicAuthToken;
+  /** True when the bearer is a password-protected token that has not been unlocked.
+In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token. */
+  locked?: boolean;
 }
 
 export interface V1GetCurrentUserResponse {
@@ -679,6 +720,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetEmbedUserResponse {
+  /** The external user ID passed to GetIFrame. */
+  externalUserId?: string;
 }
 
 export interface V1GetGithubPullRequestResponse {
@@ -1033,6 +1079,8 @@ export interface V1MagicAuthToken {
   fields?: string[];
   state?: string;
   displayName?: string;
+  /** True if recipients must enter a password before the token grants access. */
+  passwordProtected?: boolean;
 }
 
 export interface V1MemberUsergroup {
@@ -1299,6 +1347,19 @@ export interface V1Quotas {
   tokensPerSeat?: string;
 }
 
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
+
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
 
 export interface V1RecordEventsRequest {
@@ -1381,6 +1442,11 @@ export interface V1ReportOptions {
   /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
   exportAttach?: boolean;
   emailRecipients?: string[];
+  /** Email of the embed user who creates the report; only used for reports created from an embed.
+Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+It's always added to `email_recipients`, and it can't unsubscribe from the report.
+If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one. */
+  embedOwnerEmail?: string;
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
@@ -1714,6 +1780,16 @@ export interface V1TriggerReportResponse {
   [key: string]: unknown;
 }
 
+export interface V1UnlockMagicAuthTokenRequest {
+  password?: string;
+}
+
+export interface V1UnlockMagicAuthTokenResponse {
+  /** Session token to use as the bearer token instead of the magic auth token. */
+  sessionToken?: string;
+  expiresOn?: string;
+}
+
 export interface V1UnsubscribeAlertResponse {
   [key: string]: unknown;
 }
@@ -1738,6 +1814,10 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBookmarkResponse {
   [key: string]: unknown;
+}
+
+export interface V1UpdateMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
 }
 
 export interface V1UpdateOrganizationMemberUserAttributesResponse {
@@ -1927,6 +2007,15 @@ export type AdminServiceGetGithubRepoStatusParams = {
   remote?: string;
 };
 
+export type AdminServiceUpdateMagicAuthTokenBody = {
+  /** New display name. Unchanged if not set. */
+  displayName?: string;
+  /** New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set. */
+  password?: string;
+  /** Removes the password. Can't be combined with password. */
+  removePassword?: boolean;
+};
+
 export type AdminServiceListOrganizationsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1949,6 +2038,11 @@ export type AdminServiceUpdateOrganizationBody = {
 };
 
 export type AdminServiceGetBillingCreditBalanceParams = {
+  /**
+ * If true, a recently fetched balance may be returned instead of querying the billing provider.
+If false, the balance is always fetched from the billing provider.
+ */
+  allowCached?: boolean;
   superuserForceAccess?: boolean;
 };
 
@@ -2204,7 +2298,8 @@ export type AdminServiceGetIFrameBody = {
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
   /** Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
-Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state. */
+Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+Must be at most 2048 bytes. */
   externalUserId?: string;
   /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
   type?: string;
@@ -2212,6 +2307,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
+  /** The `rill_open` query param of an open link from an email sent by a report created from an embed.
+If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report. */
+  open?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
@@ -2317,6 +2416,9 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   displayName?: string;
   /** list of resources to grant access to. */
   resources?: V1ResourceName[];
+  /** Optional password that recipients must enter before the token grants access.
+Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced. */
+  password?: string;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {
@@ -2595,6 +2697,9 @@ This is only allowed for superusers. */
 };
 
 export type AdminServiceListBookmarksParams = {
+  /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   */
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").

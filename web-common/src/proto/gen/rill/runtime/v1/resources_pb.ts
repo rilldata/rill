@@ -1464,7 +1464,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  /**
+   * Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+   * Empty means the standard grains at or above smallest_time_grain.
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeGrain time_grains = 38;
+   */
+  timeGrains: TimeGrain[] = [];
 
   /**
    * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -1494,6 +1502,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Measure measures = 7;
    */
   measures: MetricsViewSpec_Measure[] = [];
+
+  /**
+   * Display order of the tags set on dimensions and measures.
+   * Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+   *
+   * @generated from field: repeated string tag_order = 39;
+   */
+  tagOrder: string[] = [];
 
   /**
    * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
@@ -1608,10 +1624,12 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 38, name: "time_grains", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 39, name: "tag_order", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
     { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
@@ -1798,7 +1816,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * The data type of the dimension. Only populated in ValidSpec.
@@ -1866,7 +1884,7 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Only for when ordering (optional)
@@ -2057,6 +2075,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   lowerIsBetter = false;
 
+  /**
+   * Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
+   *
+   * @generated from field: string exact_expression = 18;
+   */
+  exactExpression = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2082,6 +2107,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "exact_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -2255,7 +2281,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * IANA timezone the rollup was aggregated in; defaults to UTC
@@ -2846,10 +2872,34 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * Preset UI state to show by default.
+   * Its `where` holds the default filter, parsed from `defaults.filters`.
    *
    * @generated from field: rill.runtime.v1.ExplorePreset default_preset = 15;
    */
   defaultPreset?: ExplorePreset;
+
+  /**
+   * Dimension or measure names whose filter chip is always shown in the filter bar.
+   *
+   * @generated from field: repeated string pinned_filters = 24;
+   */
+  pinnedFilters: string[] = [];
+
+  /**
+   * Dimension or measure names that must have a filter value before the explore renders.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 25;
+   */
+  requiredFilters: string[] = [];
+
+  /**
+   * Dimensions whose filter holds at most one value at a time.
+   * Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+   *
+   * @generated from field: repeated string single_select_filters = 23;
+   */
+  singleSelectFilters: string[] = [];
 
   /**
    * If true, the pivot tab will be hidden when the explore is embedded.
@@ -2921,6 +2971,9 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
+    { no: 24, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "single_select_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4120,6 +4173,30 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
+   * Format of the attached export.
+   *
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 25;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 26;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 27;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: bool notify_on_recover = 15;
    */
   notifyOnRecover = false;
@@ -4133,6 +4210,13 @@ export class AlertSpec extends Message<AlertSpec> {
    * @generated from field: bool notify_on_error = 17;
    */
   notifyOnError = false;
+
+  /**
+   * Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
+   *
+   * @generated from field: uint32 notify_rows_limit = 28;
+   */
+  notifyRowsLimit = 0;
 
   /**
    * @generated from field: bool renotify = 18;
@@ -4177,9 +4261,14 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 25, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 26, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 27, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 28, name: "notify_rows_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 18, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },
@@ -5469,6 +5558,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
   requiredFilters: string[] = [];
 
   /**
+   * Array of dimension names whose filter holds at most one value at a time.
+   * Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
+   *
+   * @generated from field: repeated string single_select_filters = 22;
+   */
+  singleSelectFilters: string[] = [];
+
+  /**
    * Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
    *
    * @generated from field: map<string, string> annotations = 20;
@@ -5507,6 +5604,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 22, name: "single_select_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 21, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);

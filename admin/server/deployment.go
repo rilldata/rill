@@ -18,6 +18,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -593,6 +594,10 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}, nil
 }
 
+// maxExternalUserIDBytes is the maximum size of the external user ID that GetIFrame accepts.
+// The ID is stored with a unique index (see database.EmbedUser), and Postgres rejects index entries larger than about 2.7 KB.
+const maxExternalUserIDBytes = 2048
+
 func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (*adminv1.GetIFrameResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
@@ -603,10 +608,37 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.resource", req.Resource),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 		attribute.String("args.state", req.State),
+		attribute.String("args.open", req.Open),
 	)
 
-	if !req.Navigation && req.Resource == "" {
+	// Decode the "rill_open" param of an open link from an email sent by a report or alert created from an embed.
+	var open *embedopen.Payload
+	if req.Open != "" {
+		if req.Resource != "" {
+			return nil, status.Error(codes.InvalidArgument, "open can't be combined with resource")
+		}
+		// Only reports and alerts created from an embed can be opened, and they are owned by the embed user's external user ID.
+		if req.ExternalUserId == "" {
+			return nil, status.Error(codes.InvalidArgument, "open requires external_user_id")
+		}
+		var err error
+		open, err = embedopen.Decode(req.Open)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
+		}
+		// The name is used to look up the virtual file of the report or alert, so it must be a plain name and not a path.
+		// Otherwise, it could resolve to another kind of virtual file, whose content the embed user controls.
+		if strings.ContainsAny(open.Name, `/\`) {
+			return nil, status.Error(codes.InvalidArgument, "invalid open: name can't contain slashes")
+		}
+	}
+
+	if !req.Navigation && req.Resource == "" && open == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
+	}
+
+	if len(req.ExternalUserId) > maxExternalUserIDBytes {
+		return nil, status.Errorf(codes.InvalidArgument, "external_user_id must be at most %d bytes", maxExternalUserIDBytes)
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -655,6 +687,42 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}}
 	}
 
+	// When opening a report or alert, the embed opens the explore dashboard it targets.
+	// If navigation is disabled, limit access the same way as when the report or alert runs (see resolveEmbedOwnerIdentity).
+	if open != nil {
+		var vfPath string
+		switch open.Kind {
+		case embedopen.KindReport:
+			vfPath = virtualFilePathForManagedReport(open.Name)
+		case embedopen.KindAlert:
+			vfPath = virtualFilePathForManagedAlert(open.Name)
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid open: unsupported kind %q", open.Kind)
+		}
+
+		// The open payload is not signed, so only allow opening a report or alert created by the embed user.
+		// Otherwise, a user could edit the payload to open another user's report or alert and gain access to its dashboard.
+		// Embed users are identified by their external user ID, and the virtual file's embed owner is the source of truth for ownership.
+		embedInfo, err := s.embedCreatedInfo(ctx, proj.ID, vfPath)
+		if err != nil {
+			return nil, err
+		}
+		if embedInfo == nil || embedInfo.ownerID == "" || embedInfo.ownerID != subjectForExternalUser(req.ExternalUserId, proj.ID) {
+			return nil, status.Errorf(codes.PermissionDenied, "%s %q was not created by the provided external_user_id", open.Kind, open.Name)
+		}
+
+		// Reports and alerts created from an embed only support explore dashboards (see yamlForManagedReport and yamlForManagedAlert).
+		req.Type = runtime.ResourceKindExplore
+		if !req.Navigation {
+			// Limit the iframe to the resources the report or alert is limited to, which are those of the embed it was created from.
+			// If it is not limited, there is no override, so the resource restrictions of the user's identity apply.
+			// The report or alert itself is not one of the resources: it gives transitive access to the resources of its query,
+			// which the embed user writes, so it could give access to a metrics view outside of those resources.
+			// The embed doesn't need it either, since the runtime lets the creator of a report or alert read it regardless.
+			overrideResources = embedInfo.resources
+		}
+	}
+
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
@@ -690,11 +758,42 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, err
 	}
 
+	// Embed users with an external user ID can create reports and alerts, which run as the identity of their latest iframe.
+	// So we store the identity, and issue an admin token that identifies the embed user.
+	// This happens after issuing the runtime token, so invalid combinations of "for" and external user ID don't write anything.
+	var adminToken string
+	if req.ExternalUserId != "" {
+		embedUserID := subjectForExternalUser(req.ExternalUserId, proj.ID)
+		var email *string
+		if opts.forUserEmail != "" {
+			email = &opts.forUserEmail
+		}
+		err = s.admin.DB.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+			ID:             embedUserID,
+			ProjectID:      proj.ID,
+			ExternalUserID: req.ExternalUserId,
+			Email:          email,
+			Attributes:     opts.forUserAttributes,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Pass the final overrideResources so reports and alerts created from the embed are limited to the same resources as the iframe.
+		adminToken, err = s.admin.IssueEmbedToken(proj.ID, embedUserID, overrideResources, ttlDuration)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Build the iframe URL search params
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
+	}
+	if adminToken != "" {
+		iframeQuery["admin_token"] = adminToken
 	}
 
 	iframeQuery["type"] = req.Type
@@ -702,6 +801,15 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource
+	}
+
+	// Pass the decoded open payload, so the iframe doesn't need to decode it again.
+	if open != nil {
+		iframeQuery["open_kind"] = string(open.Kind)
+		iframeQuery["open_name"] = open.Name
+		if !open.ExecutionTime.IsZero() {
+			iframeQuery["open_execution_time"] = open.ExecutionTime.UTC().Format(time.RFC3339)
+		}
 	}
 
 	if req.Theme != "" {
@@ -728,6 +836,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["external_user_id"] = req.ExternalUserId
 	}
 
+	// The UI uses the email to pre-fill the recipients of reports.
+	if opts.forUserEmail != "" {
+		iframeQuery["user_email"] = opts.forUserEmail
+	}
+
 	for k, v := range req.Query {
 		iframeQuery[k] = v
 	}
@@ -749,6 +862,39 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
 		TtlSeconds:  uint32(opts.ttl.Seconds()),
+	}, nil
+}
+
+// GetEmbedUser returns the external user ID of an embed user.
+// It is only available to users who can manage reports, since it shows who created reports from an embed.
+func (s *Server) GetEmbedUser(ctx context.Context, req *adminv1.GetEmbedUserRequest) (*adminv1.GetEmbedUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ManageReports {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read embed users")
+	}
+
+	embedUser, err := s.admin.DB.FindEmbedUser(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	if embedUser.ProjectID != proj.ID {
+		return nil, status.Error(codes.NotFound, "embed user not found")
+	}
+
+	return &adminv1.GetEmbedUserResponse{
+		ExternalUserId: embedUser.ExternalUserID,
 	}, nil
 }
 
@@ -847,28 +993,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	return resp, nil
 }
 
-// getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
-// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
-// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
-	attr, userID, _, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	if userID == "" {
-		return attr, false, nil, nil
-	}
-
-	// Determine resource restrictions from project member and usergroups
-	restrictResources, resources, err := s.getResourceRestrictionsForUser(ctx, projID, userID)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	return attr, restrictResources, resources, nil
-}
-
 // getAttributesForUser returns
 //  1. map of attributes for a given user and project and
 //  2. userID
@@ -959,6 +1083,8 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 
 // subjectForExternalUser generates a safe subject from an external user ID accessing a deployment in the specified project.
 // The result is safe to use as a JWT subject and in telemetry (where we need to avoid collisions and PII).
+// It is also the ID of the database.EmbedUser for the external user, which owns resources such as reports created from an embed.
+// NOTE: The hash is unsalted, so anyone who knows the project ID can recover guessable external user IDs from it.
 func subjectForExternalUser(externalUserID, projectID string) string {
 	hash := sha256.Sum256([]byte(externalUserID + projectID))
 	return "ext_" + hex.EncodeToString(hash[:])

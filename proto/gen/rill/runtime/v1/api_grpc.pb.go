@@ -56,6 +56,8 @@ const (
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
+	RuntimeService_UpdateConversation_FullMethodName      = "/rill.runtime.v1.RuntimeService/UpdateConversation"
+	RuntimeService_DeleteConversation_FullMethodName      = "/rill.runtime.v1.RuntimeService/DeleteConversation"
 	RuntimeService_ShareConversation_FullMethodName       = "/rill.runtime.v1.RuntimeService/ShareConversation"
 	RuntimeService_ForkConversation_FullMethodName        = "/rill.runtime.v1.RuntimeService/ForkConversation"
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
@@ -176,6 +178,10 @@ type RuntimeServiceClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*GetConversationResponse, error)
+	// UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+	UpdateConversation(ctx context.Context, in *UpdateConversationRequest, opts ...grpc.CallOption) (*UpdateConversationResponse, error)
+	// DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+	DeleteConversation(ctx context.Context, in *DeleteConversationRequest, opts ...grpc.CallOption) (*DeleteConversationResponse, error)
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
@@ -647,6 +653,26 @@ func (c *runtimeServiceClient) GetConversation(ctx context.Context, in *GetConve
 	return out, nil
 }
 
+func (c *runtimeServiceClient) UpdateConversation(ctx context.Context, in *UpdateConversationRequest, opts ...grpc.CallOption) (*UpdateConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteConversation(ctx context.Context, in *DeleteConversationRequest, opts ...grpc.CallOption) (*DeleteConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DeleteConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShareConversationResponse)
@@ -1026,6 +1052,10 @@ type RuntimeServiceServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error)
+	// UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+	UpdateConversation(context.Context, *UpdateConversationRequest) (*UpdateConversationResponse, error)
+	// DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+	DeleteConversation(context.Context, *DeleteConversationRequest) (*DeleteConversationResponse, error)
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
@@ -1210,6 +1240,12 @@ func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *Lis
 }
 func (UnimplementedRuntimeServiceServer) GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateConversation(context.Context, *UpdateConversationRequest) (*UpdateConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteConversation(context.Context, *DeleteConversationRequest) (*DeleteConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConversation not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShareConversation not implemented")
@@ -1961,6 +1997,42 @@ func _RuntimeService_GetConversation_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_UpdateConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateConversation(ctx, req.(*UpdateConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DeleteConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteConversation(ctx, req.(*DeleteConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ShareConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ShareConversationRequest)
 	if err := dec(in); err != nil {
@@ -2600,6 +2672,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConversation",
 			Handler:    _RuntimeService_GetConversation_Handler,
+		},
+		{
+			MethodName: "UpdateConversation",
+			Handler:    _RuntimeService_UpdateConversation_Handler,
+		},
+		{
+			MethodName: "DeleteConversation",
+			Handler:    _RuntimeService_DeleteConversation_Handler,
 		},
 		{
 			MethodName: "ShareConversation",

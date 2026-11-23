@@ -2,13 +2,11 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
-    getAllowedTimeGrains,
-    isGrainBigger,
-  } from "@rilldata/web-common/lib/time/grains";
-  import { translateGrainName } from "@rilldata/web-common/lib/time/new-grains";
-  import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
+    allowedGrainsForInterval,
+    translateV1TimeGrain,
+  } from "@rilldata/web-common/lib/time/new-grains";
+  import { Interval } from "luxon";
   import type { V1TimeGrain } from "../../../runtime-client";
 
   export let tdd = false;
@@ -17,6 +15,8 @@
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
+  /** The grains the metrics view offers; defaults to the standard grains at or above `minTimeGrain`. */
+  export let availableTimeGrains: V1TimeGrain[] | undefined = undefined;
   /** Called with `undefined` when the user picks adaptive mode. */
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain | undefined) => void;
   /** Whether the grain currently follows the time range. */
@@ -28,30 +28,28 @@
 
   let open = false;
 
-  $: timeGrainOptions =
+  $: interval =
     timeStart && timeEnd
-      ? getAllowedTimeGrains(new Date(timeStart), new Date(timeEnd))
+      ? Interval.fromDateTimes(new Date(timeStart), new Date(timeEnd))
+      : undefined;
+  $: timeGrainOptions =
+    interval?.isValid && minTimeGrain
+      ? allowedGrainsForInterval(interval, minTimeGrain, availableTimeGrains)
       : [];
   $: activeTimeGrainLabel =
-    activeTimeGrain && TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label;
+    activeTimeGrain && translateV1TimeGrain(activeTimeGrain);
 
   $: capitalizedLabel = activeTimeGrainLabel
-    ? translateGrainName(activeTimeGrainLabel)
+    ? activeTimeGrainLabel
         .split(" ")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     : undefined;
 
-  $: timeGrains = minTimeGrain
-    ? timeGrainOptions
-        .filter((timeGrain) => !isGrainBigger(minTimeGrain, timeGrain.grain))
-        .map((timeGrain) => {
-          return {
-            main: translateGrainName(timeGrain.label),
-            key: timeGrain.grain,
-          };
-        })
-    : [];
+  $: timeGrains = timeGrainOptions.map((timeGrain) => ({
+    main: translateV1TimeGrain(timeGrain),
+    key: timeGrain,
+  }));
 </script>
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}

@@ -52,7 +52,25 @@ oauth_scopes: [search:read, channels:history]
 
 Register `https://admin.rilldata.com/connectors/oauth/callback` as the redirect URL when the server asks for one.
 
-Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
+Some authorization servers need extra parameters in the authorization request. Google, for example, issues a refresh token only when asked for offline access, and only on a user's first consent unless it is asked to show the consent screen again. Without a refresh token, users have to connect again each time their access token expires (typically after one hour for Google). Pass such parameters with `oauth_authorization_params`:
+
+```yaml
+type: connector
+driver: mcp
+url: https://drivemcp.googleapis.com/mcp/v1
+display_name: Google Drive
+auth: oauth
+oauth_client_id: "{{ .env.GOOGLE_OAUTH_CLIENT_ID }}"
+oauth_client_secret: "{{ .env.GOOGLE_OAUTH_CLIENT_SECRET }}"
+oauth_scopes: [https://www.googleapis.com/auth/drive.readonly]
+oauth_authorization_params:
+  access_type: offline
+  prompt: consent
+```
+
+With `prompt: consent`, Google shows its consent screen every time a user connects, which only happens again when the user disconnects or the authorization is revoked. Parameters that Rill sets itself or depends on, such as `state`, `scope`, `code_challenge`, `request` or `response_mode`, cannot be set. Changing `oauth_authorization_params` requires users to connect again.
+
+Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. When the authorization server advertises the `offline_access` scope, as Microsoft Entra ID does, Rill requests it so that the server issues a refresh token. Rill only adds it to the scopes it discovers: `oauth_scopes` are requested exactly as listed, so include `offline_access` there if the server needs it. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
 
 ### Project-scoped credentials
 
@@ -105,10 +123,11 @@ The defaults match metrics views: no `security` block allows every user with AI 
 | `ai_instructions` | Guidance for the agents on when and how to use the server. |
 | `auth` | `oauth` for per-user authorization. |
 | `oauth_client_id`, `oauth_client_secret`, `oauth_scopes` | Pre-registered client and scopes for servers without dynamic client registration. |
+| `oauth_authorization_params` | Extra query parameters for the authorization request, such as Google's `access_type: offline`. |
 | `headers` | Headers sent on every request. Supports `{{ .env.* }}` and `{{ .user.* }}`. |
 | `timeout` | Timeout per tool call (default `60s`). |
 | `connect_timeout` | Timeout for connecting and listing tools (default `10s`). |
 | `max_result_bytes` | Maximum size of a tool result passed to the AI; larger results are truncated (default `131072`). |
 | `security` | Access policy, as described above. |
 
-Tool descriptions and results from external servers are treated as untrusted content: the agents are instructed not to follow instructions found inside them. Each chat message may make at most 25 external tool calls. Some AI providers accept at most 128 tools per request, including Rill's built-in tools; if a user's connected servers exceed that, the chat fails until they disconnect a server or you narrow its tools with `security.include`. The tools of external servers are not exposed through the Rill MCP Server.
+Tool descriptions and results from external servers are treated as untrusted content: the agents are instructed not to follow instructions found inside them. Each chat message may make at most 25 external tool calls. The agents load external tools on demand, by name or keyword search, so servers with many tools do not crowd every request; at most 100 external tools can be loaded per conversation. The tools of external servers are not exposed through the Rill MCP Server.

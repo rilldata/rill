@@ -12,7 +12,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -282,6 +282,7 @@ function mapSort(
   const measure = measures.find((m) => m.name === sortField.name);
   if (!measure) return;
   const { name, type } = getMeasureNameAndType(measure);
+  if (!partialExploreState.visibleMeasures?.includes(name)) return;
 
   partialExploreState.leaderboardSortByMeasureName = name;
   partialExploreState.sortDirection = sortField.desc
@@ -350,7 +351,7 @@ function mapActivePage(
     if (shouldUpdateTimeGrain) {
       // Selected time grain is used in TDD's pivot table at the bottom.
       partialExploreState.selectedTimeRange!.interval =
-        DateTimeUnitToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
+        TokenToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
       partialExploreState.adaptiveTimeGrain = false;
     }
   } else if (showDimensionTable) {
@@ -374,7 +375,7 @@ function mapPivot(
   const columns: PivotChipData[] = timeDimensions
     .map((d) => {
       if (!d.compute?.time_floor?.grain) return undefined;
-      const grain = DateTimeUnitToV1TimeGrain[d.compute.time_floor.grain];
+      const grain = TokenToV1TimeGrain[d.compute.time_floor.grain];
       return {
         id: grain,
         title: d.compute.time_floor.grain,
@@ -406,19 +407,26 @@ function mapPivot(
   }
 
   const sorting: SortingState =
-    query.sort?.map((s) => {
-      const td = timeDimensions.find((td) => td.name === s.name);
-      if (!td?.compute?.time_floor?.grain)
-        return { id: s.name, desc: !!s.desc };
+    query.sort
+      ?.filter(
+        (s) =>
+          partialExploreState.visibleMeasures?.includes(s.name) ||
+          partialExploreState.visibleDimensions?.includes(s.name) ||
+          timeDimensions.some((td) => td.name === s.name),
+      )
+      .map((s) => {
+        const td = timeDimensions.find((td) => td.name === s.name);
+        if (!td?.compute?.time_floor?.grain)
+          return { id: s.name, desc: !!s.desc };
 
-      const grain =
-        DateTimeUnitToV1TimeGrain[td.compute.time_floor.grain] ??
-        V1TimeGrain.TIME_GRAIN_SECOND;
-      const id = td?.compute?.time_floor?.grain
-        ? `${td.name}_rill_${grain}`
-        : s.name;
-      return { id, desc: !!s.desc };
-    }) ?? [];
+        const grain =
+          TokenToV1TimeGrain[td.compute.time_floor.grain] ??
+          V1TimeGrain.TIME_GRAIN_SECOND;
+        const id = td?.compute?.time_floor?.grain
+          ? `${td.name}_rill_${grain}`
+          : s.name;
+        return { id, desc: !!s.desc };
+      }) ?? [];
 
   return {
     rows: [],

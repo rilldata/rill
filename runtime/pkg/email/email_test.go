@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,13 +88,14 @@ func TestAlertFail(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		DisplayName:   "Foobar",
 		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
 		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:       map[string]any{"hello": "world", "pi": 3.14},
+		FailColumns:   []string{"hello", "pi"},
+		FailRows:      [][]string{{"world", "3.14"}},
 		OpenLink:      "https://example.com",
 		EditLink:      "https://example.com",
 	}
@@ -107,17 +107,56 @@ func TestAlertFail(t *testing.T) {
 	require.NotEmpty(t, mock.subject)
 	require.Contains(t, mock.body, opts.DisplayName)
 	require.Contains(t, mock.body, opts.ExecutionTime.Format(time.RFC1123))
-	for k, v := range opts.FailRow {
-		require.Contains(t, mock.body, k)
-		require.Contains(t, mock.body, fmt.Sprintf("%v", v))
-	}
+	require.Contains(t, mock.body, "The first row that matched your alert criteria is:")
+	require.Contains(t, mock.body, "<b>hello</b>: world")
+	require.Contains(t, mock.body, "<b>pi</b>: 3.14")
+	require.NotContains(t, mock.body, "More rows matched")
+	require.NotContains(t, mock.body, "are attached")
+	require.NotContains(t, mock.body, "too large to attach")
+	require.Empty(t, mock.attachments)
+
+	// The export is attached
+	opts.Attachment = &Attachment{Filename: "foobar.csv", ContentType: "text/csv", Data: []byte("a,b\n1,2\n")}
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The rows that matched your alert criteria are attached.")
+	require.Equal(t, []Attachment{*opts.Attachment}, mock.attachments)
+
+	// The export was too large to attach
+	opts.Attachment = nil
+	opts.AttachmentTooLarge = true
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "too large to attach to this email")
+	require.Empty(t, mock.attachments)
+
+	// Several rows are listed in a table
+	opts.AttachmentTooLarge = false
+	opts.FailColumns = []string{"country", "orders"}
+	opts.FailRows = [][]string{{"US", "12.3k"}, {"<b>CA</b>", "4.5k"}}
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The rows that matched your alert criteria are:")
+	require.Contains(t, mock.body, ">country</th>")
+	require.Contains(t, mock.body, ">orders</th>")
+	require.Contains(t, mock.body, ">US</td>")
+	require.Contains(t, mock.body, ">12.3k</td>")
+	require.Contains(t, mock.body, ">&lt;b&gt;CA&lt;/b&gt;</td>")
+	require.NotContains(t, mock.body, "More rows matched")
+
+	// More rows matched than are listed
+	opts.FailRowsTruncated = true
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The first 2 rows that matched your alert criteria are:")
+	require.Contains(t, mock.body, "More rows matched your alert criteria.")
 }
 
 func TestAlertRecover(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		DisplayName:   "Foobar",
@@ -142,7 +181,7 @@ func TestAlertError(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:        uuid.New().String(),
 		ToName:         uuid.New().String(),
 		DisplayName:    "Foobar",

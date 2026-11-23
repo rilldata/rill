@@ -25,6 +25,30 @@ export function ephemeralMeasureToSpecMeasure(
 }
 
 /**
+ * Orders a list that offers every measure for picking so ephemeral measures
+ * come first, newest first, which keeps a new definition easy to find.
+ * Other items keep their order. `ephemeralNames` lists the definitions in
+ * creation order. Lists that mirror the dashboard's layout, such as its shown
+ * measures, keep that order instead.
+ */
+export function ephemeralMeasuresFirst<T>(
+  items: T[],
+  nameOf: (item: T) => string | undefined,
+  ephemeralNames: Iterable<string>,
+): T[] {
+  const rank = new Map(
+    [...ephemeralNames].reverse().map((name, index) => [name, index]),
+  );
+  if (!rank.size) return items;
+  const rankOf = (item: T) => rank.get(nameOf(item) ?? "");
+  const ephemeral = items
+    .filter((item) => rankOf(item) !== undefined)
+    .sort((a, b) => rankOf(a)! - rankOf(b)!);
+  const rest = items.filter((item) => rankOf(item) === undefined);
+  return [...ephemeral, ...rest];
+}
+
+/**
  * Appends synthetic spec measures for the given ephemeral measure
  * definitions to a list of spec measures.
  */
@@ -105,6 +129,52 @@ export function splitTimeSeriesMeasures(
     measureNames,
     ephemeralMeasures: measures.length ? measures : undefined,
   };
+}
+
+/**
+ * The spec measure a request measure is computed from: the base measure of a
+ * comparison or percent-of-total compute, otherwise the measure itself.
+ */
+function requestMeasureBase(
+  measure: V1MetricsViewAggregationMeasure,
+): string | undefined {
+  return (
+    measure.comparisonValue?.measure ??
+    measure.comparisonDelta?.measure ??
+    measure.comparisonRatio?.measure ??
+    measure.percentOfTotal?.measure ??
+    measure.name
+  );
+}
+
+/**
+ * Flags request measures with `exact: true` when their measure, or the base
+ * measure of their compute, is in `exactNames` (see `requestExactNames`).
+ * The runtime then computes those measures, and the measures they reference,
+ * with their `exact_expression`. Leaves other measures untouched.
+ */
+export function applyExactMeasures(
+  measures: V1MetricsViewAggregationMeasure[],
+  exactNames: ReadonlySet<string> | undefined,
+): V1MetricsViewAggregationMeasure[] {
+  if (!exactNames?.size) return measures;
+  return measures.map((measure) => {
+    const base = requestMeasureBase(measure);
+    return base && exactNames.has(base) ? { ...measure, exact: true } : measure;
+  });
+}
+
+/**
+ * The measure names to send as `exactMeasureNames` on a time series request:
+ * the requested names that are in `exactNames`. Undefined when there are none.
+ */
+export function exactTimeSeriesMeasureNames(
+  names: string[],
+  exactNames: ReadonlySet<string> | undefined,
+): string[] | undefined {
+  if (!exactNames?.size) return undefined;
+  const result = names.filter((name) => exactNames.has(name));
+  return result.length ? result : undefined;
 }
 
 /**

@@ -1,6 +1,8 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import type { MeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import { precisionForColumn } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
     calculateColumnWidth,
@@ -55,6 +57,10 @@
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
   export let config: PivotDataStoreConfig | undefined = undefined;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let fillWidth = false;
   export let containerWidth = 0;
   export let headerHeight = 30;
@@ -368,6 +374,7 @@
                     label={String(header.column.columnDef.header)}
                     description={header.column.columnDef.meta?.description}
                     wrap={wrapHeaders}
+                    precision={precisionForColumn(header.column, precisionFor)}
                   />
                 {/if}
                 {#if sortDirection}

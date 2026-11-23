@@ -12,6 +12,7 @@
   import { formatConversationTitle } from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ConversationSidebarEntry from "@rilldata/web-common/features/chat/layouts/fullpage/ConversationSidebarEntry.svelte";
 
   export let conversationManager: ConversationManager;
   export let basePath: string;
@@ -41,6 +42,12 @@
   // Handle conversation item clicks (for focus, navigation handled by href)
   function handleConversationItemClick() {
     onConversationClick();
+  }
+
+  // Leave the deleted conversation if it was open
+  function handleConversationDeleted(conversationId: string | undefined) {
+    if (conversationId !== currentConversationDto?.id) return;
+    conversationManager.enterNewConversationMode();
   }
 
   // Handle new conversation button click (for focus, navigation handled by href)
@@ -111,20 +118,15 @@
           {m.chat_error_loading_conversations()}
         </div>
       {:else if conversations.length}
-        {#each conversations as conversation}
-          <a
-            href={`${basePath}/${conversation.id}`}
-            class="conversation-item"
-            class:active={conversation.id === currentConversationDto?.id}
-            data-testid="conversation-item"
-            data-conversation-id={conversation.id}
-            title={getTitle(conversation)}
-            onclick={handleConversationItemClick}
-          >
-            <div class="conversation-title" data-testid="conversation-title">
-              {getTitle(conversation)}
-            </div>
-          </a>
+        {#each conversations as conversation (conversation.id)}
+          <ConversationSidebarEntry
+            {conversation}
+            active={conversation.id === currentConversationDto?.id}
+            {basePath}
+            {getTitle}
+            onClick={handleConversationItemClick}
+            onDeleted={() => handleConversationDeleted(conversation.id)}
+          />
         {/each}
       {:else}
         <div class="no-conversations" data-testid="no-conversations">
@@ -186,28 +188,6 @@
     @apply p-2 flex justify-center items-center;
   }
 
-  .conversation-item {
-    @apply block w-full py-2 px-3 mb-0.5;
-    @apply bg-transparent border-none rounded-md;
-    @apply text-left cursor-pointer no-underline;
-    color: inherit;
-    font-family: inherit;
-    font-size: inherit;
-    @apply transition-colors duration-200;
-  }
-
-  .conversation-item:hover {
-    @apply bg-surface-muted;
-  }
-
-  .conversation-item.active {
-    @apply bg-gray-100;
-  }
-
-  .conversation-title {
-    @apply text-xs text-fg-primary truncate;
-  }
-
   .no-conversations {
     @apply py-6 px-4 text-center text-fg-secondary text-xs;
   }
@@ -230,11 +210,6 @@
       flex-direction: row;
       overflow-x: auto;
       gap: 0.25rem;
-    }
-
-    .conversation-item {
-      flex-shrink: 0;
-      min-width: 150px;
     }
   }
 </style>

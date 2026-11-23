@@ -67,7 +67,7 @@ rows:
       metrics_view: mv1
       measure: count
       foo: "{{ .args.foo }}"
-      bar: "{{ .env.bar }}"
+      bar: "{{ .user.name }}"
   - custom_chart:
       metrics_sql: "SELECT state FROM mv2 WHERE state = 'PA'"
 `,
@@ -104,7 +104,7 @@ rows:
 	require.Equal(t, "mv1", comp1Props["metrics_view"])
 	// Templates should NOT be resolved - canvas returns raw templates
 	require.Equal(t, "{{ .args.foo }}", comp1Props["foo"])
-	require.Equal(t, "{{ .env.bar }}", comp1Props["bar"])
+	require.Equal(t, "{{ .user.name }}", comp1Props["bar"])
 
 	// Check referenced metrics views
 	require.Len(t, res.ReferencedMetricsViews, 2)
@@ -190,11 +190,8 @@ rows:
   - custom_chart:
       metrics_sql: "SELECT country FROM {{ .args.metrics_view_name }}"
   - custom_chart:
-      metrics_sql: "SELECT country FROM {{ .env.default_mv }}"
+      metrics_sql: "SELECT country FROM {{ .args.other_metrics_view }}"
 `,
-		},
-		Variables: map[string]string{
-			"default_mv": "mv2",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
@@ -221,7 +218,7 @@ rows:
 	comp0Props := res.ResolvedComponents["c_templated--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
 	require.Equal(t, "SELECT country FROM {{ .args.metrics_view_name }}", comp0Props["metrics_sql"])
 	comp1Props := res.ResolvedComponents["c_templated--component-0-1"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "SELECT country FROM {{ .env.default_mv }}", comp1Props["metrics_sql"])
+	require.Equal(t, "SELECT country FROM {{ .args.other_metrics_view }}", comp1Props["metrics_sql"])
 }
 
 func TestResolveCanvasWithEmptyCanvas(t *testing.T) {

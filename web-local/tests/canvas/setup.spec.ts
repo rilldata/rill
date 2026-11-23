@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { addCanvasWidget } from "@rilldata/web-common/tests/utils/canvas-helpers";
 import { test } from "../setup/base";
 
 test.describe("canvas", () => {
@@ -10,19 +11,13 @@ test.describe("canvas", () => {
 
     await page.getByRole("menuitem", { name: "Canvas dashboard" }).click();
 
-    await page
-      .getByRole("button", { name: "Add widget" })
-      .waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "Add widget" }).click();
-
-    await page.getByRole("menuitem", { name: "KPI" }).click();
+    await addCanvasWidget(page, "KPI");
 
     await expect(
       page.getByRole("heading", { name: "Sum of Bid Price" }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Add widget" }).click();
-    await page.getByRole("menuitem", { name: "Text/Markdown" }).click();
+    await addCanvasWidget(page, "Text/Markdown");
 
     await expect(
       page.getByRole("heading", { name: "H1 Markdown Text" }),
@@ -35,12 +30,7 @@ test.describe("canvas", () => {
 
     await page.getByRole("menuitem", { name: "Canvas dashboard" }).click();
 
-    await page
-      .getByRole("button", { name: "Add widget" })
-      .waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "Add widget" }).click();
-
-    await page.getByRole("menuitem", { name: "KPI" }).click();
+    await addCanvasWidget(page, "KPI");
 
     await expect(
       page.getByRole("heading", { name: "Sum of Bid Price" }),

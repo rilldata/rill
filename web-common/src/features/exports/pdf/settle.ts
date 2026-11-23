@@ -4,6 +4,10 @@ import { tick } from "svelte";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
 const DEFAULT_TIMEOUT_MS = 60_000;
+// How long the capture waits for components still drawing once their data is
+// in (a map's tiles). A map that never settles shouldn't hold up the export
+// for the full timeout.
+const MAX_DRAW_WAIT_MS = 15_000;
 // How often waitUntilQueriesIdle polls for in-flight queries. Frame-rate polling
 // is needlessly frequent; a coarser interval is plenty to detect idleness.
 const QUERY_POLL_INTERVAL_MS = 100;
@@ -89,8 +93,9 @@ export function isCanvasExportQuery(
   return queryKey[2] === instanceId;
 }
 
-// Waits for the off-screen export render, its data, and fonts to settle so the
-// DOM is ready to be rasterized. The caller sets canvasEntity.exportMode, which
+// Waits for the off-screen export render, its data, the components still
+// drawing it (see BaseCanvasComponent.drawing), and fonts to settle so the DOM
+// is ready to be rasterized. The caller sets canvasEntity.exportMode, which
 // mounts CanvasPdfExportView and force-enables every component's data query;
 // this only waits for the result. Best-effort: returns even on timeout.
 export async function prepareCanvasForCapture(
@@ -110,6 +115,16 @@ export async function prepareCanvasForCapture(
     instanceId: opts.instanceId,
     timeoutMs,
   });
+
+  await Promise.all(
+    Array.from(canvasEntity.componentsStore.read().values()).map((component) =>
+      waitForStoreValue(
+        component.drawing,
+        false,
+        Math.min(timeoutMs, MAX_DRAW_WAIT_MS),
+      ),
+    ),
+  );
 
   if (document.fonts) {
     await document.fonts.ready;

@@ -49,7 +49,6 @@ export function generateVLComboChartSpec(
 
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.color);
-  const xField = sanitizeValueForVega(config.x?.field);
 
   const y1MarkType = config.y1?.mark || "bar";
   const y2MarkType = config.y2?.mark || "line";
@@ -93,7 +92,7 @@ export function generateVLComboChartSpec(
   // Transform data to long format for legend
   spec.transform = [
     {
-      fold: measures,
+      fold: measures.map((measure) => sanitizeValueForVega(measure)),
       as: [measureField, valueField],
     },
   ];
@@ -106,7 +105,7 @@ export function generateVLComboChartSpec(
   // Add hover rule layer
   layers.push(
     buildHoverRuleLayer({
-      xField,
+      xField: config.x?.field,
       domainValues: data.domainValues,
       isBarMark: y1MarkType === "bar" || y2MarkType === "bar",
       defaultTooltip: defaultTooltipChannel,

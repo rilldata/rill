@@ -154,6 +154,11 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 		return nil, nil, errors.New(`multiple renderers are not allowed`)
 	}
 
+	// Dashboard templates are resolved for and shown to viewers, so they can't reference project variables, which commonly hold secrets.
+	if TemplateReferencesVariables(props) {
+		return nil, nil, errors.New(`templates in component properties can't access project variables (".env") or the full template data ("." or "$"); use ".user" attributes or params instead`)
+	}
+
 	// Enforce the custom chart spec format for this context. Presence is not required:
 	// the visual editor persists drafts with empty renderer properties.
 	if renderer == "custom_chart" {

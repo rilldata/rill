@@ -22,8 +22,8 @@ import type { ComponentParamType } from "@rilldata/web-common/features/custom-vi
  * Field names are matched only in field-valued properties and `datum` accesses in expressions.
  * This avoids rewriting unrelated Vega-Lite enum values such as `aggregate: "count"` when a bound
  * field happens to have the same name. Display names are only matched as a whole title value whose
- * encoding binds the matching field, so a hard-coded label that happens to read like a display
- * name is left alone.
+ * encoding binds the matching field, or draws a column the compiler derived from it (and formats
+ * with its formatter), so a hard-coded label that happens to read like a display name is left alone.
  */
 
 /** The name the renderer registers a component's query result under. */
@@ -135,9 +135,18 @@ function templatize(
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
     // An encoding's channel properties (axis, legend, header) nest below the object that names the
-    // field, so the field in scope is inherited until a nested object names its own.
+    // field, so the field in scope is inherited until a nested object names its own. An encoding
+    // of a column the compiler derived from a measure (a waterfall's running sum) carries that
+    // measure's formatter and display name, so it is in the measure's scope.
+    const derivedFrom = bindings.find(
+      (candidate) =>
+        candidate.type === "measure" &&
+        sanitizeFieldName(candidate.field) === record.formatType &&
+        !bindings.some((binding) => binding.field === record.field),
+    );
     const nextScope =
-      typeof record.field === "string" ? record.field : scopeField;
+      derivedFrom?.field ??
+      (typeof record.field === "string" ? record.field : scopeField);
     return Object.fromEntries(
       Object.entries(record).map(([childKey, childValue]) => [
         childKey,

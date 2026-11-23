@@ -1,5 +1,5 @@
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // A component's `time_filters` uses the explore URL vocabulary (`tr`, `compare_tr`, `grain`, `tz`).
@@ -52,7 +52,7 @@ export function resolveTimeFilters(
   return {
     hasLocalTimeRange,
     comparison,
-    grain: grain ? DateTimeUnitToV1TimeGrain[grain] : undefined,
+    grain: grain ? TokenToV1TimeGrain[grain] : undefined,
   };
 }
 

@@ -97,3 +97,32 @@ describe("generateVLMultiMetricChartSpec orientation", () => {
     }
   });
 });
+
+describe("generateVLMultiMetricChartSpec with dotted measure names", () => {
+  it("escapes the folded measures and keeps the raw names as output columns", () => {
+    const measures = ["post.count", "comment.count"];
+    const data = chartData();
+    for (const measure of measures) {
+      data.fields[measure] = { name: measure, displayName: measure };
+    }
+
+    const spec = generateVLMultiMetricChartSpec(
+      {
+        ...base,
+        y: {
+          field: measures[0],
+          fields: measures,
+          type: "quantitative",
+          zeroBasedOrigin: true,
+        },
+      },
+      data,
+      "grouped_bar",
+    );
+    expect(at(spec, "transform.0.fold")).toEqual([
+      "post\\.count",
+      "comment\\.count",
+    ]);
+    expect(at(spec, "transform.0.as")).toEqual(["Measure", "value"]);
+  });
+});

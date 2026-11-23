@@ -42,6 +42,8 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	// Names of metrics view measures that must be computed with their exact_expression (see ExactMeasureSet).
+	exactMeasures map[string]bool
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -217,6 +219,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		Dialect:     dialect,
 	}
 
+	// Resolve up front which measures must use their exact_expression.
+	// This must happen before any measure is resolved, because a measure name has exactly one value per query and AddMeasureField dedupes by name.
+	// The executor resolves the set once per query and derived queries copy it (see Query.ExactMeasures);
+	// a query that did not pass through the executor, such as the schema probe, resolves it from its flags here.
+	ast.exactMeasures = qry.ExactMeasures
+	if ast.exactMeasures == nil {
+		ast.exactMeasures = ExactMeasureSet(mv, qry)
+	}
+
 	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified
 	for _, qd := range ast.Query.Dimensions {
@@ -234,7 +245,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			minGrain = tg
 			continue
 		}
-		if tg.ToTimeutil() < minGrain.ToTimeutil() {
+		if tg.ToTimeutil().Compare(minGrain.ToTimeutil()) < 0 {
 			minGrain = tg
 		}
 	}
@@ -661,17 +672,9 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("comparison time measure %q must be based on a computed time dimension in the query", qm.Name)
 		}
 
-		baseStart := a.Query.TimeRange.Start
-		compStart := a.Query.ComparisonTimeRange.Start
-
-		dateDiff, err := a.Dialect.DateDiff(qd.Compute.TimeFloor.Grain.ToProto(), compStart, baseStart)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute date difference for comparison time measure %q: %w", qm.Name, err)
-		}
-
 		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.Dialect.EscapeIdentifier(qd.Name), a.Dialect.EscapeIdentifier(qd.Name))
 
-		expr, err := a.Dialect.IntervalSubtract(baseExpr, dateDiff, qd.Compute.TimeFloor.Grain.ToProto())
+		expr, err := a.sqlForIntervalSubtract(baseExpr, a.Query.ComparisonTimeRange.Start, a.Query.TimeRange.Start, qd.Compute.TimeFloor.Grain)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute comparison time measure %q expression: %w", qm.Name, err)
 		}
@@ -720,6 +723,12 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 		}
 	}
 
+	for _, m := range a.MetricsView.Measures {
+		if m.Name == name {
+			return nil, fmt.Errorf("dimension %q not found: %q is a measure", name, name)
+		}
+	}
+
 	return nil, fmt.Errorf("dimension %q not found", name)
 }
 
@@ -735,6 +744,15 @@ func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 	for _, m := range a.MetricsView.Measures {
 		if m.Name == name {
 			return m, nil
+		}
+	}
+
+	if name == a.MetricsView.TimeDimension {
+		return nil, fmt.Errorf("measure %q not found: %q is the time dimension", name, name)
+	}
+	for _, dim := range a.MetricsView.Dimensions {
+		if dim.Name == name {
+			return nil, fmt.Errorf("measure %q not found: %q is a dimension", name, name)
 		}
 	}
 
@@ -1018,7 +1036,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
 		if a.Query.ComparisonTimeRange == nil {
-			return errors.New("comparison time range not provided")
+			return errors.New("comparison time range not provided: comparison measures require 'comparison_time_range'")
 		}
 
 		a.WrapSelect(n, "base")
@@ -1514,15 +1532,22 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, 
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
+// It uses the measure's exact_expression if the query requests the measure exactly (see ExactMeasureSet).
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
+	// NOTE: m may be the metrics view's own spec measure, which is shared across queries, so it must never be mutated here.
+	expr := m.Expression
+	if m.ExactExpression != "" && a.exactMeasures[m.Name] {
+		expr = m.ExactExpression
+	}
+
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression, nil
+		return expr, nil
 	}
 
 	// If partitioning is not enabled, ordering and framing doesn't matter
 	if !m.Window.Partition {
-		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+		return fmt.Sprintf("%s OVER ()", expr), nil
 	}
 
 	// If partitioning is enabled, we partition by all dimensions that we don't order by.
@@ -1557,7 +1582,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode)
 
 	// Build the window expression
 	b := &strings.Builder{}
-	b.WriteString(m.Expression)
+	b.WriteString(expr)
 	b.WriteString(" OVER (")
 	if len(partitionFields) > 0 {
 		b.WriteString("PARTITION BY ")
@@ -1604,44 +1629,65 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 	start1 := a.Query.TimeRange.Start
 	start2 := a.Query.ComparisonTimeRange.Start
 
-	var dateDiff string
-	if g == TimeGrainUnspecified {
-		g = TimeGrainMillisecond // todo millis won't work for druid
-		res, err := a.Dialect.DateDiff(g.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
-	} else if g == mg {
-		res, err := a.Dialect.DateDiff(g.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
-	} else {
-		// larger time grain values can change as well
-		res, err := a.Dialect.DateDiff(mg.ToProto(), start1, start2)
-		if err != nil {
-			return "", err
-		}
-		dateDiff = res
+	// Multiples such as "10m" offset by their base unit and re-truncate below, since DateDiff and IntervalSubtract only take standard grains.
+	_, gn := g.Base()
 
-		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
-		tc := a.Dialect.EscapeIdentifier(timeDim)
-		expr, err := a.Dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
-		if err != nil {
-			return "", err
-		}
-		dim := &runtimev1.MetricsViewSpec_Dimension{
-			Expression: expr,
-		}
-		expr, err = a.Dialect.DateTruncExpr(dim, g.ToProto(), a.Query.TimeZone, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
-		if err != nil {
-			return "", fmt.Errorf(`failed to compute time floor: %w`, err)
-		}
-		return expr, nil
+	if g == TimeGrainUnspecified {
+		return a.sqlForIntervalSubtract(expr, start1, start2, TimeGrainMillisecond) // todo millis won't work for druid
+	}
+	if g == mg && gn == 1 {
+		return a.sqlForIntervalSubtract(expr, start1, start2, g)
 	}
 
+	// larger time grain values can change as well
+	// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
+	mgUnit, _ := mg.Base()
+	expr, err := a.sqlForIntervalSubtract(a.Dialect.EscapeIdentifier(timeDim), start1, start2, mgUnit)
+	if err != nil {
+		return "", err
+	}
+	dim := &runtimev1.MetricsViewSpec_Dimension{
+		Expression: expr,
+	}
+	expr, err = a.Dialect.DateTruncExpr(dim, g.ToProto(), a.Query.TimeZone, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
+	if err != nil {
+		return "", fmt.Errorf(`failed to compute time floor: %w`, err)
+	}
+	return expr, nil
+}
+
+// sqlForIntervalSubtract returns expr minus the number of grain units from t1 to t2.
+// For day and larger grains in a time zone other than UTC, it counts and subtracts the units on the query time zone's wall clock,
+// so a local midnight stays at local midnight when the interval spans a DST transition.
+func (a *AST) sqlForIntervalSubtract(expr string, t1, t2 time.Time, g TimeGrain) (string, error) {
+	tz := a.Query.TimeZone
+	if tz != "" && tz != "UTC" && tz != "Etc/UTC" && g.ToTimeutil().Compare(timeutil.TimeGrainDay) >= 0 {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
+		}
+
+		// DateDiff counts the unit boundaries between UTC times, so pass it the wall-clock times in the query time zone as if they were UTC.
+		// For example, Europe/London midnights 2026-10-23T00:00:00+01:00 and 2026-11-06T00:00:00Z are 14 days apart, but their UTC dates are 15 days apart.
+		l1, l2 := t1.In(loc), t2.In(loc)
+		dateDiff, err := a.Dialect.DateDiff(
+			g.ToProto(),
+			time.Date(l1.Year(), l1.Month(), l1.Day(), l1.Hour(), l1.Minute(), l1.Second(), l1.Nanosecond(), time.UTC),
+			time.Date(l2.Year(), l2.Month(), l2.Day(), l2.Hour(), l2.Minute(), l2.Second(), l2.Nanosecond(), time.UTC),
+		)
+		if err != nil {
+			return "", err
+		}
+		if res, ok := a.Dialect.IntervalSubtractInTimeZone(expr, dateDiff, g.ToProto(), tz); ok {
+			return res, nil
+		}
+		// The dialect subtracts in UTC, so fall through to also count the units between UTC times.
+	}
+
+	dateDiff, err := a.Dialect.DateDiff(g.ToProto(), t1, t2)
+	if err != nil {
+		return "", err
+	}
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
 

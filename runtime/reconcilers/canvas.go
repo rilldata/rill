@@ -115,7 +115,7 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		validateErr = r.validateMetricsViewTimeConsistency(metricsViews)
 	}
 	if validateErr == nil {
-		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
+		validateErr = r.validateFilterConfig(ctx, c.Spec, components)
 	}
 	if validateErr == nil {
 		validateErr = r.validateItemParamBindings(ctx, c.Spec, components)
@@ -359,20 +359,22 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(metricsViews map[s
 	return nil
 }
 
-// validateRequiredFilters checks that every entry in spec.RequiredFilters is a
-// dimension or measure on at least one of the metrics views referenced by the
-// canvas' components. This catches typos in `filters.required` since the field
-// has no inline UI.
+// validateFilterConfig checks the names in `filters.required` and `filters.single_select`
+// against the metrics views referenced by the canvas' components.
+// A required filter must be a dimension or measure on at least one of them,
+// and a single-select filter must be a dimension on at least one of them.
+// This catches typos, since the fields have no inline UI.
 //
 // If none of the referenced metrics views have a valid spec yet (still
 // reconciling, or all invalid), validation is skipped to avoid spurious
 // failures during initial reconciliation.
-func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
-	if spec == nil || len(spec.RequiredFilters) == 0 {
+func (r *CanvasReconciler) validateFilterConfig(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	if spec == nil || (len(spec.RequiredFilters) == 0 && len(spec.SingleSelectFilters) == 0) {
 		return nil
 	}
 
-	known := make(map[string]bool)
+	dimensions := make(map[string]bool)
+	measures := make(map[string]bool)
 	hasResolvedView := false
 	for _, component := range components {
 		if component == nil {
@@ -392,10 +394,10 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 			}
 			hasResolvedView = true
 			for _, d := range mvSpec.Dimensions {
-				known[d.Name] = true
+				dimensions[d.Name] = true
 			}
 			for _, m := range mvSpec.Measures {
-				known[m.Name] = true
+				measures[m.Name] = true
 			}
 		}
 	}
@@ -405,8 +407,13 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 	}
 
 	for _, name := range spec.RequiredFilters {
-		if !known[name] {
+		if !dimensions[name] && !measures[name] {
 			return fmt.Errorf("required filter %q is not a dimension or measure on any metrics view referenced by this canvas", name)
+		}
+	}
+	for _, name := range spec.SingleSelectFilters {
+		if !dimensions[name] {
+			return fmt.Errorf("single-select filter %q is not a dimension on any metrics view referenced by this canvas", name)
 		}
 	}
 	return nil
@@ -551,9 +558,10 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("text resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"text": contentStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"text": contentStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,
@@ -603,9 +611,10 @@ func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) erro
 		return fmt.Errorf("metrics_sql resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"sql": sqlStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"sql": sqlStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,

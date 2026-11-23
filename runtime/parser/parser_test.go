@@ -59,6 +59,34 @@ mock_users:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLEmbedOpenURL(t *testing.T) {
+	ctx := context.Background()
+
+	// Not set by default
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	res, err := ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Empty(t, res.EmbedOpenURL)
+
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: https://app.acme.com/analytics/open?tenant=foo
+`})
+	res, err = ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://app.acme.com/analytics/open?tenant=foo", res.EmbedOpenURL)
+
+	// Must be an absolute http(s) URL
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: /analytics/open
+`})
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Contains(t, p.Errors[0].Message, `invalid property "embeds.open_url"`)
+}
+
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
@@ -1912,6 +1940,7 @@ annotations:
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
+				NotifyRowsLimit:      5,
 				Renotify:             true,
 				RenotifyAfterSeconds: 24 * 60 * 60,
 				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
@@ -1923,6 +1952,222 @@ annotations:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlertAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based alert with all export options
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: xlsx
+  include_header: true
+  limit: 100
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require an export format
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for alerts using "data"
+		`alerts/a3.yaml`: `
+type: alert
+data:
+  sql: SELECT 1
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// PDF exports are not supported for alerts
+		`alerts/a4.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require email recipients
+		`alerts/a5.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: csv
+notify:
+  slack:
+    channels:
+      - alerts
+`,
+		// Export options are ignored when not attaching
+		`alerts/a6.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				ExportAttach:        true,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportIncludeHeader: true,
+				ExportLimit:         100,
+				NotifyOnFail:        true,
+				NotifyRowsLimit:     5,
+				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a6"},
+			Paths: []string{"/alerts/a6.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A6",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 5,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `missing required property "export.format"`,
+			FilePath: "/alerts/a2.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/alerts/a3.yaml",
+		},
+		{
+			Message:  `export format "pdf" is not supported for alerts`,
+			FilePath: "/alerts/a4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires email recipients`,
+			FilePath: "/alerts/a5.yaml",
+		},
+	})
+}
+
+func TestAlertNotifyRowsLimit(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Limits the rows listed in notifications
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 10
+  slack:
+    channels:
+      - alerts
+`,
+		// The limit can't exceed the maximum
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 51
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 10,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{}, "channels": []any{"alerts"}, "webhooks": []any{}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `invalid value 51 for property "notify.rows_limit": must be at most 50`,
+			FilePath: "/alerts/a2.yaml",
+		},
+	})
 }
 
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
@@ -2765,6 +3010,97 @@ rows:
 			require.NoError(t, err)
 			require.Len(t, p.Resources, 0)
 			require.Len(t, p.Errors, 1)
+		})
+	}
+}
+
+func TestAdminManagedCanvasComponents(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name  string
+		yaml  string
+		valid bool
+	}{
+		{
+			name: "inline components",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - markdown:
+          content: "y"
+`,
+			valid: true,
+		},
+		{
+			name: "standalone component",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+  - component: c1
+`,
+		},
+		{
+			name: "standalone component in a tab",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - component: c1
+`,
+		},
+		{
+			name: "standalone component in a canvas that is not admin-managed",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - component: c1
+`,
+			valid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: ``,
+				`components/c1.yaml`: `
+type: component
+markdown:
+  content: "z"
+`,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			if tc.valid {
+				require.Empty(t, p.Errors)
+				require.NotNil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+				return
+			}
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, `cannot reference the component "c1"`)
+			require.Nil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
 		})
 	}
 }
@@ -3954,6 +4290,177 @@ light:
 				},
 			},
 		},
+		{
+			name: "variables nested under variables",
+			yaml: `
+type: theme
+light:
+  primary: red
+  variables:
+    surface-background: "#f8fafc"
+    fg-primary: "#0f172a"
+    color-sequential-1: "hsl(211deg 79% 94%)"
+dark:
+  variables:
+    surface-background: "#0f172a"
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary: "red",
+					Variables: map[string]string{
+						"surface-background": "#f8fafc",
+						"fg-primary":         "#0f172a",
+						"color-sequential-1": "hsl(211deg 79% 94%)",
+					},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-background": "#0f172a",
+					},
+				},
+			},
+		},
+		{
+			name: "nested and flat variables are merged, nested wins",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+  surface-card: white
+  border: gray
+  variables:
+    primary: blue
+    border: black
+    fg-muted: silver
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "blue",
+					Secondary: "green",
+					Variables: map[string]string{
+						"surface-card": "white",
+						"border":       "black",
+						"fg-muted":     "silver",
+					},
+				},
+			},
+		},
+		{
+			name: "deprecated names are mapped across nested and flat variables",
+			yaml: `
+type: theme
+light:
+  surface-subtle: white
+  variables:
+    background: blue
+    card: yellow
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-subtle": "white",
+						"surface-card":   "yellow",
+					},
+				},
+			},
+		},
+		{
+			name: "unknown name under variables",
+			yaml: `
+type: theme
+light:
+  variables:
+    surface-background: white
+    unrecognised: blue
+`,
+			expectError: true,
+			errorMsg:    `invalid CSS variable: "unrecognised"`,
+		},
+		{
+			name: "invalid color under variables",
+			yaml: `
+type: theme
+dark:
+  variables:
+    fg-primary: gren
+`,
+			expectError: true,
+			errorMsg:    `invalid dark theme: invalid value "gren" for CSS variable "fg-primary"`,
+		},
+		{
+			name: "radius accepts lengths",
+			yaml: `
+type: theme
+light:
+  radius: 0.5rem
+dark:
+  variables:
+    radius: 0
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0.5rem"},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0px"},
+				},
+			},
+		},
+		{
+			name: "radius in pixels",
+			yaml: `
+type: theme
+light:
+  radius: 12PX
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "12px"},
+				},
+			},
+		},
+		{
+			name: "radius without a unit",
+			yaml: `
+type: theme
+light:
+  radius: 8
+`,
+			expectError: true,
+			errorMsg:    `invalid value "8" for CSS variable "radius": must be a length in px, rem or em`,
+		},
+		{
+			name: "radius as a percentage",
+			yaml: `
+type: theme
+light:
+  variables:
+    radius: 50%
+`,
+			expectError: true,
+			errorMsg:    `invalid value "50%" for CSS variable "radius"`,
+		},
+		{
+			name: "radius as a color",
+			yaml: `
+type: theme
+light:
+  radius: red
+`,
+			expectError: true,
+			errorMsg:    `invalid value "red" for CSS variable "radius"`,
+		},
+		{
+			name: "length for a color variable",
+			yaml: `
+type: theme
+light:
+  border: 1px
+`,
+			expectError: true,
+			errorMsg:    `invalid value "1px" for CSS variable "border"`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -4002,4 +4509,127 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// TestTemplatesRejectProjectVariables verifies that templates whose results are served to viewers or that users write can't reference project variables,
+// which commonly hold secrets, or the full template data that includes them: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
+// Models, which the server resolves on the project's behalf, may reference them.
+func TestTemplatesRejectProjectVariables(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/markdown.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Region: {{ .env.region }}"
+`,
+		`canvases/chart.yaml`: `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      metrics_sql: "SELECT count FROM {{ .env.mv }}"
+      vega_spec: "{}"
+`,
+		`canvases/nested.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: '{{ metrics_sql "SELECT count FROM {{ .env.mv }}" }}'
+`,
+		`canvases/condition.yaml`: `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+    if: '{{ eq .env.secret "guess" }}'
+`,
+		`components/standalone.yaml`: `
+type: component
+markdown:
+  content: '{{ env "secret" }}'
+`,
+		// Uses the full template data without naming the variables; it is rejected too, since the data includes them.
+		`canvases/root.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ index . "user" "email" }}'
+`,
+		`alerts/a.yaml`: `
+type: alert
+display_name: Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: "SELECT count FROM mv1 WHERE country = '{{ .env.secret }}'"
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`reports/r.yaml`: `
+type: report
+display_name: Report
+refresh:
+  cron: 0 * * * *
+data:
+  sql: "SELECT '{{ .env.secret }}' AS v"
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`apis/a.yaml`: `
+type: api
+sql: "SELECT '{{ .env.secret }}' AS v"
+`,
+		// Allowed: user attributes and metrics queries in dashboards, and models the server resolves on the project's behalf.
+		`canvases/ok.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ .user.name }}: {{ metrics_sql "SELECT count FROM mv1" }}'
+    if: '{{ .user.admin }}'
+`,
+		`models/ok.sql`: `SELECT '{{ .env.secret }}' AS v`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+
+	wantErrors := map[string]string{
+		"/canvases/markdown.yaml":     `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/chart.yaml":        `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/nested.yaml":       `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/condition.yaml":    `"if" conditions can't access project variables (".env") or the full template data ("." or "$")`,
+		"/components/standalone.yaml": `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/root.yaml":         `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/alerts/a.yaml":              `templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/reports/r.yaml":             `templates in report properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/apis/a.yaml":                `templates in API properties can't access project variables (".env") or the full template data ("." or "$")`,
+	}
+	gotErrors := make(map[string]string)
+	for _, e := range p.Errors {
+		gotErrors[e.FilePath] = e.Message
+	}
+	for path, want := range wantErrors {
+		require.Contains(t, gotErrors[path], want, "for path %q", path)
+	}
+	require.NotContains(t, gotErrors, "/canvases/ok.yaml")
+	require.NotContains(t, gotErrors, "/models/ok.sql")
+	require.Len(t, gotErrors, len(wantErrors))
 }

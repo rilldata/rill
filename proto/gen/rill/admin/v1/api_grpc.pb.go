@@ -112,6 +112,7 @@ const (
 	AdminService_ListSuperusers_FullMethodName                           = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_GetDeploymentCredentials_FullMethodName                 = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
 	AdminService_GetIFrame_FullMethodName                                = "/rill.admin.v1.AdminService/GetIFrame"
+	AdminService_GetEmbedUser_FullMethodName                             = "/rill.admin.v1.AdminService/GetEmbedUser"
 	AdminService_SetSuperuser_FullMethodName                             = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName                          = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName                     = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
@@ -148,6 +149,8 @@ const (
 	AdminService_ListMagicAuthTokens_FullMethodName                      = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
 	AdminService_GetCurrentMagicAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/GetCurrentMagicAuthToken"
 	AdminService_RevokeMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
+	AdminService_UpdateMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/UpdateMagicAuthToken"
+	AdminService_UnlockMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/UnlockMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                            = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                              = "/rill.admin.v1.AdminService/GetBookmark"
@@ -407,6 +410,9 @@ type AdminServiceClient interface {
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -482,9 +488,16 @@ type AdminServiceClient interface {
 	GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
+	// UpdateMagicAuthToken updates the display name or password of a magic auth token.
+	UpdateMagicAuthToken(ctx context.Context, in *UpdateMagicAuthTokenRequest, opts ...grpc.CallOption) (*UpdateMagicAuthTokenResponse, error)
+	// UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+	// It must be called with the magic auth token as the bearer token.
+	// On success, it returns a short-lived session token that grants the same access as the magic auth token.
+	UnlockMagicAuthToken(ctx context.Context, in *UnlockMagicAuthTokenRequest, opts ...grpc.CallOption) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+	// Embed users only see their own personal bookmarks.
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
@@ -1502,6 +1515,16 @@ func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest
 	return out, nil
 }
 
+func (c *adminServiceClient) GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmbedUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetEmbedUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetSuperuserResponse)
@@ -1856,6 +1879,26 @@ func (c *adminServiceClient) RevokeMagicAuthToken(ctx context.Context, in *Revok
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeMagicAuthTokenResponse)
 	err := c.cc.Invoke(ctx, AdminService_RevokeMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateMagicAuthToken(ctx context.Context, in *UpdateMagicAuthTokenRequest, opts ...grpc.CallOption) (*UpdateMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnlockMagicAuthToken(ctx context.Context, in *UnlockMagicAuthTokenRequest, opts ...grpc.CallOption) (*UnlockMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnlockMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnlockMagicAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2497,6 +2540,9 @@ type AdminServiceServer interface {
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -2572,9 +2618,16 @@ type AdminServiceServer interface {
 	GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
+	// UpdateMagicAuthToken updates the display name or password of a magic auth token.
+	UpdateMagicAuthToken(context.Context, *UpdateMagicAuthTokenRequest) (*UpdateMagicAuthTokenResponse, error)
+	// UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+	// It must be called with the magic auth token as the bearer token.
+	// On success, it returns a short-lived session token that grants the same access as the magic auth token.
+	UnlockMagicAuthToken(context.Context, *UnlockMagicAuthTokenRequest) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+	// Embed users only see their own personal bookmarks.
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
@@ -2941,6 +2994,9 @@ func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context,
 func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
 }
+func (UnimplementedAdminServiceServer) GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEmbedUser not implemented")
+}
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
 }
@@ -3048,6 +3104,12 @@ func (UnimplementedAdminServiceServer) GetCurrentMagicAuthToken(context.Context,
 }
 func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateMagicAuthToken(context.Context, *UpdateMagicAuthTokenRequest) (*UpdateMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) UnlockMagicAuthToken(context.Context, *UnlockMagicAuthTokenRequest) (*UnlockMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnlockMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPreferences not implemented")
@@ -4870,6 +4932,24 @@ func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetEmbedUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmbedUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetEmbedUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, req.(*GetEmbedUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
@@ -5514,6 +5594,42 @@ func _AdminService_RevokeMagicAuthToken_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RevokeMagicAuthToken(ctx, req.(*RevokeMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateMagicAuthToken(ctx, req.(*UpdateMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnlockMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlockMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnlockMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnlockMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnlockMagicAuthToken(ctx, req.(*UnlockMagicAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6654,6 +6770,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetIFrame_Handler,
 		},
 		{
+			MethodName: "GetEmbedUser",
+			Handler:    _AdminService_GetEmbedUser_Handler,
+		},
+		{
 			MethodName: "SetSuperuser",
 			Handler:    _AdminService_SetSuperuser_Handler,
 		},
@@ -6796,6 +6916,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeMagicAuthToken",
 			Handler:    _AdminService_RevokeMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "UpdateMagicAuthToken",
+			Handler:    _AdminService_UpdateMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "UnlockMagicAuthToken",
+			Handler:    _AdminService_UnlockMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "UpdateUserPreferences",

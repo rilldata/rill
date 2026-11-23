@@ -13,6 +13,7 @@ import {
   mapQueryToDashboard,
 } from "@rilldata/web-common/features/explore-mappers/map-to-explore.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+import { getDashboardPath } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, readable, type Readable } from "svelte/store";
@@ -23,6 +24,8 @@ export type MapExploreUrlContext = {
   organization: string;
   project: string;
   token?: string;
+  // Builds an URL to the embedded explore route, which embed users can open without a Rill session.
+  embedded?: boolean;
 };
 
 /**
@@ -33,7 +36,7 @@ export type MapExploreUrlContext = {
 export function getMappedExploreUrl(
   req: MapQueryRequest, // Request object passed directly to mapQueryToDashboard
   opts: MapQueryStateOptions, // Map options passed directly to mapQueryToDashboard
-  { client, organization, project, token }: MapExploreUrlContext,
+  ctx: MapExploreUrlContext,
 ) {
   if (!req.queryArgsJson) return readable("");
   const queryRequestProperties = JSON.parse(req.queryArgsJson);
@@ -44,18 +47,19 @@ export function getMappedExploreUrl(
 
   return derived(
     [
-      useExploreValidSpec(client, req.exploreName, undefined, queryClient),
-      useMetricsViewTimeRange(client, metricsViewName, undefined, queryClient),
-      mapQueryToDashboard(client, req, opts),
+      useExploreValidSpec(ctx.client, req.exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(
+        ctx.client,
+        metricsViewName,
+        undefined,
+        queryClient,
+      ),
+      mapQueryToDashboard(ctx.client, req, opts),
       page,
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {
       const url = new URL(pageState.url);
-      if (token) {
-        url.pathname = `/${organization}/${project}/-/share/${token}/explore/${req.exploreName}`;
-      } else {
-        url.pathname = `/${organization}/${project}/explore/${req.exploreName}`;
-      }
+      url.pathname = getDashboardPath(ctx, "explore", req.exploreName);
 
       if (!dashboardState?.data?.exploreState || !validSpecResp.data) {
         return url.toString();
@@ -89,12 +93,12 @@ export function getMappedExploreUrl(
 export function getMappedAIExploreUrl(
   props: AIResolverProps,
   exploreName: string,
-  { client, organization, project, token }: MapExploreUrlContext,
+  ctx: MapExploreUrlContext,
 ) {
   if (!exploreName) return readable("");
 
   const validSpec = useExploreValidSpec(
-    client,
+    ctx.client,
     exploreName,
     undefined,
     queryClient,
@@ -108,7 +112,7 @@ export function getMappedAIExploreUrl(
         return;
       }
       return useMetricsViewTimeRange(
-        client,
+        ctx.client,
         metricsViewName,
         undefined,
         queryClient,
@@ -119,11 +123,7 @@ export function getMappedAIExploreUrl(
     [validSpec, timeRangeSummary, page],
     ([validSpecResp, timeRangeSummaryResp, pageState]) => {
       const url = new URL(pageState.url);
-      if (token) {
-        url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
-      } else {
-        url.pathname = `/${organization}/${project}/explore/${exploreName}`;
-      }
+      url.pathname = getDashboardPath(ctx, "explore", exploreName);
       url.search = "";
 
       const metricsViewSpec = validSpecResp.data?.metricsView;

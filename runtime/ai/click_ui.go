@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -46,7 +45,7 @@ func (t *ClickUI) CheckAccess(ctx context.Context) (bool, error) {
 	}
 
 	// Browser actions are only meaningful for the first-party Rill client.
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+	if !isRillUserAgent(s) {
 		return false, nil
 	}
 	ui, ok := UIContextFromContext(ctx)

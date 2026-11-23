@@ -22,16 +22,18 @@ func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		Messages:         opts.Messages,
 		Tools:            opts.Tools,
 		OutputJsonSchema: outputJSONSchema,
+		IncludeReasoning: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &drivers.CompleteResult{
-		Message:           res.Message,
-		Provider:          res.GetProvider(),
-		InputTokens:       int(res.InputTokens),
-		OutputTokens:      int(res.OutputTokens),
-		CachedInputTokens: int(res.GetCachedInputTokens()),
+		Message:               res.Message,
+		Provider:              res.GetProvider(),
+		InputTokens:           int(res.InputTokens),
+		OutputTokens:          int(res.OutputTokens),
+		CachedInputTokens:     int(res.GetCachedInputTokens()),
+		CacheWriteInputTokens: int(res.GetCacheWriteInputTokens()),
 	}, nil
 }

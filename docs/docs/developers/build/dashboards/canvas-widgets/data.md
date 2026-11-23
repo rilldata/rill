@@ -134,6 +134,19 @@ In a pivot, only measures and the first row dimension render a column of their o
 
 In the canvas editor, the widget's sidebar has switches for fitting and wrapping and a sort selector, and each field chip opens a column settings menu with the label, width, wrapping, alignment, and number format. Dragging a column edge in the editor writes the width to the YAML, and clicking a header writes the sort. Viewers of the published dashboard can still resize and re-sort; their changes are not saved.
 
+### Click to filter
+
+Clicking a cell or row header in a table or pivot filters the whole canvas by the values of that row, and clicking a column-dimension header in a pivot filters by that column. The table itself keeps showing every row and highlights the selection. To keep a table read-only, so selecting a row does not filter the other widgets, set `click_to_filter: false` or turn off **Click to filter** in the widget's sidebar.
+
+```yaml
+- table:
+    metrics_view: auction_metrics
+    click_to_filter: false
+    columns:
+      - app_site_domain
+      - requests
+```
+
 ## Adhoc measures
 
 Tables, pivots, KPIs, KPI grids, leaderboards, and charts can define their own [adhoc measures](/guide/dashboards/explore/adhoc-measures) with `adhoc_measures`. An adhoc measure combines the metrics view's measures with an arithmetic expression, and you reference it by `name` wherever the widget accepts a measure.
@@ -153,7 +166,7 @@ Tables, pivots, KPIs, KPI grids, leaderboards, and charts can define their own [
         format_preset: percentage
 ```
 
-In the canvas editor, select **Create adhoc measure** at the bottom of a widget's measure selector to open the same dialog as in Explore dashboards. Rill writes the definition to the widget's `adhoc_measures`, and the measure selector shows an edit action next to it.
+In the canvas editor, select **New measure** next to the search box of a widget's measure selector to open the same dialog as in Explore dashboards. Rill writes the definition to the widget's `adhoc_measures`, and the measure selector shows an edit action next to it.
 
 | Property | Description |
 |----------|-------------|
@@ -170,6 +183,10 @@ Adhoc measures belong to a single widget: to use the same calculation in two wid
 - Define at most 10 adhoc measures per widget.
 
 For a calculation that many widgets or dashboards share, add a measure to the [metrics view](/developers/build/metrics-view) instead.
+
+## Exact values
+
+Measures that define an [`exact_expression`](/developers/build/metrics-view/measures/exact-measures) are approximate by default and show a `≈` chip next to their name in KPIs, tables, pivots and leaderboards. A chart shows one chip next to its title that covers every measure of the chart. Viewers click a chip to compute that measure, or that chart, exactly in that widget (in a leaderboard widget, in that one leaderboard) until they change the time range, comparison, grain, timezone, filters or tab. Other widgets keep their approximate values until their own chip is clicked. The selection is not part of the URL, so links and scheduled reports of the canvas open approximate. See [Exact values](/guide/dashboards/explore/exact-measures) in the guide for the chip states.
 
 ## Navigation
 

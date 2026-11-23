@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -46,6 +47,19 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Alerts created from an embed run as the embed user, and are handled separately.
+	// The lookup is skipped for other alerts (including all alerts defined in code), since only alerts created from an embed have the embed owner annotation.
+	// The lookup still checks the virtual file, so the annotation alone doesn't make an alert run as an embed user.
+	if req.Annotations["admin_embed_owner_id"] != "" {
+		embedInfo, err := s.embedCreatedInfo(ctx, proj.ID, virtualFilePathForManagedAlert(req.Alert))
+		if err != nil {
+			return nil, err
+		}
+		if embedInfo != nil {
+			return s.getEmbedAlertMeta(ctx, org, proj, req, embedInfo)
+		}
 	}
 
 	var attr map[string]any
@@ -112,7 +126,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 			// For email recipients, provide open and unsubscribe links with token
 			recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
-				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, token),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, token, email),
 			}
 		}
 	}
@@ -120,6 +134,45 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	return &adminv1.GetAlertMetaResponse{
 		RecipientUrls:      recipientURLs,
 		QueryForAttributes: attrPB,
+	}, nil
+}
+
+// getEmbedAlertMeta returns the alert metadata for an alert created from an embed.
+// The alert runs as the identity of the embed user's latest iframe, and fails if the embed user is missing or inactive.
+// Recipients only get an unsubscribe link, since they open the alert through the embedder's app (if at all).
+// The URLs of the creator's saved email are marked, so the runtime only adds the open link to the embedder's app to them;
+// they get no unsubscribe link, since the creator can't unsubscribe from their own alert (see UnsubscribeAlert).
+func (s *Server) getEmbedAlertMeta(ctx context.Context, org *database.Organization, proj *database.Project, req *adminv1.GetAlertMetaRequest, info *embedOwnerInfo) (*adminv1.GetAlertMetaResponse, error) {
+	identity, err := s.resolveEmbedOwnerIdentity(ctx, proj, info, "alert")
+	if err != nil {
+		return nil, err
+	}
+
+	// Recipients can be any address, so each of them except the creator gets an unsubscribe link.
+	// Alerts created from an embed can't be sent to Slack (see yamlForManagedAlert), so anonymous recipients are ignored.
+	tokens, err := s.createUnsubMagicTokens(ctx, proj.ID, runtime.ResourceKindAlert, req.Alert, "", info.ownerEmail, req.EmailRecipients)
+	if err != nil {
+		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
+	}
+
+	recipientURLs := make(map[string]*adminv1.GetAlertMetaResponse_URLs, len(req.EmailRecipients))
+	for _, recipient := range req.EmailRecipients {
+		urls := &adminv1.GetAlertMetaResponse_URLs{
+			// Only the creator gets an open link, since it only works with their external user ID (see GetIFrame).
+			EmbedOwner: info.isOwnerEmail(recipient),
+		}
+		if tkn, ok := tokens[recipient]; ok {
+			urls.UnsubscribeUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, tkn, recipient)
+		}
+		recipientURLs[recipient] = urls
+	}
+
+	return &adminv1.GetAlertMetaResponse{
+		RecipientUrls:      recipientURLs,
+		QueryForAttributes: identity.attributes,
+		QueryForUserId:     identity.userID,
+		RestrictResources:  identity.restrictResources,
+		Resources:          identity.resources,
 	}, nil
 }
 
@@ -140,7 +193,30 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	ownerID := ""
+	embedOwnerID := ""
+	embedOwnerEmail := ""
+	var embedResources []database.ResourceName
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		ownerID = claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
+		}
+		embedOwnerID = mdl.EmbedUserID
+		embedOwnerEmail, err = s.embedOwnerEmail(ctx, embedOwnerID, req.Options.EmbedOwnerEmail)
+		if err != nil {
+			return nil, err
+		}
+		// Unlike reports, the alert's target dashboard isn't checked against the embed's resources, since the embedder controls which dashboards it embeds.
+		// The alert's data is still limited to the embed's resources when it runs.
+		embedResources, err = embedAlertResources(mdl.Resources)
+		if err != nil {
+			return nil, err
+		}
+	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
 
@@ -161,17 +237,22 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
+	data, err := s.yamlForManagedAlert(req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
+	var embedOwnerIDPtr *string
+	if embedOwnerID != "" {
+		embedOwnerIDPtr = &embedOwnerID
+	}
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(name),
-		Data:        data,
-		OwnerID:     nil,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: embedOwnerIDPtr,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -227,22 +308,47 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
+	// Only alerts created from an embed have the embed owner annotation, so the lookup is skipped for other alerts.
+	var embedInfo *embedOwnerInfo
+	if annotations.AdminEmbedOwnerID != "" {
+		embedInfo, err = s.embedCreatedInfo(ctx, proj.ID, virtualFilePathForManagedAlert(req.Name))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID)
+	embedOwnerID, embedOwnerEmail, err := s.embedOwnerForEdit(ctx, claims, embedInfo, req.Options.EmbedOwnerEmail, "alert")
+	if err != nil {
+		return nil, err
+	}
+	embedResources, err := narrowEmbedResources(claims, annotations.AdminEmbedResources, "alert")
+	if err != nil {
+		return nil, err
+	}
+	embedResources, err = embedAlertResources(embedResources)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
+	var embedOwnerIDPtr *string
+	if embedOwnerID != "" {
+		embedOwnerIDPtr = &embedOwnerID
+	}
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(req.Name),
-		Data:        data,
-		OwnerID:     nil,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(req.Name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: embedOwnerIDPtr,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -351,6 +457,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
 
+	// The creator of an alert created from an embed always gets it, since only their email has the open link to the embedder's app.
+	// They stop it by deleting the alert instead.
+	if userEmail != "" && strings.EqualFold(userEmail, alert.Annotations.AdminEmbedOwnerEmail) {
+		return nil, status.Error(codes.FailedPrecondition, "the creator of an alert can't unsubscribe from it")
+	}
+
 	found := false
 	// Exclude email recipient
 	for idx, recipient := range alert.Notify.Email.Recipients {
@@ -386,11 +498,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID:   proj.ID,
-			Environment: "prod",
-			Path:        virtualFilePathForManagedAlert(req.Name),
-			Data:        data,
-			OwnerID:     nil,
+			ProjectID:    proj.ID,
+			Environment:  "prod",
+			Path:         virtualFilePathForManagedAlert(req.Name),
+			Data:         data,
+			OwnerID:      nil,
+			EmbedOwnerID: file.EmbedOwnerID, // Preserve the embed owner of alerts created from an embed
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -445,8 +558,15 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
+	// Only alerts created from an embed have the embed owner annotation, so the lookup is skipped for other alerts.
+	var embedInfo *embedOwnerInfo
+	if annotations.AdminEmbedOwnerID != "" {
+		embedInfo, err = s.embedCreatedInfo(ctx, proj.ID, virtualFilePathForManagedAlert(req.Name))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
@@ -517,7 +637,26 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	}, nil
 }
 
-func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
+// embedAlertResources returns the resources to limit an alert created from an embed to (see embedDashboardResources).
+// An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
+// If the embed is limited but none of its resources are dashboards, it fails,
+// since an empty list would otherwise leave the alert unlimited.
+func embedAlertResources(resources []database.ResourceName) ([]database.ResourceName, error) {
+	if len(resources) == 0 {
+		return nil, nil
+	}
+	res := embedDashboardResources(resources)
+	if len(res) == 0 {
+		return nil, status.Error(codes.PermissionDenied, "alerts aren't supported for embeds that aren't limited to any dashboards")
+	}
+	return res, nil
+}
+
+// yamlForManagedAlert generates the YAML for an alert created from the UI.
+// For alerts created from an embed, embedOwnerID is the ID of the embed user who created it,
+// embedOwnerEmail is their saved email (optional; it's always added to the recipients, since the creator can't unsubscribe),
+// and embedResources optionally limits the alert's data to the resources the embed was limited to.
+func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) ([]byte, error) {
 	res := alertYAML{}
 	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
@@ -536,17 +675,54 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
-	// Hard code the user id to run for (to avoid exposing data through alert creation)
-	res.For.UserID = ownerUserID
-	res.Query.For.UserID = ownerUserID
+	err := setAlertExportYAML(&res, opts)
+	if err != nil {
+		return nil, err
+	}
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.RowsLimit = opts.NotifyRowsLimit
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
-	res.Annotations.AdminOwnerUserID = ownerUserID
+
+	// Rill users are identified by the owner's user ID, which the alert runs for (to avoid exposing data through alert creation).
+	// Embed users are identified by the embed owner annotation; the admin service resolves it to the identity of the embed user's latest iframe when the alert runs.
+	if embedOwnerID != "" {
+		// Alerts created from an embed are only delivered by email.
+		if len(opts.SlackChannels) > 0 || len(opts.SlackUsers) > 0 || len(opts.SlackWebhooks) > 0 {
+			return nil, fmt.Errorf("alerts created from an embed can't be sent to Slack")
+		}
+		// Embed users can only run metrics queries, which are subject to the same security policies as the embedded dashboard.
+		// Other resolvers, such as "sql", could access data that the embed doesn't expose.
+		if opts.Resolver != "" || opts.QueryName == "" {
+			return nil, fmt.Errorf("alerts created from an embed must use a query, not a data resolver")
+		}
+		res.Annotations.AdminEmbedOwnerID = embedOwnerID
+		// The creator's email gets the open link to the embedder's app, so it's always one of the recipients.
+		if embedOwnerEmail != "" {
+			res.Annotations.AdminEmbedOwnerEmail = embedOwnerEmail
+			if !slices.ContainsFunc(res.Notify.Email.Recipients, func(r string) bool { return strings.EqualFold(r, embedOwnerEmail) }) {
+				res.Notify.Email.Recipients = append(slices.Clone(res.Notify.Email.Recipients), embedOwnerEmail)
+			}
+		}
+		if len(res.Notify.Email.Recipients) == 0 {
+			return nil, fmt.Errorf("alerts created from an embed must have at least one email recipient")
+		}
+		if len(embedResources) > 0 {
+			resourcesJSON, err := json.Marshal(embedResources)
+			if err != nil {
+				return nil, err
+			}
+			res.Annotations.AdminEmbedResources = string(resourcesJSON)
+		}
+	} else {
+		res.For.UserID = ownerUserID
+		res.Query.For.UserID = ownerUserID
+		res.Annotations.AdminOwnerUserID = ownerUserID
+	}
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
@@ -582,9 +758,14 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
+	err := setAlertExportYAML(&res, opts)
+	if err != nil {
+		return nil, err
+	}
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.RowsLimit = opts.NotifyRowsLimit
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -592,6 +773,27 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
+}
+
+// setAlertExportYAML sets the options for attaching the rows that triggered the alert to emails.
+// It only sets them when attaching, since they only apply to attachments.
+func setAlertExportYAML(res *alertYAML, opts *adminv1.AlertOptions) error {
+	if !opts.ExportAttach {
+		return nil
+	}
+	if opts.QueryName == "" || opts.Resolver != "" {
+		return fmt.Errorf("export attachments are only supported for query-based alerts")
+	}
+	switch opts.ExportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV, runtimev1.ExportFormat_EXPORT_FORMAT_XLSX, runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+	default:
+		return fmt.Errorf("invalid export format %q for alert attachments", opts.ExportFormat.String())
+	}
+	res.Export.Attach = true
+	res.Export.Format = exportFormatYAML(opts.ExportFormat)
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
+	res.Export.Limit = opts.ExportLimit
+	return nil
 }
 
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
@@ -620,10 +822,17 @@ type alertYAML struct {
 			UserID string `yaml:"user_id"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	Export struct {
+		Attach        bool   `yaml:"attach"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint64 `yaml:"limit,omitempty"`
+	} `yaml:"export,omitempty"` // Omitted unless attaching, so runtimes that predate it can parse the YAML
 	Renotify      bool   `yaml:"renotify"`
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
-		Email struct {
+		RowsLimit uint32 `yaml:"rows_limit,omitempty"` // Omitted unless set, so runtimes that predate it can parse the YAML
+		Email     struct {
 			Recipients []string `yaml:"recipients"`
 		}
 		Slack struct {
@@ -636,11 +845,14 @@ type alertYAML struct {
 }
 
 type alertAnnotations struct {
-	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
-	AdminManaged     bool   `yaml:"admin_managed"`
-	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
-	WebOpenPath      string `yaml:"web_open_path"`
-	WebOpenState     string `yaml:"web_open_state"`
+	AdminOwnerUserID     string `yaml:"admin_owner_user_id"`
+	AdminEmbedOwnerID    string `yaml:"admin_embed_owner_id,omitempty"`    // ID of the embed user who created the alert; the admin service resolves it to the user's identity
+	AdminEmbedOwnerEmail string `yaml:"admin_embed_owner_email,omitempty"` // Saved email of the embed user who created the alert; only this recipient gets an open link
+	AdminEmbedResources  string `yaml:"admin_embed_resources,omitempty"`   // JSON list of resources that limit the data of an alert created from an embed
+	AdminManaged         bool   `yaml:"admin_managed"`
+	AdminNonce           string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
+	WebOpenPath          string `yaml:"web_open_path"`
+	WebOpenState         string `yaml:"web_open_state"`
 }
 
 func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
@@ -650,6 +862,9 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 
 	res := alertAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
+	res.AdminEmbedOwnerID = annotations["admin_embed_owner_id"]
+	res.AdminEmbedOwnerEmail = annotations["admin_embed_owner_email"]
+	res.AdminEmbedResources = annotations["admin_embed_resources"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
 

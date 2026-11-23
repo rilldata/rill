@@ -58,4 +58,19 @@ export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
   return data;
 };
 
+/**
+ * Like httpClient, but authenticates using a bearer token instead of cookies,
+ * e.g. the admin token of an embed or the token of an unsubscribe link.
+ */
+export const httpClientWithToken = <T>(
+  token: string,
+  config: AxiosRequestConfig,
+): Promise<T> =>
+  httpClient<T>({
+    ...config,
+    headers: { ...config.headers, Authorization: `Bearer ${token}` },
+    // To be explicit, credentials (cookies) aren't sent with the request
+    withCredentials: false,
+  });
+
 export default httpClient;

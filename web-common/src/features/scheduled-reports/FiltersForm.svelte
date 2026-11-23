@@ -48,6 +48,7 @@
     timeRangeStateStore,
     comparisonRangeStateStore,
     minTimeGrain: _minTimeGrain,
+    availableTimeGrains: _availableTimeGrains,
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
@@ -85,6 +86,7 @@
   let timeRanges = $derived(exploreSpec.timeRanges ?? []);
 
   let minTimeGrain = $derived($_minTimeGrain);
+  let availableTimeGrains = $derived($_availableTimeGrains);
 
   let activeTimeZone = $derived($selectedTimezone);
 
@@ -269,6 +271,7 @@
         hidePan
         onPan={() => {}}
         {minTimeGrain}
+        {availableTimeGrains}
         {side}
       />
       <CanvasComparisonPill

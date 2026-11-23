@@ -105,6 +105,8 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
+      - **`where_resource`** - _[array of string]_ - Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
+
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
     - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
@@ -157,6 +159,18 @@ _[oneOf]_ - Specifies how user identity or attributes should be evaluated for se
 
     - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
 
+### `export`
+
+_[object]_ - Configuration for attaching the rows that triggered the alert to email notifications. Only supported for alerts created from a dashboard (which use the `query` property).
+
+  - **`attach`** - _[boolean]_ - If true, attaches an export of the rows that triggered the alert to email notifications for failed checks. Files larger than 10 MB are not attached; the email says so instead.
+
+  - **`format`** - _[string]_ - Format of the attached file. Required if `attach` is true.
+
+  - **`include_header`** - _[boolean]_ - Whether to include header rows in the attached file
+
+  - **`limit`** - _[integer]_ - Maximum number of rows to include in the attached file
+
 ### `on_recover`
 
 _[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false.
@@ -192,6 +206,8 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
     - **`channels`** - _[array of string]_ - An array of Slack channel names to notify.
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
+
+  - **`rows_limit`** - _[integer]_ - Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
 
 ### `annotations`
 

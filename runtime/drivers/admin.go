@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 var ErrNotAuthenticated = errors.New("not authenticated")
@@ -42,17 +44,34 @@ type ReportDelivery struct {
 	UnsubscribeURL string
 	UserID         string         // user ID of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user ID of the creator.
 	UserAttrs      map[string]any // user attrs of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user attrs of the creator.
+	// EmbedOwner is true if the recipient is the embed user who created the report.
+	// Only that recipient gets an open link to the embedder's app.
+	EmbedOwner bool
+	// RestrictResources is true if the report's data must only be accessed through Resources.
+	// It is set for reports created from an embed that was limited to specific resources.
+	RestrictResources bool
+	Resources         []*runtimev1.ResourceName
 }
 
 type AlertURLs struct {
 	OpenURL        string
 	EditURL        string
 	UnsubscribeURL string
+	// EmbedOwner is true if the recipient is the embed user who created the alert.
+	// Only that recipient gets an open link to the embedder's app.
+	EmbedOwner bool
 }
 
 type AlertMetadata struct {
 	RecipientURLs      map[string]AlertURLs
 	QueryForAttributes map[string]any
+	// QueryForUserID is the user ID to run the alert's queries as.
+	// It is only set for alerts created from an embed, whose identity is resolved by the admin service.
+	QueryForUserID string
+	// RestrictResources is true if the alert's data must only be accessed through Resources.
+	// It is set for alerts created from an embed that was limited to specific resources.
+	RestrictResources bool
+	Resources         []*runtimev1.ResourceName
 }
 
 // Config holds configuration returned by the admin service for the runtime instance.

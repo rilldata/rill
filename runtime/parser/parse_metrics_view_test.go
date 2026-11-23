@@ -265,6 +265,9 @@ measures:
 - name: measure_with_empty_tags
   expression: AVG(id)
   tags: []
+tag_order:
+  - test
+  - " count "
 `,
 	}
 
@@ -331,6 +334,7 @@ measures:
 						Tags:        []string{},
 					},
 				},
+				TagOrder: []string{"test", "count"},
 			},
 		},
 	}
@@ -354,6 +358,34 @@ measures:
 	require.Equal(t, []string{"measure", "count", "test"}, mv.MetricsViewSpec.Measures[0].Tags)
 	require.Nil(t, mv.MetricsViewSpec.Measures[1].Tags)
 	require.Equal(t, []string{}, mv.MetricsViewSpec.Measures[2].Tags)
+}
+
+func TestMetricsViewTagOrderErrors(t *testing.T) {
+	cases := map[string]string{
+		"tag_order: [test, test]": `tag "test" is listed more than once in "tag_order"`,
+		"tag_order: [test, ' ']":  `"tag_order" must not contain empty tags`,
+	}
+	for tagOrder, wantErr := range cases {
+		t.Run(tagOrder, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:     ``,
+				`models/m1.sql`: `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: count
+  expression: COUNT(*)
+  tags: [test]
+` + tagOrder,
+			}
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, wantErr)
+		})
+	}
 }
 
 func TestValidateQueryAttributes(t *testing.T) {
@@ -1284,4 +1316,179 @@ explore:
 	require.Equal(t, []string{"foo"}, e3.Dimensions)
 	require.Nil(t, e3.DimensionsSelector)
 	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_Regex{Regex: "count.*"}}, e3.MeasuresSelector)
+}
+
+func TestMetricsViewExactExpression(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("parsed into the spec", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+- name: records
+  expression: count(*)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		mv := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"}]
+		require.NotNil(t, mv)
+		require.Len(t, mv.MetricsViewSpec.Measures, 2)
+		require.Equal(t, "approx_count_distinct(user_id)", mv.MetricsViewSpec.Measures[0].Expression)
+		require.Equal(t, "count(DISTINCT user_id)", mv.MetricsViewSpec.Measures[0].ExactExpression)
+		require.Empty(t, mv.MetricsViewSpec.Measures[1].ExactExpression)
+	})
+
+	t.Run("requires expression", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  exact_expression: count(DISTINCT user_id)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+		require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set if "expression" is set`)
+	})
+
+	t.Run("only on simple measures without a window", func(t *testing.T) {
+		for name, measure := range map[string]string{
+			"derived": `
+- name: users_per_record
+  requires: [records]
+  expression: records / 2
+  exact_expression: records / 2
+`,
+			"window": `
+- name: running_users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+  window:
+    order: ts
+`,
+		} {
+			t.Run(name, func(t *testing.T) {
+				repo := makeRepo(t, map[string]string{
+					`rill.yaml`:     ``,
+					`models/m1.sql`: `SELECT 1 AS user_id, now() AS ts`,
+					`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: records
+  expression: count(*)
+` + measure,
+				})
+				p, err := Parse(ctx, repo, "", "", "duckdb", true)
+				require.NoError(t, err)
+				require.NotEmpty(t, p.Errors)
+				require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set on simple measures without a window`)
+			})
+		}
+	})
+}
+
+func TestParseTimeGrains(t *testing.T) {
+	// Spellings and normalization: duplicates are dropped and the list is sorted from fine to coarse.
+	grains, err := parseTimeGrains([]string{"day", "10 minutes", "hour", "6h", "10m", "D"}, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.NoError(t, err)
+	require.Equal(t, []runtimev1.TimeGrain{
+		runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE,
+		runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		runtimev1.TimeGrain_TIME_GRAIN_6_HOUR,
+		runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	}, grains)
+
+	// Not set vs explicitly empty.
+	grains, err = parseTimeGrains(nil, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.NoError(t, err)
+	require.Nil(t, grains)
+	_, err = parseTimeGrains([]string{}, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.ErrorContains(t, err, "must not be empty")
+
+	// Rejections.
+	_, err = parseTimeGrains([]string{"7m"}, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.ErrorContains(t, err, "unsupported time grain")
+	_, err = parseTimeGrains([]string{"millisecond"}, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.ErrorContains(t, err, `must be at least "second"`)
+	_, err = parseTimeGrains([]string{"10m", "day"}, runtimev1.TimeGrain_TIME_GRAIN_HOUR)
+	require.ErrorContains(t, err, `smaller than "smallest_time_grain"`)
+	_, err = parseTimeGrains([]string{"fortnight"}, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
+	require.ErrorContains(t, err, "invalid time grain")
+
+	// Multiples are rejected wherever only standard grains make sense.
+	_, err = parseStandardTimeGrain("10m")
+	require.ErrorContains(t, err, `can only be listed in "time_grains"`)
+	tg, err := parseStandardTimeGrain("hour")
+	require.NoError(t, err)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, tg)
+}
+
+func TestParseMetricsViewTimeGrains(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id, '2025-01-01T00:00:00Z'::TIMESTAMP AS ts`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+smallest_time_grain: minute
+time_grains: [day, 10m, hour, 30m]
+dimensions:
+- column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+smallest_time_grain: 10m
+dimensions:
+- column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+
+	mv1 := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"}]
+	require.NotNil(t, mv1)
+	require.Equal(t, []runtimev1.TimeGrain{
+		runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE,
+		runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE,
+		runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	}, mv1.MetricsViewSpec.TimeGrains)
+
+	// A multiple is not a valid smallest_time_grain.
+	require.Len(t, p.Errors, 1)
+	require.Equal(t, "/metrics_views/mv2.yaml", p.Errors[0].FilePath)
+	require.Contains(t, p.Errors[0].Message, `can only be listed in "time_grains"`)
 }

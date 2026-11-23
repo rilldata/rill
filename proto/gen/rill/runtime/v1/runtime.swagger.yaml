@@ -566,6 +566,62 @@ paths:
           type: string
       tags:
         - RuntimeService
+    delete:
+      summary: DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+      operationId: RuntimeService_DeleteConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    patch:
+      summary: UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+      operationId: RuntimeService_UpdateConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: New title for the conversation. Not changed if unset.
+            title: Request message for RuntimeService.UpdateConversation
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
     post:
       summary: |-
@@ -2387,6 +2443,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+                  That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
               fillMissing:
                 type: boolean
               rows:
@@ -2556,7 +2616,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
-                title: Optional, defaults to false
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+                  Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
@@ -2881,6 +2944,13 @@ paths:
                 description: |-
                   Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
                   Only the `expression` compute is supported for time series.
+              exactMeasureNames:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+                  No-op for measures without an `exact_expression`.
               timeStart:
                 type: string
                 format: date-time
@@ -4233,6 +4303,9 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      exactExpression:
+        type: string
+        description: Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -4571,12 +4644,27 @@ definitions:
         type: string
       queryForAttributes:
         type: object
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+        description: Format of the attached export.
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       notifyOnRecover:
         type: boolean
       notifyOnFail:
         type: boolean
       notifyOnError:
         type: boolean
+      notifyRowsLimit:
+        type: integer
+        format: int64
+        description: Maximum number of rows that matched the alert criteria to include in notifications for failed checks.
       renotify:
         type: boolean
       renotifyAfterSeconds:
@@ -4923,6 +5011,13 @@ definitions:
         description: |-
           Array of dimension or measure names that must have a value before the canvas can render.
           Required filters are implicitly pinned.
+      singleSelectFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension names whose filter holds at most one value at a time.
+          Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
       annotations:
         type: object
         additionalProperties:
@@ -5503,6 +5598,11 @@ definitions:
         items:
           type: string
         description: Scopes to request. If empty, the scopes the resource advertises are requested.
+      authorizationParams:
+        type: object
+        additionalProperties:
+          type: string
+        description: Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
     description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object
@@ -5553,6 +5653,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1Conversation:
     type: object
@@ -5655,6 +5757,9 @@ definitions:
   v1DeleteAIMemoryResponse:
     type: object
     title: Response message for RuntimeService.DeleteAIMemory
+  v1DeleteConversationResponse:
+    type: object
+    title: Response message for RuntimeService.DeleteConversation
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -5901,7 +6006,28 @@ definitions:
           The values should be valid IANA location identifiers.
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
-        description: Preset UI state to show by default.
+        description: |-
+          Preset UI state to show by default.
+          Its `where` holds the default filter, parsed from `defaults.filters`.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        description: Dimension or measure names whose filter chip is always shown in the filter bar.
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Dimension or measure names that must have a filter value before the explore renders.
+          Required filters are implicitly pinned.
+      singleSelectFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Dimensions whose filter holds at most one value at a time.
+          Selecting a value replaces the current one, and the filter cannot exclude values or match on text.
       embedsHidePivot:
         type: boolean
         description: If true, the pivot tab will be hidden when the explore is embedded.
@@ -6341,6 +6467,9 @@ definitions:
         type: string
       theme:
         type: string
+      embedOpenUrl:
+        type: string
+        description: Base URL for open links in emails from reports and alerts created from an embed (`embeds.open_url` in rill.yaml).
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -6716,6 +6845,11 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
       expression:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeExpression'
+      exact:
+        type: boolean
+        description: |-
+          Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+          No-op for measures without an `exact_expression`, which only simple measures define.
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -6848,6 +6982,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+          That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
       fillMissing:
         type: boolean
       rows:
@@ -7012,7 +7150,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
-        title: Optional, defaults to false
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+          Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
@@ -7229,6 +7370,13 @@ definitions:
         description: |-
           The smallest time grain that can be queried for.
           This can be useful to set if the time_dimension is not available below a certain granularity.
+      timeGrains:
+        type: array
+        items:
+          $ref: '#/definitions/v1TimeGrain'
+        description: |-
+          Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+          Empty means the standard grains at or above smallest_time_grain.
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -7249,6 +7397,13 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
+      tagOrder:
+        type: array
+        items:
+          type: string
+        description: |-
+          Display order of the tags set on dimensions and measures.
+          Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
       parentDimensions:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
@@ -7432,6 +7587,13 @@ definitions:
         description: |-
           Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
           Only the `expression` compute is supported for time series.
+      exactMeasureNames:
+        type: array
+        items:
+          type: string
+        description: |-
+          Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+          No-op for measures without an `exact_expression`.
       timeStart:
         type: string
         format: date-time
@@ -8146,6 +8308,21 @@ definitions:
         type: array
         items:
           type: object
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1ReconcileStatus:
     type: string
     enum:
@@ -8872,7 +9049,22 @@ definitions:
       - TIME_GRAIN_MONTH
       - TIME_GRAIN_QUARTER
       - TIME_GRAIN_YEAR
+      - TIME_GRAIN_5_MINUTE
+      - TIME_GRAIN_10_MINUTE
+      - TIME_GRAIN_15_MINUTE
+      - TIME_GRAIN_30_MINUTE
+      - TIME_GRAIN_2_HOUR
+      - TIME_GRAIN_3_HOUR
+      - TIME_GRAIN_4_HOUR
+      - TIME_GRAIN_6_HOUR
+      - TIME_GRAIN_8_HOUR
+      - TIME_GRAIN_12_HOUR
     default: TIME_GRAIN_UNSPECIFIED
+    description: |2-
+       - TIME_GRAIN_5_MINUTE: Multiples of a base grain.
+      They are only used to bucket time series, not as the smallest grain, for rollups or for snapping.
+      Each multiple divides its parent unit, so buckets nest inside hours and days and align to local midnight.
+      The numeric values are not the grain order: compare grains by duration, never by enum value.
   v1TimeRange:
     type: object
     properties:
@@ -9052,6 +9244,9 @@ definitions:
   v1UpdateAIMemorySettingsResponse:
     type: object
     title: Response message for RuntimeService.UpdateAIMemorySettings
+  v1UpdateConversationResponse:
+    type: object
+    title: Response message for RuntimeService.UpdateConversation
   v1WatchFilesResponse:
     type: object
     properties:

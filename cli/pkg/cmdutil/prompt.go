@@ -99,3 +99,15 @@ func InputPrompt(msg, def string) (string, error) {
 	}
 	return result, nil
 }
+
+// PasswordPrompt prompts for a secret without echoing the input.
+func PasswordPrompt(msg string) (string, error) {
+	var result string
+	if err := survey.AskOne(&survey.Password{Message: msg}, &result); err != nil {
+		return "", fmt.Errorf("prompt failed: %w", err)
+	}
+	if result == "" {
+		return "", fmt.Errorf("input cannot be empty")
+	}
+	return result, nil
+}

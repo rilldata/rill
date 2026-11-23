@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
@@ -32,6 +34,7 @@ type MetricsViewYAML struct {
 	TimeDimension     string           `yaml:"timeseries"`
 	Watermark         string           `yaml:"watermark"`
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	TimeGrains        []string         `yaml:"time_grains"`
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	MaxQueryTimeRange string           `yaml:"max_query_time_range"`
@@ -62,6 +65,7 @@ type MetricsViewYAML struct {
 		Description         string
 		Type                string
 		Expression          string
+		ExactExpression     string `yaml:"exact_expression"`
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
@@ -74,6 +78,7 @@ type MetricsViewYAML struct {
 		LowerIsBetter       bool           `yaml:"lower_is_better"`
 		Tags                []string
 	}
+	TagOrder         []string           `yaml:"tag_order"`
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
 	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`   // used when Parent is set
 	Annotations      []*struct {
@@ -148,7 +153,7 @@ func (f *MetricsViewFieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
 			return err
 		}
 
-		tg, err := parseTimeGrain(tmp.TimeGrain)
+		tg, err := parseStandardTimeGrain(tmp.TimeGrain)
 		if err != nil {
 			return fmt.Errorf(`invalid "time_grain": %w`, err)
 		}
@@ -281,12 +286,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return fmt.Errorf(`must set a value for either the "model", "table" or "parent" field`)
 	}
 
-	smallestTimeGrain, err := parseTimeGrain(tmp.SmallestTimeGrain)
+	smallestTimeGrain, err := parseStandardTimeGrain(tmp.SmallestTimeGrain)
 	if err != nil {
 		return fmt.Errorf(`invalid "smallest_time_grain": %w`, err)
 	}
-	if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+	if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && timeutil.TimeGrainFromAPI(smallestTimeGrain).Compare(timeutil.TimeGrainSecond) < 0 {
 		return errors.New(`"smallest_time_grain" must be at least "second"`)
+	}
+
+	timeGrains, err := parseTimeGrains(tmp.TimeGrains, smallestTimeGrain)
+	if err != nil {
+		return err
 	}
 
 	if tmp.DefaultTimeRange != "" {
@@ -408,11 +418,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 		names[lower] = nameIsDimension
 
-		smallestTimeGrain, err := parseTimeGrain(dim.SmallestTimeGrain)
+		smallestTimeGrain, err := parseStandardTimeGrain(dim.SmallestTimeGrain)
 		if err != nil {
 			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: %w`, dim.Name, err)
 		}
-		if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+		if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && timeutil.TimeGrainFromAPI(smallestTimeGrain).Compare(timeutil.TimeGrainSecond) < 0 {
 			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: must be at least "second"`, dim.Name)
 		}
 
@@ -484,6 +494,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
+		}
+
+		if measure.ExactExpression != "" && measure.Expression == "" {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set if "expression" is set`, measure.Name)
 		}
 
 		var formatD3Locale *structpb.Struct
@@ -595,11 +609,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
 		}
 
+		// Derived measures are calculated from the measures as a query computes them, so only simple measures have an exact variant.
+		if measure.ExactExpression != "" && (typ != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || window != nil) {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set on simple measures without a window`, measure.Name)
+		}
+
 		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:                measure.Name,
 			DisplayName:         measure.DisplayName,
 			Description:         measure.Description,
 			Expression:          measure.Expression,
+			ExactExpression:     measure.ExactExpression,
 			Type:                typ,
 			Window:              window,
 			PerDimensions:       perDimensions,
@@ -631,6 +651,20 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if v, ok := names[strings.ToLower(measure)]; !ok || v != nameIsMeasure {
 			return fmt.Errorf(`measure %q referenced in "default_dimensions" not found`, measure)
 		}
+	}
+
+	// Checking that each tag is set on a dimension or measure happens during validation,
+	// since a derived metrics view only gets its dimensions and measures from its parent then.
+	var tagOrder []string
+	for _, tag := range tmp.TagOrder {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			return fmt.Errorf(`"tag_order" must not contain empty tags`)
+		}
+		if slices.Contains(tagOrder, tag) {
+			return fmt.Errorf(`tag %q is listed more than once in "tag_order"`, tag)
+		}
+		tagOrder = append(tagOrder, tag)
 	}
 
 	// 0 is default and type is uint32
@@ -777,7 +811,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if rollup.TimeGrain == "" {
 			return fmt.Errorf(`rollup[%d]: "time_grain" is required`, i)
 		}
-		tg, err := parseTimeGrain(rollup.TimeGrain)
+		tg, err := parseStandardTimeGrain(rollup.TimeGrain)
 		if err != nil {
 			return fmt.Errorf(`rollup[%d]: invalid "time_grain": %w`, i, err)
 		}
@@ -885,6 +919,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.WatermarkExpression = tmp.Watermark
 	spec.DataTimeRange = tmp.DataTimeRange
 	spec.SmallestTimeGrain = smallestTimeGrain
+	spec.TimeGrains = timeGrains
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 	spec.MaxQueryTimeRange = tmp.MaxQueryTimeRange
@@ -895,6 +930,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
+	spec.TagOrder = tagOrder
 
 	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
 	if !timeDimSeenInDimList && tmp.TimeDimension != "" {
@@ -1066,8 +1102,37 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 	return true, r, nil
 }
 
-// parseTimeGrain parses a YAML time grain string
+// timeGrainMultipleRegex matches a multiple of minutes or hours, such as "10m", "10 min", "10 minutes" or "6h".
+var timeGrainMultipleRegex = regexp.MustCompile(`^(\d+)\s*(m|min|minutes?|h|hours?)$`)
+
+// timeGrainMultiples lists the supported multiples.
+// Each divides its parent unit, so buckets nest inside hours and days.
+var timeGrainMultiples = map[string]runtimev1.TimeGrain{
+	"5m":  runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE,
+	"10m": runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE,
+	"15m": runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE,
+	"30m": runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE,
+	"2h":  runtimev1.TimeGrain_TIME_GRAIN_2_HOUR,
+	"3h":  runtimev1.TimeGrain_TIME_GRAIN_3_HOUR,
+	"4h":  runtimev1.TimeGrain_TIME_GRAIN_4_HOUR,
+	"6h":  runtimev1.TimeGrain_TIME_GRAIN_6_HOUR,
+	"8h":  runtimev1.TimeGrain_TIME_GRAIN_8_HOUR,
+	"12h": runtimev1.TimeGrain_TIME_GRAIN_12_HOUR,
+}
+
+// parseTimeGrain parses a YAML time grain string.
+// It accepts the standard grains by name or alias, and the supported multiples as "<n>m" or "<n>h" (for example "10m", "10 minutes" or "6h").
 func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
+	if m := timeGrainMultipleRegex.FindStringSubmatch(strings.ToLower(s)); m != nil {
+		unit := "m"
+		if strings.HasPrefix(m[2], "h") {
+			unit = "h"
+		}
+		if tg, ok := timeGrainMultiples[m[1]+unit]; ok {
+			return tg, nil
+		}
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("unsupported time grain %q: the supported multiples are 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h", s)
+	}
 	switch strings.ToLower(s) {
 	case "":
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil
@@ -1092,6 +1157,53 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
+}
+
+// parseStandardTimeGrain parses a YAML time grain string and rejects multiples, which can only bucket time series through "time_grains".
+func parseStandardTimeGrain(s string) (runtimev1.TimeGrain, error) {
+	tg, err := parseTimeGrain(s)
+	if err != nil {
+		return tg, err
+	}
+	if _, n := timeutil.TimeGrainFromAPI(tg).Base(); n > 1 {
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf(`time grain %q is not supported here: multiples such as "10m" can only be listed in "time_grains"`, s)
+	}
+	return tg, nil
+}
+
+// parseTimeGrains parses the "time_grains" list and normalizes it: entries are deduplicated and sorted from fine to coarse.
+// A nil list means the property was not set; the standard grains at or above smallestTimeGrain then apply.
+func parseTimeGrains(entries []string, smallestTimeGrain runtimev1.TimeGrain) ([]runtimev1.TimeGrain, error) {
+	if entries == nil {
+		return nil, nil
+	}
+	if len(entries) == 0 {
+		return nil, errors.New(`"time_grains" must not be empty`)
+	}
+	res := make([]runtimev1.TimeGrain, 0, len(entries))
+	for _, entry := range entries {
+		tg, err := parseTimeGrain(entry)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid "time_grains": %w`, err)
+		}
+		if tg == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			return nil, errors.New(`invalid "time_grains": entries must not be empty`)
+		}
+		g := timeutil.TimeGrainFromAPI(tg)
+		if g.Compare(timeutil.TimeGrainSecond) < 0 {
+			return nil, fmt.Errorf(`invalid "time_grains": %q must be at least "second"`, entry)
+		}
+		if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && g.Compare(timeutil.TimeGrainFromAPI(smallestTimeGrain)) < 0 {
+			return nil, fmt.Errorf(`invalid "time_grains": %q is smaller than "smallest_time_grain"`, entry)
+		}
+		if !slices.Contains(res, tg) {
+			res = append(res, tg)
+		}
+	}
+	slices.SortFunc(res, func(a, b runtimev1.TimeGrain) int {
+		return timeutil.TimeGrainFromAPI(a).Compare(timeutil.TimeGrainFromAPI(b))
+	})
+	return res, nil
 }
 
 var validationTemplateData = TemplateData{

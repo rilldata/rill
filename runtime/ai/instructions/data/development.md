@@ -90,7 +90,7 @@ There are a variety of built-in connector _drivers_, which each implements one o
 - **Information schema:** can list tables and their schemas (e.g. `duckdb`, `bigquery`, `postgres`)
 - **Object store:** can list, read and write flat files (e.g. `s3`)
 - **Notifier:** can send notifications (e.g. `slack`)
-- **AI:** can generate embeddings or responses (e.g. `openai`, `claude`, `gemini`)
+- **AI:** can generate embeddings or responses (e.g. `openai`, `claude`, `gemini`, `bedrock`)
 
 Here are some useful things to know when developing connectors:
 - Actual secrets like database passwords should go in `.env` and be referenced from the connector's YAML file

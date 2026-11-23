@@ -1,6 +1,7 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import PivotColumnTruncationNotice from "@rilldata/web-common/features/dashboards/pivot/PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
@@ -22,6 +23,11 @@
     type PivotClickToFilterResult,
   } from "./pivot-click-to-filter";
 
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import {
+    canvasExactMeasureContext,
+    canvasPrecisionChip,
+  } from "../exact-measures";
   import { onDestroy } from "svelte";
   import { derived, get, type Readable, type Writable } from "svelte/store";
 
@@ -52,12 +58,15 @@
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
 
+  $: columnTruncation = $pivotDataStore?.columnTruncation;
+
   $: hasColumnAndNoMeasure =
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 
   // FilterManager and metrics view for filter application
   $: canvasEntity = component.parent;
   $: filterManager = canvasEntity.expressionFilterManager;
+
   $: spec = component.specStore;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
@@ -98,18 +107,46 @@
 
   onDestroy(() => clickToFilter?.destroy());
 
+  // `click_to_filter: false` only detaches the handlers and the selection
+  // highlight. Recreating the orchestration above when the spec toggles throws
+  // inside the Svelte runtime, so it stays in place.
+  $: clickToFilterEnabled = $spec?.click_to_filter !== false;
+  $: activeClickToFilter = clickToFilterEnabled ? clickToFilter : undefined;
+  // Turned off after a click: the table would otherwise keep ignoring the
+  // filters it applied.
+  $: if (!clickToFilterEnabled) component.releaseClickToFilter();
+
   // Unwrap stores from the factory result for template use
-  $: clickSelectionStore = clickToFilter?.clickSelection;
+  $: clickSelectionStore = activeClickToFilter?.clickSelection;
   $: clickSelection = clickSelectionStore ? $clickSelectionStore : undefined;
 
-  $: rowSelectionStateStore = clickToFilter?.rowSelectionState;
+  $: rowSelectionStateStore = activeClickToFilter?.rowSelectionState;
   $: rowSelectionState = rowSelectionStateStore
     ? $rowSelectionStateStore
     : undefined;
+
+  // Precision chips from the exact selection of this component. Declared
+  // after the stores they read (`spec`, `pivotConfig`, `pivotDataStore`): a
+  // `$:` block must not read a store above its declaration.
+  $: exactContextStore = canvasExactMeasureContext(
+    canvasEntity,
+    component.id,
+    $spec?.metrics_view ?? "",
+  );
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined =>
+    canvasPrecisionChip(
+      measureName,
+      $pivotConfig?.allMeasures.find((m) => m.name === measureName)
+        ?.displayName || measureName,
+      $exactContextStore,
+      !!$pivotDataStore?.isFetching,
+      undefined,
+      () => canvasEntity.toggleExactMeasure(component.id, measureName),
+    );
 </script>
 
 <div
-  class="size-full overflow-hidden"
+  class="size-full overflow-hidden flex flex-col gap-y-1"
   style:max-height="inherit"
   class:p-4={hasHeader}
   class:pt-1={hasHeader}
@@ -127,6 +164,9 @@
         isEmbedded={EmbedStore.isEmbedded()}
       />
     {:else}
+      {#if columnTruncation}
+        <PivotColumnTruncationNotice {columnTruncation} />
+      {/if}
       <PivotTable
         {widthScopeKey}
         border={hasHeader}
@@ -134,10 +174,11 @@
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}
+        {precisionFor}
         {rowSelectionState}
         {clickSelection}
         fillWidth
-        enableClickToFilter
+        enableClickToFilter={clickToFilterEnabled}
         {columnStyles}
         fitToWidth={$spec?.fit_to_width === true}
         wrapText={$spec?.wrap === true}
@@ -195,8 +236,8 @@
             activeCell: null,
           }));
         }}
-        onCellClickToFilter={clickToFilter?.handleCellClickToFilter}
-        onColumnHeaderClick={clickToFilter?.handleColumnHeaderClick}
+        onCellClickToFilter={activeClickToFilter?.handleCellClickToFilter}
+        onColumnHeaderClick={activeClickToFilter?.handleColumnHeaderClick}
       />
     {/if}
   {/if}

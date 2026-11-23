@@ -610,6 +610,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_MILLISECOND: {
     grain: V1TimeGrain.TIME_GRAIN_MILLISECOND,
     unit: "millisecond",
+    count: 1,
     get label() {
       return m.time_grain_millisecond();
     },
@@ -628,6 +629,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_SECOND: {
     grain: V1TimeGrain.TIME_GRAIN_SECOND,
     unit: "second",
+    count: 1,
     get label() {
       return m.time_grain_second();
     },
@@ -645,6 +647,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     unit: "minute",
+    count: 1,
     get label() {
       return m.time_grain_minute();
     },
@@ -661,6 +664,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_HOUR: {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
     unit: "hour",
+    count: 1,
     get label() {
       return m.time_grain_hour();
     },
@@ -676,6 +680,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_DAY: {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     unit: "day",
+    count: 1,
     get label() {
       return m.time_grain_day();
     },
@@ -690,6 +695,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_WEEK: {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     unit: "week",
+    count: 1,
     get label() {
       return m.time_grain_week();
     },
@@ -704,6 +710,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_MONTH: {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     unit: "month",
+    count: 1,
     get label() {
       return m.time_grain_month();
     },
@@ -717,6 +724,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_QUARTER: {
     grain: V1TimeGrain.TIME_GRAIN_QUARTER,
     unit: "quarter",
+    count: 1,
     get label() {
       return m.time_grain_quarter();
     },
@@ -730,6 +738,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_YEAR: {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     unit: "year",
+    count: 1,
     get label() {
       return m.time_grain_year();
     },
@@ -739,6 +748,171 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
       year: "numeric",
     },
   },
+  // Multiples of minutes and hours, offered only when a metrics view lists them in `time_grains`.
+  TIME_GRAIN_5_MINUTE: {
+    grain: V1TimeGrain.TIME_GRAIN_5_MINUTE,
+    unit: "minute",
+    count: 5,
+    get label() {
+      return m.time_grain_n_minutes({ count: 5 });
+    },
+    duration: Period.FIVE_MINUTES,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
+  TIME_GRAIN_10_MINUTE: {
+    grain: V1TimeGrain.TIME_GRAIN_10_MINUTE,
+    unit: "minute",
+    count: 10,
+    get label() {
+      return m.time_grain_n_minutes({ count: 10 });
+    },
+    duration: Period.TEN_MINUTES,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
+  TIME_GRAIN_15_MINUTE: {
+    grain: V1TimeGrain.TIME_GRAIN_15_MINUTE,
+    unit: "minute",
+    count: 15,
+    get label() {
+      return m.time_grain_n_minutes({ count: 15 });
+    },
+    duration: Period.FIFTEEN_MINUTES,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
+  TIME_GRAIN_30_MINUTE: {
+    grain: V1TimeGrain.TIME_GRAIN_30_MINUTE,
+    unit: "minute",
+    count: 30,
+    get label() {
+      return m.time_grain_n_minutes({ count: 30 });
+    },
+    duration: Period.THIRTY_MINUTES,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
+  TIME_GRAIN_2_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_2_HOUR,
+    unit: "hour",
+    count: 2,
+    get label() {
+      return m.time_grain_n_hours({ count: 2 });
+    },
+    duration: Period.TWO_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_3_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_3_HOUR,
+    unit: "hour",
+    count: 3,
+    get label() {
+      return m.time_grain_n_hours({ count: 3 });
+    },
+    duration: Period.THREE_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_4_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_4_HOUR,
+    unit: "hour",
+    count: 4,
+    get label() {
+      return m.time_grain_n_hours({ count: 4 });
+    },
+    duration: Period.FOUR_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_6_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_6_HOUR,
+    unit: "hour",
+    count: 6,
+    get label() {
+      return m.time_grain_n_hours({ count: 6 });
+    },
+    duration: Period.SIX_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_8_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_8_HOUR,
+    unit: "hour",
+    count: 8,
+    get label() {
+      return m.time_grain_n_hours({ count: 8 });
+    },
+    duration: Period.EIGHT_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_12_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_12_HOUR,
+    unit: "hour",
+    count: 12,
+    get label() {
+      return m.time_grain_n_hours({ count: 12 });
+    },
+    duration: Period.TWELVE_HOURS,
+    d3format: "%H:%M",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
   // TIME_GRAIN_UNSPECIFIED falls back to MINUTE-level settings as a safe default.
   // This can occur when viewing infinite time ranges without a valid smallest_time_grain.
   // The grain value should not be used in queries (filtered out by isGrainAllowed),
@@ -746,6 +920,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
   TIME_GRAIN_UNSPECIFIED: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     unit: "minute",
+    count: 1,
     get label() {
       return m.time_grain_minute();
     },

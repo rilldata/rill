@@ -14,6 +14,7 @@
   } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import type { ConnectorTable } from "../connectors-utils";
   import { onMount } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -86,13 +87,15 @@
     return () => observer.disconnect();
   });
 
-  // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
-  $: typedData = data?.tables?.map((table: V1TableInfo) => ({
-    name: table.name ?? "",
-    database,
-    databaseSchema,
-    view: table.view ?? false,
-  }));
+  // Normalize V1TableInfo[] from ListTables into the tables TableEntry takes
+  $: typedData = data?.tables?.map(
+    (table: V1TableInfo): ConnectorTable => ({
+      connector: connectorName,
+      database,
+      databaseSchema,
+      tableName: table.name ?? "",
+    }),
+  );
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -147,13 +150,10 @@
         {#each typedData as tableInfo (tableInfo)}
           <TableEntry
             driver={connector.driver.name}
-            connector={connectorName}
             showGenerateMetricsAndDashboard={isOlapConnector || canImport}
             showGenerateModel={canImport}
             {isOlapConnector}
-            {database}
-            {databaseSchema}
-            table={tableInfo.name}
+            table={tableInfo}
             {store}
           />
         {/each}

@@ -1,5 +1,6 @@
 import {
   formatDateTimeByGrain,
+  formatGrainBucket,
   prettyFormatTimeRange,
 } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
@@ -468,5 +469,39 @@ describe("formatDateTimeByGrain", () => {
     const result = formatDateTimeByGrain(nyDate, V1TimeGrain.TIME_GRAIN_MINUTE);
     // 14:30 UTC = 10:30 AM in New York (during daylight saving time)
     expect(result).toMatch(/Sep 15, 2025, 10:30\s?AM/);
+  });
+});
+
+describe("formatGrainBucket with multiples", () => {
+  it("shows minutes for minute multiples", () => {
+    const at = (iso: string) => DateTime.fromISO(iso).setZone("UTC");
+    expect(
+      formatGrainBucket(
+        at("2024-03-10T04:20:00Z"),
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      ),
+    ).toMatch(/Mar 10, 2024, 4:20\s?AM/);
+    expect(
+      formatGrainBucket(
+        at("2024-03-10T04:30:00Z"),
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      ),
+    ).toMatch(/Mar 10, 2024, 4:30\s?AM/);
+  });
+
+  it("shows the hour for hour multiples", () => {
+    const at = (iso: string) => DateTime.fromISO(iso).setZone("UTC");
+    expect(
+      formatGrainBucket(
+        at("2024-03-10T06:00:00Z"),
+        V1TimeGrain.TIME_GRAIN_6_HOUR,
+      ),
+    ).toMatch(/Mar 10, 2024, 6\s?AM/);
+    expect(
+      formatGrainBucket(
+        at("2024-03-10T12:00:00Z"),
+        V1TimeGrain.TIME_GRAIN_6_HOUR,
+      ),
+    ).toMatch(/Mar 10, 2024, 12\s?PM/);
   });
 });

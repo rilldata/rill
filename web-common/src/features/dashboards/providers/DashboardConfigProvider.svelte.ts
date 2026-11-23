@@ -43,7 +43,14 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
         metricsViewName ? [metricsViewName] : [],
       );
 
-      // this.yamlConfigProvider.update() // TODO: once we have this support for explore
+      this.yamlConfigProvider.update(
+        metricsViewName
+          ? { [metricsViewName]: exploreSpec.defaultPreset?.where }
+          : {},
+        exploreSpec.pinnedFilters ?? [],
+        exploreSpec.requiredFilters ?? [],
+        exploreSpec.singleSelectFilters ?? [],
+      );
     });
 
     this.cleanup = () => {
@@ -86,6 +93,7 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
           defaultFilters,
           canvasSpec.pinnedFilters ?? [],
           canvasSpec.requiredFilters ?? [],
+          canvasSpec.singleSelectFilters ?? [],
         );
       },
     );

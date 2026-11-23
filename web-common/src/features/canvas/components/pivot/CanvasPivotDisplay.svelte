@@ -35,6 +35,18 @@
 
   $: hasHeader = !!title || !!description;
 
+  // The rendered table for the workbook export; see BaseCanvasComponent.exportPayload.
+  $: component.exportPayload.set(
+    $pivotDataStore?.error?.length
+      ? {
+          kind: "error",
+          message: $pivotDataStore.error[0]?.message ?? "Failed to load",
+        }
+      : $pivotDataStore?.assembled && !$pivotDataStore.isFetching && $config
+        ? { kind: "table", state: $pivotDataStore, config: $config }
+        : undefined,
+  );
+
   $: filters = {
     time_filters,
     dimension_filters,

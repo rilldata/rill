@@ -1,4 +1,10 @@
 import { goto } from "$app/navigation";
+import {
+  selectedInSurface,
+  toggleInSelection,
+  toggleSurfaceInSelection,
+  type ExactSelection,
+} from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { page } from "$app/stores";
 import {
   useCanvas,
@@ -12,11 +18,11 @@ import {
   type V1CanvasRow,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
+  type V1ExploreTimeRange,
   type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
-  getQueryServiceConvertExpressionToMetricsSQLQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -41,7 +47,7 @@ import {
 } from "../components/util";
 import { Grid } from "./grid";
 import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
-import { getComparisonTypeFromRangeString } from "./time-state";
+import { getDefaultComparisonRange } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
@@ -53,8 +59,11 @@ import {
 } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import {
+  convertExpressionToMetricsSQL,
+  setPinnedAndRequiredFilters,
+} from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
@@ -85,6 +94,9 @@ export type SearchParamsStore = {
   ) => boolean;
   clearAll: () => void;
 };
+
+// An exact selection with nothing selected; see `CanvasEntity.exactMeasures`.
+const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
 
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
@@ -120,6 +132,13 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber | undefined;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  // Measures the viewer switched to their `exact_expression`, per surface (a
+  // component, or one leaderboard of a leaderboard component; see
+  // `canvasExactSurface`), tied to the URL params (time, comparison, grain,
+  // timezone, filters, tabs) they were selected in. The selection resets as
+  // soon as those params change (see onUrlChange), so exact values are only
+  // fetched after an explicit click. Tab memory only: never serialized.
+  exactMeasures = writable<ExactSelection>(NO_EXACT_SELECTION);
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
@@ -259,8 +278,8 @@ export class CanvasEntity {
     }
   };
 
-  checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
-    const defaultSearchParams = getDefaults(defaultPreset);
+  checkAndSetDefaultParams = ({ defaultPreset, timeRanges }: V1CanvasSpec) => {
+    const defaultSearchParams = getDefaults(defaultPreset ?? {}, timeRanges);
     const currentDefaultParams = get(this.defaultUrlParamsStore);
     if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
       this.defaultUrlParamsStore.set(defaultSearchParams);
@@ -328,7 +347,7 @@ export class CanvasEntity {
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
-    this.checkAndSetDefaultParams(validSpec.defaultPreset ?? {});
+    this.checkAndSetDefaultParams(validSpec);
     this.checkAndSetEmbeddedTheme(validSpec);
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
@@ -349,12 +368,8 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
-    );
-    const requiredFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.requiredFilters,
-    );
+    const { pinnedFilters, requiredFilters } =
+      this.dashboardProvider.yamlConfigProvider;
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
@@ -371,32 +386,18 @@ export class CanvasEntity {
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
     );
-    const promises = Object.values(
-      this.expressionFilterManager.topLevelJoiner.expr,
-    ).map((expr) => {
-      // TODO: our API type is proto but there is a fromJSON underneath.
-      //       Once that is fixed, we need to call toExpressionProto here.
-      const protoExpr = expr as any;
-      return queryClient.fetchQuery({
-        queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
-          this.instanceId,
-          { expression: protoExpr },
-        ),
-        queryFn: () =>
-          queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: protoExpr,
-          }),
-      });
-    });
-
-    const responses = await Promise.all(promises);
+    const filterSQLs = await Promise.all(
+      Object.values(this.expressionFilterManager.topLevelJoiner.expr).map(
+        (expr) => convertExpressionToMetricsSQL(this.client, expr),
+      ),
+    );
 
     const filterMap = new YAMLMap();
-    responses.forEach((response, index) => {
-      if (!response.sql) return;
+    filterSQLs.forEach((sql, index) => {
+      if (!sql) return;
       filterMap.add({
         key: filterNames[index],
-        value: response.sql,
+        value: sql,
       });
     });
 
@@ -407,19 +408,7 @@ export class CanvasEntity {
     // synchronously to keep the read-modify-write atomic.
     const yaml = get(this.parsedContent);
 
-    setOrDeleteFilterList(yaml, "pinned", pinnedNames);
-    setOrDeleteFilterList(yaml, "required", requiredNames);
-
-    if (
-      yaml.get("filters") instanceof YAMLMap &&
-      (yaml.get("filters") as YAMLMap).items.length === 0
-    ) {
-      try {
-        yaml.deleteIn(["filters"]);
-      } catch {
-        // no-op
-      }
-    }
+    setPinnedAndRequiredFilters(yaml, pinnedNames, requiredNames);
 
     if (timeRange) {
       yaml.setIn(["defaults", "time_range"], timeRange);
@@ -513,6 +502,12 @@ export class CanvasEntity {
     }
 
     this.searchParams.set(searchParams);
+    // The query context changed: new queries are approximate again.
+    this.exactMeasures.update((selection) =>
+      selection.contextKey === searchParams.toString()
+        ? selection
+        : NO_EXACT_SELECTION,
+    );
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
@@ -520,6 +515,61 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
+
+  /**
+   * Switches a measure of one surface between its approximate default and its
+   * exact variant for the current query context. Only that surface follows:
+   * a click re-runs the queries of one component (or one leaderboard).
+   */
+  toggleExactMeasure = (surface: string, measureName: string) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleInSelection(selection, contextKey, surface, measureName) ??
+        NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * Switches a whole surface between approximate and exact: every given
+   * measure becomes exact, or the surface returns to approximate when all of
+   * them are exact already. For components with one chip for all their
+   * measures (charts).
+   */
+  toggleExactSurface = (surface: string, measureNames: readonly string[]) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleSurfaceInSelection(
+          selection,
+          contextKey,
+          surface,
+          measureNames,
+        ) ?? NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * The measures the viewer selected as exact in a surface, for the current
+   * query context.
+   */
+  selectedExactMeasures = (surface: string): Readable<ReadonlySet<string>> =>
+    derived(
+      [this.exactMeasures, this.searchParams],
+      ([selection, searchParams]) =>
+        selectedInSurface(selection, searchParams.toString(), surface),
+    );
+
+  /**
+   * Non-reactive variant of `selectedExactMeasures`, for derivations that
+   * already subscribe to `exactMeasures`.
+   */
+  currentExactMeasures = (surface: string): ReadonlySet<string> =>
+    selectedInSurface(
+      get(this.exactMeasures),
+      get(this.searchParams).toString(),
+      surface,
+    );
 
   // Acquires a reference to the entity. The cached entity is shared across
   // consumers (e.g. an unmounting editor and a mounting preview overlap during
@@ -1081,7 +1131,10 @@ function areSameType(
   return isTableComponentType(existingType) && isTableComponentType(newType);
 }
 
-function getDefaults(defaultPreset: V1CanvasPreset) {
+function getDefaults(
+  defaultPreset: V1CanvasPreset,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+) {
   const defaultSearchParams = new URLSearchParams();
 
   const resolvedRange = defaultPreset.timeRange;
@@ -1096,7 +1149,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   ) {
     defaultSearchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      getComparisonTypeFromRangeString(defaultPreset.timeRange),
+      getDefaultComparisonRange(defaultPreset.timeRange, timeRanges),
     );
   }
 
@@ -1117,22 +1170,6 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   );
 
   return defaultSearchParams;
-}
-
-function setOrDeleteFilterList(
-  yaml: ReturnType<typeof parseDocument>,
-  key: "pinned" | "required",
-  names: string[],
-) {
-  if (names.length > 0) {
-    yaml.setIn(["filters", key], names);
-  } else {
-    try {
-      yaml.deleteIn(["filters", key]);
-    } catch {
-      // no-op
-    }
-  }
 }
 
 const customKeySort = (

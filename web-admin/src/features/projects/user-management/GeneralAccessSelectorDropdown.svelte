@@ -19,6 +19,8 @@
 
   export let organization: string;
   export let project: string;
+  // Whether the current user may list the org's groups, which the member count comes from.
+  export let readOrgMembers: boolean;
 
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
@@ -45,11 +47,14 @@
 
   // Use ListOrganizationMemberUsergroups with includeCounts to get the usersCount
   // for autogroup:members, which specifically excludes guest users
-  // Query is always enabled so the count displays immediately (not just when dropdown opens)
+  // Query is enabled regardless of the dropdown so the count displays immediately,
+  // but only for users who may list the org's groups; the count is hidden for others.
   $: listOrgMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization, {
-      includeCounts: true,
-    });
+    createAdminServiceListOrganizationMemberUsergroups(
+      organization,
+      { includeCounts: true },
+      { query: { enabled: readOrgMembers } },
+    );
 
   // Get the user count from the autogroup:members group (excludes guests)
   $: autogroupMembersGroup = $listOrgMemberUsergroups?.data?.members?.find(

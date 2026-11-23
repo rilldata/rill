@@ -19,10 +19,13 @@ import {
   keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
+import { COLUMN_COMBINATIONS_LIMIT } from "./pivot-constants";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
+  getTimeFilterSpanningValues,
+  getTimeForQuery,
   getTimeGrainFromDimension,
   getUriMeasuresForDimensions,
   isTimeDimension,
@@ -82,6 +85,7 @@ export function createPivotAggregationRowQuery(
           measures: prepareMeasuresForRequest(
             measures,
             config.ephemeralMeasures,
+            config.exactMeasures,
           ),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
@@ -172,8 +176,15 @@ export function getAxisForDimensions(
       }
       // Append the URI measure for this dimension (if it has one) without
       // affecting the sort, which was derived from `measures` above.
+      // Never append it to a sort-only query, whose single measure carries a
+      // measure-level filter: the runtime rejects that filter as soon as the
+      // query has a second measure. Such a query only selects and orders the
+      // row values; the totals shown for them, links included, come from
+      // getAxisQueryForMeasureTotals.
       const measuresForDimension =
-        includeUriMeasures && !dimension.alias
+        includeUriMeasures &&
+        !dimension.alias &&
+        !measures.some((m) => m.filter)
           ? [
               ...measures,
               ...getUriMeasuresForDimensions([dimension.name], config),
@@ -237,6 +248,12 @@ export function getAxisForDimensions(
   );
 }
 
+/**
+ * When the rows are sorted by a measure, the row axis query is a sort-only
+ * query that merely selects and orders the row values. This query fetches the
+ * totals displayed for those rows, along with the URI measures that render
+ * row dimension values as links.
+ */
 export function getAxisQueryForMeasureTotals(
   ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
@@ -274,6 +291,9 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
+      "100",
+      "0",
+      true,
     );
   }
 
@@ -307,6 +327,16 @@ export function getTotalsRowQuery(
       createInExpression(dimension, colDimensionAxes[dimension]),
     );
 
+  // Limit time columns to the buckets on their axis. Otherwise the top
+  // combinations by measure can fall outside the axis when the time range has
+  // more buckets than the axis holds, leaving scattered columns.
+  const timeFilters = colDimensionNames
+    .filter((d) => isTimeDimension(d, time.timeDimension))
+    .filter((d) => colDimensionAxes[d]?.length > 0)
+    .map((dimension) =>
+      getTimeFilterSpanningValues(dimension, colDimensionAxes[dimension]),
+    );
+
   const mergedFilter =
     mergeFilters(createAndExpression(colFilters), config.whereFilter) ??
     createAndExpression([]);
@@ -317,6 +347,8 @@ export function getTotalsRowQuery(
       name: config.measureNames[0],
     },
   ];
+  // One combination past the limit tells a capped result from one that has
+  // exactly the limit; the caller keeps only the limit.
   return createPivotAggregationRowQuery(
     ctx,
     config,
@@ -324,6 +356,8 @@ export function getTotalsRowQuery(
     dimensionBody,
     mergedFilter,
     sortBy,
-    "300",
+    (COLUMN_COMBINATIONS_LIMIT + 1).toString(),
+    "0",
+    getTimeForQuery(time, timeFilters),
   );
 }

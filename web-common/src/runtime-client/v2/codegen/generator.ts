@@ -9,7 +9,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { MethodKind } from "@bufbuild/protobuf";
-import { classifyMethod, type MethodClassification } from "./config";
+import {
+  classifyMethod,
+  protoMessageMethods,
+  usesProtoMessages,
+  type MethodClassification,
+} from "./config";
 
 export interface ServiceDef {
   typeName: string;
@@ -35,6 +40,8 @@ export interface MethodInfo {
   /** Response message type name (e.g. "MetricsViewAggregationResponse") */
   outputType: string;
   classification: MethodClassification;
+  /** Whether the request and response are proto messages instead of Orval JSON types */
+  usesProtoMessages: boolean;
   /** Whether the request type has an instanceId field */
   hasInstanceId: boolean;
   /** Whether the request type has a pageToken field (pagination input) */
@@ -109,14 +116,55 @@ function hasOrvalType(
   return availableOrvalTypes.has(orvalTypeName(protoTypeName));
 }
 
-/** Get the public-facing type for a request or response */
-function publicType(
+/**
+ * Whether the request is exposed as its Orval type. Only methods on the JSON
+ * bridge are, and only while their Orval type still exists; without one the
+ * request falls back to `PartialMessage` even though it is bridged through
+ * `fromJson`, so such callers pass the JSON representation behind a cast.
+ */
+function usesOrvalRequestType(
+  m: MethodInfo,
   availableOrvalTypes: Set<string>,
-  protoTypeName: string,
+): boolean {
+  return !m.usesProtoMessages && hasOrvalType(availableOrvalTypes, m.inputType);
+}
+
+/** Whether the response is exposed as its Orval type; see usesOrvalRequestType. */
+function usesOrvalResponseType(
+  m: MethodInfo,
+  availableOrvalTypes: Set<string>,
+): boolean {
+  return (
+    !m.usesProtoMessages && hasOrvalType(availableOrvalTypes, m.outputType)
+  );
+}
+
+/**
+ * Get the public-facing request type. Migrated methods take a `PartialMessage`,
+ * so callers can pass plain partial objects.
+ */
+function requestPublicType(
+  m: MethodInfo,
+  availableOrvalTypes: Set<string>,
 ): string {
-  return hasOrvalType(availableOrvalTypes, protoTypeName)
-    ? orvalTypeName(protoTypeName)
-    : `PartialMessage<${protoTypeName}>`;
+  return usesOrvalRequestType(m, availableOrvalTypes)
+    ? orvalTypeName(m.inputType)
+    : `PartialMessage<${m.inputType}>`;
+}
+
+/**
+ * Get the public-facing response type. Migrated methods return the proto Message
+ * type, so callers get a fully-typed message instance with its runtime helpers
+ * (e.g. `Timestamp.toDate()`, oneof selectors).
+ */
+function responsePublicType(
+  m: MethodInfo,
+  availableOrvalTypes: Set<string>,
+): string {
+  if (usesOrvalResponseType(m, availableOrvalTypes)) {
+    return orvalTypeName(m.outputType);
+  }
+  return m.usesProtoMessages ? m.outputType : `PartialMessage<${m.outputType}>`;
 }
 
 // --- Method extraction ---
@@ -150,10 +198,23 @@ function extractMethods(service: ServiceDef): MethodInfo[] {
       inputType: extractShortName(method.I.typeName),
       outputType: extractShortName(method.O.typeName),
       classification,
+      usesProtoMessages: usesProtoMessages(serviceName, key),
       hasInstanceId,
       hasPageToken,
       hasNextPageToken,
     });
+  }
+
+  // Guard against typos and renames in the migration list: every entry must
+  // name a method that is actually generated for the service.
+  const generatedKeys = new Set(methods.map((m) => m.methodKey));
+  const unknown = (protoMessageMethods[serviceName] ?? []).filter(
+    (methodKey) => !generatedKeys.has(methodKey),
+  );
+  if (unknown.length > 0) {
+    throw new Error(
+      `protoMessageMethods.${serviceName} lists methods that ${serviceName} does not generate: ${unknown.join(", ")}`,
+    );
   }
 
   return methods;
@@ -188,14 +249,14 @@ function methodNames(ctx: MethodContext) {
 
 function requestTypes(ctx: MethodContext) {
   const { m, orvalTypes } = ctx;
-  const inputPublic = publicType(orvalTypes, m.inputType);
+  const inputPublic = requestPublicType(m, orvalTypes);
   const requestType = m.hasInstanceId
     ? `Omit<${inputPublic}, "instanceId">`
     : inputPublic;
   const requestSpread = m.hasInstanceId
     ? `{ instanceId: client.instanceId, ...request }`
     : `request`;
-  const responseType = publicType(orvalTypes, m.outputType);
+  const responseType = responsePublicType(m, orvalTypes);
   return { requestType, requestSpread, responseType };
 }
 
@@ -203,6 +264,17 @@ function generateRawFunction(ctx: MethodContext): string[] {
   const { serviceName, serviceClientProp, m } = ctx;
   const { rawFn } = methodNames(ctx);
   const { requestType, requestSpread, responseType } = requestTypes(ctx);
+
+  // Migrated methods take a PartialMessage and can be passed to the ConnectRPC
+  // client directly. Methods on the JSON bridge take the JSON representation,
+  // so it must be parsed via fromJson (with undefined stripped, which fromJson
+  // rejects) and the response converted back with toJson.
+  const requestArg = m.usesProtoMessages
+    ? requestSpread
+    : `${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue)`;
+  const returnStmt = m.usesProtoMessages
+    ? `  return r;`
+    : `  return r.toJson({ emitDefaultValues: true }) as unknown as ${responseType};`;
 
   return [
     `/**`,
@@ -214,10 +286,10 @@ function generateRawFunction(ctx: MethodContext): string[] {
     `  options?: { signal?: AbortSignal },`,
     `): Promise<${responseType}> {`,
     `  const r = await client.${serviceClientProp}.${m.methodKey}(`,
-    `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
+    `    ${requestArg},`,
     `    { signal: options?.signal },`,
     `  );`,
-    `  return r.toJson({ emitDefaultValues: true }) as unknown as ${responseType};`,
+    returnStmt,
     `}`,
     ``,
   ];
@@ -282,7 +354,7 @@ function generateInfiniteQueryMethod(ctx: MethodContext): string[] {
   const omitKeys = m.hasInstanceId
     ? `"instanceId" | "pageToken"`
     : `"pageToken"`;
-  const inputPublic = publicType(ctx.orvalTypes, m.inputType);
+  const inputPublic = requestPublicType(m, ctx.orvalTypes);
   const paginatedRequestType = `Omit<${inputPublic}, ${omitKeys}>`;
 
   return [
@@ -385,17 +457,23 @@ function generateServiceFile(
   // --- Package imports ---
 
   // @bufbuild/protobuf
+  // PartialMessage is used wherever a type is not exposed as its Orval type;
+  // JsonValue is only needed for the fromJson bridge on unmigrated methods.
   const needsPartialMessage = methods.some(
     (m) =>
-      !hasOrvalType(availableOrvalTypes, m.inputType) ||
-      !hasOrvalType(availableOrvalTypes, m.outputType),
+      !usesOrvalRequestType(m, availableOrvalTypes) ||
+      (!m.usesProtoMessages && !usesOrvalResponseType(m, availableOrvalTypes)),
   );
-  const bufSpecs: string[] = ["JsonValue"];
+  const needsJsonBridge = methods.some((m) => !m.usesProtoMessages);
+  const bufSpecs: string[] = [];
+  if (needsJsonBridge) bufSpecs.push("JsonValue");
   if (needsPartialMessage) bufSpecs.push("PartialMessage");
   bufSpecs.sort();
-  lines.push(
-    `import type { ${bufSpecs.join(", ")} } from "@bufbuild/protobuf";`,
-  );
+  if (bufSpecs.length > 0) {
+    lines.push(
+      `import type { ${bufSpecs.join(", ")} } from "@bufbuild/protobuf";`,
+    );
+  }
 
   // @connectrpc/connect
   lines.push(`import type { ConnectError } from "@connectrpc/connect";`);
@@ -448,12 +526,12 @@ function generateServiceFile(
   const orvalImports = new Set<string>();
 
   for (const m of methods) {
-    protoImports.add(m.inputType); // always needed for serialization
-    if (hasOrvalType(availableOrvalTypes, m.inputType)) {
+    protoImports.add(m.inputType); // always needed: as a type or for fromJson
+    if (usesOrvalRequestType(m, availableOrvalTypes)) {
       orvalImports.add(orvalTypeName(m.inputType));
     }
 
-    if (hasOrvalType(availableOrvalTypes, m.outputType)) {
+    if (usesOrvalResponseType(m, availableOrvalTypes)) {
       orvalImports.add(orvalTypeName(m.outputType));
     } else {
       protoImports.add(m.outputType);
@@ -480,8 +558,11 @@ function generateServiceFile(
   lines.push(`import type { RuntimeClient } from "../runtime-client";`);
 
   // stripUndefined (proto fromJson rejects undefined values;
-  // Orval's HTTP client silently omitted them)
-  lines.push(`import { stripUndefined } from "../strip-undefined";`);
+  // Orval's HTTP client silently omitted them). Only needed for the fromJson
+  // bridge on methods that are not migrated to proto messages.
+  if (needsJsonBridge) {
+    lines.push(`import { stripUndefined } from "../strip-undefined";`);
+  }
 
   lines.push(``);
 

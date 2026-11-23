@@ -24,6 +24,7 @@ import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   allowedGrainsForInterval,
+  getAvailableTimeGrains,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -31,6 +32,7 @@ import {
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { clampDateToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   type DashboardTimeControls,
   type ScrubRange,
@@ -96,6 +98,8 @@ export type TimeControlState = {
 
   // Computed properties from all time range query
   minTimeGrain?: V1TimeGrain;
+  // The grains the metrics view offers, see getAvailableTimeGrains
+  availableTimeGrains?: V1TimeGrain[];
   allTimeRange?: TimeRange;
   defaultTimeRange?: TimeRange;
   timeDimension?: string;
@@ -184,6 +188,7 @@ export function getTimeControlState(
   const minTimeGrain =
     (metricsViewSpec.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  const availableTimeGrains = getAvailableTimeGrains(metricsViewSpec);
 
   const defaultTimeRange = isoDurationToFullTimeRange(
     exploreSpec.defaultPreset?.timeRange,
@@ -209,6 +214,7 @@ export function getTimeControlState(
     defaultTimeRange,
     minTimeGrain,
     !!adaptiveTimeGrain,
+    availableTimeGrains,
   );
   if (!timeRangeState) {
     return undefined;
@@ -226,6 +232,7 @@ export function getTimeControlState(
 
   return {
     minTimeGrain,
+    availableTimeGrains,
     allTimeRange,
     defaultTimeRange,
     timeDimension,
@@ -325,6 +332,7 @@ export function calculateTimeRangePartial(
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
   adaptiveTimeGrain = false,
+  availableTimeGrains?: V1TimeGrain[],
 ): TimeRangeState | undefined {
   if (!currentSelectedTimeRange) return undefined;
 
@@ -360,13 +368,18 @@ export function calculateTimeRangePartial(
 
   const interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
-  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
+  const aggregationOptions = allowedGrainsForInterval(
+    interval,
+    minTimeGrain,
+    availableTimeGrains,
+  );
 
   const validatedGrain = getValidatedTimeGrain(
     interval,
     minTimeGrain,
     adaptiveTimeGrain ? undefined : currentSelectedTimeRange?.interval,
     parsed,
+    availableTimeGrains,
   );
   if (selectedTimeRange && validatedGrain) {
     selectedTimeRange.interval = validatedGrain;
@@ -386,8 +399,8 @@ export function calculateTimeRangePartial(
       lastDefinedScrubRange.start,
       lastDefinedScrubRange.end,
     );
-    timeStart = start;
-    timeEnd = end;
+    timeStart = clampDateToTimestampBounds(start);
+    timeEnd = clampDateToTimestampBounds(end);
   }
 
   return {
@@ -463,6 +476,14 @@ export function calculateComparisonTimeRangePartial(
     comparisonTimeEnd = comparisonRange.end;
   }
 
+  // A custom comparison range, or one shifted along with a scrub, can reach past the bounds of a protobuf timestamp.
+  if (comparisonTimeStart) {
+    comparisonTimeStart = clampDateToTimestampBounds(comparisonTimeStart);
+  }
+  if (comparisonTimeEnd) {
+    comparisonTimeEnd = clampDateToTimestampBounds(comparisonTimeEnd);
+  }
+
   return {
     showTimeComparison: showTimeComparison,
     selectedComparisonTimeRange:
@@ -530,6 +551,11 @@ export function getTimeRange(
       end: defaultTimeRange.end,
     };
   }
+
+  // Presets resolved locally against the dataset bounds can reach past the range of a protobuf timestamp
+  // when the data has placeholder dates such as 0001-01-01. Clamp before anything is derived from the range.
+  timeRange.start = clampDateToTimestampBounds(timeRange.start);
+  timeRange.end = clampDateToTimestampBounds(timeRange.end);
 
   return timeRange;
 }

@@ -4,10 +4,10 @@
     resolvePlanHighlights,
     SELF_SERVE_PLANS,
     getTranslatedPlanDisplayName,
-    getTranslatedPlanTagline,
-    getTranslatedPlanPriceUnit,
   } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import DetailedUsageLink from "@rilldata/web-admin/features/billing/plans/modules/DetailedUsageLink.svelte";
+  import PricingBreakdownLink from "@rilldata/web-admin/features/billing/plans/modules/PricingBreakdownLink.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1BillingPlan } from "@rilldata/web-admin/client";
 
   let {
@@ -29,15 +29,19 @@
 {#if planDetails}
   <PlanContainer
     badge={getTranslatedPlanDisplayName(planDetails.name)}
-    description={`${planDetails.price} ${getTranslatedPlanPriceUnit()}`}
+    description={m.billing_plan_price_summary({
+      seatPrice: planDetails.price,
+      computePrice: planDetails.computePrice,
+    })}
   >
     {#snippet info()}
-      {getTranslatedPlanTagline(planDetails.name)}
+      {m.billing_plan_pricing_info()}
     {/snippet}
 
-    {#snippet action()}
+    <div class="flex items-center gap-4 mt-2">
+      <PricingBreakdownLink />
       <DetailedUsageLink {billingPortalUrl} />
-    {/snippet}
+    </div>
 
     <ul class="plan-details-container">
       {#each highlights as highlight (highlight)}

@@ -90,13 +90,23 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples bucket with TIME_SLICE on the local wall clock, so buckets stay aligned to local midnight.
+		if tz == "" {
+			return fmt.Sprintf("TIME_SLICE(%s::TIMESTAMP, %d, '%s')", expr, n, specifier), nil
+		}
+		return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', TIME_SLICE(CONVERT_TIMEZONE('UTC', '%s', %s::TIMESTAMP), %d, '%s'))", tz, tz, expr, n, specifier), nil
 	}
 
 	var shift string
@@ -129,6 +139,11 @@ func (d *dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string,
 
 func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	return fmt.Sprintf("DATEADD('%s', -1 * (%s), %s::TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+}
+
+func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
+	// Converts to the wall-clock time in tz and back, like DateTruncExpr, so the result is a TIMESTAMP in UTC.
+	return fmt.Sprintf("CONVERT_TIMEZONE('%s', 'UTC', DATEADD('%s', -1 * (%s), CONVERT_TIMEZONE('UTC', '%s', (%s)::TIMESTAMP)))", tz, d.ConvertToDateTruncSpecifier(grain), unitExpr, tz, tsExpr), true
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

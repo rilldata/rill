@@ -1,7 +1,10 @@
 import * as vega from "vega";
 import { compile } from "vega-lite";
 import { describe, expect, it } from "vitest";
+import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { estimateAxisLabelWidth } from "@rilldata/web-common/features/components/charts/util";
 import {
+  TypeCode,
   V1TimeGrain,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -22,8 +25,16 @@ const metricsView: V1MetricsViewSpec = {
       formatPreset: "currency_usd",
     },
     { name: "total_records", displayName: "Total records" },
+    {
+      name: "impressions",
+      displayName: "Impressions",
+      dataType: { code: TypeCode.CODE_INT64 },
+    },
   ],
-  dimensions: [{ name: "publisher", displayName: "Publisher" }],
+  dimensions: [
+    { name: "publisher", displayName: "Publisher" },
+    { name: "device", displayName: "Device" },
+  ],
 };
 
 const rows = [
@@ -31,6 +42,65 @@ const rows = [
   { publisher: "Google", bid_price_sum: 1450, total_records: 55 },
   { publisher: "Microsoft", bid_price_sum: 980, total_records: 31 },
 ];
+
+type SceneNode = {
+  role?: string;
+  items?: SceneNode[];
+  text?: unknown;
+  datum?: Record<string, unknown>;
+  opacity?: number;
+};
+
+/**
+ * Renders a compiled spec headless and returns the items Vega drew in the given role, such as
+ * "axis-label" or "mark". Items label overlap removal hid are left out.
+ */
+async function renderRole(spec: unknown, role: string): Promise<SceneNode[]> {
+  const view = new vega.View(vega.parse(compile(spec as never).spec), {
+    renderer: "none",
+  });
+  await view.runAsync();
+  const found: SceneNode[] = [];
+  const visit = (node: SceneNode) => {
+    if (node.role === role) found.push(...(node.items ?? []));
+    for (const item of node.items ?? []) item.items?.forEach(visit);
+  };
+  visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+  return found.filter((item) => item.opacity !== 0);
+}
+
+/** The ticks of a chart's time axis, as Vega placed them. */
+async function timeTicks(spec: unknown): Promise<Date[]> {
+  return (await renderRole(spec, "axis-label"))
+    .map((label) => label.datum?.value)
+    .filter((value): value is Date => value instanceof Date);
+}
+
+/** The parts of a compiled Vega-Lite view the assertions below read. */
+type Encoding = {
+  field?: string;
+  type?: string;
+  title?: unknown;
+  format?: string;
+  formatType?: string;
+  stack?: unknown;
+  scale?: Record<string, unknown>;
+  axis?: Record<string, unknown> | null;
+  legend?: Record<string, unknown> | null;
+  header?: Record<string, unknown>;
+};
+type View = {
+  mark?: Record<string, unknown>;
+  encoding?: Record<string, Encoding>;
+  transform?: Record<string, unknown>[];
+  layer?: View[];
+  hconcat?: View[];
+  title?: Record<string, unknown>;
+  width?: number;
+  spacing?: number;
+  autosize?: unknown;
+};
+const viewOf = (spec: unknown) => spec as View;
 
 function compileBar() {
   const columns = ["publisher", "bid_price_sum"];
@@ -111,18 +181,79 @@ describe("compileFlintSpec", () => {
     const view = new vega.View(vega.parse(compile(spec as never).spec), {
       renderer: "none",
     });
+    // Rendered into a box smaller than the one Flint laid the donut out for, as a chart with a
+    // legend above it is.
+    view.width(400).height(300);
     await view.runAsync();
-    // Half of the outer radius, which is roughly half the view.
     type SceneGroup = {
-      items: { marktype?: string; items: { innerRadius?: number }[] }[];
+      items: {
+        marktype?: string;
+        items: { innerRadius?: number; outerRadius?: number }[];
+      }[];
     };
     const scene = view.scenegraph() as unknown as {
       root: { items: SceneGroup[] };
     };
-    const arcs = scene.root.items[0].items.find(
+    const arc = scene.root.items[0].items.find(
       (item) => item.marktype === "arc",
+    )?.items[0];
+    // The donut fills the view it is drawn in rather than the plot Flint sized, which would
+    // run past the box; its hole is half of that radius.
+    expect(arc?.outerRadius).toBe(Math.min(view.width(), view.height()) / 2);
+    expect(arc?.innerRadius).toBe((arc?.outerRadius ?? 0) / 2);
+  });
+
+  it("keeps Flint's plot for a pie that labels its slices", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Pie Chart",
+        encodings: {
+          color: { field: "publisher" },
+          size: { field: "bid_price_sum" },
+        },
+        chartProperties: { showValueLabels: true },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const compiled = viewOf(spec);
+    const arc = compiled.layer?.find((layer) => layer.mark?.type === "arc");
+    // The arcs and their labels are pinned to pixel positions in the plot Flint sized, so
+    // refitting the view to the container would pull them apart.
+    expect(typeof arc?.mark?.x).toBe("number");
+    expect(typeof arc?.mark?.outerRadius).toBe("number");
+    expect(compiled.autosize).toBeUndefined();
+    expect(compiled.width).toBeLessThanOrEqual(600);
+    // That plot leaves room for the legend beside it and none above, where the theme would
+    // put it, so the legend stays where Flint laid it out.
+    expect(compiled.encoding?.color?.legend?.orient).toBe("right");
+    // The labels stand on the chart's background, so they take the theme's text color, not
+    // Flint's dark ink or the slice colors the layer would inherit.
+    const labels = compiled.layer?.find((layer) => layer.mark?.type === "text");
+    expect(labels?.mark?.color).toBeUndefined();
+    expect(labels?.encoding?.color).toBeNull();
+  });
+
+  it("draws the value labels above bars in the theme's text color", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: { x: "publisher", y: "bid_price_sum" },
+        chartProperties: { showValueLabels: true },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    const labels = viewOf(spec).layer?.find(
+      (layer) => layer.mark?.type === "text",
     );
-    expect(arcs?.items[0].innerRadius).toBeGreaterThan(150);
+    // Flint's own ink is near black, which a dark theme hides.
+    expect(labels?.mark).toBeDefined();
+    expect(labels?.mark?.color).toBeUndefined();
+    expect(labels?.encoding?.text?.formatType).toBe("rill_bid_price_sum");
   });
 
   it("keeps Flint's sizing for faceted charts, which fit autosizing cannot lay out", () => {
@@ -148,6 +279,250 @@ describe("compileFlintSpec", () => {
     expect(Number(compiled.width) * 12).toBeLessThanOrEqual(1200);
   });
 
+  it("defers typography, colors and the color scheme to Rill's theme", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    const compiled = spec as unknown as {
+      config: Record<string, Record<string, unknown> | undefined>;
+      encoding: { color: { scale?: Record<string, unknown> } };
+    };
+
+    // Flint's font sizes and grey titles would override the theme's, which the renderer passes
+    // as the embed config; so would its tableau10 scheme override the project palette.
+    for (const group of ["axisX", "axisY", "legend"]) {
+      expect(compiled.config[group]?.labelFontSize).toBeUndefined();
+      expect(compiled.config[group]?.titleFontSize).toBeUndefined();
+      expect(compiled.config[group]?.titleColor).toBeUndefined();
+    }
+    expect(compiled.encoding.color.scale?.scheme).toBeUndefined();
+  });
+
+  it("stands category labels upright where Flint only fits them flat in a smaller font", () => {
+    const axisX = (publishers: string[]) =>
+      (
+        compileFlintSpec({
+          spec: {
+            chartType: "Bar Chart",
+            encodings: { x: "publisher", y: "bid_price_sum" },
+          },
+          rows: publishers.map((publisher, i) => ({
+            publisher,
+            bid_price_sum: 100 + i,
+          })),
+          fields: deriveFlintFields(
+            ["publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec as unknown as { config: { axisX: Record<string, unknown> } }
+      ).config.axisX;
+
+    // A few names fit their bands at full size, wrapped over two lines where they need it.
+    const few = axisX(["Yahoo", "Northwind Traders", "Contoso Media Network"]);
+    expect(few.labelAngle).toBe(0);
+
+    // A dozen only fit once Flint shrinks them, and at the theme's size its band-wide limit
+    // would leave a few letters of each.
+    const many = axisX([
+      "Yahoo",
+      "Northwind Traders",
+      "Contoso Media Network",
+      "Fabrikam Media",
+      "Adventure Works Marketing",
+      "Litware",
+      "Tailspin",
+      "Lamna",
+      "Woodgrove Bank",
+      "Adatum",
+      "Proseware",
+      "Relecloud Labs",
+    ]);
+    expect(many.labelAngle).toBe(-90);
+    expect(many.labelLimit).toBe(100);
+    expect(many.labelExpr).toBeUndefined();
+  });
+
+  it("leaves the layout of a legend to Rill's theme", async () => {
+    // Long enough that Flint breaks them over lines to fit a column at the chart's right.
+    const publishers = [
+      "Adventure Works Marketing International",
+      "Northwind Advertising Exchange Network",
+      "Litware Ad Server Open Bidding",
+      "Fabrikam Media Marketplace",
+    ];
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows: publishers.flatMap((publisher, p) =>
+        Array.from({ length: 12 }, (_, i) => ({
+          timestamp: new Date(2026, 9, 1 + i),
+          publisher,
+          bid_price_sum: 100 * (p + 1) + i,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Flint lays the legend out in one column of wrapped labels at its own font size. Above the
+    // chart, where Rill's theme puts it, that column would take most of the plot's height.
+    const legend = viewOf(spec).encoding?.color?.legend;
+    expect(Object.keys(legend ?? {})).toEqual([]);
+    expect(
+      (spec as unknown as { config?: { legend?: object } }).config?.legend,
+    ).toBeUndefined();
+
+    // Drawn with the theme's legend on top, the entries run in a row, each on one line.
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, {
+          config: { legend: { orient: "top" }, customFormatTypes: true },
+        }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: { text?: unknown; y?: number }[] = [];
+    const visit = (node: SceneNode & { y?: number }) => {
+      if (node.role === "legend-label") labels.push(...(node.items ?? []));
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(labels.map((label) => label.text)).toEqual(publishers);
+  });
+
+  it("keeps a color scheme the author chose", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher", scheme: "category20" },
+        },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const color = (
+      spec as unknown as { encoding: { color: { scale: { scheme: string } } } }
+    ).encoding.color;
+    expect(color.scale.scheme).toBe("category20");
+  });
+
+  it("labels the series of a multi-measure fold with the measures' display names", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: [{ field: "bid_price_sum" }, { field: "total_records" }],
+        },
+      },
+      rows,
+      fields: deriveFlintFields(
+        ["publisher", "bid_price_sum", "total_records"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum", "total_records"],
+    });
+
+    expect(error).toBeNull();
+    const values = (
+      spec as unknown as { data: { values: Record<string, unknown>[] } }
+    ).data.values;
+    expect(new Set(values.map((row) => row.__flint_series_key))).toEqual(
+      new Set(["Sum of Bid Price", "Total records"]),
+    );
+  });
+
+  it("spans the box with the panels of a row-faceted chart, less its longest row label", () => {
+    const days = ["2024-01-01", "2024-01-02", "2024-01-03"];
+    const compileRows = (publishers: string[]) =>
+      compileFlintSpec({
+        spec: {
+          chartType: "Line Chart",
+          encodings: {
+            x: { field: "timestamp" },
+            y: { field: "bid_price_sum" },
+            row: { field: "publisher" },
+          },
+        },
+        rows: publishers.flatMap((publisher, p) =>
+          days.map((day, i) => ({
+            publisher,
+            timestamp: `${day}T00:00:00Z`,
+            bid_price_sum: 1000 * (p + 1) + i * 10,
+          })),
+        ),
+        fields: deriveFlintFields(
+          ["timestamp", "publisher", "bid_price_sum"],
+          metricsView,
+          V1TimeGrain.TIME_GRAIN_DAY,
+        ),
+        size: { width: 1200, height: 600 },
+        measureFields: ["bid_price_sum"],
+      });
+    type RowConfig = {
+      config: {
+        view: { continuousWidth: number };
+        headerRow: {
+          labelAngle: number;
+          labelAlign: string;
+          labelLimit: number;
+        };
+      };
+    };
+
+    const short = compileRows(["Yahoo", "Google", "Microsoft"]);
+    expect(short.error).toBeNull();
+    const { config } = short.spec as unknown as RowConfig;
+    // The width less the room for the axis and the row title (130px) and for "Microsoft".
+    expect(config.view.continuousWidth).toBe(1200 - 130 - 59);
+    // Upright labels, lined up against the axis.
+    expect(config.headerRow.labelAngle).toBe(0);
+    expect(config.headerRow.labelAlign).toBe("left");
+    expect(config.headerRow.labelLimit).toBe(110);
+
+    // A label past the limit is cut at it, so it takes no more room than the limit.
+    const long = compileRows([
+      "Johnson & Johnson Consumer Health",
+      "Procter & Gamble International",
+    ]);
+    expect(
+      (long.spec as unknown as RowConfig).config.view.continuousWidth,
+    ).toBe(1200 - 130 - 110);
+  });
+
   it("strips Flint's non-standard bookkeeping keys", () => {
     const { spec } = compileBar();
     const keys = Object.keys(spec as unknown as Record<string, unknown>);
@@ -155,6 +530,26 @@ describe("compileFlintSpec", () => {
     // _warnings/_width/_height/_options/_transform/_pivot are not valid Vega-Lite
     // and make vega-embed reject the spec.
     expect(keys.filter((key) => key.startsWith("_"))).toEqual([]);
+  });
+
+  it("strips the notes Flint leaves on a chart's layers", () => {
+    // A rose chart's label layer is annotated for Flint's interaction runtime.
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Rose Chart",
+        encodings: { x: "publisher", y: "bid_price_sum" },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const layers = viewOf(spec).layer ?? [];
+    expect(layers.length).toBeGreaterThan(1);
+    for (const layer of layers) {
+      expect(Object.keys(layer).filter((key) => key.startsWith("_"))).toEqual(
+        [],
+      );
+    }
   });
 
   it("labels axes with the metrics view display names", () => {
@@ -241,6 +636,949 @@ describe("compileFlintSpec", () => {
     const x = (spec as unknown as { encoding: { x: { type: string } } })
       .encoding.x;
     expect(x.type).toBe("temporal");
+  });
+
+  it("labels and formats a waterfall's derived encodings like the measure they sum", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Waterfall Chart",
+        encodings: { x: { field: "timestamp" }, y: { field: "bid_price_sum" } },
+      },
+      rows: [
+        { timestamp: "2024-01-01T00:00:00Z", bid_price_sum: 1200 },
+        { timestamp: "2024-01-08T00:00:00Z", bid_price_sum: 1450 },
+        { timestamp: "2024-01-15T00:00:00Z", bid_price_sum: 980 },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const layers = (
+      spec as unknown as {
+        layer: {
+          encoding: Record<
+            string,
+            {
+              field?: string;
+              type?: string;
+              title?: string;
+              formatType?: string;
+              axis?: Record<string, unknown>;
+            }
+          >;
+        }[];
+      }
+    ).layer;
+    const sums = layers
+      .map((layer) => layer.encoding.y)
+      .filter((y) => y?.type === "quantitative");
+    expect(sums.length).toBeGreaterThan(1);
+    // Flint sums the measure under its own field names and titles them with the raw measure name;
+    // every encoding on the shared y channel takes the measure's formatter and the display name.
+    for (const y of sums) {
+      expect(y.formatType).toBe("rill_bid_price_sum");
+      expect(y.axis?.format).toBeUndefined();
+      expect(y.title).not.toBe("bid_price_sum");
+    }
+    expect(sums.some((y) => y.title === "Sum of Bid Price")).toBe(true);
+    // The step axis gets the time field's label instead of "timestamp, __wf_lead", and its
+    // category labels are the weeks rather than raw timestamps.
+    const x = layers.map((layer) => layer.encoding.x).find(Boolean);
+    expect(x?.title).toBe("Time");
+    expect(x?.axis?.labelExpr).toContain("timeFormat");
+  });
+
+  it("formats a time field drawn on a discrete axis at its grain", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Slope Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows: [
+        {
+          timestamp: "2024-01-01T00:00:00Z",
+          publisher: "Yahoo",
+          bid_price_sum: 10,
+        },
+        {
+          timestamp: "2024-02-01T00:00:00Z",
+          publisher: "Yahoo",
+          bid_price_sum: 20,
+        },
+        {
+          timestamp: "2024-01-01T00:00:00Z",
+          publisher: "Google",
+          bid_price_sum: 15,
+        },
+        {
+          timestamp: "2024-02-01T00:00:00Z",
+          publisher: "Google",
+          bid_price_sum: 12,
+        },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_MONTH,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const encoding = (
+      spec as unknown as {
+        encoding: { x: { type: string; axis?: { labelExpr?: string } } };
+      }
+    ).encoding;
+    expect(encoding.x.type).toBe("ordinal");
+    expect(encoding.x.axis?.labelExpr).toBe(
+      "timeFormat(toDate(datum.value), '%b %Y')",
+    );
+  });
+
+  it("reaches the category axis inside a concatenated chart", () => {
+    // A bar table is a concatenation of panels; each one draws the time field on a nominal y axis.
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Table",
+        encodings: { y: { field: "timestamp" }, x: { field: "bid_price_sum" } },
+      },
+      rows: [
+        { timestamp: "2024-01-01T00:00:00Z", bid_price_sum: 1200 },
+        { timestamp: "2024-02-01T00:00:00Z", bid_price_sum: 1450 },
+        { timestamp: "2024-03-01T00:00:00Z", bid_price_sum: 980 },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_MONTH,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const panels = (
+      spec as unknown as {
+        hconcat?: {
+          encoding?: {
+            y?: { field?: string; axis?: { labelExpr?: string } | null };
+          };
+        }[];
+      }
+    ).hconcat;
+    const timeAxes = (panels ?? [])
+      .map((panel) => panel.encoding?.y)
+      .filter((y) => y?.field === "timestamp");
+    expect(timeAxes.length).toBeGreaterThan(0);
+    for (const y of timeAxes) {
+      if (y?.axis === null) continue; // a hidden axis has no labels to format
+      expect(y?.axis?.labelExpr).toContain("timeFormat");
+    }
+  });
+
+  const dailyBars = (timestamps: (Date | string)[]) =>
+    compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: { x: "timestamp", y: "bid_price_sum" },
+      },
+      rows: timestamps.map((timestamp, i) => ({
+        timestamp,
+        bid_price_sum: 1000 + i,
+      })),
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 800, height: 400 },
+      measureFields: ["bid_price_sum"],
+    }).spec;
+
+  it("ticks a day-grain time axis on its days", async () => {
+    // Local midnights, which is how the renderers hand Vega the buckets. Flint pads the banded
+    // axis by half a day at each end, so it starts and ends at noon; over a wide box Vega then
+    // ticked every 12 hours, and label overlap removal kept only the noons.
+    // Ten days, since Flint names up to eight on a discrete axis instead.
+    const days = Array.from(
+      { length: 10 },
+      (_, i) => new Date(2026, 9, 30 + i),
+    );
+    const ticks = await timeTicks(dailyBars(days));
+    expect(ticks).toHaveLength(days.length);
+    for (const tick of ticks) expect(tick.getHours()).toBe(0);
+  });
+
+  it("keeps a time axis in the browser's zone, on ticks Vega places", async () => {
+    // UTC midnights, as a dashboard in UTC buckets its days. Flint lists such an axis' tick
+    // dates itself and draws it in UTC, while the rest of the chart reads the browser's zone.
+    const days = Array.from({ length: 10 }, (_, i) =>
+      new Date(Date.UTC(2026, 9, 30 + i)).toISOString(),
+    );
+    const spec = dailyBars(days);
+    const x = viewOf(spec).encoding?.x;
+    expect(x?.type).toBe("temporal");
+    expect(x?.scale?.type).toBeUndefined();
+    expect(x?.axis).toEqual({ tickCount: 10 });
+    // Local midnights, not the UTC ones of the data.
+    const ticks = await timeTicks(spec);
+    expect(ticks.length).toBeGreaterThan(1);
+    for (const tick of ticks) expect(tick.getHours()).toBe(0);
+  });
+
+  it("names each bucket of a bar chart with only a few of them", async () => {
+    // Flint draws up to eight time buckets as bands of their own rather than on a time scale.
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    // Newest first, as a query ordered by time descending returns them.
+    const days = Array.from({ length: 7 }, (_, i) => new Date(2026, 9, 7 - i));
+    const spec = dailyBars(days);
+    expect(viewOf(spec).encoding?.x?.type).toBe("ordinal");
+
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: unknown[] = [];
+    const tooltips: unknown[] = [];
+    const visit = (node: SceneNode & { tooltip?: unknown }) => {
+      if (node.role === "axis-label") {
+        labels.push(...(node.items ?? []).map((item) => item.text));
+      }
+      for (const item of (node.items ?? []) as (SceneNode & {
+        tooltip?: unknown;
+      })[]) {
+        if (item.tooltip) tooltips.push(item.tooltip);
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    // The days at the day grain, on the axis and in each bar's tooltip, where Vega-Lite would
+    // otherwise print the raw timestamps. The axis keeps the days in time order: formatting
+    // the tooltip must not turn the field the axis sorts by into dates.
+    expect(labels.slice(0, 7)).toEqual([
+      "Oct 01",
+      "Oct 02",
+      "Oct 03",
+      "Oct 04",
+      "Oct 05",
+      "Oct 06",
+      "Oct 07",
+    ]);
+    expect(tooltips).toHaveLength(7);
+    expect(tooltips[0]).toEqual({ Time: "Oct 07", "Sum of Bid Price": "1000" });
+  });
+
+  it("colors and names a series of null values", async () => {
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Stacked Bar Chart",
+        encodings: { x: "device", y: "bid_price_sum", color: "publisher" },
+      },
+      rows: ["Phone", "TV"].flatMap((device, d) =>
+        ["Yahoo", null, "Google"].map((publisher, p) => ({
+          device,
+          publisher,
+          bid_price_sum: 100 * (p + 1) + d,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["device", "publisher", "bid_price_sum"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Flint pins the color scale to the values it lists, which leave out null: the rows without
+    // a publisher were stacked with no fill and no legend entry.
+    expect(viewOf(spec).encoding?.color?.scale?.domain).toBeUndefined();
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const fills = new Set<unknown>();
+    const legend: unknown[] = [];
+    const visit = (node: SceneNode & { marktype?: string }) => {
+      if (node.role === "legend-label") {
+        legend.push(...(node.items ?? []).map((item) => item.text));
+      }
+      for (const item of (node.items ?? []) as (SceneNode & {
+        fill?: unknown;
+      })[]) {
+        if (node.role === "mark" && node.marktype === "rect") {
+          fills.add(item.fill);
+        }
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(legend).toHaveLength(3);
+    expect(legend).toContain("null");
+    expect(fills.size).toBe(3);
+    expect([...fills].every((fill) => typeof fill === "string")).toBe(true);
+  });
+
+  it("keeps the column a stack is ordered by out of its tooltip", async () => {
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Area Chart",
+        encodings: {
+          x: "timestamp",
+          y: "bid_price_sum",
+          color: {
+            field: "publisher",
+            colors: { Yahoo: "#7b1fa2", Google: "#1976d2" },
+          },
+        },
+      },
+      rows: ["Yahoo", "Google"].flatMap((publisher, p) =>
+        Array.from({ length: 12 }, (_, i) => ({
+          timestamp: new Date(2026, 9, 1 + i),
+          publisher,
+          bid_price_sum: 100 * (p + 1) + i,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    // The colors the author assigned are a domain and a range on the color scale.
+    expect(viewOf(spec).encoding?.color?.scale?.range).toEqual([
+      "#7b1fa2",
+      "#1976d2",
+    ]);
+
+    // Vega-Lite stacks in the order of such a domain through an index column of its own, which
+    // the tooltip it builds from the encoding would list too.
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const keys = new Set<string>();
+    const visit = (node: SceneNode & { tooltip?: unknown }) => {
+      for (const item of (node.items ?? []) as (SceneNode & {
+        tooltip?: Record<string, unknown>;
+      })[]) {
+        for (const key of Object.keys(item.tooltip ?? {})) keys.add(key);
+        item.items?.forEach(visit);
+      }
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect([...keys].sort()).toEqual(["Publisher", "Sum of Bid Price", "Time"]);
+  });
+
+  it("keeps an hourly time axis on hours over two days and steps it by days over eight", async () => {
+    // From 9 AM, so that 12-hour ticks would start at noon, as they did on an eight-day line.
+    const hourly = (hours: number) =>
+      compileFlintSpec({
+        spec: {
+          chartType: "Line Chart",
+          encodings: { x: "timestamp", y: "bid_price_sum" },
+        },
+        rows: Array.from({ length: hours }, (_, i) => ({
+          timestamp: new Date(2026, 9, 30, 9 + i),
+          bid_price_sum: 100 + (i % 7),
+        })),
+        fields: deriveFlintFields(
+          ["timestamp", "bid_price_sum"],
+          metricsView,
+          V1TimeGrain.TIME_GRAIN_HOUR,
+        ),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      }).spec;
+
+    const twoDays = await timeTicks(hourly(48));
+    expect(twoDays.some((tick) => tick.getHours() !== 0)).toBe(true);
+    const eightDays = await timeTicks(hourly(8 * 24));
+    expect(eightDays.length).toBeGreaterThan(1);
+    for (const tick of eightDays) expect(tick.getHours()).toBe(0);
+  });
+
+  it("labels quarters from Q1", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Slope Chart",
+        encodings: { x: "timestamp", y: "bid_price_sum", color: "publisher" },
+      },
+      rows: [new Date(2024, 0, 1), new Date(2024, 3, 1)].flatMap(
+        (timestamp, i) =>
+          rows.map((row) => ({
+            timestamp,
+            publisher: row.publisher,
+            bid_price_sum: row.bid_price_sum + i * 100,
+          })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_QUARTER,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    const labels = (await renderRole(spec, "axis-label")).map(
+      (label) => label.text,
+    );
+    expect(labels).toEqual(expect.arrayContaining(["Q1 2024", "Q2 2024"]));
+  });
+
+  it("formats a count measure's axis with its own formatter, on integer ticks", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: { x: "publisher", y: "impressions" },
+      },
+      rows: rows.map((row, i) => ({
+        publisher: row.publisher,
+        impressions: 600_000 * (i + 1),
+      })),
+      fields: deriveFlintFields(["publisher", "impressions"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["impressions"],
+    });
+
+    const axis = viewOf(spec).encoding?.y.axis;
+    // Flint's integer label expression formats with ',d' and would override the formatter.
+    expect(axis?.labelExpr).toBeUndefined();
+    expect(axis?.formatType).toBe("rill_impressions");
+    expect(axis?.tickMinStep).toBe(1);
+  });
+
+  it("labels a 100% stacked count axis with percentages", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Stacked Bar Chart",
+        encodings: { x: "publisher", y: "impressions", color: "device" },
+        chartProperties: { stackMode: "normalize" },
+      },
+      rows: rows.flatMap((row, i) =>
+        ["Phone", "TV"].map((device, d) => ({
+          publisher: row.publisher,
+          device,
+          impressions: 100 * (i + 1) + d * 50,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["publisher", "device", "impressions"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["impressions"],
+    });
+
+    const y = viewOf(spec).encoding?.y;
+    expect(y?.stack).toBe("normalize");
+    expect(y?.axis).toEqual({ format: ".0%" });
+    // The tooltip still shows the count, through the formatter the renderer registers.
+    expect(y?.formatType).toBe("rill_impressions");
+    vega.expressionFunction("rill_impressions", (value: number) =>
+      String(value),
+    );
+    const labels = (await renderRole(spec, "axis-label")).map(
+      (label) => label.text,
+    );
+    expect(labels).toEqual(expect.arrayContaining(["0%", "50%", "100%"]));
+  });
+
+  it("gives a donut a hole when the spec sets none", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Donut Chart",
+        encodings: { color: "publisher", size: "bid_price_sum" },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    // Flint's donut is its pie, whose hole defaults to 0.
+    expect(viewOf(spec).mark?.innerRadius).toEqual({
+      expr: "min(width, height) / 2 * 0.5",
+    });
+  });
+
+  it("ranks a bump chart's measure at each step and keeps the value in the tooltip", async () => {
+    const days = [new Date(2026, 9, 30), new Date(2026, 9, 31)];
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Bump Chart",
+        encodings: { x: "timestamp", y: "bid_price_sum", color: "publisher" },
+      },
+      // Google leads on the first day, then the order flips.
+      rows: days.flatMap((timestamp, i) =>
+        rows.map((row, r) => ({
+          timestamp,
+          publisher: row.publisher,
+          bid_price_sum: i === 0 ? row.bid_price_sum : 2000 - r * 100,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const encoding = viewOf(spec).encoding!;
+    expect(encoding.y.title).toBe("Rank by Sum of Bid Price");
+    // Rank 1 on top, with every rank labelled.
+    expect(encoding.y.scale?.reverse).toBe(true);
+    expect(encoding.y.axis?.values).toEqual([1, 2, 3]);
+    expect(encoding.tooltip).toContainEqual({
+      field: "bid_price_sum",
+      type: "quantitative",
+      title: "Sum of Bid Price",
+      formatType: "rill_bid_price_sum",
+    });
+
+    // The renderers register a formatter per measure; the tooltip calls this one.
+    vega.expressionFunction("rill_bid_price_sum", (value: number) =>
+      String(value),
+    );
+    const ranks = new Map<string, unknown>();
+    for (const { datum } of await renderRole(spec, "mark")) {
+      if (!datum) continue;
+      const day = new Date(datum.timestamp as string).getDate();
+      ranks.set(`${day} ${String(datum.publisher)}`, datum.__rill_rank);
+    }
+    expect(Object.fromEntries(ranks)).toEqual({
+      "30 Google": 1,
+      "30 Yahoo": 2,
+      "30 Microsoft": 3,
+      "31 Yahoo": 1,
+      "31 Google": 2,
+      "31 Microsoft": 3,
+    });
+  });
+
+  it("titles a bar table with display names and formats its values, inside its box", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Table",
+        encodings: { y: "publisher", x: "bid_price_sum" },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 300 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    const view = viewOf(spec);
+    const panels = view.hconcat!;
+    const [bars, values] = [panels[0], panels[panels.length - 1]];
+    expect(bars.title?.text).toBe("Publisher");
+    expect(values.title?.text).toBe("Sum of Bid Price");
+    expect(values.encoding?.text).toEqual({
+      field: "__bt_val",
+      type: "quantitative",
+      formatType: "rill_bid_price_sum",
+    });
+    // The label gutter, the panels and the gaps between them leave room for Vega's padding,
+    // and the height is fitted to the box, headers included.
+    const gutter = Number(bars.encoding?.y.axis?.labelPadding);
+    const used =
+      gutter +
+      panels.reduce((sum, panel) => sum + Number(panel.width), 0) +
+      Number(view.spacing) * (panels.length - 1);
+    expect(used).toBeLessThanOrEqual(600 - 10);
+    expect(view.autosize).toEqual({ type: "fit-y", contains: "padding" });
+  });
+
+  it.each([
+    ["categories on color", { color: "publisher" }, ["Publisher"], 300],
+    ["sizes", { size: "impressions" }, ["Impressions"], 300],
+    ["shapes", { shape: "publisher" }, ["Publisher"], 300],
+    ["opacities", { opacity: "impressions" }, ["Impressions"], 300],
+    ["a measure on color", { color: "impressions" }, ["Impressions"], 300],
+    [
+      "categories, sizes, shapes and opacities",
+      {
+        color: "publisher",
+        size: "impressions",
+        shape: "device",
+        opacity: "clicks",
+      },
+      ["Publisher", "Impressions", "Device", "Clicks"],
+      240,
+    ],
+  ])(
+    "fits a marginal plot, its y axis and its legends of %s inside its box",
+    async (_, legendEncodings, legendTitles, boxHeight) => {
+      // The full numbers, cents included, of a measure with a `format_d3` of `$,.2f` or `,.0f`.
+      const dollars = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+      });
+      const measureFormatters: Record<string, (value: number) => string> = {
+        bid_price_sum: (value) => dollars.format(value),
+      };
+      for (const measure of ["total_records", "impressions", "clicks"]) {
+        measureFormatters[measure] = (value) => value.toLocaleString("en-US");
+      }
+      for (const [measure, format] of Object.entries(measureFormatters)) {
+        vega.expressionFunction(`rill_${measure}`, format);
+      }
+      const devices = ["Desktop", "Mobile", "Tablet", "Connected TV", "Other"];
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Marginal Plot",
+          encodings: {
+            x: "total_records",
+            y: "bid_price_sum",
+            ...legendEncodings,
+          },
+        },
+        rows: ["Yahoo", "Google", "Microsoft"].flatMap((publisher, p) =>
+          Array.from({ length: 20 }, (_, i) => ({
+            publisher,
+            device: devices[(i + p) % devices.length],
+            total_records: 10 + ((i * 37 + p * 11) % 90),
+            bid_price_sum: 100_000 + ((i * 53 + p * 29) % 900) * 1_000,
+            impressions: 1_000 + ((i * 71 + p * 13) % 500) * 400,
+            clicks: 5 + ((i * 17 + p * 7) % 300),
+          })),
+        ),
+        fields: deriveFlintFields(
+          [
+            "publisher",
+            "device",
+            "total_records",
+            "bid_price_sum",
+            "impressions",
+            "clicks",
+          ],
+          {
+            ...metricsView,
+            measures: [
+              ...metricsView.measures!,
+              {
+                name: "clicks",
+                displayName: "Clicks",
+                dataType: { code: TypeCode.CODE_INT64 },
+              },
+            ],
+          },
+        ),
+        size: { width: 320, height: boxHeight },
+        measureFields: Object.keys(measureFormatters),
+        measureFormatters,
+      });
+
+      // Vega measures text on a canvas, which jsdom lacks, and its fallback of 0.8em a character
+      // is far wider than Rill's Inter. Text is measured as `estimateAxisLabelWidth` measures it
+      // instead, and cut to its limit as Vega's own measure cuts it. Vega's typings leave the
+      // measure out.
+      const { textMetrics } = vega as unknown as {
+        textMetrics: {
+          width: (
+            item: { fontSize?: number; limit?: number },
+            text: string,
+          ) => number;
+        };
+      };
+      const measureText = textMetrics.width;
+      textMetrics.width = (item, text) => {
+        const width =
+          (estimateAxisLabelWidth(String(text)) * (item.fontSize ?? 11)) / 11;
+        return item.limit && item.limit > 0
+          ? Math.min(width, item.limit)
+          : width;
+      };
+      try {
+        // Drawn in Rill's theme at the size VegaLiteRenderer gives the view: the box's width,
+        // and its height less Vega's padding.
+        const view = new vega.View(
+          vega.parse(
+            compile(spec as never, { config: getRillTheme(false) as never })
+              .spec,
+          ),
+          { renderer: "none" },
+        );
+        view.width(320).height(boxHeight - 10);
+        await view.runAsync();
+        const svg = await view.toSVG();
+        const [, width, height] =
+          /<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(svg) ?? [];
+        expect(Number(width)).toBeLessThanOrEqual(320);
+        expect(Number(height)).toBeLessThanOrEqual(boxHeight);
+
+        // Nor is anything drawn past the canvas, where the legends were cut off.
+        const [left, top] = view.origin();
+        const padding = view.padding() as vega.Padding & {
+          top: number;
+          bottom: number;
+          left: number;
+          right: number;
+        };
+        const { root } = view.scenegraph() as unknown as {
+          root: SceneNode & {
+            bounds: { x1: number; x2: number; y1: number; y2: number };
+          };
+        };
+        expect(left + root.bounds.x1).toBeGreaterThanOrEqual(0);
+        expect(top + root.bounds.y1).toBeGreaterThanOrEqual(0);
+        expect(
+          padding.left + left + root.bounds.x2 + padding.right,
+        ).toBeLessThanOrEqual(320);
+        expect(
+          padding.top + top + root.bounds.y2 + padding.bottom,
+        ).toBeLessThanOrEqual(boxHeight);
+
+        const drawnTitles: unknown[] = [];
+        const legendLabels: unknown[] = [];
+        const yLabels: unknown[] = [];
+        const visit = (node: SceneNode, inYAxis: boolean) => {
+          for (const item of (node.items ?? []) as (SceneNode & {
+            orient?: string;
+          })[]) {
+            if (node.role === "legend-title") drawnTitles.push(item.text);
+            if (node.role === "legend-label") legendLabels.push(item.text);
+            if (inYAxis && node.role === "axis-label") yLabels.push(item.text);
+            const yAxis =
+              inYAxis || (node.role === "axis" && item.orient === "left");
+            for (const child of item.items ?? []) visit(child, yAxis);
+          }
+        };
+        visit(root, false);
+        expect(drawnTitles).toEqual(legendTitles);
+        if (legendTitles.length === 1 && legendTitles[0] === "Publisher") {
+          expect(legendLabels).toEqual(["Yahoo", "Google", "Microsoft"]);
+        } else {
+          expect(legendLabels.length).toBeGreaterThan(1);
+        }
+
+        // The axes print each value whole, cents included, rather than cutting it short.
+        expect(yLabels).toContain("$1,000,000.00");
+        const axisLabels = [
+          ...svg.matchAll(
+            /<g class="mark-text role-axis-label"[^>]*>(.*?)<\/g>/gs,
+          ),
+        ].flatMap(([, group]) =>
+          [...group.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(
+            ([, text]) => text,
+          ),
+        );
+        expect(axisLabels).toContain("$1,000,000.00");
+        expect(axisLabels.filter((label) => label.endsWith("…"))).toEqual([]);
+      } finally {
+        textMetrics.width = measureText;
+      }
+    },
+  );
+
+  it("centers violins in their panels and keeps them within the data", () => {
+    const sites = Array.from({ length: 12 }, (_, i) => `site_${i}`);
+    const violinRows = sites.flatMap((publisher, i) =>
+      Array.from({ length: 20 }, (_, j) => ({
+        publisher,
+        bid_price_sum: 5 + ((i * 31 + j * 7) % 100),
+      })),
+    );
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Violin Plot",
+        encodings: { x: { field: "publisher" }, y: { field: "bid_price_sum" } },
+      },
+      rows: violinRows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 1200, height: 600 },
+    });
+
+    const view = viewOf(spec);
+    // The theme's area outline, drawn in x order, zig-zagged across a horizontal area.
+    expect(view.mark?.line).toBe(false);
+    // The density axis spans the violins exactly, so each sits in the middle of its panel.
+    expect(view.encoding?.x.scale).toMatchObject({ nice: false });
+    const values = violinRows.map((row) => row.bid_price_sum);
+    expect(view.transform?.[0].extent).toEqual([
+      Math.min(...values),
+      Math.max(...values),
+    ]);
+    // Each violin is as wide as its panel allows, at its own widest point.
+    expect(view.transform).toContainEqual({
+      joinaggregate: [
+        { op: "max", field: "density", as: "__rill_violin_peak" },
+      ],
+      groupby: ["publisher"],
+    });
+    // The panels, and the room for the value axis, fit the box.
+    expect(view.spacing).toBe(0);
+    expect(12 * view.width! + 80 + 10).toBeLessThanOrEqual(1200);
+    expect(view.encoding?.facet.header?.labelLimit).toBe(view.width);
+  });
+
+  it("keeps a rose chart's labels off its short wedges, with room for them past its long ones", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Rose Chart",
+        encodings: { x: "publisher", y: "bid_price_sum" },
+      },
+      rows: [...rows, { publisher: "Tiny", bid_price_sum: 20 }],
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    const [arcs, labels] = viewOf(spec).layer!;
+    // Both layers share a radius that stops short of the box by the longest label.
+    expect(arcs.encoding?.radius.scale?.range).toEqual(
+      labels.encoding?.radius.scale?.range,
+    );
+    expect(labels.mark).toMatchObject({ radiusOffset: 6 });
+    const drawn = (await renderRole(spec, "mark"))
+      .map((item) => item.text)
+      .filter((text) => typeof text === "string");
+    expect(drawn).toEqual(
+      expect.arrayContaining(["Yahoo", "Google", "Microsoft"]),
+    );
+    expect(drawn).not.toContain("Tiny");
+  });
+
+  it("keeps a color scheme the author set on a grouped bar chart's group", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Grouped Bar Chart",
+        encodings: {
+          x: "publisher",
+          y: "bid_price_sum",
+          group: { field: "device", scheme: "category20" },
+        },
+      },
+      rows: rows.flatMap((row) =>
+        ["Phone", "TV"].map((device) => ({ ...row, device })),
+      ),
+      fields: deriveFlintFields(
+        ["publisher", "device", "bid_price_sum"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+    });
+    // Flint draws the group on the color channel.
+    expect(viewOf(spec).encoding?.color.scale?.scheme).toBe("category20");
+  });
+
+  it("formats each measure of a layered chart with its own formatter", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bullet Chart",
+        encodings: {
+          y: "publisher",
+          x: "bid_price_sum",
+          goal: "total_records",
+        },
+      },
+      rows,
+      fields: deriveFlintFields(
+        ["publisher", "bid_price_sum", "total_records"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum", "total_records"],
+    });
+
+    const x = (field: string) =>
+      viewOf(spec)
+        .layer?.map((layer) => layer.encoding?.x)
+        .find((encoding) => encoding?.field === field);
+    expect(x("bid_price_sum")?.formatType).toBe("rill_bid_price_sum");
+    // The goal shares the axis with the bars but keeps its own format.
+    expect(x("total_records")?.formatType).toBe("rill_total_records");
+  });
+
+  it("formats a candlestick's price axis with the measure's formatter", async () => {
+    vega.expressionFunction(
+      "rill_bid_price_sum",
+      (value: number) => `$${value}`,
+    );
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Candlestick Chart",
+        encodings: {
+          x: "timestamp",
+          open: "bid_price_sum",
+          high: "high",
+          low: "low",
+          close: "close",
+        },
+      },
+      rows: Array.from({ length: 12 }, (_, i) => ({
+        timestamp: new Date(2026, 9, 1 + i),
+        bid_price_sum: 100 + i,
+        high: 110 + i,
+        low: 95 + i,
+        close: 104 + i,
+      })),
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum", "high", "low", "close"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    expect(error).toBeNull();
+
+    // Each layer states the price axis again, and Vega-Lite takes a layer's axis in place of the
+    // one the chart states for the channel, so the formatter has to be on every one of them.
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const prices: unknown[] = [];
+    const visit = (node: SceneNode) => {
+      if (node.role === "axis-label") {
+        prices.push(
+          ...(node.items ?? [])
+            .filter((item) => typeof item.datum?.value === "number")
+            .map((item) => item.text),
+        );
+      }
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    expect(prices.length).toBeGreaterThan(1);
+    for (const price of prices) expect(price).toMatch(/^\$\d+/);
   });
 
   it("reports an unknown chart type instead of throwing", () => {

@@ -8,12 +8,14 @@
   import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { getAdminServiceListPersonalFilesQueryKey } from "@rilldata/web-admin/client";
   import {
-    adminServiceGetPersonalFile,
-    createAdminServiceCreatePersonalFile,
-    getAdminServiceGetPersonalFileQueryKey,
-    getAdminServiceListPersonalFilesQueryKey,
-  } from "@rilldata/web-admin/client";
+    fetchPersonalFile,
+    personalCanvasHref,
+    personalFileCreateMutationFactory,
+  } from "@rilldata/web-admin/features/personal-files/personal-file-client.ts";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -27,16 +29,21 @@
   let {
     org,
     project,
+    open = $bindable(false),
+    showTrigger = true,
   }: {
     org: string;
     project: string;
+    open?: boolean;
+    // Set to false to open the dialog from elsewhere through the bindable `open`.
+    showTrigger?: boolean;
   } = $props();
-
-  let open = $state(false);
 
   const runtimeClient = useRuntimeClient();
 
-  const createFileMutation = createAdminServiceCreatePersonalFile();
+  const createFileMutation = createMutationFromFactory(
+    personalFileCreateMutationFactory,
+  );
   let personalCanvasesQuery = $derived(
     getPersonalFilteredResources(
       runtimeClient,
@@ -88,15 +95,12 @@
         if (!values.copy) {
           yaml = generateBlobForNewResourceFile(ResourceKind.Canvas);
         } else {
-          const sourceFile = await queryClient.fetchQuery({
-            queryKey: getAdminServiceGetPersonalFileQueryKey(
-              org,
-              project,
-              values.copySource,
-            ),
-            queryFn: () =>
-              adminServiceGetPersonalFile(org, project, values.copySource),
-          });
+          const sourceFile = await fetchPersonalFile(
+            org,
+            project,
+            values.copySource,
+            { adminToken: EmbedStore.getInstance()?.adminToken },
+          );
           yaml = sourceFile.yaml;
         }
 
@@ -123,9 +127,8 @@
 
         const name = createResp.name ?? values.name;
         setCanvasMode(org, project, name, "edit");
-        await goto(
-          `/${org}/${project}/-/personal/${createResp.name ?? values.name}`,
-        );
+        open = false;
+        await goto(personalCanvasHref(org, project, name));
       },
     },
   );
@@ -136,13 +139,15 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Trigger>
-    {#snippet child({ props })}
-      <Button {...props} type="primary">
-        {m.personal_files_create_trigger()}
-      </Button>
-    {/snippet}
-  </Dialog.Trigger>
+  {#if showTrigger}
+    <Dialog.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="primary">
+          {m.personal_files_create_trigger()}
+        </Button>
+      {/snippet}
+    </Dialog.Trigger>
+  {/if}
   <Dialog.Content class="top-[30%] translate-y-0">
     <Dialog.Header>
       <Dialog.Title>{m.personal_files_create_title()}</Dialog.Title>

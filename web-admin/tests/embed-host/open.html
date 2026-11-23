@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embed host: open</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 8px;
+      }
+      #open-users {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Stands in for the embedder authenticating the user who opens an email link. -->
+    <div id="open-users">
+      <span>Select user to open:</span>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

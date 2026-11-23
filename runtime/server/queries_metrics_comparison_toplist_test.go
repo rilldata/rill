@@ -97,7 +97,6 @@ func TestServer_MetricsViewComparison(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -153,7 +152,6 @@ func TestServer_MetricsViewComparison_inline_measures(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -208,7 +206,6 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -275,7 +272,6 @@ func TestServer_MetricsViewComparison_sort_by_base(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -333,7 +329,6 @@ func TestServer_MetricsViewComparison_sort_by_comparison(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -392,7 +387,6 @@ func TestServer_MetricsViewComparison_sort_by_abs_delta(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -450,7 +444,6 @@ func TestServer_MetricsViewComparison_sort_by_rel_delta(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -500,7 +493,6 @@ func TestServer_MetricsViewComparison_sort_error(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 	require.Error(t, err)
 }
@@ -544,7 +536,6 @@ func TestServer_MetricsViewComparison_sort_by_delta_limit_1(t *testing.T) {
 			},
 		},
 		Limit: 1,
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -589,7 +580,6 @@ func TestServer_MetricsViewComparison_sort_by_base_limit_1(t *testing.T) {
 			},
 		},
 		Limit: 1,
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -637,7 +627,6 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 			expressionpb.Identifier("domain"),
 			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo.com"))},
 		),
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -701,7 +690,6 @@ func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -764,7 +752,6 @@ func TestServer_MetricsViewComparison_dimension_expression(t *testing.T) {
 			expressionpb.Identifier("dom"),
 			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, tr.Rows, 4)
@@ -809,7 +796,6 @@ func TestServer_MetricsViewComparison_dimension_expression_in_filter(t *testing.
 			expressionpb.Identifier("tld"),
 			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo.com")), expressionpb.Value(structpb.NewStringValue("google.com"))},
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, tr.Rows, 3)
@@ -853,7 +839,6 @@ func TestServer_MetricsViewComparison_dimension_expression_like_filter(t *testin
 			expressionpb.Identifier("tld"),
 			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	for _, row := range tr.Rows {
@@ -901,7 +886,6 @@ func TestServer_MetricsViewComparison_unnested_dimension_expression_in_filter(t 
 			expressionpb.Identifier("domain_parts"),
 			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, tr.Rows, 6)
@@ -948,7 +932,6 @@ func TestServer_MetricsViewComparison_unnested_dimension_expression_like_filter(
 			expressionpb.Identifier("domain_parts"),
 			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	for _, row := range tr.Rows {
@@ -1010,7 +993,6 @@ func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -1046,7 +1028,6 @@ func TestServer_MetricsViewComparison_no_comparison_no_sort_type(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err) // allow undefined sort type
 }
@@ -1072,7 +1053,6 @@ func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Rows))
@@ -1104,7 +1084,6 @@ func TestServer_MetricsViewComparison_no_comparison_numeric_dim(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -1135,7 +1114,6 @@ func Ignore_TestServer_MetricsViewComparison_no_comparison_HugeInt(t *testing.T)
 				Name: "measure_2",
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -1172,7 +1150,6 @@ func TestServer_MetricsViewComparison_no_comparison_asc(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -1209,7 +1186,6 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -1241,7 +1217,6 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -1280,7 +1255,6 @@ func TestServer_MetricsViewComparison_no_comparison_asc_limit(t *testing.T) {
 			},
 		},
 		Limit: 1,
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Rows))
@@ -1321,7 +1295,6 @@ func TestServer_MetricsViewComparison_no_comparison_2measures(t *testing.T) {
 				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -1362,7 +1335,6 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 			expressionpb.Identifier("pub"),
 			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("Yahoo"))},
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Rows) > 1)
@@ -1395,7 +1367,6 @@ func TestServer_MetricsViewComparison_no_comparison_dimension_expression(t *test
 			expressionpb.Identifier("dom"),
 			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, tr.Rows, 4)
@@ -1432,7 +1403,6 @@ func TestServer_MetricsViewComparison_no_comparison_unnested_dimension_expressio
 			expressionpb.Identifier("domain_parts"),
 			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
 		),
-		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, tr.Rows, 6)

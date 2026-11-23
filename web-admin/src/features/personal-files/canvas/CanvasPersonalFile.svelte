@@ -7,37 +7,31 @@
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { page } from "$app/state";
   import type { VirtualFileIo } from "@rilldata/web-admin/features/personal-files/virtual-file-io.ts";
   import { onMount } from "svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import {
-    getQueryServiceResolveCanvasQueryKey,
-    getRuntimeServiceListResourcesQueryKey,
-  } from "@rilldata/web-common/runtime-client";
-  import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
-  import {
-    createAdminServiceDeletePersonalFile,
-    getAdminServiceListPersonalFilesQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
   import { getCanvasModeStore } from "@rilldata/web-admin/features/personal-files/canvas/mode-utils.ts";
+  import DeletePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/DeletePersonalCanvasDialog.svelte";
+  import { personalCanvasesHomeHref } from "@rilldata/web-admin/features/personal-files/personal-file-client.ts";
 
   let {
     fileArtifact,
     fileIo,
+    organization,
+    project,
     name,
   }: {
     fileArtifact: FileArtifact;
     fileIo: VirtualFileIo;
+    organization: string;
+    project: string;
     name: string;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
-
-  let { organization, project } = $derived(page.params);
 
   let mode = $derived(getCanvasModeStore(organization, project, name));
 
@@ -48,34 +42,6 @@
   let displayName = $derived(data?.canvas?.spec?.displayName ?? name);
 
   let showDeleteConfirmation = $state(false);
-  const deleteDashboardMutation = createAdminServiceDeletePersonalFile();
-  async function deleteDashboard() {
-    await $deleteDashboardMutation.mutateAsync({
-      org: organization,
-      project,
-      name,
-    });
-
-    // Invalidate resources and personal files queries
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-        {},
-      ),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListPersonalFilesQueryKey(organization, project),
-      type: "all",
-    });
-
-    eventBus.emit("notification", {
-      type: "success",
-      message: m.personal_files_dashboard_deleted_notification({
-        name: displayName,
-      }),
-    });
-    await goto(`/${organization}/${project}`);
-  }
 
   function toggleMode() {
     mode.set($mode === "edit" ? "view" : "edit");
@@ -128,16 +94,11 @@
   </div>
 {/if}
 
-<AlertDialogGuardedConfirmation
+<DeletePersonalCanvasDialog
   bind:open={showDeleteConfirmation}
-  title={m.canvas_delete_dashboard_title()}
-  description={m.canvas_delete_dashboard_desc({ name: displayName })}
-  confirmText={`delete ${displayName}`}
-  confirmButtonText={m.settings_delete_button()}
-  confirmButtonType="destructive"
-  loading={$deleteDashboardMutation.isPending}
-  error={$deleteDashboardMutation.error?.message}
-  onConfirm={deleteDashboard}
->
-  <div class="hidden"></div>
-</AlertDialogGuardedConfirmation>
+  org={organization}
+  {project}
+  {name}
+  {displayName}
+  onDeleted={() => goto(personalCanvasesHomeHref(organization, project))}
+/>

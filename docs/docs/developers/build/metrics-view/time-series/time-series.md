@@ -59,6 +59,19 @@ timeseries: order_timestamp
 smallest_time_grain: day
 ```
 
+#### Custom time grains
+
+By default, dashboards offer the standard grains (minute, hour, day, week, month, quarter and year) at or above `smallest_time_grain`. Set `time_grains` to choose the grains your dashboards offer, including multiples of minutes and hours:
+
+```yaml
+timeseries: event_time
+smallest_time_grain: minute
+time_grains: [10m, 30m, hour, day, week]
+```
+
+The supported multiples are `5m`, `10m`, `15m`, `30m`, `2h`, `3h`, `4h`, `6h`, `8h` and `12h` (also spelled like `10 minutes`). Each divides its parent unit, so buckets nest inside hours and days and start at midnight in the dashboard's time zone.
+
+The list replaces the default set: a grain that is not listed is not offered in explore and canvas dashboards, pivot tables or scheduled reports, although the query APIs still accept any grain. Multiples only bucket time series; `smallest_time_grain`, rollups and measure `requires` selectors take standard grains.
 
 :::note Time Grain Availability
 

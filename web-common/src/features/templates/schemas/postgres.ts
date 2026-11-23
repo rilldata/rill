@@ -16,7 +16,17 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-ui-only": true,
       "x-tab-group": {
-        parameters: ["host", "port", "user", "password", "dbname", "sslmode"],
+        parameters: [
+          "host",
+          "port",
+          "user",
+          "password",
+          "dbname",
+          "sslmode",
+          "sslrootcert_pem",
+          "sslcert_pem",
+          "sslkey_pem",
+        ],
         dsn: ["dsn"],
       },
     },
@@ -69,8 +79,47 @@ export const postgresSchema: MultiStepFormSchema = {
     sslmode: {
       type: "string",
       title: "SSL mode",
-      enum: ["disable", "allow", "prefer", "require"],
+      enum: ["disable", "allow", "prefer", "require", "verify-full"],
       "x-placeholder": "Select SSL mode",
+    },
+    sslrootcert_pem: {
+      type: "string",
+      title: "CA certificate",
+      description:
+        "Upload PEM contents. Certificate uploads require SSL mode verify-full (the default when certificates are supplied).",
+      format: "file",
+      "x-display": "file",
+      "x-file-accept": ".crt,.pem",
+      "x-file-encoding": "base64",
+      "x-secret": true,
+      "x-env-var-name": "POSTGRES_SSLROOTCERT",
+      "x-advanced": true,
+    },
+    sslcert_pem: {
+      type: "string",
+      title: "Client certificate",
+      description:
+        "Upload PEM contents. Certificate uploads require SSL mode verify-full (the default when certificates are supplied).",
+      format: "file",
+      "x-display": "file",
+      "x-file-accept": ".crt,.pem",
+      "x-file-encoding": "base64",
+      "x-secret": true,
+      "x-env-var-name": "POSTGRES_SSLCERT",
+      "x-advanced": true,
+    },
+    sslkey_pem: {
+      type: "string",
+      title: "Client private key",
+      description:
+        "Upload PEM contents. Certificate uploads require SSL mode verify-full (the default when certificates are supplied).",
+      format: "file",
+      "x-display": "file",
+      "x-file-accept": ".key,.pem",
+      "x-file-encoding": "base64",
+      "x-secret": true,
+      "x-env-var-name": "POSTGRES_SSLKEY",
+      "x-advanced": true,
     },
     log_queries: {
       type: "boolean",
@@ -108,6 +157,9 @@ export const postgresSchema: MultiStepFormSchema = {
           { required: ["password"] },
           { required: ["dbname"] },
           { required: ["sslmode"] },
+          { required: ["sslrootcert_pem"] },
+          { required: ["sslcert_pem"] },
+          { required: ["sslkey_pem"] },
         ],
       },
     },
@@ -123,6 +175,9 @@ export const postgresSchema: MultiStepFormSchema = {
           { required: ["password"] },
           { required: ["dbname"] },
           { required: ["sslmode"] },
+          { required: ["sslrootcert_pem"] },
+          { required: ["sslcert_pem"] },
+          { required: ["sslkey_pem"] },
         ],
       },
     },
@@ -132,6 +187,24 @@ export const postgresSchema: MultiStepFormSchema = {
     },
   ],
   allOf: [
+    {
+      if: {
+        anyOf: [
+          { required: ["sslrootcert_pem"] },
+          { required: ["sslcert_pem"] },
+          { required: ["sslkey_pem"] },
+        ],
+      },
+      then: { properties: { sslmode: { const: "verify-full" } } },
+    },
+    {
+      if: { required: ["sslcert_pem"] },
+      then: { required: ["sslkey_pem"] },
+    },
+    {
+      if: { required: ["sslkey_pem"] },
+      then: { required: ["sslcert_pem"] },
+    },
     {
       if: { properties: { connection_mode: { const: "dsn" } } },
       then: { required: ["dsn"] },

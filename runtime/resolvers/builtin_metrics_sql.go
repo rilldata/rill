@@ -57,7 +57,8 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		return nil, err
 	}
 
-	// Rewrite to the metrics SQL resolver
+	// Rewrite to the metrics SQL resolver.
+	// The SQL comes from the caller's args, so templates in it cannot access project variables.
 	return newMetricsSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,

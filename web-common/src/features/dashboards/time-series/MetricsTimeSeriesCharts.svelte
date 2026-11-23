@@ -5,6 +5,11 @@
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -82,9 +87,11 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       charts: { canPanLeft, canPanRight, getNewPanRange },
       tags: { measureTagIndex },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
       measures: { setMeasureVisibility },
+      exactMeasures: { toggleExactMeasure },
     },
     expressionFilterManager,
   } = StateManagers;
@@ -144,6 +151,24 @@
     Boolean(activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL),
   );
   let expandedMeasureName = $derived($exploreState?.tdd?.expandedMeasureName);
+
+  // The big numbers and their charts are one surface: a click applies to this
+  // row only. On the Time Dimension Detail page the chart, totals and table
+  // form one surface instead, controlled by the chip in the page's header.
+  const measuresSurface = $derived(
+    showTimeDimensionDetail
+      ? exploreExactSurface.tdd
+      : exploreExactSurface.measures,
+  );
+
+  // Measures that are requested with `exact: true`: the surface's selection.
+  const exactContext = $derived($exactMeasureContext(measuresSurface));
+  const exactRequestNames = $derived(
+    requestExactNames(
+      $visibleMeasures.map((measure) => measure.name ?? ""),
+      exactContext,
+    ),
+  );
 
   let comparisonDimension = $derived(
     $exploreState?.selectedComparisonDimension,
@@ -342,8 +367,13 @@
         )}
         onEditEphemeral={openEphemeralMeasureEditor}
       >
-        <div class="border-t border-border" slot="action" let:close>
-          <CreateEphemeralMeasureButton onOpen={close} />
+        <!-- display: contents lets the button and its limit note join the
+             menu's search row. -->
+        <div class="contents" slot="action" let:close>
+          <CreateEphemeralMeasureButton
+            count={$dashboardStore?.ephemeralMeasures?.length ?? 0}
+            onOpen={close}
+          />
         </div>
       </DashboardMetricsDraggableList>
 
@@ -422,9 +452,14 @@
       {/if}
 
       {#each renderedMeasures as measure (measure.name)}
+        {@const measureName = measure.name ?? ""}
+        {@const exact = exactRequestNames.has(measureName)}
         <MeasureBigNumber
           {measure}
           ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+          {exact}
+          precision={precisionStateFor(measureName, exactContext)}
+          onToggleExact={() => toggleExactMeasure(measuresSurface, measureName)}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
@@ -445,6 +480,7 @@
             <MeasureChart
               {measure}
               ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+              {exact}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}

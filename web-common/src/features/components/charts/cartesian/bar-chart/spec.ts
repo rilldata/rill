@@ -70,7 +70,7 @@ export function generateVLBarChartSpec(
   const isInteractive = !!config.isInteractive && !horizontal;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField: sanitizedXField,
+    xField: config.x?.field,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: defaultTooltipChannel,
@@ -104,7 +104,7 @@ export function generateVLBarChartSpec(
       !hasComparison
         ? {
             xOffset: {
-              field: config.color.field,
+              field: sanitizeValueForVega(config.color.field),
               title:
                 data.fields[config.color.field]?.displayName ||
                 config.color.field,

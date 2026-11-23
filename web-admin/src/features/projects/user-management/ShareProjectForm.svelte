@@ -41,6 +41,7 @@
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
   export let enabled = false;
 
   let accessType: "everyone" | "invite-only" = "everyone";
@@ -49,6 +50,9 @@
   const currentUser = createAdminServiceGetCurrentUser();
 
   const PAGE_SIZE = 50;
+  // The org's members, invites and groups are only listed for users who may read them.
+  // Project admins who are not org admins still see the project's own members and invite by email.
+  $: orgQueriesEnabled = enabled && readOrgMembers;
   $: orgInvitesInfiniteQuery =
     createAdminServiceListOrganizationInvitesInfinite(
       organization,
@@ -57,7 +61,7 @@
       },
       {
         query: {
-          enabled,
+          enabled: orgQueriesEnabled,
           getNextPageParam: (lastPage) => {
             if (lastPage.nextPageToken !== "") {
               return lastPage.nextPageToken;
@@ -76,7 +80,7 @@
       },
       {
         query: {
-          enabled,
+          enabled: orgQueriesEnabled,
         },
       },
     );
@@ -192,7 +196,7 @@
     undefined,
     {
       query: {
-        enabled,
+        enabled: orgQueriesEnabled,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
@@ -324,7 +328,12 @@
     </div>
     <div class="grow"></div>
   </div>
-  <UserAndGroupInviteForm {organization} {project} {searchList} />
+  <UserAndGroupInviteForm
+    {organization}
+    {project}
+    {searchList}
+    {readOrgMembers}
+  />
   <div
     class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2"
     bind:this={membersScrollEl}
@@ -385,7 +394,7 @@
       location="right"
       alignment="middle"
       distance={8}
-      suppress={accessType !== "everyone"}
+      suppress={accessType !== "everyone" || userGroupMemberUsers.length === 0}
     >
       <div
         role="button"
@@ -397,7 +406,11 @@
         onfocus={() => (isHovered = true)}
         onblur={() => (isHovered = false)}
       >
-        <GeneralAccessSelectorDropdown {organization} {project} />
+        <GeneralAccessSelectorDropdown
+          {organization}
+          {project}
+          {readOrgMembers}
+        />
 
         {#if hasAutogroupMembers}
           {#each projectMemberUserGroupsList as group, i (i)}

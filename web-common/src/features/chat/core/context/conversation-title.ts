@@ -40,3 +40,17 @@ export function formatConversationTitle(
   }
   return withoutPartial;
 }
+
+/**
+ * Removes a trailing partial chat reference left by the old title truncation,
+ * so that the title can be loaded into the chat editor without leaking broken markup.
+ */
+export function stripPartialChatReference(title: string) {
+  // The regex matches from the first opening tag, so only apply it after the last complete reference.
+  const closingTag = `</${INLINE_CHAT_CONTEXT_TAG}>`;
+  const lastClosingTag = title.lastIndexOf(closingTag);
+  const tailStart =
+    lastClosingTag === -1 ? 0 : lastClosingTag + closingTag.length;
+  const tail = title.slice(tailStart).replace(PARTIAL_CHAT_REFERENCE_REGEX, "");
+  return (title.slice(0, tailStart) + tail).trim();
+}

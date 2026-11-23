@@ -15,6 +15,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// alertNotifyRowsLimitDefault is the value for "notify.rows_limit" when an alert doesn't set it.
+// Keep in sync with AlertNotifyRowsLimitDefault in web-common/src/features/alerts/form-utils.ts.
+const alertNotifyRowsLimitDefault = 5
+
+// alertNotifyRowsLimitMax is the maximum value for "notify.rows_limit".
+// It keeps notifications for alerts split by a high-cardinality dimension readable (and within Slack's message size limits).
+const alertNotifyRowsLimitMax = 50
+
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
 type AlertYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
@@ -44,13 +52,20 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	Export struct {
+		Attach        bool   `yaml:"attach"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
+	} `yaml:"export"`
 	OnRecover     *bool  `yaml:"on_recover"`
 	OnFail        *bool  `yaml:"on_fail"`
 	OnError       *bool  `yaml:"on_error"`
 	Renotify      *bool  `yaml:"renotify"`
 	RenotifyAfter string `yaml:"renotify_after"`
 	Notify        struct {
-		Email struct {
+		RowsLimit uint `yaml:"rows_limit"`
+		Email     struct {
 			Recipients []string `yaml:"recipients"`
 		} `yaml:"email"`
 		Slack struct {
@@ -144,6 +159,11 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 		node.Refs = append(node.Refs, refs...)
 
+		// Alerts are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
+		if TemplateReferencesVariables(resolverProps.AsMap()) {
+			return errors.New(`templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`)
+		}
+
 		// Query for: validate only one of user_id, user_email, or attributes is set
 		n := 0
 		if tmp.For.UserID != "" {
@@ -228,8 +248,34 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 	}
 
+	// Parse export options, which only apply to the export attached to email notifications for failed checks.
+	var exportFormat runtimev1.ExportFormat
+	if tmp.Export.Attach {
+		if resolver != "legacy_metrics" {
+			return errors.New(`"export.attach" requires the "query" property`)
+		}
+		if len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0 {
+			return errors.New(`"export.attach" requires email recipients`)
+		}
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+			return errors.New(`missing required property "export.format"`)
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+			return errors.New(`export format "pdf" is not supported for alerts`)
+		}
+	}
+
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
+	}
+
+	// Validate the number of matching rows to include in notifications; 0 means the default.
+	if tmp.Notify.RowsLimit > alertNotifyRowsLimitMax {
+		return fmt.Errorf(`invalid value %d for property "notify.rows_limit": must be at most %d`, tmp.Notify.RowsLimit, alertNotifyRowsLimitMax)
 	}
 
 	isLegacyNotify := len(tmp.Email.Recipients) > 0
@@ -302,11 +348,19 @@ func (p *Parser) parseAlert(node *Node) error {
 	} else if queryForAttributes != nil {
 		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
+	r.AlertSpec.ExportAttach = tmp.Export.Attach
+	r.AlertSpec.ExportFormat = exportFormat
+	r.AlertSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	r.AlertSpec.ExportLimit = uint64(tmp.Export.Limit)
 
 	// Notification default settings
 	r.AlertSpec.NotifyOnRecover = false
 	r.AlertSpec.NotifyOnFail = true
 	r.AlertSpec.NotifyOnError = false
+	r.AlertSpec.NotifyRowsLimit = uint32(tmp.Notify.RowsLimit)
+	if r.AlertSpec.NotifyRowsLimit == 0 {
+		r.AlertSpec.NotifyRowsLimit = alertNotifyRowsLimitDefault
+	}
 	r.AlertSpec.Renotify = false
 
 	if isLegacyNotify {

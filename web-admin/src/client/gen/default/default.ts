@@ -99,6 +99,7 @@ import type {
   AdminServiceTriggerRefreshSourcesBody,
   AdminServiceUnsubscribeAlertBodyBody,
   AdminServiceUpdateBillingSubscriptionBodyBody,
+  AdminServiceUpdateMagicAuthTokenBody,
   AdminServiceUpdateOrganizationBody,
   AdminServiceUpdateOrganizationMemberUserAttributesBody,
   AdminServiceUpdateProjectBody,
@@ -165,6 +166,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbedUserResponse,
   V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
@@ -289,11 +291,14 @@ import type {
   V1TriggerRedeployResponse,
   V1TriggerRefreshSourcesResponse,
   V1TriggerReportResponse,
+  V1UnlockMagicAuthTokenRequest,
+  V1UnlockMagicAuthTokenResponse,
   V1UnsubscribeAlertResponse,
   V1UnsubscribeReportResponse,
   V1UpdateBillingSubscriptionResponse,
   V1UpdateBookmarkRequest,
   V1UpdateBookmarkResponse,
+  V1UpdateMagicAuthTokenResponse,
   V1UpdateOrganizationMemberUserAttributesResponse,
   V1UpdateOrganizationResponse,
   V1UpdateProjectResponse,
@@ -1807,6 +1812,92 @@ export const createAdminServiceRevokeMagicAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary UpdateMagicAuthToken updates the display name or password of a magic auth token.
+ */
+export const adminServiceUpdateMagicAuthToken = (
+  tokenId: string,
+  adminServiceUpdateMagicAuthTokenBody: AdminServiceUpdateMagicAuthTokenBody,
+) => {
+  return httpClient<V1UpdateMagicAuthTokenResponse>({
+    url: `/v1/magic-tokens/${tokenId}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateMagicAuthTokenBody,
+  });
+};
+
+export const getAdminServiceUpdateMagicAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>,
+    TError,
+    { tokenId: string; data: AdminServiceUpdateMagicAuthTokenBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>,
+  TError,
+  { tokenId: string; data: AdminServiceUpdateMagicAuthTokenBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceUpdateMagicAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>,
+    { tokenId: string; data: AdminServiceUpdateMagicAuthTokenBody }
+  > = (props) => {
+    const { tokenId, data } = props ?? {};
+
+    return adminServiceUpdateMagicAuthToken(tokenId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateMagicAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>
+>;
+export type AdminServiceUpdateMagicAuthTokenMutationBody =
+  AdminServiceUpdateMagicAuthTokenBody;
+export type AdminServiceUpdateMagicAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary UpdateMagicAuthToken updates the display name or password of a magic auth token.
+ */
+export const createAdminServiceUpdateMagicAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>,
+      TError,
+      { tokenId: string; data: AdminServiceUpdateMagicAuthTokenBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceUpdateMagicAuthToken>>,
+  TError,
+  { tokenId: string; data: AdminServiceUpdateMagicAuthTokenBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUpdateMagicAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GetCurrentMagicAuthToken returns information about the current magic auth token.
  */
 export const adminServiceGetCurrentMagicAuthToken = (signal?: AbortSignal) => {
@@ -1888,6 +1979,97 @@ export function createAdminServiceGetCurrentMagicAuthToken<
   return query;
 }
 
+/**
+ * @summary UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+It must be called with the magic auth token as the bearer token.
+On success, it returns a short-lived session token that grants the same access as the magic auth token.
+ */
+export const adminServiceUnlockMagicAuthToken = (
+  v1UnlockMagicAuthTokenRequest: V1UnlockMagicAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1UnlockMagicAuthTokenResponse>({
+    url: `/v1/magic-tokens/current/unlock`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1UnlockMagicAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceUnlockMagicAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>,
+    TError,
+    { data: V1UnlockMagicAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>,
+  TError,
+  { data: V1UnlockMagicAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceUnlockMagicAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>,
+    { data: V1UnlockMagicAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceUnlockMagicAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUnlockMagicAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>
+>;
+export type AdminServiceUnlockMagicAuthTokenMutationBody =
+  V1UnlockMagicAuthTokenRequest;
+export type AdminServiceUnlockMagicAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+It must be called with the magic auth token as the bearer token.
+On success, it returns a short-lived session token that grants the same access as the magic auth token.
+ */
+export const createAdminServiceUnlockMagicAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>,
+      TError,
+      { data: V1UnlockMagicAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceUnlockMagicAuthToken>>,
+  TError,
+  { data: V1UnlockMagicAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUnlockMagicAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
 If the application detects it is running on a non-default domain, it can use this to find the org to present.
@@ -6084,6 +6266,117 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+export const adminServiceGetEmbedUser = (
+  org: string,
+  project: string,
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbedUserResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/embed-users/${id}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbedUserQueryKey = (
+  org?: string,
+  project?: string,
+  id?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/embed-users/${id}`] as const;
+};
+
+export const getAdminServiceGetEmbedUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetEmbedUserQueryKey(org, project, id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+  > = ({ signal }) => adminServiceGetEmbedUser(org, project, id, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && id),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbedUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+>;
+export type AdminServiceGetEmbedUserQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+
+export function createAdminServiceGetEmbedUser<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbedUserQueryOptions(
+    org,
+    project,
+    id,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */
@@ -16781,7 +17074,8 @@ export const createAdminServiceIssueUserAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+Embed users only see their own personal bookmarks.
  */
 export const adminServiceListBookmarks = (
   params?: AdminServiceListBookmarksParams,
@@ -16838,7 +17132,8 @@ export type AdminServiceListBookmarksQueryResult = NonNullable<
 export type AdminServiceListBookmarksQueryError = RpcStatus;
 
 /**
- * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+Embed users only see their own personal bookmarks.
  */
 
 export function createAdminServiceListBookmarks<

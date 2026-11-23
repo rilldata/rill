@@ -43,6 +43,7 @@
         },
         hasTimeSeriesStore,
         largestMinTimeGrain,
+        commonAvailableGrains,
         defaultTimeRangeStore,
         timeRangeOptionsStore,
         availableTimeZonesStore,
@@ -83,7 +84,9 @@
 
   let canPan = $derived($canPanStore);
 
-  let grainOptions = $derived(allowedGrainsForInterval(interval, minTimeGrain));
+  let grainOptions = $derived(
+    allowedGrainsForInterval(interval, minTimeGrain, $commonAvailableGrains),
+  );
 
   function onPan(direction: "left" | "right") {
     if (!interval || !selectedRange) return;

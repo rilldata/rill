@@ -546,3 +546,119 @@ measures:
 		})
 	}
 }
+
+func TestValidateMetricsViewExactExpression(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	newMetricsView := func(measures ...*runtimev1.MetricsViewSpec_Measure) *runtimev1.MetricsViewSpec {
+		return &runtimev1.MetricsViewSpec{
+			Connector:     "duckdb",
+			Table:         "ad_bids",
+			DisplayName:   "Ad Bids",
+			TimeDimension: "timestamp",
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: measures,
+		}
+	}
+
+	validate := func(t *testing.T, mv *runtimev1.MetricsViewSpec) *executor.ValidateMetricsViewResult {
+		e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+		require.NoError(t, err)
+		res, err := e.ValidateAndNormalizeMetricsView(context.Background())
+		require.NoError(t, err)
+		require.Empty(t, res.TimeDimensionErr)
+		require.Empty(t, res.DimensionErrs)
+		require.Empty(t, res.OtherErrs)
+		return res
+	}
+
+	t.Run("valid exact expression", func(t *testing.T) {
+		mv := newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "publishers", Expression: "approx_count_distinct(publisher)", ExactExpression: "count(DISTINCT publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		)
+		res := validate(t, mv)
+		require.Empty(t, res.MeasureErrs)
+		// The data type comes from the default expression.
+		require.NotNil(t, mv.Measures[0].DataType)
+	})
+
+	t.Run("invalid exact expression", func(t *testing.T) {
+		res := validate(t, newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "records", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			&runtimev1.MetricsViewSpec_Measure{Name: "publishers", Expression: "approx_count_distinct(publisher)", ExactExpression: "MAX(COUNT(DISTINCT publisher))", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		))
+		require.Len(t, res.MeasureErrs, 1)
+		require.Equal(t, 1, res.MeasureErrs[0].Idx)
+		require.ErrorContains(t, res.MeasureErrs[0].Err, `invalid exact_expression for measure "publishers"`)
+	})
+
+	t.Run("non-numeric exact expression", func(t *testing.T) {
+		res := validate(t, newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "records", Expression: "count(*)", ExactExpression: "max(publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		))
+		require.Len(t, res.MeasureErrs, 1)
+		require.Equal(t, 0, res.MeasureErrs[0].Idx)
+		require.ErrorContains(t, res.MeasureErrs[0].Err, "must be a numeric type")
+		require.ErrorContains(t, res.MeasureErrs[0].Err, "exact_expression")
+	})
+}
+
+func TestValidateAndNormalizeMetricsViewTagOrder(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"model.sql": `SELECT 'DK' AS country, 1 AS val`,
+		`parent.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: country
+  tags: [geo]
+measures:
+- name: total
+  expression: count(*)
+  tags: [core, revenue]
+- name: average
+  expression: avg(val)
+  tags: [usage]
+tag_order: [usage, geo, revenue]
+`,
+		// Inherits the parent's tag order without "usage", which none of its measures have.
+		`derived_inherited.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+parent_measures: [total]
+`,
+		`derived_own.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+tag_order: [core]
+`,
+		`fail_unknown_tag.yaml`: `
+version: 1
+type: metrics_view
+parent: parent
+parent_measures: [total]
+tag_order: [usage]
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 1, 0)
+
+	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "parent")
+	require.Equal(t, []string{"usage", "geo", "revenue"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "derived_inherited")
+	require.Equal(t, []string{"geo", "revenue"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "derived_own")
+	require.Equal(t, []string{"core"}, mv.GetMetricsView().State.ValidSpec.TagOrder)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "fail_unknown_tag")
+	require.Contains(t, mv.Meta.ReconcileError, `tag "usage" referenced in 'tag_order' is not set on any dimension or measure`)
+}

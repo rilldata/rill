@@ -1,6 +1,7 @@
 package metricssql_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -484,4 +485,13 @@ func TestParseFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseFilterNowIsUTC(t *testing.T) {
+	// Some OLAP engines ignore the offset in timestamp strings, so now() must produce a UTC timestamp regardless of the server's time zone
+	expr, err := metricssql.ParseFilter("timestamp < now()")
+	require.NoError(t, err)
+	val, ok := expr.Condition.Expressions[1].Value.(string)
+	require.True(t, ok)
+	require.True(t, strings.HasSuffix(val, "Z"), "got %q", val)
 }

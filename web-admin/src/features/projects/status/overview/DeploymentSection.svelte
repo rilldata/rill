@@ -4,6 +4,7 @@
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import {
     isFreePlan,
@@ -122,8 +123,16 @@
   // Slots
   $: currentSlots = Number(projectData?.prodSlots) || 0;
 
-  // Billing plan detection
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  // Billing plan detection. Only org admins can read the subscription, so the cluster size
+  // stays hidden for project admins who are not org admins.
+  $: organizationPermissions = $page.data.organizationPermissions as
+    | V1OrganizationPermissions
+    | undefined;
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(
+    organization,
+    undefined,
+    { query: { enabled: !!organizationPermissions?.manageOrg } },
+  );
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: showSlots =
     isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);

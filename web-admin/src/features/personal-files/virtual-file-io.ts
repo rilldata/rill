@@ -1,11 +1,11 @@
 import type { FileIO } from "@rilldata/web-common/features/entity-management/file-io.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import type { QueryFunction } from "@tanstack/svelte-query";
 import {
-  adminServiceGetPersonalFile,
   adminServiceEditPersonalFile,
   getAdminServiceGetPersonalFileQueryKey,
 } from "@rilldata/web-admin/client";
+import { fetchPersonalFile } from "@rilldata/web-admin/features/personal-files/personal-file-client.ts";
+import { adminServiceEditPersonalFileUsingToken } from "@rilldata/web-admin/features/personal-files/personal-file-client-using-token.ts";
 import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { inferResourceKind } from "@rilldata/web-common/features/entity-management/infer-resource-kind.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
@@ -20,9 +20,13 @@ export class VirtualFileIo implements FileIO {
     this.events,
   ) as typeof this.events.on;
 
+  /**
+   * @param adminToken If set, requests authenticate with this token instead of cookies (used in embeds).
+   */
   public constructor(
     private readonly org: string,
     private readonly project: string,
+    private readonly adminToken?: string,
   ) {}
 
   updateClient() {}
@@ -37,14 +41,9 @@ export class VirtualFileIo implements FileIO {
 
     if (invalidate) await queryClient.invalidateQueries({ queryKey });
 
-    const queryFn: QueryFunction<
-      Awaited<ReturnType<typeof adminServiceGetPersonalFile>>
-    > = () => adminServiceGetPersonalFile(this.org, this.project, name);
-
     try {
-      const response = await queryClient.fetchQuery({
-        queryKey,
-        queryFn,
+      const response = await fetchPersonalFile(this.org, this.project, name, {
+        adminToken: this.adminToken,
         staleTime: Infinity,
       });
       return response.yaml;
@@ -67,10 +66,20 @@ export class VirtualFileIo implements FileIO {
       { yaml, path },
     );
 
-    await adminServiceEditPersonalFile(this.org, this.project, name, {
-      yaml,
-      kind,
-    });
+    if (this.adminToken) {
+      await adminServiceEditPersonalFileUsingToken(
+        this.org,
+        this.project,
+        name,
+        { yaml, kind },
+        this.adminToken,
+      );
+    } else {
+      await adminServiceEditPersonalFile(this.org, this.project, name, {
+        yaml,
+        kind,
+      });
+    }
     this.events.emit("write", { name, kind });
   }
 }

@@ -9,6 +9,7 @@
   const LOCALES = [
     { code: "en", label: () => m.language_en() },
     { code: "es", label: () => m.language_es() },
+    { code: "ko", label: () => m.language_ko() },
   ] as const;
 
   const currentLocale = getLocale();

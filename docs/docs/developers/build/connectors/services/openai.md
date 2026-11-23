@@ -48,6 +48,20 @@ For details on managing credentials across environments, see [Configure Local Cr
 
 For additional configuration options (model, base URL, API type, etc.), see the [OpenAI connector reference](/reference/project-files/connectors#openai).
 
+:::note Reasoning models
+
+Rill sends a `temperature` of `0.1` unless you set `reasoning_effort`. OpenAI's reasoning models reject `temperature` unless reasoning effort is `none`, so if you use a model that reasons by default, set `reasoning_effort` (e.g., `medium`) in the connector:
+
+```yaml
+type: connector
+driver: openai
+api_key: "{{ .env.openai_api_key }}"
+model: gpt-5.6
+reasoning_effort: medium
+```
+
+:::
+
 ## Deploy to Rill Cloud
 
 Rill requires you to explicitly provide an OpenAI API key to use the OpenAI connector. See the [connector reference](/reference/project-files/connectors#openai) for details.

@@ -207,9 +207,9 @@ setup.describe("global setup", () => {
     await expect(
       adminPage.getByRole("link", { name: RILL_ORG_NAME }),
     ).toBeVisible(); // Organization breadcrumb
-    await expect(
-      adminPage.getByRole("link", { name: RILL_PROJECT_NAME }),
-    ).toBeVisible(); // Project breadcrumb
+    await expect(adminPage.locator('nav [aria-current="page"]')).toHaveText(
+      RILL_PROJECT_NAME,
+    ); // Project breadcrumb
 
     // Expect to land on the project home page
     await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
@@ -307,9 +307,9 @@ setup.describe("global setup", () => {
     await expect(
       adminPage.getByRole("link", { name: RILL_ORG_NAME }),
     ).toBeVisible(); // Organization breadcrumb
-    await expect(
-      adminPage.getByRole("link", { name: "AdBids", exact: true }),
-    ).toBeVisible(); // Project breadcrumb
+    await expect(adminPage.locator('nav [aria-current="page"]')).toHaveText(
+      "AdBids",
+    ); // Project breadcrumb
 
     // Expect to land on the project home page
     await adminPage.waitForURL(`/${RILL_ORG_NAME}/AdBids`);

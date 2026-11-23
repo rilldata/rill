@@ -6,12 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime/ai/mcpapp"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -46,23 +52,91 @@ If you have edit access, the server also exposes tools for inspecting and editin
 - **Write a file:** Use "write_file" to create, update or delete a file. If the file declares a Rill resource, it returns the resource's status and any errors encountered after reconciliation.
 `
 
-// MCPToolSpecs returns the specs of all registered tools, keyed by name.
-// The specs are freshly built and owned by the caller, so they may be mutated.
+// toolRegistry holds the tools compiled without a runtime, keyed by name.
+// It serves callers that need the tool definitions but cannot run the tools, such as the unified MCP server in the admin service.
+// It is safe to build with a nil runtime: Spec and MCPAppUI do not use it (asserted by TestMCPToolSpecs).
+var toolRegistry = sync.OnceValue(func() map[string]*CompiledTool {
+	return NewRunner(nil, nil).Tools
+})
+
+// MCPToolSpecs returns the specs of all registered tools as advertised on MCP servers, keyed by name (see CompiledTool.mcpSpec).
+// The specs are copies owned by the caller, so they may be extended, for example with extra input properties or _meta.
 // It is used by the unified MCP server in the admin service, which advertises the tools without being able to run them.
 func MCPToolSpecs() map[string]*mcp.Tool {
-	// Safe to pass a nil runtime: Spec() does not use it (asserted by TestMCPToolSpecs).
-	runner := NewRunner(nil, nil)
-	specs := make(map[string]*mcp.Tool, len(runner.Tools))
-	for name, t := range runner.Tools {
-		specs[name] = t.Spec
+	tools := toolRegistry()
+	specs := make(map[string]*mcp.Tool, len(tools))
+	for name, t := range tools {
+		spec := *t.mcpSpec()
+		spec.Meta = maps.Clone(spec.Meta)
+		// CloneSchemas copies the nested schemas and their maps but shares the plain slices, so Required is cloned separately.
+		if s, ok := spec.InputSchema.(*jsonschema.Schema); ok {
+			s = s.CloneSchemas()
+			s.Required = slices.Clone(s.Required)
+			spec.InputSchema = s
+		}
+		if s, ok := spec.OutputSchema.(*jsonschema.Schema); ok {
+			spec.OutputSchema = s.CloneSchemas()
+		}
+		specs[name] = &spec
 	}
 	return specs
+}
+
+// IsMCPAppOnlyTool reports whether only the MCP Apps widget may call a tool (see mcpapp.ToolUI.AppOnly).
+// Such tools should only be advertised by servers that serve the widget.
+func IsMCPAppOnlyTool(toolName string) bool {
+	t, ok := toolRegistry()[toolName]
+	return ok && t.AppUI.AppOnly()
+}
+
+// MCPAppToolMeta returns the _meta.ui to register a tool with: the link to the widget when it is served (a may be nil),
+// the visibility of an app-only tool regardless, and nil for tools without a UI.
+// It is exported for the unified MCP server in the admin service, which advertises the tools without being able to run them.
+func MCPAppToolMeta(toolName string, a *mcpapp.Asset) map[string]any {
+	t, ok := toolRegistry()[toolName]
+	if !ok {
+		return nil
+	}
+	return t.AppUI.Meta(a)
+}
+
+// MCPUserAgent returns the user agent to record for an MCP client: the one it reports, or "mcp/unknown" when it reports none.
+// MCP clients are external by definition, so a user agent that would pass for one of Rill's own clients is prefixed with "mcp/".
+// Otherwise a client named, say, "rill-cli" would put its session in in-app mode (see isRillUserAgent):
+// the MCP server would offer it the tools of Rill's own chat, and the session would be listed among the user's in-app conversations.
+// The prefix is matched case-insensitively, since that listing matches user agents with a SQL LIKE.
+func MCPUserAgent(userAgent string) string {
+	if userAgent == "" {
+		return "mcp/unknown"
+	}
+	if strings.HasPrefix(strings.ToLower(userAgent), "rill") {
+		return "mcp/" + userAgent
+	}
+	return userAgent
 }
 
 // MCPServer returns a new MCP server scoped to the current session.
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
+// The session must be one recorded for an MCP client (see MCPUserAgent): a session of Rill's own chat gets the in-app tools,
+// which are not meant for MCP clients (and the agents' input schemas do not even resolve as MCP tool schemas).
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
+	// Serve the MCP Apps widget (interactive charts) alongside the chart tools: when external clients get charts (see mcpChartsEnabled)
+	// and the binary carries the widget bundle. Without the widget, clients get the text fallback of create_chart.
+	var widget *mcpapp.Asset
+	ff, err := s.FeatureFlags(ctx)
+	if err != nil {
+		if !errors.Is(err, ctx.Err()) {
+			s.logger.Error("failed to resolve feature flags", zap.Error(err))
+		}
+	} else if mcpChartsEnabled(ff) {
+		widget, _ = mcpapp.Widget()
+	}
+	var capabilities *mcp.ServerCapabilities
+	if widget != nil {
+		capabilities = mcpapp.ServerCapabilities()
+	}
+
 	// Create the MCP server.
 	srv := mcp.NewServer(
 		&mcp.Implementation{
@@ -72,22 +146,8 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 		},
 		&mcp.ServerOptions{
 			Instructions: MCPInstructions,
-			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
-				// Save user agent in the session
-				clientInfo := r.Session.InitializeParams().ClientInfo
-				if clientInfo != nil && clientInfo.Name != "" {
-					userAgent := clientInfo.Name
-					if clientInfo.Version != "" {
-						userAgent += "/" + clientInfo.Version
-					}
-
-					err := s.UpdateUserAgent(ctx, userAgent)
-					if err != nil && !errors.Is(err, ctx.Err()) {
-						s.logger.Warn("failed to update user agent", zap.Error(err))
-					}
-				}
-			},
-			HasTools: true,
+			Capabilities: capabilities,
+			HasTools:     true,
 		},
 	)
 
@@ -101,6 +161,19 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 				return nil, errors.Join(err, fmt.Errorf("failed to flush session: %w", flushErr))
 			}
 			return res, err
+		}
+	})
+
+	// Record what the client tells us about itself in the initialize handshake: the user agent is updated from the client info
+	// (the session was created with the HTTP user agent, which is a less specific signal) and an activity event captures the client
+	// and whether it supports the MCP Apps UI extension. This runs as middleware rather than an InitializedHandler because the
+	// stateless transport does not carry the client info over to the "notifications/initialized" request.
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			if params, ok := req.GetParams().(*mcp.InitializeParams); ok && method == "initialize" {
+				s.recordMCPInitialize(ctx, params)
+			}
+			return next(ctx, method, req)
 		}
 	})
 
@@ -126,9 +199,14 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 		}
 	})
 
-	// Add only the tools that the user has access to
+	// Add only the tools that the user has access to, each with the _meta.ui of its part in the MCP Apps widget:
+	// create_chart links to the widget when it is served, and app-only tools, which only the widget may call,
+	// declare their visibility and are left out when it is not served (the unified server does the same, see admin/server/mcp.go).
 	ctx = WithSession(ctx, s)
 	for _, t := range s.runner.Tools {
+		if widget == nil && t.AppUI.AppOnly() {
+			continue
+		}
 		ok, err := t.CheckAccess(ctx)
 		if err != nil {
 			if !errors.Is(err, ctx.Err()) {
@@ -139,7 +217,12 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 		if !ok {
 			continue
 		}
-		t.RegisterWithMCPServer(srv)
+		t.RegisterWithMCPServer(srv, t.AppUI.Meta(widget))
+	}
+
+	// Serve the widget resource.
+	if widget != nil {
+		mcpapp.Register(srv, widget)
 	}
 
 	return srv
@@ -161,6 +244,45 @@ func isMCPInputValidationFailure(res mcp.Result, err error) bool {
 	return ok && strings.HasPrefix(text.Text, `validating "arguments"`)
 }
 
+// recordMCPInitialize updates the session's user agent from the client info (see MCPUserAgent) and records an activity event
+// with the client's identity, protocol version and MCP Apps support.
+func (s *Session) recordMCPInitialize(ctx context.Context, params *mcp.InitializeParams) {
+	var clientName, clientVersion string
+	if params.ClientInfo != nil {
+		clientName = params.ClientInfo.Name
+		clientVersion = params.ClientInfo.Version
+	}
+	if clientName != "" {
+		userAgent := clientName
+		if clientVersion != "" {
+			userAgent += "/" + clientVersion
+		}
+		err := s.UpdateUserAgent(ctx, MCPUserAgent(userAgent))
+		if err != nil && !errors.Is(err, ctx.Err()) {
+			s.logger.Warn("failed to update user agent", zap.Error(err))
+		}
+	}
+
+	var uiExtension bool
+	var uiExtensionSettings string
+	if params.Capabilities != nil {
+		if ext, ok := params.Capabilities.Extensions[mcpapp.UIExtension]; ok {
+			uiExtension = true
+			if data, err := json.Marshal(ext); err == nil {
+				uiExtensionSettings = string(data)
+			}
+		}
+	}
+
+	s.activity.Record(ctx, activity.EventTypeLog, "mcp_initialize",
+		attribute.String("client_name", clientName),
+		attribute.String("client_version", clientVersion),
+		attribute.String("protocol_version", params.ProtocolVersion),
+		attribute.Bool("ui_extension", uiExtension),
+		attribute.String("ui_extension_settings", uiExtensionSettings),
+	)
+}
+
 // coerceMCPToolArgs rewrites a tool call's raw arguments,
 // JSON-decoding any string values in positions where the tool's input schema expects an object or array.
 // It returns whether the arguments were rewritten.
@@ -175,7 +297,7 @@ func (s *Session) coerceMCPToolArgs(req mcp.Request) bool {
 	if !ok || t.Spec == nil {
 		return false
 	}
-	schema, ok := t.Spec.InputSchema.(*jsonschema.Schema)
+	schema, ok := t.mcpSpec().InputSchema.(*jsonschema.Schema)
 	if !ok || schema == nil {
 		return false
 	}

@@ -569,6 +569,11 @@ export function createCartesianMultiValueTooltipChannel(
   return multiValueTooltipChannel;
 }
 
+/**
+ * Hover target layer shared by the cartesian charts. `xField` is the raw x
+ * field name: it is escaped for the encoding here and used as is to look up
+ * the chart's domain values, which are keyed by raw names.
+ */
 export function buildHoverRuleLayer(args: {
   xField?: string;
   defaultTooltip: TooltipValue[];
@@ -595,6 +600,7 @@ export function buildHoverRuleLayer(args: {
     isDarkMode = false,
     isInteractive = false,
   } = args;
+  const sanitizedXField = xField ? sanitizeValueForVega(xField) : undefined;
 
   const params: SelectionParameter[] = [
     {
@@ -632,7 +638,7 @@ export function buildHoverRuleLayer(args: {
     },
     encoding: {
       x: {
-        field: xField,
+        field: sanitizedXField,
         ...(xBand !== undefined ? { bandPosition: xBand } : {}),
         ...(xSort && xField ? { sort: domainValues?.[xField] } : {}),
       },

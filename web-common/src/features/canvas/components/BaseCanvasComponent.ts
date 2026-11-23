@@ -48,6 +48,7 @@ import type {
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { ComponentExportPayload } from "@rilldata/web-common/features/exports/xlsx/payload";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -70,6 +71,17 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // visible or while the canvas is exporting to PDF. Export uses this rather than
   // forcing `visible` so it never mutates the live lazy-load state.
   dataEnabled: Readable<boolean>;
+
+  // The data the component currently renders, published by its display
+  // component for the workbook export (see features/exports/xlsx). Undefined
+  // while loading or when the component has nothing to export.
+  exportPayload: Writable<ComponentExportPayload | undefined> =
+    writable(undefined);
+
+  // True while the component's export render is still drawing after its data
+  // arrived, like a map loading its tiles. The canvas exports wait for it
+  // before they capture the component (see prepareCanvasForCapture).
+  drawing = writable(false);
 
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
@@ -236,6 +248,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           this.metricsViewName,
         ),
         this.parent.timeManager.hasTimeSeriesMap,
+        this.parent.timeManager.availableGrainsMap,
         this.specStore,
       ],
       ([
@@ -253,6 +266,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         minTimeGrain,
         metricsViewFilters,
         hasTimeSeriesMap,
+        availableGrainsMap,
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
@@ -270,9 +284,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           timeGrain = localGrainStore ?? globalGrainStore;
         } else if (
           localRequestedGrain &&
-          allowedGrainsForInterval(globalInterval, minTimeGrain).includes(
-            localRequestedGrain,
-          )
+          allowedGrainsForInterval(
+            globalInterval,
+            minTimeGrain,
+            availableGrainsMap.get(this.metricsViewName),
+          ).includes(localRequestedGrain)
         ) {
           timeGrain = localRequestedGrain;
         }
@@ -416,33 +432,43 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
   }
 
-  private updateYAML(newSpec: T) {
-    if (!this.parent.fileArtifact) return;
+  // Resolves to false when writing the canvas file failed. Without a file,
+  // the spec only changes in memory.
+  private updateYAML(newSpec: T): Promise<boolean> {
+    if (!this.parent.fileArtifact) return Promise.resolve(true);
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent } = this.parent.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    // Saved explicitly rather than with auto-save, so the result can be awaited.
+    updateEditorContent(parsedDocument.toString(), false, false);
+    return saveLocalContent(true);
   }
 
-  setSpec(newSpec: T) {
-    if (this.isValid(newSpec)) {
-      this.updateYAML(newSpec);
-    }
+  // Resolves to false when writing the canvas file failed. An invalid spec
+  // is not written, only applied in memory.
+  setSpec(newSpec: T): Promise<boolean> {
+    const saved = this.isValid(newSpec)
+      ? this.updateYAML(newSpec)
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
+    return saved;
   }
 
-  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]): Promise<boolean> {
+    return this.updateProperties({ [key]: value } as unknown as Partial<T>);
   }
 
   // Writes several properties in one YAML update, so dependent keys (such as
   // a sort field and its direction) never reach the reconciler half-applied.
   // A key whose value is undefined or empty is removed from the spec.
-  updateProperties(patch: Partial<T>) {
+  // Resolves to false when writing the canvas file failed; an invalid spec is
+  // not written, only applied in memory. Most callers don't wait, since the
+  // file's save state reports failures.
+  updateProperties(patch: Partial<T>): Promise<boolean> {
     const currentSpec = this.specInYAML() ?? get(this.specStore);
 
     const newSpec = { ...currentSpec, ...patch };
@@ -468,10 +494,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       }
     }
 
-    if (this.isValid(newSpec)) {
-      this.updateYAML(newSpec);
-    }
+    const saved = this.isValid(newSpec)
+      ? this.updateYAML(newSpec)
+      : Promise.resolve(true);
     this.specStore.set(newSpec);
+    return saved;
   }
 
   // The component's properties as currently written in the file. While

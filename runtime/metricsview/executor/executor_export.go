@@ -87,6 +87,7 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		InputProperties:      inputProps,
 		OutputProperties:     outputProps,
 		Priority:             e.priority,
+		QueryAttributes:      e.queryAttributes,
 		TempDir:              tempPath,
 	})
 	if err != nil {

@@ -102,5 +102,134 @@ test.describe.serial("Public URLs", () => {
     await expect(
       anonPage.getByText("No matching dimensions shown"),
     ).toBeVisible();
+    await anonPage.keyboard.press("Escape");
+
+    // Check that the Export menu offers file exports but not scheduled reports
+    // (public URLs only grant viewing and exporting, so creating a report would fail with a 403)
+    await anonPage.getByText("App Site Domain").click();
+    await anonPage.getByLabel("Dimension Display").waitFor();
+    await anonPage.mouse.move(0, 0); // Dismiss the tooltip that can overlay the export button
+    await anonPage.getByLabel("Export dimension table data").click();
+    await expect(
+      anonPage.getByRole("menuitem", { name: "Export as CSV" }),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByRole("menuitem", { name: "Create scheduled report..." }),
+    ).not.toBeVisible();
+  });
+});
+
+test.describe.serial("Password-protected public URLs", () => {
+  // Unique per attempt: a CI retry re-runs the whole group and creates another URL.
+  const label = `Test Public URL - Password ${Date.now()}`;
+  let publicUrl: string;
+  let password: string;
+
+  test("should be able to create a password-protected public URL", async ({
+    page,
+  }) => {
+    await page.goto("/e2e/openrtb/explore/auction_explore");
+
+    await page.getByRole("button", { name: "Share" }).click();
+    await page.getByRole("tab", { name: "Create public URL" }).click();
+    await page.getByPlaceholder("Label this URL").fill(label);
+
+    // Turning on the switch shows an empty password field, which the button below it fills in
+    await page.getByLabel("Require password").click();
+    const passwordInput = page.getByPlaceholder("Password");
+    await expect(passwordInput).toHaveValue("");
+    const createButton = page.getByRole("button", {
+      name: "Create",
+      exact: true,
+    });
+    await expect(createButton).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Generate and copy secure password" })
+      .click();
+    await expect(passwordInput).not.toHaveValue("");
+    await createButton.click();
+
+    // The URL and the password are both shown once after creation
+    const copyButton = page.getByRole("button", { name: /Copy Public URL/ });
+    await copyButton.waitFor();
+    const url = await copyButton.getAttribute("data-public-url");
+    const createdPassword = await page
+      .locator("[data-public-url-password]")
+      .getAttribute("data-public-url-password");
+    if (!url || !createdPassword) {
+      throw new Error("Could not find the public URL or its password");
+    }
+    expect(url).toContain("e2e/openrtb/-/share/rill_mgc_");
+    expect(createdPassword).toHaveLength(16);
+
+    publicUrl = url;
+    password = createdPassword;
+  });
+
+  test("anon must enter the password to view the public URL", async ({
+    anonPage,
+  }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
+    await anonPage.goto(publicUrl);
+
+    // The dashboard is hidden behind a password prompt
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByRole("button", { name: "Requests 6.60M" }),
+    ).toBeHidden();
+
+    // A wrong password is rejected
+    await anonPage.getByPlaceholder("Password").fill("not the password");
+    await anonPage.getByRole("button", { name: "Continue" }).click();
+    await expect(anonPage.getByText("Incorrect password")).toBeVisible();
+
+    // The right password shows the dashboard
+    await anonPage.getByPlaceholder("Password").fill(password);
+    await anonPage.getByRole("button", { name: "Continue" }).click();
+    await expect(
+      anonPage.getByRole("button", { name: "Requests 6.60M" }),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeHidden();
+  });
+
+  test("admin can remove the password from the settings page", async ({
+    page,
+    anonPage,
+  }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
+    await page.goto("/e2e/openrtb/-/settings/public-urls");
+    const row = page.locator(".row", { hasText: label });
+    await expect(row.getByLabel("Password protected")).toBeVisible();
+    // The menu trigger wraps an IconButton, so the row has two nested buttons
+    await row.locator('[aria-haspopup="menu"]').click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByText("A password is set", { exact: false }),
+    ).toBeVisible();
+    await dialog.getByLabel("Remove password").click();
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Public URL updated")).toBeVisible();
+    await expect(row.getByLabel("Password protected")).toBeHidden();
+
+    // The URL now opens without a password.
+    // The admin service caches a validated token for up to 10 seconds, and the previous test used this one,
+    // so it can still be reported as password protected right after the change: reopen the URL until the cached entry expires.
+    await expect(async () => {
+      await anonPage.goto(publicUrl);
+      await expect(
+        anonPage.getByRole("button", { name: "Requests 6.60M" }),
+      ).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeHidden();
   });
 });

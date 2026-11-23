@@ -99,7 +99,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 	// Rill's own agents receive the project instructions and always-apply skills directly in their prompts,
 	// so this enrichment is only for external MCP clients (identified by a non-rill user agent).
 	var aiInstructions strings.Builder
-	if !strings.HasPrefix(session.CatalogSession().UserAgent, "rill") {
+	if !isRillUserAgent(session) {
 		instance, err := t.Runtime.Instance(ctx, session.InstanceID())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)

@@ -68,6 +68,24 @@ If no Explore dashboard exists, and/or you don't have [permissions to view it](/
 
 :::
 
+## Download a Component as PNG
+
+You can save any component on a canvas, including KPIs, charts, tables, text and images, as a PNG image. Hover over the component and click the three-dot menu in its top-right corner, next to the Explore button, then select **Download as PNG**. When you're editing the canvas, the same option is in the component's menu.
+
+![The Download as PNG option in a canvas component's menu](/img/explore/canvas/download-as-png-menu.png)
+
+A preview opens with the component at the size it has on the canvas. By default, the image has a header with the dashboard title, the exact time range (and the comparison period, if comparison is on), the time zone and any active filters, so the image makes sense on its own when you share it. A footer shows when the image was generated.
+
+![The Download as PNG preview with the dashboard title, time range, comparison period and a filter above a line chart](/img/explore/canvas/download-as-png-dialog.png)
+
+To export only the component, clear **Include dashboard title, time range and filters**. Click **Download PNG** to save the image.
+
+![The Download as PNG preview with the header turned off, showing only the line chart](/img/explore/canvas/download-as-png-dialog-no-header.png)
+
+:::note Embedded dashboards
+In an [embedded dashboard](/developers/embed/iframe), the image doesn't include the Rill name in the footer.
+:::
+
 ## Maps
 
 Map widgets plot a measure by location, as points or as shaded regions. Drag to pan, scroll or use the buttons in the top-right corner to zoom, and hover over a point or region to see its values. The map keeps your position when you change filters or the time range. To add a map to a dashboard, see [Map widget](/developers/build/dashboards/canvas-widgets/map).
@@ -80,6 +98,7 @@ Dashboard authors can keep specific filters in the filter bar, and can block a c
 |---------|--------------------|
 | **Pinned** | The filter always appears in the filter bar, even when it has no value. Viewers can change its value but cannot remove the filter. |
 | **Required** | The canvas does not load until the filter has a value. A required filter is always pinned. |
+| **Single-select** | The filter holds one value at a time. Picking a value, in the filter bar or by clicking a chart or table, replaces the current one. Viewers cannot exclude values or match on text. |
 
 ### Configure Pinned and Required Filters in YAML
 
@@ -97,15 +116,45 @@ filters:
     - auction_type
 ```
 
-Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`.
+Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`, unless you want to choose where it appears in the filter bar (see [Filter Order](#filter-order)).
 
-Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components. If it is not, the canvas fails to reconcile with an error like:
+To limit a dimension filter to one value, list it under `single_select`. Combine it with `required` and a default value so the canvas always shows exactly one value, for example one advertiser at a time:
+
+```yaml
+filters:
+  required:
+    - advertiser
+  single_select:
+    - advertiser
+
+defaults:
+  filters:
+    bids_metrics: "advertiser = 'Acme'"
+```
+
+A link or bookmark that carries several values for a single-select filter opens with only the last of them. Single-select is a dashboard setting, not an access restriction: use [row access policies](/developers/build/metrics-view/security) to limit which data a viewer can query.
+
+Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components, and each name in `single_select` must be a dimension on one. If it is not, the canvas fails to reconcile with an error like:
 
 ```
 required filter "auction_type" is not a dimension or measure on any metrics view referenced by this canvas
 ```
 
 See the [`filters`](/reference/project-files/canvas-dashboards#filters) reference for the full list of properties.
+
+### Filter Order
+
+Pinned and required filters appear in the filter bar in the order you list them, so you can arrange them by hierarchy:
+
+```yaml
+filters:
+  pinned:
+    - region
+    - country
+    - city
+```
+
+Required filters that are not also listed under `pinned` come first, in the order of `required`. To show a required filter elsewhere, list it under `pinned` as well: its position in `pinned` then decides where it appears. Filters that viewers add come after the pinned and required ones, sorted by name. Measure filters always appear after dimension filters.
 
 ### Configure Pinned and Required Filters in the Editor
 
@@ -116,7 +165,7 @@ When you edit a canvas in [Rill Developer](/developers/build/dashboards/canvas) 
 
 ![Pin and required controls in a canvas filter dropdown](/img/explore/canvas/pin-required-filter-toggles.png)
 
-These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values, time range and comparison setting as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults).
+These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values, time range and comparison setting as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults). Pinning a filter in the editor adds it to the end of `filters.pinned`; to change the order, edit the list in the file.
 
 ### What Viewers See
 

@@ -4,6 +4,11 @@ components:
             properties:
                 editUrl:
                     type: string
+                embedOwner:
+                    description: |-
+                        If true, the recipient is the embed user who created the alert.
+                        Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+                    type: boolean
                 openUrl:
                     type: string
                 unsubscribeUrl:
@@ -21,10 +26,24 @@ components:
             properties:
                 editUrl:
                     type: string
+                embedOwner:
+                    description: |-
+                        If true, the recipient is the embed user who created the report.
+                        Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+                    type: boolean
                 exportUrl:
                     type: string
                 openUrl:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    description: |-
+                        If true, the report's data must only be accessed through the resources listed in `resources`.
+                        Set for reports created from an embed that was limited to specific resources.
+                    type: boolean
                 unsubscribeUrl:
                     type: string
                 userAttrs:
@@ -118,10 +137,31 @@ components:
                     items:
                         type: string
                     type: array
+                embedOwnerEmail:
+                    description: |-
+                        Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+                        Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+                        It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+                        If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+                    type: string
+                exportAttach:
+                    description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+                    type: boolean
+                exportFormat:
+                    $ref: '#/components/schemas/v1ExportFormat'
+                exportIncludeHeader:
+                    type: boolean
+                exportLimit:
+                    format: uint64
+                    type: string
                 intervalDuration:
                     type: string
                 metricsViewName:
                     type: string
+                notifyRowsLimit:
+                    description: Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+                    format: int64
+                    type: integer
                 queryArgsJson:
                     description: 'DEPRECATED: Use resolver and resolver_properties instead.'
                     type: string
@@ -348,6 +388,9 @@ components:
             type: string
         v1Bookmark:
             properties:
+                canManage:
+                    description: Whether the caller can update and remove the bookmark.
+                    type: boolean
                 createdOn:
                     format: date-time
                     type: string
@@ -382,6 +425,11 @@ components:
             type: object
         v1CompleteRequest:
             properties:
+                includeReasoning:
+                    description: |-
+                        Whether the response may include reasoning blocks.
+                        Older clients don't support them, so they are removed from the response unless this is set.
+                    type: boolean
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:
@@ -398,6 +446,10 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cacheWriteInputTokens:
+                    description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+                    format: int64
+                    type: integer
                 cachedInputTokens:
                     description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
                     format: int64
@@ -442,6 +494,8 @@ components:
             type: object
         v1ContentBlock:
             properties:
+                reasoning:
+                    $ref: '#/components/schemas/v1Reasoning'
                 text:
                     type: string
                 toolCall:
@@ -475,6 +529,7 @@ components:
                 displayName:
                     type: string
                 projectId:
+                    description: ID of the project. Optional for embed users, where it defaults to the embed's project.
                     type: string
                 resourceKind:
                     type: string
@@ -683,10 +738,24 @@ components:
             properties:
                 queryForAttributes:
                     type: object
+                queryForUserId:
+                    description: |-
+                        ID of the user to run the alert's queries as.
+                        Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+                    type: string
                 recipientUrls:
                     additionalProperties:
                         $ref: '#/components/schemas/GetAlertMetaResponseURLs'
                     type: object
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    description: |-
+                        If true, the alert's data must only be accessed through the resources listed in `resources`.
+                        Set for alerts created from an embed that was limited to specific resources.
+                    type: boolean
             type: object
         v1GetAlertYAMLResponse:
             properties:
@@ -779,6 +848,11 @@ components:
             type: object
         v1GetCurrentMagicAuthTokenResponse:
             properties:
+                locked:
+                    description: |-
+                        True when the bearer is a password-protected token that has not been unlocked.
+                        In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+                    type: boolean
                 token:
                     $ref: '#/components/schemas/v1MagicAuthToken'
             type: object
@@ -851,6 +925,12 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetEmbedUserResponse:
+            properties:
+                externalUserId:
+                    description: The external user ID passed to GetIFrame.
+                    type: string
             type: object
         v1GetGithubPullRequestResponse:
             properties:
@@ -1367,6 +1447,9 @@ components:
                     additionalProperties:
                         $ref: '#/components/schemas/v1Expression'
                     type: object
+                passwordProtected:
+                    description: True if recipients must enter a password before the token grants access.
+                    type: boolean
                 projectId:
                     type: string
                 resourceName:
@@ -1860,6 +1943,21 @@ components:
                 tokensPerSeat:
                     type: string
             type: object
+        v1Reasoning:
+            description: |-
+                The model's reasoning before its text or tool calls.
+                Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+            properties:
+                redactedData:
+                    description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+                    type: string
+                signature:
+                    description: Opaque provider signature that lets the provider verify the reasoning.
+                    type: string
+                text:
+                    description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+                    type: string
+            type: object
         v1RecordEventsRequest:
             properties:
                 events:
@@ -1908,6 +2006,13 @@ components:
                     items:
                         type: string
                     type: array
+                embedOwnerEmail:
+                    description: |-
+                        Email of the embed user who creates the report; only used for reports created from an embed.
+                        Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+                        It's always added to `email_recipients`, and it can't unsubscribe from the report.
+                        If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+                    type: string
                 explore:
                     title: either canvas or explore should be set
                     type: string
@@ -2386,6 +2491,20 @@ components:
             type: object
         v1TriggerReportResponse:
             type: object
+        v1UnlockMagicAuthTokenRequest:
+            properties:
+                password:
+                    type: string
+            type: object
+        v1UnlockMagicAuthTokenResponse:
+            properties:
+                expiresOn:
+                    format: date-time
+                    type: string
+                sessionToken:
+                    description: Session token to use as the bearer token instead of the magic auth token.
+                    type: string
+            type: object
         v1UnsubscribeAlertResponse:
             type: object
         v1UnsubscribeReportResponse:
@@ -2413,6 +2532,11 @@ components:
                     type: string
             type: object
         v1UpdateBookmarkResponse:
+            type: object
+        v1UpdateMagicAuthTokenResponse:
+            properties:
+                token:
+                    $ref: '#/components/schemas/v1MagicAuthToken'
             type: object
         v1UpdateOrganizationMemberUserAttributesResponse:
             type: object
@@ -3069,6 +3193,45 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: RevokeMagicAuthToken revokes a magic auth token.
+        patch:
+            operationId: AdminService_UpdateMagicAuthToken
+            parameters:
+                - in: path
+                  name: tokenId
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    description: New display name. Unchanged if not set.
+                                    type: string
+                                password:
+                                    description: New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+                                    type: string
+                                removePassword:
+                                    description: Removes the password. Can't be combined with password.
+                                    type: boolean
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1UpdateMagicAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: UpdateMagicAuthToken updates the display name or password of a magic auth token.
     /v1/magic-tokens/current:
         get:
             operationId: AdminService_GetCurrentMagicAuthToken
@@ -3086,6 +3249,33 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
+    /v1/magic-tokens/current/unlock:
+        post:
+            operationId: AdminService_UnlockMagicAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1UnlockMagicAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1UnlockMagicAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+                It must be called with the magic auth token as the bearer token.
+                On success, it returns a short-lived session token that grants the same access as the magic auth token.
     /v1/organization-for-domain/{domain}:
         get:
             operationId: AdminService_GetOrganizationNameForDomain
@@ -3273,6 +3463,13 @@ paths:
                   required: true
                   schema:
                     type: string
+                - description: |-
+                    If true, a recently fetched balance may be returned instead of querying the billing provider.
+                    If false, the balance is always fetched from the billing provider.
+                  in: query
+                  name: allowCached
+                  schema:
+                    type: boolean
                 - in: query
                   name: superuserForceAccess
                   schema:
@@ -4602,6 +4799,42 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/embed-users/{id}:
+        get:
+            operationId: AdminService_GetEmbedUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - description: ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbedUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+                It is used to show which external user owns a report created from an embed.
     /v1/orgs/{org}/projects/{project}/github/pr:
         post:
             operationId: AdminService_CreateGithubPullRequest
@@ -4744,6 +4977,7 @@ paths:
                                     description: |-
                                         Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
                                         Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+                                        Must be at most 2048 bytes.
                                     type: string
                                 hideNavigationBar:
                                     description: |-
@@ -4757,6 +4991,12 @@ paths:
                                 navigation:
                                     description: Navigation denotes whether navigation between different resources should be enabled in the embed.
                                     type: boolean
+                                open:
+                                    description: |-
+                                        The `rill_open` query param of an open link from an email sent by a report created from an embed.
+                                        If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+                                        Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+                                    type: string
                                 query:
                                     additionalProperties:
                                         type: string
@@ -5766,6 +6006,11 @@ paths:
                                         Optional metrics view to filter mapping to apply as row filters in queries.
                                         This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
                                     type: object
+                                password:
+                                    description: |-
+                                        Optional password that recipients must enter before the token grants access.
+                                        Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
+                                    type: string
                                 resourceName:
                                     description: Name of the resource to grant access to.
                                     type: string
@@ -8324,7 +8569,8 @@ paths:
         get:
             operationId: AdminService_ListBookmarks
             parameters:
-                - in: query
+                - description: ID of the project. Optional for embed users, where it defaults to the embed's project.
+                  in: query
                   name: projectId
                   schema:
                     type: string
@@ -8353,7 +8599,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
+            summary: |-
+                ListBookmarks lists all the bookmarks for the user and global ones for dashboard.
+                Embed users only see their own personal bookmarks.
         post:
             operationId: AdminService_CreateBookmark
             requestBody:

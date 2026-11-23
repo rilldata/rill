@@ -10,6 +10,7 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -30,8 +31,7 @@ func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.Strea
 		claims := auth.GetClaims(ctx, "")
 		ctx = setRequestActivityAttributes(ctx, claims, info.FullMethod)
 
-		// Tag gRPC traffic as the "ui" source (dashboard / direct query API); chat handlers override it to "chat".
-		ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
+		ctx = runtime.WithRequestSource(ctx, grpcRequestSource(info.FullMethod))
 
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = ctx
@@ -58,8 +58,7 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryS
 		claims := auth.GetClaims(ctx, "")
 		ctx = setRequestActivityAttributes(ctx, claims, info.FullMethod)
 
-		// Tag gRPC traffic as the "ui" source (dashboard / direct query API); chat handlers override it to "chat".
-		ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceUI)
+		ctx = runtime.WithRequestSource(ctx, grpcRequestSource(info.FullMethod))
 
 		var code codes.Code
 		start := time.Now()
@@ -127,6 +126,17 @@ func emitRequestMetric(ctx context.Context, activityClient *activity.Client, cla
 		attribute.String("source", string(runtime.RequestSourceFromContext(ctx))),
 		attribute.Bool("embed", embed),
 	)
+}
+
+// grpcRequestSource returns the request source for a gRPC method.
+// Chat completions are "chat"; all other gRPC traffic (dashboards and direct query API calls) is "ui".
+func grpcRequestSource(fullMethod string) runtime.RequestSource {
+	switch fullMethod {
+	case runtimev1.RuntimeService_Complete_FullMethodName, runtimev1.RuntimeService_CompleteStreaming_FullMethodName:
+		return runtime.RequestSourceChat
+	default:
+		return runtime.RequestSourceUI
+	}
 }
 
 func isEmbed(attrs map[string]any) bool {

@@ -13,6 +13,13 @@ import {
 } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 import { getGenericEnvVarName } from "@rilldata/web-common/features/connectors/env-utils.ts";
 import type { JSONSchemaObject } from "@rilldata/web-common/features/templates/schemas/types.ts";
+import { bedrockSchema } from "@rilldata/web-common/features/templates/schemas/bedrock.ts";
+import { toConnectorDriver } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "@rilldata/web-common/features/templates/schema-utils.ts";
 
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
@@ -500,6 +507,89 @@ describe("generateYAML", () => {
     expect(testEnvs).toEqual({
       CLICKHOUSE_PASSWORD: "super_secret",
     });
+  });
+
+  it("should generate Bedrock AI connector YAML with AWS credentials in .env", async () => {
+    // Mirrors the generateYAML call in saveAiConnector
+    const connector = toConnectorDriver("bedrock")!;
+    const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      bedrockSchema,
+    );
+    const result = generateYAML(
+      connector,
+      {
+        model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        region: "us-west-2",
+        aws_access_key_id: "AKIATEST",
+        aws_secret_access_key: "secret",
+      },
+      envEditSession,
+      {
+        connectorInstanceName: "bedrock",
+        orderedProperties: getSchemaFieldMetaList(bedrockSchema, {
+          step: "connector",
+        }),
+        secretKeys: getSchemaSecretKeys(bedrockSchema, { step: "connector" }),
+        stringKeys: getSchemaStringKeys(bedrockSchema, { step: "connector" }),
+        schema: bedrockSchema,
+      },
+    );
+    expect(result).toContain(
+      "https://docs.rilldata.com/developers/build/connectors/services/bedrock",
+    );
+    expect(result).toContain("driver: bedrock");
+    expect(result).toMatch(
+      /model: "?us\.anthropic\.claude-sonnet-4-5-20250929-v1:0"?/,
+    );
+    expect(result).toMatch(/region: "?us-west-2"?/);
+    expect(result).toContain(
+      'aws_access_key_id: "{{ .env.BEDROCK_AWS_ACCESS_KEY_ID }}"',
+    );
+    expect(result).toContain(
+      'aws_secret_access_key: "{{ .env.BEDROCK_AWS_SECRET_ACCESS_KEY }}"',
+    );
+    expect(result).not.toContain("AKIATEST");
+
+    await envEditSession.commit();
+    expect(testEnvs).toEqual({
+      BEDROCK_AWS_ACCESS_KEY_ID: "AKIATEST",
+      BEDROCK_AWS_SECRET_ACCESS_KEY: "secret",
+    });
+  });
+
+  it("should generate Bedrock AI connector YAML with an API key in .env", async () => {
+    const connector = toConnectorDriver("bedrock")!;
+    const { testEnvs, envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      bedrockSchema,
+    );
+    const result = generateYAML(
+      connector,
+      {
+        api_key: "ABSKtest",
+        model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      },
+      envEditSession,
+      {
+        connectorInstanceName: "bedrock",
+        orderedProperties: getSchemaFieldMetaList(bedrockSchema, {
+          step: "connector",
+        }),
+        secretKeys: getSchemaSecretKeys(bedrockSchema, { step: "connector" }),
+        stringKeys: getSchemaStringKeys(bedrockSchema, { step: "connector" }),
+        schema: bedrockSchema,
+        fieldFilter: (property) =>
+          !("internal" in property && property.internal),
+      },
+    );
+    expect(result).toContain('api_key: "{{ .env.BEDROCK_API_KEY }}"');
+    expect(result).not.toContain("auth_method");
+    expect(result).not.toContain("aws_access_key_id");
+    expect(result).not.toContain("ABSKtest");
+
+    await envEditSession.commit();
+    expect(testEnvs).toEqual({ BEDROCK_API_KEY: "ABSKtest" });
   });
 
   it("should handle env var conflict resolution with env edit session", async () => {

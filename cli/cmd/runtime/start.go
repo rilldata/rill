@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
+	_ "github.com/rilldata/rill/runtime/drivers/bedrock"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
@@ -121,7 +122,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -300,16 +301,26 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Run server
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeHTTP(cctx, nil, false) })
+			group.Go(func() error {
+				// Exit on unrecoverable runtime errors so the orchestrator restarts the process.
+				select {
+				case err := <-rt.Fatal():
+					return err
+				case <-cctx.Done():
+					return nil
+				}
+			})
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}
 			err = group.Wait()
 			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("server crashed", zap.Error(err))
-				return
+				return err // Non-zero exit code
 			}
 
 			logger.Info("server shutdown gracefully")
+			return nil
 		},
 	}
 	return startCmd

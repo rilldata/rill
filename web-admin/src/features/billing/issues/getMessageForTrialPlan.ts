@@ -3,6 +3,7 @@ import {
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
@@ -19,11 +20,16 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   );
 }
 
+/**
+ * @param creditBalance Remaining credit balance for orgs on the credit trial;
+ * undefined if the balance could not be fetched.
+ */
 export function getMessageForTrialPlan(
   trialIssue: V1BillingIssue,
+  creditBalance?: number,
 ): BillingIssueMessage {
   if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL)
-    return getMessageForCreditsTrial(trialIssue);
+    return getMessageForCreditsTrial(trialIssue, creditBalance);
   else if (
     trialIssue.type ===
     V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
@@ -87,7 +93,12 @@ export function getMessageForTrialPlan(
   return message;
 }
 
-function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
+const CreditTrialBannerDismissTTL = 24 * 60 * 60 * 1000; // 24 hrs
+
+function getMessageForCreditsTrial(
+  trialIssue: V1BillingIssue,
+  creditBalance: number | undefined,
+) {
   const message: BillingIssueMessage = {
     type: "default",
     title: m.billing_trial_expired(),
@@ -101,28 +112,44 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   const onCreditTrial = trialIssue.metadata?.onCreditTrial;
   if (!onCreditTrial?.creditAllocation) return message;
 
+  const org = trialIssue.org ?? "";
+  const billingUrl = `/${encodeURIComponent(org)}/-/settings/billing`;
+  const amount =
+    creditBalance === undefined ? undefined : formatTrialCredit(creditBalance);
+  message.includesHtml = true;
+  message.description = "";
+
   if (onCreditTrial.lowCredit) {
     message.type = "warning";
-    message.title = m.billing_trial_credit_running_low();
-    message.description = "";
+    message.title = amount
+      ? m.billing_trial_credit_running_low_remaining({ billingUrl, amount })
+      : m.billing_trial_credit_running_low();
     message.dismissible = {
-      key: trialIssue.org ?? "",
+      key: org,
       id: `${trialIssue.type ?? ""}-low-credits`,
-      ttl: 24 * 60 * 60, // 24 hrs
+      ttl: CreditTrialBannerDismissTTL,
     };
   } else {
     message.type = "default";
-    message.title = m.billing_welcome_to_rill();
-    message.description = m.billing_free_trial_with_credits({
-      amount: String(onCreditTrial.creditAllocation ?? 0),
-    });
+    message.title = amount
+      ? m.billing_free_trial_remaining_credits({ billingUrl, amount })
+      : m.billing_free_trial_see_remaining_credits({ billingUrl });
+    message.cta = {
+      text: m.billing_upgrade_today(),
+      type: "show-upgrade",
+    };
     message.dismissible = {
-      key: trialIssue.org ?? "",
-      id: `${trialIssue.type ?? ""}`,
-      ttl: 0, // Doesnt appear again once dismissed
+      key: org,
+      id: `${trialIssue.type ?? ""}-remaining-credits`,
+      ttl: CreditTrialBannerDismissTTL,
     };
   }
   return message;
+}
+
+// Rounds down to whole dollars so the banner never overstates the remaining credit.
+function formatTrialCredit(credit: number) {
+  return formatCredit(Math.max(0, Math.floor(credit)), 0);
 }
 
 function getMessageForCreditsDepletedIssue() {

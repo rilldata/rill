@@ -2,13 +2,20 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/ai/mcpapp"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -19,6 +26,9 @@ import (
 )
 
 func TestMCP(t *testing.T) {
+	// The app-only chart_data tool is only advertised alongside the widget, which CI builds do not embed.
+	serveMCPAppWidget(t)
+
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
@@ -80,6 +90,8 @@ explore:
 		ai.GetMetricsViewName,
 		ai.QueryMetricsViewName,
 		ai.QueryMetricsViewSummaryName,
+		ai.CreateChartName,
+		ai.ChartDataName,
 		ai.ProjectStatusName,
 		ai.QuerySQLName,
 		ai.ListTablesName,
@@ -277,9 +289,13 @@ func TestMCPSessionContinuity(t *testing.T) {
 			res := sessions(t)
 			require.Len(t, res, 1)
 			require.Equal(t, conn.ID(), res[0].ID)
-			// Note the user agent is the HTTP User-Agent header, not the client info from the initialize handshake:
-			// a stateless server handles the initialized notification in a session synthesized without the initialize params, so InitializedHandler never sees the client info.
-			require.NotEmpty(t, res[0].UserAgent)
+			// The initialize handshake records the client info as the user agent;
+			// on the 2026-07-28 protocol there is no handshake, so the HTTP User-Agent header the session was created with remains.
+			if protocolVersion == "2025-06-18" {
+				require.Equal(t, "mcp/test/1.0.0", res[0].UserAgent)
+			} else {
+				require.NotEmpty(t, res[0].UserAgent)
+			}
 			msgs, err := catalog.FindAIMessages(t.Context(), conn.ID())
 			require.NoError(t, err)
 			require.Len(t, msgs, 4) // two tool calls, each with a call and a result message
@@ -305,5 +321,390 @@ func TestMCPSessionContinuity(t *testing.T) {
 			}
 			require.Len(t, sessions(t), 2)
 		})
+	}
+}
+
+// TestMCPRillClientName asserts that an MCP client cannot put its session in the in-app mode of Rill's own chat
+// by reporting a name that starts with "rill" (as Rill's own MCP connector does). Such a session used to get the in-app tools,
+// two of which fail to register on an MCP server (their input schemas do not resolve), so every request after the handshake failed.
+// It also asserts that a session of Rill's own chat cannot be continued over MCP.
+func TestMCPRillClientName(t *testing.T) {
+	serveMCPAppWidget(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: mcpChartTestFiles(""),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "rill-test", Version: "1"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, &mcp.ClientSessionOptions{ProtocolVersion: "2025-06-18"})
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// The requests after the handshake are served, with the tools of an external client.
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+	require.NoError(t, err)
+	var names []string
+	for _, tool := range tools.Tools {
+		names = append(names, tool.Name)
+	}
+	require.Contains(t, names, ai.ChartDataName, "external clients get the widget's app-only tool")
+	require.NotContains(t, names, ai.RouterAgentName)
+	require.NotContains(t, names, ai.AnalystAgentName)
+	_, err = conn.ListResources(t.Context(), &mcp.ListResourcesParams{})
+	require.NoError(t, err)
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+
+	catalog, release, err := rt.Catalog(t.Context(), instanceID)
+	require.NoError(t, err)
+	defer release()
+	session, err := catalog.FindAISession(t.Context(), conn.ID())
+	require.NoError(t, err)
+	require.Equal(t, "mcp/rill-test/1", session.UserAgent)
+
+	// A session of Rill's own chat is rejected rather than served with the in-app tools.
+	inApp, err := ai.NewRunner(rt, activity.NewNoopClient()).Session(t.Context(), &ai.SessionOptions{
+		InstanceID:        instanceID,
+		SessionID:         uuid.NewString(),
+		CreateIfNotExists: true,
+		Claims:            &runtime.SecurityClaims{SkipChecks: true},
+		UserAgent:         "rill/1.0.0",
+	})
+	require.NoError(t, err)
+	require.NoError(t, inApp.Flush(t.Context()))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, httpSrv.URL, strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Mcp-Session-Id", inApp.ID())
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestMCPRequestStartsSession covers the classification of sessionless MCP requests, and that the body reaches the MCP handler intact.
+func TestMCPRequestStartsSession(t *testing.T) {
+	check := func(t *testing.T, method, body string, want bool) {
+		t.Helper()
+		var r io.Reader
+		if body != "" {
+			r = strings.NewReader(body)
+		}
+		req := httptest.NewRequest(method, "/mcp", r)
+		require.Equal(t, want, mcpRequestStartsSession(req))
+		got, err := io.ReadAll(req.Body)
+		require.NoError(t, err)
+		require.Equal(t, body, string(got), "the body must be left intact for the MCP handler")
+	}
+
+	check(t, http.MethodPost, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}`, true)
+	check(t, http.MethodPost, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_metrics_views","arguments":{}}}`, true)
+	check(t, http.MethodPost, `{"jsonrpc":"2.0","id":1,"method":"resources/list","params":{}}`, false)
+	check(t, http.MethodPost, `{"jsonrpc":"2.0","method":"notifications/initialized"}`, false)
+	// The widget's calls of an app-only tool are plumbing, not conversation turns.
+	check(t, http.MethodPost, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"chart_data","arguments":{}}}`, false)
+	check(t, http.MethodGet, "", false)
+
+	// A body larger than the peeked prefix cannot be classified and starts a session, so a large write_file call is never misclassified.
+	large := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"write_file","arguments":{"path":"/models/m.sql","contents":"` + strings.Repeat("x", mcpRequestPeekBytes) + `"}}}`
+	check(t, http.MethodPost, large, true)
+	// Neither can a body that is not JSON.
+	check(t, http.MethodPost, "not json", true)
+}
+
+// TestMCPApps checks the MCP Apps surface when the widget bundle is available:
+// the widget resource and capability are advertised, create_chart carries the _meta.ui link, chart_data is app-only,
+// create_chart returns markdown content plus structured chart data, and sessionless protocol requests do not persist sessions.
+func TestMCPApps(t *testing.T) {
+	widget := serveMCPAppWidget(t)
+
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: mcpChartTestFiles(""),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	countSessions := func(t *testing.T) int {
+		catalog, release, err := rt.Catalog(t.Context(), instanceID)
+		require.NoError(t, err)
+		defer release()
+		sessions, err := catalog.FindAISessions(t.Context(), "", "")
+		require.NoError(t, err)
+		return len(sessions)
+	}
+
+	// A client that supports the MCP Apps UI extension
+	clientOpts := &mcp.ClientOptions{Capabilities: &mcp.ClientCapabilities{}}
+	clientOpts.Capabilities.AddExtension(mcpapp.UIExtension, map[string]any{"mimeTypes": []any{mcpapp.MIMEType}})
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "claude-ai", Version: "1.0.0"}, clientOpts)
+	// Claude and ChatGPT speak protocol 2025-06-18, whose handshake is an "initialize" request that starts a session.
+	// The SDK client defaults to a newer protocol that discovers the server without one.
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, &mcp.ClientSessionOptions{ProtocolVersion: "2025-06-18"})
+	require.NoError(t, err)
+	defer conn.Close()
+	require.Contains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
+	require.NotNil(t, conn.InitializeResult().Capabilities.Resources)
+	sessionsAfterInit := countSessions(t)
+	require.GreaterOrEqual(t, sessionsAfterInit, 1)
+
+	// create_chart links to the widget and chart_data is only visible to the widget
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+	require.NoError(t, err)
+	toolsByName := make(map[string]*mcp.Tool)
+	for _, tool := range tools.Tools {
+		toolsByName[tool.Name] = tool
+	}
+	require.Contains(t, toolsByName, ai.CreateChartName)
+	require.Contains(t, toolsByName, ai.ChartDataName)
+	require.Equal(t, widget.URI, toolsByName[ai.CreateChartName].Meta["ui"].(map[string]any)["resourceUri"])
+	require.Equal(t, "Creating chart...", toolsByName[ai.CreateChartName].Meta["openai/toolInvocation/invoking"], "existing meta is kept")
+	require.Equal(t, []any{"app"}, toolsByName[ai.ChartDataName].Meta["ui"].(map[string]any)["visibility"])
+	require.Nil(t, toolsByName[ai.QueryMetricsViewName].Meta["ui"])
+
+	// The widget resource is listed and readable
+	resources, err := conn.ListResources(t.Context(), &mcp.ListResourcesParams{})
+	require.NoError(t, err)
+	require.Len(t, resources.Resources, 1)
+	require.Equal(t, widget.URI, resources.Resources[0].URI)
+	require.Equal(t, "text/html;profile=mcp-app", resources.Resources[0].MIMEType)
+	require.Equal(t, true, resources.Resources[0].Meta["ui"].(map[string]any)["prefersBorder"])
+	read, err := conn.ReadResource(t.Context(), &mcp.ReadResourceParams{URI: widget.URI})
+	require.NoError(t, err)
+	require.Len(t, read.Contents, 1)
+	require.Equal(t, "text/html;profile=mcp-app", read.Contents[0].MIMEType)
+	require.Equal(t, widget.HTML, read.Contents[0].Text)
+
+	// create_chart takes the Flint shape externally and returns a markdown fallback as content and the chart data as structured content.
+	// The in-app shape, which Rill's own chat renders itself, fails validation with the arguments that are required instead.
+	inApp, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpInAppChartArgs()})
+	require.NoError(t, err)
+	require.True(t, inApp.IsError, "the in-app shape is not accepted from MCP clients")
+	require.Contains(t, inApp.Content[0].(*mcp.TextContent).Text, "chart_spec")
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpChartArgs()})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Len(t, res.Content, 1)
+	text := res.Content[0].(*mcp.TextContent).Text
+	require.True(t, strings.HasPrefix(text, "**Bar Chart: Total Bids by Country** (2024-01-01 to 2024-02-01)"), text)
+	require.Contains(t, text, "| Country | Total Bids |")
+	require.Contains(t, text, "| US | 10 |")
+	require.Contains(t, text, "_2 of 2 rows shown_")
+	structured, ok := res.StructuredContent.(map[string]any)
+	require.True(t, ok, "structuredContent should be an object, got %T", res.StructuredContent)
+	require.Equal(t, "chart", structured["widget"])
+	require.Equal(t, "Bar Chart", structured["chart_type"])
+	require.NotContains(t, structured, "version")
+	require.NotContains(t, structured, "spec")
+	require.Len(t, structured["data"], 2)
+	require.Equal(t, []any{"US", "CA"}, structured["domain_values"].(map[string]any)["country"])
+	require.Contains(t, structured["fields"], "total_bids")
+	require.Equal(t, "Category", structured["semantic_types"].(map[string]any)["country"])
+	require.Equal(t, "Total Bids", structured["field_display_names"].(map[string]any)["total_bids"])
+	input := structured["input"].(map[string]any)
+	require.Equal(t, "Bar Chart", input["chart_spec"].(map[string]any)["chartType"])
+	require.EqualValues(t, 10, input["chart_spec"].(map[string]any)["encodings"].(map[string]any)["x"].(map[string]any)["limit"], "the input carries the applied limit")
+	require.Equal(t, "mv1", input["data"].(map[string]any)["metrics_view"])
+
+	// chart_data is callable by the widget and returns the data section with the effective input, which the text content does not repeat.
+	// Its input schema stays small, since hosts without MCP Apps list it to the model.
+	schema, err := json.Marshal(toolsByName[ai.ChartDataName].InputSchema)
+	require.NoError(t, err)
+	require.Less(t, len(schema), 1000)
+	res, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ChartDataName, Arguments: mcpChartArgs()})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Len(t, res.Content, 1)
+	require.Equal(t, "Chart data: 2 rows.", res.Content[0].(*mcp.TextContent).Text)
+	structured, ok = res.StructuredContent.(map[string]any)
+	require.True(t, ok)
+	require.Len(t, structured["data"], 2)
+	require.NotContains(t, structured, "spec")
+	require.EqualValues(t, 10, structured["input"].(map[string]any)["chart_spec"].(map[string]any)["encodings"].(map[string]any)["x"].(map[string]any)["limit"])
+
+	// Requests without a session ID that are not part of a conversation get a transient session: the catalog is unchanged.
+	// They are protocol requests, and the widget's calls of app-only tools, which are plumbing.
+	post := func(t *testing.T, body string) string {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, httpSrv.URL, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json, text/event-stream")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode, string(respBody))
+		return string(respBody)
+	}
+	sessionsBefore := countSessions(t)
+	require.Contains(t, post(t, `{"jsonrpc":"2.0","id":1,"method":"resources/list","params":{}}`), widget.URI)
+	require.Equal(t, sessionsBefore, countSessions(t), "sessionless resources/list must not persist a session")
+	args, err := json.Marshal(mcpChartArgs())
+	require.NoError(t, err)
+	require.Contains(t, post(t, `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"chart_data","arguments":`+string(args)+`}}`), "Chart data: 2 rows.")
+	require.Equal(t, sessionsBefore, countSessions(t), "a sessionless chart_data call must not persist a session")
+}
+
+// TestMCPAppsWithoutWidget asserts that without the widget bundle create_chart is still served and external clients get the chart
+// as markdown and data, while the widget surface is absent: no capability, no resource, no resourceUri on create_chart,
+// and no chart_data, which only the widget may call.
+func TestMCPAppsWithoutWidget(t *testing.T) {
+	// An override directory without a bundle hides the copy embedded in the binary.
+	t.Setenv(mcpapp.DirEnv, t.TempDir())
+
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: mcpChartTestFiles(""),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	require.NotContains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
+	require.Nil(t, conn.InitializeResult().Capabilities.Resources)
+
+	// create_chart is listed without a link to the widget; chart_data is not listed at all
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+	require.NoError(t, err)
+	toolsByName := make(map[string]*mcp.Tool)
+	for _, tool := range tools.Tools {
+		toolsByName[tool.Name] = tool
+		require.Nil(t, tool.Meta["ui"], "tool %q", tool.Name)
+	}
+	require.Contains(t, toolsByName, ai.CreateChartName)
+	require.NotContains(t, toolsByName, ai.ChartDataName)
+	require.Equal(t, "Creating chart...", toolsByName[ai.CreateChartName].Meta["openai/toolInvocation/invoking"])
+
+	// An external client gets the chart as markdown and data
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpChartArgs()})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "| Country | Total Bids |")
+	structured, ok := res.StructuredContent.(map[string]any)
+	require.True(t, ok)
+	require.Len(t, structured["data"], 2)
+}
+
+// TestMCPAppsMCPChartsOff asserts that mcp_charts: false turns charts off for external clients even where the widget bundle is present:
+// no MCP Apps capability, no widget resource, no chart tools and no rill-charts skill.
+// Rill's own chat keeps create_chart (see TestCreateChartAccess in runtime/ai).
+func TestMCPAppsMCPChartsOff(t *testing.T) {
+	serveMCPAppWidget(t)
+
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: mcpChartTestFiles("features:\n  mcp_charts: false\n"),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	// A client that supports the MCP Apps UI extension
+	clientOpts := &mcp.ClientOptions{Capabilities: &mcp.ClientCapabilities{}}
+	clientOpts.Capabilities.AddExtension(mcpapp.UIExtension, map[string]any{"mimeTypes": []any{mcpapp.MIMEType}})
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "claude-ai", Version: "1.0.0"}, clientOpts)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, &mcp.ClientSessionOptions{ProtocolVersion: "2025-06-18"})
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NotContains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
+	require.Nil(t, conn.InitializeResult().Capabilities.Resources)
+
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+	require.NoError(t, err)
+	var names []string
+	for _, tool := range tools.Tools {
+		names = append(names, tool.Name)
+	}
+	require.Contains(t, names, ai.QueryMetricsViewName)
+	require.NotContains(t, names, ai.CreateChartName)
+	require.NotContains(t, names, ai.ChartDataName)
+
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListSkillsName, Arguments: map[string]any{}})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotContains(t, res.Content[0].(*mcp.TextContent).Text, "rill-charts")
+}
+
+// serveMCPAppWidget makes the MCP server serve a stub of the MCP Apps widget for the rest of the test,
+// whether or not the binary embeds the bundle (CI builds do not), and returns it.
+func serveMCPAppWidget(t *testing.T) *mcpapp.Asset {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "widget.html"), []byte("<!doctype html><html><body>rill widget</body></html>"), 0o644))
+	t.Setenv(mcpapp.DirEnv, dir)
+	widget, ok := mcpapp.Widget()
+	require.True(t, ok)
+	return widget
+}
+
+// mcpChartTestFiles is a project with a small time series metrics view for the chart tools.
+func mcpChartTestFiles(rillYAML string) map[string]string {
+	return map[string]string{
+		"rill.yaml": rillYAML,
+		"m.sql": `
+SELECT * FROM (VALUES ('US', TIMESTAMP '2024-01-15 00:00:00', 10), ('CA', TIMESTAMP '2024-01-16 00:00:00', 5)) AS t(country, event_time, bids)
+`,
+		"mv1.yaml": `
+type: metrics_view
+model: m
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: total_bids
+  expression: SUM(bids)
+explore:
+  skip: true
+`,
+	}
+}
+
+// mcpChartArgs are create_chart (and chart_data) arguments for the metrics view of mcpChartTestFiles, in the Flint shape external clients use.
+func mcpChartArgs() map[string]any {
+	return map[string]any{
+		"chart_spec": map[string]any{
+			"chartType": "Bar Chart",
+			"encodings": map[string]any{
+				"x": map[string]any{"field": "country", "limit": 10, "sortBy": "y", "sortOrder": "descending"},
+				"y": "total_bids",
+			},
+		},
+		"data": map[string]any{
+			"metrics_view": "mv1",
+			"time_range":   map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
+		},
+	}
+}
+
+// mcpInAppChartArgs are the same chart in the in-app shape of Rill's own chat, which MCP clients may not use.
+func mcpInAppChartArgs() map[string]any {
+	return map[string]any{
+		"chart_type": "bar_chart",
+		"spec": map[string]any{
+			"metrics_view": "mv1",
+			"time_range":   map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
+			"color":        "primary",
+			"x":            map[string]any{"field": "country", "type": "nominal", "limit": 10, "sort": "-y"},
+			"y":            map[string]any{"field": "total_bids", "type": "quantitative"},
+		},
 	}
 }

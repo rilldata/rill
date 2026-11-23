@@ -18,6 +18,7 @@ export function formatConnectorName(connector: string | undefined): string {
   if (lower === "pinot") return "Pinot";
   if (lower === "claude") return "Claude";
   if (lower === "gemini") return "Gemini";
+  if (lower === "bedrock") return "Amazon Bedrock";
   return connector.charAt(0).toUpperCase() + connector.slice(1);
 }
 

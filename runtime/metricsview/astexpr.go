@@ -101,10 +101,12 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
+		ExactMeasures:       b.ast.exactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
-	// Generate SQL for the subquery
+	// Generate SQL for the subquery.
+	// The subquery copies the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet), so both compute a shared measure with the same precision.
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
@@ -192,6 +194,9 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 		if i > 0 {
 			b.writeString(joiner)
 		}
+		if e != nil && e.Value != nil && reflect.TypeOf(e.Value).Kind() == reflect.Slice {
+			return fmt.Errorf("invalid operand for %q: expected a condition, got a list value", strings.ToLower(strings.TrimSpace(joiner)))
+		}
 		err := b.writeExpression(e)
 		if err != nil {
 			return err
@@ -206,6 +211,10 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 1 {
+			// A flattened list with no values is just the left hand side; treat it as an empty list.
+			exprs = []*Expression{exprs[0], {Value: []any{}}}
+		}
 		if len(exprs) == 2 {
 			rhs := exprs[1]
 			typ := reflect.TypeOf(rhs.Value)
@@ -225,7 +234,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	}
 
 	if len(exprs) != 2 {
-		return fmt.Errorf("binary condition must have exactly 2 expressions")
+		return fmt.Errorf("binary condition must have exactly 2 expressions: %q condition has %d", op, len(exprs))
 	}
 
 	left := exprs[0]
@@ -236,6 +245,16 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	right := exprs[1]
 	if right == nil {
 		return fmt.Errorf("right expression is nil")
+	}
+
+	if op == OperatorEq || op == OperatorNeq {
+		if typ := reflect.TypeOf(right.Value); typ != nil && typ.Kind() == reflect.Slice {
+			in := OperatorIn
+			if op == OperatorNeq {
+				in = OperatorNin
+			}
+			return fmt.Errorf("%q takes a single value, got a list; use %q for a list of values", op, in)
+		}
 	}
 
 	// Check there isn't an unnest on the right side

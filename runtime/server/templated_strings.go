@@ -48,6 +48,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
+	// The template comes from the request, so it cannot access project variables.
 	resolveRes, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: req.InstanceId,
 		Resolver:   "text",

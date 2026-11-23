@@ -11,7 +11,10 @@
     maybeDeleteConnector,
   } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
   import { getLabelsForConnector } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
-  import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import {
+    setSubmitError,
+    setSuperFormSubmitError,
+  } from "@rilldata/web-common/features/add-data/form/errors.ts";
   import type { CreateConnectorStep } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
@@ -83,16 +86,23 @@
 
   async function saveConnector() {
     if (!connectorDriver) return;
-    const connectorPath = await createConnector({
-      runtimeClient,
-      queryClient,
-      connectorName,
-      connectorDriver,
-      schemaName: step.schema,
-      formValues: $form,
-      validate: false,
-      envEditSession: cachedEnvEditSession,
-    });
+    let connectorPath: string;
+    try {
+      connectorPath = await createConnector({
+        runtimeClient,
+        queryClient,
+        connectorName,
+        connectorDriver,
+        schemaName: step.schema,
+        formValues: $form,
+        validate: false,
+        envEditSession: cachedEnvEditSession,
+      });
+    } catch (e) {
+      stateManager.fireErrorEvent(e.message);
+      setSuperFormSubmitError(superFormsParams, e);
+      return;
+    }
     onClose();
     return navigateToFile(addLeadingSlash(connectorPath));
   }

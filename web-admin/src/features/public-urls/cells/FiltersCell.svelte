@@ -43,7 +43,8 @@
 
 {#if filters.length > 0}
   <div class="flex gap-1 flex-wrap">
-    {#each filters as filter (filter.name)}
+    <!-- Keyed by position: a dimension can be filtered twice, or once per metrics view. -->
+    {#each filters as filter, i (i)}
       <Chip
         type="dimension"
         readOnly

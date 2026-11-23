@@ -3,6 +3,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -28,13 +29,19 @@ type resourceStatusResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	props      *resourceStatusProps
+	// patterns are the parsed WhereResource patterns; an empty kind or name is a wildcard.
+	patterns []*runtimev1.ResourceName
 }
 
 // resourceStatusProps declares the properties for the "resource_status" resolver.
 type resourceStatusProps struct {
 	// WhereError is a flag to only return resources that are in the error state.
-	WhereError   bool           `mapstructure:"where_error"`
-	UnusedFields map[string]any `mapstructure:",remain"`
+	WhereError bool `mapstructure:"where_error"`
+	// WhereResource restricts results to resources matching any of the given "kind/name" patterns.
+	// Kinds accept shorthands like "model" or "metrics_view"; names are case-insensitive.
+	// Either segment can be "*"; a bare name matches resources with that name of any kind.
+	WhereResource []string       `mapstructure:"where_resource"`
+	UnusedFields  map[string]any `mapstructure:",remain"`
 }
 
 // newResourceStatus creates a new resourceStatusResolver.
@@ -44,10 +51,34 @@ func newResourceStatus(ctx context.Context, opts *runtime.ResolverOptions) (runt
 		return nil, err
 	}
 
+	patterns := make([]*runtimev1.ResourceName, 0, len(props.WhereResource))
+	for _, p := range props.WhereResource {
+		kind, name, ok := strings.Cut(p, "/")
+		if !ok {
+			kind, name = "*", kind
+		}
+		if kind == "" || name == "" || strings.Contains(name, "/") {
+			return nil, fmt.Errorf("resource_status: invalid where_resource %q: expected \"kind/name\"", p)
+		}
+		if kind == "*" {
+			kind = ""
+		} else {
+			kind = runtime.ResourceKindFromShorthand(kind)
+			if !runtime.IsKnownResourceKind(kind) {
+				return nil, fmt.Errorf("resource_status: invalid where_resource %q: unknown resource kind", p)
+			}
+		}
+		if name == "*" {
+			name = ""
+		}
+		patterns = append(patterns, &runtimev1.ResourceName{Kind: kind, Name: name})
+	}
+
 	return &resourceStatusResolver{
 		runtime:    opts.Runtime,
 		instanceID: opts.InstanceID,
 		props:      props,
+		patterns:   patterns,
 	}, nil
 }
 
@@ -84,22 +115,17 @@ func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtim
 		return nil, err
 	}
 
-	if r.props.WhereError {
-		// In-place trim resources that are not in error state
-		i := 0
-		for i < len(rs) {
-			r := rs[i]
-			if r.Meta.ReconcileError == "" {
-				// Remove from the slice
-				rs[i] = rs[len(rs)-1]
-				rs[len(rs)-1] = nil
-				rs = rs[:len(rs)-1]
-				continue
-			}
-			rs[i] = r
-			i++
+	rs = slices.DeleteFunc(rs, func(res *runtimev1.Resource) bool {
+		if r.props.WhereError && res.Meta.ReconcileError == "" {
+			return true
 		}
-	}
+		if len(r.patterns) > 0 && !slices.ContainsFunc(r.patterns, func(p *runtimev1.ResourceName) bool {
+			return (p.Kind == "" || p.Kind == res.Meta.Name.Kind) && (p.Name == "" || strings.EqualFold(p.Name, res.Meta.Name.Name))
+		}) {
+			return true
+		}
+		return false
+	})
 
 	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
 		an := a.Meta.Name

@@ -7543,11 +7543,21 @@ func (m *AlertSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ExportAttach
+
+	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
+
+	// no validation rules for ExportLimit
+
 	// no validation rules for NotifyOnRecover
 
 	// no validation rules for NotifyOnFail
 
 	// no validation rules for NotifyOnError
+
+	// no validation rules for NotifyRowsLimit
 
 	// no validation rules for Renotify
 
@@ -14578,6 +14588,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	}
 
 	// no validation rules for LowerIsBetter
+
+	// no validation rules for ExactExpression
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)

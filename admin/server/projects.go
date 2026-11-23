@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
@@ -64,7 +65,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
 	var projs []*database.Project
-	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
+	manageProjects := claims.OrganizationPermissions(ctx, org.ID).ManageProjects
+	if manageProjects {
 		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
 		// Get projects the user is a (direct or group) member of, plus all public projects.
@@ -89,7 +91,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	dtos := make([]*adminv1.Project, len(projs))
 	for i, p := range projs {
-		dtos[i] = s.projToDTO(p, org.Name)
+		dtos[i] = s.projToDTOForReader(p, org.Name, manageProjects)
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
@@ -304,6 +306,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	projDTO := s.projToDTOForReader(proj, org.Name, permissions.ManageProject)
+
 	var depl *database.Deployment
 	if req.Branch != "" {
 		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
@@ -319,7 +323,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	} else {
 		if proj.PrimaryDeploymentID == nil {
 			return &adminv1.GetProjectResponse{
-				Project:            s.projToDTO(proj, org.Name),
+				Project:            projDTO,
 				ProjectPermissions: permissions,
 			}, nil
 		}
@@ -366,7 +370,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	s.admin.Used.Deployment(depl.ID)
 
 	return &adminv1.GetProjectResponse{
-		Project:            s.projToDTO(proj, org.Name),
+		Project:            projDTO,
 		Deployment:         deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
@@ -395,7 +399,7 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}
 
 	return &adminv1.GetProjectByIDResponse{
-		Project: s.projToDTO(proj, org.Name),
+		Project: s.projToDTOForReader(proj, org.Name, permissions.ManageProject),
 	}, nil
 }
 
@@ -2265,6 +2269,17 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 	}
 }
 
+// projToDTOForReader is like projToDTO, but redacts fields that should only be visible to callers that can manage the project.
+// It should be used by read endpoints that are accessible to non-managers, such as visitors of public projects.
+func (s *Server) projToDTOForReader(p *database.Project, orgName string, manageProject bool) *adminv1.Project {
+	dto := s.projToDTO(p, orgName)
+	if !manageProject {
+		// The archive contains the project's files, which should not be exposed to non-managers.
+		dto.ArchiveAssetId = ""
+	}
+	return dto
+}
+
 func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID string) bool {
 	asset, err := s.admin.DB.FindAsset(ctx, id)
 	if err != nil {
@@ -2428,39 +2443,13 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 	}
 }
 
+// securityRulesFromResources returns security rules that limit access to the given resources, if restricted is true.
 func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
-	if !restricted {
-		// No resource restrictions
-		return nil
+	names := make([]*runtimev1.ResourceName, len(resources))
+	for i, r := range resources {
+		names[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
 	}
-	if len(resources) == 0 {
-		// No access to any resources
-		return []*runtimev1.SecurityRule{{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Allow: false,
-				},
-			},
-		}}
-	}
-
-	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
-	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-					Resource: &runtimev1.ResourceName{
-						Kind: r.Type,
-						Name: r.Name,
-					},
-				},
-			},
-		})
-	}
-	return rules
+	return runtime.SecurityRulesForResources(restricted, names)
 }
 
 func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {

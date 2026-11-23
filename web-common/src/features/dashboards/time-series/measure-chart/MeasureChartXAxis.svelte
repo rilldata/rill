@@ -3,6 +3,8 @@
   import { type DateTime, type Interval } from "luxon";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
+    floorToGrain,
+    plusGrain,
     V1TimeGrainToOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
@@ -51,18 +53,19 @@
     iv: Interval<true> | undefined,
     grain: V1TimeGrain | undefined,
   ): DateTime[] {
-    if (!iv || !grain) return [];
-    const unit = V1TimeGrainToDateTimeUnit[grain];
-    if (!unit) return [];
+    if (!iv || !grain || !V1TimeGrainToDateTimeUnit[grain]) return [];
 
-    // Truncate start to grain boundary (e.g. Wednesday → Monday for week grain)
-    const aligned = iv.start.startOf(unit).until(iv.end);
-    if (!aligned.isValid) return [];
-
-    return aligned
-      .splitBy({ [unit + "s"]: 1 })
-      .map((i) => i.start!)
-      .filter((dt): dt is DateTime => dt !== null);
+    // Truncate start to grain boundary (e.g. Wednesday → Monday for week grain),
+    // then step with plusGrain so hour multiples follow the wall clock across DST changes like the runtime's buckets.
+    const bins: DateTime[] = [];
+    let dt: DateTime = floorToGrain(iv.start, grain);
+    while (+dt < +iv.end) {
+      bins.push(dt);
+      const next = plusGrain(dt, grain);
+      if (+next <= +dt) break;
+      dt = next;
+    }
+    return bins;
   }
 
   interface Tick {
@@ -104,12 +107,14 @@
     if (!timeGranularity) return { timeLine: "", dateLine: "" };
 
     if (isSubDay) {
-      const grainOrder = V1TimeGrainToOrder[timeGranularity];
       const fmt: Intl.DateTimeFormatOptions = {
         hour: "numeric",
         hour12: true,
       };
-      if (grainOrder < 1) fmt.minute = "2-digit";
+      // Every sub-day grain but hours and hour multiples needs minutes, e.g. 04:15 for a 15-minute grain.
+      if (V1TimeGrainToDateTimeUnit[timeGranularity] !== "hour") {
+        fmt.minute = "2-digit";
+      }
       const timeLine = dt.toLocaleString(fmt);
 
       const dateChanged =
