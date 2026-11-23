@@ -139,6 +139,10 @@ const ANGLED_LABEL_MIN_BAND_PX = 16;
 // of the whole chart the labels end up with is smaller than this fraction.
 const ROTATED_LABEL_MAX_HEIGHT_FRACTION = 0.5;
 const ROTATED_LABEL_MIN_LIMIT_PX = 60;
+// Whether the axis a label belongs to runs along the top of the chart. It is read from the axis
+// when the label is drawn, because the side can be set on the field (`axisOrient`) as well as in
+// the chart's or the theme's config.
+const AXIS_ON_TOP = `item.mark.group.orient === "top"`;
 
 /**
  * Axis label angle, truncation and overlap handling for a position field.
@@ -151,6 +155,8 @@ const ROTATED_LABEL_MIN_LIMIT_PX = 60;
  * truncated with an ellipsis at a fraction of the plot height so the marks always keep room.
  * An explicit angle is kept as is with the same truncation, so a vertical label can never take over
  * the chart. Categorical labels are never thinned: a reader cannot infer a hidden category.
+ * Every label is anchored on the center of its band: an upright label is centered on it, and a
+ * rotated label meets it with the end of its text nearest the axis, through the middle of the line.
  * Other channels and field types only pass through an explicit `labelAngle`.
  */
 export function createAxisLabelLayout(
@@ -177,11 +183,13 @@ export function createAxisLabelLayout(
   const rotatedLimit = `max(${ROTATED_LABEL_MIN_LIMIT_PX}, height * ${ROTATED_LABEL_MAX_HEIGHT_FRACTION})`;
 
   if (field.labelAngle !== undefined) {
+    const upright = field.labelAngle % 180 === 0;
     return {
       labelAngle: field.labelAngle,
-      labelLimit: {
-        expr: field.labelAngle % 180 === 0 ? uprightLimit : rotatedLimit,
-      },
+      // Vega-Lite aligns a label of a fixed angle on its tick. For a rotated one it may pick the
+      // top or bottom baseline, which hangs the label from a corner, so only that is overridden.
+      ...(!upright && { labelBaseline: "middle" as const }),
+      labelLimit: { expr: upright ? uprightLimit : rotatedLimit },
       labelOverlap: false,
     };
   }
@@ -195,6 +203,16 @@ export function createAxisLabelLayout(
   return {
     labelAngle: {
       expr: `(${fitsUpright} ? 0 : (${fitsAngled} ? -45 : -90))`,
+    },
+    // The anchor is spelled out because Vega-Lite's default does not hold for an angle driven by
+    // a signal: the alignment it derives yields `null` for an upright label, and Vega draws a
+    // text mark without an alignment from its left edge. The label then starts at the center of
+    // its bar instead of being centered under it.
+    labelAlign: {
+      expr: `${fitsUpright} ? "center" : (${AXIS_ON_TOP} ? "left" : "right")`,
+    },
+    labelBaseline: {
+      expr: `${fitsUpright} ? (${AXIS_ON_TOP} ? "bottom" : "top") : "middle"`,
     },
     labelLimit: { expr: `${fitsUpright} ? ${uprightLimit} : ${rotatedLimit}` },
     labelOverlap: false,
