@@ -2,9 +2,12 @@ package workbook
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"image/png"
+	"slices"
 	"strings"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -111,16 +114,16 @@ func clampGeometry(g *runtimev1.WorkbookGeometry) geometry {
 // Content that sits side by side in the component (cards, say) is stacked here, so this is common.
 // The block gets every row writeText fills, however many: the cap on a block's side bounds drawings, not rows of text,
 // and a block that stopped short of its text would have the blocks below it written over that text.
+// A block moves down as far as the bottom of a block above it moved, so text blocks side by side that both grow
+// move the blocks below them by the larger growth, not by the sum.
 func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
 	geometries := make([]geometry, len(blocks))
+	grows := make([]int, len(blocks))
 	for i, b := range blocks {
 		geometries[i] = clampGeometry(b.Geometry)
-	}
-	for i, b := range blocks {
 		if b.GetText() == nil {
 			continue
 		}
-		g := geometries[i]
 		need := 0
 		if b.Title != "" {
 			need++
@@ -128,19 +131,28 @@ func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
 		if b.Subtitle != "" {
 			need++
 		}
-		for _, p := range w.textParts(b.GetText(), max(1, g.width/cellWidthPx)) {
+		for _, p := range w.textParts(b.GetText(), max(1, geometries[i].width/cellWidthPx)) {
 			need += p.minRows
 		}
-		grow := need*cellHeightPx - g.height
-		if grow <= 0 {
-			continue
-		}
-		geometries[i].height += grow
-		for j := range geometries {
-			if geometries[j].y >= g.y+g.height {
-				geometries[j].y += grow
+		grows[i] = max(0, need*cellHeightPx-geometries[i].height)
+	}
+	// A block above another one starts higher, so going top to bottom finds the shifts of the blocks above a block before its own.
+	order := make([]int, len(blocks))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(geometries[a].y, geometries[b].y) })
+	shifts := make([]int, len(blocks))
+	for k, j := range order {
+		for _, i := range order[:k] {
+			if geometries[i].y+geometries[i].height <= geometries[j].y {
+				shifts[j] = max(shifts[j], shifts[i]+grows[i])
 			}
 		}
+	}
+	for i := range geometries {
+		geometries[i].y += shifts[i]
+		geometries[i].height += grows[i]
 	}
 	return geometries
 }
@@ -554,11 +566,20 @@ func (w *writer) textParts(t *runtimev1.WorkbookTextBlock, cols int) []textPart 
 				maxRows:     extra + rows,
 			})
 		case p.GetText() != "":
+			// A cell holds at most excelize.TotalCellChars UTF-16 units and excelize cuts off the rest,
+			// so the rows are counted for the text the cell keeps.
+			text, units := p.GetText(), 0
+			for i, r := range text {
+				if units += utf16.RuneLen(r); units > excelize.TotalCellChars {
+					text = text[:i]
+					break
+				}
+			}
 			lines := 0
-			for _, line := range strings.Split(p.GetText(), "\n") {
+			for _, line := range strings.Split(text, "\n") {
 				lines += max(1, (utf8.RuneCountInString(line)+cols*textCharsPerCol-1)/(cols*textCharsPerCol))
 			}
-			res = append(res, textPart{text: p.GetText(), minRows: lines, maxRows: lines})
+			res = append(res, textPart{text: text, minRows: lines, maxRows: lines})
 		}
 	}
 	// Nothing follows the last part, so a table there needs no blank row below it.

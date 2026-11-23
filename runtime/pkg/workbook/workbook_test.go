@@ -759,6 +759,11 @@ func TestWriteTextParts(t *testing.T) {
 			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: "Revenue\n$1.1M\nDeals\n140\nWin rate\n30%"}},
 		},
 		{
+			// Beside it, more cards that need more rows still.
+			Component: "more-cards", Geometry: geo(840, 320, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: "Spend\n$40K\nClicks\n9.1K\nCPC\n$4.40\nCTR\n1.2%"}},
+		},
+		{
 			Component: "styles-only", Geometry: geo(420, 320, 400, 100),
 			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{}},
 		},
@@ -773,6 +778,15 @@ func TestWriteTextParts(t *testing.T) {
 		},
 		{
 			Component: "after", Title: "After", Geometry: geo(0, 560, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
+		},
+		{
+			// More text than a cell holds.
+			Component: "huge", Geometry: geo(0, 640, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: strings.Repeat("Line\n", 7000)}},
+		},
+		{
+			Component: "end", Title: "End", Geometry: geo(0, 720, 400, 60),
 			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
 		},
 	}
@@ -826,14 +840,24 @@ func TestWriteTextParts(t *testing.T) {
 	require.Equal(t, "43.2M", cell(dashboard, "L9"))
 	require.Equal(t, "Video", cell(dashboard, "J10"))
 	require.Equal(t, "Full data: Data - Line items (2 rows), 2 more columns", cell(dashboard, "J11"))
-	// The 60 px block has two rows for six lines, so the block 80 px below its top starts four more rows later.
+	// The 60 px blocks have two rows each, for six and eight lines. They grow four and six rows,
+	// and the block 80 px below their tops moves by the larger growth, so it starts six more rows later.
 	require.Equal(t, "Revenue\n$1.1M\nDeals\n140\nWin rate\n30%", cell(dashboard, "A25"))
 	require.Contains(t, ranges, "A25:E30")
-	require.Equal(t, "Below", cell(dashboard, "A33"))
+	require.Equal(t, "Spend\n$40K\nClicks\n9.1K\nCPC\n$4.40\nCTR\n1.2%", cell(dashboard, "N25"))
+	require.Contains(t, ranges, "N25:R32")
+	require.Equal(t, "Below", cell(dashboard, "A35"))
 	// A long text keeps every one of its 520 rows, and the block below it starts after the last of them.
-	require.True(t, strings.HasSuffix(cell(dashboard, "A37"), "Line\nLast line"))
-	require.Contains(t, ranges, "A37:E556")
-	require.Equal(t, "After", cell(dashboard, "A559"))
+	require.True(t, strings.HasSuffix(cell(dashboard, "A39"), "Line\nLast line"))
+	require.Contains(t, ranges, "A39:E558")
+	require.Equal(t, "After", cell(dashboard, "A561"))
+	// A text longer than a cell holds is cut off at the limit, and its block takes only the rows of the text it keeps:
+	// 6,553 full lines and part of the next.
+	huge := cell(dashboard, "A565")
+	require.Len(t, huge, excelize.TotalCellChars)
+	require.True(t, strings.HasSuffix(huge, "Line\nLi"))
+	require.Contains(t, ranges, "A565:E7118")
+	require.Equal(t, "End", cell(dashboard, "A7121"))
 
 	// A block without text or tables leaves its cells alone instead of merging them into one empty cell.
 	require.Equal(t, "", cell(dashboard, "G25"))
