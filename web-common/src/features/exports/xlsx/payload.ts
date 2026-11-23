@@ -33,12 +33,7 @@ export type ComponentExportPayload =
   | { kind: "table"; state: PivotDataState; config: PivotDataStoreConfig }
   | { kind: "leaderboard"; tables: LeaderboardExportTable[] }
   | { kind: "customChart"; results: CustomChartExportResult[] }
-  | {
-      kind: "map";
-      rows: V1MetricsViewAggregationResponseDataItem[];
-      dimensions: MetricsViewSpecDimension[];
-      measures: MetricsViewSpecMeasure[];
-    }
+  | { kind: "map"; layers: MapExportLayer[] }
   // The markdown as shown, and as resolved before measure values were
   // formatted (for the CSV download of its tables; see csv.ts).
   | { kind: "text"; text: string; unformattedText: string }
@@ -61,6 +56,14 @@ export interface KpiExportValue {
 export interface KpiTrendPoint {
   time: string;
   value: number | null;
+}
+
+// The rows behind one layer of a map (its regions or its points).
+export interface MapExportLayer {
+  name: string;
+  rows: V1MetricsViewAggregationResponseDataItem[];
+  dimensions: MetricsViewSpecDimension[];
+  measures: MetricsViewSpecMeasure[];
 }
 
 export interface LeaderboardExportTable {

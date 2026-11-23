@@ -2,13 +2,20 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns, Download, FileSpreadsheet } from "lucide-svelte";
+  import {
+    BoxSelect,
+    Copy,
+    Columns,
+    Download,
+    FileSpreadsheet,
+  } from "lucide-svelte";
   import { buildExportFilename } from "@rilldata/web-common/features/exports/filename";
   import { componentCsv } from "@rilldata/web-common/features/exports/csv";
   import { downloadBlob } from "@rilldata/web-common/features/exports/xlsx/client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { get } from "svelte/store";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import type { BlockKind } from "./stores/block-edit";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
 
@@ -17,9 +24,9 @@
     onDelete: () => void;
     onDuplicate: () => void;
     onDownloadPng: () => void;
-    // Optional: convert this component's row into a tab group. Only provided for
-    // top-level rows (a tab's rows cannot be nested into another tab group).
-    onConvertToTabGroup?: () => void;
+    // Optional: wrap this component's row into a new tab group or container. Only provided
+    // for top-level rows (the rows of a block cannot be nested into another block).
+    onWrapRow?: (kind: BlockKind) => void;
     editable?: boolean;
     component: BaseCanvasComponent;
     navigationEnabled?: boolean;
@@ -30,7 +37,7 @@
     onDelete,
     onDuplicate,
     onDownloadPng,
-    onConvertToTabGroup,
+    onWrapRow,
     editable = false,
     component,
     navigationEnabled = true,
@@ -116,10 +123,14 @@
           <Copy size="14px" />
           {m.canvas_component_duplicate()}
         </DropdownMenu.Item>
-        {#if onConvertToTabGroup}
-          <DropdownMenu.Item onclick={onConvertToTabGroup}>
+        {#if onWrapRow}
+          <DropdownMenu.Item onclick={() => onWrapRow?.("tab-group")}>
             <Columns size="14px" />
             {m.canvas_component_convert_to_tab_group()}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onclick={() => onWrapRow?.("container")}>
+            <BoxSelect size="14px" />
+            {m.canvas_component_wrap_in_container()}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />

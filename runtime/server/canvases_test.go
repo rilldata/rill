@@ -933,10 +933,27 @@ rows:
       - kpi:
           metrics_view: orders
           measure: order_count
+- name: sales_story
+  if: '{{ has "sales" .user.groups }}'
+  rows:
+  - items:
+    - kpi:
+        metrics_view: orders
+        measure: order_count
+  - items:
+    - width: 6
+      kpi:
+        metrics_view: orders
+        measure: total_revenue
+    - width: 6
+      if: '{{ .user.admin }}'
+      table:
+        metrics_view: costs
+        columns: [cost_center, total_cost]
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 13, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 16, 0, 0)
 
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -954,8 +971,9 @@ rows:
 		})
 	}
 
-	// layout lists the components on each row (or "tabs:" and the visible tab names for a tab group), with their widths.
-	layout := func(rows []*runtimev1.CanvasRow) []string {
+	// layout lists the components on each row (or "tabs:" and the visible tab names for a tab group, or "container:" and the layout of its rows), with their widths.
+	var layout func(rows []*runtimev1.CanvasRow) []string
+	layout = func(rows []*runtimev1.CanvasRow) []string {
 		var res []string
 		for _, row := range rows {
 			if tg := row.GetTabGroup(); tg != nil {
@@ -964,6 +982,10 @@ rows:
 					line += " " + tab.Name
 				}
 				res = append(res, line)
+				continue
+			}
+			if c := row.GetContainer(); c != nil {
+				res = append(res, "container: "+strings.Join(layout(c.Rows), " | "))
 				continue
 			}
 			line := ""
@@ -991,6 +1013,7 @@ rows:
 	}
 
 	// Priya (finance) doesn't see the admin-only cost table; the margin KPI keeps its width, and the frontend widens it to fill the row.
+	// She doesn't see the sales container either, nor any of the components inside it.
 	res := resolve(viewerCtx(priya))
 	require.Equal(t, []string{"0-0(0)", "1-0(8)", "2-0(6) 2-1(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
 	require.Len(t, res.ResolvedComponents, 4)
@@ -1005,9 +1028,11 @@ rows:
 	require.Empty(t, cmp.Resource.GetComponent().Spec.ConditionExpression)
 	require.Empty(t, cmp.Resource.GetComponent().State.ValidSpec.ConditionExpression)
 
-	// Sam (sales) sees the Pipeline tab but not the finance row.
+	// Sam (sales) sees the Pipeline tab and the sales container, but not the finance row or the admin-only cost table in the container.
 	res = resolve(viewerCtx(sam))
-	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline", "container: c4-0-0(0) | c4-1-0(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Len(t, res.ResolvedComponents, 6)
+	require.NotContains(t, res.ReferencedMetricsViews, "costs")
 
 	// The embed tenant has no domain or groups; built-in attributes default, so their conditions are false rather than errors.
 	res = resolve(viewerCtx(tenant))
@@ -1020,19 +1045,26 @@ rows:
 	// Local development (open access) shows everything, conditions included.
 	res, err = srv.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1"})
 	require.NoError(t, err)
-	require.Len(t, res.ResolvedComponents, 7)
+	require.Len(t, res.ResolvedComponents, 10)
 	require.Len(t, canvas.Conditions(res.Canvas.GetCanvas().State.ValidSpec.Rows), 5)
 
 	// The visual editor gets the full canvas with its conditions, plus what's hidden from the caller.
-	editorCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
-		UserAttributes: priya,
-		Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.EditRepo},
-	})
-	res, err = srv.ResolveCanvas(editorCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
+	editorCtx := func(attrs map[string]any) context.Context {
+		return auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+			UserAttributes: attrs,
+			Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.EditRepo},
+		})
+	}
+	res, err = srv.ResolveCanvas(editorCtx(priya), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
 	require.NoError(t, err)
-	require.Len(t, res.ResolvedComponents, 7)
+	require.Len(t, res.ResolvedComponents, 10)
 	require.Len(t, canvas.Conditions(res.Canvas.GetCanvas().State.ValidSpec.Rows), 5)
-	require.Equal(t, []string{"rows.1.items.1", "rows.3.tabs.0", "rows.3.tabs.1"}, res.HiddenPaths)
+	require.Equal(t, []string{"rows.1.items.1", "rows.3.tabs.0", "rows.3.tabs.1", "rows.4"}, res.HiddenPaths)
+
+	// An editor in sales sees the container, so the content hidden inside it is listed by its path in the container.
+	res, err = srv.ResolveCanvas(editorCtx(sam), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
+	require.NoError(t, err)
+	require.Equal(t, []string{"rows.1", "rows.3.tabs.1", "rows.4.rows.1.items.1"}, res.HiddenPaths)
 
 	// Other reads of the canvas resource are pruned the same way.
 	ctrl, err := rt.Controller(context.Background(), instanceID)
@@ -1043,7 +1075,7 @@ rows:
 	pruned, access, err := rt.ApplySecurityPolicy(context.Background(), instanceID, claims, canvasRes)
 	require.NoError(t, err)
 	require.True(t, access)
-	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline"}, layout(pruned.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline", "container: c4-0-0(0) | c4-1-0(6)"}, layout(pruned.GetCanvas().State.ValidSpec.Rows))
 
 	// A hidden inline component can't be read directly.
 	_, err = srv.ResolveComponent(viewerCtx(priya), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-1-1"})
@@ -1051,12 +1083,18 @@ rows:
 	_, err = srv.ResolveComponent(viewerCtx(financeAdmin), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-1-1"})
 	require.NoError(t, err)
 
+	// Nor can a component in a hidden container, which inherits the container's condition even without one of its own.
+	_, err = srv.ResolveComponent(viewerCtx(priya), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-c4-0-0"})
+	require.ErrorContains(t, err, "does not have access")
+	_, err = srv.ResolveComponent(viewerCtx(sam), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-c4-0-0"})
+	require.NoError(t, err)
+
 	// A public link created by Priya only grants what Priya can see on the canvas.
 	linkRules := []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
 		Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "c1"},
 	}}}}
 	link := auth.GetClaims(viewerCtx(priya, linkRules...), instanceID)
-	for name, want := range map[string]bool{"c1--component-1-0": true, "c1--component-1-1": false, "c1--component-g3-t0-0-0": false} {
+	for name, want := range map[string]bool{"c1--component-1-0": true, "c1--component-1-1": false, "c1--component-g3-t0-0-0": false, "c1--component-c4-0-0": false} {
 		cmp, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
 		require.NoError(t, err)
 		_, access, err := rt.ApplySecurityPolicy(context.Background(), instanceID, link, cmp)

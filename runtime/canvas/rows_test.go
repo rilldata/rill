@@ -1,6 +1,7 @@
 package canvas_test
 
 import (
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -101,6 +102,64 @@ func TestPruneRows(t *testing.T) {
 		canvas.StripConditions(res)
 		require.Empty(t, canvas.Conditions(res))
 	})
+
+	t.Run("containers that lose all their content are removed", func(t *testing.T) {
+		rows := []*runtimev1.CanvasRow{
+			container("story", row(item("kpis", 12)), row(item("margin_chart", 8), item("cost_table", 4))),
+			container("pipeline", row(item("pipeline_chart", 12)), row(item("leaderboard", 12))),
+			container("regions", row(item("region_chart", 12))),
+			container("notes"),
+		}
+		res, paths := canvas.PruneRows(rows, keep)
+		require.Equal(t, []string{
+			"rows.0.rows.1.items.1",
+			"rows.1.rows.0.items.0",
+			"rows.1.rows.1.items.0",
+		}, paths)
+		require.Len(t, res, 2)
+
+		// The container keeps its name and its remaining content; the container that was authored empty is removed too
+		story := res[0].GetContainer()
+		require.Equal(t, "story", story.Name)
+		require.Len(t, story.Rows, 2)
+		require.Equal(t, []uint32{8}, widths(story.Rows[1]))
+		// A container that loses nothing is returned as is
+		require.Same(t, rows[2], res[1])
+
+		// The input is not modified
+		require.Len(t, rows[0].GetContainer().Rows[1].Items, 2)
+	})
+
+	t.Run("containers and their content rejected by their own condition", func(t *testing.T) {
+		hidden := func(condition string) bool { return strings.HasPrefix(condition, "hide") }
+		conditional := canvas.Keep{
+			Row:  func(r *runtimev1.CanvasRow) bool { return !hidden(r.ConditionExpression) },
+			Item: func(i *runtimev1.CanvasItem) bool { return !hidden(i.ConditionExpression) },
+		}
+		hiddenContainer := container("finance", row(item("margin_chart", 12)))
+		hiddenContainer.ConditionExpression = "hide"
+		hiddenRow := row(item("pipeline_chart", 12))
+		hiddenRow.ConditionExpression = "hide row"
+		hiddenItem := item("cohorts_chart", 6)
+		hiddenItem.ConditionExpression = "hide item"
+		shownContainer := container("sales", row(item("kpis", 12)), hiddenRow, row(item("region_chart", 6), hiddenItem))
+		shownContainer.ConditionExpression = "show"
+		rows := []*runtimev1.CanvasRow{hiddenContainer, shownContainer}
+
+		res, paths := canvas.PruneRows(rows, conditional)
+		require.Equal(t, []string{"rows.0", "rows.1.rows.1", "rows.1.rows.2.items.1"}, paths)
+		require.Len(t, res, 1)
+		sales := res[0].GetContainer()
+		require.Equal(t, "sales", sales.Name)
+		require.Len(t, sales.Rows, 2)
+		require.Equal(t, []uint32{6}, widths(sales.Rows[1]))
+		require.Equal(t, []string{"hide", "show", "hide row", "hide item"}, canvas.Conditions(rows))
+
+		canvas.StripConditions(res)
+		require.Empty(t, canvas.Conditions(res))
+		// The input keeps its conditions, since the pruned container is a clone
+		require.Equal(t, "show", rows[1].ConditionExpression)
+	})
 }
 
 func item(component string, width uint32) *runtimev1.CanvasItem {
@@ -117,6 +176,10 @@ func tab(name string, rows ...*runtimev1.CanvasRow) *runtimev1.CanvasTab {
 
 func tabGroup(name string, tabs ...*runtimev1.CanvasTab) *runtimev1.CanvasRow {
 	return &runtimev1.CanvasRow{TabGroup: &runtimev1.CanvasTabGroup{Name: name, Tabs: tabs}}
+}
+
+func container(name string, rows ...*runtimev1.CanvasRow) *runtimev1.CanvasRow {
+	return &runtimev1.CanvasRow{Container: &runtimev1.CanvasContainer{Name: name, Rows: rows}}
 }
 
 func widths(r *runtimev1.CanvasRow) []uint32 {
