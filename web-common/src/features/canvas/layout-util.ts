@@ -42,8 +42,8 @@ export const initialHeights: Record<CanvasComponentType, number> = {
 // The lowest height a row height can give a component; types not listed here
 // cannot go below their initial height. Tables and pivots can hold just a few
 // rows, so they shrink until only the column header, the totals row, one data
-// row and a horizontal scrollbar are left. A title or description adds its own
-// height to these (see ItemWrapper).
+// row and a horizontal scrollbar are left. The component's header (title,
+// description and widget filters) adds its own height to these (see ItemWrapper).
 export const minHeights: Partial<Record<CanvasComponentType, number>> = {
   table: 114,
   pivot: 114,

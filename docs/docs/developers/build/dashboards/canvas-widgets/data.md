@@ -149,7 +149,7 @@ rows:
             - requests
 ```
 
-A row without a `height` shows a table at 300px and a pivot at 224px. A row with one can take a table or pivot down to 114px, or 174px when the widget has a title or description. That leaves room for the column header, the totals row, one data row, and a horizontal scrollbar; further rows scroll inside the widget. To size a row for a short table, allow 24px for each data row.
+A row without a `height` shows a table at 300px and a pivot at 224px. A row with one can take a table or pivot down to 114px. That leaves room for the column header, the totals row, one data row, and a horizontal scrollbar; further rows scroll inside the widget. A title, a description, and local filter chips add their own height to that minimum: a table with only a title can go down to 174px. To size a row for a short table, allow 24px for each data row.
 
 When the row also holds other widgets, the tallest minimum applies: a table next to a chart is at least 320px tall.
 

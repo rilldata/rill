@@ -5,6 +5,7 @@
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
+  import { reportHeaderHeight } from "@rilldata/web-common/features/canvas/ItemWrapper.svelte";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
   import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
@@ -58,6 +59,7 @@
 {#if title || description}
   <div
     bind:this={container}
+    use:reportHeaderHeight
     class="component-header-container w-full h-fit flex flex-col bg-surface-card px-4 pt-2 pb-1 items-start {wide
       ? 'wide'
       : ''}"
@@ -109,7 +111,7 @@
     {/if}
   </div>
 {:else if atleastOneFilter}
-  <div class="w-full px-2 py-1">
+  <div class="w-full px-2 py-1" use:reportHeaderHeight>
     <LocalFiltersHeader {component} />
   </div>
 {/if}

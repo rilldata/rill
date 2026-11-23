@@ -2656,7 +2656,7 @@ definitions:
               properties:
                 height:
                   type: string
-                  description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, or 174px with a title or description."
+                  description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
                 if:
                   $ref: '#/definitions/canvas_if_condition'
                 items:
@@ -2724,7 +2724,7 @@ definitions:
                           properties:
                             height:
                               type: string
-                              description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, or 174px with a title or description."
+                              description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
                             if:
                               $ref: '#/definitions/canvas_if_condition'
                             items:
@@ -2741,7 +2741,7 @@ definitions:
                     properties:
                       height:
                         type: string
-                        description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, or 174px with a title or description."
+                        description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
                       if:
                         $ref: '#/definitions/canvas_if_condition'
                       items:

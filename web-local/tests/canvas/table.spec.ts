@@ -319,9 +319,9 @@ test.describe("canvas table height", () => {
   test("a row height takes a table below its default height", async ({
     page,
   }) => {
-    const table = (title = "") => `  - items:
+    const table = (title = "", description = "") => `  - items:
       - table:
-          metrics_view: AdBids_metrics${title && `\n          title: ${title}`}
+          metrics_view: AdBids_metrics${title && `\n          title: ${title}`}${description && `\n          description: ${description}`}
           columns:
             - publisher
             - total_records
@@ -333,7 +333,7 @@ test.describe("canvas table height", () => {
 
     await gotoNavEntry(page, CANVAS_FILE);
     // Row 0 has no height, row 1 the height the editor fills into rows
-    // without one, and rows 2 and 3 a height of their own.
+    // without one, and rows 2 to 4 a height of their own.
     await setCanvasYaml(
       page,
       `type: canvas
@@ -348,6 +348,8 @@ ${table()}
     height: 140px
 ${table("Short table")}
     height: 120px
+${table("Described table", "With a description")}
+    height: 120px
 `,
     );
     // The new canvas has replaced the fixture once its titled table shows.
@@ -359,8 +361,11 @@ ${table("Short table")}
     await expect.poll(() => rowHeight(0)).toBe(300);
     await expect.poll(() => rowHeight(1)).toBe(300);
     await expect.poll(() => rowHeight(2)).toBe(140);
-    // A title takes its own room on top of the 114px minimum.
+    // A header takes its rendered height on top of the 114px minimum, and
+    // the table under it 22px of padding and border: 38px for a title alone,
+    // 51px with a description.
     await expect.poll(() => rowHeight(3)).toBe(174);
+    await expect.poll(() => rowHeight(4)).toBe(187);
 
     // Dragging the bottom edge of the first row follows the pointer below the
     // default height and stops at the minimum.
