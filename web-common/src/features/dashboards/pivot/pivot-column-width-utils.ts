@@ -261,7 +261,8 @@ export function calculateMeasureWidth(
 /**
  * Width estimate for the nested table's row header column. The values are
  * sampled by the first row dimension's name; the label is the joined label of
- * all row dimensions.
+ * all row dimensions. A time dimension is not sampled: it takes the minimum
+ * width, which grows with `textScale` like the estimate does.
  */
 export function calculateRowDimensionWidth(
   columnId: string,
@@ -270,7 +271,9 @@ export function calculateRowDimensionWidth(
   dataRows: PivotDataRow[],
   textScale = 1,
 ) {
-  let width = COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH;
+  let width = Math.round(
+    COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH * textScale,
+  );
   if (!isTimeDimension(columnId, timeDimension)) {
     width = calculateColumnWidth(
       columnId,

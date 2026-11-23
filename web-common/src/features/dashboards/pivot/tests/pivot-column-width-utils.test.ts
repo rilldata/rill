@@ -1,6 +1,7 @@
 import {
   calculateColumnWidth,
   calculateMeasureWidth,
+  calculateRowDimensionWidth,
   clampColumnWidth,
   distributeColumnWidthsToFillContainer,
   fitColumnWidthsToContainer,
@@ -343,5 +344,22 @@ describe("calculateMeasureWidth", () => {
         1.5,
       ),
     ).toBe(300);
+  });
+});
+
+describe("calculateRowDimensionWidth", () => {
+  it("widens a time row header with the text scale, never below its minimum", () => {
+    const width = (textScale?: number) =>
+      calculateRowDimensionWidth(
+        "ts_rill_TIME_GRAIN_DAY",
+        "Time (Day)",
+        "ts",
+        [],
+        textScale,
+      );
+    expect(width()).toBe(160);
+    expect(width(0.875)).toBe(160);
+    expect(width(1.25)).toBe(200);
+    expect(width(1.5)).toBe(240);
   });
 });
