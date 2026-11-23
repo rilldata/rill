@@ -361,12 +361,43 @@ func testProjectsWithTags(t *testing.T, db database.DB) {
 	_, err = db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "invalid", Tags: []string{"not valid"}})
 	require.ErrorIs(t, err, database.ErrValidation)
 
-	// UpdateProjectTags replaces the tags
-	stage, err = db.UpdateProjectTags(ctx, stage.ID, []string{"stage", "EU"})
+	// UpdateProjectTags adds and removes tags
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, []string{"EU", "tmp"}, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage", "tmp"}, stage.Tags)
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, nil, []string{"tmp"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
-	_, err = db.UpdateProjectTags(ctx, stage.ID, []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"})
+	_, err = db.UpdateProjectTags(ctx, stage.ID, []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}, nil)
 	require.ErrorIs(t, err, database.ErrValidation)
+
+	// Concurrent updates keep each other's changes, and the limit applies to the tags they add together
+	concurrent, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "concurrent"})
+	require.NoError(t, err)
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make([]error, database.MaxProjectTags+1)
+	for i := range errs {
+		wg.Go(func() {
+			<-start
+			_, errs[i] = db.UpdateProjectTags(ctx, concurrent.ID, []string{fmt.Sprintf("tag%d", i)}, nil)
+		})
+	}
+	close(start)
+	wg.Wait()
+	var added []string
+	for i, err := range errs {
+		if err == nil {
+			added = append(added, fmt.Sprintf("tag%d", i))
+		} else {
+			require.ErrorIs(t, err, database.ErrValidation)
+		}
+	}
+	require.Len(t, added, database.MaxProjectTags)
+	concurrent, err = db.FindProject(ctx, concurrent.ID)
+	require.NoError(t, err)
+	require.ElementsMatch(t, added, concurrent.Tags)
+	require.NoError(t, db.DeleteProject(ctx, concurrent.ID))
 
 	// Updating the other fields keeps the tags
 	stage, err = db.UpdateProject(ctx, stage.ID, &database.UpdateProjectOptions{Name: stage.Name, Description: "staging"})

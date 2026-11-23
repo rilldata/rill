@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -574,17 +575,37 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return c.projectFromDTO(res)
 }
 
-func (c *connection) UpdateProjectTags(ctx context.Context, id string, tags []string) (*database.Project, error) {
-	// Normalizing returns an empty slice instead of nil, as needed for the NOT NULL tags column.
-	tags, err := database.NormalizeProjectTags(tags)
+func (c *connection) UpdateProjectTags(ctx context.Context, id string, add, remove []string) (*database.Project, error) {
+	ctx, tx, err := c.NewTx(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// The row lock makes concurrent updates wait for this one, so they apply their changes to the tags it writes.
+	res := &projectDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id = $1 FOR UPDATE", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project", err)
+	}
+
+	// When no tags are left, this returns an empty slice instead of nil, as needed for the NOT NULL tags column.
+	tags, err := database.ApplyProjectTagChanges(res.Tags, add, remove)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &projectDTO{}
-	err = c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET tags = $1, updated_on = now() WHERE id = $2 RETURNING *", tags, id).StructScan(res)
+	if !slices.Equal(tags, []string(res.Tags)) {
+		res = &projectDTO{}
+		err = c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET tags = $1, updated_on = now() WHERE id = $2 RETURNING *", tags, id).StructScan(res)
+		if err != nil {
+			return nil, parseErr("project", err)
+		}
+	}
+
+	err = tx.Commit()
 	if err != nil {
-		return nil, parseErr("project", err)
+		return nil, err
 	}
 	return c.projectFromDTO(res)
 }

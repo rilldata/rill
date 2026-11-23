@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"slices"
 	"strings"
 	"time"
 
@@ -758,11 +757,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	// Validate tag changes before making any changes.
+	// Validate tag changes before making any changes; the result is discarded, since UpdateProjectTags applies them to the latest tags below.
 	// The tags are written after the other fields; see database.DB.UpdateProjectTags for why they are written separately.
-	var tags []string
-	if len(req.AddTags) > 0 || len(req.RemoveTags) > 0 {
-		tags, err = updatedProjectTags(proj.Tags, req.AddTags, req.RemoveTags)
+	updateTags := len(req.AddTags) > 0 || len(req.RemoveTags) > 0
+	if updateTags {
+		_, err = database.ApplyProjectTagChanges(proj.Tags, req.AddTags, req.RemoveTags)
 		if err != nil {
 			return nil, err
 		}
@@ -944,8 +943,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	// Tags don't impact deployments, so they are written directly to the database.
-	if tags != nil && !slices.Equal(tags, proj.Tags) {
-		proj, err = s.admin.DB.UpdateProjectTags(ctx, proj.ID, tags)
+	if updateTags {
+		proj, err = s.admin.DB.UpdateProjectTags(ctx, proj.ID, req.AddTags, req.RemoveTags)
 		if err != nil {
 			return nil, err
 		}
@@ -2496,33 +2495,6 @@ func securityRulesFromResources(restricted bool, resources []database.ResourceNa
 		names[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
 	}
 	return runtime.SecurityRulesForResources(restricted, names)
-}
-
-// updatedProjectTags returns a project's tags after adding and removing the given tags.
-func updatedProjectTags(current, add, remove []string) ([]string, error) {
-	removed := make(map[string]bool, len(remove))
-	for _, t := range remove {
-		t, err := database.NormalizeProjectTag(t)
-		if err != nil {
-			return nil, err
-		}
-		removed[t] = true
-	}
-
-	res := slices.Clone(current)
-	for _, t := range add {
-		t, err := database.NormalizeProjectTag(t)
-		if err != nil {
-			return nil, err
-		}
-		if removed[t] {
-			return nil, status.Errorf(codes.InvalidArgument, "tag %q can't be both added and removed", t)
-		}
-		res = append(res, t)
-	}
-	res = slices.DeleteFunc(res, func(t string) bool { return removed[t] })
-
-	return database.NormalizeProjectTags(res)
 }
 
 func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {

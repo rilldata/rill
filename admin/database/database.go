@@ -96,9 +96,10 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	// UpdateProjectTags replaces a project's tags.
+	// UpdateProjectTags adds and removes tags on a project; see ApplyProjectTagChanges.
+	// It applies the changes to the tags it reads under a row lock, so concurrent updates don't overwrite each other's changes.
 	// Tags are not part of UpdateProjectOptions, so updates that write the other project fields from a stale copy never revert them.
-	UpdateProjectTags(ctx context.Context, id string, tags []string) (*Project, error)
+	UpdateProjectTags(ctx context.Context, id string, add, remove []string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)

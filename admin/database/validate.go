@@ -82,6 +82,34 @@ func init() {
 	}
 }
 
+// ApplyProjectTagChanges returns a project's tags after adding and removing the given tags, normalized with NormalizeProjectTags.
+// It returns a validation error if a tag is invalid, a tag is both added and removed, or the result has more than MaxProjectTags tags.
+func ApplyProjectTagChanges(current, add, remove []string) ([]string, error) {
+	removed := make(map[string]bool, len(remove))
+	for _, t := range remove {
+		t, err := NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+		removed[t] = true
+	}
+
+	res := slices.Clone(current)
+	for _, t := range add {
+		t, err := NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+		if removed[t] {
+			return nil, NewValidationError(fmt.Sprintf("tag %q can't be both added and removed", t))
+		}
+		res = append(res, t)
+	}
+	res = slices.DeleteFunc(res, func(t string) bool { return removed[t] })
+
+	return NormalizeProjectTags(res)
+}
+
 // NormalizeProjectTags normalizes a project's tags with NormalizeProjectTag, then deduplicates and sorts them.
 // It returns a validation error if a tag is invalid or there are more than MaxProjectTags tags.
 func NormalizeProjectTags(tags []string) ([]string, error) {
