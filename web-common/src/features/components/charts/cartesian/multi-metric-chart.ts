@@ -308,9 +308,10 @@ export function generateVLMultiMetricChartSpec(
       spec.layer = layers;
       break;
     }
-    case "stacked_bar": {
+    case "stacked_bar":
+    case "stacked_bar_normalized": {
       const stackedBarEncoding: Partial<Encoding<Field>> = {
-        y: stackedYEncoding,
+        y: markType === "stacked_bar" ? stackedYEncoding : normalizedYEncoding,
         color: baseColorEncoding,
       };
 
@@ -329,33 +330,6 @@ export function generateVLMultiMetricChartSpec(
           {
             mark: { type: "bar", clip: true, width: { band: 0.9 } },
             encoding: stackedBarEncoding,
-          },
-          vegaConfig,
-        ),
-      ];
-      break;
-    }
-    case "stacked_bar_normalized": {
-      const normalizedBarEncoding: Partial<Encoding<Field>> = {
-        y: normalizedYEncoding,
-        color: baseColorEncoding,
-      };
-
-      if (hasComparison) {
-        const xOffset: OffsetDef<Field> = {
-          field: "period",
-          sort: { field: SortOrderField },
-        };
-        normalizedBarEncoding.xOffset = xOffset;
-        normalizedBarEncoding.opacity = opacityComparisonEncodingPeriod;
-      }
-
-      spec.layer = [
-        hoverRuleLayer,
-        centerGroupedBars(
-          {
-            mark: { type: "bar", clip: true, width: { band: 0.9 } },
-            encoding: normalizedBarEncoding,
           },
           vegaConfig,
         ),
