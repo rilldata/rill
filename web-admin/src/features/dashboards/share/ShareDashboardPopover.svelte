@@ -18,7 +18,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { LayoutBlock } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { LayoutBlock } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
   import CanvasExportForm from "@rilldata/web-common/features/exports/CanvasExportForm.svelte";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";

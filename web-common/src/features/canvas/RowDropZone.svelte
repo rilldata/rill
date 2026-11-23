@@ -2,6 +2,7 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { AddableItem } from "./layout-util";
   import Divider from "./Divider.svelte";
+  import type { BlockKind } from "./stores/block-edit";
   import { activeDivider, dropZone } from "./stores/ui-stores";
 
   export let allowDrop: boolean;
@@ -12,8 +13,8 @@
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (item: AddableItem) => void;
-  // When provided, the add menu offers inserting a tab group at this position.
-  export let onAddTabGroup: (() => void) | undefined = undefined;
+  // When provided, the add menu offers inserting a block (a tab group or a container) at this position.
+  export let onAddBlock: ((kind: BlockKind) => void) | undefined = undefined;
 
   let menuOpen = false;
 
@@ -37,9 +38,8 @@
   class:top={resolvedPosition === "top"}
   class:bottom={resolvedPosition === "bottom"}
   class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
-  onmouseenter={() => {
+  onmousemove={() => {
     if (!allowDrop) return;
-
     dropZone.set(dropId);
   }}
   onmouseleave={() => {
@@ -48,6 +48,9 @@
   }}
   onmouseup={() => {
     if (!allowDrop) return;
+    // A drag starts after a short hold, so the pointer can already rest on this zone when
+    // the drop becomes allowed; no mouseenter fires then, so the zone claims the drop here.
+    dropZone.set(dropId);
     onDrop(dropIndex, null);
   }}
 >
@@ -94,7 +97,7 @@
         }}
         onItemClick={addItem}
         onAddComponentRef={(componentName) => addItem({ componentName })}
-        {onAddTabGroup}
+        {onAddBlock}
       />
     </span>
   </div>
