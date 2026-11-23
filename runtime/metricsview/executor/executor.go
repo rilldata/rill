@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/driverutil"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 )
@@ -475,7 +476,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		}
 
 		// Execute the pivot export
-		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", nil)
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -509,7 +510,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
+// The conditional formats color the cells of the query's measures in XLSX exports; other formats ignore them.
+func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, executionTime *time.Time, format drivers.FileFormat, headers []string, conditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
 	}
@@ -583,7 +585,7 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	e.rewriteLookupGroupByKey(ctx, ast)
 
 	if pivoting {
-		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
+		return e.executePivotExport(ctx, ast, pivotAST, format, headers, conditionalFormats)
 	}
 
 	sql, args, err := ast.SQL()
@@ -591,10 +593,24 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	// The result has a column per dimension, followed by a column per measure (see writeSelectWithDisplayNames).
+	// The columns are named by display name, which needn't be unique, so the formats find their measures' columns by position.
+	var xlsxFormats []driverutil.XLSXConditionalFormat
+	for _, cf := range conditionalFormats {
+		i := slices.IndexFunc(ast.Root.MeasureFields, func(f metricsview.FieldNode) bool { return f.Name == cf.Measure })
+		if i < 0 {
+			continue
+		}
+		xlsxFormats = append(xlsxFormats, driverutil.XLSXConditionalFormat{
+			Column: len(ast.Root.DimFields) + i,
+			Format: cf.Format,
+		})
+	}
+
 	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
 		"sql":  sql,
 		"args": args,
-	}, headers)
+	}, headers, xlsxFormats)
 }
 
 // Search executes the provided query against the metrics view.

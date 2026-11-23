@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { ListValue, Message, proto3, Value } from "@bufbuild/protobuf";
+import { ExportConditionalFormat } from "./export_format_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.WorkbookChartType
@@ -1057,6 +1058,14 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
   rowNumberFormats: string[] = [];
 
   /**
+   * Conditional formats for the data rows (not the totals row), in priority order, as the dashboard colors the table.
+   * Table previews on the dashboard sheets show them too.
+   *
+   * @generated from field: repeated rill.runtime.v1.WorkbookConditionalFormat conditional_formats = 9;
+   */
+  conditionalFormats: WorkbookConditionalFormat[] = [];
+
+  /**
    * True when the source has more rows than the sheet holds, because the component had not
    * loaded them or the export's row cap trimmed them. Links to the sheet then say "first N rows".
    *
@@ -1079,6 +1088,7 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
     { no: 6, name: "totals", kind: "message", T: ListValue },
     { no: 8, name: "totals_last", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "row_number_formats", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "conditional_formats", kind: "message", T: WorkbookConditionalFormat, repeated: true },
     { no: 5, name: "more_rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1096,6 +1106,109 @@ export class WorkbookDataSheet extends Message<WorkbookDataSheet> {
 
   static equals(a: WorkbookDataSheet | PlainMessage<WorkbookDataSheet> | undefined, b: WorkbookDataSheet | PlainMessage<WorkbookDataSheet> | undefined): boolean {
     return proto3.util.equals(WorkbookDataSheet, a, b);
+  }
+}
+
+/**
+ * WorkbookConditionalFormat colors the cells of some of a data sheet's columns.
+ *
+ * @generated from message rill.runtime.v1.WorkbookConditionalFormat
+ */
+export class WorkbookConditionalFormat extends Message<WorkbookConditionalFormat> {
+  /**
+   * Names of the columns. A color scale or data bar spans all of them, so it compares the values across them,
+   * as a pivot does for the columns of a measure under its column dimensions.
+   *
+   * @generated from field: repeated string columns = 1;
+   */
+  columns: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportConditionalFormat format = 2;
+   */
+  format?: ExportConditionalFormat;
+
+  /**
+   * The values at the ends of a color scale or data bar, like the dashboard's color domain.
+   * A nested pivot takes them from its innermost rows, so the subtotals of expanded rows don't stretch the colors.
+   * When unset, they are the lowest and highest numbers in the columns.
+   *
+   * @generated from field: rill.runtime.v1.WorkbookValueRange domain = 3;
+   */
+  domain?: WorkbookValueRange;
+
+  constructor(data?: PartialMessage<WorkbookConditionalFormat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WorkbookConditionalFormat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "columns", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "format", kind: "message", T: ExportConditionalFormat },
+    { no: 3, name: "domain", kind: "message", T: WorkbookValueRange },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookConditionalFormat {
+    return new WorkbookConditionalFormat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WorkbookConditionalFormat {
+    return new WorkbookConditionalFormat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WorkbookConditionalFormat {
+    return new WorkbookConditionalFormat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WorkbookConditionalFormat | PlainMessage<WorkbookConditionalFormat> | undefined, b: WorkbookConditionalFormat | PlainMessage<WorkbookConditionalFormat> | undefined): boolean {
+    return proto3.util.equals(WorkbookConditionalFormat, a, b);
+  }
+}
+
+/**
+ * WorkbookValueRange is a range of numbers.
+ *
+ * @generated from message rill.runtime.v1.WorkbookValueRange
+ */
+export class WorkbookValueRange extends Message<WorkbookValueRange> {
+  /**
+   * @generated from field: double min = 1;
+   */
+  min = 0;
+
+  /**
+   * @generated from field: double max = 2;
+   */
+  max = 0;
+
+  constructor(data?: PartialMessage<WorkbookValueRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WorkbookValueRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "min", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 2, name: "max", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WorkbookValueRange {
+    return new WorkbookValueRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WorkbookValueRange | PlainMessage<WorkbookValueRange> | undefined, b: WorkbookValueRange | PlainMessage<WorkbookValueRange> | undefined): boolean {
+    return proto3.util.equals(WorkbookValueRange, a, b);
   }
 }
 

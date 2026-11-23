@@ -216,7 +216,7 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-      - **`variables`** - _[object]_ - Custom CSS variables for light theme
+      - **`variables`** - _[object]_ - CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
     - **`dark`** - _[object]_ - Dark theme color configuration
 
@@ -228,7 +228,7 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-      - **`variables`** - _[object]_ - Custom CSS variables for dark theme
+      - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
 ### `security`
 

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { DateTime, Interval } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
-  aggregationGrainOrder,
-  allowedAggregationGrains,
+  AggregationGrainOrder,
+  AllowedAggregationGrains,
   allowedGrainsForInterval,
   DateTimeUnitToV1TimeGrain,
   floorToGrain,
@@ -222,7 +222,7 @@ describe("allowedGrainsForInterval", () => {
 
 describe("catalog grains", () => {
   it("orders multiples between their base unit and the next standard grain", () => {
-    const order = (grain: V1TimeGrain) => aggregationGrainOrder.indexOf(grain);
+    const order = (grain: V1TimeGrain) => AggregationGrainOrder.indexOf(grain);
     expect(order(V1TimeGrain.TIME_GRAIN_MINUTE)).toBeLessThan(
       order(V1TimeGrain.TIME_GRAIN_10_MINUTE),
     );
@@ -241,7 +241,7 @@ describe("catalog grains", () => {
         V1TimeGrain.TIME_GRAIN_HOUR,
       ),
     ).toBe(false);
-    expect(allowedAggregationGrains).not.toContain(
+    expect(AllowedAggregationGrains).not.toContain(
       V1TimeGrain.TIME_GRAIN_10_MINUTE,
     );
   });
@@ -303,7 +303,7 @@ describe("catalog grains", () => {
       V1TimeGrain.TIME_GRAIN_QUARTER,
       V1TimeGrain.TIME_GRAIN_YEAR,
     ]);
-    expect(getAvailableTimeGrains(undefined)).toEqual(allowedAggregationGrains);
+    expect(getAvailableTimeGrains(undefined)).toEqual(AllowedAggregationGrains);
 
     // A day offers the declared grains that fit it; a week drops the 10-minute grain (1008 buckets still fit) only past 1500 buckets.
     const day = createInterval("2024-03-10T00:00:00", "2024-03-11T00:00:00");

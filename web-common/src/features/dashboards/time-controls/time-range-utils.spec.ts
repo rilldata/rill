@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import { getDefaultComparisonRange } from "./time-state";
+import { getDefaultComparisonRange } from "./time-range-utils";
 
 describe("getDefaultComparisonRange", () => {
   it("opens with the first comparison declared for the default range", () => {

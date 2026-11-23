@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   computeMeasureDomains,
+  computePivotMeasureDomains,
   getSchemeStops,
   makeCellFormatter,
   PIVOT_RULE_COLORS,
   resolveRuleColor,
   ruleMatches,
+  toExportConditionalFormats,
 } from "./pivot-conditional-formatting";
-import type { PivotFormatRule } from "./types";
+import type { PivotFormatRule, PivotMeasureFormatting } from "./types";
 
 describe("computeMeasureDomains", () => {
   it("computes per-measure min/max independently", () => {
@@ -31,6 +33,38 @@ describe("computeMeasureDomains", () => {
     ]);
     expect(domains.has("a")).toBe(false);
     expect(domains.get("b")).toEqual([-2, 4]);
+  });
+});
+
+describe("computePivotMeasureDomains", () => {
+  it("spans a measure's columns over the leaf rows and skips rules", () => {
+    const domains = computePivotMeasureDomains(
+      [
+        {
+          country: "US",
+          c0v0m0: 900,
+          c0v1m0: 800,
+          c0v0m1: 0.9,
+          subRows: [
+            { country: "NY", c0v0m0: 10, c0v1m0: -20, c0v0m1: 0.1 },
+            { country: "SF", c0v0m0: 30, c0v1m0: null, c0v0m1: 0.2 },
+          ],
+        },
+      ],
+      [
+        { key: "c0v0m0", measureName: "impressions" },
+        { key: "c0v1m0", measureName: "impressions" },
+        { key: "c0v0m1", measureName: "ctr" },
+      ],
+      {
+        impressions: { mode: "data_bar", scheme: "blues" },
+        ctr: {
+          mode: "rules",
+          rules: [{ operator: "gt", value: 0.5, color: "positive" }],
+        },
+      } as Record<string, PivotMeasureFormatting>,
+    );
+    expect(domains).toEqual(new Map([["impressions", [-20, 30]]]));
   });
 });
 
@@ -212,5 +246,69 @@ describe("makeCellFormatter — rules", () => {
     const warning = PIVOT_RULE_COLORS.find((c) => c.key === "warning")!;
     // 20 matches both rules; the earlier one wins.
     expect(fmt(20)?.background).toBe(warning.fill);
+  });
+});
+
+describe("toExportConditionalFormats", () => {
+  it("writes a heatmap as a color scale, flipped for lower-is-better measures", () => {
+    const heatmap = { mode: "heatmap", scheme: "greens" } as const;
+    expect(toExportConditionalFormats(heatmap)).toEqual([
+      {
+        colorScale: {
+          minColor: "#f7fcf5",
+          midColor: "#74c476",
+          maxColor: "#00441b",
+        },
+      },
+    ]);
+    expect(toExportConditionalFormats(heatmap, true)[0].colorScale).toEqual({
+      minColor: "#00441b",
+      midColor: "#74c476",
+      maxColor: "#f7fcf5",
+    });
+  });
+
+  it("gives a data bar the bar color of the dashboard", () => {
+    const [format] = toExportConditionalFormats(
+      { mode: "data_bar", scheme: "blues" },
+      true,
+    );
+    const onScreen = makeCellFormatter(
+      { mode: "data_bar", scheme: "blues" },
+      [0, 1],
+    )(1);
+    expect(onScreen?.background).toContain(format.dataBar!.color!);
+  });
+
+  it("writes rules in order with their resolved colors and skips malformed ones", () => {
+    const formats = toExportConditionalFormats({
+      mode: "rules",
+      rules: [
+        { operator: "gt", value: 100, color: "positive" },
+        { operator: "between", value: 10, value2: 20, color: "fff" },
+        { operator: "lt", value: Number.NaN, color: "negative" },
+      ],
+    });
+    expect(formats).toEqual([
+      {
+        cellRule: {
+          operator: "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN",
+          value: 100,
+          upperValue: 0,
+          fillColor: "#c6efce",
+          textColor: "#006100",
+        },
+      },
+      {
+        // A light custom fill keeps the cell's text color.
+        cellRule: {
+          operator: "EXPORT_CELL_RULE_OPERATOR_BETWEEN",
+          value: 10,
+          upperValue: 20,
+          fillColor: "#ffffff",
+          textColor: "",
+        },
+      },
+    ]);
   });
 });

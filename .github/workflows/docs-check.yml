@@ -7,6 +7,11 @@ on:
       - "cli/**"
       - "docs/**"
       - "runtime/parser/schema/**"
+      # The theme variable reference is generated from the parser's allow-list and the frontend's default styles.
+      - "runtime/parser/parse_theme_variables.go"
+      - "web-common/src/app.css"
+      - "web-common/src/colors.css"
+      - "web-common/src/styles/chart-base.css"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
