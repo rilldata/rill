@@ -355,6 +355,93 @@ describe("fitLegends", () => {
     expect(overhang.top).toBeLessThanOrEqual(0);
   });
 
+  it("shares the height between the legends of categories above and below the plot", async () => {
+    // Eighteen long names on each of two fields.
+    const names = (kind: string) =>
+      Array.from(
+        { length: 18 },
+        (_, i) => `${kind} ${String(i + 1).padStart(2, "0")} of the catalogue`,
+      );
+    const products = names("Product");
+    const suppliers = names("Supplier");
+    const spec = {
+      ...barChart([]),
+      data: {
+        values: products.map((product, i) => ({
+          product,
+          supplier: suppliers[i],
+          category: "abc"[i % 3],
+          value: 100 + i,
+        })),
+      },
+      mark: "point",
+      encoding: {
+        x: { field: "category", type: "nominal" },
+        y: { field: "value", type: "quantitative" },
+        color: { field: "product", type: "nominal" },
+        shape: { field: "supplier", type: "nominal" },
+      },
+    } as VisualizationSpec;
+    const size = { width: 240, height: 220 };
+    // Under Rill's theme the legends on one side stand one above the other.
+    const { view, legends, labels, overhang } = await drawLegends(
+      spec,
+      size,
+      getRillTheme(),
+    );
+
+    // Six entries each, as one legend lists in a plot this narrow, left the plot no height.
+    expect(legends).toHaveLength(2);
+    expect(labels).toEqual([
+      products[0],
+      "…17 entries",
+      suppliers[0],
+      "…17 entries",
+    ]);
+    expect(view.height()).toBeGreaterThan(40);
+    expect(overhang.top).toBeLessThanOrEqual(0);
+
+    // In a taller chart they list more, and take a third of its height between them.
+    const tall = await drawLegends(
+      spec,
+      { width: 560, height: 400 },
+      getRillTheme(),
+    );
+    expect(tall.labels.length).toBeGreaterThan(labels.length);
+    const heights = tall.legends.map(
+      ({ bounds }) => (bounds?.y2 ?? 0) - (bounds?.y1 ?? 0),
+    );
+    expect(heights[0] + heights[1]).toBeLessThanOrEqual(400 / 3);
+
+    // So do a legend above the plot and one below it.
+    const apart = {
+      ...spec,
+      encoding: {
+        ...(spec as { encoding: Record<string, unknown> }).encoding,
+        shape: {
+          field: "supplier",
+          type: "nominal",
+          legend: { orient: "bottom" },
+        },
+      },
+    } as VisualizationSpec;
+    const both = await drawLegends(apart, size, getRillTheme());
+    expect(both.labels).toEqual(labels);
+    expect(both.view.height()).toBeGreaterThan(40);
+
+    // Channels that list one field are drawn as one legend, which has the height to itself.
+    const merged = {
+      ...spec,
+      encoding: {
+        ...(spec as { encoding: Record<string, unknown> }).encoding,
+        shape: { field: "product", type: "nominal" },
+      },
+    } as VisualizationSpec;
+    const one = await drawLegends(merged, size, getRillTheme());
+    expect(one.legends).toHaveLength(1);
+    expect(one.labels).toEqual([...products.slice(0, 5), "…13 entries"]);
+  });
+
   it("leaves a legend its author laid out", () => {
     const columns = barChart(segments, { columns: 2 });
     expect(fitLegends(columns, {}, theme)).toBe(columns);

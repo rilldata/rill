@@ -229,7 +229,7 @@ Series colors come from the `tableau10` scheme, and a measure bound to `color` i
 
 ### Legends
 
-A chart's legend sits above the plot and is laid out to fit the widget, the same way as a [built-in chart's legend](/developers/build/dashboards/canvas-widgets/chart#legends): its entries wrap to the plot's width and take up to about a third of the chart's height, and where they don't all fit the legend ends with the number left out, such as `…12 entries`. The legends of a chart with two, such as the colors and sizes of a bubble chart, stand one above the other.
+A chart's legend sits above the plot and is laid out to fit the widget, the same way as a [built-in chart's legend](/developers/build/dashboards/canvas-widgets/chart#legends): its entries wrap to the plot's width and take up to about a third of the chart's height, and where they don't all fit the legend ends with the number left out, such as `…12 entries`. The legends of a chart with two, such as the colors and sizes of a bubble chart, stand one above the other. Two legends that each list a dimension's values, such as a chart's colors and shapes, share that third of the height between them.
 
 ### Chart Properties
 

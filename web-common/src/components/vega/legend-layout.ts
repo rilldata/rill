@@ -15,7 +15,9 @@ import type { Config } from "vega-lite";
  * as many columns as the plot's width holds, measured from its labels, and stops after the rows
  * a third of the chart's height holds, or after `MIN_ENTRIES` entries where a narrow plot holds
  * fewer in those rows: Vega's "…N entries" stands for the rest. Beside the plot it lists what the
- * plot's height holds, with labels cut so that it takes a third of the chart's width.
+ * plot's height holds, with labels cut so that it takes a third of the chart's width. The legends
+ * of categories that stand above and below the plot, one above the other on either side, share
+ * that third and those `MIN_ENTRIES` between them.
  *
  * The layout is written as expressions over Vega's `width` and `height` signals, which are the
  * plot's, and over the chart's own size, which the renderer keeps in a signal of its own (see
@@ -53,6 +55,8 @@ export function fitLegends(
   // size of its bands or of Vega-Lite's default view.
   const autosize = root.autosize ?? config?.autosize;
   const fit = record(autosize)?.type ?? autosize;
+  // Where the chart's config puts its legends; Vega-Lite's own default is the right.
+  const orient = authored?.orient ?? themed?.orient ?? "right";
   const layouts: ViewSpec[] = [];
   const fitted = fitView(root, undefined, {
     layouts,
@@ -61,8 +65,8 @@ export function fitLegends(
       (typeof root.width === "number" || root.width === "container"),
     fitsHeight: fit === "fit" || fit === "fit-y",
     datasets,
-    // Where the chart's config puts its legends; Vega-Lite's own default is the right.
-    orient: authored?.orient ?? themed?.orient ?? "right",
+    orient,
+    sharing: countCategoryLegends(root, orient),
     // The font its labels are drawn in, which a theme may set; Vega's own is 10px sans-serif.
     font: {
       family: String(
@@ -195,6 +199,8 @@ interface FitContext {
   fitsHeight: boolean;
   datasets: Record<string, unknown>;
   orient: unknown;
+  /** How many legends of categories the chart draws above and below the plot, sharing its height. */
+  sharing: number;
   font: LabelFont;
 }
 
@@ -245,34 +251,80 @@ function fitView(
   return fitted;
 }
 
-/** The layout of the legend an encoding draws, or undefined where it draws none to lay out. */
-function legendLayout(
+/**
+ * What the legend an encoding draws lists: a field's categories or a measure's values. Undefined
+ * for an encoding that draws no legend, or draws a gradient.
+ */
+function entriesOf(
   channel: string,
   definition: ViewSpec,
-  rows: unknown[] | undefined,
-  { orient: defaultOrient, font, fitsWidth, fitsHeight }: FitContext,
-): ViewSpec | undefined {
+): "categories" | "values" | undefined {
   if (definition.legend === null) return undefined;
   // A constant or a condition alone draws no legend.
   if (definition.field === undefined && definition.datum === undefined) {
     return undefined;
   }
-  const legend = record(definition.legend) ?? {};
-  if (legend.columns !== undefined || legend.direction !== undefined) {
-    return undefined;
-  }
-
-  const rowHeight = font.size + ROW_PADDING;
   const type =
     definition.type ??
     (definition.timeUnit || definition.bin || definition.aggregate
       ? undefined
       : "nominal");
-  const listsCategories = type === "nominal" || type === "ordinal";
+  if (type === "nominal" || type === "ordinal") return "categories";
   const listsValues =
     (type === "quantitative" || type === "temporal") &&
-    (!GRADIENT_CHANNELS.has(channel) || legend.type === "symbol");
-  if (!listsCategories && !listsValues) return undefined;
+    (!GRADIENT_CHANNELS.has(channel) ||
+      record(definition.legend)?.type === "symbol");
+  return listsValues ? "values" : undefined;
+}
+
+/**
+ * How many legends of categories a chart and its layers draw above and below the plot: one for
+ * each field listed on a side, as Vega-Lite draws the channels that encode one field as one
+ * legend.
+ */
+function countCategoryLegends(root: ViewSpec, defaultOrient: unknown): number {
+  const listed = new Set<string>();
+  const visit = (view: ViewSpec) => {
+    const encoding = record(view.encoding) ?? {};
+    for (const channel of LEGEND_CHANNELS) {
+      const definition = record(encoding[channel]);
+      if (!definition || entriesOf(channel, definition) !== "categories") {
+        continue;
+      }
+      const orient = record(definition.legend)?.orient ?? defaultOrient;
+      if (orient === "top" || orient === "bottom") {
+        listed.add(JSON.stringify([orient, definition.field]));
+      }
+    }
+    if (Array.isArray(view.layer)) {
+      for (const layer of view.layer as unknown[]) {
+        const layerView = record(layer);
+        if (layerView) visit(layerView);
+      }
+    }
+  };
+  visit(root);
+  return listed.size;
+}
+
+/** The layout of the legend an encoding draws, or undefined where it draws none to lay out. */
+function legendLayout(
+  channel: string,
+  definition: ViewSpec,
+  rows: unknown[] | undefined,
+  { orient: defaultOrient, sharing, font, fitsWidth, fitsHeight }: FitContext,
+): ViewSpec | undefined {
+  const lists = entriesOf(channel, definition);
+  const legend = record(definition.legend) ?? {};
+  if (
+    !lists ||
+    legend.columns !== undefined ||
+    legend.direction !== undefined
+  ) {
+    return undefined;
+  }
+  const listsCategories = lists === "categories";
+  const rowHeight = font.size + ROW_PADDING;
 
   const orient = legend.orient ?? defaultOrient;
   if (orient === "left" || orient === "right") {
@@ -299,15 +351,27 @@ function legendLayout(
     };
   }
 
-  // The rows a share of the chart's height holds under the legend's title.
-  const room = `${CONTAINER_SIGNAL}.height * ${HEIGHT_SHARE} - ${TITLE_HEIGHT}`;
-  const maxRows = `(${CONTAINER_SIGNAL}.height ? clamp(floor((${room}) / ${rowHeight}), ${MIN_ROWS}, ${MAX_ROWS}) : ${DEFAULT_ROWS})`;
+  // The legends above and below the plot share the height that one alone takes: each listing
+  // `MIN_ENTRIES`, two in a short widget left its plot no height at all. Each has a title of
+  // its own, and the further titles come out of that height as well.
+  const furtherTitles = (TITLE_HEIGHT * (sharing - 1)) / rowHeight;
+  // A name and the count of the rest, at the least.
+  const minEntries = Math.max(
+    2,
+    Math.floor((MIN_ENTRIES - furtherTitles) / sharing),
+  );
+  const minRows = Math.max(1, Math.floor(MIN_ROWS / sharing));
+  const defaultRows = Math.max(minRows, Math.round(DEFAULT_ROWS / sharing));
+  // The rows its share of the chart's height holds under the legend's title.
+  const room = `${CONTAINER_SIGNAL}.height * ${HEIGHT_SHARE / sharing} - ${TITLE_HEIGHT}`;
+  const maxRows = `(${CONTAINER_SIGNAL}.height ? clamp(floor((${room}) / ${rowHeight}), ${minRows}, ${MAX_ROWS}) : ${defaultRows})`;
   const entries = (columns: string) =>
-    `max(${maxRows} * ${columns}, ${MIN_ENTRIES})`;
+    `max(${maxRows} * ${columns}, ${minEntries})`;
 
   const labels = labelsOf(definition, legend, rows);
   const widths: LabelWidths | undefined = labels && {
     count: labels.length,
+    fewestListed: (columns) => Math.max(minRows * columns, minEntries),
     // Sorted once, for every number of columns and every label limit tried.
     widest: labels
       .map((label) => labelWidth(label, font))
@@ -338,10 +402,12 @@ function legendLayout(
   };
 }
 
-/** The widths of a legend's labels, in pixels, as far as they set the widths of its columns. */
+/** A legend's labels, as far as they set the widths of its columns. Widths are in pixels. */
 interface LabelWidths {
   /** How many labels the legend has. */
   count: number;
+  /** The fewest entries the legend lists in a number of columns, however short its chart. */
+  fewestListed: (columns: number) => number;
   /** Its widest labels, widest first: one for each column a legend may have. */
   widest: number[];
   /** The label that stands for the entries left out. */
@@ -374,7 +440,7 @@ function columnsByWidth(
     // Once entries are left out, the label that says so takes a place of its own, in place of
     // the narrowest of these where it is the wider. How many rows the chart's height allows is
     // not known here, so it is counted wherever the fewest would leave entries out.
-    const leavesOut = labels.count > Math.max(MIN_ROWS * columns, MIN_ENTRIES);
+    const leavesOut = labels.count > labels.fewestListed(columns);
     const room =
       labelsWidth +
       (leavesOut ? Math.max(0, leftOut - narrowest) : 0) +
