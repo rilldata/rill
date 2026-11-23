@@ -190,10 +190,15 @@ async function loadCustomBoundaries(
 ): Promise<GeoJSON.FeatureCollection> {
   const { file, id, name } = boundaries;
   const headers: Record<string, string> = {};
-  const jwt = runtimeClient.getJwt();
+  const jwt = await runtimeClient.getFreshJwt();
   if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
 
-  const path = file.replace(/^\/+/, "");
+  // Encode each segment, so that characters such as "#" reach the runtime as part of the file name.
+  const path = file
+    .replace(/^\/+/, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
   const response = await fetch(
     `${runtimeClient.host}/v1/instances/${runtimeClient.instanceId}/assets/${path}`,
     { headers },

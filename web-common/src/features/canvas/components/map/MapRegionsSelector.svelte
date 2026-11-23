@@ -152,7 +152,9 @@
   function handleCountryChange(newCountry: string) {
     if (!regions) return;
     // Every country has the same keys, so the key is kept; FIPS codes only match US states.
-    const { key, ...rest } = regions;
+    // `us_states` calls its code key `postal`, which is `code` in `states`.
+    const { key: existingKey, ...rest } = regions;
+    const key = existingKey === "postal" ? "code" : existingKey;
     onChange({
       ...rest,
       boundaries: "states",

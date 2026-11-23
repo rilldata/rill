@@ -19,7 +19,8 @@ export interface RegionMatch {
 
 /**
  * Normalizes a region name or code for matching:
- * case, accents, punctuation and whitespace are ignored,
+ * case, accents on Latin letters, punctuation and whitespace are ignored,
+ * while letters and digits of any script are kept,
  * and leading zeros are dropped from numeric codes so that "036" matches "36".
  */
 export function normalizeRegionValue(value: unknown): string {
@@ -27,7 +28,7 @@ export function normalizeRegionValue(value: unknown): string {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+    .replace(/[^\p{L}\p{M}\p{N}]/gu, "");
   return /^\d+$/.test(normalized)
     ? normalized.replace(/^0+(?=\d)/, "")
     : normalized;

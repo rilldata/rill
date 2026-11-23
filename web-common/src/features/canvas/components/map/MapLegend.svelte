@@ -1,6 +1,8 @@
 <script lang="ts">
   type Props = {
     title: string;
+    /** Names the layer the scale belongs to, when several layers show a legend. */
+    layer?: string;
     colors: string[];
     min: string;
     max: string;
@@ -9,13 +11,15 @@
     noteTooltip?: string;
   };
 
-  let { title, colors, min, max, note, noteTooltip }: Props = $props();
+  let { title, layer, colors, min, max, note, noteTooltip }: Props = $props();
+
+  const fullTitle = $derived(layer ? `${layer} · ${title}` : title);
 
   const gradient = $derived(`linear-gradient(to right, ${colors.join(", ")})`);
 </script>
 
 <div class="legend">
-  <div class="title" {title}>{title}</div>
+  <div class="title" title={fullTitle}>{fullTitle}</div>
   <div class="scale" style:background={gradient}></div>
   <div class="labels">
     <span>{min}</span>

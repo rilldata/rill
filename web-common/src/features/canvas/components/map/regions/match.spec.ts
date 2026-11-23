@@ -57,6 +57,11 @@ describe("normalizeRegionValue", () => {
     expect(normalizeRegionValue(36)).toBe("36");
     expect(normalizeRegionValue("0")).toBe("0");
   });
+
+  it("keeps letters of non-Latin scripts", () => {
+    expect(normalizeRegionValue("東京")).toBe("東京");
+    expect(normalizeRegionValue("Москва")).toBe("москва");
+  });
 });
 
 describe("matchRegions", () => {

@@ -276,6 +276,7 @@
             onBounds={handleLayerBounds}
             onExport={handleLayerExport}
             onDraw={handleLayerDraw}
+            showLayerInLegend={hasRegions && hasPoints}
           />
         {/if}
         {#if hasPoints}
@@ -289,6 +290,7 @@
             onBounds={handleLayerBounds}
             onExport={handleLayerExport}
             onDraw={handleLayerDraw}
+            showLayerInLegend={hasRegions && hasPoints}
           />
         {/if}
       </div>

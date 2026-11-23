@@ -85,7 +85,11 @@ export function isCanvasExportQuery(
   // Custom-chart keys follow [service, instanceId, name, index, sql, filterKey]
   // (see CustomChartRenderer); match this instance so an unrelated instance's
   // custom chart can't hold up the export.
-  if (service === "metrics_sql") return queryKey[1] === instanceId;
+  // Map region boundaries follow ["map-region-boundaries", instanceId, boundariesKey]
+  // (see createRegionBoundariesQuery); the regions can't draw until they load.
+  if (service === "metrics_sql" || service === "map-region-boundaries") {
+    return queryKey[1] === instanceId;
+  }
   if (service !== "QueryService") return false;
   // QueryService keys follow [ServiceName, methodName, instanceId, request]
   // (see runtime-client/invalidation.ts); match the instance at its fixed index

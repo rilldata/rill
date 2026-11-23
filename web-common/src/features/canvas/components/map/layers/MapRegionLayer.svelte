@@ -43,6 +43,8 @@
     onExport: MapLayerExportHandler;
     /** Called whenever the layer hands the map new data or paint to draw. */
     onDraw: () => void;
+    /** Names the layer in its legend, to tell it apart from the other layer's. */
+    showLayerInLegend: boolean;
   };
 
   let {
@@ -55,6 +57,7 @@
     onBounds,
     onExport,
     onDraw,
+    showLayerInLegend,
   }: Props = $props();
 
   const SOURCE_ID = "regions";
@@ -163,11 +166,13 @@
   );
   const measureLabel = $derived(measureSpec?.displayName || colorMeasure);
 
-  function formatValue(value: number): string {
-    return measureSpec
-      ? createMeasureValueFormatter(measureSpec)(value)
-      : String(value);
-  }
+  const formatValue = $derived(
+    measureSpec ? createMeasureValueFormatter(measureSpec) : String,
+  );
+  const dimensionLabel = $derived(
+    metricsViewSpec?.dimensions?.find((d) => d.name === dimension)
+      ?.displayName || dimension,
+  );
 
   const unmatchedNote = $derived.by(() => {
     const unmatched = match?.unmatched ?? [];
@@ -278,8 +283,16 @@
 
   // Switching boundary sets replaces the geometry; feature state from the
   // previous set would otherwise leak onto regions that share an id.
+  // Without boundaries, such as while they load or after they fail to load,
+  // the previous regions are removed so they don't pass for the current config.
   $effect(() => {
-    if (styleKey === null || !boundaries) return;
+    if (styleKey === null) return;
+    if (!boundaries) {
+      // The layer's mouseleave won't fire once it is removed.
+      if (hoveredId !== undefined) handleMouseLeave();
+      removeLayers();
+      return;
+    }
     const source = map.getSource(SOURCE_ID) as
       | mapboxgl.GeoJSONSource
       | undefined;
@@ -347,6 +360,7 @@
 {:else if canRender && match && match.values.size > 0}
   <MapLegend
     title={measureLabel}
+    layer={showLayerInLegend ? dimensionLabel : undefined}
     {colors}
     min={formatValue(colorDomain[0])}
     max={formatValue(colorDomain[1])}

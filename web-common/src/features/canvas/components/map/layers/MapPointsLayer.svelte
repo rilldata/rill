@@ -43,6 +43,8 @@
     onExport: MapLayerExportHandler;
     /** Called whenever the layer hands the map new data or paint to draw. */
     onDraw: () => void;
+    /** Names the layer in its legend, to tell it apart from the other layer's. */
+    showLayerInLegend: boolean;
   };
 
   let {
@@ -55,6 +57,7 @@
     onBounds,
     onExport,
     onDraw,
+    showLayerInLegend,
   }: Props = $props();
 
   const SOURCE_ID = "map-data";
@@ -129,6 +132,11 @@
     return measure
       ? createMeasureValueFormatter(measure)(value)
       : String(value);
+  }
+
+  function getDimensionDisplayName(name: string): string {
+    const spec = metricsViewSpec?.dimensions?.find((d) => d.name === name);
+    return spec?.displayName || name;
   }
 
   function getMeasureDisplayName(name: string): string {
@@ -292,6 +300,9 @@
 {#if canRender && geoJson.features.length > 0}
   <MapLegend
     title={getMeasureDisplayName(colorMeasure)}
+    layer={showLayerInLegend
+      ? getDimensionDisplayName(geoDimension)
+      : undefined}
     {colors}
     min={formatMeasure(colorMeasure, colorDomain[0])}
     max={formatMeasure(colorMeasure, colorDomain[1])}
