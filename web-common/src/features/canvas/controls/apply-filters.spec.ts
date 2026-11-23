@@ -165,6 +165,17 @@ describe("withoutTimeControls", () => {
     ).toBe("tr=P30D&grain=week");
   });
 
+  it("keeps the zone the YAML sets when a control's range names another", () => {
+    const utc = { ...range, values: ["W1 as of watermark tz UTC"] };
+    expect(
+      writeBack("tr=P30D&grain=day&tz=America/New_York", [utc], (p) => {
+        p.set("grain", "week");
+        // The time state leaves out the canvas's default zone, UTC here.
+        if (p.get("tz") === "UTC") p.delete("tz");
+      }),
+    ).toBe("tr=P30D&grain=week&tz=America%2FNew_York");
+  });
+
   it("writes the change as is without time controls", () => {
     expect(writeBack("tr=P30D", [], (p) => p.set("grain", "week"))).toBe(
       "tr=P30D&grain=week",

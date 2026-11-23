@@ -2,7 +2,7 @@ import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { getTimeZoneOfRange } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   V1Operation,
@@ -54,7 +54,8 @@ export function andControlFilters(
  * `tr`, and a time grain control replaces `grain`. A range picked through a control keeps the
  * canvas comparison unless the YAML says otherwise, like a range picked in the editor does.
  * A range that names a zone (`... tz Asia/Kathmandu`) also sets `tz`, which is how the time state
- * writes that zone back, so withoutTimeControls can tell it came from the control.
+ * writes that zone back, so withoutTimeControls can tell it came from the control. A `tz` the
+ * YAML sets wins over it, as it does in the time state.
  */
 export function applyTimeControls(
   timeFilters: string,
@@ -66,8 +67,10 @@ export function applyTimeControls(
     if (typeof value !== "string" || !value) continue;
     if (control.kind === ControlKind.TimeRange) {
       params.set(ExploreStateURLParams.TimeRange, value);
-      const zone = rangeTimeZone(value);
-      if (zone) params.set(ExploreStateURLParams.TimeZone, zone);
+      const zone = getTimeZoneOfRange(value);
+      if (zone && !params.has(ExploreStateURLParams.TimeZone)) {
+        params.set(ExploreStateURLParams.TimeZone, zone);
+      }
       if (!params.has(ExploreStateURLParams.ComparisonTimeRange)) {
         params.set(
           ExploreStateURLParams.ComparisonTimeRange,
@@ -103,13 +106,4 @@ export function withoutTimeControls(
     else params.set(key, value);
   }
   return params;
-}
-
-// The zone a range names, if any, read the way TimeFilterManager reads it.
-function rangeTimeZone(range: string): string | undefined {
-  try {
-    return parseRillTime(range).timezone;
-  } catch {
-    return undefined;
-  }
 }

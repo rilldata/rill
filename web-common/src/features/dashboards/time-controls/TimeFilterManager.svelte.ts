@@ -35,6 +35,7 @@ import {
 import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
 import {
   formatRillTimeWallClock,
+  getTimeZoneOfRange,
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
@@ -1041,14 +1042,5 @@ export class TimeFilterManager implements UrlParamsStore {
       .filter(Boolean) as ComparisonTimeRangeOption[];
     // Custom comparisons are rendered separately by ComparisonTimeRangePicker.
     return filteredOptions;
-  }
-}
-
-function getTimeZoneOfRange(timeRange: string | undefined) {
-  if (!timeRange) return undefined;
-  try {
-    return parseRillTime(timeRange).timezone;
-  } catch {
-    return undefined;
   }
 }
