@@ -1481,7 +1481,7 @@
   "field_list_measures": "MEDIDAS",
   "field_list_time": "TIEMPO",
   "file_explorer_delete_file_description": "El archivo {path} se eliminará del proyecto.",
-  "file_explorer_delete_folder_description": "La carpeta {path} y todo su contenido se eliminarán del proyecto.",
+  "file_explorer_delete_folder_description": "La carpeta {path} y todo su contenido se eliminarán del proyecto, incluidos los archivos que el explorador de archivos no muestra, como las rutas ignoradas en rill.yaml.",
   "file_explorer_delete_resource_description": [
     {
       "declarations": ["input kind", "input name", "input path"],

@@ -50,7 +50,7 @@ Rather than creating a parent folder and moving it into another folder manually,
 
 To delete a resource, hover over its file in the file explorer, click on the "triple dots," and select `Delete`. Rill asks you to confirm first, and the dialog names the resource and the file that will be removed. Nothing is deleted until you click `Delete` in the dialog.
 
-Folders work the same way: deleting a folder that has contents lists the files that will be removed with it, while an empty folder is deleted right away.
+Folders work the same way: deleting a folder that has contents lists the files in it. Files the file explorer doesn't show, such as paths in `ignore_paths`, are removed with it too. An empty folder is deleted right away.
 
 :::warning Deleting can't be undone in Rill Developer
 

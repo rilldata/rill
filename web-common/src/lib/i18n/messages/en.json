@@ -1472,7 +1472,7 @@
   "field_list_measures": "MEASURES",
   "field_list_time": "TIME",
   "file_explorer_delete_file_description": "The file {path} will be deleted from the project.",
-  "file_explorer_delete_folder_description": "The folder {path} and everything in it will be deleted from the project.",
+  "file_explorer_delete_folder_description": "The folder {path} and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
   "file_explorer_delete_resource_description": [
     {
       "declarations": ["input kind", "input name", "input path"],

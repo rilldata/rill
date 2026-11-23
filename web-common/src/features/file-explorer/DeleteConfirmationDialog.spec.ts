@@ -92,7 +92,7 @@ describe("DeleteConfirmationDialog", () => {
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent("Delete folder?");
     expect(dialog).toHaveTextContent(
-      "The folder /dashboards and everything in it will be deleted from the project.",
+      "The folder /dashboards and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
     );
     expect(
       screen.getAllByRole("listitem").map((item) => item.textContent),

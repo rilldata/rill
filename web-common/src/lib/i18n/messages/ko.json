@@ -1472,7 +1472,7 @@
   "field_list_measures": "측정값",
   "field_list_time": "시간",
   "file_explorer_delete_file_description": "파일 {path}이(가) 프로젝트에서 삭제됩니다.",
-  "file_explorer_delete_folder_description": "폴더 {path}와(과) 그 안의 모든 항목이 프로젝트에서 삭제됩니다.",
+  "file_explorer_delete_folder_description": "폴더 {path}와(과) 그 안의 모든 항목이 프로젝트에서 삭제됩니다. 파일 탐색기에 표시되지 않는 파일(예: rill.yaml에서 무시하도록 설정한 경로)도 함께 삭제됩니다.",
   "file_explorer_delete_resource_description": [
     {
       "declarations": ["input kind", "input name", "input path"],
