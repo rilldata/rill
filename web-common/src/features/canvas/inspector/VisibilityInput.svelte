@@ -2,35 +2,31 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { Document } from "yaml";
-  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
-  import { isHiddenPath } from "../layout-util";
+  import { isHiddenPath, type YAMLPath } from "../layout-util";
+  import { setKeyBeforeContent } from "../stores/block-edit";
+  import type { CanvasEntity } from "../stores/canvas-entity";
 
-  export let component: BaseCanvasComponent;
+  // The "Visible when" input for the `if` condition of a canvas element: a component's
+  // item, a tab group or a container.
+  export let canvas: CanvasEntity;
+  // The element's YAML path, e.g. ["rows", 0, "items", 1] or ["rows", 2].
+  export let path: YAMLPath;
+  // Who sees the element, worded for its kind.
+  export let hint: string;
+  // Shown while a condition is set, e.g. that hiding a component doesn't restrict its data.
+  export let dataNote: string | undefined = undefined;
+  export let id = "canvas-visibility-condition";
 
-  $: ({ parent, specStore } = component);
-  $: ({ parsedContent, hiddenPaths, _metricsViews } = parent);
+  $: ({ parsedContent, hiddenPaths } = canvas);
 
-  // The canvas item's YAML path: the component's path without its renderer key.
-  $: itemPath = component.pathInYAML.slice(0, -1);
-
-  $: condition = readCondition($parsedContent, itemPath);
+  $: condition = readCondition($parsedContent, path);
 
   let value = "";
   $: value = condition;
 
-  $: hiddenFromYou = isHiddenPath($hiddenPaths, itemPath);
+  $: hiddenFromYou = isHiddenPath($hiddenPaths, path);
 
-  $: metricsViewName = ($specStore as { metrics_view?: string } | undefined)
-    ?.metrics_view;
-  $: dataQueryable =
-    !!condition &&
-    !!metricsViewName &&
-    !$_metricsViews[metricsViewName]?.state?.validSpec?.securityRules?.length;
-
-  function readCondition(
-    doc: Document | undefined,
-    path: (string | number)[],
-  ): string {
+  function readCondition(doc: Document | undefined, path: YAMLPath): string {
     const raw: unknown = doc?.getIn([...path, "if"]);
     if (typeof raw === "string") return raw;
     if (typeof raw === "boolean") return String(raw);
@@ -38,16 +34,16 @@
   }
 
   function save() {
-    const fileArtifact = parent.fileArtifact;
+    const fileArtifact = canvas.fileArtifact;
     if (!fileArtifact || !$parsedContent) return;
 
     const next = value.trim();
     if (next === condition) return;
 
     if (next === "") {
-      $parsedContent.deleteIn([...itemPath, "if"]);
+      $parsedContent.deleteIn([...path, "if"]);
     } else {
-      $parsedContent.setIn([...itemPath, "if"], next);
+      setKeyBeforeContent($parsedContent, path, "if", next);
     }
     fileArtifact.updateEditorContent($parsedContent.toString(), false, true);
   }
@@ -55,14 +51,14 @@
 
 <div class="visibility">
   <Input
-    id="canvas-visibility-condition"
+    {id}
     capitalizeLabel={false}
     textClass="text-sm"
     size="sm"
     labelGap={2}
     fontFamily="var(--font-mono, monospace)"
     label={m.canvas_visibility_label()}
-    hint={m.canvas_visibility_hint()}
+    {hint}
     bind:value
     onBlur={save}
     onEnter={save}
@@ -70,8 +66,8 @@
   {#if hiddenFromYou}
     <p class="note">{m.canvas_visibility_hidden_from_you()}</p>
   {/if}
-  {#if dataQueryable}
-    <p class="note">{m.canvas_visibility_data_note()}</p>
+  {#if condition && dataNote}
+    <p class="note">{dataNote}</p>
   {/if}
 </div>
 

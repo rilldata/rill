@@ -1,10 +1,15 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -57,8 +62,24 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 
 	str, err := repo.Get(ctx, path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return httputil.Errorf(http.StatusNotFound, "file %q not found", path)
+		}
 		return err
 	}
-	_, err = w.Write([]byte(str))
-	return err
+
+	// Assets may hold licensed data, such as map boundaries, so shared caches must never store them.
+	// Browsers revalidate on every use, which is cheap thanks to the ETag.
+	sum := sha256.Sum256([]byte(str))
+	w.Header().Set("Cache-Control", "private, no-cache")
+	w.Header().Set("ETag", `"`+hex.EncodeToString(sum[:])+`"`)
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".geojson", ".topojson":
+		w.Header().Set("Content-Type", "application/json")
+	default:
+		// http.ServeContent detects the type from the extension, then from the content.
+	}
+
+	http.ServeContent(w, req, path, time.Time{}, strings.NewReader(str))
+	return nil
 }

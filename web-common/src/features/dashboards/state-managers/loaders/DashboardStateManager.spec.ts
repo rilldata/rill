@@ -58,7 +58,7 @@ import {
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
-import { readable } from "svelte/store";
+import { get, readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
@@ -374,6 +374,29 @@ describe("DashboardStateManager", () => {
         ...ExploreStateSubsetForRillDefaultState,
         ...ExploreStateSubsetForYAMLState,
       });
+    });
+
+    it("Should call onLoad once the initial state is in the url", async () => {
+      const searchesAtLoad: string[] = [];
+      renderDashboardStateManager(undefined, false, false, () =>
+        searchesAtLoad.push(get(hoistedPage).url.searchParams.toString()),
+      );
+
+      await waitFor(() =>
+        expect(searchesAtLoad).toEqual([
+          new URLSearchParams(PageURLForRillDefaultState).toString(),
+        ]),
+      );
+    });
+
+    it("Should call onLoad when the dashboard fails to load", async () => {
+      // No time range summary: the dashboard has no data to show.
+      mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {});
+      const onLoad = vi.fn();
+      renderDashboardStateManager(undefined, false, false, onLoad);
+
+      await waitFor(() => expect(screen.getByText("Failed to load dashboard")));
+      expect(onLoad).toHaveBeenCalled();
     });
   });
 
@@ -712,6 +735,7 @@ function renderDashboardStateManager(
     | undefined = undefined,
   disableMostRecentDashboardState: boolean = false,
   disableInitSessionDashboardState: boolean = false,
+  onLoad: () => void = () => {},
 ) {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
@@ -719,6 +743,7 @@ function renderDashboardStateManager(
       bookmarkOrTokenExploreState,
       disableMostRecentDashboardState,
       disableInitSessionDashboardState,
+      onLoad,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

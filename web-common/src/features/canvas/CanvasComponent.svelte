@@ -5,6 +5,7 @@
   import CanvasComponentPngDialog from "./export/CanvasComponentPngDialog.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
+  import type { BlockKind } from "./stores/block-edit";
   import { textScaleStyle } from "./text-size";
 </script>
 
@@ -62,7 +63,8 @@
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
+  // Optional: wrap the component's row into a new block of the kind (top-level rows only).
+  export let onWrapRow: ((kind: BlockKind) => void) | undefined = undefined;
 
   let open = false;
   let container: HTMLElement;
@@ -101,7 +103,7 @@
     {component}
     {onDelete}
     {onDuplicate}
-    {onConvertToTabGroup}
+    {onWrapRow}
     onDownloadPng={openPngDialog}
     {editable}
     bind:dropdownOpen={open}
