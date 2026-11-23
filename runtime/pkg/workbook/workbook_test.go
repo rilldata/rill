@@ -848,16 +848,19 @@ func TestWriteTextParts(t *testing.T) {
 	require.Contains(t, ranges, "N25:R32")
 	require.Equal(t, "Below", cell(dashboard, "A35"))
 	// A long text keeps every one of its 520 rows, and the block below it starts after the last of them.
-	require.True(t, strings.HasSuffix(cell(dashboard, "A39"), "Line\nLast line"))
-	require.Contains(t, ranges, "A39:E558")
+	// It has more line feeds than a cell shows, so it fills cells of 254 lines, one below the other.
+	require.Contains(t, ranges, "A39:E292")
+	require.Contains(t, ranges, "A293:E546")
+	require.Equal(t, strings.Repeat("Line\n", 11)+"Last line", cell(dashboard, "A547"))
+	require.Contains(t, ranges, "A547:E558")
 	require.Equal(t, "After", cell(dashboard, "A561"))
-	// A text longer than a cell holds is cut off at the limit, and its block takes only the rows of the text it keeps:
-	// 6,553 full lines and part of the next.
-	huge := cell(dashboard, "A565")
-	require.Len(t, huge, excelize.TotalCellChars)
-	require.True(t, strings.HasSuffix(huge, "Line\nLi"))
-	require.Contains(t, ranges, "A565:E7118")
-	require.Equal(t, "End", cell(dashboard, "A7121"))
+	// A text longer still fills more such cells and moves the blocks below it as far.
+	require.Equal(t, strings.Repeat("Line\n", 253)+"Line", cell(dashboard, "A565"))
+	require.Contains(t, ranges, "A565:E818")
+	require.Equal(t, strings.Repeat("Line\n", 253)+"Line", cell(dashboard, "A819"))
+	require.Equal(t, strings.Repeat("Line\n", 142), cell(dashboard, "A7423"))
+	require.Contains(t, ranges, "A7423:E7565")
+	require.Equal(t, "End", cell(dashboard, "A7568"))
 
 	// A block without text or tables leaves its cells alone instead of merging them into one empty cell.
 	require.Equal(t, "", cell(dashboard, "G25"))
@@ -871,6 +874,27 @@ func TestWriteTextParts(t *testing.T) {
 	require.Equal(t, "25.0%", cell(data, "B4"))
 	require.Equal(t, "83.3%", cell(data, "C2"))
 	require.Equal(t, "n/a", cell(data, "C4"))
+}
+
+func TestCellTexts(t *testing.T) {
+	long := strings.Repeat("x", excelize.TotalCellChars)
+	tests := []struct {
+		name string
+		text string
+		want []string
+	}{
+		{"fits", "a\nb", []string{"a\nb"}},
+		{"line feeds", strings.Repeat("a\n", 300), []string{strings.Repeat("a\n", 253) + "a", strings.Repeat("a\n", 46)}},
+		{"characters", long[:20_000] + "\n" + long[:20_000], []string{long[:20_000], long[:20_000]}},
+		{"long line", "a\n" + long + "yz\nb", []string{"a", long, "yz\nb"}},
+		// A character outside the Basic Multilingual Plane takes two UTF-16 units and is never split.
+		{"surrogate pair", long[1:] + "😀", []string{long[1:], "😀"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, cellTexts(tt.text))
+		})
+	}
 }
 
 func TestWriteLongCanvas(t *testing.T) {

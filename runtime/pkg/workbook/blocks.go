@@ -44,6 +44,8 @@ const (
 	previewExtraRows = 2
 	// Rows of a table that a text block always previews, growing if it must.
 	textTableMinRows = 5
+	// Line feeds Excel shows in one cell.
+	maxCellLineFeeds = 253
 )
 
 // writeDashboardSheet writes a dashboard sheet: the header lines, then every block at the cell its geometry maps to.
@@ -136,19 +138,24 @@ func (w *writer) blockGeometries(blocks []*runtimev1.WorkbookBlock) []geometry {
 		}
 		grows[i] = max(0, need*cellHeightPx-geometries[i].height)
 	}
-	// A block above another one starts higher, so going top to bottom finds the shifts of the blocks above a block before its own.
-	order := make([]int, len(blocks))
-	for i := range order {
-		order[i] = i
+	// Going down the tops, carry the furthest any bottom above has moved.
+	// A block whose bottom is above another's top also starts higher, so its own shift is known by then.
+	byTop := make([]int, len(blocks))
+	for i := range byTop {
+		byTop[i] = i
 	}
-	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(geometries[a].y, geometries[b].y) })
+	byBottom := slices.Clone(byTop)
+	slices.SortFunc(byTop, func(a, b int) int { return cmp.Compare(geometries[a].y, geometries[b].y) })
+	slices.SortFunc(byBottom, func(a, b int) int {
+		return cmp.Compare(geometries[a].y+geometries[a].height, geometries[b].y+geometries[b].height)
+	})
 	shifts := make([]int, len(blocks))
-	for k, j := range order {
-		for _, i := range order[:k] {
-			if geometries[i].y+geometries[i].height <= geometries[j].y {
-				shifts[j] = max(shifts[j], shifts[i]+grows[i])
-			}
+	moved, k := 0, 0
+	for _, j := range byTop {
+		for ; k < len(byBottom) && geometries[byBottom[k]].y+geometries[byBottom[k]].height <= geometries[j].y; k++ {
+			moved = max(moved, shifts[byBottom[k]]+grows[byBottom[k]])
 		}
+		shifts[j] = moved
 	}
 	for i := range geometries {
 		geometries[i].y += shifts[i]
@@ -566,20 +573,14 @@ func (w *writer) textParts(t *runtimev1.WorkbookTextBlock, cols int) []textPart 
 				maxRows:     extra + rows,
 			})
 		case p.GetText() != "":
-			// A cell holds at most excelize.TotalCellChars UTF-16 units and excelize cuts off the rest,
-			// so the rows are counted for the text the cell keeps.
-			text, units := p.GetText(), 0
-			for i, r := range text {
-				if units += utf16.RuneLen(r); units > excelize.TotalCellChars {
-					text = text[:i]
-					break
+			// A text longer than a cell holds goes into successive cells, one below the other.
+			for _, text := range cellTexts(p.GetText()) {
+				lines := 0
+				for _, line := range strings.Split(text, "\n") {
+					lines += max(1, (utf8.RuneCountInString(line)+cols*textCharsPerCol-1)/(cols*textCharsPerCol))
 				}
+				res = append(res, textPart{text: text, minRows: lines, maxRows: lines})
 			}
-			lines := 0
-			for _, line := range strings.Split(text, "\n") {
-				lines += max(1, (utf8.RuneCountInString(line)+cols*textCharsPerCol-1)/(cols*textCharsPerCol))
-			}
-			res = append(res, textPart{text: text, minRows: lines, maxRows: lines})
 		}
 	}
 	// Nothing follows the last part, so a table there needs no blank row below it.
@@ -592,7 +593,8 @@ func (w *writer) textParts(t *runtimev1.WorkbookTextBlock, cols int) []textPart 
 }
 
 // writeText writes a text block over its area, top to bottom in reading order:
-// each run of text as one merged, wrapping cell and each table as a preview that links to its data sheet.
+// each run of text as a merged, wrapping cell (several, one below the other, for more than a cell holds)
+// and each table as a preview that links to its data sheet.
 // A part takes the rows it can use, as long as the parts below it keep the rows they need (see blockGeometries),
 // and a text that comes last takes what is left, so a block of only text fills its whole area.
 // A block without text or tables writes nothing: an empty merged cell would only hide the grid.
@@ -739,4 +741,39 @@ func (w *writer) setLink(sheet string, col, row int, text, target, linkType stri
 		return err
 	}
 	return w.f.SetCellHyperLink(sheet, cell, target, linkType)
+}
+
+// cellTexts splits a text into the texts of successive cells, each within what Excel shows in a cell:
+// excelize.TotalCellChars UTF-16 units (excelize cuts off the rest) and maxCellLineFeeds line feeds.
+// It splits at line feeds, which then fall between two cells, and within a line only when the line alone is too long.
+func cellTexts(text string) []string {
+	var cells, lines []string
+	// UTF-16 units of the lines, with the line feeds between them.
+	units := 0
+	flush := func() {
+		if len(lines) > 0 {
+			cells = append(cells, strings.Join(lines, "\n"))
+		}
+		lines, units = nil, 0
+	}
+	for _, line := range strings.Split(text, "\n") {
+		start, n := 0, 0
+		for i, r := range line {
+			if n += utf16.RuneLen(r); n > excelize.TotalCellChars {
+				flush()
+				cells = append(cells, line[start:i])
+				start, n = i, utf16.RuneLen(r)
+			}
+		}
+		if len(lines) > maxCellLineFeeds || len(lines) > 0 && units+1+n > excelize.TotalCellChars {
+			flush()
+		}
+		if len(lines) > 0 {
+			units++
+		}
+		lines = append(lines, line[start:])
+		units += n
+	}
+	flush()
+	return cells
 }
