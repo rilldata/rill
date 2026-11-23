@@ -37,7 +37,7 @@
 
   const blockIndex = $derived(builder.blockIndex);
   // The chip shows a name the author chose, not a generated one such as "container-2".
-  // Renaming happens in the inspector, which a click on the chip opens.
+  // Renaming happens in the inspector, which a click on the header opens.
   const name = $derived(
     isGeneratedBlockName("container", container.name) ? "" : container.name,
   );
@@ -46,13 +46,19 @@
     onSelectBlock(container.name);
   }
 
-  // A press anywhere on the header band, the chip's label and name included, starts a drag
-  // of the whole container; a press without a drag still selects it. The chip's menu keeps
-  // its own behavior.
+  // The header band is one control, like a tab group's strip: a press anywhere on it, the
+  // chip included, starts a drag of the whole container, and a click without a drag selects
+  // it. The chip's menu button keeps its own behavior.
+  function onMenuButton(event: MouseEvent) {
+    return event.target instanceof Element && !!event.target.closest("button");
+  }
+
   function handleHeaderMouseDown(event: MouseEvent) {
-    if (event.target instanceof Element && event.target.closest("button"))
-      return;
-    onBlockMouseDown(blockIndex, event);
+    if (!onMenuButton(event)) onBlockMouseDown(blockIndex, event);
+  }
+
+  function handleHeaderClick(event: MouseEvent) {
+    if (!onMenuButton(event)) select();
   }
 </script>
 
@@ -70,9 +76,13 @@
   onSelect={select}
 >
   {#snippet header()}
-    <div class="header" role="presentation" onmousedown={handleHeaderMouseDown}>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div class={["chip", { selected }]} role="presentation" onclick={select}>
+    <div
+      class="header"
+      role="presentation"
+      onmousedown={handleHeaderMouseDown}
+      onclick={handleHeaderClick}
+    >
+      <div class={["chip", { selected }]}>
         <BlockGrip kind="container" />
         <span class="label" title={m.canvas_container_viewer_note()}>
           {m.canvas_container()}
@@ -117,7 +127,7 @@
 
   .chip {
     @apply flex h-5 items-center gap-x-1 rounded-sm border border-gray-200 bg-surface-card pl-0.5 pr-0.5;
-    @apply cursor-grab text-xs font-medium text-fg-secondary active:cursor-grabbing;
+    @apply text-xs font-medium text-fg-secondary;
   }
 
   .chip:hover {

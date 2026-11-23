@@ -127,13 +127,22 @@ test.describe("canvas containers", () => {
       ["rows: []"],
     );
 
-    // Move the story container above the header container by its label: the whole chip
-    // is a drag handle, not only the grip.
-    await dragTo(
-      page,
-      blockRegion(page, 1).locator(".chip .label"),
-      page.locator("#block-row-0"),
+    // Move the story container above the header container by its label: the whole header
+    // is a drag handle, not only the grip. A drag starts after a short hold, so reach the
+    // slot during the hold and release without moving again: the slot still takes the drop.
+    const label = await blockRegion(page, 1)
+      .locator(".chip .label")
+      .boundingBox();
+    const slot = await page.locator("#block-row-0").boundingBox();
+    if (!label || !slot) throw new Error("drag source or slot is not visible");
+    await page.mouse.move(
+      label.x + label.width / 2,
+      label.y + label.height / 2,
     );
+    await page.mouse.down();
+    await page.mouse.move(slot.x + slot.width / 2, slot.y + 2);
+    await expect(page.locator(".block-ghost")).toBeVisible();
+    await page.mouse.up();
     await expectProjectFile(page, CANVAS, [
       "rows:\n  - name: story",
       "content: Header row",
@@ -225,9 +234,14 @@ test.describe("canvas containers", () => {
       blockRegion(page, 2).getByRole("tab", { name: "Details" }),
     ).toHaveAttribute("aria-selected", "true");
 
-    // Select the container, then insert another container above it, from the add menu
-    // below the first row.
-    await blockRegion(page, 1).locator(".chip .label").click();
+    // Select the container from the blank part of its header, then insert another
+    // container above it, from the add menu below the first row.
+    const header = blockRegion(page, 1).locator(".header");
+    const band = await header.boundingBox();
+    if (!band) throw new Error("container header is not visible");
+    await header.click({
+      position: { x: band.width - 24, y: band.height / 2 },
+    });
     const name = page.getByLabel("Container name");
     await expect(name).toHaveValue("container-2");
     // The add button shows only while the pointer is over the row's edge, so open its menu
