@@ -151,6 +151,20 @@ describe("withoutTimeControls", () => {
     );
   });
 
+  it("keeps the zone a control's range names out of the YAML", () => {
+    const zoned = {
+      ...range,
+      values: ["W1 as of watermark tz Asia/Kathmandu"],
+    };
+    // The time state writes the zone it reads from the range as `tz`.
+    expect(
+      writeBack("tr=P30D&grain=day", [zoned], (p) => {
+        p.set("grain", "week");
+        p.set("tz", "Asia/Kathmandu");
+      }),
+    ).toBe("tr=P30D&grain=week");
+  });
+
   it("writes the change as is without time controls", () => {
     expect(writeBack("tr=P30D", [], (p) => p.set("grain", "week"))).toBe(
       "tr=P30D&grain=week",
