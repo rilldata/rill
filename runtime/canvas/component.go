@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -640,28 +642,129 @@ func (v rendererValidator) validateMap(props map[string]any) error {
 		return err
 	}
 
-	geoDim, ok := pathutil.GetPathString(props, "geo_dimension.field")
-	if !ok {
-		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property")
-	}
-	if !v.hasDimension(mv, geoDim) {
-		return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
+	// A map has a points layer (from a geo dimension), a regions layer, or both.
+	geoDim, hasPoints := pathutil.GetPathString(props, "geo_dimension.field")
+	_, hasRegions := props["regions"]
+	if !hasPoints && !hasRegions {
+		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property or a 'regions' property")
 	}
 
-	// Color on a map is always measure-driven.
-	colorMeasure, ok := pathutil.GetPathString(props, "color.measure")
-	if !ok {
-		return errors.New("renderer properties for map must include a string 'color.measure' property")
-	}
-	if !v.hasMeasure(mv, colorMeasure, ephemeralNames) {
-		return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
+	if hasPoints {
+		if !v.hasDimension(mv, geoDim) {
+			return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
+		}
+		// Color on a map is always measure-driven.
+		colorMeasure, ok := pathutil.GetPathString(props, "color.measure")
+		if !ok {
+			return errors.New("renderer properties for map must include a string 'color.measure' property")
+		}
+		if !v.hasMeasure(mv, colorMeasure, ephemeralNames) {
+			return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
+		}
+	} else if err := v.validateOptionalMeasureField(mv, mvn, props, "color.measure", ephemeralNames); err != nil {
+		return err
 	}
 
 	if err := v.validateOptionalMeasureField(mv, mvn, props, "size_measure.field", ephemeralNames); err != nil {
 		return err
 	}
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field"); err != nil {
+		return err
+	}
 
-	return v.validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
+	if hasRegions {
+		return v.validateMapRegions(mv, mvn, props, ephemeralNames)
+	}
+	return nil
+}
+
+// mapRegionKeys lists the keys that region values can be matched by, per built-in boundary set.
+// It must be kept in sync with BOUNDARY_SETS in web-common/src/features/canvas/components/map/regions/registry.ts.
+var mapRegionKeys = map[string][]string{
+	"countries": {"auto", "iso_a2", "iso_a3", "iso_n3", "name"},
+	"states":    {"auto", "code", "iso_3166_2", "fips", "name"},
+	"us_states": {"auto", "postal", "iso_3166_2", "fips", "name"},
+}
+
+// mapRegionCountry matches an ISO 3166-1 alpha-2 country code, as used by the `states` boundary set.
+// Whether the country has built-in state boundaries is only known to the frontend,
+// so an unsupported country surfaces as an error when the map renders.
+var mapRegionCountry = regexp.MustCompile(`^[A-Z]{2}$`)
+
+// validateMapRegions validates the regions layer of a map.
+func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn string, props map[string]any, ephemeralNames map[string]bool) error {
+	if _, ok := props["regions"].(map[string]any); !ok {
+		return errors.New("renderer property 'regions' must be a mapping")
+	}
+
+	dim, ok := pathutil.GetPathString(props, "regions.dimension")
+	if !ok {
+		return errors.New("renderer property 'regions' must include a string 'dimension' property")
+	}
+	if !v.hasDimension(mv, dim) {
+		return fmt.Errorf("referenced regions.dimension %q is not a dimension in metrics view %q", dim, mvn)
+	}
+
+	country, hasCountry, err := getOptionalPathString(props, "regions.country")
+	if err != nil {
+		return err
+	}
+
+	switch boundaries := props["regions"].(map[string]any)["boundaries"].(type) {
+	case string:
+		keys, ok := mapRegionKeys[boundaries]
+		if !ok {
+			if v.lenient && IsTemplated(boundaries) {
+				break
+			}
+			return fmt.Errorf("renderer property 'regions.boundaries' must be one of %v or a mapping with 'file' and 'id' properties, got %q", slices.Sorted(maps.Keys(mapRegionKeys)), boundaries)
+		}
+		if err := v.validateOptionalStringEnum(props, "regions.key", keys); err != nil {
+			return err
+		}
+		if boundaries != "states" {
+			if hasCountry {
+				return errors.New("renderer property 'regions.country' is only supported with 'boundaries: states'")
+			}
+			break
+		}
+		if !hasCountry {
+			return errors.New("renderer property 'regions' must include a string 'country' property with 'boundaries: states'")
+		}
+		if !mapRegionCountry.MatchString(country) && !(v.lenient && IsTemplated(country)) {
+			return fmt.Errorf("renderer property 'regions.country' must be an ISO 3166-1 alpha-2 code such as \"DE\", got %q", country)
+		}
+	case map[string]any:
+		// Custom boundaries from a GeoJSON or TopoJSON file in the project, matched on a single feature property.
+		// The file is not checked here: it is served from a public path and loaded by the browser,
+		// so a missing file surfaces as an error when the map renders.
+		if file, ok := pathutil.GetPathString(props, "regions.boundaries.file"); !ok || file == "" {
+			return errors.New("renderer property 'regions.boundaries' must include a string 'file' property")
+		}
+		if id, ok := pathutil.GetPathString(props, "regions.boundaries.id"); !ok || id == "" {
+			return errors.New("renderer property 'regions.boundaries' must include a string 'id' property")
+		}
+		if _, _, err := getOptionalPathString(props, "regions.boundaries.name"); err != nil {
+			return err
+		}
+		if _, ok := pathutil.GetPath(props, "regions.key"); ok {
+			return errors.New("renderer property 'regions.key' is not supported with custom boundaries; use 'regions.boundaries.id' instead")
+		}
+		if hasCountry {
+			return errors.New("renderer property 'regions.country' is only supported with 'boundaries: states'")
+		}
+	default:
+		return errors.New("renderer property 'regions' must include a 'boundaries' property that is a string or a mapping")
+	}
+
+	measure, ok := pathutil.GetPathString(props, "regions.color.measure")
+	if !ok {
+		return errors.New("renderer property 'regions' must include a string 'color.measure' property")
+	}
+	if !v.hasMeasure(mv, measure, ephemeralNames) {
+		return fmt.Errorf("referenced regions.color.measure %q is not a measure in metrics view %q", measure, mvn)
+	}
+	return nil
 }
 
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
