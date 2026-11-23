@@ -9,6 +9,8 @@ import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humaniz
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { formatSpecifier } from "d3-format";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ExprRef, SignalRef } from "vega";
+import type { Config } from "vega-lite";
 import type {
   Field,
   NumericMarkPropDef,
@@ -169,7 +171,9 @@ export function generateVLMultiMetricChartSpec(
     type: "quantitative" as const,
     title: "Value",
     axis: {
-      ...createSharedAxisFormat(measures, data.fields),
+      // An axis format in the encoding would override the chart's own `vl_config`.
+      ...(!formatsAxisLabels(vegaConfig, horizontal ? "x" : "y") &&
+        createSharedAxisFormat(measures, data.fields)),
       ...(!config.y?.showAxisTitle && { title: null }),
     },
     scale: {
@@ -390,6 +394,48 @@ export function generateVLMultiMetricChartSpec(
   };
 
   return horizontal ? transposeCartesianSpec(result) : result;
+}
+
+/**
+ * Whether a chart's Vega-Lite config sets the tick labels of the quantitative axis
+ * on the given channel: a number format, or a format or label expression in any of
+ * the axis config blocks that Vega-Lite applies to that axis.
+ */
+function formatsAxisLabels(
+  vegaConfig: Config<ExprRef | SignalRef> | undefined,
+  channel: "x" | "y",
+): boolean {
+  if (!vegaConfig) return false;
+  if (
+    vegaConfig.numberFormat !== undefined ||
+    vegaConfig.numberFormatType !== undefined
+  ) {
+    return true;
+  }
+  const axisConfigs =
+    channel === "x"
+      ? [
+          vegaConfig.axis,
+          vegaConfig.axisQuantitative,
+          vegaConfig.axisX,
+          vegaConfig.axisXQuantitative,
+          vegaConfig.axisBottom,
+          vegaConfig.axisTop,
+        ]
+      : [
+          vegaConfig.axis,
+          vegaConfig.axisQuantitative,
+          vegaConfig.axisY,
+          vegaConfig.axisYQuantitative,
+          vegaConfig.axisLeft,
+          vegaConfig.axisRight,
+        ];
+  return axisConfigs.some(
+    (axis) =>
+      axis?.format !== undefined ||
+      axis?.formatType !== undefined ||
+      axis?.labelExpr !== undefined,
+  );
 }
 
 // SI prefixes below one, from yocto to milli, as d3 writes them.

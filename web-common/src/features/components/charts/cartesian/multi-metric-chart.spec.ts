@@ -149,6 +149,18 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
     },
   };
 
+  // Horizontal bars carry the measures, and their axis, on x.
+  const horizontalBars: CartesianChartSpec = {
+    ...vertical,
+    x: vertical.y,
+    y: vertical.x,
+  };
+
+  const withVegaConfig = (config: CartesianChartSpec, vegaConfig: object) => ({
+    ...config,
+    vl_config: JSON.stringify(vegaConfig),
+  });
+
   function dataWith(formats: MeasureFormat[]) {
     const data = chartData();
     data.fields = { device: { name: "device", displayName: "Device" } };
@@ -221,8 +233,6 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
       axisFormat(vertical, "stacked_area", "layer.0.encoding.y.axis.format"),
     ).toBe(",%");
 
-    // Horizontal bars carry the measures, and their axis, on x.
-    const horizontalBars = { ...vertical, x: vertical.y, y: vertical.x };
     expect(
       axisFormat(
         horizontalBars,
@@ -235,6 +245,57 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
     expect(
       axisFormat(vertical, "stacked_bar_normalized", "layer.1.encoding.y.axis"),
     ).toEqual({ title: null, format: ".0%" });
+  });
+
+  // A chart's own Vega-Lite config, as set through `vl_config`.
+  const suffix = { labelExpr: "datum.label + ' sec'" };
+  it.each<[string, CartesianChartSpec, object, boolean]>([
+    [
+      "yields to a label expression for the y axis",
+      vertical,
+      { axisY: suffix },
+      false,
+    ],
+    [
+      "yields to a format for quantitative axes",
+      vertical,
+      { axisQuantitative: { format: ".1%" } },
+      false,
+    ],
+    ["yields to a number format", vertical, { numberFormat: ".2f" }, false],
+    [
+      "yields to a label expression for the x axis of horizontal bars",
+      horizontalBars,
+      { axisX: suffix },
+      false,
+    ],
+    [
+      "ignores a label expression for the category axis",
+      vertical,
+      { axisX: suffix },
+      true,
+    ],
+    [
+      "ignores a label expression for the category axis of horizontal bars",
+      horizontalBars,
+      { axisY: suffix },
+      true,
+    ],
+    [
+      "ignores axis settings other than the label text",
+      vertical,
+      { axisY: { labelColor: "gray" } },
+      true,
+    ],
+  ])("%s in `vl_config`", (_name, chart, vegaConfig, isFormatted) => {
+    const spec = generateVLMultiMetricChartSpec(
+      withVegaConfig(chart, vegaConfig),
+      dataWith([percentage, percentage]),
+    );
+    const channel = chart === horizontalBars ? "x" : "y";
+    expect(at(spec, `layer.1.encoding.${channel}.axis.format`)).toBe(
+      isFormatted ? ",%" : undefined,
+    );
   });
 
   describe("rendered tick labels", () => {
@@ -412,6 +473,25 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
         "0.5000025",
         "0.500003",
       ]);
+    });
+
+    it("keeps the labels that the chart's `vl_config` asks for", async () => {
+      // A label expression in the encoding would drop this suffix.
+      expect(
+        await tickLabels(
+          [{}, {}],
+          [row("Desktop", 9000, 6000), row("Mobile", 1000, 4000)],
+          withVegaConfig(vertical, { axisY: suffix }),
+        ),
+      ).toEqual(["0k sec", "2k sec", "4k sec", "6k sec", "8k sec"]);
+
+      expect(
+        await tickLabels(
+          [percentage, percentage],
+          [row("Desktop", 0.9, 0.6), row("Mobile", 0.1, 0.4)],
+          withVegaConfig(horizontalBars, { axisX: { format: ".1%" } }),
+        ),
+      ).toEqual(["0.0%", "20.0%", "40.0%", "60.0%", "80.0%"]);
     });
 
     it("leaves the theme's labels alone from one upward", async () => {
