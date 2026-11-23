@@ -12,10 +12,9 @@ import {
 import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
+  mapTimeManagerComparisonRangeToV1TimeRange,
+  mapTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -36,44 +35,39 @@ export function getDimensionTableExportQuery(
 ): V1Query | undefined {
   const metricsViewName = get(ctx.metricsViewName);
   const exploreState = get(ctx.dashboardStore);
-  const timeControlState = get(useTimeControlStore(ctx));
+  const timeFilterManager = ctx.timeFilterManager;
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
 
   if (
     !validSpecStore.data?.explore ||
     !validSpecStore.data.metricsView ||
-    !timeControlState.ready
+    !timeFilterManager.ready
   )
     return undefined;
 
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState.selectedTimeRange,
-      exploreState.selectedTimezone,
-      validSpecStore.data.explore,
-    );
+    timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
   } else {
     timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
+      start: timeFilterManager.timeStart,
+      end: timeFilterManager.timeEnd,
     };
   }
   if (!timeRange) return undefined;
 
   let comparisonTimeRange: V1TimeRange | undefined;
-  if (timeControlState.showTimeComparison) {
+  if (timeFilterManager.showComparison) {
     if (isScheduled) {
-      comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-        timeControlState.selectedComparisonTimeRange,
-        timeControlState.showTimeComparison,
+      comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+        timeFilterManager,
         timeRange,
       );
     } else {
       comparisonTimeRange = {
-        start: timeControlState.comparisonTimeStart,
-        end: timeControlState.comparisonTimeEnd,
+        start: timeFilterManager.comparisonTimeStart,
+        end: timeFilterManager.comparisonTimeEnd,
       };
     }
   }

@@ -362,3 +362,72 @@ metrics_view: mv1
 	require.Empty(t, res.Resources)
 	require.False(t, res.Initializing)
 }
+
+// TestListSkillsWithDashboardRestriction tests that claims limited to a single dashboard, such as those of an embed of one dashboard,
+// can list the project's skills if they can use AI, since the dashboard's AI chat lists them in its "/" picker.
+func TestListSkillsWithDashboardRestriction(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi_grid:
+      metrics_view: mv1
+      measures: [count]
+`,
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+agents: [analyst]
+---
+
+ARPU excludes trial users.`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	for _, dashboard := range []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindExplore, Name: "e1"},
+		{Kind: runtime.ResourceKindCanvas, Name: "c1"},
+	} {
+		t.Run(dashboard.Kind, func(t *testing.T) {
+			// listSkills lists skills with claims limited to the dashboard, like the runtime JWT the admin service issues for its iframe (see GetIFrame).
+			listSkills := func(permissions ...runtime.Permission) []*runtimev1.Resource {
+				ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+					UserAttributes:  map[string]any{"embed": true},
+					Permissions:     permissions,
+					AdditionalRules: runtime.SecurityRulesForResources(true, []*runtimev1.ResourceName{dashboard}),
+				})
+				res, err := srv.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: instanceID, Kind: runtime.ResourceKindSkill})
+				require.NoError(t, err)
+				return res.Resources
+			}
+
+			skills := listSkills(runtime.ReadObjects, runtime.UseAI)
+			require.Len(t, skills, 1)
+			require.Equal(t, "glossary", skills[0].Meta.Name.Name)
+
+			// Without the permission to use AI, the dashboard doesn't give access to skills.
+			require.Empty(t, listSkills(runtime.ReadObjects))
+		})
+	}
+}

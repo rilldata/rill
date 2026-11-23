@@ -20,8 +20,9 @@ The `create_chart` tool draws a chart from a metrics view. You describe the char
 - Categories compared: Bar Chart for one measure; Stacked Bar Chart with the parts on `color`; Grouped Bar Chart with the clustering dimension on `group`; Bar Table for many categories with value labels; Lollipop Chart for a ranking.
 - Share of a whole: Pie Chart with the measure on `size` and the dimension on `color`, `innerRadius` for a donut; only for a handful of values that add up to a whole.
 - How a total changed: Waterfall Chart with the step on `x` and the signed change on `y`; leave `color` unbound, it is reserved for a start/delta/end type field.
-- Two measures per category: Scatter Plot with the dimension on `detail`, optional `size` and `color`; Heatmap for two dimensions and one measure.
-- A distribution: Histogram, Boxplot, Violin Plot or Density Plot need one row per observation, so put the finest dimension on `detail`.
+- Two measures per category: Scatter Plot with the dimension on `detail`, optional `size` and `color`; Marginal Plot to also show how each measure is distributed; Heatmap for two dimensions and one measure.
+- A daily pattern over weeks or months: Calendar Heatmap with the time field on `x` at the day grain and the measure on `color`.
+- A distribution: Histogram, Boxplot, Violin Plot, Density Plot or Ridgeline Plot (one curve per category) need one row per observation, so put the finest dimension on `detail`.
 
 ### Titles
 

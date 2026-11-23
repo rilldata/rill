@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/driverutil"
 )
 
 // executeExport enables exporting data from a connector to a temporary local file in the given format.
@@ -16,7 +17,7 @@ import (
 // executeExport works by simulating a model that outputs to a file.
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
-func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, headers []string) (string, error) {
+func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, headers []string, conditionalFormats []driverutil.XLSXConditionalFormat) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
@@ -50,6 +51,7 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		"format":                format,
 		"headers":               headers,
 		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
+		"conditional_formats":   conditionalFormats,
 	}
 
 	opts := &drivers.ModelExecutorOptions{

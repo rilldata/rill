@@ -5,7 +5,6 @@ import {
   toggleSurfaceInSelection,
   type ExactSelection,
 } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
-import { page } from "$app/stores";
 import {
   useCanvas,
   type CanvasResponse,
@@ -49,8 +48,7 @@ import { defaultBlockName } from "./block-edit";
 import { Grid } from "./grid";
 import { RowsBlock, type LayoutBlock } from "./layout-blocks";
 import { TabGroup } from "./tab-group";
-import { getDefaultComparisonRange } from "./time-state";
-import { TimeManager } from "./time-manager";
+import { getDefaultComparisonRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
@@ -72,6 +70,7 @@ import {
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -89,17 +88,6 @@ function encodeTabKey(name: string): string {
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
 // Set returns a boolean indicating whether the value was set
-export type SearchParamsStore = {
-  subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (
-    map: Map<string, string | undefined>,
-    checkIfSet?: boolean,
-    replaceState?: boolean,
-    prefixes?: string[],
-  ) => boolean;
-  clearAll: () => void;
-};
-
 // An exact selection with nothing selected; see `CanvasEntity.exactMeasures`.
 const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
 
@@ -115,15 +103,17 @@ export class CanvasEntity {
   // edit that moves blocks keeps their keys.
   private readonly blocks = new Map<string, TabGroup | RowsBlock>();
 
-  // Time state controls
-  timeManager: TimeManager;
-
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
   dashboardProvider: CanvasDashboardConfigProvider;
 
   // Expression filter manager
   expressionFilterManager: ExpressionFilterManager;
+
+  // Time filter manager
+  timeFilterManager: TimeFilterManager;
+  // Whether each of the canvas' metrics views has a time dimension.
+  hasTimeSeriesMap: Readable<Map<string, boolean>>;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -192,50 +182,11 @@ export class CanvasEntity {
       allowUnvalidatedSpec,
     );
 
-    // This will be deprecated soon - bgh
-    const searchParamsStore: SearchParamsStore = (() => {
-      return {
-        subscribe: this.searchParams.subscribe,
-        set: (
-          map: Map<string, string>,
-          checkIfSet = false,
-          replaceState = false,
-        ) => {
-          const existingParams = new URLSearchParams(window.location.search);
-
-          map.forEach((value, key) => {
-            if (checkIfSet && existingParams.has(key)) return false;
-
-            if (value === undefined || value === null || value === "") {
-              existingParams.delete(key);
-            } else {
-              existingParams.set(key, value);
-            }
-          });
-
-          goto(`?${existingParams.toString()}`, { replaceState }).catch(
-            console.error,
-          );
-          return true;
-        },
-        clearAll: () => {
-          const url = get(page).url;
-          url.searchParams.forEach((_, effectiveKey) => {
-            url.searchParams.delete(effectiveKey);
-          });
-
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-        },
-      };
-    })();
-
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
       this.client,
     );
-
-    this.timeManager = new TimeManager(searchParamsStore, this);
 
     // Let the embed layer (CanvasDashboardEmbed) drive themeName;
     // initialise with no override here so createResolvedThemeStore falls
@@ -267,6 +218,24 @@ export class CanvasEntity {
       this.clearActiveComponent();
     });
     this.expressionFilterManager.storeSync.syncToUrl("clear=true");
+
+    this.timeFilterManager = new TimeFilterManager(
+      this.client,
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
+    );
+    this.timeFilterManager.storeSync.syncToUrl("clear=true");
+
+    this.hasTimeSeriesMap = derived(
+      this._metricsViews,
+      (metricsViews) =>
+        new Map(
+          Object.entries(metricsViews).map(([metricsViewName, metricsView]) => [
+            metricsViewName,
+            !!metricsView?.state?.validSpec?.timeDimension,
+          ]),
+        ),
+    );
 
     this.processSpec(this.spec);
   }
@@ -360,8 +329,6 @@ export class CanvasEntity {
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
 
-    this.timeManager.onSpecChange(response);
-
     this.titleStore.set(validSpec.displayName ?? "");
     this.checkAndSetHiddenPaths(response.hiddenPaths);
 
@@ -376,12 +343,8 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
-    );
-    const requiredFilters = Object.keys(
-      this.dashboardProvider.yamlConfigProvider.requiredFilters,
-    );
+    const { pinnedFilters, requiredFilters } =
+      this.dashboardProvider.yamlConfigProvider;
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
@@ -392,8 +355,8 @@ export class CanvasEntity {
     const requiredNames = requiredFilters
       .map((f) => f.split("::").pop())
       .filter(Boolean) as string[];
-    const timeRange = get(this.timeManager.state.rangeStore);
-    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
+    const timeRange = this.timeFilterManager.timeRange;
+    const comparisonOn = this.timeFilterManager.showComparison;
 
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
@@ -524,7 +487,7 @@ export class CanvasEntity {
       this.saveSnapshot(searchParams.toString());
     }
     this.expressionFilterManager.storeSync.setUrlParams(searchParams);
-    this.timeManager.state.onUrlChange(searchParams);
+    this.timeFilterManager.storeSync.setUrlParams(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 
@@ -626,6 +589,7 @@ export class CanvasEntity {
     this.unsubscriber = undefined;
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
+    this.timeFilterManager.cleanup();
     this.dashboardProvider.cleanup?.();
   };
 

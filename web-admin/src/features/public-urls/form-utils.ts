@@ -15,7 +15,6 @@ import { derived } from "svelte/store";
 import { page } from "$app/stores";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 /**
@@ -51,8 +50,6 @@ export function createFieldsAndStateForKind(
         fields: undefined,
         sanitizedState: getSanitizedStateUrl(pageState.url),
         droppedEphemeralMeasures: [] as DroppedEphemeralMeasure[],
-        queryTimeStart: undefined,
-        queryTimeEnd: undefined,
       };
     });
   }
@@ -66,7 +63,6 @@ export function createFieldsAndStateForKind(
     },
     validSpecStore,
   } = stateManagers;
-  const timeControlStore = useTimeControlStore(stateManagers);
   return derived(
     [
       dashboardStore,
@@ -74,7 +70,6 @@ export function createFieldsAndStateForKind(
       visibleMeasures,
       visibleDimensions,
       validSpecStore,
-      timeControlStore,
     ],
     ([
       dashboardState,
@@ -82,7 +77,6 @@ export function createFieldsAndStateForKind(
       $visibleMeasures,
       $visibleDimensions,
       validSpecState,
-      timeControlState,
     ]) => {
       const metricsViewSpec = validSpecState.data?.metricsView ?? {};
       const exploreSpec = validSpecState.data?.explore ?? {};
@@ -110,8 +104,6 @@ export function createFieldsAndStateForKind(
         fields: exploreFields,
         sanitizedState,
         droppedEphemeralMeasures,
-        queryTimeStart: timeControlState.timeStart,
-        queryTimeEnd: timeControlState.timeEnd,
       };
     },
   );

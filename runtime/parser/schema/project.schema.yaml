@@ -2500,6 +2500,22 @@ definitions:
               required:
                 - name
 
+          tag_order:
+            type: array
+            description: |
+              Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+              Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+              Each tag must be set on at least one dimension or measure.
+              A derived metrics view uses the parent's order unless it sets its own.
+
+              ```yaml
+              tag_order:
+                - Revenue
+                - Engagement
+                - Geography
+              ```
+            items:
+              type: string
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
             $ref: '#/definitions/field_selector_properties'
@@ -2755,12 +2771,17 @@ definitions:
                 description: Toggles filtering functionality for the canvas dashboard.
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and a default value in `defaults.filters` so a value is always set. Each name must be a dimension on a metrics view referenced by the canvas.
                 items:
                   type: string
           allow_custom_time_range:
@@ -2991,16 +3012,23 @@ definitions:
                     - device
                   required:
                     - advertiser
+                  single_select:
+                    - advertiser
                 ```
             properties:
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and `defaults.filters` so a value is always set. Each name must be a dimension shown in the explore, other than a time dimension.
                 items:
                   type: string
             additionalProperties: false
@@ -3392,7 +3420,7 @@ definitions:
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
-      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+      To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard.
     examples:
       - # Example: Basic theme with light and dark mode colors
         type: theme
@@ -3403,37 +3431,58 @@ definitions:
           primary: "#818CF8"  # Indigo-400
           secondary: "#A78BFA"  # Purple-400
 
-      - # Example: Advanced theme with custom color palettes
+      - # Example: Branded surfaces, text, borders and corners
+        type: theme
+        light:
+          primary: "#0F766E"  # Teal-700
+          secondary: "#F59E0B"  # Amber-500
+          variables:
+            surface-background: "#F8FAFC"  # Page behind the components
+            surface-card: "#FFFFFF"  # Canvas components
+            fg-primary: "#0F172A"  # Main text
+            border: "#CBD5E1"
+            radius: 1rem  # Rounder corners; use 0 for square ones
+        dark:
+          primary: "#2DD4BF"  # Teal-400
+          secondary: "#FBBF24"  # Amber-400
+          variables:
+            surface-background: "#0B1120"
+            surface-card: "#111827"
+            fg-primary: "#F1F5F9"
+            border: "#334155"
+            radius: 1rem
+
+      - # Example: Custom chart color palettes
         type: theme
         light:
           primary: "#14B8A6"  # Teal
           secondary: "#10B981"  # Emerald
-          
-          color-sequential-1: "hsl(180deg 80% 95%)"
-          color-sequential-5: "hsl(180deg 80% 50%)"
-          color-sequential-9: "hsl(180deg 80% 25%)"
-          color-qualitative-1: "hsl(156deg 56% 52%)"
-          color-qualitative-2: "hsl(27deg 100% 65%)"
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
         dark:
           primary: "2DD4BF"
           secondary: "34D399"
-          
-          color-sequential-1: "hsl(180deg 40% 30%)"
-          color-sequential-5: "hsl(180deg 50% 50%)"
-          color-sequential-9: "hsl(180deg 60% 70%)"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
 
-      - # Example: Theme with KPI delta colors (green for positive, red for negative)
+      - # Example: KPI delta colors, with the variables set directly in the block instead of under `variables`
         type: theme
         light:
-            primary: "#6366f1"
-            secondary: "#8b5cf6"
-            kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-            kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+          primary: "#6366f1"
+          secondary: "#8b5cf6"
+          kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
+          kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
         dark:
-            primary: "#818cf8"
-            secondary: "#a78bfa"
-            kpi-positive: "#4ade80"  # Brighter green for dark mode
-            kpi-negative: "#f87171"  # Brighter red for dark mode
+          primary: "#818cf8"
+          secondary: "#a78bfa"
+          kpi-positive: "#4ade80"  # Brighter green for dark mode
+          kpi-negative: "#f87171"  # Brighter red for dark mode
     allOf:
       - title: Properties
         type: object
@@ -3471,7 +3520,7 @@ definitions:
                 description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for light theme
+                description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
           dark:
@@ -3492,7 +3541,7 @@ definitions:
                 description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for dark theme
+                description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
 
@@ -4207,7 +4256,7 @@ definitions:
             description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for light theme
+            description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
       dark:
@@ -4228,7 +4277,7 @@ definitions:
             description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for dark theme
+            description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
   api_data_properties:
@@ -4960,12 +5009,17 @@ definitions:
             properties:
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
                 items:
                   type: string
             additionalProperties: false

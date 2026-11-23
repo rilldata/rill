@@ -2,10 +2,13 @@
 // Hosts fetch the resource once per connection and cache it, so this is a
 // first-render cost, but it still has to stay comfortably below Claude's
 // tool-result limits and mobile WebView comfort.
+// The budget was 650 KB until flint-chart 1.0, whose Vega-Lite backend grew from
+// about 60 KB to about 230 KB gzipped (its layout planner and theme engine, which
+// the compiler runs for every chart, so they cannot be left out of the bundle).
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
-const BUDGET_BYTES = 650 * 1024;
+const BUDGET_BYTES = 760 * 1024;
 const file = new URL("../dist/widget.html", import.meta.url);
 
 const raw = readFileSync(file);

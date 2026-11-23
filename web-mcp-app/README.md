@@ -92,8 +92,8 @@ scripts/              size budget check, fixture generator, svelte-check wrapper
 ## Build, develop, test
 
 - `npm run build -w web-mcp-app`: Vite + `vite-plugin-singlefile` produce `dist/widget.html` and
-  `scripts/check-size.mjs` enforces the gzip budget (650 KB; currently about 565 KB, most of it Vega,
-  about 60 KB of it Flint's Vega-Lite backend).
+  `scripts/check-size.mjs` enforces the gzip budget (760 KB; currently about 740 KB, most of it Vega,
+  about 230 KB of it Flint's Vega-Lite backend).
   `make runtime.mcpapp.embed` builds and copies the file into `runtime/ai/mcpapp/embed/`.
 - `npm run dev -w web-mcp-app` rebuilds on change; run the runtime with `RILL_MCP_APP_DIR=web-mcp-app/dist`
   to serve the latest build without restarting.

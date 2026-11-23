@@ -39,8 +39,9 @@ type ExploreDefinitionYAML struct {
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
 	Defaults             *ExploreDefaultsYAML   `yaml:"defaults"`
 	Filters              struct {
-		Pinned   []string `yaml:"pinned"`
-		Required []string `yaml:"required"`
+		Pinned       []string `yaml:"pinned"`
+		Required     []string `yaml:"required"`
+		SingleSelect []string `yaml:"single_select"`
 	} `yaml:"filters"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -390,6 +391,7 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.DefaultPreset = d.defaultPreset
 	spec.PinnedFilters = tmp.Filters.Pinned
 	spec.RequiredFilters = tmp.Filters.Required
+	spec.SingleSelectFilters = tmp.Filters.SingleSelect
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange

@@ -331,10 +331,11 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 	}
 	spec.Measures = ms
 
-	// Filter the pinned and required filters.
+	// Filter the pinned, required and single-select filters.
 	// A filter can't be set on a field that isn't accessible, so leaving it required would block the explore for good.
 	spec.PinnedFilters = slices.DeleteFunc(spec.PinnedFilters, func(name string) bool { return !security.CanAccessField(name) })
 	spec.RequiredFilters = slices.DeleteFunc(spec.RequiredFilters, func(name string) bool { return !security.CanAccessField(name) })
+	spec.SingleSelectFilters = slices.DeleteFunc(spec.SingleSelectFilters, func(name string) bool { return !security.CanAccessField(name) })
 
 	// Filter the dimensions and measures in the presets
 	if spec.DefaultPreset != nil {
