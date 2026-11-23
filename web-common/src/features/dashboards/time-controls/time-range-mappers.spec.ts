@@ -1,15 +1,15 @@
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
+  mapTimeManagerComparisonRangeToV1TimeRange,
   mapV1TimeRangeToSelectedComparisonTimeRange,
+  setTimeFilterParamsFromV1TimeRanges,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import {
-  type DashboardTimeControls,
-  TimeComparisonOption,
-} from "@rilldata/web-common/lib/time/types";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
-describe("mapSelectedComparisonTimeRangeToV1TimeRange", () => {
+describe("mapTimeManagerComparisonRangeToV1TimeRange", () => {
   const TestCases: {
     title: string;
     timeRange: V1TimeRange;
@@ -53,9 +53,12 @@ describe("mapSelectedComparisonTimeRangeToV1TimeRange", () => {
   for (const { title, timeRange, comparison, expected } of TestCases) {
     it(title, () => {
       expect(
-        mapSelectedComparisonTimeRangeToV1TimeRange(
-          { name: comparison } as DashboardTimeControls,
-          true,
+        mapTimeManagerComparisonRangeToV1TimeRange(
+          {
+            showComparison: true,
+            comparisonTimeRange: comparison,
+            isCustomComparison: false,
+          } as TimeFilterManager,
           timeRange,
         ),
       ).toEqual(expected);
@@ -108,6 +111,58 @@ describe("mapV1TimeRangeToSelectedComparisonTimeRange", () => {
           TimeRangeSummary.max,
         )?.name,
       ).toBe(expected);
+    });
+  }
+});
+
+describe("setTimeFilterParamsFromV1TimeRanges", () => {
+  const TestCases: {
+    title: string;
+    timeRange: V1TimeRange;
+    expectedTimeRange: string;
+    expectedTimeZone: string | null;
+  }[] = [
+    {
+      title: "keeps the saved zone of an absolute range",
+      timeRange: {
+        start: "2026-03-01T05:00:00Z",
+        end: "2026-03-02T05:00:00Z",
+        timeZone: "America/New_York",
+      },
+      expectedTimeRange: "2026-03-01T00:00:00.000Z to 2026-03-02T00:00:00.000Z",
+      expectedTimeZone: "America/New_York",
+    },
+    {
+      // Otherwise the dashboard's default zone would shift the UTC endpoints
+      title: "pins an absolute range without a saved zone to UTC",
+      timeRange: {
+        start: "2026-03-01T05:00:00Z",
+        end: "2026-03-02T05:00:00Z",
+      },
+      expectedTimeRange: "2026-03-01T05:00:00.000Z to 2026-03-02T05:00:00.000Z",
+      expectedTimeZone: "UTC",
+    },
+    {
+      title: "leaves the zone unset for a relative range without a saved zone",
+      timeRange: { expression: "7D as of watermark/D+1D" },
+      expectedTimeRange: "7D as of watermark/D+1D",
+      expectedTimeZone: null,
+    },
+  ];
+
+  for (const {
+    title,
+    timeRange,
+    expectedTimeRange,
+    expectedTimeZone,
+  } of TestCases) {
+    it(title, () => {
+      const params = new URLSearchParams();
+      setTimeFilterParamsFromV1TimeRanges(params, timeRange, undefined);
+      expect(params.get(ExploreStateURLParams.TimeRange)).toBe(
+        expectedTimeRange,
+      );
+      expect(params.get(ExploreStateURLParams.TimeZone)).toBe(expectedTimeZone);
     });
   }
 });

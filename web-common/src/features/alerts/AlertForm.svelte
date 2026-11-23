@@ -21,10 +21,7 @@
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import {
-    getNewAlertInitialFiltersFormValues,
-    getNewAlertInitialFormValues,
-  } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
+  import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
@@ -41,13 +38,17 @@
     isSomeFieldTainted,
   } from "@rilldata/web-common/features/alerts/utils.ts";
   import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
-  import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import {
+    createReportFilterManagers,
+    getFilterParamsFromAggregationRequest,
+  } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { get } from "svelte/store";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -59,8 +60,6 @@
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
   import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
@@ -99,14 +98,6 @@
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
-
-  $: allTimeRangeResp = useMetricsViewTimeRange(
-    runtimeClient,
-    metricsViewName,
-    undefined,
-    queryClient,
-  );
 
   const exploreState =
     props.mode === "create"
@@ -115,23 +106,21 @@
 
   const { mutation } = provider;
 
-  let filters: ExpressionFilterManager;
-  let timeControls: TimeControls;
-  let cleanup: (() => void) | undefined = undefined;
-  $: {
-    cleanup?.();
-    ({ filters, timeControls, cleanup } =
+  // The explore's provider resolves its metrics view and yaml config,
+  // so the filter form follows the explore's settings, such as `lock_time_zone`.
+  const dashboardConfigProvider = new ExploreDashboardConfigProvider(
+    runtimeClient,
+    exploreName,
+  );
+  const { expressionFilterManager, timeFilterManager, cleanup } =
+    createReportFilterManagers(
+      runtimeClient,
+      dashboardConfigProvider,
+      // Explore urls carry the singular `f` param.
+      true,
       props.mode === "create"
-        ? getNewAlertInitialFiltersFormValues(
-            runtimeClient,
-            metricsViewName,
-            exploreName,
-            $exploreState!,
-          )
-        : getFiltersAndTimeControlsFromAggregationRequest(
-            runtimeClient,
-            metricsViewName,
-            exploreName,
+        ? get(page).url.searchParams
+        : getFilterParamsFromAggregationRequest(
             JSON.parse(
               props.alertSpec.queryArgsJson ||
                 (props.alertSpec.resolverProperties?.query_args_json as
@@ -139,10 +128,8 @@
                   | undefined) ||
                 "{}",
             ),
-            $allTimeRangeResp.data?.timeRangeSummary,
-          ));
-  }
-  $: ({ selectedComparisonTimeRange } = timeControls);
+          ),
+    );
 
   const superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -202,9 +189,11 @@
           queryArgsJson: JSON.stringify(
             getAlertQueryArgsFromFormValues(
               values,
-              filters.topLevelJoiner.expr[metricsViewName],
-              timeControls.toState(),
-              exploreSpec,
+              // Keyed by the metrics view's resource name, which can differ in casing from the explore's reference.
+              expressionFilterManager.topLevelJoiner.expr[
+                expressionFilterManager.metricsViewsProvider.metricsViewNames[0]
+              ],
+              timeFilterManager,
             ),
           ),
           metricsViewName: values.metricsViewName,
@@ -312,16 +301,16 @@
     // if the user came to the delivery tab and name was not changed then auto generate it
     const name = generateAlertName(
       $form,
-      $selectedComparisonTimeRange,
+      timeFilterManager.showComparison
+        ? timeFilterManager.comparisonTimeRange
+        : undefined,
       metricsViewSpec,
     );
     if (!name) return;
     $form.name = name;
   }
 
-  onDestroy(() => {
-    cleanup?.();
-  });
+  onDestroy(cleanup);
 </script>
 
 <!-- Cap the form to the viewport so the dialog never overflows a small window.
@@ -354,10 +343,19 @@
     </DialogTabs.List>
     <div class="p-3 bg-surface-subtle h-[600px] min-h-0 shrink overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogDataTab
+          {superFormInstance}
+          {expressionFilterManager}
+          {timeFilterManager}
+          {dashboardConfigProvider}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogCriteriaTab
+          {superFormInstance}
+          {expressionFilterManager}
+          {timeFilterManager}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
         <AlertDialogDeliveryTab

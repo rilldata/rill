@@ -4,7 +4,10 @@ import type {
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getColumnDefForPivot } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
-import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { describe, expect, it } from "vitest";
@@ -97,18 +100,26 @@ describe("leafColumns", () => {
     ] as ColumnDef<PivotDataRow>[];
 
     expect(leafColumns(defs)).toStrictEqual([
-      { key: "country", groups: [], header: "Country", measure: undefined },
+      {
+        key: "country",
+        groups: [],
+        header: "Country",
+        measure: undefined,
+        formattedMeasure: undefined,
+      },
       {
         key: "impressions",
         groups: ["Total"],
         header: "Impressions",
         measure: undefined,
+        formattedMeasure: undefined,
       },
       {
         key: "c0v0_c1v0m0",
         groups: ["Mobile", "Android"],
         header: "Impressions",
         measure: undefined,
+        formattedMeasure: undefined,
       },
     ]);
   });
@@ -222,6 +233,141 @@ describe("flattenPivotData", () => {
     ]);
     expect(table.rows).toStrictEqual([["US", 117.50599999999999, -3, 0.5]]);
     expect(table.totals).toBeUndefined();
+  });
+
+  it("applies a measure's conditional formatting to its value columns only", () => {
+    // As on the dashboard, the columns that show a measure's values carry its
+    // formatting in their meta; comparison columns and the row totals don't.
+    const formatted = (measureName: string, isRowTotal = false) => ({
+      measureName,
+      conditionalFormat: { mode: "heatmap", scheme: "greens" },
+      isRowTotal,
+    });
+    const nestedDefs = [
+      { id: "country", accessorFn: () => null, header: "Country" },
+      ...["Mobile", "Desktop"].map((device, v) => ({
+        header: device,
+        columns: [
+          {
+            accessorKey: `c0v${v}m0`,
+            header: "Impressions",
+            name: "impressions",
+            meta: formatted("impressions"),
+          },
+          {
+            accessorKey: `c0v${v}m1`,
+            header: "Δ",
+            name: "impressions__delta_abs",
+            meta: { measureName: "impressions" },
+          },
+        ],
+      })),
+      {
+        header: "",
+        columns: [
+          {
+            accessorKey: "impressions",
+            header: "Impressions",
+            name: "impressions",
+            meta: formatted("impressions", true),
+          },
+        ],
+      },
+    ] as unknown as ColumnDef<PivotDataRow>[];
+    const table = flattenPivotData(
+      state(nestedDefs, [
+        { country: "US", c0v0m0: 1, c0v0m1: 0, c0v1m0: 2, impressions: 3 },
+      ]),
+      config({
+        colDimensionNames: ["device"],
+        pivot: {
+          expanded: {},
+          measureFormatting: {
+            impressions: { mode: "heatmap", scheme: "greens" },
+            ctr: {
+              mode: "rules",
+              rules: [{ operator: "gt", value: 0.5, color: "positive" }],
+            },
+          },
+        } as unknown as PivotDataStoreConfig["pivot"],
+      }),
+    );
+    // The CTR has formatting but no columns in the table, so it gets no format.
+    // The domain spans the value columns, not the row totals.
+    expect(table.conditionalFormats).toEqual([
+      {
+        columns: ["c0v0m0", "c0v1m0"],
+        format: {
+          colorScale: {
+            minColor: "#f7fcf5",
+            midColor: "#74c476",
+            maxColor: "#00441b",
+          },
+        },
+        domain: { min: 1, max: 2 },
+      },
+    ]);
+  });
+
+  it("takes a nested pivot's color domain from its leaf rows, as the dashboard does", () => {
+    const barDefs = [
+      { id: "country", accessorFn: () => null, header: "Country" },
+      {
+        accessorKey: "impressions",
+        header: "Impressions",
+        name: "impressions",
+        meta: {
+          measureName: "impressions",
+          conditionalFormat: { mode: "data_bar", scheme: "blues" },
+        },
+      },
+    ] as unknown as ColumnDef<PivotDataRow>[];
+    const barConfig = config({
+      rowDimensionNames: ["country", "city"],
+      pivot: {
+        expanded: { "0": true },
+        measureFormatting: {
+          impressions: { mode: "data_bar", scheme: "blues" },
+        },
+      } as unknown as PivotDataStoreConfig["pivot"],
+    });
+    const domain = (data: PivotDataRow[]) =>
+      flattenPivotData(state(barDefs, data), barConfig).conditionalFormats?.[0]
+        .domain;
+
+    // The subtotals of the expanded and the collapsed country are left out.
+    expect(
+      domain([
+        {
+          country: "US",
+          impressions: 1000000,
+          subRows: [
+            { country: "NY", impressions: 52000 },
+            { country: "SF", impressions: -48000 },
+          ],
+        },
+        {
+          country: "CA",
+          impressions: 900000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+      ]),
+    ).toEqual({ min: -48000, max: 52000 });
+    // Without loaded leaf rows, the parent rows set it.
+    expect(
+      domain([
+        {
+          country: "US",
+          impressions: 1000000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+        {
+          country: "CA",
+          impressions: 900000,
+          subRows: [{ country: LOADING_CELL }],
+        },
+      ]),
+    ).toEqual({ min: 900000, max: 1000000 });
   });
 
   it("names the row-totals columns like the pivot's own header does", () => {

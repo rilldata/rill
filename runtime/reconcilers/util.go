@@ -168,6 +168,18 @@ func exploreNameFromAnnotations(annotations map[string]string, fallback string) 
 	return fallback
 }
 
+// dashboardConditionKinds returns the kinds of resources that transitive access to a dashboard grants in full, whatever the dashboard contains.
+// Those are the themes that style the dashboard,
+// and, if the claims can use AI, the skills that the dashboard's AI chat lists in its "/" picker.
+// The AI agents load skills regardless of resource restrictions, so the picker would otherwise miss skills the agents use.
+func dashboardConditionKinds(claims *runtime.SecurityClaims) []string {
+	kinds := []string{runtime.ResourceKindTheme}
+	if claims.Can(runtime.UseAI) {
+		kinds = append(kinds, runtime.ResourceKindSkill)
+	}
+	return kinds
+}
+
 // analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
 // It returns a map of variable names referenced in the props mapped to their current value (if known).
 func analyzeTemplatedVariables(ctx context.Context, c *runtime.Controller, props map[string]any) (map[string]string, error) {

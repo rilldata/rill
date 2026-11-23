@@ -2249,6 +2249,40 @@ func (m *WorkbookDataSheet) validate(all bool) error {
 
 	// no validation rules for TotalsLast
 
+	for idx, item := range m.GetConditionalFormats() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, WorkbookDataSheetValidationError{
+						field:  fmt.Sprintf("ConditionalFormats[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, WorkbookDataSheetValidationError{
+						field:  fmt.Sprintf("ConditionalFormats[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return WorkbookDataSheetValidationError{
+					field:  fmt.Sprintf("ConditionalFormats[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for MoreRows
 
 	if len(errors) > 0 {
@@ -2330,3 +2364,269 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WorkbookDataSheetValidationError{}
+
+// Validate checks the field values on WorkbookConditionalFormat with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WorkbookConditionalFormat) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkbookConditionalFormat with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkbookConditionalFormatMultiError, or nil if none found.
+func (m *WorkbookConditionalFormat) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkbookConditionalFormat) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFormat()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WorkbookConditionalFormatValidationError{
+					field:  "Format",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WorkbookConditionalFormatValidationError{
+					field:  "Format",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFormat()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WorkbookConditionalFormatValidationError{
+				field:  "Format",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetDomain()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WorkbookConditionalFormatValidationError{
+					field:  "Domain",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WorkbookConditionalFormatValidationError{
+					field:  "Domain",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDomain()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WorkbookConditionalFormatValidationError{
+				field:  "Domain",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return WorkbookConditionalFormatMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkbookConditionalFormatMultiError is an error wrapping multiple validation
+// errors returned by WorkbookConditionalFormat.ValidateAll() if the
+// designated constraints aren't met.
+type WorkbookConditionalFormatMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkbookConditionalFormatMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkbookConditionalFormatMultiError) AllErrors() []error { return m }
+
+// WorkbookConditionalFormatValidationError is the validation error returned by
+// WorkbookConditionalFormat.Validate if the designated constraints aren't met.
+type WorkbookConditionalFormatValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkbookConditionalFormatValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkbookConditionalFormatValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkbookConditionalFormatValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkbookConditionalFormatValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkbookConditionalFormatValidationError) ErrorName() string {
+	return "WorkbookConditionalFormatValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkbookConditionalFormatValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkbookConditionalFormat.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkbookConditionalFormatValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkbookConditionalFormatValidationError{}
+
+// Validate checks the field values on WorkbookValueRange with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WorkbookValueRange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkbookValueRange with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkbookValueRangeMultiError, or nil if none found.
+func (m *WorkbookValueRange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkbookValueRange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Min
+
+	// no validation rules for Max
+
+	if len(errors) > 0 {
+		return WorkbookValueRangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkbookValueRangeMultiError is an error wrapping multiple validation errors
+// returned by WorkbookValueRange.ValidateAll() if the designated constraints
+// aren't met.
+type WorkbookValueRangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkbookValueRangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkbookValueRangeMultiError) AllErrors() []error { return m }
+
+// WorkbookValueRangeValidationError is the validation error returned by
+// WorkbookValueRange.Validate if the designated constraints aren't met.
+type WorkbookValueRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkbookValueRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkbookValueRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkbookValueRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkbookValueRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkbookValueRangeValidationError) ErrorName() string {
+	return "WorkbookValueRangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkbookValueRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkbookValueRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkbookValueRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkbookValueRangeValidationError{}

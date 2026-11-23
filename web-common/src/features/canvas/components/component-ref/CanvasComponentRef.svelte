@@ -12,10 +12,7 @@
   $: ({ specStore, timeAndFilterStore, resource } = component);
 
   $: ({
-    parent: {
-      theme,
-      timeManager: { hasTimeSeriesMap },
-    },
+    parent: { theme, hasTimeSeriesMap },
   } = component);
 
   // The component's metrics view is the one its item binds (see ComponentRefComponent.syncMetricsViewName).
