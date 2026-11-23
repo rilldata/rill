@@ -311,6 +311,25 @@ describe("fitLegends", () => {
     expect(legend.rows).toBe(1);
   });
 
+  it("lays out a chart whose rows are not objects", async () => {
+    // Vega-Lite draws a list of numbers or strings as rows of one field, `data`.
+    const spec = {
+      width: 560,
+      height: 300,
+      autosize: { type: "fit", contains: "padding" },
+      data: { values: channels },
+      mark: "point",
+      encoding: {
+        x: { field: "data", type: "nominal" },
+        color: { field: "data", type: "nominal" },
+      },
+    } as VisualizationSpec;
+    const legend = await drawLegends(spec, { width: 560, height: 300 });
+
+    expect(legend.labels).toEqual(channels);
+    expect(legend.overhang.right).toBeLessThanOrEqual(0);
+  });
+
   it("stands several legends on one side one above the other, each wrapped", async () => {
     const spec = {
       ...barChart(channels),
@@ -399,6 +418,9 @@ describe("fitLegends", () => {
       const spec = malformed as unknown as VisualizationSpec;
       expect(fitLegends(spec, {}, theme)).toBe(spec);
     }
+    // So does a layer that is no view.
+    const layered = { layer: [null] } as unknown as VisualizationSpec;
+    expect(fitLegends(layered, {}, theme)).toBe(layered);
   });
 
   it("leaves composed charts and gradients alone", () => {

@@ -181,7 +181,6 @@ const FACET_CHANNELS = ["facet", "row", "column"];
 
 /** A view of a Vega-Lite spec as this module reads it; other keys pass through untouched. */
 type ViewSpec = Record<string, unknown>;
-type Row = Record<string, unknown>;
 
 interface LabelFont {
   family: string;
@@ -205,7 +204,7 @@ interface FitContext {
  */
 function fitView(
   view: ViewSpec,
-  inheritedRows: Row[] | undefined,
+  inheritedRows: unknown[] | undefined,
   context: FitContext,
 ): ViewSpec {
   const rows = rowsOf(view.data, context.datasets) ?? inheritedRows;
@@ -234,8 +233,11 @@ function fitView(
   }
 
   if (Array.isArray(view.layer)) {
-    const layers = view.layer as ViewSpec[];
-    const fittedLayers = layers.map((layer) => fitView(layer, rows, context));
+    const layers = view.layer as unknown[];
+    const fittedLayers = layers.map((layer) => {
+      const layerView = record(layer);
+      return layerView ? fitView(layerView, rows, context) : layer;
+    });
     if (fittedLayers.some((layer, i) => layer !== layers[i])) {
       fitted = { ...fitted, layer: fittedLayers };
     }
@@ -247,7 +249,7 @@ function fitView(
 function legendLayout(
   channel: string,
   definition: ViewSpec,
-  rows: Row[] | undefined,
+  rows: unknown[] | undefined,
   { orient: defaultOrient, font, fitsWidth, fitsHeight }: FitContext,
 ): ViewSpec | undefined {
   if (definition.legend === null) return undefined;
@@ -390,7 +392,7 @@ function widthOfColumns(
 function labelsOf(
   definition: ViewSpec,
   legend: ViewSpec,
-  rows: Row[] | undefined,
+  rows: unknown[] | undefined,
 ): string[] | undefined {
   if (
     legend.labelExpr !== undefined ||
@@ -409,23 +411,25 @@ function labelsOf(
       : undefined;
   }
   const field = definition.field;
-  if (typeof field !== "string" || !rows?.length || !(field in rows[0])) {
+  // Rows need not be objects: Vega-Lite also draws a list of numbers or strings.
+  const first = record(rows?.[0]);
+  if (typeof field !== "string" || !rows || !first || !(field in first)) {
     return undefined;
   }
-  return [...new Set(rows.map((row) => String(row[field])))];
+  return [...new Set(rows.map((row) => String(record(row)?.[field])))];
 }
 
 /** The rows a view's `data` names or holds, when it does either. */
 function rowsOf(
   data: unknown,
   datasets: Record<string, unknown>,
-): Row[] | undefined {
+): unknown[] | undefined {
   const source = record(data);
   if (!source) return undefined;
   const rows =
     source.values ??
     (typeof source.name === "string" ? datasets[source.name] : undefined);
-  return Array.isArray(rows) ? (rows as Row[]) : undefined;
+  return Array.isArray(rows) ? (rows as unknown[]) : undefined;
 }
 
 /** A generous width per character, as a share of the font size, where no canvas measures text. */
