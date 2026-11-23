@@ -3,47 +3,9 @@ import type {
   V1CanvasTab,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable } from "svelte/store";
-import { canvasItemInstanceId, namePrefixFromPath } from "../layout-util";
+import { tabRowsPath } from "../layout-util";
 import type { CanvasEntity } from "./canvas-entity";
-import { Grid } from "./grid";
-
-/**
- * A single tab within a tab group. Owns its own Grid (the tab's rows) and the
- * YAML path prefix at which those rows live, so the existing component-path and
- * transaction machinery can target a tab's rows the same way it targets top-level rows.
- */
-export class Tab {
-  /** Stable identifier, derived from the label; used for URL state. */
-  name: string;
-  /** User-facing label. */
-  displayName: string;
-  /** The tab's rows. */
-  grid: Grid;
-  /** YAML path prefix for this tab's rows, e.g. ["rows", 2, "tabs", 0, "rows"]. */
-  yamlPathPrefix: (string | number)[];
-
-  constructor(
-    canvas: CanvasEntity,
-    name: string,
-    displayName: string,
-    yamlPathPrefix: (string | number)[],
-  ) {
-    this.name = name;
-    this.displayName = displayName;
-    this.yamlPathPrefix = yamlPathPrefix;
-    this.grid = new Grid(canvas);
-  }
-
-  updateFromTab(tab: V1CanvasTab, yamlPathPrefix: (string | number)[]) {
-    this.name = tab.name ?? this.name;
-    this.displayName = tab.displayName ?? this.displayName;
-    this.yamlPathPrefix = yamlPathPrefix;
-    const namePrefix = namePrefixFromPath(yamlPathPrefix);
-    this.grid.updateFromCanvasRows(tab.rows ?? [], (item, row, col) =>
-      canvasItemInstanceId(item, row, col, namePrefix),
-    );
-  }
-}
+import { RowsBlock } from "./layout-blocks";
 
 /**
  * A tab group: a top-level layout block that renders a strip of tabs, only one of
@@ -56,8 +18,8 @@ export class TabGroup {
    *  The active tab is tracked by its name across spec rebuilds (see updateFromSpec), so this
    *  index always points at the same tab after a reorder. */
   activeTabIndex = writable<number>(0);
-  /** The tabs in this group. */
-  tabs = writable<Tab[]>([]);
+  /** The tabs in this group, each a named rows list with a label. */
+  tabs = writable<RowsBlock[]>([]);
   /* A tab index to activate as soon as it exists in the spec (used after add/duplicate, where
      the new tab's name isn't known on the client until the spec reflects it). */
   private pendingActiveTabIndex: number | null = null;
@@ -89,19 +51,21 @@ export class TabGroup {
     const next = tabs.map((tab, tabIndex) => {
       // NOTE: this is the YAML path (row.tabs[t].rows), which differs from the
       // proto JSON shape (row.tabGroup.tabs[t].rows). pathInYAML edits the YAML document.
-      const prefix = ["rows", blockIndex, "tabs", tabIndex, "rows"];
+      const rowsPath = tabRowsPath(blockIndex, tabIndex);
       const tabName = tab.name ?? `tab-${tabIndex}`;
       const t =
         byName.get(tabName) ??
-        new Tab(
+        new RowsBlock(
           this.canvas,
           tabName,
           tab.displayName ?? `Tab ${tabIndex + 1}`,
-          prefix,
+          rowsPath,
         );
+      t.name = tabName;
+      t.displayName = tab.displayName ?? t.displayName;
       // Always sync from the spec — a newly-created tab must populate its grid too,
       // otherwise its rows render empty until the next reprocess.
-      t.updateFromTab(tab, prefix);
+      t.updateRows(tab.rows ?? [], rowsPath);
       return t;
     });
 
@@ -158,61 +122,12 @@ export class TabGroup {
     return true;
   }
 
-  getActiveTab(): Tab | undefined {
+  getActiveTab(): RowsBlock | undefined {
     return get(this.tabs)[get(this.activeTabIndex)];
   }
 }
 
-/**
- * A top-level layout block. The canvas body is an ordered list of these: each is
- * either a plain row or a tab group, mirroring the heterogeneous `rows` array in the spec.
- */
-export type LayoutBlock =
-  | { kind: "row"; rowIndex: number; freeRowIndex: number }
-  | { kind: "tab-group"; rowIndex: number; group: TabGroup };
-
 /** True if the spec contains any tab groups. */
 export function specHasTabGroups(rows: V1CanvasRow[] | undefined): boolean {
   return !!rows?.some((row) => !!row.tabGroup);
-}
-
-/**
- * The key each tab group carries after a top-level row edit, as [oldKey, newKey] pairs.
- * Unnamed groups are keyed `group-<rowIndex>` (see CanvasEntity.processLayout), so an edit
- * that shifts row indices shifts their keys too; explicitly named groups keep their key.
- * `newIndexOf` maps a row index before the edit to the index after it, or -1 if that row
- * is removed, in which case the group is left out.
- */
-export function rekeyedTabGroupNames(
-  blocks: LayoutBlock[],
-  newIndexOf: (rowIndex: number) => number,
-): Array<[string, string]> {
-  const pairs: Array<[string, string]> = [];
-  for (const block of blocks) {
-    if (block.kind !== "tab-group") continue;
-    const newIndex = newIndexOf(block.rowIndex);
-    if (newIndex < 0) continue;
-    const { name } = block.group;
-    const isIndexKeyed = name === `group-${block.rowIndex}`;
-    pairs.push([name, isIndexKeyed ? `group-${newIndex}` : name]);
-  }
-  return pairs;
-}
-
-/** Row index mapping for moving the top-level row at `from` to `newIndex`. */
-export function rowIndexAfterMove(
-  from: number,
-  newIndex: number,
-): (rowIndex: number) => number {
-  return (rowIndex) => {
-    if (rowIndex === from) return newIndex;
-    // Rows between the two positions slide one step toward the vacated slot.
-    if (from < newIndex && rowIndex > from && rowIndex <= newIndex) {
-      return rowIndex - 1;
-    }
-    if (newIndex < from && rowIndex >= newIndex && rowIndex < from) {
-      return rowIndex + 1;
-    }
-    return rowIndex;
-  };
 }

@@ -7,6 +7,7 @@
     extractErrorStatusCode,
     isNotFoundError,
   } from "@rilldata/web-common/lib/errors";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { errorStore } from "../../components/errors/error-store";
@@ -37,6 +38,9 @@
 
   $: metricsViewName = data?.metricsView?.meta?.name?.name;
 
+  // The explore did not load, so DashboardStateManager will not report it.
+  $: if (isError || (isSuccess && isExploreErrored)) onLoad();
+
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedResolvedTheme = derived([embedThemeStore], () =>
     resolveEmbedTheme(),
@@ -56,6 +60,10 @@
       body: m.error_access_denied_body(),
     });
   }
+
+  function onLoad() {
+    EmbedStore.getInstance()?.exploreLoaded.set(true);
+  }
 </script>
 
 {#if isSuccess}
@@ -68,6 +76,7 @@
           {exploreName}
           storageNamespacePrefix={EmbedStorageNamespacePrefix}
           disableMostRecentDashboardState
+          {onLoad}
         >
           <Dashboard
             {exploreName}
