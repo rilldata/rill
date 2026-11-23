@@ -203,7 +203,7 @@ spec:
     x: { field: "{{ .params.measure }}" }
 ```
 
-A chart's series, the values on `color` or `group`, are listed in the legend and take their colors in order of their total, largest first, the order built-in charts list a split dimension in. Set `sortOrder` on that encoding to list them by name instead. A pie or donut keeps the order of the query's rows, which its slices are drawn in.
+A chart's series, the values on `color` or `group`, are listed in the legend and take their colors in order of their total, largest first, the order built-in charts list a split dimension in. Series with the same total are listed by name. Set `sortOrder` on that encoding to list them by name instead. A pie or donut keeps the order of the query's rows, which its slices are drawn in.
 
 Leave out `type` and `aggregate` unless the chart draws wrong without them. Rill already marks measures as quantitative, dimensions as nominal and time dimensions as temporal, and measures arrive aggregated; a hard-coded type can break the chart when a dashboard binds a different field.
 

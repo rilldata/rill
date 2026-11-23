@@ -452,17 +452,18 @@ describe("compileFlintSpec", () => {
     };
     // One row per publisher and day, each day's rows in the given order: a query ordered by
     // time leaves that order to the database, and it changes from one run to the next.
-    const rowsInOrder = (publishers: string[]) =>
+    const rowsInOrder = (publishers: string[], values = totals) =>
       Array.from({ length: 4 }, (_, day) =>
         publishers.map((publisher) => ({
           timestamp: new Date(2026, 9, 1 + day),
           publisher,
-          bid_price_sum: totals[publisher] + day,
+          bid_price_sum: values[publisher] + day,
         })),
       ).flat();
     const lineChart = (
       publishers: string[],
       color: Record<string, unknown> = {},
+      values = totals,
     ) =>
       compileFlintSpec({
         spec: {
@@ -473,7 +474,7 @@ describe("compileFlintSpec", () => {
             color: { field: "publisher", ...color },
           },
         },
-        rows: rowsInOrder(publishers),
+        rows: rowsInOrder(publishers, values),
         fields: deriveFlintFields(
           ["timestamp", "publisher", "bid_price_sum"],
           metricsView,
@@ -491,6 +492,58 @@ describe("compileFlintSpec", () => {
         ["Microsoft", "Yahoo", "Google"],
       ]) {
         expect(await legendLabels(lineChart(arrival))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("lists the series of one total by name, whatever order their rows arrive in", async () => {
+      // Vega lists the values that tie on a scale's sort as their rows arrive, so two series
+      // of one total, or of no value at all, swapped places and colors between loads.
+      const tied = { Yahoo: 100, Google: 300, Microsoft: 100 };
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(lineChart(arrival, {}, tied))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("lists the series of a box plot by name", async () => {
+      // A box plot summarizes its rows, and has no total to place its series by.
+      const boxPlot = (arrival: string[]) =>
+        compileFlintSpec({
+          spec: {
+            chartType: "Boxplot",
+            encodings: {
+              x: { field: "device" },
+              y: { field: "bid_price_sum" },
+              color: { field: "publisher" },
+            },
+          },
+          rows: ["Phone", "Desktop"].flatMap((device) =>
+            rowsInOrder(arrival).map((row) => ({ ...row, device })),
+          ),
+          fields: deriveFlintFields(
+            ["device", "publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec;
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        const spec = boxPlot(arrival);
+        expect(viewOf(spec).encoding?.color?.sort).toBe("ascending");
+        expect(await legendLabels(spec)).toEqual([
           "Google",
           "Microsoft",
           "Yahoo",
@@ -522,13 +575,13 @@ describe("compileFlintSpec", () => {
         size: { width: 600, height: 400 },
         measureFields: ["bid_price_sum"],
       });
-      const byTotal = {
-        field: "bid_price_sum",
-        op: "sum",
-        order: "descending",
-      };
-      expect(viewOf(spec).encoding?.color?.sort).toEqual(byTotal);
-      expect(viewOf(spec).encoding?.xOffset?.sort).toEqual(byTotal);
+      // One column places the publishers, by their total and then by name.
+      const { color, xOffset } = viewOf(spec).encoding ?? {};
+      expect(color?.sort).toEqual({ field: "__rill_series_place", op: "min" });
+      expect(xOffset?.sort).toEqual(color?.sort);
+      expect(
+        (spec as unknown as { transform: unknown[] }).transform,
+      ).toHaveLength(2);
     });
 
     it("keeps an order the author gave the series", async () => {

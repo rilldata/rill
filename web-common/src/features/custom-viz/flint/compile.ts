@@ -1413,6 +1413,10 @@ const SERIES_CHANNELS = [
   "shape",
 ];
 
+/** The columns a series' total, and its place among the series by it, are derived into. */
+const SERIES_TOTAL_FIELD = "__rill_series_total";
+const SERIES_PLACE_FIELD = "__rill_series_place";
+
 /**
  * Flint lists a chart's series in the order their rows arrive (`sort: null`), in the legend and so
  * in the colors they take. The query of a chart over time is ordered by time, which leaves the
@@ -1423,11 +1427,20 @@ const SERIES_CHANNELS = [
  * total of the measure the chart draws, largest first, as a built-in chart orders the values it
  * splits by. A chart with a measure on both axes, or on neither, keeps the rows' order, and so
  * does a pie, whose slices are drawn in that order. So do the series of Flint's own columns.
+ *
+ * Series of one total are ordered by name. Vega-Lite sorts a scale by a single field, and Vega
+ * lists the values that tie on it as their rows arrive, so sorting by the total alone left such
+ * series, those of no value among them, to swap colors as before. The view derives each
+ * series' place in the order as a column instead, and the scale is sorted by that.
+ *
+ * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
+ * listed by name alone.
  */
 function orderSeries(spec: Record<string, unknown>): void {
   for (const view of layersOf(spec)) {
     const mark = view.mark as string | Record<string, unknown> | undefined;
-    if ((typeof mark === "object" ? mark.type : mark) === "arc") continue;
+    const markType = typeof mark === "object" ? mark.type : mark;
+    if (markType === "arc") continue;
     const encodings = encodingsOf(view);
     const measures = [encodings.x, encodings.y].filter(
       (encoding) =>
@@ -1439,6 +1452,8 @@ function orderSeries(spec: Record<string, unknown>): void {
         !encoding.bin,
     );
     if (measures.length !== 1) continue;
+    // The column each field's series are placed in: several channels may draw one field.
+    const places = new Map<string, string>();
     for (const channel of SERIES_CHANNELS) {
       const encoding = encodings[channel];
       if (
@@ -1451,11 +1466,32 @@ function orderSeries(spec: Record<string, unknown>): void {
       ) {
         continue;
       }
-      encoding.sort = {
-        field: measures[0].field,
-        op: "sum",
-        order: "descending",
-      };
+      if (COMPOSITE_MARKS.has(markType as string)) {
+        encoding.sort = "ascending";
+        continue;
+      }
+      let place = places.get(encoding.field);
+      if (!place) {
+        const suffix = places.size ? `_${places.size + 1}` : "";
+        const total = SERIES_TOTAL_FIELD + suffix;
+        place = SERIES_PLACE_FIELD + suffix;
+        places.set(encoding.field, place);
+        view.transform = [
+          ...((view.transform as unknown[] | undefined) ?? []),
+          {
+            joinaggregate: [{ op: "sum", field: measures[0].field, as: total }],
+            groupby: [encoding.field],
+          },
+          {
+            window: [{ op: "dense_rank", as: place }],
+            sort: [
+              { field: total, order: "descending" },
+              { field: encoding.field, order: "ascending" },
+            ],
+          },
+        ];
+      }
+      encoding.sort = { field: place, op: "min" };
     }
   }
 }
