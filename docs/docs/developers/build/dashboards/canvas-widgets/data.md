@@ -153,6 +153,8 @@ A row without a `height` shows a table at 300px and a pivot at 224px. A row with
 
 When the row also holds other widgets, the tallest minimum applies: a table next to a chart is at least 320px tall.
 
+Earlier versions of Rill showed a table at 300px and a pivot at 224px even when the row's `height` was lower. Such a row now renders at its `height`, down to the minimum above. If a table or pivot shrinks after an upgrade, remove the row's `height` to get the default size back, or drag the row taller.
+
 ### Click to filter
 
 Clicking a cell or row header in a table or pivot filters the whole canvas by the values of that row, and clicking a column-dimension header in a pivot filters by that column. The table itself keeps showing every row and highlights the selection. To keep a table read-only, so selecting a row does not filter the other widgets, set `click_to_filter: false` or turn off **Click to filter** in the widget's sidebar.
