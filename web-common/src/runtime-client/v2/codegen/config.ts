@@ -108,11 +108,17 @@ export const protoMessageMethods: Record<string, string[]> = {
   ],
   RuntimeService: [
     "analyzeConnectors",
+    "createDirectory",
+    "deleteFile",
     "getConnectorOAuthConfig",
+    "getFile",
     "getInstance",
     "listConnectorDrivers",
+    "listFiles",
     "listInstances",
     "listNotifierConnectors",
+    "putFile",
+    "renameFile",
   ],
 };
 

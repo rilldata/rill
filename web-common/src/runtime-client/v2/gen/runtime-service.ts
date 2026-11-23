@@ -24,11 +24,13 @@ import {
   CompleteRequest,
   CreateAIMemoryRequest,
   CreateDirectoryRequest,
+  CreateDirectoryResponse,
   CreateTriggerRequest,
   DeleteAIMemoryRequest,
   DeleteConversationRequest,
   DeleteConversationResponse,
   DeleteFileRequest,
+  DeleteFileResponse,
   DisconnectMCPServerRequest,
   DisconnectMCPServerResponse,
   ForkConversationRequest,
@@ -41,6 +43,7 @@ import {
   GetConversationRequest,
   GetExploreRequest,
   GetFileRequest,
+  GetFileResponse,
   GetInstanceRequest,
   GetInstanceResponse,
   GetLogsRequest,
@@ -65,6 +68,7 @@ import {
   ListConversationsRequest,
   ListExamplesRequest,
   ListFilesRequest,
+  ListFilesResponse,
   ListGitBranchesRequest,
   ListGitCommitsRequest,
   ListInstancesRequest,
@@ -79,9 +83,11 @@ import {
   PushEnvRequest,
   PushEnvResponse,
   PutFileRequest,
+  PutFileResponse,
   QueryResolverRequest,
   ReloadConfigRequest,
   RenameFileRequest,
+  RenameFileResponse,
   RestoreGitCommitRequest,
   ShareConversationRequest,
   SkipModelPartitionsRequest,
@@ -97,10 +103,8 @@ import type {
   V1AnalyzeVariablesResponse,
   V1CompleteResponse,
   V1CreateAIMemoryResponse,
-  V1CreateDirectoryResponse,
   V1CreateTriggerResponse,
   V1DeleteAIMemoryResponse,
-  V1DeleteFileResponse,
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
@@ -108,7 +112,6 @@ import type {
   V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
-  V1GetFileResponse,
   V1GetLogsResponse,
   V1GetModelPartitionsResponse,
   V1GetResourceResponse,
@@ -125,16 +128,13 @@ import type {
   V1ListAIMemoriesResponse,
   V1ListConversationsResponse,
   V1ListExamplesResponse,
-  V1ListFilesResponse,
   V1ListGitBranchesResponse,
   V1ListGitCommitsResponse,
   V1ListResourcesResponse,
   V1ListToolsResponse,
   V1PingResponse,
-  V1PutFileResponse,
   V1QueryResolverResponse,
   V1ReloadConfigResponse,
-  V1RenameFileResponse,
   V1RestoreGitCommitResponse,
   V1ShareConversationResponse,
   V1UnpackEmptyResponse,
@@ -499,19 +499,12 @@ export async function runtimeServiceListFiles(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ListFilesResponse> {
+): Promise<ListFilesResponse> {
   const r = await client.runtimeService.listFiles(
-    ListFilesRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ListFilesResponse;
+  return r;
 }
 
 export function getRuntimeServiceListFilesQueryKey(
@@ -522,41 +515,37 @@ export function getRuntimeServiceListFilesQueryKey(
 }
 
 export function getRuntimeServiceListFilesQueryOptions<
-  TData = V1ListFilesResponse,
+  TData = ListFilesResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
-    query?: Partial<
-      CreateQueryOptions<V1ListFilesResponse, ConnectError, TData>
-    >;
+    query?: Partial<CreateQueryOptions<ListFilesResponse, ConnectError, TData>>;
   },
-): CreateQueryOptions<V1ListFilesResponse, ConnectError, TData> & {
+): CreateQueryOptions<ListFilesResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceListFilesQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ListFilesResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ListFilesResponse> = ({ signal }) =>
     runtimeServiceListFiles(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ListFilesResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ListFilesResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListFiles<TData = V1ListFilesResponse>(
+export function createRuntimeServiceListFiles<TData = ListFilesResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
-    query?: Partial<
-      CreateQueryOptions<V1ListFilesResponse, ConnectError, TData>
-    >;
+    query?: Partial<CreateQueryOptions<ListFilesResponse, ConnectError, TData>>;
   },
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
@@ -575,17 +564,12 @@ export async function runtimeServiceGetFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1GetFileResponse> {
+): Promise<GetFileResponse> {
   const r = await client.runtimeService.getFile(
-    GetFileRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({ emitDefaultValues: true }) as unknown as V1GetFileResponse;
+  return r;
 }
 
 export function getRuntimeServiceGetFileQueryKey(
@@ -595,33 +579,33 @@ export function getRuntimeServiceGetFileQueryKey(
   return ["RuntimeService", "getFile", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetFileQueryOptions<TData = V1GetFileResponse>(
+export function getRuntimeServiceGetFileQueryOptions<TData = GetFileResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetFileResponse, ConnectError, TData>>;
+    query?: Partial<CreateQueryOptions<GetFileResponse, ConnectError, TData>>;
   },
-): CreateQueryOptions<V1GetFileResponse, ConnectError, TData> & {
+): CreateQueryOptions<GetFileResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceGetFileQueryKey(client.instanceId, request);
-  const queryFn: QueryFunction<V1GetFileResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<GetFileResponse> = ({ signal }) =>
     runtimeServiceGetFile(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1GetFileResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<GetFileResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetFile<TData = V1GetFileResponse>(
+export function createRuntimeServiceGetFile<TData = GetFileResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetFileResponse, ConnectError, TData>>;
+    query?: Partial<CreateQueryOptions<GetFileResponse, ConnectError, TData>>;
   },
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
@@ -2955,30 +2939,25 @@ export async function runtimeServicePutFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<PutFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1PutFileResponse> {
+): Promise<PutFileResponse> {
   const r = await client.runtimeService.putFile(
-    PutFileRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({ emitDefaultValues: true }) as unknown as V1PutFileResponse;
+  return r;
 }
 
 export function getRuntimeServicePutFileMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1PutFileResponse,
+      PutFileResponse,
       unknown,
       Omit<PartialMessage<PutFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  V1PutFileResponse,
+  PutFileResponse,
   unknown,
   Omit<PartialMessage<PutFileRequest>, "instanceId">
 > {
@@ -2992,14 +2971,14 @@ export function createRuntimeServicePutFileMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1PutFileResponse,
+      PutFileResponse,
       unknown,
       Omit<PartialMessage<PutFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  V1PutFileResponse,
+  PutFileResponse,
   unknown,
   Omit<PartialMessage<PutFileRequest>, "instanceId">
 > {
@@ -3017,32 +2996,25 @@ export async function runtimeServiceCreateDirectory(
   client: RuntimeClient,
   request: Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1CreateDirectoryResponse> {
+): Promise<CreateDirectoryResponse> {
   const r = await client.runtimeService.createDirectory(
-    CreateDirectoryRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1CreateDirectoryResponse;
+  return r;
 }
 
 export function getRuntimeServiceCreateDirectoryMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1CreateDirectoryResponse,
+      CreateDirectoryResponse,
       unknown,
       Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  V1CreateDirectoryResponse,
+  CreateDirectoryResponse,
   unknown,
   Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
 > {
@@ -3056,14 +3028,14 @@ export function createRuntimeServiceCreateDirectoryMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1CreateDirectoryResponse,
+      CreateDirectoryResponse,
       unknown,
       Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  V1CreateDirectoryResponse,
+  CreateDirectoryResponse,
   unknown,
   Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
 > {
@@ -3081,32 +3053,25 @@ export async function runtimeServiceDeleteFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<DeleteFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1DeleteFileResponse> {
+): Promise<DeleteFileResponse> {
   const r = await client.runtimeService.deleteFile(
-    DeleteFileRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1DeleteFileResponse;
+  return r;
 }
 
 export function getRuntimeServiceDeleteFileMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1DeleteFileResponse,
+      DeleteFileResponse,
       unknown,
       Omit<PartialMessage<DeleteFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  V1DeleteFileResponse,
+  DeleteFileResponse,
   unknown,
   Omit<PartialMessage<DeleteFileRequest>, "instanceId">
 > {
@@ -3120,14 +3085,14 @@ export function createRuntimeServiceDeleteFileMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1DeleteFileResponse,
+      DeleteFileResponse,
       unknown,
       Omit<PartialMessage<DeleteFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  V1DeleteFileResponse,
+  DeleteFileResponse,
   unknown,
   Omit<PartialMessage<DeleteFileRequest>, "instanceId">
 > {
@@ -3145,32 +3110,25 @@ export async function runtimeServiceRenameFile(
   client: RuntimeClient,
   request: Omit<PartialMessage<RenameFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1RenameFileResponse> {
+): Promise<RenameFileResponse> {
   const r = await client.runtimeService.renameFile(
-    RenameFileRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1RenameFileResponse;
+  return r;
 }
 
 export function getRuntimeServiceRenameFileMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1RenameFileResponse,
+      RenameFileResponse,
       unknown,
       Omit<PartialMessage<RenameFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  V1RenameFileResponse,
+  RenameFileResponse,
   unknown,
   Omit<PartialMessage<RenameFileRequest>, "instanceId">
 > {
@@ -3184,14 +3142,14 @@ export function createRuntimeServiceRenameFileMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      V1RenameFileResponse,
+      RenameFileResponse,
       unknown,
       Omit<PartialMessage<RenameFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  V1RenameFileResponse,
+  RenameFileResponse,
   unknown,
   Omit<PartialMessage<RenameFileRequest>, "instanceId">
 > {

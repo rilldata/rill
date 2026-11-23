@@ -1,6 +1,7 @@
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import type { V1DirEntry } from "@rilldata/web-common/runtime-client";
+import type { DirEntry } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import type { PartialMessage } from "@bufbuild/protobuf";
 import { QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
@@ -11,7 +12,9 @@ export interface Directory {
   files: string[]; // TODO: Use file 'path' instead of 'name'; compute 'name' downstream
 }
 
-export function transformFileList(files: V1DirEntry[]): Directory {
+export function transformFileList(
+  files: PartialMessage<DirEntry>[],
+): Directory {
   const rootDirectory: Directory = {
     name: "",
     path: "/",

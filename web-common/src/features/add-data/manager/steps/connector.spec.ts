@@ -16,7 +16,9 @@ import {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   AnalyzeConnectorsResponse,
+  GetFileResponse,
   GetInstanceResponse,
+  PutFileResponse,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import {
   ResourceKind,
@@ -134,9 +136,9 @@ describe("ClickHouse connector readiness", () => {
         ],
       }),
     );
-    vi.mocked(runtimeServiceGetFile).mockResolvedValue({
-      blob: "olap_connector: duckdb\n",
-    });
+    vi.mocked(runtimeServiceGetFile).mockResolvedValue(
+      new GetFileResponse({ blob: "olap_connector: duckdb\n" }),
+    );
     vi.mocked(runtimeServiceGetInstance).mockResolvedValue(
       new GetInstanceResponse({ instance: { olapConnector: connectorName } }),
     );
@@ -154,7 +156,7 @@ describe("ClickHouse connector readiness", () => {
     });
     vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
       if (body.path === connectorPath) parsed = true;
-      return {};
+      return new PutFileResponse();
     });
   });
 
@@ -185,7 +187,7 @@ describe("ClickHouse connector readiness", () => {
             queryClient.setQueryData(parserKey, { resource: parser(2) });
           }
         }, parseDelay);
-        return {};
+        return new PutFileResponse();
       });
       vi.mocked(runtimeServiceGetResource).mockImplementation(
         async (_, params) => {
@@ -236,7 +238,7 @@ describe("ClickHouse connector readiness", () => {
     let parsedAt = Infinity;
     vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
       if (body.path === connectorPath) parsedAt = Date.now() + 900;
-      return {};
+      return new PutFileResponse();
     });
     vi.mocked(runtimeServiceGetResource).mockImplementation(
       async (_, params) => {
@@ -430,7 +432,7 @@ describe("ClickHouse connector readiness", () => {
       );
       vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
         if (body.path === "rill.yaml") configAppliedAt = Date.now() + 1_000;
-        return {};
+        return new PutFileResponse();
       });
       vi.mocked(runtimeServiceGetInstance).mockImplementation(
         async () =>
