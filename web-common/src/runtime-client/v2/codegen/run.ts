@@ -20,6 +20,7 @@ import {
   generateIndex,
   loadOrvalTypes,
   toKebabCase,
+  validateProtoMessageMethods,
   type ServiceDef,
 } from "./generator";
 
@@ -42,6 +43,8 @@ const services: { descriptor: ServiceDef; name: string }[] = [
     name: "ConnectorService",
   },
 ];
+
+validateProtoMessageMethods(services.map((s) => s.descriptor));
 
 let totalQueries = 0;
 let totalMutations = 0;

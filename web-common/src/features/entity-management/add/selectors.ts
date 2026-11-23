@@ -1,8 +1,7 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import {
-  createRuntimeServiceAnalyzeConnectors,
-  type V1AnalyzedConnector,
-} from "@rilldata/web-common/runtime-client";
+import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
+import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { structToJson } from "@rilldata/web-common/lib/proto-utils";
 import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
 type ConnectorForSchema = {
@@ -50,7 +49,7 @@ export function getConnectorsWithMetricsViewSupport(
   );
 }
 
-function groupBySchema(connectors: V1AnalyzedConnector[]) {
+function groupBySchema(connectors: AnalyzedConnector[]) {
   const seenDriver = new Set<string>();
   const connectorsForSchema: ConnectorForSchema[] = [];
   connectors.forEach((connector) => {
@@ -68,17 +67,13 @@ function groupBySchema(connectors: V1AnalyzedConnector[]) {
   return connectorsForSchema;
 }
 
-export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
+export function inferSchemaForConnector(connector: AnalyzedConnector) {
   if (!connector.driver?.name) return "";
   // TODO: some schema will share driver name, differentiate them.
   const driverName = connector.driver.name;
   switch (driverName) {
     case "duckdb":
-      if (
-        (
-          connector.config as Record<string, string> | undefined
-        )?.path?.startsWith("md:")
-      )
+      if (String(structToJson(connector.config)?.path ?? "").startsWith("md:"))
         return "motherduck";
       if (isDuckLakeConnector(connector)) return "ducklake";
       break;
@@ -87,11 +82,11 @@ export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
   return driverName;
 }
 
-function isDuckLakeConnector(connector: V1AnalyzedConnector): boolean {
+function isDuckLakeConnector(connector: AnalyzedConnector): boolean {
   const attachCandidates: unknown[] = [
-    (connector.config as Record<string, unknown> | undefined)?.attach,
-    (connector.projectConfig as Record<string, unknown> | undefined)?.attach,
-    (connector.presetConfig as Record<string, unknown> | undefined)?.attach,
+    structToJson(connector.config)?.attach,
+    structToJson(connector.projectConfig)?.attach,
+    structToJson(connector.presetConfig)?.attach,
   ];
   if (
     attachCandidates.some(

@@ -205,19 +205,30 @@ function extractMethods(service: ServiceDef): MethodInfo[] {
     });
   }
 
-  // Guard against typos and renames in the migration list: every entry must
-  // name a method that is actually generated for the service.
-  const generatedKeys = new Set(methods.map((m) => m.methodKey));
-  const unknown = (protoMessageMethods[serviceName] ?? []).filter(
-    (methodKey) => !generatedKeys.has(methodKey),
-  );
-  if (unknown.length > 0) {
-    throw new Error(
-      `protoMessageMethods.${serviceName} lists methods that ${serviceName} does not generate: ${unknown.join(", ")}`,
-    );
-  }
-
   return methods;
+}
+
+/**
+ * Guards against typos and renames in `protoMessageMethods`:
+ * every entry must name a method that is actually generated for its service.
+ * Runs against the real services rather than inside `extractMethods`,
+ * so that test fixtures standing in for a service are not tied to its migration list.
+ */
+function validateProtoMessageMethods(services: ServiceDef[]): void {
+  for (const service of services) {
+    const serviceName = extractShortName(service.typeName);
+    const generatedKeys = new Set(
+      extractMethods(service).map((m) => m.methodKey),
+    );
+    const unknown = (protoMessageMethods[serviceName] ?? []).filter(
+      (methodKey) => !generatedKeys.has(methodKey),
+    );
+    if (unknown.length > 0) {
+      throw new Error(
+        `protoMessageMethods.${serviceName} lists methods that ${serviceName} does not generate: ${unknown.join(", ")}`,
+      );
+    }
+  }
 }
 
 // --- Code generation: per-method helpers ---
@@ -373,7 +384,7 @@ function generateInfiniteQueryMethod(ctx: MethodContext): string[] {
     `      ${rawFn}(client, { ...request, pageToken: pageParam } as ${requestType}, { signal }),`,
     `    initialPageParam: undefined as string | undefined,`,
     `    getNextPageParam: (lastPage) =>`,
-    `      (lastPage as Record<string, unknown>)?.nextPageToken as string | undefined || undefined,`,
+    `      lastPage.nextPageToken || undefined,`,
     `    enabled: !!client.instanceId,`,
     `    ...options?.query,`,
     `  } as CreateInfiniteQueryOptions<${responseType}, ConnectError, TData, ${responseType}, QueryKey, string | undefined> & { queryKey: QueryKey };`,
@@ -604,6 +615,7 @@ export {
   generateServiceFile,
   generateIndex,
   extractMethods,
+  validateProtoMessageMethods,
   loadOrvalTypes,
   toKebabCase,
   // Per-method generators (exported for narrow testing)

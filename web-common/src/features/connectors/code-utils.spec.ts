@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import {
   replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
@@ -425,7 +426,7 @@ describe("formatHeadersAsYamlMap", () => {
 
 describe("generateYAML", () => {
   it("should produce basic connector YAML", async () => {
-    const connector: V1ConnectorDriver = {
+    const connector: PartialMessage<ConnectorDriver> = {
       name: "clickhouse",
       docsUrl:
         "https://docs.rilldata.com/developers/build/connectors/data-source/clickhouse",
@@ -449,7 +450,7 @@ describe("generateYAML", () => {
   });
 
   it("should preserve property ordering from orderedProperties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -474,7 +475,7 @@ describe("generateYAML", () => {
   });
 
   it("should replace secret properties with env var placeholders", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const schema = {
       type: "object",
       properties: {
@@ -593,7 +594,7 @@ describe("generateYAML", () => {
   });
 
   it("should handle env var conflict resolution with env edit session", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const schema = {
       type: "object",
       properties: {
@@ -655,7 +656,7 @@ describe("generateYAML", () => {
   });
 
   it("should quote string properties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -673,7 +674,7 @@ describe("generateYAML", () => {
   });
 
   it("should not quote non-string properties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -686,7 +687,7 @@ describe("generateYAML", () => {
   });
 
   it("should filter out empty string values", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -702,7 +703,7 @@ describe("generateYAML", () => {
   });
 
   it("should filter out undefined values", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -717,7 +718,7 @@ describe("generateYAML", () => {
   });
 
   it("should filter out empty arrays", async () => {
-    const connector: V1ConnectorDriver = { name: "https" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "https" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -732,7 +733,7 @@ describe("generateYAML", () => {
   });
 
   it("should exclude clickhouse managed: false", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -747,7 +748,7 @@ describe("generateYAML", () => {
   });
 
   it("should include clickhouse managed: true", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -762,7 +763,7 @@ describe("generateYAML", () => {
   });
 
   it("should output driver as duckdb for motherduck", async () => {
-    const connector: V1ConnectorDriver = { name: "motherduck" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "motherduck" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -778,7 +779,7 @@ describe("generateYAML", () => {
   });
 
   it("should apply fieldFilter to exclude internal properties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -800,7 +801,7 @@ describe("generateYAML", () => {
   });
 
   it("should produce no property lines when orderedProperties is empty", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,

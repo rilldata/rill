@@ -1,5 +1,6 @@
 import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
-import type { V1AnalyzedConnector } from "../../runtime-client";
+import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { structToJson } from "@rilldata/web-common/lib/proto-utils";
 
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
@@ -142,9 +143,11 @@ export function makeTablePreviewHref(
  * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
  * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
-export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
+export function getConnectorIconKey(connector: AnalyzedConnector): string {
+  const config = structToJson(connector.config);
+
   // Special case: MotherDuck connectors use md: path prefix
-  const path = connector.config?.path;
+  const path = config?.path;
   if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
   }
@@ -156,9 +159,9 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   // falls back to the default connector name written by the DuckLake tile.
   if (connector.driver?.name === "duckdb") {
     const attachCandidates: unknown[] = [
-      connector.config?.attach,
-      connector.projectConfig?.attach,
-      connector.presetConfig?.attach,
+      config?.attach,
+      structToJson(connector.projectConfig)?.attach,
+      structToJson(connector.presetConfig)?.attach,
     ];
     const isDuckLakeAttach = attachCandidates.some(
       (v) => typeof v === "string" && v.includes("ducklake:"),
@@ -175,8 +178,8 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn
   if (connector.driver?.name === "clickhouse") {
-    const host = connector.config?.host;
-    const dsn = connector.config?.dsn;
+    const host = config?.host;
+    const dsn = config?.dsn;
 
     if (
       (typeof host === "string" && host.includes("clickhouse.cloud")) ||
@@ -188,8 +191,8 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
   // Special case: Supabase connectors have "supabase.com" in host or dsn
   if (connector.driver?.name === "postgres") {
-    const host = connector.config?.host;
-    const dsn = connector.config?.dsn;
+    const host = config?.host;
+    const dsn = config?.dsn;
 
     if (
       (typeof host === "string" && host.includes("supabase")) ||

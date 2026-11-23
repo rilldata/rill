@@ -1,8 +1,7 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-import type {
-  V1ConnectorDriver,
-  V1Source,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Source } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -22,7 +21,7 @@ materialize: true`;
 }
 
 export function generateSourceYAML(
-  connector: V1ConnectorDriver,
+  connector: PartialMessage<ConnectorDriver>,
   formValues: Record<string, unknown>,
   envEditSession: EnvEditSession,
   opts?: {
@@ -160,7 +159,10 @@ function extensionContainsParts(
   return false;
 }
 
-export function inferSourceName(connector: V1ConnectorDriver, path: string) {
+export function inferSourceName(
+  connector: PartialMessage<ConnectorDriver>,
+  path: string,
+) {
   if (
     !path ||
     path.endsWith("/") ||
@@ -217,10 +219,10 @@ export function getFileTypeFromPath(fileName) {
  * well-documented file reading capabilities.
  */
 export function maybeRewriteToDuckDb(
-  connector: V1ConnectorDriver,
+  connector: PartialMessage<ConnectorDriver>,
   formValues: Record<string, unknown>,
   options?: { connectorInstanceName?: string },
-): [V1ConnectorDriver, Record<string, unknown>] {
+): [PartialMessage<ConnectorDriver>, Record<string, unknown>] {
   // Create a copy of the connector, so that we don't overwrite the original
   const connectorCopy = { ...connector };
   const connectorInstanceName =
@@ -403,10 +405,10 @@ export function maybeRewriteToDuckDb(
  * This serves as a single source of truth for both preview and submission.
  */
 export function prepareSourceFormData(
-  connector: V1ConnectorDriver,
+  connector: PartialMessage<ConnectorDriver>,
   formValues: Record<string, unknown>,
   options?: { connectorInstanceName?: string },
-): [V1ConnectorDriver, Record<string, unknown>] {
+): [PartialMessage<ConnectorDriver>, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 

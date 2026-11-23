@@ -22,7 +22,8 @@
     getConnectorDriverForConnector,
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import type { PartialMessage } from "@bufbuild/protobuf";
+  import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
   import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
   import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
@@ -84,7 +85,7 @@
   );
 
   async function init(connector?: string, schema?: string) {
-    let driver: V1ConnectorDriver | undefined = undefined;
+    let driver: PartialMessage<ConnectorDriver> | undefined = undefined;
     if (connector) {
       const analyzedConnector = await getConnectorDriverForConnector(
         runtimeClient,
