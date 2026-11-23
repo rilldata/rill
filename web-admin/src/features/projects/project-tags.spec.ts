@@ -16,6 +16,9 @@ describe("sanitizeProjectTag", () => {
     ["env:prod", "env-prod"],
     ["team_a", "team_a"],
     ["--sandbox--", "sandbox"],
+    ["prod!", "prod"],
+    // Tags the admin service accepts are kept, so saving doesn't rename tags set from the CLI.
+    ["prod-", "prod-"],
     ["Été", "été"],
     ["운영", "운영"],
     // Decomposed "é" (e + combining acute) is composed, as the admin service does.

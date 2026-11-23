@@ -10,14 +10,14 @@ const PROJECT_TAG_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}_-]*$/u;
 /**
  * Turns text typed as a tag into the form the admin service stores:
  * trimmed, lowercase and NFC-normalized.
- * Runs of other characters, such as spaces, become a hyphen,
+ * If the admin service would still reject it, runs of other characters, such as spaces, become a hyphen,
  * so "Data Science" becomes "data-science".
+ * Tags it accepts are kept as they are, so saving doesn't rename a tag set from the CLI, such as "prod-".
  */
 export function sanitizeProjectTag(input: string): string {
-  return input
-    .normalize("NFC")
-    .trim()
-    .toLowerCase()
+  const tag = input.normalize("NFC").trim().toLowerCase();
+  if (isValidProjectTag(tag)) return tag;
+  return tag
     .replace(/[^\p{L}\p{M}\p{N}_-]+/gu, "-")
     .replace(/^[-_]+|-+$/g, "");
 }
