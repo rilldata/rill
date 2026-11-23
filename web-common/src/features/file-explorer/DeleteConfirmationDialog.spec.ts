@@ -1,4 +1,4 @@
-import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { setRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeleteTarget } from "./delete-target";
@@ -19,7 +19,7 @@ function renderDialog(target: DeleteTarget) {
 }
 
 describe("DeleteConfirmationDialog", () => {
-  afterEach(() => featureFlags.adminServer.set(false));
+  afterEach(() => setRuntimeEditEnvironment("local"));
 
   it("names the dashboard and its file, and says the delete can't be undone", () => {
     renderDialog(canvas);
@@ -100,7 +100,7 @@ describe("DeleteConfirmationDialog", () => {
   });
 
   it("explains how to restore a file in the Cloud editor", () => {
-    featureFlags.adminServer.set(true);
+    setRuntimeEditEnvironment("cloud");
     renderDialog(canvas);
 
     const dialog = screen.getByRole("alertdialog");

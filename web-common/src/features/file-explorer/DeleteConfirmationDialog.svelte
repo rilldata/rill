@@ -10,7 +10,7 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { DeleteTarget } from "./delete-target";
@@ -29,7 +29,7 @@
   } = $props();
 
   // The file explorer runs in Rill Developer and in the Cloud editor, and only the latter can restore a deleted file.
-  const { adminServer: isCloudEditor } = featureFlags;
+  const isCloudEditor = isCloudRuntimeEditEnvironment();
 
   let titleKind = $derived(
     target?.type === "folder" ? "folder" : (target?.resource?.kind ?? "file"),
@@ -71,7 +71,7 @@
           </ul>
         {/if}
         <div>
-          {$isCloudEditor
+          {isCloudEditor
             ? m.file_explorer_delete_undo_cloud()
             : m.file_explorer_delete_undo_developer()}
         </div>
