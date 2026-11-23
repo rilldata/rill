@@ -417,8 +417,11 @@ function createSharedAxisFormat(
   ) {
     return { format: ",%" };
   }
+  // The tick's value as JavaScript writes it, which keeps every digit that sets
+  // it apart from its neighbors, with the minus sign d3 gives the other labels.
+  const plainDecimal = `(datum.value < 0 ? '\u2212' : '') + toString(abs(datum.value))`;
   return {
-    labelExpr: `indexof('${SI_FRACTION_PREFIXES}', slice(datum.label, -1)) >= 0 ? format(datum.value, '~g') : datum.label`,
+    labelExpr: `indexof('${SI_FRACTION_PREFIXES}', slice(datum.label, -1)) >= 0 ? ${plainDecimal} : datum.label`,
   };
 }
 

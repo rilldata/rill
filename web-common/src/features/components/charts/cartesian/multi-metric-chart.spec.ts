@@ -297,6 +297,11 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
 
     // d3 writes negative numbers with a minus sign, not a hyphen.
     const minus = "\u2212";
+    // A line chart whose axis does not start at zero, for ranges far from it.
+    const narrow: CartesianChartSpec = {
+      ...vertical,
+      y: { ...vertical.y!, zeroBasedOrigin: false },
+    };
     const row = (device: string, clicks: number, revenue: number) => ({
       device,
       click_share: clicks,
@@ -384,6 +389,29 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
       expect(
         await tickLabels([{}, {}], [row("Desktop", 0.0009, 0.0004)]),
       ).toEqual(["0", "0.0002", "0.0004", "0.0006", "0.0008"]);
+      expect(await tickLabels([{}, {}], [row("Desktop", -0.4, 0.6)])).toEqual([
+        `${minus}0.4`,
+        `${minus}0.2`,
+        "0",
+        "0.2",
+        "0.4",
+        "0.6",
+      ]);
+
+      // Ticks half a millionth apart: six significant digits would repeat labels.
+      const labels = await tickLabels(
+        [{}, {}],
+        [row("Desktop", 0.500001, 0.500003)],
+        narrow,
+        "line",
+      );
+      expect(labels.sort()).toEqual([
+        "0.500001",
+        "0.5000015",
+        "0.500002",
+        "0.5000025",
+        "0.500003",
+      ]);
     });
 
     it("leaves the theme's labels alone from one upward", async () => {
@@ -395,10 +423,6 @@ describe("generateVLMultiMetricChartSpec value axis format", () => {
       ).toEqual(["0k", "2k", "4k", "6k", "8k"]);
 
       // A narrow range keeps the precision Vega derives from the tick step.
-      const narrow: CartesianChartSpec = {
-        ...vertical,
-        y: { ...vertical.y!, zeroBasedOrigin: false },
-      };
       expect(
         await tickLabels(
           [{}, {}],
