@@ -157,13 +157,13 @@
   </Dialog.Header>
 
   <div class="flex flex-col gap-y-2">
-    <div class="flex items-center gap-x-2">
-      <input
-        readonly
-        value={issued.token}
-        aria-label={m.access_tokens_column_token()}
-        class="h-8 flex-1 min-w-0 rounded-[2px] border bg-surface-background px-2 font-mono text-xs text-fg-primary"
-      />
+    <div class="flex items-start gap-x-2">
+      <!-- Shown in full rather than in an input, which scrolls to its end when focused. -->
+      <code
+        class="flex-1 min-w-0 select-all break-all rounded-[2px] border bg-surface-background px-2 py-1.5 font-mono text-xs text-fg-primary"
+      >
+        {issued.token}
+      </code>
       <Button type="secondary" onClick={copyToken}>
         {copied ? m.access_tokens_copied() : m.access_tokens_copy()}
       </Button>

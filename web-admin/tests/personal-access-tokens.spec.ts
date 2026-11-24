@@ -33,7 +33,7 @@ test.describe("Personal access tokens", () => {
 
     // The token is shown once and authenticates as the user
     await expect(dialog.getByText("Copy your new token")).toBeVisible();
-    const token = await dialog.locator("input[readonly]").inputValue();
+    const token = (await dialog.locator("code").textContent())?.trim() ?? "";
     expect(token).toMatch(/^rill_usr_/);
     expect(await currentUserStatus(token)).toBe(200);
     await dialog.getByRole("button", { name: "Done" }).click();
