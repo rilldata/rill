@@ -45,7 +45,7 @@
     dashboardStore,
     validSpecStore,
     selectors: {
-      pivot: { rows, columns, measures, dimensions },
+      pivot: { rows, columns, isFlat, measures, dimensions },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
       measures: { measureLabel },
       exactMeasures: { exactMeasureContext },
@@ -136,11 +136,7 @@
   $: hasColumnAndNoMeasure =
     $columns.dimension.length > 0 && $columns.measure.length === 0;
 
-  $: canExport = canExportPivot(
-    $rows,
-    $columns,
-    $dashboardStore.pivot.tableMode === "flat",
-  );
+  $: canExport = canExportPivot($rows, $columns, $isFlat);
 
   function removeActiveCell() {
     if (!$dashboardStore.pivot.activeCell) return;
