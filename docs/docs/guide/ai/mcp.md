@@ -149,9 +149,11 @@ Note: If you select this option, you must have Node.js installed on your system.
 
 **Via UI (recommended):**
 
-Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically:
+Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically. Give the token a name and choose when it expires (90 days by default):
 
 ![Project AI](/img/explore/mcp/project-ai.png)
+
+You can also create tokens, and see or revoke the ones you have, under **Access tokens** in the menu behind your avatar.
 
 **Via CLI:**
 

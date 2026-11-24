@@ -54,7 +54,7 @@
         {#if activeTab === "oauth"}
           <OAuthSection {apiUrl} />
         {:else}
-          <ManualSection {apiUrl} {isPublic} />
+          <ManualSection {apiUrl} {project} {isPublic} />
         {/if}
       </div>
     </Tabs>

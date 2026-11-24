@@ -4,6 +4,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let apiUrl: string;
+  export let project: string;
   export let isPublic: boolean;
 
   let issuedToken: string | null = null;
@@ -40,7 +41,7 @@
 
 <div class="flex flex-col gap-y-6 min-w-0">
   {#if !isPublic}
-    <PersonalAccessTokensSection bind:issuedToken />
+    <PersonalAccessTokensSection {project} bind:issuedToken />
   {/if}
 
   <div class="flex flex-col gap-y-3 min-w-0">
