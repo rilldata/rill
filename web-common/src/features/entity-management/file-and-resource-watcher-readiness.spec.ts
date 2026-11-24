@@ -128,6 +128,20 @@ describe("watcher readiness during a controller restart", () => {
     expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
   });
 
+  // A readiness request can stay pending, e.g. queued behind slow queries,
+  // while the stream itself is reachable. It must not hold up the reconnect.
+  it("reopens when the readiness request never returns", async () => {
+    watcher.start("http://runtime/sse");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+
+    vi.mocked(runtimeServiceGetResource).mockReturnValue(new Promise(() => {}));
+    transports[0].fire("close");
+    await vi.advanceTimersByTimeAsync(25_000);
+
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+  });
+
   it("still closes when the controller never becomes available", async () => {
     watcher.start("http://runtime/sse");
     await vi.advanceTimersByTimeAsync(5_000);

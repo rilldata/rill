@@ -83,7 +83,9 @@ func TestMiddleware(t *testing.T) {
 		req := httptest.NewRequest("GET", "/", nil)
 		req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", token)}
 
-		handler.ServeHTTP(httptest.NewRecorder(), req)
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, req)
+		require.Equal(t, http.StatusOK, recorder.Code)
 	})
 
 	t.Run("OpenWithDevJWT", func(t *testing.T) {
@@ -103,6 +105,8 @@ func TestMiddleware(t *testing.T) {
 		req := httptest.NewRequest("GET", "/", nil)
 		req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", token)}
 
-		handler.ServeHTTP(httptest.NewRecorder(), req)
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, req)
+		require.Equal(t, http.StatusOK, recorder.Code)
 	})
 }
