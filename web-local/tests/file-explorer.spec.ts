@@ -157,6 +157,7 @@ test.describe("File Explorer", () => {
     test("should ask before deleting a canvas or an explore dashboard", async ({
       page,
     }) => {
+      const metricsViewFile = "/metrics/AdBids_metrics.yaml";
       const canvasFile = "/dashboards/AdBids_metrics_canvas.yaml";
       const exploreFile = "/dashboards/AdBids_metrics_explore.yaml";
       const dialog = page.getByRole("alertdialog");
@@ -167,6 +168,20 @@ test.describe("File Explorer", () => {
       await expect(page.getByText("Total records").first()).toBeVisible({
         timeout: 60_000,
       });
+
+      // Deleting the metrics view lists the dashboards built on it
+      await openFileNavEntryContextMenu(page, metricsViewFile);
+      await clickMenuButton(page, "Delete");
+      await expect(dialog).toContainText("Delete metrics view?");
+      await expect(dialog).toContainText(
+        "These 2 files depend on it and will have errors until you update them:",
+      );
+      await expect(dialog.getByRole("listitem")).toHaveText([
+        canvasFile,
+        exploreFile,
+      ]);
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
 
       // The dialog names the dashboard and its file, and says whether the delete can be undone
       await openFileNavEntryContextMenu(page, canvasFile);

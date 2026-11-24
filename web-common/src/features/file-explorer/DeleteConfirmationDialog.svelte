@@ -70,6 +70,18 @@
             {/each}
           </ul>
         {/if}
+        {#if target?.type === "file" && target.dependents.length}
+          <div>
+            {m.file_explorer_delete_dependents({
+              count: target.dependents.length,
+            })}
+          </div>
+          <ul class="file-list">
+            {#each target.dependents as file (file)}
+              <li title={file}>{file}</li>
+            {/each}
+          </ul>
+        {/if}
         <div>
           {isCloudEditor
             ? m.file_explorer_delete_undo_cloud()

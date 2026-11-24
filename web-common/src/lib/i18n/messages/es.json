@@ -1480,6 +1480,16 @@
   "field_list_dimensions": "DIMENSIONES",
   "field_list_measures": "MEDIDAS",
   "field_list_time": "TIEMPO",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este archivo depende de él y tendrá errores hasta que lo actualices:",
+        "countPlural=other": "Estos {count} archivos dependen de él y tendrán errores hasta que los actualices:"
+      }
+    }
+  ],
   "file_explorer_delete_file_description": "El archivo {path} se eliminará del proyecto.",
   "file_explorer_delete_folder_description": "La carpeta {path} y todo su contenido se eliminarán del proyecto, incluidos los archivos que el explorador de archivos no muestra, como las rutas ignoradas en rill.yaml.",
   "file_explorer_delete_resource_description": [

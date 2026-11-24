@@ -1471,6 +1471,16 @@
   "field_list_dimensions": "차원",
   "field_list_measures": "측정값",
   "field_list_time": "시간",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "이 파일은 삭제할 항목에 의존하므로 업데이트할 때까지 오류가 발생합니다:",
+        "countPlural=other": "다음 파일 {count}개는 삭제할 항목에 의존하므로 업데이트할 때까지 오류가 발생합니다:"
+      }
+    }
+  ],
   "file_explorer_delete_file_description": "파일 {path}이(가) 프로젝트에서 삭제됩니다.",
   "file_explorer_delete_folder_description": "폴더 {path}와(과) 그 안의 모든 항목이 프로젝트에서 삭제됩니다. 파일 탐색기에 표시되지 않는 파일(예: rill.yaml에서 무시하도록 설정한 경로)도 함께 삭제됩니다.",
   "file_explorer_delete_resource_description": [

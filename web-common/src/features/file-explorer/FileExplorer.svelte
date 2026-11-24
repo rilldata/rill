@@ -23,6 +23,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
+  import { fetchResources } from "../entity-management/resource-selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { ChevronsDownUp, ChevronsUpDown } from "lucide-svelte";
   import { get } from "svelte/store";
@@ -143,12 +145,19 @@
   async function onDelete(filePath: string, isDir: boolean) {
     if (!$getFileTree.data) return;
 
-    const target = isDir
-      ? getFolderDeleteTarget($getFileTree.data, filePath)
-      : getFileDeleteTarget(
-          filePath,
-          get(fileArtifacts.getFileArtifact(filePath).resourceName),
-        );
+    let target: DeleteTarget | undefined;
+    if (isDir) {
+      target = getFolderDeleteTarget($getFileTree.data, filePath);
+    } else {
+      const resourceName = get(
+        fileArtifacts.getFileArtifact(filePath).resourceName,
+      );
+      // The dialog lists the files that depend on this one; if the lookup fails, it opens without that list.
+      const resources = resourceName
+        ? await fetchResources(queryClient, runtimeClient).catch(() => [])
+        : [];
+      target = getFileDeleteTarget(filePath, resourceName, resources);
+    }
     if (!target) {
       await deleteEntry(filePath, isDir, false);
       return;

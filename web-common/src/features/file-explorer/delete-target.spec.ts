@@ -1,4 +1,7 @@
-import type { V1DirEntry } from "@rilldata/web-common/runtime-client";
+import type {
+  V1DirEntry,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import { getFileDeleteTarget, getFolderDeleteTarget } from "./delete-target";
@@ -13,27 +16,132 @@ describe("getFileDeleteTarget", () => {
     [ResourceKind.Source, "source"],
   ])("names the resource a %s file defines", (kind, expected) => {
     expect(
-      getFileDeleteTarget("/dashboards/orders.yaml", { kind, name: "orders" }),
+      getFileDeleteTarget(
+        "/dashboards/orders.yaml",
+        { kind, name: "orders" },
+        [],
+      ),
     ).toEqual({
       type: "file",
       path: "/dashboards/orders.yaml",
       resource: { kind: expected, name: "orders" },
+      dependents: [],
     });
   });
 
   it("describes a file of any other resource kind as a plain file", () => {
     expect(
-      getFileDeleteTarget("/themes/brand.yaml", {
-        kind: ResourceKind.Theme,
-        name: "brand",
-      }),
-    ).toEqual({ type: "file", path: "/themes/brand.yaml" });
+      getFileDeleteTarget(
+        "/themes/brand.yaml",
+        { kind: ResourceKind.Theme, name: "brand" },
+        [],
+      ),
+    ).toEqual({ type: "file", path: "/themes/brand.yaml", dependents: [] });
   });
 
   it("describes a file without a parsed resource as a plain file", () => {
-    expect(getFileDeleteTarget("/dashboards/broken.yaml", undefined)).toEqual({
+    expect(
+      getFileDeleteTarget("/dashboards/broken.yaml", undefined, []),
+    ).toEqual({
       type: "file",
       path: "/dashboards/broken.yaml",
+      dependents: [],
+    });
+  });
+
+  describe("dependents", () => {
+    function resource(
+      kind: ResourceKind,
+      name: string,
+      filePath: string,
+      refs: { kind: ResourceKind; name: string }[] = [],
+    ): V1Resource {
+      return { meta: { name: { kind, name }, filePaths: [filePath], refs } };
+    }
+
+    const model = { kind: ResourceKind.Model, name: "orders" };
+    const metricsView = {
+      kind: ResourceKind.MetricsView,
+      name: "orders_metrics",
+    };
+    const component = {
+      kind: ResourceKind.Component,
+      name: "orders_canvas--component-0-0",
+    };
+    const resources = [
+      resource(model.kind, model.name, "/models/orders.sql"),
+      // The ref is written in another case than the model's name, which the runtime accepts.
+      resource(
+        metricsView.kind,
+        metricsView.name,
+        "/metrics/orders_metrics.yaml",
+        [{ kind: ResourceKind.Model, name: "Orders" }],
+      ),
+      // An explore defined in the metrics view's own file goes with it.
+      resource(
+        ResourceKind.Explore,
+        "orders_metrics",
+        "/metrics/orders_metrics.yaml",
+        [metricsView],
+      ),
+      resource(
+        ResourceKind.Explore,
+        "orders_explore",
+        "/dashboards/orders_explore.yaml",
+        [metricsView],
+      ),
+      resource(
+        component.kind,
+        component.name,
+        "/dashboards/orders_canvas.yaml",
+        [metricsView],
+      ),
+      resource(
+        ResourceKind.Canvas,
+        "orders_canvas",
+        "/dashboards/orders_canvas.yaml",
+        [component],
+      ),
+      resource(ResourceKind.Model, "customers", "/models/customers.sql"),
+      resource(
+        ResourceKind.MetricsView,
+        "customers_metrics",
+        "/metrics/customers_metrics.yaml",
+        [{ kind: ResourceKind.Model, name: "customers" }],
+      ),
+    ];
+
+    it("lists the files that depend on the resource, directly or through others", () => {
+      expect(
+        getFileDeleteTarget("/models/orders.sql", model, resources).dependents,
+      ).toEqual([
+        "/dashboards/orders_canvas.yaml",
+        "/dashboards/orders_explore.yaml",
+        "/metrics/orders_metrics.yaml",
+      ]);
+    });
+
+    it("leaves out the file being deleted", () => {
+      expect(
+        getFileDeleteTarget(
+          "/metrics/orders_metrics.yaml",
+          metricsView,
+          resources,
+        ).dependents,
+      ).toEqual([
+        "/dashboards/orders_canvas.yaml",
+        "/dashboards/orders_explore.yaml",
+      ]);
+    });
+
+    it("is empty for a resource nothing depends on", () => {
+      expect(
+        getFileDeleteTarget(
+          "/dashboards/orders_explore.yaml",
+          { kind: ResourceKind.Explore, name: "orders_explore" },
+          resources,
+        ).dependents,
+      ).toEqual([]);
     });
   });
 });

@@ -8,6 +8,7 @@ const canvas: DeleteTarget = {
   type: "file",
   path: "/dashboards/orders_overview.yaml",
   resource: { kind: "canvas", name: "orders_overview" },
+  dependents: [],
 };
 
 function renderDialog(target: DeleteTarget) {
@@ -60,6 +61,7 @@ describe("DeleteConfirmationDialog", () => {
       type: "file",
       path: "/dashboards/orders_explore.yaml",
       resource: { kind: "explore", name: "orders_explore" },
+      dependents: [],
     });
 
     const dialog = screen.getByRole("alertdialog");
@@ -70,7 +72,7 @@ describe("DeleteConfirmationDialog", () => {
   });
 
   it("describes a file without a named resource by its path", () => {
-    renderDialog({ type: "file", path: "/notes/README.md" });
+    renderDialog({ type: "file", path: "/notes/README.md", dependents: [] });
 
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent("Delete file?");
@@ -99,6 +101,36 @@ describe("DeleteConfirmationDialog", () => {
     ).toEqual(["orders.yaml", "archive/orders_2024.yaml"]);
   });
 
+  it("lists the files that depend on the resource", () => {
+    renderDialog({
+      type: "file",
+      path: "/metrics/orders_metrics.yaml",
+      resource: { kind: "metrics_view", name: "orders_metrics" },
+      dependents: [
+        "/dashboards/orders_canvas.yaml",
+        "/dashboards/orders_explore.yaml",
+      ],
+    });
+
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "These 2 files depend on it and will have errors until you update them:",
+    );
+    expect(
+      screen.getAllByRole("listitem").map((item) => item.textContent),
+    ).toEqual([
+      "/dashboards/orders_canvas.yaml",
+      "/dashboards/orders_explore.yaml",
+    ]);
+  });
+
+  it("says when a single file depends on the resource", () => {
+    renderDialog({ ...canvas, dependents: ["/alerts/orders_drop.yaml"] });
+
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "This file depends on it and will have errors until you update it:",
+    );
+  });
+
   it("explains how to restore a file in the Cloud editor", () => {
     setRuntimeEditEnvironment("cloud");
     renderDialog(canvas);
@@ -112,7 +144,7 @@ describe("DeleteConfirmationDialog", () => {
 
   it("renders markup in a file name as text", () => {
     const path = "/notes/<img src=x onerror=alert(1)>.md";
-    renderDialog({ type: "file", path });
+    renderDialog({ type: "file", path, dependents: [] });
 
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent(path);
