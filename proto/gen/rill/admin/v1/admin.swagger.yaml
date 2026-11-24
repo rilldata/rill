@@ -612,6 +612,8 @@ paths:
                 type: string
               billingEmail:
                 type: string
+              disableProjectDomainAccess:
+                type: boolean
       x-visibility: public
   /v1/orgs/{org}/billing/credits:
     get:
@@ -6556,6 +6558,11 @@ definitions:
         type: string
       defaultProjectRoleId:
         type: string
+      disableProjectDomainAccess:
+        type: boolean
+        description: |-
+          When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+          Rules a project already has keep adding users.
       defaultProvisioner:
         type: string
       quotas:

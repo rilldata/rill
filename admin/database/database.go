@@ -436,6 +436,7 @@ type Organization struct {
 	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
+	DisableProjectDomainAccess          bool      `db:"disable_project_domain_access"`
 	DefaultProvisioner                  string    `db:"default_provisioner"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -479,7 +480,9 @@ type InsertOrganizationOptions struct {
 	CreatedByUserID                     *string
 }
 
-// UpdateOrganizationOptions defines options for updating an existing org
+// UpdateOrganizationOptions defines options for updating an existing org.
+// Unlike the other fields, DisableProjectDomainAccess is left unchanged when nil,
+// so a caller working from an earlier read of the org can't undo a concurrent change to it.
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
@@ -490,6 +493,7 @@ type UpdateOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DisableProjectDomainAccess          *bool
 	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int

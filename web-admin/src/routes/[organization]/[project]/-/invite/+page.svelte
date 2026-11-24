@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateProjectWhitelistedDomain,
+    createAdminServiceGetOrganization,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
@@ -27,6 +28,10 @@
   let invited = false;
   $: userDomain = getUserDomain();
   $: isPublicDomain = userDomainIsPublic();
+  $: orgResp = createAdminServiceGetOrganization(organization);
+  // Orgs can refuse new project domain access rules; wait for the org to load before offering one.
+  $: domainAccessAllowed =
+    !!$orgResp.data && !$orgResp.data.organization?.disableProjectDomainAccess;
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
 
   $: buttonText =
@@ -80,7 +85,7 @@
       onInvite={() => (invited = true)}
     />
   </div>
-  {#if $userDomain.data && !$isPublicDomain.data}
+  {#if $userDomain.data && !$isPublicDomain.data && domainAccessAllowed}
     <div class="flex flex-col gap-y-1">
       <div class="text-sm font-medium">{m.auth_allow_domain_access()}</div>
       <div class="flex flex-row gap-x-2">
