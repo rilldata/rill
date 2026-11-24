@@ -207,6 +207,7 @@
           measureFields: measures.map((measure) => measure.name as string),
           measureFormatters,
           theme: flintThemeSpec,
+          legendPosition: chartTheme?.legend?.position,
         })
       : null;
 

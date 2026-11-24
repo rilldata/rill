@@ -424,6 +424,7 @@ describe("the chart catalog compiled with a theme", () => {
       size: { width: 560, height: 320 },
       measureFields: metricsView.measures?.map((m) => m.name as string),
       theme: flintTheme(isDarkMode, theme, { chart }),
+      legendPosition: chart?.legend?.position,
     });
   }
 
@@ -432,6 +433,11 @@ describe("the chart catalog compiled with a theme", () => {
     ["in light mode", style, false],
     ["in dark mode", style, true],
     ["over a preset", { ...style, extends: "economist" }, false],
+    [
+      "without a legend position",
+      { ...style, legend: { symbol: "line" } },
+      false,
+    ],
   ];
 
   it.each(themes)("compiles every example %s", (_, chart, isDarkMode) => {
@@ -441,6 +447,17 @@ describe("the chart catalog compiled with a theme", () => {
       // A theme changes how a chart looks, not whether it can be drawn.
       expect(themed.error, entry.name).toBe(plain.error);
       if (!themed.spec) continue;
+      // A legend the chart places itself, as a Marginal Plot does, goes on the side the theme
+      // states, and at the right where it states none. A preset lays its legends out as a design
+      // of its own.
+      if (!chart.extends) {
+        expect(
+          legendSides(themed.spec).filter(
+            (side) => side !== (chart.legend?.position ?? "right"),
+          ),
+          entry.name,
+        ).toEqual([]);
+      }
       const config = getRillTheme(isDarkMode, theme, { chart });
       expect(
         () => compile(themed.spec as TopLevelSpec, { config }),
@@ -449,3 +466,26 @@ describe("the chart catalog compiled with a theme", () => {
     }
   });
 });
+
+/** The sides a compiled chart states for its legends, outside its config. */
+function legendSides(spec: unknown): unknown[] {
+  const sides: unknown[] = [];
+  const visit = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "config") continue;
+      if (key === "legend" && value && typeof value === "object") {
+        const { orient } = value as { orient?: unknown };
+        if (orient !== undefined) sides.push(orient);
+        continue;
+      }
+      visit(value);
+    }
+  };
+  visit(spec);
+  return sides;
+}

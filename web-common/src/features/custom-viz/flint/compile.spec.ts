@@ -7,9 +7,11 @@ import {
   TypeCode,
   V1TimeGrain,
   type V1MetricsViewSpec,
+  type V1ThemeChartStyle,
 } from "@rilldata/web-common/runtime-client";
 import { compileFlintSpec } from "./compile";
 import { deriveFlintFields } from "./semantic-types";
+import { flintTheme } from "./theme";
 
 /**
  * End-to-end check of the render path: metrics view spec + query rows → Flint semantics →
@@ -1221,26 +1223,116 @@ describe("compileFlintSpec", () => {
     expect(view.autosize).toEqual({ type: "fit-y", contains: "padding" });
   });
 
-  it.each([
-    ["categories on color", { color: "publisher" }, ["Publisher"], 300],
-    ["sizes", { size: "impressions" }, ["Impressions"], 300],
-    ["shapes", { shape: "publisher" }, ["Publisher"], 300],
-    ["opacities", { opacity: "impressions" }, ["Impressions"], 300],
-    ["a measure on color", { color: "impressions" }, ["Impressions"], 300],
+  const allLegends = {
+    color: "publisher",
+    size: "impressions",
+    shape: "device",
+    opacity: "clicks",
+  };
+  const allLegendTitles = ["Publisher", "Impressions", "Device", "Clicks"];
+  // Each case's legends, where they go, the box's height and the project theme's chart style.
+  const marginalCases: [
+    string,
+    string,
+    Record<string, string>,
+    string[],
+    number,
+    V1ThemeChartStyle | undefined,
+  ][] = [
+    [
+      "categories on color",
+      "at the right",
+      { color: "publisher" },
+      ["Publisher"],
+      300,
+      undefined,
+    ],
+    [
+      "sizes",
+      "at the right",
+      { size: "impressions" },
+      ["Impressions"],
+      300,
+      undefined,
+    ],
+    [
+      "shapes",
+      "at the right",
+      { shape: "publisher" },
+      ["Publisher"],
+      300,
+      undefined,
+    ],
+    [
+      "opacities",
+      "at the right",
+      { opacity: "impressions" },
+      ["Impressions"],
+      300,
+      undefined,
+    ],
+    [
+      "a measure on color",
+      "at the right",
+      { color: "impressions" },
+      ["Impressions"],
+      300,
+      undefined,
+    ],
     [
       "categories, sizes, shapes and opacities",
-      {
-        color: "publisher",
-        size: "impressions",
-        shape: "device",
-        opacity: "clicks",
-      },
-      ["Publisher", "Impressions", "Device", "Clicks"],
+      "at the right",
+      allLegends,
+      allLegendTitles,
       240,
+      undefined,
     ],
-  ])(
-    "fits a marginal plot, its y axis and its legends of %s inside its box",
-    async (_, legendEncodings, legendTitles, boxHeight) => {
+    [
+      "categories on color",
+      "at the right, in a theme that states no side,",
+      { color: "publisher" },
+      ["Publisher"],
+      300,
+      { line: { width: 3 } },
+    ],
+    [
+      "categories on color",
+      "at the bottom",
+      { color: "publisher" },
+      ["Publisher"],
+      300,
+      { legend: { position: "bottom" } },
+    ],
+    [
+      "categories on color",
+      "at the top",
+      { color: "publisher" },
+      ["Publisher"],
+      300,
+      { legend: { position: "top" } },
+    ],
+    [
+      "categories on color",
+      "at the left",
+      { color: "publisher" },
+      ["Publisher"],
+      300,
+      { legend: { position: "left" } },
+    ],
+    [
+      "categories, sizes, shapes and opacities",
+      "at the bottom",
+      allLegends,
+      allLegendTitles,
+      400,
+      { legend: { position: "bottom" } },
+    ],
+  ];
+  it.each(marginalCases)(
+    "fits a marginal plot, its y axis and its legends of %s %s inside its box",
+    async (_, __, legendEncodings, legendTitles, boxHeight, chart) => {
+      // A Marginal Plot keeps its legends at the right unless the theme states a side.
+      const side = chart?.legend?.position ?? "right";
       // The full numbers, cents included, of a measure with a `format_d3` of `$,.2f` or `,.0f`.
       const dollars = new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -1300,6 +1392,8 @@ describe("compileFlintSpec", () => {
         size: { width: 320, height: boxHeight },
         measureFields: Object.keys(measureFormatters),
         measureFormatters,
+        theme: chart && flintTheme(false, undefined, { chart }),
+        legendPosition: chart?.legend?.position,
       });
 
       // Vega measures text on a canvas, which jsdom lacks, and its fallback of 0.8em a character
@@ -1327,13 +1421,23 @@ describe("compileFlintSpec", () => {
         // and its height less Vega's padding.
         const view = new vega.View(
           vega.parse(
-            compile(spec as never, { config: getRillTheme(false) as never })
-              .spec,
+            compile(spec as never, {
+              config: getRillTheme(false, undefined, { chart }) as never,
+            }).spec,
           ),
           { renderer: "none" },
         );
         view.width(320).height(boxHeight - 10);
         await view.runAsync();
+        // Vega sets a legend above or below a concatenation past the view's height, and
+        // FlintChartRenderer shrinks that height by as much as the chart outgrows its box.
+        for (let pass = 0; pass < 2; pass++) {
+          const drawn = /<svg[^>]* height="([\d.]+)"/.exec(await view.toSVG());
+          const overflow = Number(drawn?.[1]) - boxHeight;
+          if (!(overflow > 0)) break;
+          view.height(Math.max(0, view.height() - overflow));
+          await view.runAsync();
+        }
         const svg = await view.toSVG();
         const [, width, height] =
           /<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(svg) ?? [];
@@ -1362,6 +1466,7 @@ describe("compileFlintSpec", () => {
           padding.top + top + root.bounds.y2 + padding.bottom,
         ).toBeLessThanOrEqual(boxHeight);
 
+        const legendSides = new Set<unknown>();
         const drawnTitles: unknown[] = [];
         const legendLabels: unknown[] = [];
         const yLabels: unknown[] = [];
@@ -1369,6 +1474,7 @@ describe("compileFlintSpec", () => {
           for (const item of (node.items ?? []) as (SceneNode & {
             orient?: string;
           })[]) {
+            if (node.role === "legend") legendSides.add(item.orient);
             if (node.role === "legend-title") drawnTitles.push(item.text);
             if (node.role === "legend-label") legendLabels.push(item.text);
             if (inYAxis && node.role === "axis-label") yLabels.push(item.text);
@@ -1378,6 +1484,7 @@ describe("compileFlintSpec", () => {
           }
         };
         visit(root, false);
+        expect([...legendSides]).toEqual([side]);
         expect(drawnTitles).toEqual(legendTitles);
         if (legendTitles.length === 1 && legendTitles[0] === "Publisher") {
           expect(legendLabels).toEqual(["Yahoo", "Google", "Microsoft"]);
