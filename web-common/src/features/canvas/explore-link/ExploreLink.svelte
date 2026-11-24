@@ -4,7 +4,7 @@
   import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
   import { useExploreAvailability } from "@rilldata/web-common/features/explore-mappers/explore-validation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { derived, get } from "svelte/store";
+  import { get } from "svelte/store";
   import { useTransformCanvasToExploreState } from "./canvas-explore-transformer";
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
 
@@ -22,28 +22,21 @@
   // Check if component can be linked to explore
   $: exploreAvailability = useExploreAvailability(client, metricsViewName);
 
-  $: context = derived(
-    [exploreAvailability, component.timeAndFilterStore],
-    ([exploreAvailResp, timeAndFilterStore]) => ({
-      organization,
-      project,
-      exploreName: exploreAvailResp.exploreName ?? metricsViewName,
-      timeAndFilterStore,
-    }),
-  );
-
   // Built when the link is clicked:
   // components read their own view state (a pivot's rows, columns and sort) with `get`,
-  // so a value computed here reactively keeps that state as it was when `context` last changed.
+  // so a value computed here reactively would keep that state as it was at the last time or filter change.
   // For a pivot in a canvas tab, that is before the pivot has seeded its rows and columns.
   function getExploreState() {
-    return useTransformCanvasToExploreState(component, get(context));
+    return useTransformCanvasToExploreState(
+      component,
+      get(component.timeAndFilterStore),
+    );
   }
 </script>
 
 {#if $exploreAvailability.isAvailable}
   <ExploreLink
-    exploreName={$context.exploreName ?? metricsViewName}
+    exploreName={$exploreAvailability.exploreName ?? metricsViewName}
     displayName={$exploreAvailability.displayName}
     {organization}
     {project}
