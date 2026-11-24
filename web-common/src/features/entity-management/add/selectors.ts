@@ -2,6 +2,7 @@ import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
 import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { structToJson } from "@rilldata/web-common/lib/proto-utils";
+import { isDuckLakeConnector } from "@rilldata/web-common/features/connectors/connectors-utils";
 import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
 type ConnectorForSchema = {
@@ -80,21 +81,4 @@ export function inferSchemaForConnector(connector: AnalyzedConnector) {
   }
 
   return driverName;
-}
-
-function isDuckLakeConnector(connector: AnalyzedConnector): boolean {
-  const attachCandidates: unknown[] = [
-    structToJson(connector.config)?.attach,
-    structToJson(connector.projectConfig)?.attach,
-    structToJson(connector.presetConfig)?.attach,
-  ];
-  if (
-    attachCandidates.some(
-      (v) => typeof v === "string" && v.includes("ducklake:"),
-    )
-  ) {
-    return true;
-  }
-  const name = connector.name ?? "";
-  return name === "ducklake" || name.startsWith("ducklake_");
 }

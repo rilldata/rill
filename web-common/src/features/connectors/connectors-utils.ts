@@ -136,6 +136,31 @@ export function makeTablePreviewHref(
 }
 
 /**
+ * Detects DuckLake connectors, which use the duckdb driver with an `attach` clause pointing at a DuckLake catalog
+ * (e.g. `'ducklake:metadata.ducklake' AS ...`).
+ * Detection covers both the resolved config and the raw project/preset config,
+ * so it still works when the runtime redacts the merged config.
+ * It falls back to the default connector name written by the DuckLake tile.
+ * Callers should check that the driver is duckdb first.
+ */
+export function isDuckLakeConnector(connector: AnalyzedConnector): boolean {
+  const attachCandidates: unknown[] = [
+    structToJson(connector.config)?.attach,
+    structToJson(connector.projectConfig)?.attach,
+    structToJson(connector.presetConfig)?.attach,
+  ];
+  if (
+    attachCandidates.some(
+      (v) => typeof v === "string" && v.includes("ducklake:"),
+    )
+  ) {
+    return true;
+  }
+  const name = connector.name ?? "";
+  return name === "ducklake" || name.startsWith("ducklake_");
+}
+
+/**
  * Determines the correct icon key for a connector based on its configuration.
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
@@ -152,28 +177,8 @@ export function getConnectorIconKey(connector: AnalyzedConnector): string {
     return "motherduck";
   }
 
-  // Special case: DuckLake connectors use an `attach` clause pointing at a
-  // DuckLake catalog (e.g. `'ducklake:metadata.ducklake' AS ...`).
-  // Detection covers both resolved config and the raw project/preset config
-  // so the icon still shows even when the runtime redacts merged config, and
-  // falls back to the default connector name written by the DuckLake tile.
-  if (connector.driver?.name === "duckdb") {
-    const attachCandidates: unknown[] = [
-      config?.attach,
-      structToJson(connector.projectConfig)?.attach,
-      structToJson(connector.presetConfig)?.attach,
-    ];
-    const isDuckLakeAttach = attachCandidates.some(
-      (v) => typeof v === "string" && v.includes("ducklake:"),
-    );
-    const name = connector.name ?? "";
-    if (
-      isDuckLakeAttach ||
-      name === "ducklake" ||
-      name.startsWith("ducklake_")
-    ) {
-      return "ducklake";
-    }
+  if (connector.driver?.name === "duckdb" && isDuckLakeConnector(connector)) {
+    return "ducklake";
   }
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn

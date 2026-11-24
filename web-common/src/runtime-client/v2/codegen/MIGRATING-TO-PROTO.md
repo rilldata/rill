@@ -70,9 +70,13 @@ deleting a `V1*` type alone does not migrate anything.
    `(cd web-common && NODE_OPTIONS=--max-old-space-size=12288 npx svelte-check --threshold error --output machine)`.
    That configuration reports over a thousand errors that already exist on `main`, so compare against a baseline instead of reading the output.
    Filtering to touched files is not enough: it misses errors in untouched consumers.
-   Run it for all three workspaces with and without your changes (`git stash push -u`, run, `git stash pop`),
-   strip `line:col` from the `ERROR` lines, and `comm` the sorted lists; the "new" side must be empty.
-   A `git worktree` baseline is not comparable, because generated files (e.g. i18n messages) are not committed.
+   Run it for all three workspaces on your branch and on its merge base, in the same checkout:
+   `git stash push -u` (if dirty), `git switch --detach $(git merge-base HEAD origin/main)`, run,
+   `git switch -`, `git stash pop`.
+   Stashing alone is not enough once the migration is committed.
+   Strip `line:col` from the `ERROR` lines and `comm` the sorted lists; the "new" side must be empty.
+   Avoid a `git worktree` baseline: generated files that are gitignored (e.g. i18n messages, `.svelte-kit`) would have to be rebuilt there,
+   whereas switching in place reuses them.
    Then exercise the affected UI; most bugs here are runtime shape differences that type-check fine through `any`.
 
 ## Conversion table
