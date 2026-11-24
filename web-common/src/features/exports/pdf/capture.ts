@@ -25,6 +25,8 @@ export interface CaptureOptions {
   onProgress?: (ratio: number) => void;
 }
 
+const EXPORT_VIEW_ID = "canvas-pdf-export-view";
+
 // The off-screen export render (see CanvasPdfExportView) of one canvas, mounted
 // only while exporting. Capturing a dedicated tree keeps the live dashboard
 // untouched. The lookup is scoped to the canvas store (keyed by instance +
@@ -35,7 +37,7 @@ export function findExportView(
   canvasName: string,
 ): { exportView: HTMLElement; rowContainer: HTMLElement } {
   const exportView = Array.from(
-    document.querySelectorAll<HTMLElement>("#canvas-pdf-export-view"),
+    document.querySelectorAll<HTMLElement>(`#${EXPORT_VIEW_ID}`),
   ).find(
     (el) =>
       el.dataset.instanceId === instanceId &&
@@ -107,8 +109,13 @@ function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
   // Safari lacks before 17.4. visibility is inherited, so the target's value
   // covers its ancestors; opacity is not, so each ancestor is looked at, as is
   // content-visibility: hidden, which skips drawing an ancestor's contents.
+  // The walk ends at the export view: the page hosting it is not the dashboard.
   if (getComputedStyle(target).visibility !== "visible") return false;
-  for (let el: Element | null = target; el; el = el.parentElement) {
+  for (
+    let el: Element | null = target;
+    el && el.id !== EXPORT_VIEW_ID;
+    el = el.parentElement
+  ) {
     const style = getComputedStyle(el);
     if (style.opacity === "0") return false;
     if (el !== target && style.contentVisibility === "hidden") return false;

@@ -292,8 +292,16 @@ describe("measureCanvasBlocks", () => {
         #canvas-row-5 { content-visibility: hidden; }
       </style>
     `;
+    // Only the export view's own styles count, not those of the page that
+    // holds it off-screen.
+    const view = document.createElement("div");
+    view.id = "canvas-pdf-export-view";
+    view.append(container);
+    const host = document.createElement("div");
+    host.style.opacity = "0";
+    host.append(view);
     // The rules of a <style> block apply once it is in the document.
-    document.body.append(container);
+    document.body.append(host);
     const el = (id: string) => container.querySelector<HTMLElement>(`#${id}`)!;
     layOut(el("shown"));
     layOut(el("after"));
@@ -319,7 +327,7 @@ describe("measureCanvasBlocks", () => {
         ["after", 7],
       ]);
     } finally {
-      container.remove();
+      host.remove();
     }
   });
 });
