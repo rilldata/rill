@@ -786,6 +786,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   billingEmail?: string;
 
+  /**
+   * @generated from field: optional bool disable_project_domain_access = 19;
+   */
+  disableProjectDomainAccess?: boolean;
+
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -804,6 +809,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "disable_project_domain_access", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -17325,6 +17331,14 @@ export class Organization extends Message<Organization> {
   defaultProjectRoleId = "";
 
   /**
+   * When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+   * Rules a project already has keep adding users.
+   *
+   * @generated from field: bool disable_project_domain_access = 20;
+   */
+  disableProjectDomainAccess = false;
+
+  /**
    * @generated from field: string default_provisioner = 19;
    */
   defaultProvisioner = "";
@@ -17387,6 +17401,7 @@ export class Organization extends Message<Organization> {
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "disable_project_domain_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

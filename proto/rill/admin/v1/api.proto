@@ -1509,6 +1509,7 @@ message UpdateOrganizationRequest {
   optional string thumbnail_asset_id = 9 [(validate.rules).string = {uuid: true, ignore_empty: true}];
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
+  optional bool disable_project_domain_access = 19;
   // Reserved for backwards compatibility (default_provisioner, which is now only settable via SudoUpdateOrganizationDefaultProvisioner)
   reserved 10;
 }
@@ -3637,6 +3638,9 @@ message Organization {
   string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
+  // When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+  // Rules a project already has keep adding users.
+  bool disable_project_domain_access = 20;
   string default_provisioner = 19;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
