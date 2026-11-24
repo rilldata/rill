@@ -42,7 +42,7 @@ require (
 	github.com/databricks/databricks-sql-go v1.16.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/docker/go-connections v0.6.0
-	github.com/duckdb/duckdb-go/v2 v2.20000.1-0.20261121143038-c2e2ea1ae574
+	github.com/duckdb/duckdb-go/v2 v2.20001.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/envoyproxy/protoc-gen-validate v1.3.3
 	github.com/fatih/color v1.16.0

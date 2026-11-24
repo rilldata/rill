@@ -1207,8 +1207,8 @@ github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96/go.mod h1:Qh8CwZ
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/duckdb/duckdb-go-bindings v0.20001.0 h1:6tyMwoNnxsRdL6e+Xs5SruHCbZiZo65SbBDkaT2/1nk=
 github.com/duckdb/duckdb-go-bindings v0.20001.0/go.mod h1:6cf+CX3OBrHZ8sGZyAVNwBnrNqssYPdxgJIiZo+YlbM=
-github.com/duckdb/duckdb-go/v2 v2.20000.1-0.20261121143038-c2e2ea1ae574 h1:q5IqJNq3xiqY0h1xNkBcF4JJh6SSfp4m6lMVkYSn3L8=
-github.com/duckdb/duckdb-go/v2 v2.20000.1-0.20261121143038-c2e2ea1ae574/go.mod h1:N+RrhtTOVZOLmrq7VZTJQwVvJ1PyX5+PULlxEOVsKwE=
+github.com/duckdb/duckdb-go/v2 v2.20001.0 h1:6YGztAujmp4S/kTprvkmulzMokTnm2fHWoGbLSJcXv8=
+github.com/duckdb/duckdb-go/v2 v2.20001.0/go.mod h1:N+RrhtTOVZOLmrq7VZTJQwVvJ1PyX5+PULlxEOVsKwE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
