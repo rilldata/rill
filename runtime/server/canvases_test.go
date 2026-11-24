@@ -1301,18 +1301,25 @@ rows:
 - items:
   - kpi: {metrics_view: mv2, measure: count}
 `,
+			"c2.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+  - kpi: {metrics_view: mv2, measure: count}
+`,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 11, 0, 0)
 	t.Cleanup(releaseModel) // Runs before the instance closes, which waits for the model.
 
 	srvr, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
-	resolve := func(perms ...runtime.Permission) *runtimev1.ResolveCanvasResponse {
+	// resolve resolves a canvas for a viewer, or for the visual editor if the permissions allow editing.
+	resolve := func(canvas string, perms ...runtime.Permission) (*runtimev1.ResolveCanvasResponse, error) {
 		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{Permissions: perms})
-		res, err := srvr.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: slices.Contains(perms, runtime.EditRepo)})
-		require.NoError(t, err)
-		return res
+		editor := slices.Contains(perms, runtime.EditRepo)
+		return srvr.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: canvas, Unsafe: editor, IncludeHidden: editor})
 	}
 	items := func(res *runtimev1.ResolveCanvasResponse) [][]string {
 		var rows [][]string
@@ -1326,8 +1333,8 @@ rows:
 		return rows
 	}
 
-	// Publish a new layout that removes the second item of the first row, so the old c1--component-0-1 is deleted,
-	// renames mv2 to mv3, and changes the model the metrics views depend on.
+	// Publish a new layout of c1 that removes the second item of its first row, so the old c1--component-0-1 is deleted,
+	// rename mv2 to mv3, and change the model the metrics views depend on.
 	testruntime.DeleteFiles(t, rt, instanceID, "mv2.yaml")
 	testruntime.PutFiles(t, rt, instanceID, map[string]string{
 		"m1.yaml": fmt.Sprintf(`
@@ -1344,6 +1351,13 @@ rows:
 - items:
   - kpi: {metrics_view: mv3, measure: count}
 `,
+		"c2.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+  - kpi: {metrics_view: mv3, measure: count}
+`,
 	})
 	ctrl, err := rt.Controller(t.Context(), instanceID)
 	require.NoError(t, err)
@@ -1358,23 +1372,29 @@ rows:
 		return errors.Is(err, drivers.ErrResourceNotFound)
 	}, 10*time.Second, 10*time.Millisecond)
 
-	// While the model reconciles, the canvas serves its old layout without the items that can't render:
+	// While the model reconciles, viewers get the old layout without the items that can't render:
 	// the deleted c1--component-0-1, and c1--component-1-0, whose valid spec still uses the renamed mv2.
-	res := resolve(runtime.ReadAPI)
+	res, err := resolve("c1", runtime.ReadAPI)
+	require.NoError(t, err)
 	require.Equal(t, [][]string{{"c1--component-0-0"}}, items(res))
 	require.Equal(t, []string{"c1--component-0-0"}, slices.Collect(maps.Keys(res.ResolvedComponents)))
 	require.Equal(t, []string{"mv1"}, slices.Collect(maps.Keys(res.ReferencedMetricsViews)))
 
-	// The editor gets the old layout too, without the deleted component.
-	res = resolve(runtime.ReadAPI, runtime.EditRepo)
-	require.Equal(t, [][]string{{"c1--component-0-0"}, {"c1--component-1-0"}}, items(res))
-	require.Equal(t, []string{"rows.1.items.0"}, res.HiddenPaths)
+	// The editor maps items to their YAML paths by position, so it doesn't get a layout with items removed.
+	// It gets an error for the deleted component, and the paths of the items that use the renamed metrics view.
+	_, err = resolve("c1", runtime.ReadAPI, runtime.EditRepo)
+	require.ErrorContains(t, err, `component "c1--component-0-1" in valid spec not found`)
+	res, err = resolve("c2", runtime.ReadAPI, runtime.EditRepo)
+	require.NoError(t, err)
+	require.Equal(t, [][]string{{"c2--component-0-0", "c2--component-0-1"}}, items(res))
+	require.Equal(t, []string{"rows.0.items.1"}, res.HiddenPaths)
 
 	// Once the model finishes, the canvas serves the new layout.
 	releaseModel()
 	require.NoError(t, ctrl.WaitUntilIdle(t.Context(), false))
-	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
-	res = resolve(runtime.ReadAPI)
+	testruntime.RequireReconcileState(t, rt, instanceID, 10, 0, 0)
+	res, err = resolve("c1", runtime.ReadAPI)
+	require.NoError(t, err)
 	require.Equal(t, [][]string{{"c1--component-0-0"}, {"c1--component-1-0"}}, items(res))
 	require.ElementsMatch(t, []string{"mv1", "mv3"}, slices.Collect(maps.Keys(res.ReferencedMetricsViews)))
 }

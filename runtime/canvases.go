@@ -104,6 +104,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: componentName}, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
+				// The visual editor maps items to their YAML paths by position,
+				// so removing the items of missing components (see below) would point its edits at other items.
+				if includeHidden {
+					return nil, fmt.Errorf("component %q in valid spec not found", componentName)
+				}
 				missingComponents[componentName] = true
 				continue
 			}
@@ -117,7 +122,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	// The valid spec can reference components that no longer exist while a new version of the canvas reconciles.
 	// For example, inline components are named by their position, so a layout change deletes the old ones,
 	// but the canvas only replaces its valid spec once its components, metrics views and models have reconciled.
-	// The items of the missing components are removed, so the canvas keeps serving the rest of its last valid version.
+	// Viewers get the canvas without the items of the missing components, so it keeps serving the rest of its last valid version.
 	if len(missingComponents) > 0 {
 		res = pruneCanvasItems(res, components, func(item *runtimev1.CanvasItem) bool { return !missingComponents[item.Component] })
 		spec = res.GetCanvas().State.ValidSpec
@@ -342,7 +347,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	}
 
 	// Remove the fields and components the claims can't query, so viewers don't see errors for content they aren't allowed to see.
-	res, components = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
+	res = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
 
 	// Remove the default filters for metrics views that are no longer on the canvas for the claims.
 	// If some component's metrics views are unknown, the filters for any metrics view the claims can access are kept, since that component may use them.
@@ -373,16 +378,15 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 // pruneInaccessibleContent removes the fields that the claims can't query from the components' renderer properties,
 // and removes the items that can't render without them (see inaccessibleComponents and inaccessibleItem),
 // along with the components that no remaining item references.
-// The provided resources are not modified; anything that changes is cloned.
-func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) (*runtimev1.Resource, map[string]*runtimev1.Resource) {
+// It updates components in place, but the provided resources are not modified; anything that changes is cloned.
+func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) *runtimev1.Resource {
 	removed, pruned := inaccessibleComponents(components, metricsViews, securities, forbiddenComponents, unsafe)
 	for name, cmp := range pruned {
 		components[name] = cmp
 	}
-	canvasRes = pruneCanvasItems(canvasRes, components, func(item *runtimev1.CanvasItem) bool {
+	return pruneCanvasItems(canvasRes, components, func(item *runtimev1.CanvasItem) bool {
 		return !removed[item.Component] && !inaccessibleItem(item, components, metricsViews, unsafe)
 	})
-	return canvasRes, components
 }
 
 // pruneCanvasItems removes the items that keep rejects from the canvas's spec and valid spec,
