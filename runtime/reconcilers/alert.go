@@ -863,9 +863,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		executionTime = current.ExecutionTime.AsTime()
 	}
 
-	// Generate the notification message to send (if any)
+	// Generate the notification message to send (if any).
+	// Alerts don't notify without admin metadata.
+	// It's only missing for alerts created from an embed whose owner couldn't be resolved (see executeAll), and the alert is effectively paused.
 	var msg *drivers.AlertStatus
-	if notify {
+	if notify && adminMeta != nil {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 			if !a.Spec.NotifyOnRecover {
@@ -916,11 +918,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 	}
 
-	// Alerts don't notify without admin metadata.
-	// It's only missing for alerts created from an embed whose owner couldn't be resolved (see executeAll), and the alert is effectively paused.
-	if adminMeta == nil {
-		msg = nil
-	}
 	embedCreated := isEmbedCreatedAlert(a)
 
 	// Alerts created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
