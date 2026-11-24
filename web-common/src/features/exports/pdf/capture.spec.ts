@@ -348,6 +348,7 @@ describe("measureCanvasBlocks", () => {
         <article id="free-a" class="component-card"></article>
       </section>
       <section id="pdf-tab-label-g-overview" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-overview" class="pdf-controls-row"></section>
       <section id="canvas-row-g-overview-0" data-tab-group="g" data-tab="overview">
         <article id="tab-a" class="component-card"></article>
       </section>
@@ -365,11 +366,12 @@ describe("measureCanvasBlocks", () => {
     const blocks = measureCanvasBlocks(container);
 
     expect(
-      blocks.map((b) => [b.id, b.rowIndex, b.isTabLabel, b.tabGroup, b.tab]),
+      blocks.map((b) => [b.id, b.rowIndex, b.isBand, b.tabGroup, b.tab]),
     ).toStrictEqual([
       ["free-a", 0, false, undefined, undefined],
-      ["pdf-tab-label-g-overview", 2, true, undefined, undefined],
-      ["tab-a", 2, false, "g", "overview"],
+      ["pdf-tab-label-g-overview", 3, true, undefined, undefined],
+      ["pdf-controls-g-overview", 3, true, undefined, undefined],
+      ["tab-a", 3, false, "g", "overview"],
     ]);
     expect(blocks[0].element).toBe(container.querySelector("#free-a"));
     expect(blocks[0]).toMatchObject({

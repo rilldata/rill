@@ -224,7 +224,7 @@ export function groupBySheet(blocks: MeasuredBlock[]): {
   const main: MeasuredBlock[] = [];
   const tabs = new Map<SheetKey, MeasuredBlock[]>();
   for (const block of blocks) {
-    if (block.isTabLabel) continue;
+    if (block.isBand) continue;
     const key = sheetKey(block);
     if (key === MAIN_SHEET) {
       main.push(block);

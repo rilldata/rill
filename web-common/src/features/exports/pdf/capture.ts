@@ -64,8 +64,10 @@ export interface MeasuredBlock {
   widthPx: number;
   heightPx: number;
   rowIndex: number;
-  // The label band above an exported tab (see CanvasPdfExportTab) rather than a component card.
-  isTabLabel: boolean;
+  // A band above some rows rather than a component card: an exported tab's label
+  // (CanvasPdfExportTab) or a level's viewer controls (CanvasPdfExportControls).
+  // Bands frame the widgets; neither export counts them as widgets.
+  isBand: boolean;
   tabGroup?: string;
   tab?: string;
 }
@@ -90,7 +92,7 @@ export function measureCanvasBlocks(
       widthPx: rect.width,
       heightPx: rect.height,
       rowIndex: rowIndexFor(target, rowContainer),
-      isTabLabel: target.classList.contains("pdf-tab-label-row"),
+      isBand: isBand(target),
       tabGroup: section?.dataset.tabGroup,
       tab: section?.dataset.tab,
     });
@@ -143,7 +145,7 @@ export async function captureCanvasBlocks(
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
   const targets = measureCanvasBlocks(rowContainer);
-  if (targets.every((target) => isBand(target.element))) {
+  if (targets.every((target) => target.isBand)) {
     throw new Error("Nothing to export on this canvas.");
   }
 
@@ -210,8 +212,7 @@ export async function captureCanvasBlocks(
     } catch (e) {
       console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
-    const band = isBand(target.element);
-    if (dataUrl || !band) {
+    if (dataUrl || !target.isBand) {
       blocks.push({
         id: target.id,
         dataUrl,
@@ -222,7 +223,7 @@ export async function captureCanvasBlocks(
         rowIndex: target.rowIndex,
       });
     }
-    if (dataUrl && !band) capturedWidget = true;
+    if (dataUrl && !target.isBand) capturedWidget = true;
     done += 1;
     reportProgress();
   }
