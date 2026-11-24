@@ -5,6 +5,7 @@
     getAdminServiceListProjectWhitelistedDomainsQueryKey,
   } from "@rilldata/web-admin/client";
   import { getProjectRolesOptions } from "@rilldata/web-admin/features/projects/user-management/constants";
+  import { AlertDialogConfirmation } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
@@ -25,6 +26,10 @@
   // Set before the request starts, so a second click can't send another one,
   // and cleared once the list has refetched without the removed domain.
   let removing: string | undefined;
+  // Removal asks first: an admin can't add the rule back from the Share dialog.
+  // The domain stays set while the dialog closes so its text doesn't change mid-animation.
+  let confirmOpen = false;
+  let confirmDomain = "";
   const roleLabels = new Map<string, string>(
     getProjectRolesOptions().map(({ value, label }) => [value, label]),
   );
@@ -94,14 +99,35 @@
       </span>
     </div>
     <div class="grow"></div>
-    <Button
-      type="text"
-      small
+    <!-- Same box and text as the role dropdowns above, so the column lines up. -->
+    <button
+      type="button"
+      class="rounded-sm mr-[10px] min-w-[72px] px-2 py-1 text-left hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
       disabled={!!removing}
-      loading={removing === domain}
-      onClick={() => remove(domain ?? "")}
+      onclick={() => {
+        confirmDomain = domain ?? "";
+        confirmOpen = true;
+      }}
     >
       {m.users_remove()}
-    </Button>
+    </button>
   </div>
 {/each}
+
+<AlertDialogConfirmation
+  open={confirmOpen}
+  onOpenChange={(open: boolean) => {
+    confirmOpen = open;
+  }}
+  title={m.users_domain_access_remove_confirm_title({ domain: confirmDomain })}
+  description={m.users_domain_access_remove_confirm_desc({
+    domain: confirmDomain,
+    project,
+  })}
+  confirmLabel={m.users_yes_remove()}
+  confirmType="destructive"
+  onConfirm={() => {
+    confirmOpen = false;
+    void remove(confirmDomain);
+  }}
+/>

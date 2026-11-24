@@ -153,7 +153,7 @@ describe("ShareProjectForm", () => {
     expect(urls).not.toContain(ORG_AUTOGROUP_MEMBERS_URL);
   });
 
-  it("shows a project admin the project's domain access, which adds users without an invite, and removes it once", async () => {
+  it("shows a project admin the project's domain access, which adds users without an invite, and removes it once confirmed", async () => {
     let finishRemoval = () => {};
     mockResponses({
       [PROJECT_DOMAINS_URL]: {
@@ -169,14 +169,35 @@ describe("ShareProjectForm", () => {
     ).toBeTruthy();
     expect(screen.getByText("Joins automatically as Viewer")).toBeTruthy();
 
-    // A second click while the removal is pending must not send another request.
+    // Removing asks first, since the Share dialog can't add the rule back; cancelling sends nothing.
     const remove = screen.getByRole("button", { name: "Remove" });
     await fireEvent.click(remove);
+    expect(
+      await screen.findByText("Remove domain access for @example.com?"),
+    ).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Remove domain access for @example.com?"),
+      ).toBeNull(),
+    );
+    expect(domainRemovals()).toHaveLength(0);
+
+    // Confirming sends one request, and Remove stays disabled while it is pending.
     await fireEvent.click(remove);
+    await fireEvent.click(
+      await screen.findByRole("button", { name: "Yes, remove" }),
+    );
     await waitFor(() => expect(domainRemovals()).toHaveLength(1));
     expect(domainRemovals()[0][0].url).toBe(
       `${PROJECT_DOMAINS_URL}/example.com`,
     );
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Remove domain access for @example.com?"),
+      ).toBeNull(),
+    );
+    expect((remove as HTMLButtonElement).disabled).toBe(true);
     finishRemoval();
   });
 
