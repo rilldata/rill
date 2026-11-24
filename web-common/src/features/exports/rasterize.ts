@@ -127,6 +127,9 @@ async function isBlank(dataUrl: string): Promise<boolean> {
 
 export type RasterFormat = "jpeg" | "png";
 
+// What an export shows in place of a block whose capture failed.
+export const CAPTURE_FAILED_NOTE = "This widget could not be captured.";
+
 export interface RasterizeOptions {
   backgroundColor: string;
   // Web fonts, already resolved to data URIs, shared by every capture. Letting
@@ -146,9 +149,18 @@ export interface RasterizeOptions {
 // holding a <canvas> is captured twice and the first result discarded; the
 // warm-up has to run at the real pixel ratio, as a smaller one does not prime
 // the second pass.
+//
+// Throws when the browser produced no image, so a caller never embeds one: a
+// node with no area, or a raster over the browser's canvas limits, serializes
+// to an empty "data:," URL rather than failing.
 export async function rasterizeNode(
   node: HTMLElement,
-  { backgroundColor, fontEmbedCSS, warmUpCanvas, format }: RasterizeOptions,
+  {
+    backgroundColor,
+    fontEmbedCSS,
+    warmUpCanvas,
+    format = "jpeg",
+  }: RasterizeOptions,
 ): Promise<string> {
   const restoreSvgStyles = inlineSvgStyles(node);
   const capture = format === "png" ? toPng : toJpeg;
@@ -169,7 +181,11 @@ export async function rasterizeNode(
         console.warn("Canvas warm-up pass failed", e);
       }
     }
-    return await capture(node, options);
+    const dataUrl = await capture(node, options);
+    if (!dataUrl.startsWith(`data:image/${format};base64,`)) {
+      throw new Error(`The browser returned no ${format.toUpperCase()} image.`);
+    }
+    return dataUrl;
   } finally {
     restoreSvgStyles();
   }

@@ -50,6 +50,21 @@ describe("isCanvasExportQuery", () => {
     ).toBe(false);
   });
 
+  it("matches map region boundaries for the active instance", () => {
+    expect(
+      isCanvasExportQuery(
+        ["map-region-boundaries", "instance-1", "countries"],
+        "instance-1",
+      ),
+    ).toBe(true);
+    expect(
+      isCanvasExportQuery(
+        ["map-region-boundaries", "instance-2", "countries"],
+        "instance-1",
+      ),
+    ).toBe(false);
+  });
+
   it("ignores unrelated admin and other runtime queries", () => {
     expect(
       isCanvasExportQuery(

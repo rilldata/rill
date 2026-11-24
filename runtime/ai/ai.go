@@ -959,18 +959,18 @@ func (s *BaseSession) MessagesWithChildren(predicates ...Predicate) []*Message {
 			return res
 		}
 
-		// Find it's children and return them too
-		subMsgs := s.Messages(FilterByParent(m.ID))
-		res = append(res, subMsgs...)
-
-		// For each child that's a call, add its result too
-		for _, sm := range subMsgs {
-			if sm.Type == MessageTypeCall {
-				subResMsg, ok := s.Message(FilterByParent(sm.ID), FilterByType(MessageTypeResult))
-				if ok {
-					res = append(res, subResMsg)
-				}
+		// Find its children and return them too; for each child that's a call, add its result too
+		for _, sm := range s.Messages(FilterByParent(m.ID)) {
+			if sm.Type != MessageTypeCall {
+				res = append(res, sm)
+				continue
 			}
+			subResMsg, ok := s.Message(FilterByParent(sm.ID), FilterByType(MessageTypeResult))
+			if !ok {
+				// Skip the call if there isn't a corresponding result (e.g. it was cancelled).
+				continue
+			}
+			res = append(res, sm, subResMsg)
 		}
 
 		return res

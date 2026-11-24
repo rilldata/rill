@@ -25,6 +25,8 @@ export interface CaptureOptions {
   onProgress?: (ratio: number) => void;
 }
 
+const EXPORT_VIEW_ID = "canvas-pdf-export-view";
+
 // The off-screen export render (see CanvasPdfExportView) of one canvas, mounted
 // only while exporting. Capturing a dedicated tree keeps the live dashboard
 // untouched. The lookup is scoped to the canvas store (keyed by instance +
@@ -35,7 +37,7 @@ export function findExportView(
   canvasName: string,
 ): { exportView: HTMLElement; rowContainer: HTMLElement } {
   const exportView = Array.from(
-    document.querySelectorAll<HTMLElement>("#canvas-pdf-export-view"),
+    document.querySelectorAll<HTMLElement>(`#${EXPORT_VIEW_ID}`),
   ).find(
     (el) =>
       el.dataset.instanceId === instanceId &&
@@ -68,15 +70,19 @@ export interface MeasuredBlock {
   tab?: string;
 }
 
-// Measures every capture target of the export render in document order.
+// Measures the capture targets of the export render that the dashboard draws,
+// in document order. A target the dashboard doesn't draw is left out, so no
+// export shows a widget its viewer can't see; see isDrawn.
 export function measureCanvasBlocks(
   rowContainer: HTMLElement,
 ): MeasuredBlock[] {
   const contentRect = rowContainer.getBoundingClientRect();
-  return captureTargetsIn(rowContainer).map((target) => {
+  const blocks: MeasuredBlock[] = [];
+  for (const target of captureTargetsIn(rowContainer)) {
     const rect = target.getBoundingClientRect();
+    if (!isDrawn(target, rect)) continue;
     const section = target.closest("section");
-    return {
+    blocks.push({
       id: target.id,
       element: target,
       xPx: rect.left - contentRect.left,
@@ -87,14 +93,44 @@ export function measureCanvasBlocks(
       isTabLabel: target.classList.contains("pdf-tab-label-row"),
       tabGroup: section?.dataset.tabGroup,
       tab: section?.dataset.tab,
-    };
-  });
+    });
+  }
+  return blocks;
+}
+
+// Whether a capture target shows on the dashboard. It doesn't when it has no
+// box of at least a pixel each way (display: none on it or on its row, a card
+// collapsed by its styles) or is hidden with visibility or opacity. Canvas
+// markdown can carry CSS that hides other widgets, and the export render's
+// rows and cards have the dashboard's ids, so the same rules apply to them.
+function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
+  if (rect.width < 1 || rect.height < 1) return false;
+  // Read from the computed styles rather than Element.checkVisibility, which
+  // Safari lacks before 17.4. visibility is inherited, so the target's value
+  // covers its ancestors; opacity is not, so each ancestor is looked at, as is
+  // content-visibility: hidden, which skips drawing an ancestor's contents.
+  // The walk ends at the export view: the page hosting it is not the dashboard.
+  if (getComputedStyle(target).visibility !== "visible") return false;
+  for (
+    let el: Element | null = target;
+    el && el.id !== EXPORT_VIEW_ID;
+    el = el.parentElement
+  ) {
+    const style = getComputedStyle(el);
+    if (style.opacity === "0") return false;
+    if (el !== target && style.contentVisibility === "hidden") return false;
+  }
+  return true;
 }
 
 // Rasterizes the filter bar (optional) and each canvas block into images
 // positioned relative to the canvas content area: every component card plus the
-// label band above each exported tab (see captureTargetsIn). Per-block failures
-// degrade to a skipped block rather than aborting the whole export.
+// bands of tab labels and viewer controls (see captureTargetsIn). A widget whose
+// capture fails keeps its place without an image (see CapturedBlock.dataUrl)
+// rather than aborting the whole export; a band that fails is left out,
+// as the filter bar is, since the note shown in a failed block's place speaks
+// of a widget. The filter bar and the bands only frame the widgets, so
+// this throws when there is no widget to export or none could be captured.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
 ): Promise<CaptureResult> {
@@ -107,6 +143,9 @@ export async function captureCanvasBlocks(
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
   const targets = measureCanvasBlocks(rowContainer);
+  if (targets.every((target) => isBand(target.element))) {
+    throw new Error("Nothing to export on this canvas.");
+  }
 
   // Probed once per page load, not per block or per export: the answer is a
   // property of the browser, and the probe itself rasterizes.
@@ -158,14 +197,21 @@ export async function captureCanvasBlocks(
     reportProgress();
   }
 
+  let capturedWidget = false;
   for (const target of targets) {
+    let dataUrl: string | undefined;
     try {
-      const dataUrl = await rasterizeNode(target.element, {
+      dataUrl = await rasterizeNode(target.element, {
         backgroundColor,
         fontEmbedCSS,
         warmUpCanvas,
         format: opts.format,
       });
+    } catch (e) {
+      console.warn(`Failed to capture canvas block "${target.id}"`, e);
+    }
+    const band = isBand(target.element);
+    if (dataUrl || !band) {
       blocks.push({
         id: target.id,
         dataUrl,
@@ -175,13 +221,16 @@ export async function captureCanvasBlocks(
         heightPx: target.heightPx,
         rowIndex: target.rowIndex,
       });
-    } catch (e) {
-      console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
+    if (dataUrl && !band) capturedWidget = true;
     done += 1;
     reportProgress();
   }
 
+  // A PDF of nothing but the notes of failed widgets isn't an export.
+  if (!capturedWidget) {
+    throw new Error("This canvas could not be captured.");
+  }
   return { blocks, contentWidthPx, backgroundColor };
 }
 
