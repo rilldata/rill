@@ -1,10 +1,11 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { mapTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
+  type MetricsViewSpecMeasure,
+  type V1MetricsViewAggregationConditionalFormat,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Query,
@@ -14,6 +15,7 @@ import { get } from "svelte/store";
 import { requestExactNames } from "../exact-measures/exact-measures";
 import { exploreExactSurface } from "../exact-measures/explore-surfaces";
 import type { StateManagers } from "../state-managers/state-managers";
+import { toExportConditionalFormats } from "./pivot-conditional-formatting";
 import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasuresForRequest } from "./pivot-utils";
 import {
@@ -27,13 +29,13 @@ import {
 export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewName = get(ctx.metricsViewName);
   const validSpecStore = get(ctx.validSpecStore);
-  const timeControlState = get(useTimeControlStore(ctx));
+  const timeFilterManager = ctx.timeFilterManager;
   const exploreState = get(ctx.dashboardStore);
   const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
 
-  if (!validSpecStore.data?.explore || !timeControlState.ready)
+  if (!validSpecStore.data?.explore || !timeFilterManager.ready)
     return undefined;
 
   const enableComparison = configStore.enableComparison;
@@ -42,19 +44,14 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const pivotState = configStore.pivot;
 
   const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
-  const exploreSpec = validSpecStore.data?.explore ?? {};
 
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState.selectedTimeRange,
-      exploreState.selectedTimezone,
-      exploreSpec,
-    );
+    timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
   } else {
     timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
+      start: timeFilterManager.timeStart,
+      end: timeFilterManager.timeEnd,
     };
   }
 
@@ -91,10 +88,35 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       isFlat,
       pivotState,
       exactMeasures,
+      conditionalFormats: getPivotExportConditionalFormats(
+        pivotState,
+        columns.measure,
+        metricsViewSpec.measures ?? [],
+      ),
     }),
   };
 
   return query;
+}
+
+// The conditional formats of the pivot's measures, which Excel exports keep.
+// They are resolved from the active theme when the export is made, so a
+// scheduled report keeps the colors of the theme it was created with.
+export function getPivotExportConditionalFormats(
+  pivotState: PivotState,
+  measureChips: PivotChipData[],
+  measureSpecs: MetricsViewSpecMeasure[],
+): V1MetricsViewAggregationConditionalFormat[] {
+  return measureChips.flatMap(({ id }) => {
+    const fmt = pivotState.measureFormatting?.[id];
+    if (!fmt) return [];
+    const lowerIsBetter =
+      measureSpecs.find((m) => m.name === id)?.lowerIsBetter ?? false;
+    return toExportConditionalFormats(fmt, lowerIsBetter).map((format) => ({
+      measure: id,
+      format,
+    }));
+  });
 }
 
 export function getPivotAggregationRequest({
@@ -110,6 +132,7 @@ export function getPivotAggregationRequest({
   isFlat,
   pivotState,
   exactMeasures,
+  conditionalFormats,
 }: {
   instanceId: string;
   metricsViewName: string;
@@ -124,6 +147,8 @@ export function getPivotAggregationRequest({
   pivotState: PivotState;
   // Measures to request with `exact: true`; see `requestExactNames`.
   exactMeasures?: string[];
+  // Colors for the measures' cells in Excel exports.
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
 }): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
@@ -233,5 +258,6 @@ export function getPivotAggregationRequest({
     pivotOn,
     sort,
     offset: "0",
+    ...(conditionalFormats?.length && { conditionalFormats }),
   };
 }

@@ -10,13 +10,11 @@ import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/da
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
+  mapTimeManagerComparisonRangeToV1TimeRange,
+  mapTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
-  V1ExploreSpec,
   V1ExportFormat,
   V1Expression,
   V1MetricsViewAggregationRequest,
@@ -25,8 +23,10 @@ import type {
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
 import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { object, array, string } from "yup";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 // The number of matching rows listed in notifications when an alert doesn't set it.
 // Keep in sync with alertNotifyRowsLimitDefault in runtime/parser/parse_alert.go.
@@ -69,17 +69,11 @@ export type AlertFormValues = {
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
   expr: V1Expression | undefined,
-  timeControlArgs: TimeControlState,
-  exploreSpec: V1ExploreSpec,
+  timeFilterManager: TimeFilterManager | undefined,
 ): V1MetricsViewAggregationRequest {
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlArgs.selectedTimeRange,
-    timeControlArgs.selectedTimezone,
-    exploreSpec,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlArgs.selectedComparisonTimeRange,
-    timeControlArgs.showTimeComparison,
+  const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
+  const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+    timeFilterManager,
     timeRange,
   );
 
@@ -225,7 +219,12 @@ export const alertFormValidationSchema = yup(
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
-    emailRecipients: array(string().email("Invalid email")),
+    // Checked on the email recipients rather than the whole form, so the error shows up on the delivery tab.
+    emailRecipients: array(string().email("Invalid email")).test(
+      "has-notification",
+      () => m.alert_form_no_notification(),
+      (_, context) => hasNotification(context.parent as AlertFormValues),
+    ),
     embedOwnerEmail: string().email("Invalid email"),
     // The row limit input is hidden unless attachments are enabled for email delivery
     exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
@@ -278,6 +277,19 @@ export function checkIsTabValid(
   }
 
   return hasRequiredFields && !hasErrors;
+}
+
+// hasNotification returns true if an alert created from an embed is sent to someone:
+// the embed creator's email (always a recipient if set) or an email recipient.
+// Alerts created from an embed can't be sent to Slack.
+// Other alerts aren't checked, since they have always been allowed without recipients.
+function hasNotification(values: AlertFormValues) {
+  if (!EmbedStore.isEmbedded()) return true;
+  return (
+    !!values.embedOwnerEmail?.trim() ||
+    (values.enableEmailNotification &&
+      values.emailRecipients.some((r) => r.trim() !== ""))
+  );
 }
 
 function someCriteriaHasErrors(

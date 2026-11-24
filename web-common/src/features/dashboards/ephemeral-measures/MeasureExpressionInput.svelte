@@ -4,8 +4,9 @@ The expression editor of the ephemeral measure editors.
 A single-line tiptap editor. Typing "@" opens a picker of the measures the
 expression may reference, searchable by display name as well as name, and a
 picked measure is shown as a chip with its display name (like a mention in the
-AI chat). `value` is the plain expression: chips serialize to the measure's
-field name (see measure-mention.ts).
+AI chat), with a button that removes it. `value` is the plain expression:
+chips serialize to the measure's field name (see measure-mention.ts).
+Helper text below the editor explains the syntax; an error replaces it.
 -->
 <script lang="ts">
   import * as Kbd from "@rilldata/web-common/components/kbd";
@@ -19,7 +20,7 @@ field name (see measure-mention.ts).
     offset,
     shift,
   } from "@floating-ui/dom";
-  import { Editor, Extension } from "@tiptap/core";
+  import { Editor, Extension, type NodeViewRenderer } from "@tiptap/core";
   import Document from "@tiptap/extension-document";
   import Mention from "@tiptap/extension-mention";
   import Paragraph from "@tiptap/extension-paragraph";
@@ -27,8 +28,9 @@ field name (see measure-mention.ts).
   import { Placeholder } from "@tiptap/extensions";
   import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
   import { ArrowDown, ArrowUp } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { mount, onMount, unmount } from "svelte";
   import { formatMeasureRef } from "./expression-parser";
+  import MeasureChip from "./MeasureChip.svelte";
   import {
     type ExpressionToken,
     filterMeasureMentions,
@@ -65,6 +67,18 @@ field name (see measure-mention.ts).
   // The "@" is not valid in an expression, so the parse error it causes is
   // noise while the picker is open.
   $: shownErrors = open ? undefined : errors;
+
+  // An example built from the measures the user can actually insert.
+  $: placeholder =
+    measures.length >= 2
+      ? m.dashboard_pivot_ephemeral_expression_example({
+          first: measures[0].displayName || measures[0].name || "",
+          second: measures[1].displayName || measures[1].name || "",
+        })
+      : m.dashboard_pivot_ephemeral_expression_placeholder();
+  // The placeholder is only redrawn on a transaction, and the measures may
+  // load after the editor mounts.
+  $: if (editor && placeholder) editor.view.dispatch(editor.state.tr);
 
   function onKeydown(e: KeyboardEvent) {
     if (!open || !picker) return;
@@ -130,6 +144,38 @@ field name (see measure-mention.ts).
       .run();
   }
 
+  /**
+   * Renders a measure chip (MeasureChip) whose button removes it, along with
+   * the space inserted after it.
+   */
+  const renderChip: NodeViewRenderer = ({ node, getPos, editor }) => {
+    // Svelte mounts into a target element, which becomes the node's view.
+    const dom = document.createElement("span");
+    const chip = mount(MeasureChip, {
+      target: dom,
+      props: {
+        name: node.attrs.id as string,
+        label: node.attrs.label as string,
+        onRemove: () => {
+          const from = getPos();
+          if (from === undefined) return;
+          let to = from + node.nodeSize;
+          if (editor.state.doc.textBetween(to, to + 1) === " ") to++;
+          editor.chain().focus().deleteRange({ from, to }).run();
+        },
+      },
+    });
+
+    return {
+      dom,
+      // The chip's remove button handles its own events.
+      stopEvent: (event) =>
+        event.target instanceof Element && !!event.target.closest("button"),
+      ignoreMutation: () => true,
+      destroy: () => void unmount(chip),
+    };
+  };
+
   function docToTokens(doc: ProseMirrorNode): ExpressionToken[] {
     const tokens: ExpressionToken[] = [];
     doc.descendants((node) => {
@@ -155,16 +201,17 @@ field name (see measure-mention.ts).
         Document.extend({ content: "paragraph" }),
         Paragraph,
         Text,
-        Placeholder.configure({
-          placeholder: m.dashboard_pivot_ephemeral_expression_placeholder(),
-        }),
+        Placeholder.configure({ placeholder: () => placeholder }),
         // Enter selects from the picker (handled on the wrapper) and does
         // nothing otherwise.
         Extension.create({
           name: "singleLine",
           addKeyboardShortcuts: () => ({ Enter: () => true }),
         }),
-        Mention.extend({ name: MENTION }).configure({
+        Mention.extend({
+          name: MENTION,
+          addNodeView: () => renderChip,
+        }).configure({
           HTMLAttributes: { class: "measure-chip" },
           deleteTriggerWithBackspace: true,
           renderText: ({ node }) => formatMeasureRef(node.attrs.id as string),
@@ -232,6 +279,7 @@ field name (see measure-mention.ts).
           role: "textbox",
           "aria-label": m.dashboard_pivot_ephemeral_expression_label(),
           "aria-multiline": "false",
+          "aria-describedby": `${id}-help`,
         },
       },
       onUpdate: ({ editor }) => {
@@ -249,11 +297,7 @@ field name (see measure-mention.ts).
      before the editor does. -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="flex flex-col gap-y-1" on:keydown|capture={onKeydown}>
-  <InputLabel
-    {id}
-    label={m.dashboard_pivot_ephemeral_expression_label()}
-    hint={m.dashboard_pivot_ephemeral_expression_hint()}
-  />
+  <InputLabel {id} label={m.dashboard_pivot_ephemeral_expression_label()} />
 
   <div
     bind:this={element}
@@ -262,9 +306,12 @@ field name (see measure-mention.ts).
     class:error={!!shownErrors}
   ></div>
 
-  {#if shownErrors}
-    <div class="text-red-500 text-xs">{shownErrors}</div>
-  {/if}
+  <div
+    id="{id}-help"
+    class="text-xs {shownErrors ? 'text-red-500' : 'text-fg-secondary'}"
+  >
+    {shownErrors ?? m.dashboard_pivot_ephemeral_expression_hint()}
+  </div>
 
   {#if open}
     <div
@@ -330,11 +377,6 @@ field name (see measure-mention.ts).
   .editor :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     @apply text-fg-muted pointer-events-none absolute;
-  }
-
-  .editor :global(.measure-chip) {
-    @apply inline-block px-1 rounded-sm border;
-    @apply bg-secondary-50 border-secondary-200 text-secondary-800;
   }
 
   .measure-picker {

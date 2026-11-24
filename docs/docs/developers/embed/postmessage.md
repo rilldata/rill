@@ -332,7 +332,7 @@ Notifications are sent **from the iframe** to the parent window. These do not in
 
 ### `ready()`
 
-Fired once when the iframe is initialized and ready to receive messages.
+Fired once when the iframe is initialized and ready to receive messages. On an explore dashboard, this is once the dashboard has loaded (or failed to load), so a state you send after `ready` is not replaced by the dashboard's initial state.
 
 ```json
 { "method": "ready" }

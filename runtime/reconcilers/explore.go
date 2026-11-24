@@ -103,10 +103,6 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 }
 
 func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
-
 	explore := res.GetExplore()
 	if explore == nil {
 		return nil, fmt.Errorf("resource is not an explore")
@@ -121,28 +117,20 @@ func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims 
 		return nil, fmt.Errorf("explore does not reference a metrics view")
 	}
 
-	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
-
-	// give access to the underlying metrics view
-	if spec.MetricsView != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView})
-	}
-
-	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
+	// Give access to the explore and its underlying metrics view.
+	return []*runtimev1.SecurityRule{{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				ConditionKinds: dashboardConditionKinds(claims),
+				ConditionResources: []*runtimev1.ResourceName{
+					res.Meta.Name,
+					{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView},
 				},
+				Allow:     true,
+				Exclusive: true,
 			},
-		})
-	}
-
-	return rules, nil
+		},
+	}}, nil
 }
 
 // validateAndRewrite validates the explore spec and rewrites it with the following rules:
@@ -228,6 +216,33 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 	spec.MeasuresSelector = nil
 
+	// Validate the pinned and required filters, which must name fields of the explore that can be filtered.
+	// A required filter on any other field could never be given a value, which would block the explore for good.
+	// Time dimensions are filtered through the time range, so the filter bar has no filter for them.
+	for _, filters := range []struct {
+		kind  string
+		names []string
+	}{{"pinned", spec.PinnedFilters}, {"required", spec.RequiredFilters}} {
+		for _, name := range filters.names {
+			if _, ok := timeDims[name]; ok {
+				return nil, nil, fmt.Errorf("%s filter %q is a time dimension, which can't be filtered", filters.kind, name)
+			}
+			if !slices.Contains(spec.Dimensions, name) && !slices.Contains(spec.Measures, name) {
+				return nil, nil, fmt.Errorf("%s filter %q is not a dimension or measure in this explore", filters.kind, name)
+			}
+		}
+	}
+
+	// Validate single-select filters, which must name dimensions of the explore that can be filtered.
+	for _, name := range spec.SingleSelectFilters {
+		if _, ok := timeDims[name]; ok {
+			return nil, nil, fmt.Errorf("single-select filter %q is a time dimension, which can't be filtered", name)
+		}
+		if !slices.Contains(spec.Dimensions, name) {
+			return nil, nil, fmt.Errorf("single-select filter %q is not a dimension in this explore", name)
+		}
+	}
+
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset
@@ -245,10 +260,65 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 		p.Measures = measures
 		p.MeasuresSelector = nil
+
+		// Validate the default filter. Its syntax was checked by the parser.
+		err = validateExploreFilterFields(p.Where, spec, timeDims, false)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid default filter: %w", err)
+		}
 	}
 
 	// Done with rewriting
 	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil
+}
+
+// validateExploreFilterFields checks that a filter expression only references fields of the explore that can be filtered.
+// A WHERE condition must reference dimensions, and the HAVING condition of a subquery must reference measures.
+// The having flag tells which of the two expr is part of.
+// Time dimensions, given in timeDims, are filtered through the time range and can't be referenced.
+func validateExploreFilterFields(expr *runtimev1.Expression, spec *runtimev1.ExploreSpec, timeDims map[string]struct{}, having bool) error {
+	switch e := expr.GetExpression().(type) {
+	case *runtimev1.Expression_Ident:
+		if having {
+			if !slices.Contains(spec.Measures, e.Ident) {
+				return fmt.Errorf("%q is not a measure in this explore", e.Ident)
+			}
+			return nil
+		}
+		if _, ok := timeDims[e.Ident]; ok {
+			return fmt.Errorf("%q is a time dimension, which can't be filtered", e.Ident)
+		}
+		if !slices.Contains(spec.Dimensions, e.Ident) {
+			if slices.Contains(spec.Measures, e.Ident) {
+				return fmt.Errorf("measure %q can only be filtered in the HAVING clause of a subquery, for example \"<dimension> IN (SELECT <dimension> FROM %s HAVING %s > 0)\"", e.Ident, spec.MetricsView, e.Ident)
+			}
+			return fmt.Errorf("%q is not a dimension in this explore", e.Ident)
+		}
+	case *runtimev1.Expression_Cond:
+		for _, operand := range e.Cond.Exprs {
+			err := validateExploreFilterFields(operand, spec, timeDims, having)
+			if err != nil {
+				return err
+			}
+		}
+	case *runtimev1.Expression_Subquery:
+		// The subquery groups by a dimension, which is held to the same rules as one in a WHERE condition.
+		err := validateExploreFilterFields(&runtimev1.Expression{Expression: &runtimev1.Expression_Ident{Ident: e.Subquery.Dimension}}, spec, timeDims, false)
+		if err != nil {
+			return err
+		}
+		for _, name := range e.Subquery.Measures {
+			if !slices.Contains(spec.Measures, name) {
+				return fmt.Errorf("%q is not a measure in this explore", name)
+			}
+		}
+		err = validateExploreFilterFields(e.Subquery.Where, spec, timeDims, false)
+		if err != nil {
+			return err
+		}
+		return validateExploreFilterFields(e.Subquery.Having, spec, timeDims, true)
+	}
+	return nil
 }
 
 // mergeAccessRules combines Access rule conditions into a single rule

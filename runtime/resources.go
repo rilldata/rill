@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -330,6 +331,12 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 	}
 	spec.Measures = ms
 
+	// Filter the pinned, required and single-select filters.
+	// A filter can't be set on a field that isn't accessible, so leaving it required would block the explore for good.
+	spec.PinnedFilters = slices.DeleteFunc(spec.PinnedFilters, func(name string) bool { return !security.CanAccessField(name) })
+	spec.RequiredFilters = slices.DeleteFunc(spec.RequiredFilters, func(name string) bool { return !security.CanAccessField(name) })
+	spec.SingleSelectFilters = slices.DeleteFunc(spec.SingleSelectFilters, func(name string) bool { return !security.CanAccessField(name) })
+
 	// Filter the dimensions and measures in the presets
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset
@@ -349,6 +356,10 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 			}
 		}
 		p.Measures = ms
+
+		// Remove the conditions of the default filter that reference a field that isn't accessible.
+		// Queries with such a condition are rejected, so keeping it would break every query the explore makes.
+		p.Where = pruneFilterFields(p.Where, security.CanAccessField)
 	}
 
 	// We mustn't modify the resource in-place
@@ -359,4 +370,59 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 			State: &runtimev1.ExploreState{ValidSpec: spec},
 		}},
 	}
+}
+
+// pruneFilterFields removes the conditions of a filter expression that reference a field for which canAccess returns false.
+// The operands of an AND condition are pruned one by one.
+// Any other condition is kept or removed as a whole, since removing a part of it would change what it matches.
+// It returns nil if nothing is left. The expression is not modified in place.
+func pruneFilterFields(expr *runtimev1.Expression, canAccess func(string) bool) *runtimev1.Expression {
+	if expr == nil {
+		return nil
+	}
+
+	cond := expr.GetCond()
+	if cond == nil || cond.Op != runtimev1.Operation_OPERATION_AND {
+		if filterFieldsAccessible(expr, canAccess) {
+			return expr
+		}
+		return nil
+	}
+
+	var exprs []*runtimev1.Expression
+	for _, operand := range cond.Exprs {
+		operand = pruneFilterFields(operand, canAccess)
+		if operand != nil {
+			exprs = append(exprs, operand)
+		}
+	}
+	if len(exprs) == 0 {
+		return nil
+	}
+	return &runtimev1.Expression{Expression: &runtimev1.Expression_Cond{Cond: &runtimev1.Condition{Op: cond.Op, Exprs: exprs}}}
+}
+
+// filterFieldsAccessible reports whether canAccess returns true for every field referenced in a filter expression.
+func filterFieldsAccessible(expr *runtimev1.Expression, canAccess func(string) bool) bool {
+	switch e := expr.GetExpression().(type) {
+	case *runtimev1.Expression_Ident:
+		return canAccess(e.Ident)
+	case *runtimev1.Expression_Cond:
+		for _, operand := range e.Cond.Exprs {
+			if !filterFieldsAccessible(operand, canAccess) {
+				return false
+			}
+		}
+	case *runtimev1.Expression_Subquery:
+		if !canAccess(e.Subquery.Dimension) {
+			return false
+		}
+		for _, name := range e.Subquery.Measures {
+			if !canAccess(name) {
+				return false
+			}
+		}
+		return filterFieldsAccessible(e.Subquery.Where, canAccess) && filterFieldsAccessible(e.Subquery.Having, canAccess)
+	}
+	return true
 }

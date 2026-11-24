@@ -27,6 +27,7 @@
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { getThemeChartFont } from "@rilldata/web-common/features/themes/theme-font";
   import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onDestroy, tick } from "svelte";
@@ -64,6 +65,11 @@
    */
   export let onFixError:
     | ((error: string, metricsSQL?: string) => void)
+    | undefined = undefined;
+  // Reports the rows and schema of the query once it has loaded (undefined until then),
+  // for the canvas exports.
+  export let onResults:
+    | ((results: CustomChartExportResult[] | undefined) => void)
     | undefined = undefined;
 
   const chartFont = getThemeChartFont();
@@ -149,6 +155,10 @@
     type: field.type?.code,
   })) as VirtualizedTableColumns[];
 
+  $: onResults?.(
+    $dataQuery.isSuccess ? [{ data: rows, schema: tableColumns }] : undefined,
+  );
+
   // Measures present in the result, so their Rill formatters can be registered and referenced.
   $: ({ fields, measures } = deriveResultFields(
     columns,
@@ -156,17 +166,23 @@
     timeGrain,
   ));
 
-  $: expressionFunctions = measures.reduce<
-    Record<string, { fn: (val: number) => string }>
-  >((acc, measure) => {
-    const fieldName = sanitizeFieldName(measure.name as string);
-    const formatter = createMeasureValueFormatter<null | undefined>(measure);
-    return {
-      ...acc,
-      // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
-      [fieldName]: { fn: (val: number) => formatter(val) ?? String(val) },
-    };
-  }, {});
+  $: measureFormatters = Object.fromEntries(
+    measures.map((measure) => {
+      const formatter = createMeasureValueFormatter<null | undefined>(measure);
+      return [
+        measure.name as string,
+        // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
+        (val: number) => formatter(val) ?? String(val),
+      ];
+    }),
+  );
+
+  $: expressionFunctions = Object.fromEntries(
+    Object.entries(measureFormatters).map(([measure, fn]) => [
+      sanitizeFieldName(measure),
+      { fn },
+    ]),
+  );
 
   $: ejected = parseVegaSpec(vegaSpec);
 
@@ -182,6 +198,7 @@
               ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
+          measureFormatters,
         })
       : null;
 

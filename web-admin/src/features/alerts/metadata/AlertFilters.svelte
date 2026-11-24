@@ -9,8 +9,10 @@
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import { onDestroy } from "svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
+  import { onDestroy, untrack } from "svelte";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
   let {
     metricsViewName,
@@ -43,6 +45,23 @@
     ),
   );
 
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    metricsViewProvider,
+    yamlConfigProvider,
+    // An alert without a time range has no time filter, rather than the metrics view's default one.
+    { skipDefaultTimeRange: true },
+  );
+  let timeParams = $derived.by(() => {
+    const params = new URLSearchParams();
+    setTimeFilterParamsFromV1TimeRanges(params, timeRange, comparisonTimeRange);
+    return params;
+  });
+  $effect(() => {
+    const params = timeParams;
+    untrack(() => timeFilterManager.storeSync.setUrlParams(params));
+  });
+
   // time range could be an empty object sometimes
   let hasTimeRange = $derived(timeRange && Object.keys(timeRange).length > 0);
   let filtersLength = $derived(
@@ -50,6 +69,7 @@
   );
 
   onDestroy(() => {
+    timeFilterManager.cleanup();
     metricsViewProvider.cleanup();
     yamlConfigProvider.cleanup?.();
   });
@@ -59,11 +79,5 @@
   <MetadataLabel>
     {m.alert_filters_label({ count: String(filtersLength) })}
   </MetadataLabel>
-  <ReadonlyExpressionFilters
-    {expressionFilterManager}
-    displayTimeRange={timeRange}
-    displayComparisonTimeRange={comparisonTimeRange}
-    queryTimeStart={timeRange?.start}
-    queryTimeEnd={timeRange?.end}
-  />
+  <ReadonlyFilters {expressionFilterManager} {timeFilterManager} />
 </div>

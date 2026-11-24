@@ -8,3 +8,50 @@ enum ExportFormat {
   EXPORT_FORMAT_PARQUET = 3;
   EXPORT_FORMAT_PDF = 4;
 }
+
+// ExportConditionalFormat colors cells of an Excel export the way a pivot or table colors them on its dashboard.
+// It is written as one of Excel's own conditional formats, so the colors follow the values in the file.
+// Colors are hex RGB strings like "#1a9850"; the caller resolves theme colors before sending them.
+message ExportConditionalFormat {
+  oneof format {
+    ExportColorScale color_scale = 1;
+    ExportDataBar data_bar = 2;
+    ExportCellRule cell_rule = 3;
+  }
+}
+
+// ExportColorScale shades each cell by where its value falls between the lowest and the highest value of the cells it covers.
+message ExportColorScale {
+  string min_color = 1;
+  // Color of the midpoint between the lowest and the highest value. Optional; without it the scale has two colors.
+  string mid_color = 2;
+  string max_color = 3;
+}
+
+// ExportDataBar draws a bar in each cell, its length proportional to the value relative to the highest value of the cells it covers.
+message ExportDataBar {
+  string color = 1;
+}
+
+// ExportCellRule fills the cells whose value matches a condition. Cells without a number never match.
+// When several rules cover a cell, the first one that matches applies.
+message ExportCellRule {
+  ExportCellRuleOperator operator = 1;
+  double value = 2;
+  // Upper bound of the between operator, inclusive.
+  double upper_value = 3;
+  string fill_color = 4;
+  // Optional. Leaves the text color as it is if empty.
+  string text_color = 5;
+}
+
+enum ExportCellRuleOperator {
+  EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED = 0;
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN = 1;
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL = 2;
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN = 3;
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL = 4;
+  EXPORT_CELL_RULE_OPERATOR_EQUAL = 5;
+  // Between value and upper_value, both inclusive.
+  EXPORT_CELL_RULE_OPERATOR_BETWEEN = 6;
+}

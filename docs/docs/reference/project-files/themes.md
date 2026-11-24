@@ -6,7 +6,7 @@ sidebar_position: 40
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
 
-To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard.
 
 
 ## Properties
@@ -133,7 +133,7 @@ Background colors, from the page to the elements layered on top of it.
 
 ### Text
 
-Text colors. If a theme sets `fg-primary` but not the others, Rill derives `fg-secondary`, `fg-tertiary`, `fg-muted` and `fg-disabled` from it by lowering its opacity, and uses it unchanged for `fg-inverse` and `fg-accent`.
+Text colors. If a theme sets `fg-primary` but not the others, Rill derives `fg-secondary`, `fg-tertiary`, `fg-muted` and `fg-disabled` from it by lowering its opacity, and uses it unchanged for `fg-accent`. `fg-inverse` keeps its default unless set, because tooltips and primary buttons keep their own background.
 
 | Variable | What it styles | Light default | Dark default |
 | --- | --- | --- | --- |

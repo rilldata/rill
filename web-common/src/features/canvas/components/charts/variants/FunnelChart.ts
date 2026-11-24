@@ -180,7 +180,7 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
   updateProperty(
     key: keyof FunnelCanvasChartSpec,
     value: FunnelCanvasChartSpec[keyof FunnelCanvasChartSpec],
-  ) {
+  ): Promise<boolean> {
     const currentSpec = get(this.specStore);
 
     if (key === "breakdownMode") {
@@ -223,11 +223,10 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
         }
       }
 
-      this.setSpec(newSpec);
-      return;
+      return this.setSpec(newSpec);
     }
 
-    super.updateProperty(key, value);
+    return super.updateProperty(key, value);
   }
 
   createChartDataQuery(

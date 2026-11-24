@@ -7,7 +7,9 @@
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { DEFAULT_MAP_COLOR_RANGE, MapComponent } from "../components/map";
   import MapColorSelector from "../components/map/MapColorSelector.svelte";
+  import MapRegionsSelector from "../components/map/MapRegionsSelector.svelte";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AIGenerateButton from "./AIGenerateButton.svelte";
@@ -17,6 +19,8 @@
   import MarkSelector from "./chart/MarkSelector.svelte";
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
+  import type { FieldConfig } from "@rilldata/web-common/features/components/charts/types";
+  import { get } from "svelte/store";
   import ComparisonInput from "./ComparisonInput.svelte";
   import {
     ephemeralSpecsToDefs,
@@ -41,6 +45,37 @@
 
   function toggleSection(key: string) {
     collapsedSections[key] = !collapsedSections[key];
+  }
+
+  function updatePositionalField(
+    key: AllKeys<ComponentSpec>,
+    updatedConfig: FieldConfig | undefined,
+    metricsView: string,
+  ) {
+    localParamValues[key] = updatedConfig;
+    // A map's geo dimension needs a color measure, which a regions-only map lacks;
+    // set both together so the spec stays valid,
+    // defaulting to the regions' measure or the first measure of the metrics view.
+    if (
+      component instanceof MapComponent &&
+      key === "geo_dimension" &&
+      updatedConfig?.field
+    ) {
+      const mapSpec = get(component.specStore);
+      if (!mapSpec.color?.measure) {
+        const measure =
+          mapSpec.regions?.color?.measure ||
+          get(component.parent.metricsView.getMetricsViewFromName(metricsView))
+            .metricsView?.measures?.[0]?.name ||
+          "";
+        void component.updateProperties({
+          geo_dimension: { ...updatedConfig, type: "nominal" },
+          color: { measure, colorRange: DEFAULT_MAP_COLOR_RANGE },
+        });
+        return;
+      }
+    }
+    component.updateProperty(key, updatedConfig);
   }
 
   $: ({
@@ -181,6 +216,7 @@
             <InputLabel
               small
               label={config.label ?? key}
+              hint={config.description}
               id={key}
               faint={config.meta?.invertBoolean
                 ? ($specStore[key] ?? config.meta?.defaultValue ?? false)
@@ -360,10 +396,8 @@
             fieldConfig={localParamValues[key] || {}}
             ephemeralMeasures={componentEphemeralMeasures}
             component={supportsEphemeralMeasures ? component : undefined}
-            onChange={(updatedConfig) => {
-              localParamValues[key] = updatedConfig;
-              component.updateProperty(key, updatedConfig);
-            }}
+            onChange={(updatedConfig) =>
+              updatePositionalField(key, updatedConfig, metricsView)}
           />
           <!-- COLOR CONFIG -->
         {:else if metricsView && config.type === "mark"}
@@ -387,6 +421,18 @@
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
+            }}
+          />
+          <!-- MAP REGIONS CONFIG -->
+        {:else if metricsView && config.type === "map_regions" && component instanceof MapComponent}
+          <MapRegionsSelector
+            {component}
+            {canvasName}
+            {metricsView}
+            regions={localParamValues[key]}
+            onChange={(updatedConfig) => {
+              localParamValues[key] = updatedConfig;
+              component.updateProperty("regions", updatedConfig);
             }}
           />
         {/if}

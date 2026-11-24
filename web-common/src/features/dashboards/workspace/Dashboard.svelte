@@ -25,6 +25,7 @@
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
+  import MissingRequiredFiltersMessage from "../filters/MissingRequiredFiltersMessage.svelte";
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
@@ -60,6 +61,8 @@
     dashboardStore,
     expressionFilterManager,
   } = StateManagers;
+  const missingRequiredFilters =
+    expressionFilterManager.missingRequiredFiltersStore;
 
   const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 
@@ -74,8 +77,10 @@
   $: ({ selectedTimeDimension } = $dashboardStore);
   const filterStore =
     expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
-  $: dimensionOnlyFilter = $filterStore?.dimensionOnlyExpr;
   $: whereFilter = $filterStore?.expr;
+
+  // The dashboard is replaced by a message until every required filter has a value.
+  $: hasMissingRequired = $missingRequiredFilters.length > 0;
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -133,8 +138,6 @@
       }
     : undefined;
 
-  $: timeRanges = exploreSpec?.timeRanges ?? [];
-
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
   // For non-embedded dashboards, theme can come from URL params.
@@ -179,7 +182,7 @@
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-            <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
+            <Filters />
             <div class="absolute bottom-0 flex flex-col right-0">
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
@@ -194,6 +197,11 @@
         statusCode={extractErrorStatusCode(exploreError)}
         header="This user can't access this dashboard"
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+      />
+    {:else if hasMissingRequired}
+      <MissingRequiredFiltersMessage
+        missingRequiredFilters={$missingRequiredFilters}
+        metricsViewsProvider={expressionFilterManager.metricsViewsProvider}
       />
     {:else if $showPivot}
       <PivotDisplay {isEmbedded} />
@@ -219,8 +227,6 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
-                {dimensionOnlyFilter}
-                {whereFilter}
                 hideStartPivotButton={hidePivot}
                 tddChartHeight={$tddChartHeight}
               />
@@ -295,7 +301,7 @@
 
     <CellInspector />
 
-    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess && !hasMissingRequired}
       <RowsViewerAccordion {metricsViewName} {exploreName} {whereFilter} />
     {/if}
   </article>

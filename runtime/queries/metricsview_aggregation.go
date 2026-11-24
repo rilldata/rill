@@ -16,29 +16,32 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
+	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 )
 
 type MetricsViewAggregation struct {
-	MetricsViewName     string                                         `json:"metrics_view,omitempty"`
-	Dimensions          []*runtimev1.MetricsViewAggregationDimension   `json:"dimensions,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
-	Sort                []*runtimev1.MetricsViewAggregationSort        `json:"sort,omitempty"`
-	TimeRange           *runtimev1.TimeRange                           `json:"time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
-	Where               *runtimev1.Expression                          `json:"where,omitempty"`
-	WhereSQL            string                                         `json:"where_sql,omitempty"`
-	Having              *runtimev1.Expression                          `json:"having,omitempty"`
-	HavingSQL           string                                         `json:"having_sql,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter                   `json:"filter,omitempty"` // Backwards compatibility
-	Priority            int32                                          `json:"priority,omitempty"`
-	Limit               *int64                                         `json:"limit,omitempty"`
-	Offset              int64                                          `json:"offset,omitempty"`
-	PivotOn             []string                                       `json:"pivot_on,omitempty"`
-	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
-	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	FillMissing         bool                                           `json:"fill_missing,omitempty"`
-	Rows                bool                                           `json:"rows,omitempty"`
-	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
+	MetricsViewName     string                                       `json:"metrics_view,omitempty"`
+	Dimensions          []*runtimev1.MetricsViewAggregationDimension `json:"dimensions,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
+	Sort                []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
+	TimeRange           *runtimev1.TimeRange                         `json:"time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                         `json:"comparison_time_range,omitempty"`
+	Where               *runtimev1.Expression                        `json:"where,omitempty"`
+	WhereSQL            string                                       `json:"where_sql,omitempty"`
+	Having              *runtimev1.Expression                        `json:"having,omitempty"`
+	HavingSQL           string                                       `json:"having_sql,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"` // Backwards compatibility
+	Priority            int32                                        `json:"priority,omitempty"`
+	Limit               *int64                                       `json:"limit,omitempty"`
+	Offset              int64                                        `json:"offset,omitempty"`
+	PivotOn             []string                                     `json:"pivot_on,omitempty"`
+	// ConditionalFormats color the measures' cells in XLSX exports.
+	ConditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat `json:"conditional_formats,omitempty"`
+	SecurityClaims     *runtime.SecurityClaims                              `json:"security_claims,omitempty"`
+	Aliases            []*runtimev1.MetricsViewComparisonMeasureAlias       `json:"aliases,omitempty"`
+	FillMissing        bool                                                 `json:"fill_missing,omitempty"`
+	Rows               bool                                                 `json:"rows,omitempty"`
+	ExecutionTime      *time.Time                                           `json:"execution_time,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -178,11 +181,23 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	var format drivers.FileFormat
+	var conditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		format = drivers.FileFormatXLSX
+		// Only XLSX files keep the conditional formats, so other formats ignore them, even invalid ones.
+		// Check them before running the query, since the XLSX writer only applies them after writing every row.
+		if len(q.ConditionalFormats) > conditionalformat.MaxFormats {
+			return fmt.Errorf("the export has %d conditional formats, which exceeds the limit of %d", len(q.ConditionalFormats), conditionalformat.MaxFormats)
+		}
+		for _, cf := range q.ConditionalFormats {
+			if err := conditionalformat.Validate(cf.Format); err != nil {
+				return fmt.Errorf("invalid conditional format for measure %q: %w", cf.Measure, err)
+			}
+		}
+		conditionalFormats = q.ConditionalFormats
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		format = drivers.FileFormatParquet
 	default:
@@ -202,7 +217,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers, conditionalFormats)
 	if err != nil {
 		return err
 	}

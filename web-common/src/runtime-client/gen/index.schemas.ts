@@ -480,16 +480,26 @@ Defaults to "group-<index>" if not provided in the canvas YAML. */
   tabs?: V1CanvasTab[];
 }
 
+export interface V1CanvasContainer {
+  /** Stable identifier of the container.
+Defaults to "container-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Rows in the container. These are always plain rows;
+a container never holds a tab group or another container. */
+  rows?: V1CanvasRow[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. Empty when the row is a tab group. */
+  /** Items to render in the row. Empty when the row is a tab group or a container. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  container?: V1CanvasContainer;
   /** Templated boolean expression from the row's `if` property.
-The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+The row (or tab group, or container) is only shown to viewers for whom it evaluates to true. */
   conditionExpression?: string;
 }
 
@@ -526,6 +536,9 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  /** Array of dimension names whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   annotations?: Record<string, string>;
   /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
   aiPrompts?: V1AIPrompt[];
@@ -1013,7 +1026,17 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
+  /** Preset UI state to show by default.
+Its `where` holds the default filter, parsed from `defaults.filters`. */
   defaultPreset?: V1ExplorePreset;
+  /** Dimension or measure names whose filter chip is always shown in the filter bar. */
+  pinnedFilters?: string[];
+  /** Dimension or measure names that must have a filter value before the explore renders.
+Required filters are implicitly pinned. */
+  requiredFilters?: string[];
+  /** Dimensions whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   /** If true, the pivot tab will be hidden when the explore is embedded. */
   embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
@@ -1060,6 +1083,55 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
+
+export interface V1ExportCellRule {
+  operator?: V1ExportCellRuleOperator;
+  value?: number;
+  /** Upper bound of the between operator, inclusive. */
+  upperValue?: number;
+  fillColor?: string;
+  /** Optional. Leaves the text color as it is if empty. */
+  textColor?: string;
+}
+
+export type V1ExportCellRuleOperator =
+  (typeof V1ExportCellRuleOperator)[keyof typeof V1ExportCellRuleOperator];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportCellRuleOperator = {
+  EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED:
+    "EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED",
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN:
+    "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN",
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL:
+    "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN: "EXPORT_CELL_RULE_OPERATOR_LESS_THAN",
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL:
+    "EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_EQUAL: "EXPORT_CELL_RULE_OPERATOR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_BETWEEN: "EXPORT_CELL_RULE_OPERATOR_BETWEEN",
+} as const;
+
+export interface V1ExportColorScale {
+  minColor?: string;
+  /** Color of the midpoint between the lowest and the highest value. Optional; without it the scale has two colors. */
+  midColor?: string;
+  maxColor?: string;
+}
+
+/**
+ * Colors cells of an Excel export the way a pivot or table colors them on its dashboard.
+ * Set one of the fields. Colors are hex RGB strings like "#1a9850".
+ */
+export interface V1ExportConditionalFormat {
+  colorScale?: V1ExportColorScale;
+  dataBar?: V1ExportDataBar;
+  cellRule?: V1ExportCellRule;
+}
+
+export interface V1ExportDataBar {
+  color?: string;
+}
 
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
@@ -1526,6 +1598,12 @@ export interface V1MetricsView {
   state?: V1MetricsViewState;
 }
 
+export interface V1MetricsViewAggregationConditionalFormat {
+  /** Name of the measure. Under pivot_on, the format spans all of the measure's columns. */
+  measure?: string;
+  format?: V1ExportConditionalFormat;
+}
+
 export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
@@ -1610,6 +1688,8 @@ export interface V1MetricsViewAggregationRequest {
   havingSql?: string;
   limit?: string;
   offset?: string;
+  /** Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order. */
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
@@ -1830,6 +1910,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  /** Display order of the tags set on dimensions and measures.
+Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure. */
+  tagOrder?: string[];
   parentDimensions?: V1FieldSelector;
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];
@@ -3276,6 +3359,8 @@ export type QueryServiceMetricsViewAggregationBody = {
   havingSql?: string;
   limit?: string;
   offset?: string;
+  /** Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order. */
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;

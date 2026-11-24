@@ -130,13 +130,14 @@ export class Theme {
     { token: "measure-border", source: "secondary", light: 800, dark: 800 },
   ];
 
-  // Opacity percentages for fg-* hierarchy when auto-generating from fg-primary
+  // Opacity percentages for fg-* hierarchy when auto-generating from fg-primary.
+  // fg-inverse is deliberately absent: it is the text on tooltips and primary buttons,
+  // whose backgrounds don't follow fg-primary, so it keeps app.css's light default.
   private static FG_OPACITY_HIERARCHY: Record<string, number> = {
     "fg-secondary": 85,
     "fg-tertiary": 70,
     "fg-muted": 55,
     "fg-disabled": 40,
-    "fg-inverse": 100,
     "fg-accent": 100,
   };
 

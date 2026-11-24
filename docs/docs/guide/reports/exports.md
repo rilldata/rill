@@ -46,7 +46,7 @@ Exports are available from:
 
 - Leaderboards: expand a leaderboard in Explore and select Export on the top right
 - Time Dimension Detail: after choosing a comparison, select Export on the time series chart
-- Pivot Tables: _coming soon_ 
+- Pivot Tables: select Export above the pivot table. Excel files keep the pivot's conditional formatting (heatmaps, data bars and rules) as Excel conditional formatting. Rules follow the values in the file. Heatmaps and data bars keep the range of the exported values: if you change a value to one outside that range, that cell gets the color or bar at the end of the range, and the other cells keep theirs. Excel data bars only grow for positive values, so zero and negative values get a short bar of the same length, where the dashboard sizes a negative value's bar by its absolute value.
 
 ## How to Schedule an Email Report
 
