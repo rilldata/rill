@@ -38,8 +38,10 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   if (!validSpecStore.data?.explore || !timeFilterManager.ready)
     return undefined;
 
-  const enableComparison = configStore.enableComparison;
   const isFlat = configStore.isFlat;
+  if (!canExportPivot(rows, columns, isFlat)) return undefined;
+
+  const enableComparison = configStore.enableComparison;
   const comparisonTime = configStore.comparisonTime;
   const pivotState = configStore.pivot;
 
@@ -97,6 +99,21 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   };
 
   return query;
+}
+
+// Whether the pivot shows any data to export.
+// It mirrors the empty state in `createPivotDataStore`:
+// without a measure, only row dimensions (or a flat table's dimension columns) show data.
+// An export of an empty pivot fails in the runtime and the browser lands on the raw error,
+// and column dimensions without a measure export bare counts.
+export function canExportPivot(
+  rows: PivotChipData[],
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
+  isFlat: boolean,
+): boolean {
+  if (columns.measure.length > 0) return true;
+  if (isFlat) return columns.dimension.length > 0;
+  return rows.length > 0 && columns.dimension.length === 0;
 }
 
 // The conditional formats of the pivot's measures, which Excel exports keep.
