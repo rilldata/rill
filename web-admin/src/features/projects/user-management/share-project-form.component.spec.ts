@@ -157,9 +157,12 @@ describe("ShareProjectForm", () => {
     let finishRemoval = () => {};
     mockResponses({
       [PROJECT_DOMAINS_URL]: {
-        domains: [{ domain: "example.com", role: "viewer" }],
+        domains: [
+          { domain: "example.com", role: "viewer" },
+          { domain: "example.org", role: "editor" },
+        ],
       },
-      [`${PROJECT_DOMAINS_URL}/example.com`]: () =>
+      [`${PROJECT_DOMAINS_URL}/example.org`]: () =>
         new Promise((resolve) => (finishRemoval = () => resolve({}))),
     });
     renderForm(false);
@@ -168,10 +171,12 @@ describe("ShareProjectForm", () => {
       await screen.findByText("Anyone with an @example.com email"),
     ).toBeTruthy();
     expect(screen.getByText("Joins automatically as Viewer")).toBeTruthy();
+    expect(screen.getByText("Joins automatically as Editor")).toBeTruthy();
 
     // Removing asks first, since the Share dialog can't add the rule back; cancelling sends nothing.
-    const remove = screen.getByRole("button", { name: "Remove" });
-    await fireEvent.click(remove);
+    const [removeViewerRule, removeEditorRule] =
+      screen.getAllByRole<HTMLButtonElement>("button", { name: "Remove" });
+    await fireEvent.click(removeViewerRule);
     expect(
       await screen.findByText("Remove domain access for @example.com?"),
     ).toBeTruthy();
@@ -183,21 +188,30 @@ describe("ShareProjectForm", () => {
     );
     expect(domainRemovals()).toHaveLength(0);
 
-    // Confirming sends one request, and Remove stays disabled while it is pending.
-    await fireEvent.click(remove);
-    await fireEvent.click(
-      await screen.findByRole("button", { name: "Yes, remove" }),
-    );
+    // The dialog's command restores the same rule: same org, project and role.
+    await fireEvent.click(removeEditorRule);
+    expect(
+      await screen.findByText(
+        /rill user whitelist setup example\.org --org acme --project sales --role editor/,
+      ),
+    ).toBeTruthy();
+
+    // Confirming sends one request; every Remove stays disabled while it is pending,
+    // and only the rule being removed shows as busy.
+    await fireEvent.click(screen.getByRole("button", { name: "Yes, remove" }));
     await waitFor(() => expect(domainRemovals()).toHaveLength(1));
     expect(domainRemovals()[0][0].url).toBe(
-      `${PROJECT_DOMAINS_URL}/example.com`,
+      `${PROJECT_DOMAINS_URL}/example.org`,
     );
     await waitFor(() =>
       expect(
-        screen.queryByText("Remove domain access for @example.com?"),
+        screen.queryByText("Remove domain access for @example.org?"),
       ).toBeNull(),
     );
-    expect((remove as HTMLButtonElement).disabled).toBe(true);
+    expect(removeViewerRule.disabled).toBe(true);
+    expect(removeEditorRule.disabled).toBe(true);
+    expect(removeEditorRule.getAttribute("aria-busy")).toBe("true");
+    expect(removeViewerRule.getAttribute("aria-busy")).toBe("false");
     finishRemoval();
   });
 

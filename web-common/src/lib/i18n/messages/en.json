@@ -2659,7 +2659,7 @@
   "users_domain_access_anyone": "Anyone with an @{domain} email",
   "users_domain_access_joins_as": "Joins automatically as {role}",
   "users_domain_access_load_failed": "Couldn't load this project's domain access rules.",
-  "users_domain_access_remove_confirm_desc": "People with an @{domain} email will no longer join this project automatically. Those who already joined keep their access. To add it back, run \"rill user whitelist setup {domain} --project {project}\".",
+  "users_domain_access_remove_confirm_desc": "People with an @{domain} email will no longer join this project automatically. Those who already joined keep their access. To add it back, run \"rill user whitelist setup {domain} --org {organization} --project {project} --role {role}\". For a domain other than your own email's, contact Rill support.",
   "users_domain_access_remove_confirm_title": "Remove domain access for @{domain}?",
   "users_domain_access_removed": "People with an @{domain} email no longer join automatically. Those who already joined keep their access.",
   "users_email_or_group_placeholder": "Email or group, separated by commas",

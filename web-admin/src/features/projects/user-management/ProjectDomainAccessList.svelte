@@ -7,6 +7,7 @@
   import { getProjectRolesOptions } from "@rilldata/web-admin/features/projects/user-management/constants";
   import { AlertDialogConfirmation } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -27,9 +28,9 @@
   // and cleared once the list has refetched without the removed domain.
   let removing: string | undefined;
   // Removal asks first: an admin can't add the rule back from the Share dialog.
-  // The domain stays set while the dialog closes so its text doesn't change mid-animation.
+  // The rule stays set while the dialog closes so its text doesn't change mid-animation.
   let confirmOpen = false;
-  let confirmDomain = "";
+  let confirmRule = { domain: "", role: "" };
   const roleLabels = new Map<string, string>(
     getProjectRolesOptions().map(({ value, label }) => [value, label]),
   );
@@ -99,16 +100,24 @@
       </span>
     </div>
     <div class="grow"></div>
-    <!-- Same box and text as the role dropdowns above, so the column lines up. -->
+    <!-- Same box and text as the role dropdowns above, so the column lines up.
+         The row being removed keeps full opacity and a spinner just left of the box. -->
     <button
       type="button"
-      class="rounded-sm mr-[10px] min-w-[72px] px-2 py-1 text-left hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+      class="relative rounded-sm mr-[10px] min-w-[72px] px-2 py-1 text-left hover:bg-surface-hover disabled:cursor-not-allowed"
+      class:opacity-50={!!removing && removing !== domain}
       disabled={!!removing}
+      aria-busy={removing === domain}
       onclick={() => {
-        confirmDomain = domain ?? "";
+        confirmRule = { domain: domain ?? "", role: role ?? "" };
         confirmOpen = true;
       }}
     >
+      {#if removing === domain}
+        <span class="absolute -left-4 top-1/2 -translate-y-1/2">
+          <LoadingSpinner size="12px" />
+        </span>
+      {/if}
       {m.users_remove()}
     </button>
   </div>
@@ -119,15 +128,19 @@
   onOpenChange={(open: boolean) => {
     confirmOpen = open;
   }}
-  title={m.users_domain_access_remove_confirm_title({ domain: confirmDomain })}
+  title={m.users_domain_access_remove_confirm_title({
+    domain: confirmRule.domain,
+  })}
   description={m.users_domain_access_remove_confirm_desc({
-    domain: confirmDomain,
+    domain: confirmRule.domain,
+    organization,
     project,
+    role: confirmRule.role,
   })}
   confirmLabel={m.users_yes_remove()}
   confirmType="destructive"
   onConfirm={() => {
     confirmOpen = false;
-    void remove(confirmDomain);
+    void remove(confirmRule.domain);
   }}
 />
