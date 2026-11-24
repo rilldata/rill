@@ -2230,7 +2230,7 @@
   "settings_org_page_title": "Organization settings",
   "settings_org_title": "Organization",
   "settings_org_url_description": "Your org URL will be https://ui.rilldata.com/{slug}, to comply with our naming rules.",
-  "settings_project_domain_access_description": "Let project admins allow everyone with their email domain to join a project when publishing. When this is off, new project rules can't be added. Rules a project already has keep working until they are removed.",
+  "settings_project_domain_access_description": "Let project admins add everyone with their email domain to a project. Turning this off keeps existing rules.",
   "settings_project_domain_access_title": "Project domain access",
   "settings_project_hibernated_notification": "Project hibernated",
   "settings_project_now_private_notification": "Project is now private",
