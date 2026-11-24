@@ -3054,7 +3054,7 @@ definitions:
     title: Alert YAML
     id: alerts
     type: object
-    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`. Alerts defined in YAML run after you deploy the project to Rill Cloud; Rill Developer doesn't run them or send their notifications.
     examples:
       - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
         type: alert
@@ -3088,7 +3088,7 @@ definitions:
           refresh:
             $ref: '#/definitions/schedule_properties'
             description: |
-                  Refresh schedule for the alert
+                  Refresh schedule for the alert. Alerts only run in Rill Cloud, so `run_in_dev` doesn't make them run in Rill Developer.
                     ```yaml
                     refresh:
                       cron: "* * * * *"
