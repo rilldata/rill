@@ -159,10 +159,52 @@ func ceilTime(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDa
 	if t.IsZero() {
 		return t
 	}
+
+	// Sub-day grains have a fixed duration, so the next boundary is one grain after the truncated time.
 	tg := timeutil.TimeGrainFromAPI(grain)
-	floor := timeutil.TruncateTime(t, tg, tz, int(firstDayOfWeek), 1)
-	if floor.Equal(t) {
+	if tg.Compare(timeutil.TimeGrainDay) < 0 {
+		floor := timeutil.TruncateTime(t, tg, tz, int(firstDayOfWeek), 1)
+		if floor.Equal(t) {
+			return t
+		}
+		return timeutil.OffsetTime(floor, tg, 1, tz)
+	}
+
+	// Day and coarser grains start at local midnight, so compute the boundaries from t's local calendar date.
+	// Adding a grain to the truncated time is not enough: on a day without a midnight (a DST change at 00:00),
+	// the truncated time falls on the previous day, and adding a day to it misses the next midnight.
+	lt := t.In(tz)
+	y, m, d := lt.Date()
+	date := func(y int, m time.Month, d int) time.Time {
+		return time.Date(y, m, d, 0, 0, 0, 0, tz)
+	}
+	var start, next time.Time
+	switch grain {
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		start, next = date(y, m, d), date(y, m, d+1)
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		fdow := int(firstDayOfWeek)
+		if fdow < 1 || fdow > 7 {
+			fdow = 1
+		}
+		weekday := int(lt.Weekday())
+		if weekday == 0 {
+			weekday = 7
+		}
+		back := (weekday - fdow + 7) % 7
+		start, next = date(y, m, d-back), date(y, m, d-back+7)
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		start, next = date(y, m, 1), date(y, m+1, 1)
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		qm := m - (m-1)%3
+		start, next = date(y, qm, 1), date(y, qm+3, 1)
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		start, next = date(y, 1, 1), date(y+1, 1, 1)
+	default:
 		return t
 	}
-	return timeutil.OffsetTime(floor, tg, 1, tz)
+	if start.Equal(t) {
+		return t
+	}
+	return next
 }

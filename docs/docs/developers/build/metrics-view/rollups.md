@@ -201,6 +201,8 @@ The base table then has no rows between two boundaries, so a time bound inside a
 
 Rounding only helps rollups whose boundaries the rounded bounds fall on. In the example above, a monthly rollup is still skipped for that query, because `2024-10-16` is not the start of a month. Rounding never causes a rollup to be skipped that the original bounds qualify for, and the timezone check is unchanged.
 
+Week boundaries start on the metrics view's `first_day_of_week`, so a table with one row per week starting on Sunday sets `base_time_grain: week` and `first_day_of_week: 7`. Quarter and year boundaries are calendar quarters and years starting in January, regardless of `first_month_of_year`. For a table with one row per fiscal quarter or year, such as April 1 timestamps with `first_month_of_year: 4`, set `base_time_grain: month`: every fiscal boundary is also a month boundary, while `year` would fail the check described below.
+
 Only set `base_time_grain` if every row is on a boundary. Rill checks the base table's earliest and latest timestamps and ignores the setting if either is off a boundary, but it does not scan the other rows. When the metrics view sets `data_time_range`, Rill does not query those timestamps, so it skips this check. If they are off a boundary, queries routed to a rollup return different numbers than the base table would.
 
 :::info
