@@ -13,11 +13,12 @@ rill org edit [<org-name>] [flags]
 ### Flags
 
 ```
-      --org string                    Organization name
-      --display-name string           Display name
-      --description string            Description
-      --default-project-role string   Default role for members on new projects (options: admin, editor, viewer, none)
-      --billing-email string          Billing email
+      --org string                      Organization name
+      --display-name string             Display name
+      --description string              Description
+      --default-project-role string     Default role for members on new projects (options: admin, editor, viewer, none)
+      --billing-email string            Billing email
+      --disable-project-domain-access   Stop project admins from adding new email domain access rules; existing rules keep working (set to false to allow new rules again)
 ```
 
 ### Global flags

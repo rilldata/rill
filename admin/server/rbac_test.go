@@ -12,6 +12,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -1057,6 +1059,24 @@ func TestRBAC(t *testing.T) {
 		checkProjMember(userEmail2, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
 		checkProjMember(userEmail3, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameViewer, 5) // Because explicit invite role takes precedence over domain whitelist role
 		checkProjMember(userEmail4, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
+
+		// Turn off domain access for the org's projects
+		disable := true
+		org1Updated, err := c1.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Org:                        org1.Organization.Name,
+			DisableProjectDomainAccess: &disable,
+		})
+		require.NoError(t, err)
+		require.True(t, org1Updated.Organization.DisableProjectDomainAccess)
+
+		// Check that new domain rules are refused
+		_, err = c1.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
+			Org:     org1.Organization.Name,
+			Project: proj1.Project.Name,
+			Domain:  "whitelist-projs.test",
+			Role:    database.ProjectRoleNameViewer,
+		})
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
 	})
 
 	t.Run("Managed usergroup memberships", func(t *testing.T) {

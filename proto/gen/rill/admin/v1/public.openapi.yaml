@@ -1517,6 +1517,11 @@ components:
                     type: string
                 description:
                     type: string
+                disableProjectDomainAccess:
+                    description: |-
+                        When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+                        Rules a project already has keep adding users.
+                    type: boolean
                 displayName:
                     type: string
                 faviconUrl:
@@ -2856,6 +2861,8 @@ paths:
                                     type: string
                                 description:
                                     type: string
+                                disableProjectDomainAccess:
+                                    type: boolean
                                 displayName:
                                     type: string
                                 faviconAssetId:

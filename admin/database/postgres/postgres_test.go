@@ -177,6 +177,20 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "", org.DefaultProvisioner)
 
+	// Check that DisableProjectDomainAccess is only changed when set
+	disableProjectDomainAccess := true
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                       org.Name,
+		DisableProjectDomainAccess: &disableProjectDomainAccess,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
+
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
 
