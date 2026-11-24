@@ -149,7 +149,10 @@ test.describe("canvas containers", () => {
       "content: Loose row",
     ]);
 
-    // Rename the story in its inspector, which a click on the chip opens.
+    // Rename the story in its inspector, which a click on the chip opens. Wait for the canvas
+    // to show the move first: a spec from an earlier edit that arrives after the drop shows
+    // the old order until the next reconcile.
+    await expect(blockRegion(page, 0).locator(".chip")).toContainText("story");
     await blockRegion(page, 0).locator(".chip .label").click();
     const name = page.getByLabel("Container name");
     await expect(name).toHaveValue("story");
