@@ -16,19 +16,21 @@ import (
 
 func TestAssetsHandler(t *testing.T) {
 	svg := `<svg xmlns="http://www.w3.org/2000/svg"></svg>`
+	geojson := `{"type":"FeatureCollection","features":[]}`
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			// The root is listed to check that it never makes the whole project public.
-			"rill.yaml":                  `public_paths: ["./public", "/static/", "/"]`,
-			".env":                       "token=secret",
-			"secret.txt":                 "secret",
-			"publicity/notes.txt":        "secret",
-			"public/logo.png":            "png",
-			"public/img/logo.svg":        svg,
-			"public/img/brand/PHOTO.JPG": "jpg",
-			"public/fonts/brand.woff2":   "woff2",
-			"public/page.html":           "<html></html>",
-			"static/app.css":             "body {}",
+			"rill.yaml":                   `public_paths: ["./public", "/static/", "/"]`,
+			".env":                        "token=secret",
+			"secret.txt":                  "secret",
+			"publicity/notes.txt":         "secret",
+			"public/logo.png":             "png",
+			"public/img/logo.svg":         svg,
+			"public/img/brand/PHOTO.JPG":  "jpg",
+			"public/fonts/brand.woff2":    "woff2",
+			"public/maps/regions.geojson": geojson,
+			"public/page.html":            "<html></html>",
+			"static/app.css":              "body {}",
 		},
 	})
 
@@ -40,8 +42,11 @@ func TestAssetsHandler(t *testing.T) {
 	httpSrv := httptest.NewServer(handler)
 	t.Cleanup(httpSrv.Close)
 
-	get := func(t *testing.T, path string) (*http.Response, string) {
-		res, err := httpSrv.Client().Get(httpSrv.URL + "/v1/instances/" + instanceID + "/assets/" + path)
+	get := func(t *testing.T, path string, header http.Header) (*http.Response, string) {
+		req, err := http.NewRequest(http.MethodGet, httpSrv.URL+"/v1/instances/"+instanceID+"/assets/"+path, http.NoBody)
+		require.NoError(t, err)
+		req.Header = header
+		res, err := httpSrv.Client().Do(req)
 		require.NoError(t, err)
 		defer res.Body.Close()
 		body, err := io.ReadAll(res.Body)
@@ -49,7 +54,8 @@ func TestAssetsHandler(t *testing.T) {
 		return res, string(body)
 	}
 
-	// Files in the public paths are served, at any depth, with a content type derived from the extension.
+	// Files in the public paths are served, at any depth, with a content type derived from the extension,
+	// and with headers that keep them out of shared caches.
 	served := []struct {
 		path        string
 		contentType string
@@ -59,6 +65,7 @@ func TestAssetsHandler(t *testing.T) {
 		{"public/img/logo.svg", "image/svg+xml", svg},
 		{"public/img/brand/PHOTO.JPG", "image/jpeg", "jpg"},
 		{"public/fonts/brand.woff2", "font/woff2", "woff2"},
+		{"public/maps/regions.geojson", "application/json", geojson},
 		{"static/app.css", "text/css; charset=utf-8", "body {}"},
 		// Types that aren't known to be passive are never served as something a browser renders.
 		{"public/page.html", "application/octet-stream", "<html></html>"},
@@ -67,14 +74,22 @@ func TestAssetsHandler(t *testing.T) {
 	}
 	for _, tt := range served {
 		t.Run(tt.path, func(t *testing.T) {
-			res, body := get(t, tt.path)
+			res, body := get(t, tt.path, nil)
 			require.Equal(t, http.StatusOK, res.StatusCode)
 			require.Equal(t, tt.contentType, res.Header.Get("Content-Type"))
 			require.Equal(t, "nosniff", res.Header.Get("X-Content-Type-Options"))
 			require.Contains(t, res.Header.Get("Content-Security-Policy"), "sandbox")
+			require.Equal(t, "private, no-cache", res.Header.Get("Cache-Control"))
+			require.NotEmpty(t, res.Header.Get("ETag"))
 			require.Equal(t, tt.body, body)
 		})
 	}
+
+	// A file is revalidated with its ETag.
+	res, _ := get(t, "public/maps/regions.geojson", nil)
+	res, body := get(t, "public/maps/regions.geojson", http.Header{"If-None-Match": {res.Header.Get("ETag")}})
+	require.Equal(t, http.StatusNotModified, res.StatusCode)
+	require.Empty(t, body)
 
 	// Files outside the public paths are not served, however the path is spelled.
 	forbidden := []string{
@@ -93,15 +108,15 @@ func TestAssetsHandler(t *testing.T) {
 	}
 	for _, path := range forbidden {
 		t.Run(path, func(t *testing.T) {
-			res, body := get(t, path)
+			res, body := get(t, path, nil)
 			require.Equal(t, http.StatusForbidden, res.StatusCode)
 			require.NotContains(t, body, "secret")
 		})
 	}
 
 	// Missing files and directories are not served.
-	res, _ := get(t, "public/img/missing.png")
+	res, _ = get(t, "public/img/missing.png", nil)
 	require.Equal(t, http.StatusNotFound, res.StatusCode)
-	res, _ = get(t, "public/img")
+	res, _ = get(t, "public/img", nil)
 	require.NotEqual(t, http.StatusOK, res.StatusCode)
 }

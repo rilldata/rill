@@ -238,12 +238,15 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	ctx = WithDashboardFilters(ctx, dashboardFilters)
 
-	// Run an LLM tool call loop
+	// Run an LLM tool call loop.
+	// The prompt forbids manual calculations, but models still do them and get them wrong,
+	// so the numbers in the response are also checked against the tool results.
 	var response string
 	err = s.Complete(ctx, "Analyst loop", &response, &CompleteOptions{
 		Messages:      messages,
 		Tools:         tools,
 		MaxIterations: 20,
+		CheckResponse: checkNumbersGrounded,
 		UnwrapCall:    true,
 	})
 	if err != nil {

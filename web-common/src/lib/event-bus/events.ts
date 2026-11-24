@@ -54,6 +54,7 @@ export interface BannerMessage {
     // ID used to calculate ttl for.
     // The same key can switch IDs. This means we need to start a new counter but save under the same `key`
     id: string;
+    // How long the banner stays dismissed, in milliseconds.
     // If value is 0 then banner is dismissed forever.
     ttl: number;
   };

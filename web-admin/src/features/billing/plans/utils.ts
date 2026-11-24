@@ -95,10 +95,11 @@ export function triggerWelcomeToRillDialog(planName: string) {
   showWelcomeToRillDialogForPlan.set(planName);
 }
 
-export function formatCredit(credits: number): string {
+export function formatCredit(credits: number, fractionDigits = 2): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(credits);
 }

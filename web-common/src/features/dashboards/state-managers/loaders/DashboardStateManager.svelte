@@ -31,11 +31,14 @@
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
   export let disableInitSessionDashboardState: boolean = false;
+  // Called when the dashboard has loaded, or has failed to load; can be called more than once.
+  // Once loaded, url changes are applied to the dashboard.
+  export let onLoad: () => void = () => {};
 
   const client = useRuntimeClient();
 
   const StateManagers = getStateManagers();
-  const { expressionFilterManager } = StateManagers;
+  const { expressionFilterManager, timeFilterManager } = StateManagers;
 
   $: exploreSpecQuery = useExploreValidSpec(client, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
@@ -61,6 +64,8 @@
       storageNamespacePrefix,
       dataLoader,
       expressionFilterManager,
+      timeFilterManager,
+      handleInitialized,
     );
   }
 
@@ -77,6 +82,7 @@
       error: Error | null;
     });
   }
+  $: if (error) onLoad();
 
   $: showUrlWarning = isUrlTooLong($page.url);
   $: if (showUrlWarning) {
@@ -119,6 +125,11 @@
   onDestroy(() => {
     stateSync?.teardown();
   });
+
+  // Wraps onLoad so the reactive statement creating the sync does not depend on it.
+  function handleInitialized() {
+    onLoad();
+  }
 </script>
 
 {#if isLoading}

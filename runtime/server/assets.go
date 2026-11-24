@@ -1,12 +1,15 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"io/fs"
 	"net/http"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -41,8 +44,11 @@ var assetContentTypes = map[string]string{
 	".css":   "text/css; charset=utf-8",
 	".csv":   "text/csv; charset=utf-8",
 	".json":  "application/json",
-	".tsv":   "text/tab-separated-values; charset=utf-8",
-	".txt":   "text/plain; charset=utf-8",
+	// Map boundaries.
+	".geojson":  "application/json",
+	".topojson": "application/json",
+	".tsv":      "text/tab-separated-values; charset=utf-8",
+	".txt":      "text/plain; charset=utf-8",
 }
 
 // assetsHandler serves files from the project's public paths (see `public_paths` in rill.yaml), including files in subdirectories.
@@ -95,7 +101,7 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	data, err := repo.Get(ctx, assetPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return httputil.Errorf(http.StatusNotFound, "asset not found")
+			return httputil.Errorf(http.StatusNotFound, "file %q not found", assetPath)
 		}
 		return err
 	}
@@ -108,6 +114,13 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", assetContentSecurityPolicy)
 
-	_, err = w.Write([]byte(data))
-	return err
+	// Assets may hold licensed data, such as map boundaries, so shared caches must never store them.
+	// Browsers revalidate on every use, which is cheap thanks to the ETag.
+	sum := sha256.Sum256([]byte(data))
+	w.Header().Set("Cache-Control", "private, no-cache")
+	w.Header().Set("ETag", `"`+hex.EncodeToString(sum[:])+`"`)
+
+	// ServeContent answers conditional and range requests; it keeps the Content-Type set above.
+	http.ServeContent(w, req, assetPath, time.Time{}, strings.NewReader(data))
+	return nil
 }

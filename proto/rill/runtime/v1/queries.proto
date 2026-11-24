@@ -468,6 +468,9 @@ message MetricsViewAggregationRequest {
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   // Optional. Defaults to 0
   int64 offset = 10 [(validate.rules).int64.gte = 0];
+  // Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order.
+  // Ignored by queries and by other export formats.
+  repeated MetricsViewAggregationConditionalFormat conditional_formats = 24;
   // Optional
   int32 priority = 11;
   // Optional
@@ -481,6 +484,14 @@ message MetricsViewAggregationRequest {
   bool rows = 22;
   // Optional. If true, the response will include traces of spans captured during execution.
   bool trace = 23;
+}
+
+// MetricsViewAggregationConditionalFormat colors a measure's cells when the result is exported to Excel.
+message MetricsViewAggregationConditionalFormat {
+  // Name of the measure. Under pivot_on, the format spans all of the measure's columns,
+  // so a color scale or data bar compares the values across them.
+  string measure = 1;
+  ExportConditionalFormat format = 2;
 }
 
 message MetricsViewAggregationResponse {
@@ -1065,7 +1076,7 @@ message ResolveCanvasResponse {
   map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   map<string, Resource> referenced_metrics_views = 3;
-  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
   // The paths follow the canvas YAML. Only set when include_hidden is true.
   repeated string hidden_paths = 4;
 }

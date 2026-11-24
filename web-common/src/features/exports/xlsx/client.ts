@@ -1,3 +1,5 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import type { CanvasWorkbookExportRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/workbook_pb";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -14,10 +16,23 @@ export async function postWorkbookRequest(
   const jwt = await client.getFreshJwt();
   if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
 
-  const response = await fetch(
-    `${client.host}/v1/instances/${client.instanceId}/exports/workbook`,
-    { method: "POST", headers, body: request.toJsonString() },
-  );
+  const body = new TextEncoder().encode(request.toJsonString());
+  let response: Response;
+  try {
+    response = await fetch(
+      `${client.host}/v1/instances/${client.instanceId}/exports/workbook`,
+      { method: "POST", headers, body },
+    );
+  } catch (e) {
+    // fetch rejects with a bare "Failed to fetch" when no readable response comes back:
+    // a dropped connection, or a proxy in front of the runtime refusing a large upload
+    // with an error page that carries no CORS headers (nginx's default body limit is 1 MB).
+    // Chart images are what make the request large, so name its size and how to shrink it.
+    throw new Error(
+      m.export_xlsx_upload_failed({ size: formatMemorySize(body.byteLength) }),
+      { cause: e },
+    );
+  }
   if (!response.ok) {
     throw new Error(await errorMessage(response));
   }

@@ -175,13 +175,9 @@ func legendPosition(position string) string {
 
 // columnRange returns the formula reference to a column's data cells, e.g. 'Data - Spend'!$B$2:$B$11.
 func columnRange(sheet string, col, rows int) (string, error) {
-	first, err := excelize.CoordinatesToCellName(col, 2, true)
+	r, err := cellRange(col, 2, rows, true)
 	if err != nil {
 		return "", err
 	}
-	last, err := excelize.CoordinatesToCellName(col, rows+1, true)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s!%s:%s", quoteSheet(sheet), first, last), nil
+	return quoteSheet(sheet) + "!" + r, nil
 }

@@ -33,11 +33,9 @@
   // svelte-ignore state_referenced_locally
   let open = $state(openOnMount && !measureManager.expr);
 
-  let pinned = $derived(
-    Boolean(yamlConfigProvider.pinnedFilters[measureManager.name]),
-  );
+  let pinned = $derived(yamlConfigProvider.isPinnedFilter(measureManager.name));
   let required = $derived(
-    Boolean(yamlConfigProvider.requiredFilters[measureManager.name]),
+    yamlConfigProvider.isRequiredFilter(measureManager.name),
   );
   let missingRequired = $derived(required && !measureManager.expr);
 

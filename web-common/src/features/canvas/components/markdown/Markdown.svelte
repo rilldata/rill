@@ -12,6 +12,7 @@
     getPositionClasses,
     hasTemplatingSyntax,
     formatResolvedContent,
+    unformatResolvedContent,
     getResolveTemplatedStringQueryOptions,
   } from "./util";
 
@@ -41,23 +42,14 @@
   );
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
-  // Store the last successfully resolved content to prevent flashing during refetches
-  let lastResolvedContent: string | null = null;
+  // Store the last successfully resolved body to prevent flashing during refetches
+  let lastResolvedBody: string | null = null;
 
-  function applyFormattingIfNeeded(content: string): string {
-    if (
-      applyFormatting &&
-      metricsViews &&
-      Object.keys(metricsViews).length > 0
-    ) {
-      return formatResolvedContent(content, metricsViews);
-    }
-    return content;
-  }
-
-  $: resolvedContent = (() => {
+  // The resolved markdown before measure formatting:
+  // with formatting on, the runtime wraps each measure value in a format token.
+  $: resolvedBody = (() => {
     if (!needsTemplating) {
-      lastResolvedContent = null;
+      lastResolvedBody = null;
       return content;
     }
 
@@ -67,11 +59,11 @@
     }
 
     // If we're fetching and have a previous resolved value, use it to prevent flash
-    if ($resolveQuery?.isFetching && lastResolvedContent) {
-      return lastResolvedContent;
+    if ($resolveQuery?.isFetching && lastResolvedBody) {
+      return lastResolvedBody;
     }
 
-    // Update stored resolved content when we have new data
+    // Update stored resolved body when we have new data
     const queryData = $resolveQuery?.data;
     if (
       queryData &&
@@ -82,16 +74,19 @@
       const body = (queryData as { body?: string }).body;
       // An empty body is a valid result: the template rendered nothing.
       if (typeof body === "string") {
-        const newResolvedContent = applyFormattingIfNeeded(body);
-        lastResolvedContent = newResolvedContent;
-        return newResolvedContent;
+        lastResolvedBody = body;
+        return body;
       }
     }
 
     // Until the template resolves there is nothing to show:
     // the raw template source is not meant to be read.
-    return lastResolvedContent ?? "";
+    return lastResolvedBody ?? "";
   })();
+  $: resolvedContent =
+    applyFormatting && Object.keys(metricsViews).length > 0
+      ? formatResolvedContent(resolvedBody, metricsViews)
+      : resolvedBody;
   $: renderPromise = marked(resolvedContent || "");
 
   $: errorMessage = (() => {
@@ -101,9 +96,15 @@
     return extractErrorMessage(error);
   })();
 
-  // The resolved text for the workbook export; see BaseCanvasComponent.exportPayload.
+  // The resolved text for the workbook and CSV exports; see BaseCanvasComponent.exportPayload.
   $: component?.exportPayload.set(
-    resolvedContent ? { kind: "text", text: resolvedContent } : undefined,
+    resolvedContent
+      ? {
+          kind: "text",
+          text: resolvedContent,
+          unformattedText: unformatResolvedContent(resolvedBody),
+        }
+      : undefined,
   );
 </script>
 

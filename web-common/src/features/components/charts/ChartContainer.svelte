@@ -12,7 +12,7 @@
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
-  import { getContext, hasContext, onDestroy } from "svelte";
+  import { getContext, hasContext, onDestroy, untrack } from "svelte";
   import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { readable } from "svelte/store";
@@ -21,9 +21,11 @@
   import { getChartData } from "./data-provider";
   import type { ChartSpec, ChartType } from "./types";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
   const hasParentTheme = hasContext(THEME_STORE_CONTEXT_KEY);
   const parentThemeStore = getContext<Writable<Theme | undefined>>(
@@ -89,6 +91,29 @@
     ),
   );
 
+  const timeFilterManager = new TimeFilterManager(
+    client,
+    metricsViewProvider,
+    yamlConfigProvider,
+    // A chart without a time range has no time filter, rather than the metrics view's default one.
+    { skipDefaultTimeRange: true },
+  );
+  let timeParams = $derived.by(() => {
+    const params = new URLSearchParams();
+    setTimeFilterParamsFromV1TimeRanges(
+      params,
+      $timeAndFilterStore.timeRange,
+      $timeAndFilterStore.showTimeComparison
+        ? $timeAndFilterStore.comparisonTimeRange
+        : undefined,
+    );
+    return params;
+  });
+  $effect(() => {
+    const params = timeParams;
+    untrack(() => timeFilterManager.storeSync.setUrlParams(params));
+  });
+
   let metricsViewSelectors = $derived(new MetricsViewSelectors(client));
 
   let chartDataQuery = $derived(
@@ -145,6 +170,7 @@
   });
 
   onDestroy(() => {
+    timeFilterManager.cleanup();
     metricsViewProvider.cleanup();
     yamlConfigProvider.cleanup?.();
   });
@@ -161,14 +187,9 @@
             <h4 class="title">{chartTitle}</h4>
             {#if "metrics_view" in $spec}
               <Filter size="16px" className="text-fg-secondary flex-shrink-0" />
-              <ReadonlyExpressionFilters
+              <ReadonlyFilters
                 {expressionFilterManager}
-                displayTimeRange={$timeAndFilterStore.timeRange}
-                displayComparisonTimeRange={$timeAndFilterStore.showTimeComparison
-                  ? $timeAndFilterStore.comparisonTimeRange
-                  : undefined}
-                queryTimeStart={$timeAndFilterStore.timeRange.start}
-                queryTimeEnd={$timeAndFilterStore.timeRange.end}
+                {timeFilterManager}
                 hasBoldTimeRange={false}
                 chipLayout="scroll"
               />

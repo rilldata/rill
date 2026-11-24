@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -1531,4 +1532,84 @@ func TestControllerInitializing(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.False(t, ctrl.Initializing())
+}
+
+func TestReconcileHangIsFatal(t *testing.T) {
+	runtime.SetReconcileHangTimeouts(t, 500*time.Millisecond, 100*time.Millisecond)
+
+	// Make reconciles for the "hang" theme ignore cancellation
+	started := make(chan struct{})
+	var startedOnce sync.Once
+	initTheme := runtime.ReconcilerInitializers[runtime.ResourceKindTheme]
+	runtime.ReconcilerInitializers[runtime.ResourceKindTheme] = func(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+		r, err := initTheme(ctx, c)
+		if err != nil {
+			return nil, err
+		}
+		return &hangingReconciler{Reconciler: r, started: func() { startedOnce.Do(func() { close(started) }) }}, nil
+	}
+	t.Cleanup(func() { runtime.ReconcilerInitializers[runtime.ResourceKindTheme] = initTheme })
+
+	rt, id := testruntime.NewInstance(t)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+
+	// Start the hanging reconcile
+	testruntime.PutFiles(t, rt, id, map[string]string{"themes/hang.yaml": "type: theme\ncolors:\n  primary: red\n  secondary: grey\n"})
+	require.NoError(t, ctrl.Reconcile(ctx, runtime.GlobalProjectParserName))
+	select {
+	case <-started:
+	case <-time.After(10 * time.Second):
+		t.Fatal("hanging reconcile did not start")
+	}
+
+	// Cancel it by changing its spec
+	testruntime.PutFiles(t, rt, id, map[string]string{"themes/hang.yaml": "type: theme\ncolors:\n  primary: blue\n  secondary: grey\n"})
+	require.NoError(t, ctrl.Reconcile(ctx, runtime.GlobalProjectParserName))
+
+	select {
+	case err := <-rt.Fatal():
+		require.ErrorContains(t, err, "reconcile hung after cancelation")
+		require.ErrorContains(t, err, "hang")
+	case <-time.After(10 * time.Second):
+		t.Fatal("expected a fatal error")
+	}
+}
+
+func TestControllerRestartIsNotFatal(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	inst, err := rt.Instance(ctx, id)
+	require.NoError(t, err)
+	prev, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+	require.NoError(t, rt.EditInstance(ctx, inst, true))
+
+	// The new controller starts after the old one has stopped and its error has been handled
+	require.Eventually(t, func() bool {
+		ctrl, err := rt.Controller(ctx, id)
+		return err == nil && ctrl != prev
+	}, 10*time.Second, 10*time.Millisecond)
+
+	select {
+	case err := <-rt.Fatal():
+		t.Fatalf("unexpected fatal error: %v", err)
+	default:
+	}
+}
+
+// hangingReconciler wraps a reconciler and makes reconciles for resources named "hang" block forever, ignoring cancellation.
+type hangingReconciler struct {
+	runtime.Reconciler
+	started func()
+}
+
+func (r *hangingReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
+	if n.Name == "hang" {
+		r.started()
+		select {}
+	}
+	return r.Reconciler.Reconcile(ctx, n)
 }

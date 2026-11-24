@@ -1,4 +1,8 @@
-import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+import {
+  createAdminServiceGetBillingCreditBalance,
+  createAdminServiceGetOrganization,
+  V1BillingIssueType,
+} from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForCustomMessage } from "@rilldata/web-admin/features/billing/issues/getMessageForCustomMessage";
@@ -10,6 +14,7 @@ import {
 } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived } from "svelte/store";
 
 export type BillingIssueMessage = {
@@ -17,6 +22,8 @@ export type BillingIssueMessage = {
   iconType: BannerMessage["iconType"];
   title: string;
   description: string;
+  // Whether title or description contain HTML, e.g. links.
+  includesHtml?: boolean;
   cta?: BillingIssueMessageCTA;
   dismissible?: BannerMessage["dismissible"];
 };
@@ -29,13 +36,20 @@ export type BillingIssueMessageCTA = {
 };
 
 export function useBillingIssueMessage(organization: string) {
+  const categorisedIssues =
+    useCategorisedOrganizationBillingIssues(organization);
   return derived(
     [
       createAdminServiceGetOrganization(organization),
-      useCategorisedOrganizationBillingIssues(organization),
+      categorisedIssues,
+      useTrialCreditBalance(organization, categorisedIssues),
     ],
-    ([orgResp, categorisedIssuesResp]) => {
-      if (orgResp.isLoading || categorisedIssuesResp.isLoading) {
+    ([orgResp, categorisedIssuesResp, trialCreditBalance]) => {
+      if (
+        orgResp.isLoading ||
+        categorisedIssuesResp.isLoading ||
+        trialCreditBalance.isLoading
+      ) {
         return {
           isFetching: true,
           isLoading: true,
@@ -65,7 +79,10 @@ export function useBillingIssueMessage(organization: string) {
           isFetching: false,
           isLoading: false,
           error: undefined,
-          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
+          data: getMessageForTrialPlan(
+            categorisedIssuesResp.data.trial,
+            trialCreditBalance.balance,
+          ),
         };
       }
 
@@ -105,5 +122,55 @@ export function useBillingIssueMessage(organization: string) {
         error: undefined,
       };
     },
+  );
+}
+
+const TrialCreditBalanceRefreshMs = 15 * 60 * 1000;
+
+/**
+ * Fetches the remaining credit balance for orgs on the credit trial, for display in the trial banner.
+ * Allows a recently cached balance so the banner doesn't query the billing provider on every page load.
+ * The balance is undefined for other orgs, or if it could not be fetched.
+ */
+function useTrialCreditBalance(
+  organization: string,
+  categorisedIssues: ReturnType<typeof useCategorisedOrganizationBillingIssues>,
+) {
+  return derived(
+    categorisedIssues,
+    (categorisedIssuesResp, set) => {
+      if (
+        categorisedIssuesResp.data?.trial?.type !==
+        V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+      ) {
+        set({ isLoading: false, balance: undefined });
+        return;
+      }
+      return createAdminServiceGetBillingCreditBalance(
+        organization,
+        { allowCached: true },
+        {
+          query: {
+            // Retrying would only delay the banner; on failure it links to the billing page instead.
+            retry: false,
+            // Refetch so long-open tabs pick up balance changes; matches the server's 15-minute cache.
+            // Interval ticks are skipped while the tab is hidden, so also refetch on return if the balance is stale.
+            refetchInterval: TrialCreditBalanceRefreshMs,
+            staleTime: TrialCreditBalanceRefreshMs,
+            refetchOnWindowFocus: true,
+          },
+        },
+        queryClient,
+      ).subscribe((balanceResp) =>
+        set({
+          isLoading: balanceResp.isLoading,
+          // A zero balance is omitted from the response.
+          balance: balanceResp.data
+            ? (balanceResp.data.balance ?? 0)
+            : undefined,
+        }),
+      );
+    },
+    { isLoading: true, balance: undefined as number | undefined },
   );
 }

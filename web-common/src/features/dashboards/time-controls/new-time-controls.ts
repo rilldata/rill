@@ -5,16 +5,17 @@
 // The functions below UTILS are being used
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
+import {
+  type DerivedInterval,
+  fetchTimeRanges,
+  toDerivedInterval,
+} from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  V1ExploreTimeRange,
-  V1TimeRangeSummary,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
@@ -152,6 +153,8 @@ export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
+
+export const INHERIT_TIME_RANGE_ALIAS = "inherit";
 
 // An extra entry at the top of a range or comparison menu that hands the choice back to a parent,
 // such as a canvas widget following the canvas time range.
@@ -377,7 +380,6 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 
 import {
   getAllowedGrains,
-  GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -399,12 +401,7 @@ export async function deriveInterval(
   timeDimension?: string,
   // When set, relative ranges are anchored at this time instead of now/latest (e.g. for scheduled report exports).
   executionTime?: string,
-): Promise<{
-  interval: Interval;
-  grain?: V1TimeGrain | undefined;
-  fullTimeRange?: V1TimeRangeSummary;
-  error?: string;
-}> {
+): Promise<DerivedInterval> {
   if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
       interval: Interval.invalid("Cannot derive interval for custom range"),
@@ -414,10 +411,8 @@ export async function deriveInterval(
   }
 
   try {
-    const parsed = parseRillTime(name);
-
-    // We have a RillTime string
-    const cacheBust = name.includes("now");
+    // Fail early on expressions that are not rill time.
+    parseRillTime(name);
 
     const response = await fetchTimeRanges({
       client,
@@ -426,25 +421,10 @@ export async function deriveInterval(
       timeZone: activeTimeZone,
       timeDimension,
       executionTime,
-      cacheBust,
+      cacheBust: name.includes("now"),
     });
 
-    const timeRange = response.resolvedTimeRanges?.[0];
-
-    if (!timeRange?.start || !timeRange?.end) {
-      return { interval: Interval.invalid("Invalid time range") };
-    }
-
-    return {
-      interval: Interval.fromDateTimes(
-        DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
-        DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
-      ),
-      fullTimeRange: response.fullTimeRange,
-      grain: parsed.asOfLabel?.snap
-        ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
-        : parsed.rangeGrain,
-    };
+    return toDerivedInterval(response, name, activeTimeZone);
   } catch (error) {
     console.error("Error deriving interval:", error);
     return {
@@ -812,6 +792,9 @@ export function constructNewString({
   snapToEnd: boolean;
   ref: RillTimeLabel | string | undefined;
 }): string {
+  // Safeguard to ensure we don't try to parse an `inherit` time range.
+  if (currentString === INHERIT_TIME_RANGE_ALIAS) return currentString;
+
   const legacy = isUsingLegacyTime(currentString);
 
   const rillTime = parseRillTime(
