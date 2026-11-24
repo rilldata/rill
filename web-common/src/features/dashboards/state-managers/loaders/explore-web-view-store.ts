@@ -64,17 +64,13 @@ export function updateExploreSessionStore(
       toEphemeralMeasuresParam(exploreState.ephemeralMeasures),
     );
   }
-  try {
-    // Store the full url for the web view
-    setExploreStateForWebView(
-      exploreName,
-      storageNamespacePrefix,
-      curWebView,
-      urlSearchParams.toString(),
-    );
-  } catch {
-    // no-op
-  }
+  // Store the full url for the web view
+  setExploreStateForWebView(
+    exploreName,
+    storageNamespacePrefix,
+    curWebView,
+    urlSearchParams.toString(),
+  );
 
   // We need to make sure other views are in sync
   for (const otherWebViewStr in FromURLParamViewMap) {
@@ -86,7 +82,12 @@ export function updateExploreSessionStore(
       storageNamespacePrefix,
       otherWebView,
     );
-    const otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    let otherWebViewRawSearch = "";
+    try {
+      otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    } catch {
+      // Reading storage throws when the browser blocks it, e.g. in an embed with third-party cookies blocked.
+    }
     const otherWebViewUrlParams = new URLSearchParams(otherWebViewRawSearch);
 
     // Copy relevant params from current view to the other view
@@ -97,17 +98,13 @@ export function updateExploreSessionStore(
       otherWebViewUrlParams,
     );
 
-    try {
-      // Store the full url for the other web view
-      setExploreStateForWebView(
-        exploreName,
-        storageNamespacePrefix,
-        otherWebView,
-        otherWebViewUrlParams.toString(),
-      );
-    } catch {
-      // no-op
-    }
+    // Store the full url for the other web view
+    setExploreStateForWebView(
+      exploreName,
+      storageNamespacePrefix,
+      otherWebView,
+      otherWebViewUrlParams.toString(),
+    );
   }
 }
 
@@ -190,10 +187,14 @@ export function setExploreStateForWebView(
   webView: ExploreUrlWebView,
   state: string,
 ) {
-  sessionStorage.setItem(
-    getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
-    state,
-  );
+  try {
+    sessionStorage.setItem(
+      getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
+      state,
+    );
+  } catch {
+    // Writing storage throws when the quota is exceeded or the browser blocks it, e.g. in an embed.
+  }
 }
 
 function shouldSkipSessionStorage(searchParams: URLSearchParams) {

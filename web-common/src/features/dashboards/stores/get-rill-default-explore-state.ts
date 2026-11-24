@@ -89,7 +89,7 @@ function getRillDefaultExploreTimeState(
     timeRangeSummary,
   );
 
-  const timeZone = getDefaultTimeZone(exploreSpec);
+  const timeZone = getDefaultTimeZone(exploreSpec.timeZones);
 
   const grainForRange = getGrainForRange(
     timeRangeName,
@@ -257,8 +257,8 @@ export function getGrainForRange(
   }
 }
 
-export function getDefaultTimeZone(explore: V1ExploreSpec) {
-  const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
+export function getDefaultTimeZone(timeZones: string[] | undefined) {
+  const preference = timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {
     return getLocalIANA();

@@ -336,7 +336,11 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_CLAUDE_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
-		return map[string]string{"api_key": apiKey}
+		cfg := map[string]string{"api_key": apiKey}
+		if model := os.Getenv("RILL_RUNTIME_CLAUDE_TEST_MODEL"); model != "" {
+			cfg["model"] = model
+		}
+		return cfg
 	},
 	"gemini": func(t TestingT) map[string]string {
 		loadDotEnv(t)

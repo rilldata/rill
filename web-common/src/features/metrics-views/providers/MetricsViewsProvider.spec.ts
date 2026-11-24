@@ -10,6 +10,7 @@ import {
   createTestMetricsViewsProvider,
   useMetricsViewMocks,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
+import { waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 
 const AD_BIDS_MIRROR_METRICS_NAME = "AdBids_mirror_metrics";
@@ -47,6 +48,27 @@ describe("MetricsViewsProvider", () => {
     ]);
     // No time dimension, so there is no time range summary to wait for.
     expect(provider.ready).toBe(true);
+
+    destroy();
+  });
+
+  it("becomes ready again after the set of metrics views changes", async () => {
+    const { value: provider, destroy } = await createTestMetricsViewsProvider([
+      AD_BIDS_METRICS_NAME,
+    ]);
+    expect(provider.ready).toBe(true);
+    const events: string[] = [];
+    provider.on("specs-loaded", () => events.push("specs-loaded"));
+    provider.on("time-specs-loaded", () => events.push("time-specs-loaded"));
+
+    provider.setMetricsViewNames([
+      AD_BIDS_METRICS_NAME,
+      AD_BIDS_MIRROR_METRICS_NAME,
+    ]);
+
+    await waitFor(() => expect(provider.ready).toBe(true));
+    expect(provider.specsReady).toBe(true);
+    expect(events).toEqual(["specs-loaded", "time-specs-loaded"]);
 
     destroy();
   });

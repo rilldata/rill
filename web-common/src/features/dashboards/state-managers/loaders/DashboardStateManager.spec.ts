@@ -13,6 +13,11 @@ import {
   PageMockForComponentTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import {
+  createAndExpression,
+  createBinaryExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -45,6 +50,7 @@ import {
 import {
   V1ExploreComparisonMode,
   type V1ExploreSpec,
+  V1Operation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -52,7 +58,7 @@ import {
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
-import { readable } from "svelte/store";
+import { get, readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
@@ -369,6 +375,29 @@ describe("DashboardStateManager", () => {
         ...ExploreStateSubsetForYAMLState,
       });
     });
+
+    it("Should call onLoad once the initial state is in the url", async () => {
+      const searchesAtLoad: string[] = [];
+      renderDashboardStateManager(undefined, false, false, () =>
+        searchesAtLoad.push(get(hoistedPage).url.searchParams.toString()),
+      );
+
+      await waitFor(() =>
+        expect(searchesAtLoad).toEqual([
+          new URLSearchParams(PageURLForRillDefaultState).toString(),
+        ]),
+      );
+    });
+
+    it("Should call onLoad when the dashboard fails to load", async () => {
+      // No time range summary: the dashboard has no data to show.
+      mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {});
+      const onLoad = vi.fn();
+      renderDashboardStateManager(undefined, false, false, onLoad);
+
+      await waitFor(() => expect(screen.getByText("Failed to load dashboard")));
+      expect(onLoad).toHaveBeenCalled();
+    });
   });
 
   describe("Dashboards with an explore spec naming fields the metrics view dropped", () => {
@@ -455,6 +484,69 @@ describe("DashboardStateManager", () => {
       pageMock.assertSearchParams(
         "measures=bid_price&dims=domain&sort_by=bid_price&leaderboard_measures=bid_price",
       );
+    });
+  });
+
+  describe("Dashboards with a default filter", () => {
+    const DefaultFilter = createAndExpression([
+      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Contoso"]),
+    ]);
+    const OtherFilter = createAndExpression([
+      createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["fabrikam.com"]),
+    ]);
+
+    beforeEach(() => {
+      mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
+      mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+        ...AD_BIDS_EXPLORE_INIT,
+        requiredFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+        defaultPreset: {
+          // What the runtime parses from `defaults.filters: publisher = 'Contoso'`.
+          where: createBinaryExpression(
+            AD_BIDS_PUBLISHER_DIMENSION,
+            V1Operation.OPERATION_EQ,
+            "Contoso",
+          ),
+        },
+      });
+    });
+
+    it("Should apply the default filter on first load and write it to the url", async () => {
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      expect(getCleanMetricsExploreForAssertion().whereFilter).toEqual(
+        DefaultFilter,
+      );
+      pageMock.assertSearchParams("f=publisher IN ('Contoso')");
+    });
+
+    it("Should let a filter in the url win over the default filter", async () => {
+      pageMock.gotoSearch("f=domain IN ('fabrikam.com')");
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      expect(getCleanMetricsExploreForAssertion().whereFilter).toEqual(
+        OtherFilter,
+      );
+      pageMock.assertSearchParams("f=domain IN ('fabrikam.com')");
+    });
+
+    it("Should let the filter of a bookmark win over the default filter", async () => {
+      renderDashboardStateManager(
+        readable({
+          data: { whereFilter: OtherFilter, dimensionsWithInlistFilter: [] },
+          error: null,
+          isFetching: false,
+          isLoading: false,
+        }),
+      );
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      expect(getCleanMetricsExploreForAssertion().whereFilter).toEqual(
+        OtherFilter,
+      );
+      pageMock.assertSearchParams("f=domain IN ('fabrikam.com')");
     });
   });
 
@@ -643,6 +735,7 @@ function renderDashboardStateManager(
     | undefined = undefined,
   disableMostRecentDashboardState: boolean = false,
   disableInitSessionDashboardState: boolean = false,
+  onLoad: () => void = () => {},
 ) {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
@@ -650,6 +743,7 @@ function renderDashboardStateManager(
       bookmarkOrTokenExploreState,
       disableMostRecentDashboardState,
       disableInitSessionDashboardState,
+      onLoad,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

@@ -1,6 +1,8 @@
 import * as vega from "vega";
 import { compile } from "vega-lite";
 import { describe, expect, it } from "vitest";
+import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { estimateAxisLabelWidth } from "@rilldata/web-common/features/components/charts/util";
 import {
   TypeCode,
   V1TimeGrain,
@@ -1218,6 +1220,189 @@ describe("compileFlintSpec", () => {
     expect(used).toBeLessThanOrEqual(600 - 10);
     expect(view.autosize).toEqual({ type: "fit-y", contains: "padding" });
   });
+
+  it.each([
+    ["categories on color", { color: "publisher" }, ["Publisher"], 300],
+    ["sizes", { size: "impressions" }, ["Impressions"], 300],
+    ["shapes", { shape: "publisher" }, ["Publisher"], 300],
+    ["opacities", { opacity: "impressions" }, ["Impressions"], 300],
+    ["a measure on color", { color: "impressions" }, ["Impressions"], 300],
+    [
+      "categories, sizes, shapes and opacities",
+      {
+        color: "publisher",
+        size: "impressions",
+        shape: "device",
+        opacity: "clicks",
+      },
+      ["Publisher", "Impressions", "Device", "Clicks"],
+      240,
+    ],
+  ])(
+    "fits a marginal plot, its y axis and its legends of %s inside its box",
+    async (_, legendEncodings, legendTitles, boxHeight) => {
+      // The full numbers, cents included, of a measure with a `format_d3` of `$,.2f` or `,.0f`.
+      const dollars = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+      });
+      const measureFormatters: Record<string, (value: number) => string> = {
+        bid_price_sum: (value) => dollars.format(value),
+      };
+      for (const measure of ["total_records", "impressions", "clicks"]) {
+        measureFormatters[measure] = (value) => value.toLocaleString("en-US");
+      }
+      for (const [measure, format] of Object.entries(measureFormatters)) {
+        vega.expressionFunction(`rill_${measure}`, format);
+      }
+      const devices = ["Desktop", "Mobile", "Tablet", "Connected TV", "Other"];
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Marginal Plot",
+          encodings: {
+            x: "total_records",
+            y: "bid_price_sum",
+            ...legendEncodings,
+          },
+        },
+        rows: ["Yahoo", "Google", "Microsoft"].flatMap((publisher, p) =>
+          Array.from({ length: 20 }, (_, i) => ({
+            publisher,
+            device: devices[(i + p) % devices.length],
+            total_records: 10 + ((i * 37 + p * 11) % 90),
+            bid_price_sum: 100_000 + ((i * 53 + p * 29) % 900) * 1_000,
+            impressions: 1_000 + ((i * 71 + p * 13) % 500) * 400,
+            clicks: 5 + ((i * 17 + p * 7) % 300),
+          })),
+        ),
+        fields: deriveFlintFields(
+          [
+            "publisher",
+            "device",
+            "total_records",
+            "bid_price_sum",
+            "impressions",
+            "clicks",
+          ],
+          {
+            ...metricsView,
+            measures: [
+              ...metricsView.measures!,
+              {
+                name: "clicks",
+                displayName: "Clicks",
+                dataType: { code: TypeCode.CODE_INT64 },
+              },
+            ],
+          },
+        ),
+        size: { width: 320, height: boxHeight },
+        measureFields: Object.keys(measureFormatters),
+        measureFormatters,
+      });
+
+      // Vega measures text on a canvas, which jsdom lacks, and its fallback of 0.8em a character
+      // is far wider than Rill's Inter. Text is measured as `estimateAxisLabelWidth` measures it
+      // instead, and cut to its limit as Vega's own measure cuts it. Vega's typings leave the
+      // measure out.
+      const { textMetrics } = vega as unknown as {
+        textMetrics: {
+          width: (
+            item: { fontSize?: number; limit?: number },
+            text: string,
+          ) => number;
+        };
+      };
+      const measureText = textMetrics.width;
+      textMetrics.width = (item, text) => {
+        const width =
+          (estimateAxisLabelWidth(String(text)) * (item.fontSize ?? 11)) / 11;
+        return item.limit && item.limit > 0
+          ? Math.min(width, item.limit)
+          : width;
+      };
+      try {
+        // Drawn in Rill's theme at the size VegaLiteRenderer gives the view: the box's width,
+        // and its height less Vega's padding.
+        const view = new vega.View(
+          vega.parse(
+            compile(spec as never, { config: getRillTheme(false) as never })
+              .spec,
+          ),
+          { renderer: "none" },
+        );
+        view.width(320).height(boxHeight - 10);
+        await view.runAsync();
+        const svg = await view.toSVG();
+        const [, width, height] =
+          /<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(svg) ?? [];
+        expect(Number(width)).toBeLessThanOrEqual(320);
+        expect(Number(height)).toBeLessThanOrEqual(boxHeight);
+
+        // Nor is anything drawn past the canvas, where the legends were cut off.
+        const [left, top] = view.origin();
+        const padding = view.padding() as vega.Padding & {
+          top: number;
+          bottom: number;
+          left: number;
+          right: number;
+        };
+        const { root } = view.scenegraph() as unknown as {
+          root: SceneNode & {
+            bounds: { x1: number; x2: number; y1: number; y2: number };
+          };
+        };
+        expect(left + root.bounds.x1).toBeGreaterThanOrEqual(0);
+        expect(top + root.bounds.y1).toBeGreaterThanOrEqual(0);
+        expect(
+          padding.left + left + root.bounds.x2 + padding.right,
+        ).toBeLessThanOrEqual(320);
+        expect(
+          padding.top + top + root.bounds.y2 + padding.bottom,
+        ).toBeLessThanOrEqual(boxHeight);
+
+        const drawnTitles: unknown[] = [];
+        const legendLabels: unknown[] = [];
+        const yLabels: unknown[] = [];
+        const visit = (node: SceneNode, inYAxis: boolean) => {
+          for (const item of (node.items ?? []) as (SceneNode & {
+            orient?: string;
+          })[]) {
+            if (node.role === "legend-title") drawnTitles.push(item.text);
+            if (node.role === "legend-label") legendLabels.push(item.text);
+            if (inYAxis && node.role === "axis-label") yLabels.push(item.text);
+            const yAxis =
+              inYAxis || (node.role === "axis" && item.orient === "left");
+            for (const child of item.items ?? []) visit(child, yAxis);
+          }
+        };
+        visit(root, false);
+        expect(drawnTitles).toEqual(legendTitles);
+        if (legendTitles.length === 1 && legendTitles[0] === "Publisher") {
+          expect(legendLabels).toEqual(["Yahoo", "Google", "Microsoft"]);
+        } else {
+          expect(legendLabels.length).toBeGreaterThan(1);
+        }
+
+        // The axes print each value whole, cents included, rather than cutting it short.
+        expect(yLabels).toContain("$1,000,000.00");
+        const axisLabels = [
+          ...svg.matchAll(
+            /<g class="mark-text role-axis-label"[^>]*>(.*?)<\/g>/gs,
+          ),
+        ].flatMap(([, group]) =>
+          [...group.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(
+            ([, text]) => text,
+          ),
+        );
+        expect(axisLabels).toContain("$1,000,000.00");
+        expect(axisLabels.filter((label) => label.endsWith("…"))).toEqual([]);
+      } finally {
+        textMetrics.width = measureText;
+      }
+    },
+  );
 
   it("centers violins in their panels and keeps them within the data", () => {
     const sites = Array.from({ length: 12 }, (_, i) => `site_${i}`);

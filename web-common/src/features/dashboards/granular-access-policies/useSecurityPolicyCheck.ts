@@ -53,7 +53,7 @@ export function useVisibilityConditionsCheck(
 }
 
 /**
- * Whether canvas rows (including tab groups and their tabs) use `if` conditions to show content to some users only.
+ * Whether canvas rows (including tab groups, their tabs and containers) use `if` conditions to show content to some users only.
  * Previewing as another user is then useful even without a security policy.
  */
 export function hasVisibilityConditions(rows: unknown): boolean {
@@ -61,7 +61,12 @@ export function hasVisibilityConditions(rows: unknown): boolean {
   return rows.some((row) => {
     if (!row || typeof row !== "object") return false;
     if (isCondition((row as { if?: unknown }).if)) return true;
-    const { items, tabs } = row as { items?: unknown; tabs?: unknown };
+    const {
+      items,
+      tabs,
+      rows: containerRows,
+    } = row as { items?: unknown; tabs?: unknown; rows?: unknown };
+    if (hasVisibilityConditions(containerRows)) return true;
     if (
       Array.isArray(items) &&
       items.some(

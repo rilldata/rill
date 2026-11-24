@@ -374,11 +374,13 @@ describe("Report rows and columns", () => {
               instanceId: "",
               metricsViewName: AD_BIDS_METRICS_NAME,
               exploreState,
-              timeControlState,
+              timeRange: {
+                start: timeControlState.timeStart,
+                end: timeControlState.timeEnd,
+              },
               metricsViewSpec: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
               exploreSpec: AD_BIDS_EXPLORE,
               dimensionSearchText: "",
-              isScheduled: true,
             })!,
         );
       });

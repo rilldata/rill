@@ -2,6 +2,9 @@ package parser
 
 import (
 	"fmt"
+	"maps"
+	"regexp"
+	"strings"
 
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,165 +24,18 @@ type ThemeYAML struct {
 	Chart yaml.Node `yaml:"chart"`
 }
 
+// ThemeColors is the raw structure of a theme's `light` or `dark` block.
+// CSS variables can be set under `variables` or directly in the block.
+// See ThemeVariableGroups for the supported variables.
 type ThemeColors struct {
-	Primary   string            `yaml:"primary"`
-	Secondary string            `yaml:"secondary"`
-	Variables map[string]string `yaml:",inline"`
+	Primary       string            `yaml:"primary"`
+	Secondary     string            `yaml:"secondary"`
+	Variables     map[string]string `yaml:"variables"`
+	FlatVariables map[string]string `yaml:",inline"`
 }
 
-// deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
-// Old themes using these names will continue to work through automatic mapping.
-var deprecatedCSSVariables = map[string][]string{
-	"surface":           {"surface-background", "surface-base"},
-	"background":        {"surface-subtle"},
-	"card":              {"surface-card"},
-	"card-foreground":   {"fg-secondary"},
-	"muted":             {"surface-muted"},
-	"muted-foreground":  {"fg-muted"},
-	"accent":            {"popover-accent"},
-	"accent-foreground": {"fg-accent"},
-	"ring":              {"ring-focus"},
-	"foreground":        {"fg-primary"},
-}
-
-var allowedCSSVariables = map[string]bool{
-	// Primary theme colors
-	"primary":   true,
-	"secondary": true,
-
-	// Surface semantic variables
-	"surface-base":       true,
-	"surface-subtle":     true,
-	"surface-background": true,
-	"surface-hover":      true,
-	"surface-active":     true,
-	"surface-overlay":    true,
-	"surface-muted":      true,
-	"surface-card":       true,
-
-	// Foreground semantic variables
-	"fg-primary":   true,
-	"fg-secondary": true,
-	"fg-tertiary":  true,
-	"fg-inverse":   true,
-	"fg-muted":     true,
-	"fg-disabled":  true,
-	"fg-accent":    true,
-
-	// Accent semantic variables
-	"accent-primary":          true,
-	"accent-primary-action":   true,
-	"accent-secondary":        true,
-	"accent-secondary-action": true,
-
-	// Icon semantic variables
-	"icon-default":  true,
-	"icon-muted":    true,
-	"icon-disabled": true,
-	"icon-accent":   true,
-
-	// Border and input
-	"border": true,
-	"input":  true,
-
-	// Ring (focus states)
-	"ring-focus":  true,
-	"ring-offset": true,
-
-	// Dimension styling
-	"dimension":            true,
-	"dimension-foreground": true,
-	"dimension-border":     true,
-
-	// Measure styling
-	"measure":            true,
-	"measure-foreground": true,
-	"measure-border":     true,
-
-	// Tooltip
-	"tooltip": true,
-
-	// Destructive actions
-	"destructive":            true,
-	"destructive-foreground": true,
-
-	// KPI delta coloring
-	"kpi-positive": true,
-	"kpi-negative": true,
-
-	// Popover
-	"popover":            true,
-	"popover-accent":     true,
-	"popover-foreground": true,
-	"popover-footer":     true,
-
-	// Non-deprecated misc
-	"radius": true,
-
-	// Deprecated but still allowed (mapped automatically)
-	"ring":                 true,
-	"surface":              true,
-	"background":           true,
-	"foreground":           true,
-	"card":                 true,
-	"card-foreground":      true,
-	"muted":                true,
-	"muted-foreground":     true,
-	"accent":               true,
-	"accent-foreground":    true,
-	"primary-foreground":   true,
-	"secondary-foreground": true,
-
-	// Sequential palette (9 colors)
-	"color-sequential-1": true,
-	"color-sequential-2": true,
-	"color-sequential-3": true,
-	"color-sequential-4": true,
-	"color-sequential-5": true,
-	"color-sequential-6": true,
-	"color-sequential-7": true,
-	"color-sequential-8": true,
-	"color-sequential-9": true,
-
-	// Diverging palette (11 colors)
-	"color-diverging-1":  true,
-	"color-diverging-2":  true,
-	"color-diverging-3":  true,
-	"color-diverging-4":  true,
-	"color-diverging-5":  true,
-	"color-diverging-6":  true,
-	"color-diverging-7":  true,
-	"color-diverging-8":  true,
-	"color-diverging-9":  true,
-	"color-diverging-10": true,
-	"color-diverging-11": true,
-
-	// Qualitative palette (24 colors)
-	"color-qualitative-1":  true,
-	"color-qualitative-2":  true,
-	"color-qualitative-3":  true,
-	"color-qualitative-4":  true,
-	"color-qualitative-5":  true,
-	"color-qualitative-6":  true,
-	"color-qualitative-7":  true,
-	"color-qualitative-8":  true,
-	"color-qualitative-9":  true,
-	"color-qualitative-10": true,
-	"color-qualitative-11": true,
-	"color-qualitative-12": true,
-	"color-qualitative-13": true,
-	"color-qualitative-14": true,
-	"color-qualitative-15": true,
-	"color-qualitative-16": true,
-	"color-qualitative-17": true,
-	"color-qualitative-18": true,
-	"color-qualitative-19": true,
-	"color-qualitative-20": true,
-	"color-qualitative-21": true,
-	"color-qualitative-22": true,
-	"color-qualitative-23": true,
-	"color-qualitative-24": true,
-}
+// cssLengthRegexp matches the lengths accepted for theme variables: a non-negative number with a px, rem or em unit.
+var cssLengthRegexp = regexp.MustCompile(`^(\d+(\.\d+)?|\.\d+)(px|rem|em)$`)
 
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseTheme(node *Node) error {
@@ -267,30 +123,10 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 }
 
 func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
-	// Create a new map for the final variables with deprecated names mapped to new ones
-	finalVariables := make(map[string]string)
-
-	for k, v := range t.Variables {
-		if !allowedCSSVariables[k] {
-			return nil, fmt.Errorf("invalid CSS variable: %q", k)
-		}
-		_, err := csscolorparser.Parse(v)
-		if err != nil {
-			return nil, fmt.Errorf("invalid value %q for CSS variable %q: %w", v, k, err)
-		}
-
-		// Check if this is a deprecated variable that should be mapped
-		if newNames, isDeprecated := deprecatedCSSVariables[k]; isDeprecated {
-			for _, newName := range newNames {
-				// Only map to the new name if it's not already explicitly set
-				if _, alreadySet := t.Variables[newName]; !alreadySet {
-					finalVariables[newName] = v
-				}
-			}
-			// Don't output the deprecated name
-		} else {
-			finalVariables[k] = v
-		}
+	res := &runtimev1.ThemeColors{
+		Primary:   t.Primary,
+		Secondary: t.Secondary,
+		Variables: make(map[string]string),
 	}
 
 	if t.Primary != "" {
@@ -307,9 +143,50 @@ func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
 		}
 	}
 
-	return &runtimev1.ThemeColors{
-		Primary:   t.Primary,
-		Secondary: t.Secondary,
-		Variables: finalVariables,
-	}, nil
+	// A variable set under `variables` takes precedence over the same variable set directly in the block.
+	vars := make(map[string]string, len(t.FlatVariables)+len(t.Variables))
+	maps.Copy(vars, t.FlatVariables)
+	maps.Copy(vars, t.Variables)
+
+	for k, v := range vars {
+		def, ok := themeVariables[k]
+		if !ok {
+			return nil, fmt.Errorf("invalid CSS variable: %q", k)
+		}
+
+		if def.Length {
+			v = strings.ToLower(strings.TrimSpace(v))
+			if v == "0" {
+				// A unitless zero is a valid length on its own, but not inside calc(), which the frontend uses to derive lengths from it.
+				v = "0px"
+			}
+			if !cssLengthRegexp.MatchString(v) {
+				return nil, fmt.Errorf("invalid value %q for CSS variable %q: must be a length in px, rem or em, such as 8px or 0.5rem", vars[k], k)
+			}
+		} else {
+			_, err := csscolorparser.Parse(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value %q for CSS variable %q: %w", v, k, err)
+			}
+		}
+
+		switch {
+		case k == "primary":
+			// Only reachable through `variables`: it is equivalent to setting `primary` directly in the block.
+			res.Primary = v
+		case k == "secondary":
+			res.Secondary = v
+		case len(def.ReplacedBy) > 0:
+			// Deprecated name: pass the value on under the new names, unless they are set explicitly.
+			for _, newName := range def.ReplacedBy {
+				if _, ok := vars[newName]; !ok {
+					res.Variables[newName] = v
+				}
+			}
+		default:
+			res.Variables[k] = v
+		}
+	}
+
+	return res, nil
 }

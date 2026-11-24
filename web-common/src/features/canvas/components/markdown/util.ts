@@ -47,15 +47,17 @@ export function hasTemplatingSyntax(content: string): boolean {
   return /\{\{[\s\S]*?\}\}/.test(content);
 }
 
+// A measure value the runtime wraps for formatting when `apply_formatting` is on;
+// see runtime/resolvers/text.go.
+const FORMAT_TOKEN = /__RILL__FORMAT__\(([^)]+)\)/g;
+
 export function formatResolvedContent(
   text: string,
   metricsViews: Record<string, V1MetricsView | undefined>,
 ): string {
   if (!text) return text;
 
-  const formatPattern = /__RILL__FORMAT__\(([^)]+)\)/g;
-
-  return text.replace(formatPattern, (fullMatch, tokenContent: string) => {
+  return text.replace(FORMAT_TOKEN, (fullMatch, tokenContent: string) => {
     try {
       const trimmed = tokenContent.trim();
       const {
@@ -99,6 +101,21 @@ export function formatResolvedContent(
   });
 }
 
+// Replaces each format token with the raw value it wraps,
+// so exported data keeps the full precision the formatted text rounds away.
+export function unformatResolvedContent(text: string): string {
+  return text.replace(FORMAT_TOKEN, (fullMatch, tokenContent: string) => {
+    try {
+      const { value } = JSON.parse(tokenContent.trim()) as {
+        value: number | string | null;
+      };
+      return value === null ? "" : String(value);
+    } catch {
+      return fullMatch;
+    }
+  });
+}
+
 function buildRequestBody(params: {
   content: string;
   applyFormatting: boolean;
@@ -130,11 +147,11 @@ export function getResolveTemplatedStringQueryOptions(
       return derived(
         [
           component.specStore,
-          component.timeAndFilterStore,
           component.parent?.specStore ?? null,
-          component.parent.timeManager.hasTimeSeriesStore,
+          // A markdown component has no metrics view of its own, so it follows the canvas time filters.
+          component.parent.timeFilterManager.getTimeControlStore(),
         ],
-        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
+        ([spec, parentSpec, { hasTimeSeries, interval, timeZone }]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -144,7 +161,13 @@ export function getResolveTemplatedStringQueryOptions(
           const requestBody = buildRequestBody({
             content,
             applyFormatting,
-            timeRange: timeAndFilters?.timeRange,
+            timeRange: interval
+              ? {
+                  start: interval.start.toUTC().toISO(),
+                  end: interval.end.toUTC().toISO(),
+                  timeZone,
+                }
+              : undefined,
             exprByMetricsView,
             metricsViews,
           });
@@ -154,7 +177,8 @@ export function getResolveTemplatedStringQueryOptions(
             !!content &&
             !!client.instanceId &&
             !!requestBody &&
-            (!hasTimeSeries || !!timeAndFilters?.timeRange);
+            // `hasTimeSeries` is undefined until the specs resolve, which must not fire the query early.
+            (hasTimeSeries === false || !!interval);
 
           const body: QueryServiceResolveTemplatedStringBody =
             !enabled || !requestBody

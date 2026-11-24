@@ -265,6 +265,9 @@ measures:
 - name: measure_with_empty_tags
   expression: AVG(id)
   tags: []
+tag_order:
+  - test
+  - " count "
 `,
 	}
 
@@ -331,6 +334,7 @@ measures:
 						Tags:        []string{},
 					},
 				},
+				TagOrder: []string{"test", "count"},
 			},
 		},
 	}
@@ -354,6 +358,34 @@ measures:
 	require.Equal(t, []string{"measure", "count", "test"}, mv.MetricsViewSpec.Measures[0].Tags)
 	require.Nil(t, mv.MetricsViewSpec.Measures[1].Tags)
 	require.Equal(t, []string{}, mv.MetricsViewSpec.Measures[2].Tags)
+}
+
+func TestMetricsViewTagOrderErrors(t *testing.T) {
+	cases := map[string]string{
+		"tag_order: [test, test]": `tag "test" is listed more than once in "tag_order"`,
+		"tag_order: [test, ' ']":  `"tag_order" must not contain empty tags`,
+	}
+	for tagOrder, wantErr := range cases {
+		t.Run(tagOrder, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:     ``,
+				`models/m1.sql`: `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: count
+  expression: COUNT(*)
+  tags: [test]
+` + tagOrder,
+			}
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, wantErr)
+		})
+	}
 }
 
 func TestValidateQueryAttributes(t *testing.T) {

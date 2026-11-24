@@ -13,6 +13,7 @@ import type { WorkbookColumnType } from "@rilldata/web-common/proto/gen/rill/run
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
+  V1ExportConditionalFormat,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -32,13 +33,10 @@ export type ComponentExportPayload =
   | { kind: "table"; state: PivotDataState; config: PivotDataStoreConfig }
   | { kind: "leaderboard"; tables: LeaderboardExportTable[] }
   | { kind: "customChart"; results: CustomChartExportResult[] }
-  | {
-      kind: "map";
-      rows: V1MetricsViewAggregationResponseDataItem[];
-      dimensions: MetricsViewSpecDimension[];
-      measures: MetricsViewSpecMeasure[];
-    }
-  | { kind: "text"; text: string }
+  | { kind: "map"; layers: MapExportLayer[] }
+  // The markdown as shown, and as resolved before measure values were
+  // formatted (for the CSV download of its tables; see csv.ts).
+  | { kind: "text"; text: string; unformattedText: string }
   | { kind: "imageUrl"; url: string }
   | { kind: "error"; message: string };
 
@@ -58,6 +56,14 @@ export interface KpiExportValue {
 export interface KpiTrendPoint {
   time: string;
   value: number | null;
+}
+
+// The rows behind one layer of a map (its regions or its points).
+export interface MapExportLayer {
+  name: string;
+  rows: V1MetricsViewAggregationResponseDataItem[];
+  dimensions: MetricsViewSpecDimension[];
+  measures: MetricsViewSpecMeasure[];
 }
 
 export interface LeaderboardExportTable {
@@ -94,4 +100,18 @@ export interface ExportTable {
   // True when the source has more rows than the table holds (the component
   // had not loaded them, or the export's row cap trimmed them).
   moreRows?: boolean;
+  // The table's conditional formatting, in priority order; see
+  // WorkbookDataSheet.conditional_formats.
+  conditionalFormats?: ExportTableConditionalFormat[];
+}
+
+// A conditional format over some of a table's columns, by name. A color scale
+// or data bar spans all of them, like a measure's columns in a pivot.
+export interface ExportTableConditionalFormat {
+  columns: string[];
+  format: V1ExportConditionalFormat;
+  // The values at the ends of a color scale or data bar, when they aren't the
+  // lowest and highest numbers in the columns, like the leaf-row domain of a
+  // nested pivot.
+  domain?: { min: number; max: number };
 }

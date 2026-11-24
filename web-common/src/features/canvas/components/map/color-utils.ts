@@ -5,8 +5,9 @@ import {
 } from "@rilldata/web-common/features/themes/palette-store";
 import chroma, { type Color } from "chroma-js";
 import * as d3sc from "d3-scale-chromatic";
+import type { ExpressionSpecification } from "mapbox-gl";
 
-type MapTheme = { primary: Color; secondary: Color };
+export type MapTheme = { primary: Color; secondary: Color };
 
 /**
  * Mapping of Vega/D3 scheme names to d3-scale-chromatic interpolators.
@@ -85,10 +86,17 @@ export function computeMinMax(
   features: GeoJSON.Feature[],
   property: string,
 ): [number, number] {
+  return computeValueRange(features.map((f) => f.properties?.[property]));
+}
+
+/**
+ * Computes the min and max of the finite numbers in the list.
+ * Falls back to a unit range so color and size scales never divide by zero.
+ */
+export function computeValueRange(values: unknown[]): [number, number] {
   let min = Infinity;
   let max = -Infinity;
-  for (const f of features) {
-    const val = f.properties?.[property];
+  for (const val of values) {
     if (typeof val === "number" && isFinite(val)) {
       min = Math.min(min, val);
       max = Math.max(max, val);
@@ -101,14 +109,15 @@ export function computeMinMax(
 
 /**
  * Builds a Mapbox GL interpolate expression for coloring features
- * by a numeric property using the given color stops.
+ * by a numeric value using the given color stops.
+ * The input is an expression for the value, such as `["get", "revenue"]`.
  */
 export function buildColorExpression(
-  property: string,
+  input: ExpressionSpecification,
   min: number,
   max: number,
   colors: string[],
-): unknown[] {
+): ExpressionSpecification {
   const stops: (number | string)[] = [];
   for (let i = 0; i < colors.length; i++) {
     const t = min + (i / (colors.length - 1)) * (max - min);
@@ -118,9 +127,9 @@ export function buildColorExpression(
   return [
     "interpolate",
     ["linear"],
-    ["coalesce", ["get", property], min],
+    input,
     ...stops,
-  ];
+  ] as ExpressionSpecification;
 }
 
 /**
@@ -133,7 +142,7 @@ export function buildSizeExpression(
   max: number,
   minRadius = 4,
   maxRadius = 20,
-): unknown[] {
+): ExpressionSpecification {
   return [
     "interpolate",
     ["linear"],

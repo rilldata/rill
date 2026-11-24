@@ -1,12 +1,17 @@
 import {
+  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_NAME,
+  AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 import { renderInRuntimeContext } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
-import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { describe, expect, it } from "vitest";
 
 // Mixed-case resource name, as produced by a file like `AdBids_Mixed_Metrics.yaml`.
@@ -25,6 +30,18 @@ mocks.mockMetricsExplore(
   },
   MIXED_CASE_METRICS_NAME,
 );
+
+// An explore with a filter config, which the provider hands to the filter bar.
+const FILTERED_EXPLORE_NAME = "AdBids_filtered_explore";
+const FILTERED_EXPLORE: V1ExploreSpec = {
+  ...AD_BIDS_EXPLORE_INIT,
+  pinnedFilters: [AD_BIDS_DOMAIN_DIMENSION],
+  requiredFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+  defaultPreset: {
+    where: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Contoso"]),
+  },
+};
+mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
 
 describe("ExploreDashboardConfigProvider", () => {
   it("names the metrics view by its resource name rather than the explore's reference", async () => {
@@ -45,6 +62,92 @@ describe("ExploreDashboardConfigProvider", () => {
     expect(
       provider.metricsViewsProvider.specs[MIXED_CASE_METRICS_NAME],
     ).toMatchObject(AD_BIDS_METRICS_INIT);
+
+    destroy();
+    provider.cleanup?.();
+  });
+
+  it("applies the explore's default, pinned and required filters", async () => {
+    mocks.mockMetricsExplore(
+      FILTERED_EXPLORE_NAME,
+      AD_BIDS_METRICS_INIT,
+      FILTERED_EXPLORE,
+    );
+    const { value: provider, destroy } = renderInRuntimeContext(
+      ({ runtimeClient }) =>
+        new ExploreDashboardConfigProvider(
+          runtimeClient,
+          FILTERED_EXPLORE_NAME,
+        ),
+    );
+    const { yamlConfigProvider } = provider;
+
+    await waitUntil(() => yamlConfigProvider.requiredFilters.length > 0, 5000);
+    expect(yamlConfigProvider.pinnedFilters).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(yamlConfigProvider.defaultFilters).toEqual({
+      [AD_BIDS_METRICS_NAME]: FILTERED_EXPLORE.defaultPreset?.where,
+    });
+
+    destroy();
+    provider.cleanup?.();
+  });
+
+  it("keeps each unsaved pin and required toggle until the file changes its list", async () => {
+    mocks.mockMetricsExplore(
+      FILTERED_EXPLORE_NAME,
+      AD_BIDS_METRICS_INIT,
+      FILTERED_EXPLORE,
+    );
+    const {
+      value: provider,
+      queryClient,
+      destroy,
+    } = renderInRuntimeContext(
+      ({ runtimeClient }) =>
+        new ExploreDashboardConfigProvider(
+          runtimeClient,
+          FILTERED_EXPLORE_NAME,
+        ),
+    );
+    const { yamlConfigProvider } = provider;
+    await waitUntil(() => yamlConfigProvider.requiredFilters.length > 0, 5000);
+
+    // Toggled in the editor, not saved to the file yet.
+    yamlConfigProvider.togglePinnedFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    yamlConfigProvider.toggleRequiredFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    // An edit to the file that leaves the pinned and required lists as they are.
+    mocks.mockMetricsExplore(FILTERED_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+      ...FILTERED_EXPLORE,
+      displayName: "Renamed",
+      timeZones: ["Asia/Kolkata"],
+    });
+    await queryClient.refetchQueries();
+    // The query notifies its subscribers on a later tick.
+    await asyncWait(10);
+    // A filter pinned in the editor goes after the ones the file pins.
+    expect(yamlConfigProvider.pinnedFilters).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([]);
+    expect(yamlConfigProvider.timeZones).toEqual(["Asia/Kolkata"]);
+
+    // Once the file changes the pinned list, it is the source of truth for that list again.
+    // The required toggle is kept, since the required list is unchanged.
+    mocks.mockMetricsExplore(FILTERED_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+      ...FILTERED_EXPLORE,
+      pinnedFilters: [],
+    });
+    await queryClient.refetchQueries();
+    await asyncWait(10);
+    expect(yamlConfigProvider.pinnedFilters).toEqual([]);
+    expect(yamlConfigProvider.requiredFilters).toEqual([]);
 
     destroy();
     provider.cleanup?.();

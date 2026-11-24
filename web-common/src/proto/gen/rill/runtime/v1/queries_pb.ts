@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
-import { ExportFormat } from "./export_format_pb.js";
+import { ExportConditionalFormat, ExportFormat } from "./export_format_pb.js";
 import { Resource, ResourceName } from "./resources_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
@@ -1087,6 +1087,14 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   offset = protoInt64.zero;
 
   /**
+   * Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order.
+   * Ignored by queries and by other export formats.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationConditionalFormat conditional_formats = 24;
+   */
+  conditionalFormats: MetricsViewAggregationConditionalFormat[] = [];
+
+  /**
    * Optional
    *
    * @generated from field: int32 priority = 11;
@@ -1156,6 +1164,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 20, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 24, name: "conditional_formats", kind: "message", T: MetricsViewAggregationConditionalFormat, repeated: true },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1178,6 +1187,54 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
 
   static equals(a: MetricsViewAggregationRequest | PlainMessage<MetricsViewAggregationRequest> | undefined, b: MetricsViewAggregationRequest | PlainMessage<MetricsViewAggregationRequest> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationRequest, a, b);
+  }
+}
+
+/**
+ * MetricsViewAggregationConditionalFormat colors a measure's cells when the result is exported to Excel.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationConditionalFormat
+ */
+export class MetricsViewAggregationConditionalFormat extends Message<MetricsViewAggregationConditionalFormat> {
+  /**
+   * Name of the measure. Under pivot_on, the format spans all of the measure's columns,
+   * so a color scale or data bar compares the values across them.
+   *
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportConditionalFormat format = 2;
+   */
+  format?: ExportConditionalFormat;
+
+  constructor(data?: PartialMessage<MetricsViewAggregationConditionalFormat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationConditionalFormat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "format", kind: "message", T: ExportConditionalFormat },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationConditionalFormat {
+    return new MetricsViewAggregationConditionalFormat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationConditionalFormat {
+    return new MetricsViewAggregationConditionalFormat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationConditionalFormat {
+    return new MetricsViewAggregationConditionalFormat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationConditionalFormat | PlainMessage<MetricsViewAggregationConditionalFormat> | undefined, b: MetricsViewAggregationConditionalFormat | PlainMessage<MetricsViewAggregationConditionalFormat> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationConditionalFormat, a, b);
   }
 }
 
@@ -4457,7 +4514,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
   referencedMetricsViews: { [key: string]: Resource } = {};
 
   /**
-   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
    * The paths follow the canvas YAML. Only set when include_hidden is true.
    *
    * @generated from field: repeated string hidden_paths = 4;
