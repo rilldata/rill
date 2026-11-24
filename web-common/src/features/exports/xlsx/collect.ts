@@ -26,6 +26,7 @@ import {
 import { get } from "svelte/store";
 import { markdownParts, markdownTables } from "../markdown-content";
 import type { MeasuredBlock } from "../pdf/capture";
+import { CAPTURE_FAILED_NOTE } from "../rasterize";
 import { hasNativeChart, mapChart } from "./chart-mapping";
 import type { WorkbookHeader } from "./header";
 import { markdownExportTable } from "./markdown-table";
@@ -37,6 +38,7 @@ import type {
   ExportTable,
   KpiExportValue,
   LeaderboardExportTable,
+  MapExportLayer,
 } from "./payload";
 import { tableExportTable } from "./table-rows";
 import { excelDateFormat, localIsoInZone, timeColumnType } from "./time-format";
@@ -320,6 +322,7 @@ async function blockFor(
     | { title?: string; description?: string }
     | undefined;
   const image = input.images.get(component.id);
+  const imageNeeded = needsImage(component, payload, input.chartMode);
   const timeZone = input.header.timeZone || "UTC";
   let title = spec?.title?.trim() ?? "";
   const subtitle = spec?.description?.trim() ?? "";
@@ -336,10 +339,14 @@ async function blockFor(
     dataSheets.push(toDataSheet(id, sheetTitle || component.id, table));
     return id;
   };
-  const imageOr = (fallback: string): WorkbookBlock["content"] =>
-    image
-      ? { case: "image", value: new WorkbookImageBlock({ png: image }) }
-      : note(fallback);
+  // The block's snapshot. A block that is exported as one and has none lost it
+  // to a failed capture, and says so; any other block shows the fallback.
+  const imageOr = (fallback: string): WorkbookBlock["content"] => {
+    if (image) {
+      return { case: "image", value: new WorkbookImageBlock({ png: image }) };
+    }
+    return note(imageNeeded ? CAPTURE_FAILED_NOTE : fallback);
+  };
 
   if (!payload) {
     return { title, subtitle, content: imageOr("No data") };
@@ -362,7 +369,7 @@ async function blockFor(
         timeZone,
       });
       const sheetId = addSheet("", title, table);
-      if (chart && !needsImage(component, payload, input.chartMode)) {
+      if (chart && !imageNeeded) {
         chart.dataSheetId = sheetId;
         return { title, subtitle, content: { case: "chart", value: chart } };
       }
@@ -390,7 +397,7 @@ async function blockFor(
       const trendDataSheetId = trend
         ? addSheet("trend", `${title || component.id} trend`, trend)
         : "";
-      if (needsImage(component, payload, input.chartMode)) {
+      if (imageNeeded) {
         return { title, subtitle, content: imageOr("No data") };
       }
       return {
@@ -461,7 +468,15 @@ async function blockFor(
       return { title, subtitle, content: imageOr("No data") };
     }
     case "map": {
-      addSheet("", title, mapTable(payload));
+      // One data sheet per layer, so regions and points keep their own columns.
+      for (const layer of payload.layers) {
+        const suffix = payload.layers.length > 1 ? layer.name : "";
+        addSheet(
+          suffix,
+          [title || component.id, suffix].filter(Boolean).join(" "),
+          mapTable(layer),
+        );
+      }
       return { title, subtitle, content: imageOr("No data") };
     }
     case "text": {
@@ -680,9 +695,7 @@ function columnTypeForCode(code: string | undefined): WorkbookColumnType {
   return WorkbookColumnType.STRING;
 }
 
-function mapTable(
-  payload: Extract<ComponentExportPayload, { kind: "map" }>,
-): ExportTable {
+function mapTable(payload: MapExportLayer): ExportTable {
   const columns: ExportColumn[] = [
     ...payload.dimensions.map((dimension) => ({
       name: dimension.name ?? "",

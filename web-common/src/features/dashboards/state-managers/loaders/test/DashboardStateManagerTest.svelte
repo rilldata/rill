@@ -16,6 +16,7 @@
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
   export let disableInitSessionDashboardState: boolean = false;
+  export let onLoad: () => void = () => {};
 </script>
 
 <StateManagersProvider metricsViewName={AD_BIDS_METRICS_NAME} {exploreName}>
@@ -24,6 +25,7 @@
     {bookmarkOrTokenExploreState}
     {disableMostRecentDashboardState}
     {disableInitSessionDashboardState}
+    {onLoad}
   >
     <div>Dashboard loaded!</div>
   </DashboardStateManager>

@@ -71,6 +71,9 @@ export class DashboardStateSync {
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
     private readonly timeFilterManager: TimeFilterManager,
+    // Called once the store holds the initial state and the url matches it.
+    // Url changes made before that are not applied, see handleURLChange.
+    private readonly onInitialized: () => void,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -222,6 +225,7 @@ export class DashboardStateSync {
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
       this.updating = false;
+      this.onInitialized();
       return;
     }
 
@@ -238,6 +242,7 @@ export class DashboardStateSync {
     }
     this.initialized = true;
     this.updating = false;
+    this.onInitialized();
   }
 
   /**

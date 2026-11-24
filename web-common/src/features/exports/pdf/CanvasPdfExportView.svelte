@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import StaticCanvasRow from "@rilldata/web-common/features/canvas/StaticCanvasRow.svelte";
+  import StaticRowsBlock from "@rilldata/web-common/features/canvas/StaticRowsBlock.svelte";
+  import { layoutBlockKey } from "@rilldata/web-common/features/canvas/stores/layout-blocks";
   import CanvasPdfExportHeader from "./CanvasPdfExportHeader.svelte";
   import CanvasPdfExportTabGroup from "./CanvasPdfExportTabGroup.svelte";
 
@@ -10,7 +12,8 @@
   // the capture is complete without touching the live dashboard's lazy-load
   // state. Tab groups are flattened for print: every exported tab (all tabs, or
   // only each group's active one — see exportAllTabs) renders as a label band
-  // followed by its rows, stacked in strip order.
+  // followed by its rows, stacked in strip order. Containers render their rows
+  // like free rows, as viewers see them.
   // See captureCanvasBlocks, which reads from #canvas-pdf-export-view.
   export let canvasName: string;
   export let instanceId: string;
@@ -39,13 +42,22 @@
     class="row-container w-full h-fit flex flex-col items-center relative"
     style:width="{width}px"
   >
-    {#each blocks as block (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
+    {#each blocks as block (layoutBlockKey(block))}
       {#if block.kind === "tab-group"}
         <CanvasPdfExportTabGroup
           group={block.group}
           {components}
           maxWidth={width}
           allTabs={$exportAllTabs}
+        />
+      {:else if block.kind === "container"}
+        <StaticRowsBlock
+          block={block.container}
+          {components}
+          maxWidth={width}
+          navigationEnabled={false}
+          lazy={false}
+          idPrefix={`${block.container.name}-`}
         />
       {:else if rows[block.freeRowIndex]}
         <StaticCanvasRow

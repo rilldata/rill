@@ -25,6 +25,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { CAPTURE_FAILED_NOTE } from "../rasterize";
 
 function block(
   id: string,
@@ -138,6 +139,55 @@ describe("buildWorkbookRequest", () => {
       ["intro", 0],
       ["outro", 240],
     ]);
+  });
+
+  // A custom chart is exported as a snapshot. Without one (its capture failed)
+  // the block is a note, so the runtime is never sent an image it would reject
+  // and the rest of the workbook still exports.
+  it("notes a block whose snapshot failed and keeps the others", async () => {
+    const customChart = (id: string) =>
+      ({
+        id,
+        type: "custom_chart",
+        exportPayload: readable({ kind: "customChart", results: [] }),
+        specStore: readable({ title: id }),
+      }) as unknown as BaseCanvasComponent;
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+
+    const request = await buildWorkbookRequest({
+      canvasName: "canvas",
+      canvasEntity: {
+        componentsStore: readable(
+          new Map([
+            ["captured", customChart("captured")],
+            ["failed", customChart("failed")],
+          ]),
+        ),
+        layout: readable([]),
+      } as unknown as CanvasEntity,
+      blocks: [block("captured", 0, 0, 0), block("failed", 1, 0, 220)],
+      images: new Map([["captured", png]]),
+      chartMode: "native",
+      header: {
+        title: "Canvas",
+        timeRangeText: "",
+        comparisonText: "",
+        timeZone: "UTC",
+        filterLines: [],
+      },
+      generatedAt: "2026-01-01 00:00 UTC",
+      dashboardUrl: "https://example.com/canvas",
+    });
+
+    const [captured, failed] = request.dashboardSheets[0].blocks;
+    expect(captured.content).toMatchObject({
+      case: "image",
+      value: { png },
+    });
+    expect(failed.content).toMatchObject({
+      case: "note",
+      value: { text: CAPTURE_FAILED_NOTE },
+    });
   });
 });
 

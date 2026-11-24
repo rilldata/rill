@@ -1,5 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { parseColor } from "./assemble";
+import { CAPTURE_FAILED_NOTE } from "../rasterize";
+import { parseColor, renderPdf } from "./assemble";
+import { paginate } from "./layout";
+
+// A 4x2 grayscale JPEG.
+const JPEG =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/wAALCAACAAQBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAABP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AK//Z";
+
+describe("renderPdf", () => {
+  // A block without an image is one whose capture failed. Handing jsPDF its
+  // missing image throws ("Invalid argument passed to jsPDF.scale") and loses
+  // the whole document, so the page gets a note where the block sits instead.
+  it("draws a note in place of a block whose capture failed", async () => {
+    const pagination = paginate(
+      [
+        { id: "captured", dataUrl: JPEG, rowIndex: 0, ...box(0, 0) },
+        { id: "failed", dataUrl: undefined, rowIndex: 1, ...box(0, 220) },
+      ],
+      { contentWidthPx: 800, format: "a4", orientation: "landscape" },
+    );
+
+    const doc = await renderPdf(pagination, {
+      title: "Dashboard",
+      filename: "dashboard.pdf",
+      backgroundColor: "rgb(255, 255, 255)",
+      generatedAt: "2026-01-01 00:00 UTC",
+      dashboardUrl: "https://example.com/canvas",
+    });
+
+    const pdf = doc.output();
+    expect(pdf).toContain(`(${CAPTURE_FAILED_NOTE}) Tj`);
+    // Only the captured block is embedded as an image.
+    expect(pdf.match(/\/Subtype \/Image/g)).toHaveLength(1);
+  });
+});
+
+function box(xPx: number, yPx: number) {
+  return { xPx, yPx, widthPx: 800, heightPx: 200 };
+}
 
 describe("parseColor", () => {
   it("parses rgb and rgba colors", () => {

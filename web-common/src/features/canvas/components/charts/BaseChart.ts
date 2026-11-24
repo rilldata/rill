@@ -46,7 +46,11 @@ import {
   type CanvasEntity,
   type ComponentPath,
 } from "../../stores/canvas-entity";
-import { getItemPropertiesExcept, namePrefixFromPath } from "../../layout-util";
+import {
+  getItemPropertiesExcept,
+  positionKeyPrefix,
+  rowsPathOfComponent,
+} from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -238,7 +242,7 @@ export abstract class BaseChart<
       metricsViewName: currentSpec.metrics_view,
       metricsViewSpec,
       spec: mergedSpec,
-      namePrefix: namePrefixFromPath(this.pathInYAML),
+      namePrefix: positionKeyPrefix(rowsPathOfComponent(this.pathInYAML)),
     });
 
     const newComponent = createComponent(newResource, this.parent, [
