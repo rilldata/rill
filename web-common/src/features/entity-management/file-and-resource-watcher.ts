@@ -105,7 +105,19 @@ export class FileAndResourceWatcher {
           await options.onBeforeReconnect?.();
           // .env and OLAP changes restart the controller. Opening the stream
           // while it is closed consumes retries and can leave a fatal page.
-          await waitForControllerRestart(this.runtimeClient, this.queryClient);
+          // The wait only spares those retries, so its own failures must not
+          // count as attempts: when it errors (e.g. the project parser is
+          // hidden from a non-admin user) or times out, open the stream anyway
+          // and let that attempt decide.
+          await waitForControllerRestart(
+            this.runtimeClient,
+            this.queryClient,
+          ).catch((error: unknown) => {
+            console.warn(
+              "Reconnecting before the runtime reported ready",
+              error,
+            );
+          });
         },
       },
       decoders: {
