@@ -21,9 +21,9 @@ func TestAssetsHandler(t *testing.T) {
 		Files: map[string]string{
 			// The root is listed to check that it never makes the whole project public.
 			"rill.yaml":                   `public_paths: ["./public", "/static/", "/"]`,
-			".env":                        "token=secret",
-			"secret.txt":                  "secret",
-			"publicity/notes.txt":         "secret",
+			".env":                        "token=confidential",
+			"secret.txt":                  "confidential",
+			"publicity/notes.txt":         "confidential",
 			"public/logo.png":             "png",
 			"public/img/logo.svg":         svg,
 			"public/img/brand/PHOTO.JPG":  "jpg",
@@ -102,7 +102,6 @@ func TestAssetsHandler(t *testing.T) {
 		"public/img/%2e%2e/%2e%2e/secret.txt",
 		"public/..%2fsecret.txt",
 		"public%2f..%2fsecret.txt",
-		"public/./%2e%2e/secret.txt",
 		"%2e%2e/secret.txt",
 		"public/%2e%2e/publicity/notes.txt",
 	}
@@ -110,9 +109,16 @@ func TestAssetsHandler(t *testing.T) {
 		t.Run(path, func(t *testing.T) {
 			res, body := get(t, path, nil)
 			require.Equal(t, http.StatusForbidden, res.StatusCode)
-			require.NotContains(t, body, "secret")
+			require.NotContains(t, body, "confidential")
 		})
 	}
+
+	// The ServeMux redirects a path with `.` segments to its cleaned form.
+	// Go 1.26 escapes the `%` of `%2e` again in that redirect (fixed in Go 1.27),
+	// so the redirected path names a missing file inside the public path instead of being refused.
+	res, body = get(t, "public/./%2e%2e/secret.txt", nil)
+	require.Contains(t, []int{http.StatusForbidden, http.StatusNotFound}, res.StatusCode)
+	require.NotContains(t, body, "confidential")
 
 	// Missing files and directories are not served.
 	res, _ = get(t, "public/img/missing.png", nil)
