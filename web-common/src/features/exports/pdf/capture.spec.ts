@@ -122,6 +122,8 @@ describe("captureCanvasBlocks", () => {
     header.id = "canvas-pdf-export-header";
     const rows = document.createElement("div");
     rows.className = "row-container";
+    rows.innerHTML = `<article id="widget" class="component-card"></article>`;
+    layOut(rows.querySelector("#widget")!);
     view.append(header, rows);
     document.body.appendChild(view);
 
@@ -171,15 +173,17 @@ describe("captureCanvasBlocks", () => {
   });
 
   // A raster over the browser's canvas limits comes back as an empty data URL.
-  // The block keeps its place without an image, so the PDF can say a widget is
-  // missing there, and the other blocks are still captured.
-  it("keeps a block whose capture produced no image, without one", async () => {
+  // The widget keeps its place without an image, so the PDF can say a widget is
+  // missing there, and the other blocks are still captured. A tab label isn't a
+  // widget, so one that fails is left out, as the filter bar is.
+  it("keeps a widget whose capture produced no image, without one", async () => {
     const view = document.createElement("div");
     view.id = "canvas-pdf-export-view";
     view.dataset.instanceId = "inst";
     view.dataset.canvasName = "failing";
     view.innerHTML = `
       <div class="row-container">
+        <section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
         <section id="canvas-row-0">
           <article id="fine" class="component-card"></article>
           <article id="broken" class="component-card"></article>
@@ -187,6 +191,7 @@ describe("captureCanvasBlocks", () => {
       </div>
     `;
     document.body.appendChild(view);
+    layOut(view.querySelector("#pdf-tab-label-g-t")!, { height: 40 });
     layOut(view.querySelector("#fine")!, { width: 400, height: 200 });
     layOut(view.querySelector("#broken")!, {
       left: 400,
@@ -194,6 +199,7 @@ describe("captureCanvasBlocks", () => {
       height: 200,
     });
     vi.mocked(toJpeg)
+      .mockResolvedValueOnce("data:,")
       .mockResolvedValueOnce("data:image/jpeg;base64,")
       .mockResolvedValueOnce("data:,");
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -213,6 +219,78 @@ describe("captureCanvasBlocks", () => {
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  // The filter bar and the tab labels only frame the widgets: a PDF of them
+  // and the notes of failed widgets isn't an export.
+  it("fails when no widget could be captured", async () => {
+    const view = mountExportView(
+      "all-failing",
+      `<section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
+       <section id="canvas-row-0">
+         <article id="broken" class="component-card"></article>
+       </section>`,
+    );
+    const filterBar = view.querySelector<HTMLElement>(
+      "#canvas-pdf-export-header",
+    )!;
+    Object.defineProperty(filterBar, "scrollHeight", { value: 40 });
+    vi.mocked(toJpeg)
+      .mockResolvedValueOnce("data:image/jpeg;base64,")
+      .mockResolvedValueOnce("data:image/jpeg;base64,")
+      .mockResolvedValueOnce("data:,");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(
+      captureCanvasBlocks({
+        instanceId: "inst",
+        canvasName: "all-failing",
+        includeFilters: true,
+      }),
+    ).rejects.toThrow("This canvas could not be captured.");
+    // The filter bar and the tab label were captured; the widget wasn't.
+    expect(vi.mocked(toJpeg).mock.calls.map(([node]) => node.id)).toEqual([
+      "canvas-pdf-export-header",
+      "pdf-tab-label-g-t",
+      "broken",
+    ]);
+    warn.mockRestore();
+  });
+
+  it("fails when the canvas draws no widget", async () => {
+    const view = mountExportView(
+      "no-widgets",
+      `<section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
+       <section id="canvas-row-0">
+         <article id="hidden" class="component-card"></article>
+       </section>`,
+    );
+    // Hidden with `display: none` on its row: no box.
+    layOut(view.querySelector("#hidden")!, { width: 0, height: 0 });
+
+    await expect(
+      captureCanvasBlocks({
+        instanceId: "inst",
+        canvasName: "no-widgets",
+        includeFilters: true,
+      }),
+    ).rejects.toThrow("Nothing to export on this canvas.");
+  });
+
+  // An export view with a filter bar and the given rows, every label and card
+  // laid out.
+  function mountExportView(canvasName: string, rows: string): HTMLElement {
+    const view = document.createElement("div");
+    view.id = "canvas-pdf-export-view";
+    view.dataset.instanceId = "inst";
+    view.dataset.canvasName = canvasName;
+    view.innerHTML = `
+      <div id="canvas-pdf-export-header"></div>
+      <div class="row-container">${rows}</div>
+    `;
+    document.body.appendChild(view);
+    for (const target of captureTargetsIn(view)) layOut(target);
+    return view;
+  }
 });
 
 describe("measureCanvasBlocks", () => {

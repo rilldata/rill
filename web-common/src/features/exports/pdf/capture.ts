@@ -125,9 +125,12 @@ function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
 
 // Rasterizes the filter bar (optional) and each canvas block into images
 // positioned relative to the canvas content area: every component card plus the
-// label band above each exported tab (see captureTargetsIn). A block whose
+// label band above each exported tab (see captureTargetsIn). A widget whose
 // capture fails keeps its place without an image (see CapturedBlock.dataUrl)
-// rather than aborting the whole export.
+// rather than aborting the whole export; a tab label that fails is left out,
+// as the filter bar is, since the note shown in a failed block's place speaks
+// of a widget. The filter bar and the tab labels only frame the widgets, so
+// this throws when there is no widget to export or none could be captured.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
 ): Promise<CaptureResult> {
@@ -140,6 +143,9 @@ export async function captureCanvasBlocks(
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
   const targets = measureCanvasBlocks(rowContainer);
+  if (targets.every((target) => target.isTabLabel)) {
+    throw new Error("Nothing to export on this canvas.");
+  }
 
   // Probed once per page load, not per block or per export: the answer is a
   // property of the browser, and the probe itself rasterizes.
@@ -191,6 +197,7 @@ export async function captureCanvasBlocks(
     reportProgress();
   }
 
+  let capturedWidget = false;
   for (const target of targets) {
     let dataUrl: string | undefined;
     try {
@@ -203,19 +210,26 @@ export async function captureCanvasBlocks(
     } catch (e) {
       console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
-    blocks.push({
-      id: target.id,
-      dataUrl,
-      xPx: target.xPx,
-      yPx: target.yPx,
-      widthPx: target.widthPx,
-      heightPx: target.heightPx,
-      rowIndex: target.rowIndex,
-    });
+    if (dataUrl || !target.isTabLabel) {
+      blocks.push({
+        id: target.id,
+        dataUrl,
+        xPx: target.xPx,
+        yPx: target.yPx,
+        widthPx: target.widthPx,
+        heightPx: target.heightPx,
+        rowIndex: target.rowIndex,
+      });
+    }
+    if (dataUrl && !target.isTabLabel) capturedWidget = true;
     done += 1;
     reportProgress();
   }
 
+  // A PDF of nothing but the notes of failed widgets isn't an export.
+  if (!capturedWidget) {
+    throw new Error("This canvas could not be captured.");
+  }
   return { blocks, contentWidthPx, backgroundColor };
 }
 
