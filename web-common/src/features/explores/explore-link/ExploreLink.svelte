@@ -23,7 +23,12 @@
   export let displayName: string | undefined = undefined;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
-  export let exploreState: Partial<ExploreState> | undefined = undefined;
+  // A function is called when the link is clicked, for callers whose state
+  // can change without a store update they could react to.
+  export let exploreState:
+    | Partial<ExploreState>
+    | (() => Partial<ExploreState>)
+    | undefined = undefined;
   export let mode: "inline" | "dropdown-item" | "icon-button" = "inline";
   export let disabled: boolean = false;
 
@@ -41,7 +46,7 @@
     try {
       const exploreURL = await generateExploreLink(
         runtimeClient,
-        exploreState,
+        typeof exploreState === "function" ? exploreState() : exploreState,
         exploreName,
         onEditPage ? undefined : organization,
         onEditPage ? undefined : project,
