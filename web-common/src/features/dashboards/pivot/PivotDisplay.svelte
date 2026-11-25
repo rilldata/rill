@@ -1,6 +1,9 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
+  import {
+    canExportPivot,
+    getPivotExportQuery,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -42,7 +45,7 @@
     dashboardStore,
     validSpecStore,
     selectors: {
-      pivot: { columns, measures, dimensions },
+      pivot: { rows, columns, isFlat, measures, dimensions },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
       measures: { measureLabel },
       exactMeasures: { exactMeasureContext },
@@ -132,6 +135,8 @@
 
   $: hasColumnAndNoMeasure =
     $columns.dimension.length > 0 && $columns.measure.length === 0;
+
+  $: canExport = canExportPivot($rows, $columns, $isFlat);
 
   function removeActiveCell() {
     if (!$dashboardStore.pivot.activeCell) return;
@@ -256,6 +261,7 @@
           {#if $exports}
             <ExportMenu
               label={m.dashboard_export_pivot_data()}
+              disabled={!canExport}
               includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
