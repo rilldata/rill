@@ -118,9 +118,7 @@
   });
   const formattedData = $derived(timeDimensionDataCopy);
   const excludeMode = $derived(
-    expressionFilterManager.sortedFilterManagers.dimensions.find(
-      (dfm) => dfm.name === dimensionName,
-    )?.exclude ?? false,
+    expressionFilterManager.isDimensionExcluded(dimensionName),
   );
 
   const rowHeaderLabels = $derived(

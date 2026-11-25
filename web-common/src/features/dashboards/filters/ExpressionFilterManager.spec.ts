@@ -976,6 +976,80 @@ describe("single-select filters", () => {
   });
 });
 
+describe("exclude mode for a filter without values", () => {
+  function publisherParam(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.get(
+      `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+    );
+  }
+
+  function toggleExclude(filterManager: ExpressionFilterManager) {
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleExclude(),
+    );
+  }
+
+  function toggleValue(filterManager: ExpressionFilterManager, value: string) {
+    filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (dfm) =>
+      dfm.toggleValue(value, false),
+    );
+  }
+
+  it("applies exclude toggled before the first value is picked", () => {
+    const filterManager = createFilterManager();
+    filterManager.keepExcludeModeWhileEmpty(AD_BIDS_PUBLISHER_DIMENSION);
+
+    toggleExclude(filterManager);
+    expect(publisherParam(filterManager)).toBeNull();
+    expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
+      true,
+    );
+
+    toggleValue(filterManager, "Google");
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google')`,
+    );
+  });
+
+  it("keeps exclude after the last value is removed", () => {
+    const filterManager = createFilterManager();
+    filterManager.keepExcludeModeWhileEmpty(AD_BIDS_PUBLISHER_DIMENSION);
+
+    toggleValue(filterManager, "Google");
+    toggleExclude(filterManager);
+    toggleValue(filterManager, "Google");
+    expect(publisherParam(filterManager)).toBeNull();
+    expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
+      true,
+    );
+
+    toggleValue(filterManager, "Facebook");
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Facebook')`,
+    );
+  });
+
+  it("forgets exclude once the view stops tracking it", () => {
+    const filterManager = createFilterManager();
+    const stopTracking = filterManager.keepExcludeModeWhileEmpty(
+      AD_BIDS_PUBLISHER_DIMENSION,
+    );
+
+    toggleExclude(filterManager);
+    stopTracking();
+    expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
+      false,
+    );
+
+    toggleValue(filterManager, "Google");
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();

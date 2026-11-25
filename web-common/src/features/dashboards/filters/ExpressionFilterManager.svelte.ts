@@ -10,6 +10,7 @@ import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-view
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { toStore, type Readable } from "svelte/store";
+import { SvelteMap } from "svelte/reactivity";
 import {
   type DimensionOrMeasureManager,
   JoinerFilterManager,
@@ -63,6 +64,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
     dimensions: DimensionFilterManager[];
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
+  // Exclude mode chosen for a dimension filter that has no values yet, keyed by dimension name.
+  // An empty filter writes no param, so its manager is dropped and the mode would otherwise be lost.
+  // Only dimensions registered through `keepExcludeModeWhileEmpty` are tracked,
+  // so the mode never carries over to a filter added elsewhere, from the filter bar for example.
+  private readonly pendingExcludes = new SvelteMap<string, boolean>();
 
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
@@ -335,6 +341,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
+    // A filter without values starts from the exclude mode chosen for it.
+    if (!dimensionFilterManager.expr && this.pendingExcludes.get(name)) {
+      dimensionFilterManager.exclude = true;
+    }
+
     const ret = dimensionFilterManager.runWithSource(source, () =>
       callback(dimensionFilterManager),
     );
@@ -342,7 +353,39 @@ export class ExpressionFilterManager implements UrlParamsStore {
     if (dimensionFilterManager.expr) {
       this.topLevelJoiner.maybeAddDimensionFilter(dimensionFilterManager);
     }
+    // Once the filter has values it holds the exclude mode itself.
+    if (this.pendingExcludes.has(name)) {
+      this.pendingExcludes.set(
+        name,
+        !dimensionFilterManager.expr && dimensionFilterManager.exclude,
+      );
+    }
     return ret;
+  }
+
+  /**
+   * Whether the filter on dimension `name` excludes its values.
+   * Falls back to the pending exclude mode while the filter has no values.
+   */
+  public isDimensionExcluded(name: string) {
+    const manager = this.filterManagersMap[name];
+    const exclude =
+      manager instanceof DimensionFilterManager && manager.exclude;
+    if (manager?.expr) return exclude;
+    return exclude || !!this.pendingExcludes.get(name);
+  }
+
+  /**
+   * Keeps the exclude mode of dimension `name` while its filter has no values,
+   * so toggling exclude before selecting a value is not lost.
+   * Used by views with an exclude toggle, the dimension table for example.
+   * Returns a function that stops tracking and forgets the mode.
+   */
+  public keepExcludeModeWhileEmpty(name: string) {
+    this.pendingExcludes.set(name, false);
+    return () => {
+      this.pendingExcludes.delete(name);
+    };
   }
 
   public measureFilterAction(
@@ -371,6 +414,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public clear() {
     this.temporaryFilterName = undefined;
+    for (const name of this.pendingExcludes.keys()) {
+      this.pendingExcludes.set(name, false);
+    }
     // `setUrlParams` is the only other writer of this flag,
     // and the navigation after a clear skips it because the params already match the cleared state.
     this.isComplexFilter = false;
