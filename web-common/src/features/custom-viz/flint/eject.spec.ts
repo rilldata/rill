@@ -197,6 +197,32 @@ describe("ejectToVegaSpec", () => {
     expect(stripped).not.toContain("bid_price_sum");
   });
 
+  it("orders an ejected chart's series from the component's own data", () => {
+    // The series' totals and places are derived by field in the spec's transforms, so no
+    // series the compiler read is named in the component file.
+    const { json, spec } = eject(
+      {
+        chartType: "Line Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      ["timestamp", "publisher", "bid_price_sum"],
+    );
+
+    expect(spec.encoding.color.sort).toEqual({
+      field: "__rill_series_place",
+      op: "min",
+    });
+    const transforms = JSON.stringify(spec.transform);
+    expect(transforms).toContain('"groupby":["{{ .params.x_axis }}"]');
+    expect(transforms).toContain('"field":"{{ .params.y_axis }}"');
+    expect(json.replace(/\{\{[^}]*\}\}/g, "")).not.toContain("publisher");
+    expect(json).not.toContain("Yahoo");
+  });
+
   it("templates the display name on columns derived from a bound measure", () => {
     // The compiler titles a waterfall's running sums with the display name of the measure they
     // sum, on columns of its own, and routes them through the measure's formatter.

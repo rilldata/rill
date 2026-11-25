@@ -203,6 +203,8 @@ spec:
     x: { field: "{{ .params.measure }}" }
 ```
 
+A chart's series, the values on `color` or `group`, are listed in the legend and take their colors in order of their total, largest first, the order built-in charts list a split dimension in. Series with the same total are listed by name. A series typed `ordinal` is listed in ascending order of its values instead, which for text is alphabetical. Set `sortOrder` on a series' encoding to list it by its values in the direction you choose. A pie or donut keeps the order of the query's rows, which its slices are drawn in.
+
 Leave out `type` and `aggregate` unless the chart draws wrong without them. Rill already marks measures as quantitative, dimensions as nominal and time dimensions as temporal, and measures arrive aggregated; a hard-coded type can break the chart when a dashboard binds a different field.
 
 ### Field Semantics
@@ -219,11 +221,15 @@ Rill tells Flint what each selected field means, based on the metrics view:
 | A time dimension | A date at the grain it was bucketed at, from year down to day, or a timestamp below a day |
 | Any other dimension | A category |
 
-These decide zero baselines, tick spacing and the kind of color scale. Axis labels and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
+These decide zero baselines, tick spacing and the kind of color scale. Axis labels, legends and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
 
 ### Colors
 
 Series colors come from the `tableau10` scheme, and a measure bound to `color` is drawn with a sequential scheme such as `blues`. Set `scheme` on the `color` encoding to choose another. Charts drawn in a single color use the dashboard theme's primary color. To color series with the [theme's palette](/developers/build/dashboards/customization#changing-themes--colors) instead, [convert the component](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#use-the-theme-palette) and remove the scheme.
+
+### Legends
+
+A chart's legend sits above the plot and is laid out to fit the widget, the same way as a [built-in chart's legend](/developers/build/dashboards/canvas-widgets/chart#legends): its entries wrap to the plot's width and take up to about a third of the chart's height, and where they don't all fit the legend ends with the number left out, such as `…12 entries`. The legends of a chart with two, such as the colors and sizes of a bubble chart, stand one above the other. Two legends that each list a dimension's values, such as a chart's colors and shapes, share that third of the height between them.
 
 ### Chart Properties
 
