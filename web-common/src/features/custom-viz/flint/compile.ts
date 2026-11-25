@@ -1447,17 +1447,8 @@ function orderSeries(
   const own = encodingsOf(view);
   const encodings = { ...inherited, ...own };
   orderViewSeries(view, own, encodings);
-  const wrapped = view.spec;
-  if (wrapped && typeof wrapped === "object") {
-    orderSeries(wrapped as Record<string, unknown>);
-  }
-  for (const key of ["layer", "hconcat", "vconcat", "concat"]) {
-    const children = view[key];
-    if (!Array.isArray(children)) continue;
-    // Of these, only a layer draws the encoding of the view it is in.
-    for (const child of children as Record<string, unknown>[]) {
-      orderSeries(child, key === "layer" ? encodings : {});
-    }
+  for (const { view: child, layered } of childViews(view)) {
+    orderSeries(child, layered ? encodings : {});
   }
 }
 
@@ -1643,18 +1634,30 @@ const LEGEND_CHANNELS = new Set([
  */
 function layersOf(spec: Record<string, unknown>): Record<string, unknown>[] {
   const views = [spec];
+  for (const { view } of childViews(spec)) views.push(...layersOf(view));
+  return views;
+}
+
+/**
+ * The views nested directly in a view, each with whether it is a layer: of them, only a layer
+ * draws the encoding of the view it is in.
+ */
+function childViews(
+  spec: Record<string, unknown>,
+): { view: Record<string, unknown>; layered: boolean }[] {
+  const children: { view: Record<string, unknown>; layered: boolean }[] = [];
   const wrapped = spec.spec;
   if (wrapped && typeof wrapped === "object") {
-    views.push(...layersOf(wrapped as Record<string, unknown>));
+    children.push({ view: wrapped as Record<string, unknown>, layered: false });
   }
   for (const key of ["layer", "hconcat", "vconcat", "concat"]) {
-    const children = spec[key];
-    if (!Array.isArray(children)) continue;
-    for (const child of children as Record<string, unknown>[]) {
-      views.push(...layersOf(child));
+    const nested = spec[key];
+    if (!Array.isArray(nested)) continue;
+    for (const view of nested as Record<string, unknown>[]) {
+      children.push({ view, layered: key === "layer" });
     }
   }
-  return views;
+  return children;
 }
 
 function encodingsOf(
