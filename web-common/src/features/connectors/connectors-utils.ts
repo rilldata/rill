@@ -1,3 +1,4 @@
+import type { JsonObject } from "@bufbuild/protobuf";
 import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
 import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { structToJson } from "@rilldata/web-common/lib/proto-utils";
@@ -141,11 +142,15 @@ export function makeTablePreviewHref(
  * Detection covers both the resolved config and the raw project/preset config,
  * so it still works when the runtime redacts the merged config.
  * It falls back to the default connector name written by the DuckLake tile.
- * Callers should check that the driver is duckdb first.
+ * Callers should check that the driver is duckdb first,
+ * and pass the already decoded `connector.config` so the resolved `Struct` is only decoded once.
  */
-export function isDuckLakeConnector(connector: AnalyzedConnector): boolean {
+export function isDuckLakeConnector(
+  connector: AnalyzedConnector,
+  config: JsonObject | undefined,
+): boolean {
   const attachCandidates: unknown[] = [
-    structToJson(connector.config)?.attach,
+    config?.attach,
     structToJson(connector.projectConfig)?.attach,
     structToJson(connector.presetConfig)?.attach,
   ];
@@ -177,7 +182,10 @@ export function getConnectorIconKey(connector: AnalyzedConnector): string {
     return "motherduck";
   }
 
-  if (connector.driver?.name === "duckdb" && isDuckLakeConnector(connector)) {
+  if (
+    connector.driver?.name === "duckdb" &&
+    isDuckLakeConnector(connector, config)
+  ) {
     return "ducklake";
   }
 

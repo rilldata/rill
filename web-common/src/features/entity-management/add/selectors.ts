@@ -73,11 +73,12 @@ export function inferSchemaForConnector(connector: AnalyzedConnector) {
   // TODO: some schema will share driver name, differentiate them.
   const driverName = connector.driver.name;
   switch (driverName) {
-    case "duckdb":
-      if (String(structToJson(connector.config)?.path ?? "").startsWith("md:"))
-        return "motherduck";
-      if (isDuckLakeConnector(connector)) return "ducklake";
+    case "duckdb": {
+      const config = structToJson(connector.config);
+      if (String(config?.path ?? "").startsWith("md:")) return "motherduck";
+      if (isDuckLakeConnector(connector, config)) return "ducklake";
       break;
+    }
   }
 
   return driverName;

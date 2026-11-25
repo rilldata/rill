@@ -72,7 +72,7 @@ deleting a `V1*` type alone does not migrate anything.
    Filtering to touched files is not enough: it misses errors in untouched consumers.
    Run it for all three workspaces on your branch and on its merge base, in the same checkout:
    `git stash push -u` (if dirty), `git switch --detach $(git merge-base HEAD origin/main)`, run,
-   `git switch -`, `git stash pop`.
+   `git switch -`, then `git stash pop` only if the earlier command created a stash.
    Stashing alone is not enough once the migration is committed.
    Strip `line:col` from the `ERROR` lines and `comm` the sorted lists; the "new" side must be empty.
    Avoid a `git worktree` baseline: generated files that are gitignored (e.g. i18n messages, `.svelte-kit`) would have to be rebuilt there,
