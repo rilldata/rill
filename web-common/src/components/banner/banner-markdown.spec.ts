@@ -40,12 +40,25 @@ describe("renderBannerMarkdown", () => {
     );
   });
 
-  it("Should remove HTML other than inline formatting", () => {
+  it("Should show HTML other than inline formatting as written", () => {
+    expect(renderBannerMarkdown("Use the <region> filter")).toBe(
+      "Use the &lt;region&gt; filter",
+    );
+
+    const other =
+      '<span style="position:fixed">styled</span> <img src="x" onerror="alert(1)"><script>alert(1)</script><style>body{display:none}</style>';
+    const container = document.createElement("div");
+    container.innerHTML = renderBannerMarkdown(
+      `<u onclick="alert(1)">Note</u> ${other}`,
+    );
+    // The only element is the allowed tag, without its event handler.
     expect(
-      renderBannerMarkdown(
-        '<u>Note</u> <span style="position:fixed">styled</span> <img src="x" onerror="alert(1)"><script>alert(1)</script><style>body{display:none}</style>',
-      ),
-    ).toBe("<u>Note</u> styled ");
+      [...container.querySelectorAll("*")].map((el) => el.outerHTML),
+    ).toEqual(["<u>Note</u>"]);
+    expect(container.textContent).toBe(`Note ${other}`);
+  });
+
+  it("Should remove unsafe links", () => {
     expect(renderBannerMarkdown("[click](javascript:alert(1))")).not.toContain(
       "javascript:",
     );
