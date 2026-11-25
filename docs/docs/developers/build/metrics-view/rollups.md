@@ -199,7 +199,7 @@ rollups:
 
 The base table then has no rows between two boundaries, so a time bound inside a day selects the same rows as the next midnight. Rollup routing rounds the start and end of the query's time ranges up to the next boundary before the alignment checks. A query from `2024-10-15 12:55` to `2024-11-14 12:55`, such as an AI agent's "last 30 days", uses the daily rollup instead of the base table. The query results are the same either way.
 
-Rounding only helps rollups whose boundaries the rounded bounds fall on. In the example above, a monthly rollup is still skipped for that query, because `2024-10-16` is not the start of a month. The timezone check is unchanged.
+Rounding only helps rollups whose boundaries the rounded bounds fall on. In the example above, a monthly rollup is skipped because October 16 is not a month boundary. Rounding can also make a previously eligible rollup fall back to the base table. For example, with `base_time_grain: week` and Monday-start weeks, a query starting February 1, 2024 rounds to February 5 and can no longer use a monthly rollup. The timezone check is unchanged.
 
 Week boundaries start on the metrics view's `first_day_of_week`. For weekly data starting on Sunday, set `base_time_grain: week` and `first_day_of_week: 7`. Quarter and year boundaries are calendar quarters and years starting in January, regardless of `first_month_of_year`. Use `base_time_grain: month` for fiscal quarters or years whose boundaries all fall on the first day of a calendar month, such as April 1. If a fiscal calendar starts periods on other dates, use `day` if every timestamp is at local midnight.
 
