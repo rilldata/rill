@@ -235,9 +235,11 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			// Rounding returns wrong results if the base table has rows between boundaries.
 			// Checking the base table's min and max timestamps catches some wrong declarations for free; the query then uses the base table.
 			// With a data_time_range, the timestamps are the declared range rather than the table's actual bounds, so there is nothing to check.
+			// It truncates instead of using ceilTime, which also returns a timestamp unchanged when it is next to a DST change.
+			baseGrain := timeutil.TimeGrainFromAPI(e.metricsView.BaseTimeGrain)
 			if rounded && e.metricsView.DataTimeRange == "" &&
-				(!ceilTime(baseMin, e.metricsView.BaseTimeGrain, baseLoc, e.metricsView.FirstDayOfWeek).Equal(baseMin) ||
-					!ceilTime(baseMax, e.metricsView.BaseTimeGrain, baseLoc, e.metricsView.FirstDayOfWeek).Equal(baseMax)) {
+				(!timeutil.TruncateTime(baseMin, baseGrain, baseLoc, int(e.metricsView.FirstDayOfWeek), 1).Equal(baseMin) ||
+					!timeutil.TruncateTime(baseMax, baseGrain, baseLoc, int(e.metricsView.FirstDayOfWeek), 1).Equal(baseMax)) {
 				rejectCandidate(rejectBaseTimeGrainMismatch)
 				selectionSpan.SetAttributes(attribute.String("rollup.result", "none"))
 				return nil, nil

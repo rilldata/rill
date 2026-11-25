@@ -1820,6 +1820,7 @@ explore:
 		// mv_daily declares this with base_time_grain, so bounds inside a day can still use its rollups.
 		// mv_daily_undeclared is the same metrics view without it, and mv_hourly wrongly declares day grain over the hourly base_events.
 		// mv_daily_declared_range also declares a data_time_range that ends mid-day, which must not be mistaken for rows between boundaries.
+		// mv_dst wrongly declares day grain in America/New_York over a table whose first row is at noon on a DST change day.
 		// mv_kathmandu stores one row per hour in Asia/Kathmandu (UTC+05:45), so its rows are at 15 minutes past each UTC hour.
 		mvYAML := func(model, extra string, rollups ...string) string {
 			res := fmt.Sprintf(`
@@ -1863,6 +1864,14 @@ FROM base_daily GROUP BY 1, 2`,
 			"models/rollup_hourly_day.sql": `
 SELECT date_trunc('day', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
 FROM base_events GROUP BY 1, 2`,
+			// Noon on March 10 and 11 and midnight on March 12, in New York; DST starts on March 10
+			"models/base_dst.sql": `
+SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
+FROM (VALUES (TIMESTAMP '2024-03-10 16:00:00'), (TIMESTAMP '2024-03-11 16:00:00'), (TIMESTAMP '2024-03-12 04:00:00')) t(ts)`,
+			// Midnight on March 10, 11 and 12 in New York
+			"models/rollup_dst_day.sql": `
+SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
+FROM (VALUES (TIMESTAMP '2024-03-10 05:00:00'), (TIMESTAMP '2024-03-11 04:00:00'), (TIMESTAMP '2024-03-12 04:00:00')) t(ts)`,
 			"models/base_kathmandu.sql": `
 SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
 FROM generate_series(TIMESTAMP '2024-01-01 00:15:00', TIMESTAMP '2024-01-31 23:15:00', INTERVAL '1 HOUR') t(ts)`,
@@ -1873,11 +1882,12 @@ FROM base_kathmandu GROUP BY 1, 2`,
 			"metrics_views/mv_daily_undeclared.yaml":     mvYAML("base_daily", "", rollupYAML("rollup_daily_day", "day"), rollupYAML("rollup_daily_month", "month")),
 			"metrics_views/mv_hourly.yaml":               mvYAML("base_events", "base_time_grain: day", rollupYAML("rollup_hourly_day", "day")),
 			"metrics_views/mv_daily_declared_range.yaml": mvYAML("base_daily", "base_time_grain: day\ndata_time_range: 2024-01-01T00:00:00Z to 2024-03-31T12:00:00Z", rollupYAML("rollup_daily_day", "day")),
+			"metrics_views/mv_dst.yaml":                  mvYAML("base_dst", "base_time_grain: day\nbase_time_zone: America/New_York", rollupYAML("rollup_dst_day", "day")+"    time_zone: America/New_York\n"),
 			"metrics_views/mv_kathmandu.yaml":            mvYAML("base_kathmandu", "base_time_grain: hour\nbase_time_zone: Asia/Kathmandu", rollupYAML("rollup_kathmandu_minute", "minute")),
 		}
 		customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
-		// 1 project_parser + 7 models + 5 metrics views = 13 resources; 0 errors
-		testruntime.RequireReconcileState(t, customRT, customID, 13, 0, 0)
+		// 1 project_parser + 9 models + 6 metrics views = 16 resources; 0 errors
+		testruntime.RequireReconcileState(t, customRT, customID, 16, 0, 0)
 
 		newExecutor := func(t *testing.T, name string) *executor.Executor {
 			r := testruntime.GetResource(t, customRT, customID, runtime.ResourceKindMetricsView, name)
@@ -1952,6 +1962,15 @@ FROM base_kathmandu GROUP BY 1, 2`,
 				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
 				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 				want:  rollupTestBaseTable,
+			},
+			{
+				// The base table's min timestamp is at noon on a DST change day, which must not pass as being on a boundary
+				name:     "declaration_contradicted_next_to_dst_change",
+				mv:       "mv_dst",
+				start:    time.Date(2024, 3, 11, 12, 0, 0, 0, time.UTC),
+				end:      time.Date(2024, 3, 13, 4, 0, 0, 0, time.UTC),
+				timeZone: "America/New_York",
+				want:     "base_dst",
 			},
 			{
 				// The declared range ends mid-day, but the guard only applies to the table's actual bounds
