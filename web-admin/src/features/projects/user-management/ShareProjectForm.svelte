@@ -16,6 +16,7 @@
     buildCopyLink,
     buildSearchList,
   } from "@rilldata/web-admin/features/projects/user-management/helpers.ts";
+  import ProjectDomainAccessList from "@rilldata/web-admin/features/projects/user-management/ProjectDomainAccessList.svelte";
   import ProjectUserGroupItem from "@rilldata/web-admin/features/projects/user-management/ProjectUserGroupItem.svelte";
   import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
   import UsergroupSetRole from "@rilldata/web-admin/features/projects/user-management/UsergroupSetRole.svelte";
@@ -38,6 +39,7 @@
 
   export let organization: string;
   export let project: string;
+  export let manageProject: boolean;
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
@@ -443,6 +445,9 @@
         </ul>
       </TooltipContent>
     </Tooltip>
+    {#if manageProject}
+      <ProjectDomainAccessList {organization} {project} {enabled} />
+    {/if}
   </div>
 </div>
 <div class="flex flex-row items-center px-3.5 py-3 border-t">
