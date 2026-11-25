@@ -302,7 +302,33 @@ _[object]_ - (no description)
 
 ### `kpi_grid`
 
-_[object]_ - Grid of KPIs
+_[object]_ - Grid of KPI cards, one per measure, each with the measure's value, an optional time comparison and an optional sparkline
+
+  - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
+
+  - **`measures`** - _[array of string]_ - Measures to display, one card each. An entry is the name of a measure of the metrics view or of one of the component's `adhoc_measures`. _(required)_
+
+  - **`adhoc_measures`** - _[array]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+
+  - **`comparison`** - _[array of string]_ - Comparison values shown under each KPI while the component shows a time comparison, any of `previous` (the comparison period's value), `delta` (absolute change) and `percent_change`. Defaults to `delta` and `percent_change`.
+
+  - **`sparkline`** - _[string]_ - Where to draw each KPI's sparkline, `bottom` (below the value), `right` (beside the value) or `none`. Defaults to `bottom`.
+
+  - **`size`** - _[string]_ - Size of the KPI cards, `small`, `medium`, `large` or `xlarge`. Scales the value, the labels, the spacing and the minimum width of each card together, so a larger size fits fewer cards per row. Defaults to `medium`.
+
+  - **`hide_time_range`** - _[boolean]_ - Hide the time range shown under each KPI. Defaults to false.
+
+  - **`title`** - _[string]_ - KPI grid title
+
+  - **`description`** - _[string]_ - KPI grid description
+
+  - **`show_description_as_tooltip`** - _[boolean]_ - Show the description as a tooltip on the title instead of below it
+
+  - **`time_filters`** - _[string]_ - Time range and comparison for this KPI grid, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+
+  - **`dimension_filters`** - _[string]_ - SQL filter expression applied to this KPI grid only, such as `country IN ('US')`
+
+  - **`hide_local_filters`** - _[boolean]_ - Hide the local filter chips on the KPI grid; the filters still apply to its queries
 
 ### `table`
 
