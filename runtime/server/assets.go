@@ -41,6 +41,10 @@ var assetContentTypes = map[string]string{
 	".ttf":   "font/ttf",
 	".woff":  "font/woff",
 	".woff2": "font/woff2",
+	".mp3":   "audio/mpeg",
+	".wav":   "audio/wav",
+	".mp4":   "video/mp4",
+	".webm":  "video/webm",
 	".css":   "text/css; charset=utf-8",
 	".csv":   "text/csv; charset=utf-8",
 	".json":  "application/json",
@@ -97,6 +101,12 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 	defer release()
+
+	// Reading a directory fails with an error other than fs.ErrNotExist, so look for one first.
+	info, err := repo.Stat(ctx, assetPath)
+	if err == nil && info.IsDir {
+		return httputil.Errorf(http.StatusNotFound, "file %q not found", assetPath)
+	}
 
 	data, err := repo.Get(ctx, assetPath)
 	if err != nil {

@@ -120,9 +120,9 @@ func TestAssetsHandler(t *testing.T) {
 	require.Contains(t, []int{http.StatusForbidden, http.StatusNotFound}, res.StatusCode)
 	require.NotContains(t, body, "confidential")
 
-	// Missing files and directories are not served.
-	res, _ = get(t, "public/img/missing.png", nil)
-	require.Equal(t, http.StatusNotFound, res.StatusCode)
-	res, _ = get(t, "public/img", nil)
-	require.NotEqual(t, http.StatusOK, res.StatusCode)
+	// Missing files and directories, including a public path itself, are not found.
+	for _, path := range []string{"public/img/missing.png", "public/img", "public"} {
+		res, _ = get(t, path, nil)
+		require.Equal(t, http.StatusNotFound, res.StatusCode, path)
+	}
 }
