@@ -1,4 +1,3 @@
-import { exploreBookmarkDataTransformer } from "@rilldata/web-admin/features/bookmarks/explore-bookmark-legacy-data-transformer.ts";
 import {
   getBookmarkData,
   parseBookmarks,
@@ -30,6 +29,7 @@ import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { convertProtoToUrl } from "@rilldata/web-common/features/dashboards/proto-state/protoToUrl.ts";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
@@ -214,13 +214,7 @@ describe("getBookmarkData and parseBookmarks", () => {
             AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
             (data) =>
               // Use the explore transformer to match the ExploreBookmarks components and to parse legacy proto state
-              exploreBookmarkDataTransformer({
-                data,
-                metricsViewSpec:
-                  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-                exploreSpec: AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-                timeRangeSummary: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-              }),
+              convertProtoToUrl(data).toString(),
           );
 
           assertUnorderedUrlSearch(

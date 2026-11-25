@@ -1,5 +1,4 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   getSelectedValuesInFilter,
   getWhereFilterExpressionIndex,
@@ -252,31 +251,6 @@ const metricsViewReducers = {
       state.entities[name].name = name;
 
       return state;
-    });
-  },
-
-  syncFromUrl(
-    name: string,
-    urlState: string,
-    metricsView: V1MetricsViewSpec,
-    explore: V1ExploreSpec,
-  ) {
-    if (!urlState || !metricsView) return;
-    // not all data for MetricsExplorerEntity will be filled out here.
-    // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView, explore);
-    if (!partial) return;
-
-    updateMetricsExplorerByName(name, (exploreState) => {
-      for (const key in partial) {
-        exploreState[key] = partial[key];
-      }
-      // this hack is needed since what is shown for comparison is not a single source
-      // TODO: use an enum and get rid of this
-      if (!partial.showTimeComparison) {
-        exploreState.showTimeComparison = false;
-      }
-      correctExploreState(metricsView, exploreState);
     });
   },
 

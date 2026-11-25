@@ -5,6 +5,7 @@ import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboar
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain.ts";
 
 /**
@@ -28,6 +29,27 @@ export function correctExploreState(
 
   correctLeaderboardMeasures(exploreState);
   correctPivotFields(exploreState);
+  correctTimeDimensionDetails(metricsViewSpec, exploreState);
+}
+
+/**
+ * Time dimension details need a time dimension to chart against.
+ * A link can still open them on an explore without one,
+ * e.g. a report's request without dimensions is mapped without the specs.
+ */
+function correctTimeDimensionDetails(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreState: ExploreState,
+) {
+  if (
+    exploreState.activePage !==
+      DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL ||
+    metricsViewSpec.timeDimension
+  ) {
+    return;
+  }
+  exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+  exploreState.tdd = { ...exploreState.tdd, expandedMeasureName: "" };
 }
 
 /**

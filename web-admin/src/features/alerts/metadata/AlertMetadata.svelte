@@ -9,7 +9,6 @@
   import {
     useAlert,
     useAlertDashboardName,
-    useAlertDashboardState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -29,7 +28,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -37,11 +35,15 @@
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { alertDeleteMutationFactory } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { convertStateParamToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
+  import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
 
   export let organization: string;
   export let project: string;
@@ -86,29 +88,48 @@
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
-
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
 
-  $: exploreUrl = getMappedExploreUrl(
-    {
-      exploreName: $exploreName.data,
-      queryName,
-      queryArgsJson,
-    },
-    {
-      exploreProtoState: alertSpec?.annotations?.web_open_state,
-    },
-    {
-      client: runtimeClient,
-      organization,
-      project,
-      embedded,
-    },
+  // The alert's request has no notion of in-list filters; the saved dashboard state does.
+  $: dimensionsWithInlistFilter = getDimensionsWithInlistFilter(
+    alertSpec?.annotations?.web_open_state,
   );
+  function getDimensionsWithInlistFilter(webOpenState: string | undefined) {
+    try {
+      const filterParam = convertStateParamToUrlParams(
+        "explore",
+        webOpenState,
+      ).get(ExploreStateURLParams.Filters);
+      if (!filterParam) return [];
+      return convertFilterParamToExpression(filterParam)
+        .dimensionsWithInlistFilter;
+    } catch {
+      // An unparsable state only loses the in-list display of the filters.
+      return [];
+    }
+  }
+
+  $: exploreUrlQuery = createQuery(
+    getMappedExploreUrlQueryOptions(
+      runtimeClient,
+      {
+        type: "query",
+        request: {
+          exploreName: $exploreName.data ?? "",
+          queryName,
+          queryArgsJson,
+        },
+        options: {
+          exploreProtoState: alertSpec?.annotations?.web_open_state,
+        },
+      },
+      { organization, project, embedded },
+    ),
+  );
+  $: exploreUrl = $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();
@@ -196,7 +217,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a href={$exploreUrl}>
+              <a href={exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}
@@ -265,8 +286,7 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
-      dimensionsWithInlistFilter={$dashboardState.data
-        ?.dimensionsWithInlistFilter ?? []}
+      {dimensionsWithInlistFilter}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />

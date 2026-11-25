@@ -10,10 +10,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import {
-    getMappedAIExploreUrl,
-    getMappedExploreUrl,
-  } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
   import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -33,7 +29,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { reportDeleteMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
@@ -52,6 +48,10 @@
     formatRefreshSchedule,
   } from "./utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import {
+    getMappedExploreUrlQueryOptions,
+    type MappedExploreUrlSource,
+  } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
 
   export let organization: string;
   export let project: string;
@@ -107,22 +107,34 @@
 
   $: ({ queryName, queryArgsJson } = getSpecQuery(reportSpec ?? {}));
 
-  $: exploreUrl = getMappedExploreUrl(
-    {
-      exploreName: isCanvasReport ? "" : ($dashboardName.data ?? ""),
-      queryName,
-      queryArgsJson,
-    },
-    {
-      exploreProtoState: reportSpec?.annotations?.web_open_state,
-      forceOpenPivot: true,
-    },
-    {
-      client: runtimeClient,
+  // AI reports link to the explore they analyze, with the report's scope (dimensions, measures, time ranges, filter) applied.
+  $: exploreUrlSource = (
+    isAIReport
+      ? {
+          type: "ai",
+          exploreName: $dashboardName.data ?? "",
+          props: (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
+        }
+      : {
+          type: "query",
+          request: {
+            // Canvas reports link to the canvas instead; an empty query keeps this disabled.
+            exploreName: isCanvasReport ? "" : ($dashboardName.data ?? ""),
+            queryName: isCanvasReport ? "" : queryName,
+            queryArgsJson: isCanvasReport ? "" : queryArgsJson,
+          },
+          options: {
+            exploreProtoState: reportSpec?.annotations?.web_open_state,
+            forceOpenPivot: true,
+          },
+        }
+  ) as MappedExploreUrlSource;
+  $: exploreUrlQuery = createQuery(
+    getMappedExploreUrlQueryOptions(runtimeClient, exploreUrlSource, {
       organization,
       project,
       embedded,
-    },
+    }),
   );
 
   // Canvas reports link to the canvas page with the captured state applied.
@@ -136,17 +148,7 @@
     ).toString();
     return search ? `${path}?${search}` : path;
   })();
-  // AI reports link to the explore they analyze, with the report's scope (dimensions, measures, time ranges, filter) applied.
-  $: aiExploreUrl = getMappedAIExploreUrl(
-    (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
-    isAIReport ? ($dashboardName.data ?? "") : "",
-    { client: runtimeClient, organization, project, embedded },
-  );
-  $: dashboardUrl = isCanvasReport
-    ? canvasUrl
-    : isAIReport
-      ? $aiExploreUrl
-      : $exploreUrl;
+  $: dashboardUrl = isCanvasReport ? canvasUrl : $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();

@@ -289,7 +289,7 @@ export function setTimeFilterParamsFromV1TimeRanges(
  * Maps an API time range to the rill time range and zone a {@link TimeFilterManager} is seeded with.
  * The zone is undefined when the dashboard's default zone should apply.
  */
-function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
+export function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
   timeRange: string | undefined;
   timeZone: string | undefined;
 } {

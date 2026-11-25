@@ -32,7 +32,6 @@
   import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import {
     getDashboardNameFromReport,
-    applyReportFiltersToParams,
     createReportFilterManagers,
     getExistingReportInitialFormValues,
     getFilterParamsFromAggregationRequest,
@@ -45,7 +44,6 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
   import { array, object, string, boolean } from "yup";
@@ -59,12 +57,10 @@
     type V1MetricsViewAggregationRequest,
     type V1Query,
     type V1ReportSpec,
-    type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getCanvasFilters } from "../canvas/filters/canvas-filter-expressions";
   import { getCanvasStoreUnguarded } from "../canvas/state-managers/state-managers";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
@@ -79,6 +75,7 @@
     getReportMutationFactory,
   } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { augmentUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
 
   let {
     open = $bindable(),
@@ -230,14 +227,6 @@
     return params;
   }
 
-  let currentProtobufState: string | undefined = undefined;
-  // svelte-ignore state_referenced_locally
-  if (open && props.mode === "create") {
-    const stateManagers = getStateManagers();
-    const { dashboardStore } = stateManagers;
-    currentProtobufState = get(dashboardStore).proto;
-  }
-
   const schema = yup(
     object({
       title: string().required(m.report_form_required()),
@@ -351,6 +340,20 @@
       values.timeOfDay,
       values.dayOfMonth,
     );
+    const webOpenState = augmentUrlParams(
+      isCanvasReport ? "canvas" : "explore",
+      props.mode === "edit" ? props.reportSpec.annotations : undefined,
+      expressionFilterManager,
+      timeFilterManager,
+      (urlParams) => {
+        if (!isCanvasReport) return;
+        // The canvas state (filters, time range, tabs) the report will render with,
+        // plus the PDF rendering options, which the export page reads back from this state.
+        urlParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
+        urlParams.set("pdf_all_tabs", String(values.pdfAllTabs));
+      },
+    );
+
     const commonOptions = {
       displayName: values.title,
       refreshCron: refreshCron, // for testing: "* * * * *"
@@ -369,6 +372,7 @@
         isEmbedded && showEmbedOwnerEmail
           ? values.embedOwnerEmail.trim()
           : undefined,
+      webOpenState,
     };
 
     // Until the specs load, the managers hold no filters, so the report would silently drop them.
@@ -376,22 +380,11 @@
       throw new Error(m.report_form_canvas_loading());
     }
 
-    if (isCanvasReport && canvasBaseParams) {
-      // The canvas state (filters, time range, tabs) the report will render with,
-      // plus the PDF rendering options, which the export page reads back from this state.
-      const stateParams = applyReportFiltersToParams(
-        canvasBaseParams,
-        expressionFilterManager,
-        timeFilterManager,
-      );
-      stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
-      stateParams.set("pdf_all_tabs", String(values.pdfAllTabs));
-
+    if (isCanvasReport) {
       return {
         ...commonOptions,
         canvas: canvasName,
         exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
-        webOpenState: stateParams.toString(),
         // The selected filters are also baked into the report's security rules,
         // so magic-token recipients cannot query data beyond them.
         metricsViewFilters: getCanvasFilters(expressionFilterManager),
@@ -425,14 +418,6 @@
       exportIncludeHeader: values.exportIncludeHeader || false,
       exportAttach: values.exportAttach,
       exportFormat: values.exportFormat,
-      webOpenState:
-        props.mode === "create"
-          ? currentProtobufState
-          : props.mode === "edit"
-            ? (props.reportSpec.annotations as V1ReportSpecAnnotations)[
-                "web_open_state"
-              ]
-            : undefined,
     };
   }
 
