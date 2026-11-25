@@ -312,7 +312,7 @@ func TestAST_RewriteFunctionTableRefs(t *testing.T) {
 		{
 			"no replace",
 			`select * from AdBid a join AdImp i on a.id=i.id where a='1' group by b limit 2`,
-			`SELECT * FROM AdBid AS a INNER JOIN AdImp AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+			`SELECT * FROM (AdBid AS a INNER JOIN AdImp AS i ON ((a.id = i.id))) WHERE (a = '1') GROUP BY b LIMIT 2`,
 		},
 		{
 			"simple replace",
@@ -326,7 +326,7 @@ select * from
 	read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) as b join
 	AdImpressions i on b.id=i.id
 `,
-			`SELECT * FROM AdBids AS b INNER JOIN AdImpressions AS i ON ((b.id = i.id))`,
+			`SELECT * FROM (AdBids AS b INNER JOIN AdImpressions AS i ON ((b.id = i.id)))`,
 		},
 		{
 			"join with sub query",
@@ -335,7 +335,7 @@ select * from
   read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) a join
   (select * from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) i1 where i1.city='Bengaluru') i on a.id=i.id
 where a='1' group by b limit 2`,
-			`SELECT * FROM AdBids AS a INNER JOIN (SELECT * FROM AdImpressions AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+			`SELECT * FROM (AdBids AS a INNER JOIN (SELECT * FROM AdImpressions AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id))) WHERE (a = '1') GROUP BY b LIMIT 2`,
 		},
 		{
 			"replace with CTEs",
@@ -345,7 +345,7 @@ with
   tbl3 as (select col1 from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
 select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id
 `,
-			`WITH tbl2 AS (SELECT col1 FROM AdBids), tbl3 AS (SELECT col1 FROM AdImpressions)SELECT col1 FROM tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id))`,
+			`WITH tbl2 AS (SELECT col1 FROM AdBids), tbl3 AS (SELECT col1 FROM AdImpressions) SELECT col1 FROM (tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id)))`,
 		},
 		{
 			"replace with CTEs and unions",
@@ -355,7 +355,7 @@ with
   tbl3 as (select col1 from read_csv( 'AdBids_June.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
 select col1 from tbl2 union all select col1 from tbl3 union all select col1 from read_csv( 'AdBids_July.csv', delim='|', columns={'timestamp':'TIMESTAMP'})
 `,
-			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)(SELECT col1 FROM tbl2) UNION ALL ((SELECT col1 FROM tbl3) UNION ALL (SELECT col1 FROM AdBids_July))`,
+			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June) (SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)UNION ALL (SELECT col1 FROM AdBids_July)`,
 		},
 		{
 			"replace with pivot statement",
@@ -375,7 +375,7 @@ unpivot
 	(select * from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) where publisher is not null)
 on publisher
 `,
-			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) UNPIVOT ("value" FOR "name" IN ('publisher'))`,
+			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) UNPIVOT ("value" FOR "name" IN (publisher))`,
 		},
 		{
 			"percent sample",
@@ -418,7 +418,7 @@ func TestAST_RewriteBaseTableRefs(t *testing.T) {
 			"simple table reference",
 			`select * from AdBid a join "s3://data/AdImp.csv" i on a.id=i.id where a='1' group by b limit 2`,
 			[]string{"AB", "AI"},
-			`SELECT * FROM AB AS a INNER JOIN AI AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+			`SELECT * FROM (AB AS a INNER JOIN AI AS i ON ((a.id = i.id))) WHERE (a = '1') GROUP BY b LIMIT 2`,
 		},
 		{
 			"table references with sub queries",
@@ -427,7 +427,7 @@ select * from
   AdBid a join (select * from "s3://data/AdImp.csv" i1 where i1.city='Bengaluru') i on a.id=i.id
   where a='1' group by b limit 2`,
 			[]string{"AB", "AI"},
-			`SELECT * FROM AB AS a INNER JOIN (SELECT * FROM AI AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+			`SELECT * FROM (AB AS a INNER JOIN (SELECT * FROM AI AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id))) WHERE (a = '1') GROUP BY b LIMIT 2`,
 		},
 		{
 			"table references with CTEs",
@@ -438,7 +438,7 @@ with
 select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id
 `,
 			[]string{"AB", "AI", "tbl2", "tbl3"},
-			`WITH tbl2 AS (SELECT col1 FROM AB AS a), tbl3 AS (SELECT col1 FROM AI AS i)SELECT col1 FROM tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id))`,
+			`WITH tbl2 AS (SELECT col1 FROM AB AS a), tbl3 AS (SELECT col1 FROM AI AS i) SELECT col1 FROM (tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id)))`,
 		},
 		{
 			"table references with CTEs and unions",
@@ -449,7 +449,7 @@ with
 select col1 from tbl2 union all select col1 from tbl3 union all select col1 from "s3://data/AdBid_July.csv"
 `,
 			[]string{"A_M", "A_J", "tbl2", "tbl3", "A_Jl"},
-			`WITH tbl2 AS (SELECT col1 FROM A_M AS a), tbl3 AS (SELECT col1 FROM A_J AS i)(SELECT col1 FROM tbl2) UNION ALL ((SELECT col1 FROM tbl3) UNION ALL (SELECT col1 FROM A_Jl))`,
+			`WITH tbl2 AS (SELECT col1 FROM A_M AS a), tbl3 AS (SELECT col1 FROM A_J AS i) (SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)UNION ALL (SELECT col1 FROM A_Jl)`,
 		},
 	}
 
@@ -507,7 +507,7 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 					},
 				},
 			},
-			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (sample_size = -1))`,
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (sample_size = CAST(-1 AS BIGINT)))`,
 		},
 		{
 			"with multiple paths with map prop",
@@ -541,7 +541,7 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 					},
 				},
 			},
-			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), ("columns" = main.struct_pack(O := main.struct_pack(K1 := 1.2))))`,
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), ("columns" = main.struct_pack(O := main.struct_pack(K1 := CAST(1.2 AS DOUBLE)))))`,
 		},
 		{
 			"with list prop",
@@ -555,7 +555,7 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 					},
 				},
 			},
-			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (list = main.list_value(1.2, 1)))`,
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (list = main.list_value(CAST(1.2 AS DOUBLE), 1)))`,
 		},
 		{
 			"with deep list paths",
@@ -627,28 +627,28 @@ func TestAST_RewriteLimit(t *testing.T) {
 			`SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON (sub1.col1 = sub2.col1)`,
 			100,
 			0,
-			`SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100`,
+			`SELECT col1 FROM ((SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON ((sub1.col1 = sub2.col1))) LIMIT 100`,
 		},
 		{
 			"UpdateLimit_SELECT",
 			`SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 2000`,
 			100,
 			0,
-			`SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100`,
+			`SELECT col1 FROM ((SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1))) LIMIT 100`,
 		},
 		{
 			"InsertLimit_WITH",
 			`WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1) SELECT col1 FROM tbl2 UNION ALL SELECT col1 FROM tbl3`,
 			100,
 			0,
-			`WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1)(SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3) LIMIT 100`,
+			`WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1) (SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3) LIMIT 100`,
 		},
 		{
 			"UpdateLimit_WITH",
 			`WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 2000`,
 			100,
 			0,
-			`WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 100`,
+			`WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000) (SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 100`,
 		},
 		{
 			"InsertLimit_SELECT_WHERE",

@@ -181,19 +181,18 @@ func transformStatments(root *jsonvalue.V, limit int) error {
 	      "class":"CONSTANT",
 	      "type":"VALUE_CONSTANT",
 	      "alias":"",
-	      "value":{
-	         "type":{
-	            "id":"INTEGER",
-	            "type_info":null
-	         },
-	         "is_null":false,
-	         "value":1
+	      "literal":{
+	         "kind":"INTEGER",
+	         "text":"1"
 	      }
 	   },
-	   "offset":null
+	   "offset":null,
+	   "limit_type":"ROW_COUNT"
 	},
 
 ]
+
+Constants are replaced rather than updated in place since their serialization differs across DuckDB versions.
 
 "LIMIT ?" clause serialization is:
 
@@ -216,10 +215,7 @@ func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 			if v.MustGet("type").String() == "LIMIT_MODIFIER" {
 				modifierType := v.MustGet("limit").MustGet("class").String()
 				switch modifierType {
-				case "CONSTANT":
-					v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
-					updated = true
-				case "PARAMETER":
+				case "CONSTANT", "PARAMETER":
 					err := v.Delete("limit")
 					if err != nil {
 						return err

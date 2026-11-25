@@ -31,6 +31,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+const storageCompatibilityVersion = "v1.5.0"
+
 var (
 	errNotFound       = errors.New("rduckdb: not found")
 	createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*\s+\bsecret\b`)
@@ -110,6 +112,10 @@ func (d *DBOptions) ValidateSettings() error {
 	if d.WriteSettings == nil {
 		d.WriteSettings = make(map[string]string)
 	}
+	// Pin the storage format so rolling back to DuckDB 1.5 can still read files on the local disk.
+	d.ReadSettings["storage_compatibility_version"] = storageCompatibilityVersion
+	d.WriteSettings["storage_compatibility_version"] = storageCompatibilityVersion
+
 	memoryLimitBytes := int64(d.MemoryLimitGB * 1000 * 1000 * 1000)
 	if memoryLimitBytes == 0 {
 		db, err := sql.Open("duckdb", "")

@@ -25,29 +25,6 @@ func (fn *fromNode) rewriteToReadTableFunction(name string, paths []string, prop
 }
 
 func (sn *selectNode) rewriteLimit(limit int) error {
-	// If this is a CTE_NODE, traverse down to find the final SELECT/SET_OPERATION node
-	if toString(sn.ast, astKeyType) == "CTE_NODE" {
-		finalNode := sn.ast
-		for {
-			child := toNode(finalNode, astKeyChild)
-			if child == nil {
-				break
-			}
-			// If the child is still a CTE_NODE, continue traversing
-			if toString(child, astKeyType) == "CTE_NODE" {
-				finalNode = child
-				continue
-			}
-			// Found the final SELECT or SET_OPERATION node
-			finalNode = child
-			break
-		}
-
-		// Apply limit to the final node
-		sn := &selectNode{ast: finalNode}
-		return sn.rewriteLimit(limit)
-	}
-
 	modifiersNode := toNodeArray(sn.ast, astKeyModifiers)
 	updated := false
 	for _, v := range modifiersNode {
@@ -57,10 +34,7 @@ func (sn *selectNode) rewriteLimit(limit int) error {
 
 		modifierType := toString(toNode(v, astKeyLimit), astKeyClass)
 		switch modifierType {
-		case "CONSTANT":
-			toNode(toNode(v, astKeyLimit), astKeyValue)[astKeyValue] = limit
-			updated = true
-		case "PARAMETER":
+		case "CONSTANT", "PARAMETER":
 			delete(v, astKeyLimit)
 
 			limitObject, err := createConstantLimit(limit)

@@ -53,26 +53,6 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 	}
 
 	switch toString(node, astKeyType) {
-	case "CTE_NODE":
-		// Handle new nested CTE structure in DuckDB 1.4.1+
-		// Each CTE_NODE represents one CTE in the WITH clause
-
-		// Mark the CTE name as an alias
-		if cteName := toString(node, astKeyCTEName); cteName != "" {
-			a.aliases[cteName] = true
-		}
-
-		// Traverse the query for this specific CTE (not the root)
-		if query := toNode(toNode(node, astKeyQuery), astKeyNode); query != nil {
-			a.traverseSelectQueryStatement(query, false)
-		}
-
-		// Process the child node (could be another CTE_NODE or the final SELECT_NODE)
-		// Pass through isRoot so the final SELECT_NODE can be marked as root
-		if child := toNode(node, astKeyChild); child != nil {
-			a.traverseSelectQueryStatement(child, isRoot)
-		}
-
 	case "SELECT_NODE":
 		if isRoot {
 			// only get the select list from the root select.
@@ -85,8 +65,9 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 
 	case "SET_OPERATION_NODE":
 		a.traverseCTEMap(toNode(node, astKeyCTE))
-		a.traverseSelectQueryStatement(toNode(node, astKeyLeft), isRoot)
-		a.traverseSelectQueryStatement(toNode(node, astKeyRight), isRoot)
+		for _, child := range toNodeArray(node, astKeyChildren) {
+			a.traverseSelectQueryStatement(child, isRoot)
+		}
 	}
 }
 
@@ -120,7 +101,7 @@ func (a *AST) traverseColumnNode(node astNode) {
 }
 
 func (a *AST) traverseExcludeColumnNode(node astNode) {
-	for _, child := range toNodeArray(node, astKeyChildren) {
+	for _, child := range functionArgs(node) {
 		if toString(child, astKeyType) != "COLUMN_REF" {
 			continue
 		}
@@ -182,7 +163,7 @@ func (a *AST) traverseCTEMap(node astNode) {
 	mapEntries := toNodeArray(node, astKeyMap)
 	for _, mapEntry := range mapEntries {
 		a.aliases[toString(mapEntry, astKeyKey)] = true
-		a.traverseSelectQueryStatement(toNode(toNode(toNode(mapEntry, astKeyValue), astKeyQuery), astKeyNode), false)
+		a.traverseSelectQueryStatement(toNode(toNode(mapEntry, astKeyValue), astKeyQueryNode), false)
 	}
 }
 
@@ -214,7 +195,7 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 	node := toNode(parent, childKey)
 	functionNode := toNode(node, astKeyFunction)
 	functionName := toString(functionNode, astKeyFunctionName)
-	arguments := toNodeArray(functionNode, astKeyChildren)
+	arguments := functionArgs(functionNode)
 
 	ref := &TableRef{
 		Function:   functionName,
@@ -282,9 +263,9 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 func valueToGoValue(v astNode) any {
 	switch toString(v, astKeyType) {
 	case "VALUE_CONSTANT":
-		return constantValueToGoValue(toNode(v, astKeyValue))
+		return constantValueToGoValue(toNode(v, astKeyLiteral))
 	case "FUNCTION":
-		if toString(v, astKeySchema) == "main" {
+		if schema := toString(v, astKeySchema); schema == "" || schema == "main" {
 			switch toString(v, astKeyFunctionName) {
 			case "struct_pack":
 				return structValueToGoValue(v)
@@ -298,36 +279,29 @@ func valueToGoValue(v astNode) any {
 	return nil
 }
 
+// constantValueToGoValue converts a constant's literal, e.g. `{"kind": "INTEGER", "text": "1"}`, to a Go value.
 func constantValueToGoValue(v astNode) any {
-	if toBoolean(v, astKeyIsNull) {
-		return nil
-	}
-
-	t := toNode(v, astKeyType)
-	val := v[astKeyValue]
-	switch toString(t, astKeyID) {
+	text := toString(v, astKeyText)
+	switch toString(v, astKeyKind) {
 	case "BOOLEAN":
-		return val.(bool)
-	case "TINYINT", "SMALLINT", "INTEGER":
-		return forceConvertToNum[int32](val)
-	case "BIGINT":
-		return forceConvertToNum[int64](val)
-	case "UTINYINT", "USMALLINT", "UINTEGER":
-		return forceConvertToNum[uint32](val)
-	case "UBIGINT":
-		return forceConvertToNum[uint64](val)
-	case "FLOAT":
-		return forceConvertToNum[float32](val)
-	case "DOUBLE":
-		return forceConvertToNum[float64](val)
-	case "DECIMAL":
-		ti := toNode(t, astKeyTypeInfo)
-		if ti == nil {
-			return 0.0
+		return castToBoolean(text)
+	case "INTEGER":
+		i, err := strconv.ParseInt(text, 10, 64)
+		if err != nil {
+			return nil
 		}
-		return forceConvertToNum[float64](val) / math.Pow(10, forceConvertToNum[float64](ti[astKeyScale]))
-	case "VARCHAR":
-		return val.(string)
+		if i >= math.MinInt32 && i <= math.MaxInt32 {
+			return int32(i)
+		}
+		return i
+	case "NUMERIC":
+		f, err := strconv.ParseFloat(text, 64)
+		if err != nil {
+			return nil
+		}
+		return f
+	case "STRING":
+		return text
 		// TODO: others
 	}
 	return nil
@@ -336,7 +310,7 @@ func constantValueToGoValue(v astNode) any {
 func structValueToGoValue(v astNode) map[string]any {
 	structVal := map[string]any{}
 
-	for _, child := range toNodeArray(v, astKeyChildren) {
+	for _, child := range functionArgs(v) {
 		structVal[toString(child, astKeyAlias)] = valueToGoValue(child)
 	}
 
@@ -345,7 +319,7 @@ func structValueToGoValue(v astNode) map[string]any {
 
 func arrayValueToGoValue(v astNode) []any {
 	arr := make([]any, 0)
-	for _, child := range toNodeArray(v, astKeyChildren) {
+	for _, child := range functionArgs(v) {
 		arr = append(arr, valueToGoValue(child))
 	}
 	return arr
@@ -353,7 +327,7 @@ func arrayValueToGoValue(v astNode) []any {
 
 func castValueToGoValue(v astNode) any {
 	val := valueToGoValue(toNode(v, astKeyChild))
-	if toString(toNode(v, astKeyCastType), astKeyID) == "BOOLEAN" {
+	if strings.EqualFold(toString(toNode(v, astKeyTypeExpr), astKeyTypeName), "BOOLEAN") {
 		return castToBoolean(val)
 	}
 	// TODO: other types
