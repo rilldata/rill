@@ -574,4 +574,27 @@ describe("fitLegends", () => {
     // New rows with the same labels change nothing.
     expect(setLegendLabels(legend.view, fitted, refreshed)).toBe(false);
   });
+
+  it("keeps clear of the names of the chart's own params", async () => {
+    // A param of the chart's own under the name the first legend's labels would take: Vega
+    // refused the spec for its second signal of that name.
+    const spec = {
+      ...barChart(channels),
+      params: [{ name: "rill_legend_labels_0", value: 0.5 }],
+      mark: { type: "bar", opacity: { expr: "rill_legend_labels_0" } },
+    } as VisualizationSpec;
+    const legend = await drawLegends(spec, { width: 560, height: 300 });
+    expect(legend.view.signal("rill_legend_labels_0")).toBe(0.5);
+    // Laid out by its labels: short ones take a single row.
+    expect(legend.labels).toEqual(channels);
+    expect(legend.rows).toBe(1);
+
+    // The renderer sets the container's size by name, so a chart with a param of that name is
+    // left as it is.
+    const container = {
+      ...barChart(channels),
+      params: [{ name: "rill_container", value: 1 }],
+    } as VisualizationSpec;
+    expect(fitLegends(container, theme)).toBe(container);
+  });
 });

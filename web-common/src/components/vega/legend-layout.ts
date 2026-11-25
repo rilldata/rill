@@ -50,6 +50,10 @@ export function fitLegends(
   if (authored?.columns !== undefined || authored?.direction !== undefined) {
     return spec;
   }
+  // The params the chart declares, whose names its signals take. The renderer sets the container's
+  // size by name, so a chart that already has a param of that name is left as it is.
+  const named = paramNames(root);
+  if (named.has(CONTAINER_SIGNAL)) return spec;
   // The plot's `width` follows the container's where the chart states a width for Vega to fit,
   // and its `height` where the chart is fitted both ways. A chart with neither is drawn at the
   // size of its bands or of Vega-Lite's default view.
@@ -73,6 +77,7 @@ export function fitLegends(
   const fitted = fitView(root, () => undefined, {
     layouts,
     labelled,
+    named,
     fitsWidth:
       (fit === "fit" || fit === "fit-x") &&
       (typeof root.width === "number" || root.width === "container"),
@@ -263,6 +268,8 @@ interface FitContext {
   layouts: ViewSpec[];
   /** The legends among them laid out by their labels. */
   labelled: LabelledLegend[];
+  /** The names the chart's params take, and those given to the signals of `labelled` so far. */
+  named: Set<string>;
   /** Whether the plot's `width` and `height` are fitted to the chart's container. */
   fitsWidth: boolean;
   fitsHeight: boolean;
@@ -376,6 +383,19 @@ function countCategoryLegends(root: ViewSpec, defaultOrient: unknown): number {
   return listed.size;
 }
 
+/** The names of the params a view and its layers declare, each of which Vega makes a signal of. */
+function paramNames(view: ViewSpec, names = new Set<string>()): Set<string> {
+  for (const param of Array.isArray(view.params) ? view.params : []) {
+    const name = record(param)?.name;
+    if (typeof name === "string") names.add(name);
+  }
+  for (const layer of Array.isArray(view.layer) ? view.layer : []) {
+    const layerView = record(layer);
+    if (layerView) paramNames(layerView, names);
+  }
+  return names;
+}
+
 /** The layout of the legend an encoding draws, or undefined where it draws none to lay out. */
 function legendLayout(
   channel: string,
@@ -459,7 +479,11 @@ function legendLayout(
     };
   }
 
-  const signal = `${LABELS_SIGNAL}_${context.labelled.length}`;
+  // A name no param of the chart takes: Vega refuses a second signal of one.
+  let n = 0;
+  while (context.named.has(`${LABELS_SIGNAL}_${n}`)) n++;
+  const signal = `${LABELS_SIGNAL}_${n}`;
+  context.named.add(signal);
   context.labelled.push({
     signal,
     labels: (datasets) => {
