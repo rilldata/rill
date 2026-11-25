@@ -1,5 +1,12 @@
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
+import {
+  clickMenuButton,
+  deleteFile,
+  getFileNavEntry,
+  openFileNavEntryContextMenu,
+} from "./utils/commonHelpers";
+import { fileNotPresent, gotoNavEntry } from "./utils/waitHelpers";
 
 test.describe("File Explorer", () => {
   test.use({ project: "Blank" });
@@ -65,6 +72,10 @@ test.describe("File Explorer", () => {
       await page.getByRole("listitem", { name: "/README.md" }).hover();
       await page.getByLabel("/README.md actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Delete" })
+        .click();
       await expect(
         page.getByRole("link", { name: "README.md" }),
       ).not.toBeVisible();
@@ -126,7 +137,82 @@ test.describe("File Explorer", () => {
         .hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
-      await page.getByRole("button", { name: "Delete" }).click();
+      const dialog = page.getByRole("alertdialog");
+      await expect(dialog).toContainText(
+        "The folder /my-directory and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
+      );
+      await dialog.getByRole("button", { name: "Delete" }).click();
+      await expect(
+        page.getByRole("directory", { name: "my-directory" }),
+      ).toHaveCount(0);
+    });
+  });
+
+  test.describe("Delete confirmation", () => {
+    test.use({ project: "AdBids" });
+    // The runtime ingests the project before the dashboards resolve,
+    // which can take longer than the default 30s locally.
+    test.describe.configure({ timeout: 180_000 });
+
+    test("should ask before deleting a canvas or an explore dashboard", async ({
+      page,
+    }) => {
+      const metricsViewFile = "/metrics/AdBids_metrics.yaml";
+      const canvasFile = "/dashboards/AdBids_metrics_canvas.yaml";
+      const exploreFile = "/dashboards/AdBids_metrics_explore.yaml";
+      const dialog = page.getByRole("alertdialog");
+
+      // Open the canvas, so the delete has to leave its page.
+      // Its widgets render once the canvas resource has resolved.
+      await gotoNavEntry(page, canvasFile);
+      await expect(page.getByText("Total records").first()).toBeVisible({
+        timeout: 60_000,
+      });
+
+      // Deleting the metrics view lists the dashboards built on it
+      await openFileNavEntryContextMenu(page, metricsViewFile);
+      await clickMenuButton(page, "Delete");
+      await expect(dialog).toContainText("Delete metrics view?");
+      await expect(dialog).toContainText(
+        "These 2 files depend on it and will have errors until you update them:",
+      );
+      await expect(dialog.getByRole("listitem")).toHaveText([
+        canvasFile,
+        exploreFile,
+      ]);
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
+
+      // The dialog names the dashboard and its file, and says whether the delete can be undone
+      await openFileNavEntryContextMenu(page, canvasFile);
+      await clickMenuButton(page, "Delete");
+      await expect(dialog).toContainText("Delete canvas dashboard?");
+      await expect(dialog).toContainText(
+        `The canvas dashboard AdBids_metrics_canvas and its file ${canvasFile} will be deleted from the project.`,
+      );
+      await expect(dialog).toContainText("This can't be undone in Rill.");
+
+      // Cancelling keeps the dashboard
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
+      await expect(getFileNavEntry(page, canvasFile)).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/files${canvasFile}`));
+
+      // Confirming deletes it and leaves the deleted file's page
+      await deleteFile(page, canvasFile);
+      await fileNotPresent(page, canvasFile);
+      await expect(page).not.toHaveURL(new RegExp(`/files${canvasFile}`));
+
+      // An explore dashboard gets its own wording
+      await openFileNavEntryContextMenu(page, exploreFile);
+      await clickMenuButton(page, "Delete");
+      await expect(dialog).toContainText("Delete explore dashboard?");
+      await expect(dialog).toContainText(
+        `The explore dashboard AdBids_metrics_explore and its file ${exploreFile} will be deleted from the project.`,
+      );
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(getFileNavEntry(page, exploreFile)).toBeVisible();
     });
   });
 });

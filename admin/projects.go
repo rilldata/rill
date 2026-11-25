@@ -318,7 +318,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	limit := 10
 	afterProjectName := ""
 	for {
-		projs, err := s.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+		projs, err := s.DB.FindProjectsForOrganization(ctx, org.ID, nil, afterProjectName, limit)
 		if err != nil {
 			return err
 		}

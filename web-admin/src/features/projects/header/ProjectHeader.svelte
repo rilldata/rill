@@ -262,6 +262,7 @@
         <ShareProjectPopover
           {organization}
           {project}
+          manageProject={!!projectPermissions.manageProject}
           manageProjectAdmins={projectPermissions.manageProjectAdmins}
           {manageOrgAdmins}
           {manageOrgMembers}

@@ -876,6 +876,13 @@ export class ListProjectsForOrganizationRequest extends Message<ListProjectsForO
   org = "";
 
   /**
+   * If set, only projects that have at least one of these tags are returned.
+   *
+   * @generated from field: repeated string tags = 4;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -894,6 +901,7 @@ export class ListProjectsForOrganizationRequest extends Message<ListProjectsForO
   static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -3958,6 +3966,14 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   description = "";
 
   /**
+   * Tags for organizing the project, such as "prod" or "sandbox".
+   * Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores.
+   *
+   * @generated from field: repeated string tags = 18;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool public = 4;
    */
   public = false;
@@ -4034,6 +4050,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4201,6 +4218,21 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   description?: string;
 
   /**
+   * Tags to add to the project. Tags the project already has are kept.
+   *
+   * @generated from field: repeated string add_tags = 19;
+   */
+  addTags: string[] = [];
+
+  /**
+   * Tags to remove from the project. Tags the project doesn't have are ignored.
+   * A tag can't be in both add_tags and remove_tags.
+   *
+   * @generated from field: repeated string remove_tags = 20;
+   */
+  removeTags: string[] = [];
+
+  /**
    * @generated from field: optional bool public = 4;
    */
   public?: boolean;
@@ -4289,6 +4321,8 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "add_tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "remove_tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -17651,6 +17685,13 @@ export class Project extends Message<Project> {
   description = "";
 
   /**
+   * User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase.
+   *
+   * @generated from field: repeated string tags = 29;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool public = 6;
    */
   public = false;
@@ -17767,6 +17808,7 @@ export class Project extends Message<Project> {
     { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 29, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 26, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },

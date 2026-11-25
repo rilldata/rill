@@ -1203,6 +1203,8 @@ export interface V1Project {
   orgId?: string;
   orgName?: string;
   description?: string;
+  /** User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase. */
+  tags?: string[];
   public?: boolean;
   createdByUserId?: string;
   directoryName?: string;
@@ -2144,6 +2146,10 @@ export type AdminServiceUpdateOrganizationMemberUserAttributesBody = {
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
+  /**
+   * If set, only projects that have at least one of these tags are returned.
+   */
+  tags?: string[];
   pageSize?: number;
   pageToken?: string;
 };
@@ -2151,6 +2157,9 @@ export type AdminServiceListProjectsForOrganizationParams = {
 export type AdminServiceCreateProjectBody = {
   project?: string;
   description?: string;
+  /** Tags for organizing the project, such as "prod" or "sandbox".
+Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores. */
+  tags?: string[];
   public?: boolean;
   /** directory_name should be the most recently observed local directory name for the project.
 See ListProjectsForFingerprint for more context. */
@@ -2197,6 +2206,11 @@ export type AdminServiceGetProjectParams = {
 
 export type AdminServiceUpdateProjectBody = {
   description?: string;
+  /** Tags to add to the project. Tags the project already has are kept. */
+  addTags?: string[];
+  /** Tags to remove from the project. Tags the project doesn't have are ignored.
+A tag can't be in both add_tags and remove_tags. */
+  removeTags?: string[];
   public?: boolean;
   directoryName?: string;
   primaryBranch?: string;

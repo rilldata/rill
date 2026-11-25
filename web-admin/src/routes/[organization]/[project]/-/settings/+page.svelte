@@ -8,6 +8,7 @@
   import DeleteProject from "@rilldata/web-admin/features/projects/settings/DeleteProject.svelte";
   import HibernateProject from "@rilldata/web-admin/features/projects/settings/HibernateProject.svelte";
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
+  import ProjectTagsSettings from "@rilldata/web-admin/features/projects/settings/ProjectTagsSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -21,6 +22,11 @@
 </script>
 
 <ProjectNameSettings {organization} {project} />
+
+<!-- Keyed so unsaved tag edits don't carry over when the page is reused for another project -->
+{#key `${organization}/${project}`}
+  <ProjectTagsSettings {organization} {project} />
+{/key}
 
 {#snippet githubAction()}
   <GithubConnectionDialog {organization} {project} />

@@ -35,6 +35,8 @@ const ORG_MEMBERS_URL = `/v1/orgs/${ORG}/members`;
 const ORG_INVITES_URL = `/v1/orgs/${ORG}/invites`;
 const ORG_USERGROUPS_URL = `/v1/orgs/${ORG}/usergroups`;
 const ORG_AUTOGROUP_MEMBERS_URL = `/v1/orgs/${ORG}/usergroups/autogroup:members/members`;
+// Only project admins may list the project's domain access rules.
+const PROJECT_DOMAINS_URL = `/v1/orgs/${ORG}/projects/${PROJECT}/whitelisted`;
 
 const request = vi.mocked(httpClient);
 
@@ -42,12 +44,13 @@ function requestedUrls() {
   return request.mock.calls.map(([config]) => config.url);
 }
 
-function renderForm(readOrgMembers: boolean) {
+function renderForm(readOrgMembers: boolean, manageProject = true) {
   return render(ShareProjectForm, {
     props: {
       organization: ORG,
       project: PROJECT,
-      manageProjectAdmins: true,
+      manageProject,
+      manageProjectAdmins: manageProject,
       manageOrgAdmins: false,
       manageOrgMembers: false,
       readOrgMembers,
@@ -68,15 +71,30 @@ async function focusInviteInput() {
   await new Promise((resolve) => setTimeout(resolve, 50));
 }
 
-beforeEach(() => {
-  request.mockReset();
-  request.mockImplementation(((config: AxiosRequestConfig) =>
-    Promise.resolve(
+/**
+ * Answers the form's requests; every list is empty unless a response is given for its URL.
+ * A response can be a function, called per request, to return a pending or rejected promise.
+ */
+function mockResponses(responses: Record<string, unknown> = {}) {
+  request.mockImplementation(((config: AxiosRequestConfig) => {
+    const response = responses[config.url ?? ""];
+    if (typeof response === "function")
+      return (response as () => Promise<unknown>)();
+    return Promise.resolve(
       config.url === "/v1/users/current"
         ? { user: { email: "me@acme.com", displayName: "Me" } }
-        : // Every list is empty: the tests only check which lists the form asks for.
-          { members: [], invites: [], nextPageToken: "" },
-    )) as typeof httpClient);
+        : (response ?? { members: [], invites: [], nextPageToken: "" }),
+    );
+  }) as typeof httpClient);
+}
+
+function domainRemovals() {
+  return request.mock.calls.filter(([config]) => config.method === "DELETE");
+}
+
+beforeEach(() => {
+  request.mockReset();
+  mockResponses();
   // The form observes its member list for infinite scrolling, which jsdom does not implement.
   vi.stubGlobal(
     "IntersectionObserver",
@@ -133,5 +151,98 @@ describe("ShareProjectForm", () => {
     expect(urls).not.toContain(ORG_INVITES_URL);
     expect(urls).not.toContain(ORG_USERGROUPS_URL);
     expect(urls).not.toContain(ORG_AUTOGROUP_MEMBERS_URL);
+  });
+
+  it("shows a project admin the project's domain access, which adds users without an invite, and removes it once confirmed", async () => {
+    let finishRemoval = () => {};
+    mockResponses({
+      [PROJECT_DOMAINS_URL]: {
+        domains: [
+          { domain: "example.com", role: "viewer" },
+          { domain: "example.org", role: "editor" },
+        ],
+      },
+      [`${PROJECT_DOMAINS_URL}/example.org`]: () =>
+        new Promise((resolve) => (finishRemoval = () => resolve({}))),
+    });
+    renderForm(false);
+
+    expect(
+      await screen.findByText("Anyone with an @example.com email"),
+    ).toBeTruthy();
+    expect(screen.getByText("Joins automatically as Viewer")).toBeTruthy();
+    expect(screen.getByText("Joins automatically as Editor")).toBeTruthy();
+
+    // Removing asks first, since the Share dialog can't add the rule back; cancelling sends nothing.
+    const [removeViewerRule, removeEditorRule] =
+      screen.getAllByRole<HTMLButtonElement>("button", { name: "Remove" });
+    await fireEvent.click(removeViewerRule);
+    expect(
+      await screen.findByText("Remove domain access for @example.com?"),
+    ).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Remove domain access for @example.com?"),
+      ).toBeNull(),
+    );
+    expect(domainRemovals()).toHaveLength(0);
+
+    // The dialog's command restores the same rule: same org, project and role.
+    await fireEvent.click(removeEditorRule);
+    expect(
+      await screen.findByText(
+        /rill user whitelist setup example\.org --org acme --project sales --role editor/,
+      ),
+    ).toBeTruthy();
+
+    // Confirming sends one request; every Remove stays disabled while it is pending,
+    // and only the rule being removed shows as busy.
+    await fireEvent.click(screen.getByRole("button", { name: "Yes, remove" }));
+    await waitFor(() => expect(domainRemovals()).toHaveLength(1));
+    expect(domainRemovals()[0][0].url).toBe(
+      `${PROJECT_DOMAINS_URL}/example.org`,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Remove domain access for @example.org?"),
+      ).toBeNull(),
+    );
+    expect(removeViewerRule.disabled).toBe(true);
+    expect(removeEditorRule.disabled).toBe(true);
+    expect(removeEditorRule.getAttribute("aria-busy")).toBe("true");
+    expect(removeViewerRule.getAttribute("aria-busy")).toBe("false");
+    finishRemoval();
+  });
+
+  it("says when the project's domain access could not be loaded, and retries", async () => {
+    mockResponses({
+      [PROJECT_DOMAINS_URL]: () => Promise.reject(new Error("unavailable")),
+    });
+    renderForm(false);
+
+    expect(
+      await screen.findByText(
+        "Couldn't load this project's domain access rules.",
+      ),
+    ).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() =>
+      expect(
+        requestedUrls().filter((url) => url === PROJECT_DOMAINS_URL),
+      ).toHaveLength(2),
+    );
+  });
+
+  it("does not list the project's domain access for an editor", async () => {
+    renderForm(false, false);
+
+    await waitFor(() =>
+      expect(requestedUrls()).toEqual(
+        expect.arrayContaining([PROJECT_MEMBERS_URL, PROJECT_INVITES_URL]),
+      ),
+    );
+    // The admin server would reject it with a 403.
+    expect(requestedUrls()).not.toContain(PROJECT_DOMAINS_URL);
   });
 });

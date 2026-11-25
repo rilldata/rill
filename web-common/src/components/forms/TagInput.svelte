@@ -7,6 +7,8 @@
     label?: string;
     placeholder?: string;
     size?: "sm" | "md";
+    // A validation message shown below the input, above the suggestions.
+    error?: string;
     onChange: (tags: string[]) => void;
   };
 
@@ -16,6 +18,7 @@
     label = "Tags",
     placeholder = "Add a tag and press Enter",
     size = "md",
+    error = "",
     onChange,
   }: Props = $props();
 
@@ -102,9 +105,11 @@
     }
   }
 
-  // Recompute when the list of suggestions changes (e.g. typing filters it).
+  // Recompute when the list of suggestions changes (e.g. typing filters it),
+  // or when an error message changes the height of the input.
   $effect(() => {
     void filteredSuggestions.length;
+    void error;
     if (showDropdown) updatePosition();
   });
 
@@ -257,8 +262,14 @@
       aria-label={label}
       aria-autocomplete="list"
       aria-expanded={showDropdown}
+      aria-invalid={!!error}
     />
   </div>
+  {#if error}
+    <span class="text-red-500" class:text-xs={isSmall} class:text-sm={!isSmall}>
+      {error}
+    </span>
+  {/if}
 </div>
 
 {#if showDropdown}

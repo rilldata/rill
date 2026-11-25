@@ -1121,6 +1121,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: tags
+          description: If set, only projects that have at least one of these tags are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
         - name: pageSize
           in: query
           required: false
@@ -1158,6 +1166,13 @@ paths:
                 type: string
               description:
                 type: string
+              tags:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Tags for organizing the project, such as "prod" or "sandbox".
+                  Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores.
               public:
                 type: boolean
               directoryName:
@@ -1327,6 +1342,18 @@ paths:
             properties:
               description:
                 type: string
+              addTags:
+                type: array
+                items:
+                  type: string
+                description: Tags to add to the project. Tags the project already has are kept.
+              removeTags:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Tags to remove from the project. Tags the project doesn't have are ignored.
+                  A tag can't be in both add_tags and remove_tags.
               public:
                 type: boolean
               directoryName:
@@ -6738,6 +6765,11 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
+        description: User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase.
       public:
         type: boolean
       createdByUserId:

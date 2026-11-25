@@ -1576,6 +1576,49 @@
   "field_list_dimensions": "DIMENSIONES",
   "field_list_measures": "MEDIDAS",
   "field_list_time": "TIEMPO",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este archivo depende de él y tendrá errores hasta que lo actualices:",
+        "countPlural=other": "Estos {count} archivos dependen de él y tendrán errores hasta que los actualices:"
+      }
+    }
+  ],
+  "file_explorer_delete_file_description": "El archivo {path} se eliminará del proyecto.",
+  "file_explorer_delete_folder_description": "La carpeta {path} y todo su contenido se eliminarán del proyecto, incluidos los archivos que el explorador de archivos no muestra, como las rutas ignoradas en rill.yaml.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "El dashboard de canvas {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=explore": "El dashboard Explore {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=metrics_view": "La vista de métricas {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=model": "El modelo {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=source": "La fuente {name} y su archivo {path} se eliminarán del proyecto.",
+        "kind=*": "{name} y su archivo {path} se eliminarán del proyecto."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "¿Eliminar dashboard de canvas?",
+        "kind=explore": "¿Eliminar dashboard Explore?",
+        "kind=metrics_view": "¿Eliminar vista de métricas?",
+        "kind=model": "¿Eliminar modelo?",
+        "kind=source": "¿Eliminar fuente?",
+        "kind=folder": "¿Eliminar carpeta?",
+        "kind=*": "¿Eliminar archivo?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "Hasta que publiques, un archivo que ya existía la última vez que tu rama se sincronizó con producción se puede restaurar desde la lista de archivos modificados, tal como estaba en ese momento; se pierden las ediciones posteriores. Un archivo añadido en esta rama no se puede restaurar en Rill; si se confirmó, recupéralo del historial de Git.",
+  "file_explorer_delete_undo_developer": "Esta acción no se puede deshacer en Rill. Los archivos eliminados solo se pueden recuperar desde el control de versiones o una copia de seguridad.",
   "filter_advanced_beta": "Avanzado (BETA)",
   "filter_advanced_remove": "Eliminar",
   "filter_advanced_warning": "Los filtros avanzados son una funcionalidad experimental. Puede haber errores.",
@@ -1880,7 +1923,10 @@
   "nav_tab_status": "Estado",
   "org_check_out_projects": "Explora tus proyectos a continuación.",
   "org_new_project": "+ Nuevo proyecto",
+  "org_no_projects_with_tags": "Ningún proyecto tiene las etiquetas seleccionadas.",
   "org_no_projects_yet": "Esta organización aún no tiene proyectos.",
+  "org_projects_tag_filter_clear": "Borrar filtro",
+  "org_projects_tag_filter_label": "Filtrar proyectos por etiqueta",
   "org_role_admin_description": "Acceso completo a la configuración de la org, miembros y todos los proyectos",
   "org_role_editor_description": "Puede crear/gestionar proyectos y miembros no administradores",
   "org_role_guest_description": "Acceso solo a proyectos invitados",
@@ -1981,6 +2027,8 @@
   "project_bookmarks_title": "Marcadores del proyecto",
   "project_branch_hibernated": "Rama en hibernación",
   "project_branch_is_hibernated": "Esta rama está en hibernación.",
+  "project_card_tags_label": "Etiquetas",
+  "project_card_tags_more": "+{count}",
   "project_card_visibility_private": "Este proyecto es privado",
   "project_card_visibility_public": "Este proyecto es público",
   "project_contact_admin_to_redeploy": "Contacte al administrador del proyecto para redesplegar el proyecto.",
@@ -2315,6 +2363,14 @@
   "settings_project_now_private_notification": "El proyecto es ahora privado",
   "settings_project_now_public_notification": "El proyecto es ahora público",
   "settings_project_page_title": "Configuración del proyecto",
+  "settings_project_tags_description": "Las etiquetas aparecen en la página de proyectos de tu organización, donde se pueden usar para filtrar proyectos.",
+  "settings_project_tags_invalid": "\"{tag}\" no es una etiqueta válida. Usa hasta 40 letras, dígitos, guiones y guiones bajos, empezando por una letra o un dígito.",
+  "settings_project_tags_label": "Añade etiquetas como prod, stage o sandbox para organizar este proyecto",
+  "settings_project_tags_placeholder": "Añade una etiqueta y pulsa Intro",
+  "settings_project_tags_title": "Etiquetas",
+  "settings_project_tags_too_many": "Un proyecto puede tener como máximo {max} etiquetas.",
+  "settings_project_tags_update_failed": "Error al actualizar las etiquetas del proyecto",
+  "settings_project_tags_updated_notification": "Etiquetas del proyecto actualizadas",
   "settings_project_title": "Proyecto",
   "settings_project_url_description": "Su proyecto estará disponible en https://ui.rilldata.com/{org}/{slug}.",
   "settings_project_visibility_private": "Este proyecto es actualmente <strong>Privado</strong>. Solo los miembros de la organización pueden acceder a este proyecto.",
@@ -2357,6 +2413,7 @@
   "status_action_view_logs": "Ver registros",
   "status_action_view_partitions": "Ver particiones",
   "status_all_statuses": "Todos los estados",
+  "status_all_tags": "Todas las etiquetas",
   "status_all_types": "Todos los tipos",
   "status_cancel": "Cancelar",
   "status_checking_errors": "Verificando errores...",
@@ -2769,6 +2826,12 @@
   "users_manage_groups_pending_hint": "Este usuario aún no ha aceptado su invitación. Se unirá a los grupos seleccionados cuando la acepte.",
   "users_groups_updated": "Grupos de usuarios actualizados",
   "users_error_updating_groups": "No se pudieron actualizar los grupos de usuarios: {message}",
+  "users_domain_access_anyone": "Cualquier persona con un correo de @{domain}",
+  "users_domain_access_joins_as": "Se une automáticamente como {role}",
+  "users_domain_access_load_failed": "No se pudieron cargar las reglas de acceso por dominio de este proyecto.",
+  "users_domain_access_remove_confirm_desc": "Las personas con un correo de @{domain} ya no se unirán automáticamente a este proyecto. Quienes ya se unieron conservan su acceso. Para volver a agregarlo, ejecuta \"rill user whitelist setup {domain} --org {organization} --project {project} --role {role}\". Si no es el dominio de tu correo, contacta al soporte de Rill.",
+  "users_domain_access_remove_confirm_title": "¿Eliminar el acceso por dominio de @{domain}?",
+  "users_domain_access_removed": "Las personas con un correo de @{domain} ya no se unen automáticamente. Quienes ya se unieron conservan su acceso.",
   "users_email_or_group_placeholder": "Correo o grupo, separados por comas",
   "users_email_placeholder": "Agregar correos, separados por comas",
   "users_error": "Error",

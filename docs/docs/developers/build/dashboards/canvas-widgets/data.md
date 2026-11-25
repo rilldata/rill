@@ -134,6 +134,27 @@ In a pivot, only measures and the first row dimension render a column of their o
 
 In the canvas editor, the widget's sidebar has switches for fitting and wrapping and a sort selector, and each field chip opens a column settings menu with the label, width, wrapping, alignment, and number format. Dragging a column edge in the editor writes the width to the YAML, and clicking a header writes the sort. Viewers of the published dashboard can still resize and re-sort; their changes are not saved.
 
+### Height
+
+A table or pivot takes the height of its row. In the canvas editor, drag the bottom edge of the row to resize it. In YAML, set `height` on the row:
+
+```yaml
+rows:
+  - height: 140px
+    items:
+      - table:
+          metrics_view: auction_metrics
+          columns:
+            - pub_name
+            - requests
+```
+
+A row without a `height` shows a table at 300px and a pivot at 224px. A row with one can take a table or pivot down to 114px. That leaves room for the column header, the totals row, one data row, and a horizontal scrollbar; further rows scroll inside the widget. A title, a description, and local filter chips add their own height to that minimum: a table with only a title can go down to 174px. To size a row for a short table, allow 24px for each data row.
+
+When the row also holds other widgets, the tallest minimum applies: a table next to a chart is at least 320px tall.
+
+Earlier versions of Rill showed a table at 300px and a pivot at 224px even when the row's `height` was lower. Such a row now renders at its `height`, down to the minimum above. If a table or pivot shrinks after an upgrade, remove the row's `height` to get the default size back, or drag the row taller.
+
 ### Click to filter
 
 Clicking a cell or row header in a table or pivot filters the whole canvas by the values of that row, and clicking a column-dimension header in a pivot filters by that column. The table itself keeps showing every row and highlights the selection. To keep a table read-only, so selecting a row does not filter the other widgets, set `click_to_filter: false` or turn off **Click to filter** in the widget's sidebar.

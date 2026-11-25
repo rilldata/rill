@@ -14,6 +14,7 @@ import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 import { combineConditions, copyName } from "./stores/block-edit";
 
+// The height a component takes in a row that has no height of its own.
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -32,20 +33,25 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   kpi_grid: 128,
   image: 80,
   table: 300,
-  pivot: 300,
+  pivot: 224,
   leaderboard: 300,
   component_ref: 320,
   map: 400,
 };
 
-// Minimum heights a component can shrink to, when smaller than its initial
-// height. Used as the CSS floor so components like pivots (whose content can be
-// short, e.g. a low row limit) don't reserve their full initial height.
+// The lowest height a row height can give a component; types not listed here
+// cannot go below their initial height. Tables and pivots can hold just a few
+// rows, so they shrink until only the column header, the totals row, one data
+// row and a horizontal scrollbar are left. The component's header (title,
+// description and widget filters) adds its own height to these (see ItemWrapper).
 export const minHeights: Partial<Record<CanvasComponentType, number>> = {
-  pivot: 224,
+  table: 114,
+  pivot: 114,
 };
 
 export const MIN_HEIGHT = 40;
+// The height of a row whose YAML sets none.
+export const DEFAULT_ROW_HEIGHT = 100;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
@@ -881,8 +887,24 @@ export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
-export function getMinHeight(id: string | undefined) {
-  return minHeights[id as CanvasComponentType] ?? getInitialHeight(id);
+/**
+ * Whether a row's height is one that somebody chose.
+ * The editor fills MIN_HEIGHT into rows that have no height (see mapGuard),
+ * so that value and anything below it count as no height.
+ */
+export function isRowHeightSet(height: number | undefined) {
+  return height !== undefined && height > MIN_HEIGHT;
+}
+
+/**
+ * The lowest height the component type renders at.
+ * In a row without a height of its own that is the type's initial height,
+ * which keeps tables at their default size until the row is given a height.
+ */
+export function getMinHeight(id: string | undefined, rowHasHeight: boolean) {
+  const initialHeight = getInitialHeight(id);
+  if (!rowHasHeight) return initialHeight;
+  return minHeights[id as CanvasComponentType] ?? initialHeight;
 }
 
 export function initComponentSpec(
