@@ -115,7 +115,7 @@ The `config` block holds the label sizes and spacing the chart was compiled with
 
 These apply to every `vega_spec` in a component file, converted or written by hand:
 
-- **Data**: read the query result from `"data": { "name": "query1" }`. A component runs one query, so there is no other dataset; don't inline `values` or load a `url`.
+- **Data**: read the query result from `"data": { "name": "query1" }`. A component that declares params runs one query, so there is no other dataset; don't inline `values` or load a `url`.
 - **Size**: keep `"width": "container"`, `"height": "container"` and `"autosize": { "type": "fit", "contains": "padding" }` so the chart fills its widget. Without `autosize`, only the width is fitted, and axes and legends can run past the bottom of the widget. Vega-Lite can't size faceted or concatenated views to a container; give their panels fixed sizes.
 - **Types**: set `type` on every encoding. Nothing is derived any more, and a missing type can draw the wrong scale.
 - **Time**: encode a time dimension as `temporal`. The query still buckets it at the dashboard's time grain, as described in [Time Dimensions](/developers/build/dashboards/canvas-widgets/custom-viz#time-dimensions). Vega-Lite labels times in the viewer's browser time zone; on a dashboard that uses UTC, add `"scale": { "type": "utc" }` to the encoding so the labels match the buckets for every viewer.

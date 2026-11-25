@@ -2668,7 +2668,9 @@ definitions:
                       component:
                         type: string
                         description: |
-                          Name of the component to display. Each component type has its own set of properties.
+                          Name of a component defined in its own file (`type: component`), such as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz). Bind its declared params with `params`.
+                          Each project file is limited to 128 KB, so keeping a large chart in a component file also keeps the canvas file small; see [Move a Large Chart Out of the Canvas File](/developers/build/dashboards/canvas-widgets/custom-viz#move-a-large-chart-out-of-the-canvas-file).
+                          To define a widget inline instead, leave out `component` and add a key named after the component type, with the widget's properties as its value. Each component type has its own set of properties.
                           Available component types:
 
                               - **markdown** - Text component, uses markdown formatting
@@ -3981,7 +3983,25 @@ definitions:
     properties:
       content:
         type: string
-        description: Markdown content
+        description: Markdown text to display. Supports templating, with the `metrics_sql` and `metrics_sql_rows` functions to insert the results of [Metrics SQL](/developers/build/metrics-view/metrics-sql) queries, which follow the canvas time range and filters. See [Dynamic Markdown](/developers/build/dashboards/canvas-widgets/misc#dynamic-markdown).
+      apply_formatting:
+        type: boolean
+        description: Format the measure values that `metrics_sql` and `metrics_sql_rows` return with each measure's `format_d3` or `format_preset` from the metrics view. Defaults to false.
+      alignment:
+        type: object
+        description: Position of the text within the component
+        properties:
+          horizontal:
+            type: string
+            enum: ["left", "center", "right"]
+            description: Horizontal position of the text, one of `left` (default), `center` or `right`
+          vertical:
+            type: string
+            enum: ["top", "middle", "bottom"]
+            description: Vertical position of the text, one of `top`, `middle` (default) or `bottom`
+      time_filters:
+        type: string
+        description: Time range for the queries in `content`, as a `tr` URL parameter such as `tr=P7D`. Defaults to the canvas time range.
       title:
         type: string
         description: Markdown title
