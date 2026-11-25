@@ -255,11 +255,11 @@
             onblur={handleLeaveOrBlur}
           >
             {#if !supportsTotal}
-              <span class="text-fg-muted italic text-sm font-normal">
+              <span class="no-total text-fg-muted italic font-normal">
                 {m.kpi_no_total()}
               </span>
             {:else if primaryTotalResult.isError}
-              <AlertTriangleIcon class=" text-red-300" size="34px" />
+              <AlertTriangleIcon class="error-icon text-red-300" />
             {:else if primaryTotalResult.isLoading || !measure}
               <div class="loading h-6 w-16"></div>
             {:else if primaryTotalResult.data}
@@ -380,7 +380,7 @@
       class:saturate-0={primarySparklineResult.isFetching}
     >
       {#if primarySparklineResult.isError}
-        <AlertTriangleIcon class="text-red-300" size="34px" />
+        <AlertTriangleIcon class="error-icon text-red-300" />
       {:else if primarySparklineResult.isLoading || !timeGrain || !timeZone || !measure?.name}
         <div
           class="size-full mt-2 !bg-theme-50 loading !rounded-md min-h-10"
@@ -419,6 +419,12 @@
     --kpi-label-max-width: 10rem;
     --kpi-gap: 0.5rem;
     --kpi-sparkline-min-height: 3rem;
+
+    /*
+     * No font-size here on purpose: the text tokens are set on each text element.
+     * The card's own size only reaches the time range caption and the sparkline's dates,
+     * which keep the page's 12px at small and medium; large and xlarge set it below.
+     */
   }
 
   .wrapper[data-size="small"] {
@@ -445,7 +451,7 @@
     --kpi-label-max-width: 14rem;
     --kpi-gap: 0.75rem;
     --kpi-sparkline-min-height: 4rem;
-    /* Inherited by the time range caption; smaller presets keep the page's size. */
+    /* The time range caption and the sparkline's dates (see .wrapper). */
     font-size: 0.875rem;
   }
 
@@ -504,6 +510,21 @@
 
   .hovered-value {
     @apply text-theme-500;
+  }
+
+  /* Shown in place of the value of a measure that has no total. */
+  .no-total {
+    font-size: var(--kpi-text-size);
+    line-height: var(--kpi-text-height);
+  }
+
+  /*
+   * The error icons scale with the value:
+   * 2px shorter than its line, which keeps them at 34px at medium.
+   */
+  .wrapper :global(.error-icon) {
+    width: calc(var(--kpi-value-height) - 0.125rem);
+    height: calc(var(--kpi-value-height) - 0.125rem);
   }
 
   .comparison-value-wrapper {

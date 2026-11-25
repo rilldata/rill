@@ -6,8 +6,10 @@ import { test } from "../setup/base";
 
 const CANVAS_FILE = "/dashboards/AdBids_metrics_canvas.yaml";
 
-// The fixture's metrics view plus a measure with a long formatted value:
-// the canvas's 24 hours hold 1,122 records, so it shows "1,246,542".
+// The fixture's metrics view plus three measures:
+// one with a long formatted value (the canvas's 24 hours hold 1,122 records, so it shows "1,246,542"),
+// a rolling window, which has no total,
+// and one whose query fails, since publisher names don't cast to integers.
 const METRICS_YAML = `version: 1
 type: metrics_view
 
@@ -44,6 +46,14 @@ measures:
     display_name: Scaled records
     expression: COUNT(*) * 1111
     format_d3: ",.0f"
+  - name: rolling_records
+    display_name: Rolling records
+    expression: AVG(total_records)
+    requires: [total_records]
+    window: time
+  - name: broken_records
+    display_name: Broken records
+    expression: SUM(CAST(publisher AS INTEGER))
 `;
 
 function canvasYaml(size: string) {
@@ -62,6 +72,26 @@ rows:
             - delta
             - percent_change
           sparkline: right
+          size: ${size}
+        width: 12
+    height: 128px
+`;
+}
+
+// A grid whose two KPIs show no value: one has no total, the other's query fails.
+function noValueCanvasYaml(size: string) {
+  return `type: canvas
+display_name: "KPI size canvas"
+defaults:
+  time_range: PT24H
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: AdBids_metrics
+          measures:
+            - rolling_records
+            - broken_records
+          sparkline: none
           size: ${size}
         width: 12
     height: 128px
@@ -95,6 +125,17 @@ rows:
         width: 12
     height: 128px
 `;
+
+// Replaces the metrics view YAML and waits for it to be saved.
+async function setMetricsYaml(page: Page) {
+  await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
+  await page.getByRole("button", { name: "switch to code editor" }).click();
+  const saved = page.waitForResponse(
+    "**/rill.runtime.v1.RuntimeService/PutFile",
+  );
+  await updateCodeEditor(page, METRICS_YAML);
+  await saved;
+}
 
 // Replaces the canvas YAML through the code editor and returns to the visual editor.
 async function setCanvasYaml(page: Page, yaml: string) {
@@ -155,14 +196,7 @@ test.describe("canvas kpi grid size", () => {
   test("a larger size keeps a long value whole beside the sparkline", async ({
     page,
   }) => {
-    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
-    await page.getByRole("button", { name: "switch to code editor" }).click();
-    const saved = page.waitForResponse(
-      "**/rill.runtime.v1.RuntimeService/PutFile",
-    );
-    await updateCodeEditor(page, METRICS_YAML);
-    await saved;
-
+    await setMetricsYaml(page);
     await gotoNavEntry(page, CANVAS_FILE);
     const data = page.getByRole("button", { name: "scaled_records KPI data" });
     const card = page.locator(".wrapper[data-size]", { has: data });
@@ -186,6 +220,34 @@ test.describe("canvas kpi grid size", () => {
       );
       await expect(card.locator(".sparkline-wrapper")).toBeVisible();
       expect(await valueOverflow(data), `value clipped at ${size}`).toBe(0);
+    }
+  });
+
+  test("the no-total hint and the error icon scale with the size", async ({
+    page,
+  }) => {
+    await setMetricsYaml(page);
+    await gotoNavEntry(page, CANVAS_FILE);
+    const hint = page
+      .getByRole("button", { name: "rolling_records KPI data" })
+      .getByText("no total");
+    const icon = page
+      .getByRole("button", { name: "broken_records KPI data" })
+      .locator(".big-number svg");
+
+    for (const [size, fontSize, iconSize] of [
+      ["small", "12px", "26px"],
+      ["medium", "14px", "34px"],
+      ["xlarge", "18px", "70px"],
+    ]) {
+      await setCanvasYaml(page, noValueCanvasYaml(size));
+      await expect(page.locator(`.wrapper[data-size="${size}"]`)).toHaveCount(
+        2,
+        { timeout: 60_000 },
+      );
+      await expect(hint).toHaveCSS("font-size", fontSize, { timeout: 60_000 });
+      await expect(icon).toHaveCSS("width", iconSize, { timeout: 60_000 });
+      await expect(icon).toHaveCSS("height", iconSize);
     }
   });
 
