@@ -155,55 +155,23 @@ func timeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firs
 
 // ceilTime returns t if it is on a boundary of the given grain, otherwise the next boundary after it.
 // Like timeAligned, it uses calendar quarters and years; a zero t is returned unchanged.
+// It also returns t unchanged when a DST change falls between the boundaries around t,
+// since a midnight can then be skipped or repeated; rollup routing then uses the query's own bounds.
 func ceilTime(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) time.Time {
 	if t.IsZero() {
 		return t
 	}
-
-	// Sub-day grains have a fixed duration, so the next boundary is one grain after the truncated time.
 	tg := timeutil.TimeGrainFromAPI(grain)
-	if tg.Compare(timeutil.TimeGrainDay) < 0 {
-		floor := timeutil.TruncateTime(t, tg, tz, int(firstDayOfWeek), 1)
-		if floor.Equal(t) {
-			return t
-		}
-		return timeutil.OffsetTime(floor, tg, 1, tz)
-	}
-
-	// Day and coarser grains start at local midnight, so compute the boundaries from t's local calendar date.
-	// Adding a grain to the truncated time is not enough: on a day without a midnight (a DST change at 00:00),
-	// the truncated time falls on the previous day, and adding a day to it misses the next midnight.
-	lt := t.In(tz)
-	y, m, d := lt.Date()
-	date := func(y int, m time.Month, d int) time.Time {
-		return time.Date(y, m, d, 0, 0, 0, 0, tz)
-	}
-	var start, next time.Time
-	switch grain {
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		start, next = date(y, m, d), date(y, m, d+1)
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		fdow := int(firstDayOfWeek)
-		if fdow < 1 || fdow > 7 {
-			fdow = 1
-		}
-		weekday := int(lt.Weekday())
-		if weekday == 0 {
-			weekday = 7
-		}
-		back := (weekday - fdow + 7) % 7
-		start, next = date(y, m, d-back), date(y, m, d-back+7)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		start, next = date(y, m, 1), date(y, m+1, 1)
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		qm := m - (m-1)%3
-		start, next = date(y, qm, 1), date(y, qm+3, 1)
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		start, next = date(y, 1, 1), date(y+1, 1, 1)
-	default:
+	floor := timeutil.TruncateTime(t, tg, tz, int(firstDayOfWeek), 1)
+	if floor.Equal(t) {
 		return t
 	}
-	if start.Equal(t) {
+	next := timeutil.OffsetTime(floor, tg, 1, tz)
+
+	_, tOffset := t.In(tz).Zone()
+	_, floorOffset := floor.In(tz).Zone()
+	_, nextOffset := next.In(tz).Zone()
+	if floorOffset != tOffset || nextOffset != tOffset || !next.After(t) {
 		return t
 	}
 	return next
