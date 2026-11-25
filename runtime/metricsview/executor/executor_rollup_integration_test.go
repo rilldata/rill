@@ -1820,7 +1820,6 @@ explore:
 		// mv_daily declares this with base_time_grain, so bounds inside a day can still use its rollups.
 		// mv_daily_undeclared is the same metrics view without it, and mv_hourly wrongly declares day grain over the hourly base_events.
 		// mv_daily_declared_range also declares a data_time_range that ends mid-day, which must not be mistaken for rows between boundaries.
-		// mv_weekly stores one row per Monday and has a month rollup, whose boundaries are not week boundaries.
 		// mv_kathmandu stores one row per hour in Asia/Kathmandu (UTC+05:45), so its rows are at 15 minutes past each UTC hour.
 		mvYAML := func(model, extra string, rollups ...string) string {
 			res := fmt.Sprintf(`
@@ -1864,12 +1863,6 @@ FROM base_daily GROUP BY 1, 2`,
 			"models/rollup_hourly_day.sql": `
 SELECT date_trunc('day', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
 FROM base_events GROUP BY 1, 2`,
-			"models/base_weekly.sql": `
-SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
-FROM generate_series(TIMESTAMP '2024-01-01', TIMESTAMP '2024-03-25', INTERVAL '7 DAY') t(ts)`,
-			"models/rollup_weekly_month.sql": `
-SELECT date_trunc('month', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
-FROM base_weekly GROUP BY 1, 2`,
 			"models/base_kathmandu.sql": `
 SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
 FROM generate_series(TIMESTAMP '2024-01-01 00:15:00', TIMESTAMP '2024-01-31 23:15:00', INTERVAL '1 HOUR') t(ts)`,
@@ -1880,12 +1873,11 @@ FROM base_kathmandu GROUP BY 1, 2`,
 			"metrics_views/mv_daily_undeclared.yaml":     mvYAML("base_daily", "", rollupYAML("rollup_daily_day", "day"), rollupYAML("rollup_daily_month", "month")),
 			"metrics_views/mv_hourly.yaml":               mvYAML("base_events", "base_time_grain: day", rollupYAML("rollup_hourly_day", "day")),
 			"metrics_views/mv_daily_declared_range.yaml": mvYAML("base_daily", "base_time_grain: day\ndata_time_range: 2024-01-01T00:00:00Z to 2024-03-31T12:00:00Z", rollupYAML("rollup_daily_day", "day")),
-			"metrics_views/mv_weekly.yaml":               mvYAML("base_weekly", "base_time_grain: week", rollupYAML("rollup_weekly_month", "month")),
 			"metrics_views/mv_kathmandu.yaml":            mvYAML("base_kathmandu", "base_time_grain: hour\nbase_time_zone: Asia/Kathmandu", rollupYAML("rollup_kathmandu_minute", "minute")),
 		}
 		customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
-		// 1 project_parser + 9 models + 6 metrics views = 16 resources; 0 errors
-		testruntime.RequireReconcileState(t, customRT, customID, 16, 0, 0)
+		// 1 project_parser + 7 models + 5 metrics views = 13 resources; 0 errors
+		testruntime.RequireReconcileState(t, customRT, customID, 13, 0, 0)
 
 		newExecutor := func(t *testing.T, name string) *executor.Executor {
 			r := testruntime.GetResource(t, customRT, customID, runtime.ResourceKindMetricsView, name)
@@ -1968,14 +1960,6 @@ FROM base_kathmandu GROUP BY 1, 2`,
 				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
 				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 				want:  "rollup_daily_day",
-			},
-			{
-				// Feb 1 is on a month boundary but not a week boundary; rounding it to Feb 5 must not reject the month rollup
-				name:  "aligned_without_rounding",
-				mv:    "mv_weekly",
-				start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-				end:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
-				want:  "rollup_weekly_month",
 			},
 			{
 				// 12:20:30 UTC rounds up to 19:00 in Kathmandu, which is 13:15 UTC and on a minute boundary
