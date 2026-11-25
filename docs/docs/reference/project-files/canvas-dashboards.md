@@ -46,7 +46,7 @@ _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this
 
 _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
 
-  - **`height`** - _[string]_ - Height of the row in px
+  - **`height`** - _[string]_ - Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title).
 
   - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
   The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
@@ -93,7 +93,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
     - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
 
-      - **`height`** - _[string]_ - Height of the row in px
+      - **`height`** - _[string]_ - Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title).
 
       - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
       The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
@@ -103,7 +103,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
   - **`rows`** - _[array of object]_ - Makes this entry a container of rows instead of a plain row. A container keeps related rows together; it has no visual element for viewers, who see its rows as plain rows. The container's `if` applies to everything inside it. Containers hold plain rows (with `items`) and cannot be nested inside a tab or another container.
 
-    - **`height`** - _[string]_ - Height of the row in px
+    - **`height`** - _[string]_ - Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title).
 
     - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
     The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
