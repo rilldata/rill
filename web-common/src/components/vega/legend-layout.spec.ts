@@ -3,7 +3,7 @@ import * as vega from "vega";
 import { compile, type Config, type TopLevelSpec } from "vega-lite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stubCanvasContext } from "../../features/components/charts/cartesian/test-fixtures";
-import { fitLegends, setContainerSize } from "./legend-layout";
+import { fitLegends, setContainerSize, setLegendLabels } from "./legend-layout";
 import { getRillTheme } from "./vega-config";
 import { refitOnPlotResize } from "./view-refit";
 
@@ -80,8 +80,8 @@ function sceneItems(view: vega.View, role: string): SceneItem[] {
 
 /**
  * A chart's legends as Vega drew them in a container of a size, laid out by `fitLegends` under a
- * config. The chart is told the container's size as `VegaLiteRenderer` tells it, unless `told`
- * is false.
+ * config. The chart is told the container's size and its legends' labels as `VegaLiteRenderer`
+ * tells it, unless `told` is false.
  */
 async function drawLegends(
   spec: VisualizationSpec,
@@ -91,7 +91,7 @@ async function drawLegends(
   told = true,
 ) {
   stubCanvasContext();
-  const fitted = fitLegends(spec, datasets, config) as TopLevelSpec;
+  const fitted = fitLegends(spec, config) as TopLevelSpec;
   const view = new vega.View(vega.parse(compile(fitted, { config }).spec), {
     renderer: "none",
   });
@@ -99,7 +99,10 @@ async function drawLegends(
     view.change(name, vega.changeset().insert(rows));
   }
   refitOnPlotResize(view);
-  if (told) setContainerSize(view, size.width, size.height);
+  if (told) {
+    setContainerSize(view, size.width, size.height);
+    setLegendLabels(view, fitted, datasets);
+  }
   view.width(size.width).height(size.height);
   await view.runAsync();
   return { view, ...readLegends(view) };
@@ -444,19 +447,18 @@ describe("fitLegends", () => {
 
   it("leaves a legend its author laid out", () => {
     const columns = barChart(segments, { columns: 2 });
-    expect(fitLegends(columns, {}, theme)).toBe(columns);
+    expect(fitLegends(columns, theme)).toBe(columns);
 
     const configured = {
       ...barChart(segments),
       config: { legend: { columns: 3 } },
     } as VisualizationSpec;
-    expect(fitLegends(configured, {}, theme)).toBe(configured);
+    expect(fitLegends(configured, theme)).toBe(configured);
   });
 
   it("keeps what a legend states for itself", () => {
     const fitted = fitLegends(
       barChart(segments, { labelLimit: 80, title: "Segment" }),
-      {},
       theme,
     ) as unknown as {
       encoding: { color: { legend: Record<string, unknown> } };
@@ -472,16 +474,16 @@ describe("fitLegends", () => {
   it("does not bring back a legend the chart turned off", () => {
     // Vega-Lite draws a legend that states anything of its own, whatever the config says.
     const hidden = barChart(segments, null);
-    expect(fitLegends(hidden, {}, theme)).toBe(hidden);
+    expect(fitLegends(hidden, theme)).toBe(hidden);
 
     const disabled = {
       ...barChart(segments),
       config: { legend: { disable: true } },
     } as VisualizationSpec;
-    expect(fitLegends(disabled, {}, theme)).toBe(disabled);
+    expect(fitLegends(disabled, theme)).toBe(disabled);
 
     const plain = barChart(segments);
-    expect(fitLegends(plain, {}, { legend: { disable: true } })).toBe(plain);
+    expect(fitLegends(plain, { legend: { disable: true } })).toBe(plain);
   });
 
   it("leaves a chart whose plot is not fitted to its container", () => {
@@ -489,38 +491,38 @@ describe("fitLegends", () => {
     // 60px wide in a widget of any width, which is no measure of the room the legend has.
     const stepped = { ...barChart(segments) } as Record<string, unknown>;
     delete stepped.width;
-    expect(fitLegends(stepped as VisualizationSpec, {}, theme)).toBe(stepped);
+    expect(fitLegends(stepped as VisualizationSpec, theme)).toBe(stepped);
 
     // Fitted across only, a chart grows downwards to hold a legend beside it.
     const acrossOnly = {
       ...barChart(segments, { orient: "right" }),
       autosize: { type: "fit-x" },
     } as VisualizationSpec;
-    expect(fitLegends(acrossOnly, {}, theme)).toBe(acrossOnly);
+    expect(fitLegends(acrossOnly, theme)).toBe(acrossOnly);
   });
 
   it("passes on a spec that is not an object, for Vega to report", () => {
     // A `vega_spec` holding `42` or `"line"` parses, and reaches the renderer as that value.
     for (const malformed of [42, "line", null]) {
       const spec = malformed as unknown as VisualizationSpec;
-      expect(fitLegends(spec, {}, theme)).toBe(spec);
+      expect(fitLegends(spec, theme)).toBe(spec);
     }
     // So does a layer that is no view.
     const layered = { layer: [null] } as unknown as VisualizationSpec;
-    expect(fitLegends(layered, {}, theme)).toBe(layered);
+    expect(fitLegends(layered, theme)).toBe(layered);
   });
 
   it("leaves composed charts and gradients alone", () => {
     const composed = {
       hconcat: [barChart(segments), barChart(channels)],
     } as VisualizationSpec;
-    expect(fitLegends(composed, {}, theme)).toBe(composed);
+    expect(fitLegends(composed, theme)).toBe(composed);
 
     const faceted = barChart(segments) as unknown as {
       encoding: Record<string, unknown>;
     };
     faceted.encoding.column = { field: "category", type: "nominal" };
-    expect(fitLegends(faceted as unknown as VisualizationSpec, {}, theme)).toBe(
+    expect(fitLegends(faceted as unknown as VisualizationSpec, theme)).toBe(
       faceted,
     );
 
@@ -535,19 +537,41 @@ describe("fitLegends", () => {
         color: { field: "value", type: "quantitative" },
       },
     } as VisualizationSpec;
-    expect(fitLegends(heatmap, {}, theme)).toBe(heatmap);
+    expect(fitLegends(heatmap, theme)).toBe(heatmap);
   });
 
-  it("returns the same spec for as long as its legends are laid out the same", () => {
+  it("lays a legend out again for new labels without the spec changing", async () => {
     const spec = {
       ...barChart(channels),
       data: { name: "query1" },
     } as VisualizationSpec;
-    const first = fitLegends(spec, { query1: rowsOf(channels) }, theme);
-    // New rows with the same labels, as a refetch gives.
-    expect(fitLegends(spec, { query1: rowsOf(channels) }, theme)).toBe(first);
-    expect(fitLegends(spec, { query1: rowsOf(segments) }, theme)).not.toBe(
-      first,
+    const legend = await drawLegends(spec, { width: 560, height: 300 }, theme, {
+      query1: rowsOf(channels),
+    });
+    expect(legend.rows).toBe(1);
+
+    // A refresh that brings other labels, as a filter does. A spec that held them was rebuilt,
+    // and its chart drawn anew, losing what the viewer had selected.
+    const fitted = fitLegends(spec, theme);
+    expect(fitLegends(spec, theme)).toBe(fitted);
+    const refreshed = { query1: rowsOf(segments) };
+    legend.view.change(
+      "query1",
+      vega
+        .changeset()
+        .remove(() => true)
+        .insert(refreshed.query1),
     );
+    expect(setLegendLabels(legend.view, fitted, refreshed)).toBe(true);
+    await legend.view.runAsync();
+
+    const relaid = readLegends(legend.view);
+    expect(relaid.labels).toEqual(segments);
+    expect(relaid.limits).toEqual([140]);
+    expect(relaid.columns).toBe(3);
+    expect(relaid.overhang.right).toBeLessThanOrEqual(0);
+    expect(relaid.overhang.top).toBeLessThanOrEqual(0);
+    // New rows with the same labels change nothing.
+    expect(setLegendLabels(legend.view, fitted, refreshed)).toBe(false);
   });
 });

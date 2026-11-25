@@ -154,4 +154,56 @@ describe("VegaLiteRenderer", () => {
     expect(rows.size).toBeGreaterThan(1);
     expect(rows.size).toBe(5);
   });
+
+  it("lays a legend out again by the labels of new data", async () => {
+    const rowsOf = (series: string[]) =>
+      series.map((name, i) => ({ series: name, category: "a", value: i + 1 }));
+    const short = Array.from({ length: 8 }, (_, i) => `S${i + 1}`);
+    const long = short.map((name) => `${name} of the display catalogue`);
+    const { container, rerender } = render(VegaLiteRenderer, {
+      props: {
+        spec: {
+          width: "container",
+          autosize: { type: "fit" },
+          data: { name: "metrics-view" },
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "value", type: "quantitative" },
+            color: {
+              field: "series",
+              type: "nominal",
+              legend: { orient: "top" },
+            },
+          },
+        },
+        data: { "metrics-view": rowsOf(long) },
+        renderer: "svg",
+        viewVL: undefined as unknown as vega.View,
+      },
+    });
+    const labels = () =>
+      [...container.querySelectorAll(".role-legend-label text")].map(
+        (label) => label.textContent,
+      );
+    const columns = () =>
+      new Set(
+        [
+          ...container.querySelectorAll(".role-legend-entry .role-scope > g"),
+        ].map(
+          (entry) =>
+            /translate\((-?[\d.]+)/.exec(
+              entry.getAttribute("transform") ?? "",
+            )?.[1],
+        ),
+      ).size;
+    await waitFor(() => expect(labels()).toHaveLength(long.length));
+    expect(columns()).toBe(2);
+
+    // The labels are read from the data the chart is given, and its legend follows them: eight
+    // short names stand side by side, where columns as wide as a label may run held two.
+    await rerender({ data: { "metrics-view": rowsOf(short) } });
+    await waitFor(() => expect(labels()).toEqual(short));
+    await waitFor(() => expect(columns()).toBe(short.length));
+  });
 });

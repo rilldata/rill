@@ -12,7 +12,11 @@
     type VisualizationSpec,
   } from "svelte-vega";
   import type { Config } from "vega-lite";
-  import { fitLegends, setContainerSize } from "./legend-layout";
+  import {
+    fitLegends,
+    setContainerSize,
+    setLegendLabels,
+  } from "./legend-layout";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
@@ -124,9 +128,27 @@
     return { ...base, width, height };
   }
 
-  // Every legend is laid out to fit the chart, from the labels in its data and the theme's
-  // legend settings.
-  $: fittedSpec = fitLegends(spec, data, baseOptions.config as Config);
+  // Every legend is laid out to fit the chart, by the theme's legend settings and its labels.
+  $: fittedSpec = fitLegends(spec, baseOptions.config as Config);
+
+  // The labels are read from the data and handed to the live view, which lays its legends out
+  // again by them; a spec that held them was rebuilt, and the chart drawn anew, by each refresh
+  // that brought other labels. Keyed on identity, as `viewData` is.
+  let labelledView: View | undefined;
+  let labelledSpec: VisualizationSpec | undefined;
+  let labelledData: Record<string, unknown> | undefined;
+  $: if (
+    viewVL !== labelledView ||
+    fittedSpec !== labelledSpec ||
+    data !== labelledData
+  ) {
+    labelledView = viewVL;
+    labelledSpec = fittedSpec;
+    labelledData = data;
+    if (viewVL && setLegendLabels(viewVL, fittedSpec, data)) {
+      void viewVL.runAsync();
+    }
+  }
 
   // Each view, from its first embed and from every re-embed, is fitted again whenever a fit
   // leaves its plot at a new size (see `refitOnPlotResize`).

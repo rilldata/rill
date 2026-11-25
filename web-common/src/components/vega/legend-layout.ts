@@ -20,21 +20,21 @@ import type { Config } from "vega-lite";
  * that third and those `MIN_ENTRIES` between them.
  *
  * The layout is written as expressions over Vega's `width` and `height` signals, which are the
- * plot's, and over the chart's own size, which the renderer keeps in a signal of its own (see
- * `setContainerSize`). So it follows a resize without the chart being rebuilt, and
- * `refitOnPlotResize` then fits the plot around the legend those sizes give.
+ * plot's, over the chart's own size, which the renderer keeps in a signal of its own (see
+ * `setContainerSize`), and over the widths of each legend's labels, which it keeps in another
+ * (see `setLegendLabels`). So it follows a resize, and new data with other labels, without the
+ * chart being rebuilt, and `refitOnPlotResize` then fits the plot around the legend they give.
  *
  * A legend that states its own `columns` or `direction` is left as its author laid it out, and so
  * is every legend of a spec whose `config` does. So are the legends of a chart whose plot is not
  * fitted to its container, where `width` or `height` says nothing of the room there is: a chart
  * sized by its bands' step, and a faceted or concatenated one, whose sizes are a panel's.
  *
- * A spec comes back as the same object for as long as its legends are laid out the same, so that
- * new data with the same labels does not rebuild the chart.
+ * A spec comes back as the same object for as long as its legends are laid out the same: the
+ * same spec under the same config.
  */
 export function fitLegends(
   spec: VisualizationSpec,
-  datasets: Record<string, unknown>,
   config: Config | undefined,
 ): VisualizationSpec {
   // A `vega_spec` that parses to something other than an object is Vega's to report.
@@ -58,45 +58,88 @@ export function fitLegends(
   // Where the chart's config puts its legends; Vega-Lite's own default is the right.
   const orient = authored?.orient ?? themed?.orient ?? "right";
   const layouts: ViewSpec[] = [];
-  const fitted = fitView(root, undefined, {
+  const labelled: LabelledLegend[] = [];
+  // The font its labels are drawn in, which a theme may set; Vega's own is 10px sans-serif.
+  const font = {
+    family: String(
+      authored?.labelFont ??
+        themed?.labelFont ??
+        record(root.config)?.font ??
+        config?.font ??
+        "sans-serif",
+    ),
+    size: Number(authored?.labelFontSize ?? themed?.labelFontSize) || 10,
+  };
+  const fitted = fitView(root, () => undefined, {
     layouts,
+    labelled,
     fitsWidth:
       (fit === "fit" || fit === "fit-x") &&
       (typeof root.width === "number" || root.width === "container"),
     fitsHeight: fit === "fit" || fit === "fit-y",
-    datasets,
     orient,
     sharing: countCategoryLegends(root, orient),
-    // The font its labels are drawn in, which a theme may set; Vega's own is 10px sans-serif.
-    font: {
-      family: String(
-        authored?.labelFont ??
-          themed?.labelFont ??
-          record(root.config)?.font ??
-          config?.font ??
-          "sans-serif",
-      ),
-      size: Number(authored?.labelFontSize ?? themed?.labelFontSize) || 10,
-    },
+    font,
   });
 
-  const key = JSON.stringify(layouts);
+  // The labels are measured in the font, which the layouts do not name.
+  const key = JSON.stringify({ layouts, font });
   const last = lastFitted.get(root);
   if (last?.key === key) return last.spec;
   const result = (
     layouts.length
       ? {
           ...fitted,
-          // The size of the chart's container, for the layouts to read once it is known.
+          // The size of the chart's container and the labels of its legends, for the layouts
+          // to read once they are known.
           params: [
             ...(Array.isArray(root.params) ? (root.params as unknown[]) : []),
             { name: CONTAINER_SIGNAL, value: {} },
+            // Labels a spec holds, as its own rows or as a scale's domain, are known from
+            // the start; those of a dataset once the chart is told them.
+            ...labelled.map(({ signal, labels }) => ({
+              name: signal,
+              value: labels({}),
+            })),
           ],
         }
       : fitted
   ) as VisualizationSpec;
   lastFitted.set(root, { key, spec: result });
+  labelledLegends.set(result as object, labelled);
   return result;
+}
+
+/**
+ * Tells a chart the labels of its legends, which `fitLegends` lays them out by: those its spec
+ * states, or else those in the rows of `datasets`, or of the spec, that it draws. They are kept in
+ * signals, so that new data with other labels lays the legends out again without the chart being
+ * rebuilt. Until a chart is told the labels of its datasets, each column of a legend that lists
+ * them is taken to be as wide as its labels may run.
+ *
+ * Returns whether any of them changed, for the view to be run again. Its plot is then fitted
+ * around the legends they lay out: Vega fits it only once the view is resized.
+ */
+export function setLegendLabels(
+  view: View,
+  spec: VisualizationSpec,
+  datasets: Record<string, unknown>,
+): boolean {
+  let changed = false;
+  for (const { signal, labels } of labelledLegends.get(spec as object) ?? []) {
+    const value = labels(datasets);
+    try {
+      if (JSON.stringify(view.signal(signal)) === JSON.stringify(value)) {
+        continue;
+      }
+      view.signal(signal, value);
+      changed = true;
+    } catch {
+      // The view of another spec, as one being replaced is, reads no such labels.
+    }
+  }
+  if (changed) view.resize();
+  return changed;
 }
 
 /**
@@ -120,6 +163,8 @@ export function setContainerSize(
 
 /** The signal a chart's container size is kept in, as `{ width, height }`. */
 const CONTAINER_SIGNAL = "rill_container";
+/** The prefix of the signals the labels of a chart's legends are kept in, as `LegendLabels`. */
+const LABELS_SIGNAL = "rill_legend_labels";
 /** The share of its chart's height that a legend above or below the plot may take. */
 const HEIGHT_SHARE = 0.3;
 /**
@@ -133,6 +178,8 @@ const lastFitted = new WeakMap<
   ViewSpec,
   { key: string; spec: VisualizationSpec }
 >();
+/** The legends of each spec `fitLegends` gave that are laid out by their labels. */
+const labelledLegends = new WeakMap<object, LabelledLegend[]>();
 
 /** The widest a legend's label runs before it is cut, in pixels, where its legend is crowded. */
 const LABEL_LIMIT = 140;
@@ -185,6 +232,26 @@ const FACET_CHANNELS = ["facet", "row", "column"];
 
 /** A view of a Vega-Lite spec as this module reads it; other keys pass through untouched. */
 type ViewSpec = Record<string, unknown>;
+/** The rows a view draws, from the datasets its chart is given. */
+type RowsSource = (datasets: Record<string, unknown>) => unknown[] | undefined;
+
+/** A legend laid out by its labels, and how they are read. */
+interface LabelledLegend {
+  /** The signal the labels are kept in. */
+  signal: string;
+  labels: (datasets: Record<string, unknown>) => LegendLabels | null;
+}
+
+/**
+ * What a legend's layout reads of its labels, widths in pixels: how many there are, and how wide
+ * the plot is to be for each number of their columns from two on, with the labels cut where the
+ * legend is crowded, and in full where that cuts any.
+ */
+interface LegendLabels {
+  count: number;
+  crowded: number[];
+  full: number[] | null;
+}
 
 interface LabelFont {
   family: string;
@@ -194,10 +261,11 @@ interface LabelFont {
 interface FitContext {
   /** Every layout given, in the order the legends are met. */
   layouts: ViewSpec[];
+  /** The legends among them laid out by their labels. */
+  labelled: LabelledLegend[];
   /** Whether the plot's `width` and `height` are fitted to the chart's container. */
   fitsWidth: boolean;
   fitsHeight: boolean;
-  datasets: Record<string, unknown>;
   orient: unknown;
   /** How many legends of categories the chart draws above and below the plot, sharing its height. */
   sharing: number;
@@ -210,10 +278,11 @@ interface FitContext {
  */
 function fitView(
   view: ViewSpec,
-  inheritedRows: unknown[] | undefined,
+  inheritedRows: RowsSource,
   context: FitContext,
 ): ViewSpec {
-  const rows = rowsOf(view.data, context.datasets) ?? inheritedRows;
+  const rows: RowsSource = (datasets) =>
+    rowsOf(view.data, datasets) ?? inheritedRows(datasets);
   let fitted = view;
 
   const encoding = record(view.encoding);
@@ -311,9 +380,16 @@ function countCategoryLegends(root: ViewSpec, defaultOrient: unknown): number {
 function legendLayout(
   channel: string,
   definition: ViewSpec,
-  rows: unknown[] | undefined,
-  { orient: defaultOrient, sharing, font, fitsWidth, fitsHeight }: FitContext,
+  rows: RowsSource,
+  context: FitContext,
 ): ViewSpec | undefined {
+  const {
+    orient: defaultOrient,
+    sharing,
+    font,
+    fitsWidth,
+    fitsHeight,
+  } = context;
   const lists = entriesOf(channel, definition);
   const legend = record(definition.legend) ?? {};
   if (
@@ -368,28 +444,54 @@ function legendLayout(
   const entries = (columns: string) =>
     `max(${maxRows} * ${columns}, ${minEntries})`;
 
-  const labels = labelsOf(definition, legend, rows);
-  const widths: LabelWidths | undefined = labels && {
-    count: labels.length,
-    fewestListed: (columns) => Math.max(minRows * columns, minEntries),
-    // Sorted once, for every number of columns and every label limit tried.
-    widest: labels
-      .map((label) => labelWidth(label, font))
-      .sort((a, b) => b - a)
-      .slice(0, MAX_COLUMNS),
-    leftOut: labelWidth(LEFT_OUT_LABEL, font),
-  };
-  const crowded = columnsByWidth(widths, LABEL_LIMIT);
-  let columns = crowded;
-  let labelLimit = `${LABEL_LIMIT}`;
+  // Until its labels are known, or where they cannot be read, each column is taken to be as wide
+  // as a label may run.
+  const column = SYMBOL_WIDTH + LABEL_LIMIT + COLUMN_PADDING;
+  const unlabelled = `max(1, floor((width + ${COLUMN_PADDING}) / ${column}))`;
+  if (!readsLabels(definition, legend)) {
+    return {
+      columns: { expr: unlabelled },
+      labelLimit: {
+        expr: `max(${MIN_LABEL_LIMIT}, min(${LABEL_LIMIT}, width - ${SYMBOL_WIDTH}))`,
+      },
+      symbolLimit: { expr: entries(unlabelled) },
+      titleLimit,
+    };
+  }
+
+  const signal = `${LABELS_SIGNAL}_${context.labelled.length}`;
+  context.labelled.push({
+    signal,
+    labels: (datasets) => {
+      const labels = labelsOf(definition, legend, rows(datasets));
+      if (!labels) return null;
+      const widths: LabelWidths = {
+        count: labels.length,
+        fewestListed: (columns) => Math.max(minRows * columns, minEntries),
+        // Sorted once, for every number of columns and every label limit tried.
+        widest: labels
+          .map((label) => labelWidth(label, font))
+          .sort((a, b) => b - a)
+          .slice(0, MAX_COLUMNS),
+        leftOut: labelWidth(LEFT_OUT_LABEL, font),
+      };
+      return {
+        count: widths.count,
+        crowded: widthsForColumns(widths, LABEL_LIMIT),
+        full:
+          widths.widest[0] > LABEL_LIMIT
+            ? widthsForColumns(widths, FULL_LABEL_LIMIT)
+            : null,
+      };
+    },
+  });
+  const crowded = columnsByWidth(`${signal}.crowded`);
+  const inFull = columnsByWidth(`${signal}.full`);
   // Where every entry fits with its label in full, none is cut short: three long names in a wide
   // chart read better on two rows than as three stubs on one.
-  if (widths && widths.widest[0] > LABEL_LIMIT) {
-    const inFull = columnsByWidth(widths, FULL_LABEL_LIMIT);
-    const roomy = `${entries(inFull)} >= ${widths.count}`;
-    columns = `(${roomy} ? ${inFull} : ${crowded})`;
-    labelLimit = `(${roomy} ? ${FULL_LABEL_LIMIT} : ${LABEL_LIMIT})`;
-  }
+  const roomy = `${signal} && ${signal}.full && ${entries(inFull)} >= ${signal}.count`;
+  const columns = `(${signal} ? (${roomy} ? ${inFull} : ${crowded}) : ${unlabelled})`;
+  const labelLimit = `(${roomy} ? ${FULL_LABEL_LIMIT} : ${LABEL_LIMIT})`;
   return {
     columns: { expr: columns },
     // A single column is no wider than the plot it stands over.
@@ -415,23 +517,15 @@ interface LabelWidths {
 }
 
 /**
- * An expression for the most columns a legend fits across the plot's `width`, given the widths
- * of its labels. Without them, every column is taken to be as wide as a label may run.
+ * The width of plot a legend's labels take in each number of columns from two on, cut at a limit.
  *
  * Vega sizes each column to its widest label, and which labels share a column follows the
  * legend's order, which is the data's. The widest label of each column is at most one of the
  * widest labels overall, so their sum holds for any order.
  */
-function columnsByWidth(
-  labels: LabelWidths | undefined,
-  limit: number,
-): string {
-  if (!labels) {
-    const column = SYMBOL_WIDTH + limit + COLUMN_PADDING;
-    return `max(1, floor((width + ${COLUMN_PADDING}) / ${column}))`;
-  }
+function widthsForColumns(labels: LabelWidths, limit: number): number[] {
   const leftOut = Math.min(labels.leftOut, limit);
-  let expr = "1";
+  const widths: number[] = [];
   // The widest labels, one for each column so far. Cutting them at the limit keeps their order.
   let labelsWidth = Math.min(labels.widest[0] ?? 0, limit);
   for (let columns = 2; columns <= labels.widest.length; columns++) {
@@ -441,36 +535,53 @@ function columnsByWidth(
     // the narrowest of these where it is the wider. How many rows the chart's height allows is
     // not known here, so it is counted wherever the fewest would leave entries out.
     const leavesOut = labels.count > labels.fewestListed(columns);
-    const room =
+    widths.push(
       labelsWidth +
-      (leavesOut ? Math.max(0, leftOut - narrowest) : 0) +
-      columns * SYMBOL_WIDTH +
-      (columns - 1) * COLUMN_PADDING;
-    expr = `(width >= ${room} ? ${columns} : ${expr})`;
+        (leavesOut ? Math.max(0, leftOut - narrowest) : 0) +
+        columns * SYMBOL_WIDTH +
+        (columns - 1) * COLUMN_PADDING,
+    );
+  }
+  return widths;
+}
+
+/**
+ * An expression for the most columns of a legend that fit across the plot's `width`, given an
+ * expression for the widths they take (see `widthsForColumns`). A legend has as many columns as
+ * it has labels, up to `MAX_COLUMNS`: the widths of more are undefined, which no width reaches.
+ */
+function columnsByWidth(widths: string): string {
+  let expr = "1";
+  for (let columns = 2; columns <= MAX_COLUMNS; columns++) {
+    expr = `(width >= ${widths}[${columns - 2}] ? ${columns} : ${expr})`;
   }
   return expr;
 }
 
 /**
- * The labels of a legend of categories, where they can be read off the chart: the values the
- * legend or its scale states, or else the field's in the rows the chart draws. A legend that
- * formats its labels, or a field the chart derives, gives none.
+ * Whether a legend of categories has labels that can be read off the chart. A legend that formats
+ * its labels, or a field the chart derives, has none.
  */
-function labelsOf(
-  definition: ViewSpec,
-  legend: ViewSpec,
-  rows: unknown[] | undefined,
-): string[] | undefined {
-  if (
+function readsLabels(definition: ViewSpec, legend: ViewSpec): boolean {
+  return !(
     legend.labelExpr !== undefined ||
     legend.format !== undefined ||
     legend.formatType !== undefined ||
     definition.timeUnit ||
     definition.bin ||
     definition.aggregate
-  ) {
-    return undefined;
-  }
+  );
+}
+
+/**
+ * The labels of a legend of categories that `readsLabels`: the values the legend or its scale
+ * states, or else the field's in the rows the chart draws.
+ */
+function labelsOf(
+  definition: ViewSpec,
+  legend: ViewSpec,
+  rows: unknown[] | undefined,
+): string[] | undefined {
   const stated = legend.values ?? record(definition.scale)?.domain;
   if (Array.isArray(stated)) {
     return stated.every((value) => typeof value !== "object")
