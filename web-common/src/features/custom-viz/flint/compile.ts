@@ -1668,6 +1668,9 @@ function orderViewSeries(
         },
         {
           window: [{ op: "dense_rank", as: place }],
+          // Vega-Lite adds a facet's fields to the groupby of a window under it, and threw on
+          // one that had none: a Sparkline was not drawn.
+          groupby: [],
           sort: [
             { field: total, order: "descending" },
             { field: encoding.field, order: "ascending" },
