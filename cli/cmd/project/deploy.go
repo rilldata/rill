@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -69,8 +70,15 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		// just a hack to avoid re-validation when `rill project deploy` internally calls `rill project connect-github`
 		return nil
 	}
-	// expand project directory and get absolute path
+
+	// Validate the tags before the deploy flows create anything, such as an org or a repository
 	var err error
+	o.Tags, err = database.NormalizeProjectTags(o.Tags)
+	if err != nil {
+		return err
+	}
+
+	// expand project directory and get absolute path
 	o.GitPath, err = fileutil.ExpandHome(o.GitPath)
 	if err != nil {
 		return err

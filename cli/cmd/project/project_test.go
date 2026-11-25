@@ -3,6 +3,8 @@ package project_test
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/admin/testadmin"
@@ -16,7 +18,7 @@ func TestProjectTags(t *testing.T) {
 	_, c := adm.NewUser(t)
 	u1 := testcli.New(t, adm, c.Token)
 
-	org := randomName()
+	org := randomName(t)
 	res := u1.Run(t, "org", "create", org)
 	require.Equal(t, 0, res.ExitCode, res.Output)
 	for _, p := range []*adminv1.CreateProjectRequest{
@@ -50,13 +52,19 @@ func TestProjectTags(t *testing.T) {
 	res = u1.Run(t, "project", "list", "--tag", "missing")
 	require.Equal(t, 0, res.ExitCode, res.Output)
 	require.Contains(t, res.Output, "No projects found")
+
+	// Deploys reject invalid tags before uploading the project
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "rill.yaml"), nil, 0o644))
+	res = u1.Run(t, "project", "deploy", "--interactive=false", "--org", org, "--project", "revenue-eu", "--tag", "not valid", "--path", dir)
+	require.Equal(t, 1, res.ExitCode)
+	require.Contains(t, res.Output, "must start with a letter or digit")
+	require.NotContains(t, res.Output, "Starting upload")
 }
 
-func randomName() string {
+func randomName(t *testing.T) string {
 	id := make([]byte, 16)
 	_, err := rand.Read(id)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	return "test_" + hex.EncodeToString(id)
 }
