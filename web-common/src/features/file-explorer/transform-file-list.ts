@@ -122,7 +122,8 @@ export function getDirectoryHasWarnings(
   );
 }
 
-function flattenDirectory(dir: Directory) {
+// Returns the paths of every file in the directory, including files in nested directories.
+export function flattenDirectory(dir: Directory) {
   const files = dir.files.map((f) => `${dir.path}/${f}`);
   dir.directories.forEach((subDir) => files.push(...flattenDirectory(subDir)));
   return files;

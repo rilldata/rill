@@ -1497,6 +1497,49 @@
   "field_list_dimensions": "DIMENSIONS",
   "field_list_measures": "MEASURES",
   "field_list_time": "TIME",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This file depends on it and will have errors until you update it:",
+        "countPlural=other": "These {count} files depend on it and will have errors until you update them:"
+      }
+    }
+  ],
+  "file_explorer_delete_file_description": "The file {path} will be deleted from the project.",
+  "file_explorer_delete_folder_description": "The folder {path} and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "The canvas dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=explore": "The explore dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=metrics_view": "The metrics view {name} and its file {path} will be deleted from the project.",
+        "kind=model": "The model {name} and its file {path} will be deleted from the project.",
+        "kind=source": "The source {name} and its file {path} will be deleted from the project.",
+        "kind=*": "{name} and its file {path} will be deleted from the project."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "Delete canvas dashboard?",
+        "kind=explore": "Delete explore dashboard?",
+        "kind=metrics_view": "Delete metrics view?",
+        "kind=model": "Delete model?",
+        "kind=source": "Delete source?",
+        "kind=folder": "Delete folder?",
+        "kind=*": "Delete file?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "Until you publish, a file that existed when your branch last synced with production can be restored from the list of changed files, as it was at that sync; later edits to it are lost. A file added on this branch can't be restored in Rill; if it was committed, recover it from Git history.",
+  "file_explorer_delete_undo_developer": "This can't be undone in Rill. Deleted files can only be recovered from version control or a backup.",
   "filter_advanced_beta": "Advanced (BETA)",
   "filter_advanced_remove": "Remove",
   "filter_advanced_warning": "Advanced filters are a bleeding edge feature! There may be bugs.",

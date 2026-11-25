@@ -110,9 +110,15 @@ export async function renameFileUsingTitle(
 export async function deleteFile(page: Page, filePath: string) {
   // open context menu and click delete
   await openFileNavEntryContextMenu(page, filePath);
+  await clickMenuButton(page, "Delete");
+
+  // nothing is deleted until the confirmation dialog is accepted
   await Promise.all([
     page.waitForResponse("**/rill.runtime.v1.RuntimeService/DeleteFile"),
-    clickMenuButton(page, "Delete"),
+    page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete" })
+      .click(),
   ]);
 }
 

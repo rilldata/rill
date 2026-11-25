@@ -1497,6 +1497,49 @@
   "field_list_dimensions": "차원",
   "field_list_measures": "측정값",
   "field_list_time": "시간",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "이 파일은 삭제할 항목에 의존하므로 업데이트할 때까지 오류가 발생합니다:",
+        "countPlural=other": "다음 파일 {count}개는 삭제할 항목에 의존하므로 업데이트할 때까지 오류가 발생합니다:"
+      }
+    }
+  ],
+  "file_explorer_delete_file_description": "파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+  "file_explorer_delete_folder_description": "폴더 {path}와(과) 그 안의 모든 항목이 프로젝트에서 삭제됩니다. 파일 탐색기에 표시되지 않는 파일(예: rill.yaml에서 무시하도록 설정한 경로)도 함께 삭제됩니다.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "캔버스 대시보드 {name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+        "kind=explore": "탐색 대시보드 {name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+        "kind=metrics_view": "메트릭 뷰 {name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+        "kind=model": "모델 {name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+        "kind=source": "소스 {name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다.",
+        "kind=*": "{name} 및 해당 파일 {path}이(가) 프로젝트에서 삭제됩니다."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "캔버스 대시보드를 삭제하시겠습니까?",
+        "kind=explore": "탐색 대시보드를 삭제하시겠습니까?",
+        "kind=metrics_view": "메트릭 뷰를 삭제하시겠습니까?",
+        "kind=model": "모델을 삭제하시겠습니까?",
+        "kind=source": "소스를 삭제하시겠습니까?",
+        "kind=folder": "폴더를 삭제하시겠습니까?",
+        "kind=*": "파일을 삭제하시겠습니까?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "게시하기 전까지는 브랜치가 마지막으로 프로덕션과 동기화될 때 있던 파일을 변경된 파일 목록에서 그 시점의 상태로 복원할 수 있으며, 이후의 편집 내용은 사라집니다. 이 브랜치에서 추가한 파일은 Rill에서 복원할 수 없으며, 커밋된 경우 Git 기록에서 복구할 수 있습니다.",
+  "file_explorer_delete_undo_developer": "이 작업은 Rill에서 되돌릴 수 없습니다. 삭제된 파일은 버전 관리 시스템이나 백업에서만 복구할 수 있습니다.",
   "filter_advanced_beta": "고급 (베타)",
   "filter_advanced_remove": "제거",
   "filter_advanced_warning": "고급 필터는 최신 실험적 기능입니다! 버그가 있을 수 있습니다.",
