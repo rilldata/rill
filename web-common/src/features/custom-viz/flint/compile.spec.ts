@@ -596,6 +596,44 @@ describe("compileFlintSpec", () => {
       ]);
     });
 
+    it("orders the series of a layer by the measure of the view it is layered in", async () => {
+      // A bullet chart draws its measure on the root view and its series on one of its layers.
+      const bulletChart = (arrival: string[]) =>
+        compileFlintSpec({
+          spec: {
+            chartType: "Bullet Chart",
+            encodings: {
+              x: { field: "device" },
+              y: { field: "bid_price_sum" },
+              color: { field: "publisher" },
+            },
+          },
+          rows: ["Phone", "Desktop"].flatMap((device) =>
+            arrival.map((publisher) => ({
+              device,
+              publisher,
+              bid_price_sum: totals[publisher],
+            })),
+          ),
+          fields: deriveFlintFields(
+            ["device", "publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec;
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(bulletChart(arrival))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
     it("keeps the rows' order for a pie, whose slices are drawn in it", () => {
       const { spec } = compileFlintSpec({
         spec: {

@@ -1435,64 +1435,91 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
  *
  * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
  * listed by name alone.
+ *
+ * A layer draws the measure of the view it is layered in where it does not draw one of its own,
+ * as a bullet chart's bars do.
  */
-function orderSeries(spec: Record<string, unknown>): void {
-  for (const view of layersOf(spec)) {
-    const mark = view.mark as string | Record<string, unknown> | undefined;
-    const markType = typeof mark === "object" ? mark.type : mark;
-    if (markType === "arc") continue;
-    const encodings = encodingsOf(view);
-    const measures = [encodings.x, encodings.y].filter(
-      (encoding) =>
-        encoding &&
-        !Array.isArray(encoding) &&
-        encoding.type === "quantitative" &&
-        typeof encoding.field === "string" &&
-        !encoding.field.startsWith("__") &&
-        !encoding.bin,
-    );
-    if (measures.length !== 1) continue;
-    // The column each field's series are placed in: several channels may draw one field.
-    const places = new Map<string, string>();
-    for (const channel of SERIES_CHANNELS) {
-      const encoding = encodings[channel];
-      if (
-        !encoding ||
-        Array.isArray(encoding) ||
-        !isDiscrete(encoding) ||
-        encoding.sort !== null ||
-        typeof encoding.field !== "string" ||
-        encoding.field.startsWith("__")
-      ) {
-        continue;
-      }
-      if (COMPOSITE_MARKS.has(markType as string)) {
-        encoding.sort = "ascending";
-        continue;
-      }
-      let place = places.get(encoding.field);
-      if (!place) {
-        const suffix = places.size ? `_${places.size + 1}` : "";
-        const total = SERIES_TOTAL_FIELD + suffix;
-        place = SERIES_PLACE_FIELD + suffix;
-        places.set(encoding.field, place);
-        view.transform = [
-          ...((view.transform as unknown[] | undefined) ?? []),
-          {
-            joinaggregate: [{ op: "sum", field: measures[0].field, as: total }],
-            groupby: [encoding.field],
-          },
-          {
-            window: [{ op: "dense_rank", as: place }],
-            sort: [
-              { field: total, order: "descending" },
-              { field: encoding.field, order: "ascending" },
-            ],
-          },
-        ];
-      }
-      encoding.sort = { field: place, op: "min" };
+function orderSeries(
+  view: Record<string, unknown>,
+  inherited: Record<string, EncodingRecord> = {},
+): void {
+  const own = encodingsOf(view);
+  const encodings = { ...inherited, ...own };
+  orderViewSeries(view, own, encodings);
+  const wrapped = view.spec;
+  if (wrapped && typeof wrapped === "object") {
+    orderSeries(wrapped as Record<string, unknown>);
+  }
+  for (const key of ["layer", "hconcat", "vconcat", "concat"]) {
+    const children = view[key];
+    if (!Array.isArray(children)) continue;
+    // Of these, only a layer draws the encoding of the view it is in.
+    for (const child of children as Record<string, unknown>[]) {
+      orderSeries(child, key === "layer" ? encodings : {});
     }
+  }
+}
+
+/** Orders the series a view draws itself, by the measure it draws or is layered over. */
+function orderViewSeries(
+  view: Record<string, unknown>,
+  own: Record<string, EncodingRecord>,
+  encodings: Record<string, EncodingRecord>,
+): void {
+  const mark = view.mark as string | Record<string, unknown> | undefined;
+  const markType = typeof mark === "object" ? mark.type : mark;
+  if (markType === "arc") return;
+  const measures = [encodings.x, encodings.y].filter(
+    (encoding) =>
+      encoding &&
+      !Array.isArray(encoding) &&
+      encoding.type === "quantitative" &&
+      typeof encoding.field === "string" &&
+      !encoding.field.startsWith("__") &&
+      !encoding.bin,
+  );
+  if (measures.length !== 1) return;
+  // The column each field's series are placed in: several channels may draw one field.
+  const places = new Map<string, string>();
+  for (const channel of SERIES_CHANNELS) {
+    // A series drawn by the view this one is layered in is ordered there.
+    const encoding = own[channel];
+    if (
+      !encoding ||
+      Array.isArray(encoding) ||
+      !isDiscrete(encoding) ||
+      encoding.sort !== null ||
+      typeof encoding.field !== "string" ||
+      encoding.field.startsWith("__")
+    ) {
+      continue;
+    }
+    if (COMPOSITE_MARKS.has(markType as string)) {
+      encoding.sort = "ascending";
+      continue;
+    }
+    let place = places.get(encoding.field);
+    if (!place) {
+      const suffix = places.size ? `_${places.size + 1}` : "";
+      const total = SERIES_TOTAL_FIELD + suffix;
+      place = SERIES_PLACE_FIELD + suffix;
+      places.set(encoding.field, place);
+      view.transform = [
+        ...((view.transform as unknown[] | undefined) ?? []),
+        {
+          joinaggregate: [{ op: "sum", field: measures[0].field, as: total }],
+          groupby: [encoding.field],
+        },
+        {
+          window: [{ op: "dense_rank", as: place }],
+          sort: [
+            { field: total, order: "descending" },
+            { field: encoding.field, order: "ascending" },
+          ],
+        },
+      ];
+    }
+    encoding.sort = { field: place, op: "min" };
   }
 }
 
