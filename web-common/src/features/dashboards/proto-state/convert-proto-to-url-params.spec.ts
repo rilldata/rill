@@ -3,7 +3,7 @@ import {
   Timestamp,
   type PartialMessage,
 } from "@bufbuild/protobuf";
-import { convertProtoToUrl } from "@rilldata/web-common/features/dashboards/proto-state/protoToUrl";
+import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params";
 import { toExpressionProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
   createAndExpression,
@@ -197,11 +197,11 @@ const TestCases: {
   },
 ];
 
-describe("convertProtoToUrl", () => {
+describe("convertProtoToUrlParams", () => {
   for (const { title, state, expected } of TestCases) {
     it(title, () => {
       const protoState = protoBase64.enc(new DashboardState(state).toBinary());
-      const urlParams = convertProtoToUrl(protoState);
+      const urlParams = convertProtoToUrlParams(protoState);
 
       expect(Object.fromEntries(urlParams.entries())).toEqual(expected);
 

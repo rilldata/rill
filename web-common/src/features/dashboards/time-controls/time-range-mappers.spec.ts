@@ -1,15 +1,15 @@
 import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import {
-  mapTimeManagerComparisonRangeToV1TimeRange,
-  mapV1TimeRangeToSelectedComparisonTimeRange,
-  setTimeFilterParamsFromV1TimeRanges,
+  convertTimeManagerComparisonRangeToV1TimeRange,
+  convertV1TimeRangeToSelectedComparisonTimeRange,
+  convertV1TimeRangesToTimeFilterUrlParams,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
-describe("mapTimeManagerComparisonRangeToV1TimeRange", () => {
+describe("convertTimeManagerComparisonRangeToV1TimeRange", () => {
   const TestCases: {
     title: string;
     timeRange: V1TimeRange;
@@ -53,7 +53,7 @@ describe("mapTimeManagerComparisonRangeToV1TimeRange", () => {
   for (const { title, timeRange, comparison, expected } of TestCases) {
     it(title, () => {
       expect(
-        mapTimeManagerComparisonRangeToV1TimeRange(
+        convertTimeManagerComparisonRangeToV1TimeRange(
           {
             showComparison: true,
             comparisonTimeRange: comparison,
@@ -66,7 +66,7 @@ describe("mapTimeManagerComparisonRangeToV1TimeRange", () => {
   }
 });
 
-describe("mapV1TimeRangeToSelectedComparisonTimeRange", () => {
+describe("convertV1TimeRangeToSelectedComparisonTimeRange", () => {
   const TimeRangeSummary = {
     min: "2024-01-01T00:00:00Z",
     max: "2024-02-01T00:00:00Z",
@@ -105,7 +105,7 @@ describe("mapV1TimeRangeToSelectedComparisonTimeRange", () => {
   for (const { title, comparisonTimeRange, expected } of TestCases) {
     it(title, () => {
       expect(
-        mapV1TimeRangeToSelectedComparisonTimeRange(
+        convertV1TimeRangeToSelectedComparisonTimeRange(
           comparisonTimeRange,
           TimeRangeSummary,
           TimeRangeSummary.max,
@@ -115,7 +115,7 @@ describe("mapV1TimeRangeToSelectedComparisonTimeRange", () => {
   }
 });
 
-describe("setTimeFilterParamsFromV1TimeRanges", () => {
+describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
   const TestCases: {
     title: string;
     timeRange: V1TimeRange;
@@ -157,8 +157,10 @@ describe("setTimeFilterParamsFromV1TimeRanges", () => {
     expectedTimeZone,
   } of TestCases) {
     it(title, () => {
-      const params = new URLSearchParams();
-      setTimeFilterParamsFromV1TimeRanges(params, timeRange, undefined);
+      const params = convertV1TimeRangesToTimeFilterUrlParams(
+        timeRange,
+        undefined,
+      );
       expect(params.get(ExploreStateURLParams.TimeRange)).toBe(
         expectedTimeRange,
       );

@@ -10,8 +10,8 @@ import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/da
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  mapTimeManagerComparisonRangeToV1TimeRange,
-  mapTimeManagerRangeToV1TimeRange,
+  convertTimeManagerComparisonRangeToV1TimeRange,
+  convertTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
@@ -71,8 +71,8 @@ export function getAlertQueryArgsFromFormValues(
   expr: V1Expression | undefined,
   timeFilterManager: TimeFilterManager | undefined,
 ): V1MetricsViewAggregationRequest {
-  const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
-  const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+  const timeRange = convertTimeManagerRangeToV1TimeRange(timeFilterManager);
+  const comparisonTimeRange = convertTimeManagerComparisonRangeToV1TimeRange(
     timeFilterManager,
     timeRange,
   );

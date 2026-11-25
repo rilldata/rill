@@ -19,7 +19,7 @@ export type AIResolverProps = {
 };
 
 /**
- * Maps the scope of an AI report onto a metrics resolver query, so that {@link mapMetricsResolverQueryToUrlSearch}
+ * Maps the scope of an AI report onto a metrics resolver query, so that {@link convertMetricsResolverQueryToUrlParams}
  * can turn it into explore url params. The `ai` resolver shares the metrics resolver's time range and filter formats;
  * it only names dimensions and measures as plain strings and points at an explore instead of a metrics view.
  */

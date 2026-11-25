@@ -9,8 +9,8 @@ import {
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getUrlFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-url-from-aggregation-request";
-import { mapMetricsResolverQueryToUrlSearch } from "@rilldata/web-common/features/explore-mappers/url-mappers/map-metrics-resolver-query-to-url-search";
+import { convertAggregationRequestToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-aggregation-request-to-url-params";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params";
 import {
   type V1MetricsViewAggregationRequest,
   V1TimeGrain,
@@ -32,7 +32,7 @@ function expectParsesWithoutErrors(urlParams: URLSearchParams) {
   expect(errors).toEqual([]);
 }
 
-describe("getUrlFromAggregationRequest", () => {
+describe("convertAggregationRequestToUrlParams", () => {
   const TestCases: {
     title: string;
     req: V1MetricsViewAggregationRequest;
@@ -101,7 +101,7 @@ describe("getUrlFromAggregationRequest", () => {
 
   for (const { title, req, forceOpenPivot, expected } of TestCases) {
     it(title, async () => {
-      const urlParams = await getUrlFromAggregationRequest({
+      const urlParams = await convertAggregationRequestToUrlParams({
         client: NoopClient,
         req,
         forceOpenPivot,
@@ -112,7 +112,7 @@ describe("getUrlFromAggregationRequest", () => {
   }
 });
 
-describe("mapMetricsResolverQueryToUrlSearch", () => {
+describe("convertMetricsResolverQueryToUrlParams", () => {
   const TestCases: {
     title: string;
     query: MetricsResolverQuery;
@@ -229,7 +229,7 @@ describe("mapMetricsResolverQueryToUrlSearch", () => {
 
   for (const { title, query, expected } of TestCases) {
     it(title, () => {
-      const urlParams = mapMetricsResolverQueryToUrlSearch({ query });
+      const urlParams = convertMetricsResolverQueryToUrlParams({ query });
       expect(Object.fromEntries(urlParams.entries())).toEqual(expected);
       expectParsesWithoutErrors(urlParams);
     });

@@ -17,7 +17,7 @@ import {
  * Opens the dimension table of the request's dimension.
  * Older alerts used comparison requests; they never saved a dashboard state, so the url is built from the request alone.
  */
-export async function getUrlFromComparisonRequest({
+export async function convertComparisonRequestToUrlParams({
   client,
   req,
   executionTime,

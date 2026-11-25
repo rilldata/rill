@@ -1,7 +1,7 @@
 import { page } from "$app/state";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
-import { convertProtoToUrl } from "@rilldata/web-common/features/dashboards/proto-state/protoToUrl.ts";
+import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
 /**
  * Builds the `web_open_state` of an alert or a report:
@@ -41,5 +41,5 @@ export function convertStateParamToUrlParams(
   if (kind === "canvas" || state.startsWith("?")) {
     return new URLSearchParams(state);
   }
-  return convertProtoToUrl(state);
+  return convertProtoToUrlParams(state);
 }

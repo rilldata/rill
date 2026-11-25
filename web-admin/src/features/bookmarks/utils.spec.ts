@@ -29,7 +29,7 @@ import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { convertProtoToUrl } from "@rilldata/web-common/features/dashboards/proto-state/protoToUrl.ts";
+import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
@@ -214,7 +214,7 @@ describe("getBookmarkData and parseBookmarks", () => {
             AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
             (data) =>
               // Use the explore transformer to match the ExploreBookmarks components and to parse legacy proto state
-              convertProtoToUrl(data).toString(),
+              convertProtoToUrlParams(data).toString(),
           );
 
           assertUnorderedUrlSearch(

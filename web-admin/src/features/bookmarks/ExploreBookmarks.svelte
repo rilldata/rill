@@ -13,7 +13,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQuery } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
-  import { convertProtoToUrl } from "@rilldata/web-common/features/dashboards/proto-state/protoToUrl.ts";
+  import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -62,7 +62,7 @@
     $page.url.searchParams,
     $rillDefaultExploreURLParams,
     // Transformer for legacy bookmark data that was stored in proto format.
-    (data) => convertProtoToUrl(data).toString(),
+    (data) => convertProtoToUrlParams(data).toString(),
   );
   // Categorize bookmarks into home, shared and personal bookmarks.
   $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);

@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { error, redirect } from "@sveltejs/kit";
-import { mapMetricsResolverQueryToUrlSearch } from "@rilldata/web-common/features/explore-mappers/url-mappers/map-metrics-resolver-query-to-url-search.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 
 export async function openQuery({
   mapArgs,
@@ -100,7 +100,7 @@ function generateExploreLink(
 ): string {
   const url = getUrlForExplore(exploreName, organization, project);
 
-  const searchParams = mapMetricsResolverQueryToUrlSearch(args);
+  const searchParams = convertMetricsResolverQueryToUrlParams(args);
 
   searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);

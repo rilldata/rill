@@ -50,7 +50,7 @@ import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
  * Fields with no url param are dropped:
  * leaderboard context column, tdd pin, pivot expanded state, pivot column page and pivot comparison.
  */
-export function convertProtoToUrl(protoState: string) {
+export function convertProtoToUrlParams(protoState: string) {
   const dashboard = DashboardState.fromBinary(base64ToProto(protoState));
   const urlParams = new URLSearchParams();
 
@@ -77,20 +77,32 @@ export function convertProtoToUrl(protoState: string) {
     );
   }
 
-  copyParamsToTarget(convertFilters(dashboard), urlParams);
-  copyParamsToTarget(convertTimeFields(dashboard, isFullState), urlParams);
+  copyParamsToTarget(convertProtoFiltersToUrlParams(dashboard), urlParams);
+  copyParamsToTarget(
+    convertProtoTimeFieldsToUrlParams(dashboard, isFullState),
+    urlParams,
+  );
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
-    copyParamsToTarget(convertPivotFields(dashboard), urlParams);
+    copyParamsToTarget(
+      convertProtoPivotFieldsToUrlParams(dashboard),
+      urlParams,
+    );
   } else {
     // Explore and pivot share the sort params, so only one of them can be set.
-    copyParamsToTarget(convertExploreFields(dashboard, isFullState), urlParams);
+    copyParamsToTarget(
+      convertProtoExploreFieldsToUrlParams(dashboard, isFullState),
+      urlParams,
+    );
   }
-  copyParamsToTarget(convertTimeDimensionFields(dashboard), urlParams);
+  copyParamsToTarget(
+    convertProtoTimeDimensionFieldsToUrlParams(dashboard),
+    urlParams,
+  );
 
   return urlParams;
 }
 
-function convertFilters(dashboard: DashboardState) {
+function convertProtoFiltersToUrlParams(dashboard: DashboardState) {
   const urlParams = new URLSearchParams();
 
   let expr: V1Expression | undefined = undefined;
@@ -129,11 +141,14 @@ function convertFilters(dashboard: DashboardState) {
   return urlParams;
 }
 
-function convertTimeFields(dashboard: DashboardState, isFullState: boolean) {
+function convertProtoTimeFieldsToUrlParams(
+  dashboard: DashboardState,
+  isFullState: boolean,
+) {
   const urlParams = new URLSearchParams();
 
   if (dashboard.timeRange) {
-    const timeRangeName = fromTimeRangeProto(dashboard.timeRange);
+    const timeRangeName = convertProtoTimeRangeToUrlParam(dashboard.timeRange);
     if (timeRangeName) {
       urlParams.set(ExploreStateURLParams.TimeRange, timeRangeName);
     }
@@ -150,7 +165,7 @@ function convertTimeFields(dashboard: DashboardState, isFullState: boolean) {
     // backwards compatibility
     const compareTimeRangeName = dashboard.showTimeComparison
       ? correctComparisonTimeRange(
-          fromTimeRangeProto(dashboard.compareTimeRange) ?? "",
+          convertProtoTimeRangeToUrlParam(dashboard.compareTimeRange) ?? "",
         )
       : "";
     urlParams.set(
@@ -169,7 +184,9 @@ function convertTimeFields(dashboard: DashboardState, isFullState: boolean) {
   }
 
   if (dashboard.scrubRange) {
-    const scrubRangeName = fromTimeRangeProto(dashboard.scrubRange);
+    const scrubRangeName = convertProtoTimeRangeToUrlParam(
+      dashboard.scrubRange,
+    );
     if (scrubRangeName) {
       urlParams.set(ExploreStateURLParams.HighlightedTimeRange, scrubRangeName);
     }
@@ -182,7 +199,7 @@ function convertTimeFields(dashboard: DashboardState, isFullState: boolean) {
   return urlParams;
 }
 
-function fromTimeRangeProto(timeRange: DashboardTimeRange) {
+function convertProtoTimeRangeToUrlParam(timeRange: DashboardTimeRange) {
   const rangeName = timeRange.name;
 
   // Check custom first since TimeRangePreset has CUSTOM as well
@@ -198,7 +215,10 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   return rangeName;
 }
 
-function convertExploreFields(dashboard: DashboardState, isFullState: boolean) {
+function convertProtoExploreFieldsToUrlParams(
+  dashboard: DashboardState,
+  isFullState: boolean,
+) {
   const urlParams = new URLSearchParams();
 
   if (dashboard.allMeasuresVisible) {
@@ -264,7 +284,7 @@ function convertExploreFields(dashboard: DashboardState, isFullState: boolean) {
   return urlParams;
 }
 
-function convertTimeDimensionFields(dashboard: DashboardState) {
+function convertProtoTimeDimensionFieldsToUrlParams(dashboard: DashboardState) {
   const urlParams = new URLSearchParams();
 
   if (dashboard.expandedMeasure) {
@@ -288,7 +308,7 @@ function convertTimeDimensionFields(dashboard: DashboardState) {
   return urlParams;
 }
 
-function convertPivotFields(dashboard: DashboardState) {
+function convertProtoPivotFieldsToUrlParams(dashboard: DashboardState) {
   const urlParams = new URLSearchParams();
 
   const mapTimeDimension = (grain: TimeGrain) =>
@@ -330,7 +350,10 @@ function convertPivotFields(dashboard: DashboardState) {
 
   const sort = dashboard.pivotSort[0];
   if (sort) {
-    urlParams.set(ExploreStateURLParams.SortBy, toPivotSortParam(sort.id));
+    urlParams.set(
+      ExploreStateURLParams.SortBy,
+      convertPivotSortIdToUrlParam(sort.id),
+    );
     urlParams.set(
       ExploreStateURLParams.SortDirection,
       sort.desc ? "DESC" : "ASC",
@@ -376,7 +399,7 @@ function convertPivotFields(dashboard: DashboardState) {
 }
 
 // The pivot sorts a time column either by its grain or by `{timeDimension}_rill_{grain}`.
-function toPivotSortParam(sortId: string) {
+function convertPivotSortIdToUrlParam(sortId: string) {
   if (sortId in ToURLParamTimeDimensionMap) {
     return ToURLParamTimeDimensionMap[sortId] as string;
   }

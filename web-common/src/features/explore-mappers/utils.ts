@@ -3,8 +3,8 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  mapV1TimeRangeToSelectedComparisonTimeRange,
-  mapV1TimeRangeToSelectedTimeRange,
+  convertV1TimeRangeToSelectedComparisonTimeRange,
+  convertV1TimeRangeToSelectedTimeRange,
   PreviousCompleteRangeMap,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -71,7 +71,7 @@ export async function fillTimeRange(
     executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
 
   if (reqTimeRange) {
-    exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
+    exploreState.selectedTimeRange = convertV1TimeRangeToSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
       endTime,
@@ -99,7 +99,7 @@ export async function fillTimeRange(
       };
     } else {
       exploreState.selectedComparisonTimeRange =
-        mapV1TimeRangeToSelectedComparisonTimeRange(
+        convertV1TimeRangeToSelectedComparisonTimeRange(
           reqComparisonTimeRange,
           timeRangeSummary,
           endTime,

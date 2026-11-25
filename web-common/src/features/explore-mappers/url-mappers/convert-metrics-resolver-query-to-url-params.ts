@@ -14,7 +14,7 @@ import {
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
-import { toCustomTimeRangeParam } from "@rilldata/web-common/features/explore-mappers/url-mappers/utils.ts";
+import { convertAbsoluteTimeRangeToUrlParam } from "@rilldata/web-common/features/explore-mappers/url-mappers/utils.ts";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import type {
@@ -32,7 +32,7 @@ import type {
  * Used to move a filter on the time dimension to the time range.
  * When missing, the dimension the query floors to a time grain is used.
  */
-export function mapMetricsResolverQueryToUrlSearch(
+export function convertMetricsResolverQueryToUrlParams(
   args: MetricsResolverQueryMapperArgs,
   timeDimension?: string,
 ) {
@@ -61,10 +61,13 @@ export function mapMetricsResolverQueryToUrlSearch(
     );
   }
 
-  copyParamsToTarget(mapTimeRanges(query, args), searchParams);
+  copyParamsToTarget(
+    convertResolverTimeRangesToUrlParams(query, args),
+    searchParams,
+  );
 
   copyParamsToTarget(
-    mapWhereFilter(
+    convertResolverWhereToUrlParams(
       query,
       timeDimension ?? timeDimensions[0]?.compute?.time_floor?.dimension,
     ),
@@ -76,14 +79,19 @@ export function mapMetricsResolverQueryToUrlSearch(
   }
 
   copyParamsToTarget(
-    mapActivePage(query, exploreDimensions, measureNames, timeDimensions),
+    convertResolverQueryToActivePageUrlParams(
+      query,
+      exploreDimensions,
+      measureNames,
+      timeDimensions,
+    ),
     searchParams,
   );
 
   return searchParams;
 }
 
-function mapTimeRanges(
+function convertResolverTimeRangesToUrlParams(
   query: MetricsResolverQuery,
   args: MetricsResolverQueryMapperArgs,
 ) {
@@ -92,7 +100,7 @@ function mapTimeRanges(
   if (args.resolvedTimeRange) {
     searchParams.set(
       ExploreStateURLParams.TimeRange,
-      toCustomTimeRangeParam(
+      convertAbsoluteTimeRangeToUrlParam(
         args.resolvedTimeRange.start!,
         args.resolvedTimeRange.end!,
       ),
@@ -100,14 +108,14 @@ function mapTimeRanges(
   } else {
     searchParams.set(
       ExploreStateURLParams.TimeRange,
-      mapResolverTimeRangeToDashboardControls(query.time_range),
+      convertResolverTimeRangeToUrlParam(query.time_range),
     );
   }
 
   if (args.resolvedComparisonTimeRange) {
     searchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      toCustomTimeRangeParam(
+      convertAbsoluteTimeRangeToUrlParam(
         args.resolvedComparisonTimeRange.start!,
         args.resolvedComparisonTimeRange.end!,
       ),
@@ -115,21 +123,19 @@ function mapTimeRanges(
   } else if (query.comparison_time_range) {
     searchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      mapResolverTimeRangeToDashboardControls(query.comparison_time_range),
+      convertResolverTimeRangeToUrlParam(query.comparison_time_range),
     );
   }
 
   return searchParams;
 }
 
-function mapResolverTimeRangeToDashboardControls(
-  timeRange: TimeRange | undefined,
-) {
+function convertResolverTimeRangeToUrlParam(timeRange: TimeRange | undefined) {
   // Default to "All Time" when no time range is specified
   if (!timeRange) return TimeRangePreset.ALL_TIME;
 
   if (timeRange.start && timeRange.end) {
-    return toCustomTimeRangeParam(timeRange.start, timeRange.end);
+    return convertAbsoluteTimeRangeToUrlParam(timeRange.start, timeRange.end);
   } else if (timeRange.expression) {
     return timeRange.expression;
   } else if (timeRange.iso_duration) {
@@ -144,7 +150,7 @@ function mapResolverTimeRangeToDashboardControls(
  * Sets the filter param from the query's where filter.
  * A filter on the time dimension replaces the time range, since explore filters cannot hold one.
  */
-function mapWhereFilter(
+function convertResolverWhereToUrlParams(
   query: MetricsResolverQuery,
   timeDimension: string | undefined,
 ) {
@@ -161,7 +167,7 @@ function mapWhereFilter(
     if (timeRange?.start && timeRange.end) {
       searchParams.set(
         ExploreStateURLParams.TimeRange,
-        toCustomTimeRangeParam(timeRange.start, timeRange.end),
+        convertAbsoluteTimeRangeToUrlParam(timeRange.start, timeRange.end),
       );
       where = filterIdentifiers(where, (_, i) => i !== timeDimension);
     }
@@ -180,7 +186,7 @@ function mapWhereFilter(
  * the dimension table for a single dimension;
  * and the pivot for anything with more dimensions.
  */
-function mapActivePage(
+function convertResolverQueryToActivePageUrlParams(
   query: MetricsResolverQuery,
   exploreDimensions: string[],
   measureNames: string[],
@@ -217,18 +223,31 @@ function mapActivePage(
       exploreDimensions[0],
     );
     copyParamsToTarget(
-      mapLeaderboardSort(query.measures ?? [], query, measureNames),
+      convertResolverSortToLeaderboardUrlParams(
+        query.measures ?? [],
+        query,
+        measureNames,
+      ),
       searchParams,
     );
   } else if (showPivot) {
     searchParams.set(ExploreStateURLParams.WebView, ExploreUrlWebView.Pivot);
     copyParamsToTarget(
-      mapPivot(query, exploreDimensions, measureNames, timeDimensions),
+      convertResolverQueryToPivotUrlParams(
+        query,
+        exploreDimensions,
+        measureNames,
+        timeDimensions,
+      ),
       searchParams,
     );
   } else {
     copyParamsToTarget(
-      mapLeaderboardSort(query.measures ?? [], query, measureNames),
+      convertResolverSortToLeaderboardUrlParams(
+        query.measures ?? [],
+        query,
+        measureNames,
+      ),
       searchParams,
     );
   }
@@ -236,7 +255,7 @@ function mapActivePage(
   return searchParams;
 }
 
-function mapLeaderboardSort(
+function convertResolverSortToLeaderboardUrlParams(
   measures: Measure[],
   query: MetricsResolverQuery,
   measureNames: string[],
@@ -288,7 +307,7 @@ function getMeasureNameAndType(measure: Measure) {
   };
 }
 
-function mapPivot(
+function convertResolverQueryToPivotUrlParams(
   query: MetricsResolverQuery,
   exploreDimensions: string[],
   measureNames: string[],

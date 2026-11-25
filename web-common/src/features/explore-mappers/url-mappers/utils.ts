@@ -1,7 +1,7 @@
 import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
-  mapV1TimeRangeToComparisonTimeOption,
-  mapV1TimeRangeToTimeFilterParams,
+  convertV1TimeRangeToComparisonTimeOption,
+  convertV1TimeRangeToTimeFilterParams,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type V1TimeRange } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -18,7 +18,7 @@ export async function convertAPITimeRangesToUrlParams(
   if (!reqTimeRange) return urlParams;
 
   const { timeRange, timeZone } =
-    mapV1TimeRangeToTimeFilterParams(reqTimeRange);
+    convertV1TimeRangeToTimeFilterParams(reqTimeRange);
   if (timeRange) {
     // Resolve time range overriding ref to `executionTime` and set to custom.
     // This keeps the time range consistent regardless of when the link is opened.
@@ -47,11 +47,11 @@ export async function convertAPITimeRangesToUrlParams(
     // The explore url only takes an absolute comparison as `start,end`.
     const comparisonParam =
       reqComparisonTimeRange.start && reqComparisonTimeRange.end
-        ? toCustomTimeRangeParam(
+        ? convertAbsoluteTimeRangeToUrlParam(
             reqComparisonTimeRange.start,
             reqComparisonTimeRange.end,
           )
-        : mapV1TimeRangeToComparisonTimeOption(
+        : convertV1TimeRangeToComparisonTimeOption(
             reqTimeRange,
             reqComparisonTimeRange,
           );
@@ -67,7 +67,7 @@ export async function convertAPITimeRangesToUrlParams(
  * Formats an absolute range as the explore url's custom range, `start,end`.
  * Both ends are normalized to ISO strings with milliseconds, which the comparison and highlighted range params require.
  */
-export function toCustomTimeRangeParam(
+export function convertAbsoluteTimeRangeToUrlParam(
   start: string | Date,
   end: string | Date,
 ) {

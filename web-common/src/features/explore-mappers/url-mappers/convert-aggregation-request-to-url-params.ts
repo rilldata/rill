@@ -42,7 +42,7 @@ import {
   ToURLParamTimeDimensionMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
 
-export async function getUrlFromAggregationRequest({
+export async function convertAggregationRequestToUrlParams({
   client,
   req,
   executionTime,
@@ -90,11 +90,17 @@ export async function getUrlFromAggregationRequest({
 
   if (forceOpenPivot) {
     searchParams.set(ExploreStateURLParams.WebView, ExploreUrlWebView.Pivot);
-    copyParamsToTarget(convertToPivotParams(req), searchParams);
+    copyParamsToTarget(
+      convertAggregationRequestToPivotUrlParams(req),
+      searchParams,
+    );
     return searchParams;
   }
 
-  copyParamsToTarget(convertToExploreParams(req), searchParams);
+  copyParamsToTarget(
+    convertAggregationRequestToExploreUrlParams(req),
+    searchParams,
+  );
 
   return searchParams;
 }
@@ -177,7 +183,9 @@ function exprHasComparison(expr: V1Expression) {
  * A request without dimensions opens the time dimension details of its first measure.
  * Explores without a time dimension fall back to the explore view during validation.
  */
-function convertToExploreParams(req: V1MetricsViewAggregationRequest) {
+function convertAggregationRequestToExploreUrlParams(
+  req: V1MetricsViewAggregationRequest,
+) {
   const searchParams = new URLSearchParams();
 
   const measureNames =
@@ -222,7 +230,9 @@ function convertToExploreParams(req: V1MetricsViewAggregationRequest) {
   return searchParams;
 }
 
-function convertToPivotParams(req: V1MetricsViewAggregationRequest) {
+function convertAggregationRequestToPivotUrlParams(
+  req: V1MetricsViewAggregationRequest,
+) {
   const searchParams = new URLSearchParams();
   const {
     rows: reqRows,

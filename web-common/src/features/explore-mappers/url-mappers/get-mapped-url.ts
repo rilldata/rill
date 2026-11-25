@@ -9,9 +9,9 @@ import {
   type DashboardPathContext,
   getDashboardPath,
 } from "@rilldata/web-common/features/explore-mappers/utils.ts";
-import { getUrlFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-url-from-aggregation-request.ts";
-import { getUrlFromComparisonRequest } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-url-from-comparison-request.ts";
-import { mapMetricsResolverQueryToUrlSearch } from "@rilldata/web-common/features/explore-mappers/url-mappers/map-metrics-resolver-query-to-url-search.ts";
+import { convertAggregationRequestToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-aggregation-request-to-url-params.ts";
+import { convertComparisonRequestToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-comparison-request-to-url-params.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 import {
   type AIResolverProps,
   mapAIResolverPropsToMetricsResolverQuery,
@@ -69,7 +69,7 @@ export async function getMappedExploreUrl(
   if (source.type === "ai") {
     const path = getDashboardPath(ctx, "explore", source.exploreName);
     // The resolver query's metrics view is not part of the url, so the explore's spec is not needed.
-    const search = mapMetricsResolverQueryToUrlSearch({
+    const search = convertMetricsResolverQueryToUrlParams({
       query: mapAIResolverPropsToMetricsResolverQuery(source.props, ""),
     }).toString();
     return search ? `${path}?${search}` : path;
@@ -77,7 +77,7 @@ export async function getMappedExploreUrl(
 
   const { request, options } = source;
   const { exploreName, metricsViewName, searchParams } =
-    await getSearchParamsFromQuery(client, request, options);
+    await convertQueryRequestToUrlParams(client, request, options);
 
   // backwards compatibility for older alerts created on metrics explore directly
   const path = getDashboardPath(ctx, "explore", exploreName || metricsViewName);
@@ -90,7 +90,7 @@ function canMapExploreUrl(source: MappedExploreUrlSource) {
   return !!source.request.queryName && !!source.request.queryArgsJson;
 }
 
-async function getSearchParamsFromQuery(
+async function convertQueryRequestToUrlParams(
   client: RuntimeClient,
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
@@ -114,7 +114,7 @@ async function getSearchParamsFromQuery(
       return {
         exploreName,
         metricsViewName: req.metricsView ?? "",
-        searchParams: await getUrlFromAggregationRequest({
+        searchParams: await convertAggregationRequestToUrlParams({
           client,
           req,
           urlState: exploreProtoState,
@@ -130,7 +130,7 @@ async function getSearchParamsFromQuery(
       return {
         exploreName,
         metricsViewName: req.metricsViewName ?? "",
-        searchParams: await getUrlFromComparisonRequest({
+        searchParams: await convertComparisonRequestToUrlParams({
           client,
           req,
           executionTime,

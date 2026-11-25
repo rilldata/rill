@@ -19,7 +19,7 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
-import { mapMetricsResolverQueryToUrlSearch } from "@rilldata/web-common/features/explore-mappers/url-mappers/map-metrics-resolver-query-to-url-search.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 
 const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
 const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
@@ -28,7 +28,7 @@ const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
 /**
  * Creates a store that contains a mapper function that maps a metrics resolver query to url with explore params.
  * Uses {@link getMetricsViewAndExploreSpecsQueryOptions} to get ListResources query to get metrics view and explore specs.
- * Calls {@link mapMetricsResolverQueryToUrlSearch} to get explore url params from a metrics resolver query.
+ * Calls {@link convertMetricsResolverQueryToUrlParams} to get explore url params from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url with explore params.
  */
 export function getMetricsResolverQueryToUrlMapperStore(
@@ -124,7 +124,7 @@ export function mapMetricsResolverQueryToUrl(
   const exploreName = exploreForMetricViewsMap.get(metricsViewName);
   if (!metricsViewSpec || !exploreName) return url.href;
 
-  const urlSearchParams = mapMetricsResolverQueryToUrlSearch(
+  const urlSearchParams = convertMetricsResolverQueryToUrlParams(
     {
       query,
       ...resolvedTimeRanges,

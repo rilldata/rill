@@ -56,7 +56,7 @@ for (const preset in PreviousCompleteRangeMap) {
   ] = preset as TimeRangePreset;
 }
 
-export function mapV1TimeRangeToSelectedTimeRange(
+export function convertV1TimeRangeToSelectedTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
   end: string,
@@ -102,7 +102,7 @@ export function mapV1TimeRangeToSelectedTimeRange(
   return selectedTimeRange;
 }
 
-export function mapV1TimeRangeToSelectedComparisonTimeRange(
+export function convertV1TimeRangeToSelectedComparisonTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
   end: string,
@@ -117,7 +117,7 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
 
   // A comparison sent as the base expression with an offset, such as "P1D offset -1W"
   const offsetOption = timeRange.expression
-    ? getComparisonOptionFromExpression(timeRange.expression)
+    ? convertExpressionToComparisonOption(timeRange.expression)
     : undefined;
   if (offsetOption) {
     duration = offsetOption;
@@ -157,7 +157,7 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   return selectedTimeRange;
 }
 
-export function mapTimeManagerRangeToV1TimeRange(
+export function convertTimeManagerRangeToV1TimeRange(
   timeFilterManager: TimeFilterManager | undefined,
 ): V1TimeRange | undefined {
   // The requested range rather than the resolved `timeRange`:
@@ -204,7 +204,7 @@ export function mapTimeManagerRangeToV1TimeRange(
   return timeRange;
 }
 
-export function mapTimeManagerComparisonRangeToV1TimeRange(
+export function convertTimeManagerComparisonRangeToV1TimeRange(
   timeFilterManager: TimeFilterManager | undefined,
   timeRange: V1TimeRange | undefined,
 ): V1TimeRange | undefined {
@@ -256,40 +256,42 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
 }
 
 /**
- * Sets the time filter url params a {@link TimeFilterManager} is seeded with from API time ranges,
+ * Converts API time ranges to the time filter url params a {@link TimeFilterManager} is seeded with,
  * e.g. those saved in a report's or an alert's aggregation request.
  */
-export function setTimeFilterParamsFromV1TimeRanges(
-  params: URLSearchParams,
+export function convertV1TimeRangesToTimeFilterUrlParams(
   timeRange: V1TimeRange | undefined,
   comparisonTimeRange: V1TimeRange | undefined,
 ) {
-  if (!timeRange) return;
+  const urlParams = new URLSearchParams();
+  if (!timeRange) return urlParams;
 
   const { timeRange: timeRangeParam, timeZone } =
-    mapV1TimeRangeToTimeFilterParams(timeRange);
-  if (!timeRangeParam) return;
-  params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+    convertV1TimeRangeToTimeFilterParams(timeRange);
+  if (!timeRangeParam) return urlParams;
+  urlParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
   if (timeZone) {
-    params.set(ExploreStateURLParams.TimeZone, timeZone);
+    urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
   }
 
   if (comparisonTimeRange) {
-    const comparisonParam = mapV1TimeRangeToComparisonTimeOption(
+    const comparisonParam = convertV1TimeRangeToComparisonTimeOption(
       timeRange,
       comparisonTimeRange,
     );
     if (comparisonParam) {
-      params.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
+      urlParams.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
     }
   }
+
+  return urlParams;
 }
 
 /**
  * Maps an API time range to the rill time range and zone a {@link TimeFilterManager} is seeded with.
  * The zone is undefined when the dashboard's default zone should apply.
  */
-export function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
+export function convertV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
   timeRange: string | undefined;
   timeZone: string | undefined;
 } {
@@ -318,7 +320,7 @@ export function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
   };
 }
 
-export function mapV1TimeRangeToComparisonTimeOption(
+export function convertV1TimeRangeToComparisonTimeOption(
   primaryTimeRange: V1TimeRange,
   timeRange: V1TimeRange,
 ) {
@@ -361,7 +363,7 @@ export function mapV1TimeRangeToComparisonTimeOption(
 }
 
 // Returns the comparison option whose rill time offset ends the expression, such as "-1W" in "P7D offset -1W".
-function getComparisonOptionFromExpression(
+function convertExpressionToComparisonOption(
   expression: string,
 ): TimeComparisonOption | undefined {
   const offset = / offset (\S+)$/.exec(expression)?.[1];
