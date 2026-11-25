@@ -262,9 +262,21 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 	}
 	if d.Hour != 0 {
 		n := t.Hour() % d.Hour
+		targetHour := t.Hour() - n
 		// Build the boundary from local clock fields: time.Truncate aligns to UTC
 		// hour boundaries, which are not on the hour in zones with a fractional offset.
-		return time.Date(t.Year(), t.Month(), t.Day(), t.Hour()-n, 0, 0, 0, t.Location())
+		res := time.Date(t.Year(), t.Month(), t.Day(), targetHour, 0, 0, 0, t.Location())
+		// During a fall-back DST fold, time.Date picks one occurrence of a repeated
+		// local hour; shift by the offset difference if the other occurrence matches t's offset.
+		_, tOff := t.Zone()
+		if _, rOff := res.Zone(); tOff != rOff {
+			if cand := res.Add(time.Duration(rOff-tOff) * time.Second); cand.Year() == t.Year() && cand.Month() == t.Month() && cand.Day() == t.Day() && cand.Hour() == targetHour {
+				if _, cOff := cand.Zone(); cOff == tOff {
+					return cand
+				}
+			}
+		}
+		return res
 	}
 	if d.Minute != 0 {
 		n := t.Minute() % d.Minute

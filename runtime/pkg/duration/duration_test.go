@@ -38,6 +38,7 @@ func TestParseISO8601(t *testing.T) {
 func TestTruncate(t *testing.T) {
 	halfHourZone := time.FixedZone("IST", 5*3600+1800)
 	quarterHourZone := time.FixedZone("NPT", 5*3600+2700)
+	copenhagen := must(time.LoadLocation("Europe/Copenhagen"))
 
 	// Test case structure
 	type testCase struct {
@@ -116,12 +117,20 @@ func TestTruncate(t *testing.T) {
 			expectedTime:     time.Date(2023, 3, 26, 3, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
 		},
 		{
-			name:             "Truncate to start of hour with fall DST",
+			name:             "Truncate to start of hour with fall DST (first occurrence, CEST)",
 			duration:         StandardDuration{Hour: 1},
-			inputTime:        time.Date(2023, 10, 29, 2, 15, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			inputTime:        time.Date(2023, 10, 29, 0, 15, 0, 0, time.UTC).In(copenhagen),
 			firstDayOfWeek:   1,
 			firstMonthOfYear: 1,
-			expectedTime:     time.Date(2023, 10, 29, 2, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			expectedTime:     time.Date(2023, 10, 29, 0, 0, 0, 0, time.UTC).In(copenhagen),
+		},
+		{
+			name:             "Truncate to start of hour with fall DST (second occurrence, CET)",
+			duration:         StandardDuration{Hour: 1},
+			inputTime:        time.Date(2023, 10, 29, 1, 15, 0, 0, time.UTC).In(copenhagen),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2023, 10, 29, 1, 0, 0, 0, time.UTC).In(copenhagen),
 		},
 		{
 			name:             "Truncate to start of same minute",
