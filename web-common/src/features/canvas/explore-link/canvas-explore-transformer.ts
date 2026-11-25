@@ -4,22 +4,13 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { transformTimeAndFiltersToExploreState } from "@rilldata/web-common/features/explores/explore-link/explore-state-transformer";
 
-export interface CanvasLinkContext {
-  organization?: string;
-  project?: string;
-  timeAndFilterStore: TimeAndFilterStore;
-  exploreName: string;
-}
-
 /**
  *  Orchestrator function that transforms canvas component to explore state
  */
 export function useTransformCanvasToExploreState(
   component: BaseCanvasComponent<ComponentWithMetricsView>,
-  context: CanvasLinkContext,
+  timeAndFilterStore: TimeAndFilterStore,
 ) {
-  const timeAndFilterStore = context.timeAndFilterStore;
-
   // if (!validateUserPermissions()) {
   //   throw createLinkError(
   //     "PERMISSION_ERROR",
