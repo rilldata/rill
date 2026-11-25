@@ -42,6 +42,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
+	t.Run("TestProjectsWithTags", func(t *testing.T) { testProjectsWithTags(t, db) })
 	t.Run("TestProjectsWithPagination", func(t *testing.T) { testProjectsWithPagination(t, db) })
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
@@ -175,6 +176,20 @@ func testOrganizations(t *testing.T, db database.DB) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "", org.DefaultProvisioner)
+
+	// Check that DisableProjectDomainAccess is only changed when set
+	disableProjectDomainAccess := true
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                       org.Name,
+		DisableProjectDomainAccess: &disableProjectDomainAccess,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
@@ -335,6 +350,130 @@ func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 }
 
+func testProjectsWithTags(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "tags"})
+	require.NoError(t, err)
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "tags@example.com"})
+	require.NoError(t, err)
+	viewer, err := db.FindProjectRole(ctx, database.ProjectRoleNameViewer)
+	require.NoError(t, err)
+
+	// Tags default to empty and are normalized on insert
+	untagged, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "untagged"})
+	require.NoError(t, err)
+	require.Empty(t, untagged.Tags)
+	prod, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "prod", Tags: []string{"Prod", "eu", "prod"}, Public: true})
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "prod"}, prod.Tags)
+	stage, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "stage", Tags: []string{"stage"}})
+	require.NoError(t, err)
+	sandbox, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "sandbox", Tags: []string{"sandbox"}})
+	require.NoError(t, err)
+	require.NoError(t, db.InsertProjectMemberUser(ctx, sandbox.ID, user.ID, viewer.ID, false, nil))
+	_, err = db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "invalid", Tags: []string{"not valid"}})
+	require.ErrorIs(t, err, database.ErrValidation)
+
+	// UpdateProjectTags adds and removes tags
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, []string{"EU", "tmp"}, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage", "tmp"}, stage.Tags)
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, nil, []string{"tmp"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+	_, err = db.UpdateProjectTags(ctx, stage.ID, []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}, nil)
+	require.ErrorIs(t, err, database.ErrValidation)
+
+	// Concurrent updates keep each other's changes, and the limit applies to the tags they add together
+	concurrent, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "concurrent"})
+	require.NoError(t, err)
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make([]error, database.MaxProjectTags+1)
+	for i := range errs {
+		wg.Go(func() {
+			<-start
+			_, errs[i] = db.UpdateProjectTags(ctx, concurrent.ID, []string{fmt.Sprintf("tag%d", i)}, nil)
+		})
+	}
+	close(start)
+	wg.Wait()
+	var added []string
+	for i, err := range errs {
+		if err == nil {
+			added = append(added, fmt.Sprintf("tag%d", i))
+		} else {
+			require.ErrorIs(t, err, database.ErrValidation)
+		}
+	}
+	require.Len(t, added, database.MaxProjectTags)
+	concurrent, err = db.FindProject(ctx, concurrent.ID)
+	require.NoError(t, err)
+	require.ElementsMatch(t, added, concurrent.Tags)
+	require.NoError(t, db.DeleteProject(ctx, concurrent.ID))
+
+	// Updating the other fields keeps the tags
+	stage, err = db.UpdateProject(ctx, stage.ID, &database.UpdateProjectOptions{Name: stage.Name, Description: "staging"})
+	require.NoError(t, err)
+	require.Equal(t, "staging", stage.Description)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+	stage, err = db.FindProject(ctx, stage.ID)
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+
+	names := func(projs []*database.Project) []string {
+		res := make([]string, len(projs))
+		for i, p := range projs {
+			res[i] = p.Name
+		}
+		return res
+	}
+
+	// Filtering matches any of the tags, and nil or empty tags mean no filter
+	projs, err := db.FindProjectsForOrganization(ctx, org.ID, nil, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox", "stage", "untagged"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{}, "", 10)
+	require.NoError(t, err)
+	require.Len(t, projs, 4)
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox", "stage"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"missing"}, "", 10)
+	require.NoError(t, err)
+	require.Empty(t, projs)
+
+	// Pagination continues after the last project of the filtered page
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, "", 2)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, projs[1].Name, 2)
+	require.NoError(t, err)
+	require.Equal(t, []string{"stage"}, names(projs))
+
+	// The user sees the public project and the project they are a member of
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox"}, names(projs))
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, []string{"sandbox", "stage"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"sandbox"}, names(projs))
+
+	projs, err = db.FindPublicProjectsInOrganization(ctx, org.ID, []string{"prod"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod"}, names(projs))
+	projs, err = db.FindPublicProjectsInOrganization(ctx, org.ID, []string{"sandbox"}, "", 10)
+	require.NoError(t, err)
+	require.Empty(t, projs)
+
+	for _, p := range []*database.Project{untagged, prod, stage, sandbox} {
+		require.NoError(t, db.DeleteProject(ctx, p.ID))
+	}
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
 func testProjectsWithPagination(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
@@ -366,14 +505,14 @@ func testProjectsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "other", proj3.Name)
 
 	// fetch project name without name filter
-	projs, err := db.FindProjectsForOrganization(ctx, org.ID, "", 2)
+	projs, err := db.FindProjectsForOrganization(ctx, org.ID, nil, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrganization(ctx, org.ID, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, nil, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -427,14 +566,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, "", 2)
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)

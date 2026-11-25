@@ -1616,6 +1616,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	}
 
+	if m.DisableProjectDomainAccess != nil {
+		// no validation rules for DisableProjectDomainAccess
+	}
+
 	if len(errors) > 0 {
 		return UpdateOrganizationRequestMultiError(errors)
 	}
@@ -47152,6 +47156,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for CustomDomain
 
 	// no validation rules for DefaultProjectRoleId
+
+	// no validation rules for DisableProjectDomainAccess
 
 	// no validation rules for DefaultProvisioner
 

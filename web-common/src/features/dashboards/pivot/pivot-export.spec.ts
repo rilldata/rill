@@ -1,4 +1,5 @@
 import {
+  canExportPivot,
   getPivotAggregationRequest,
   getPivotExportConditionalFormats,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-export";
@@ -101,6 +102,38 @@ describe("getPivotAggregationRequest", () => {
     expect(
       flatRequestSort([{ id: "bid_price", desc: true }], false, timeOnly),
     ).toEqual([{ name: "timestamp_rill_TIME_GRAIN_DAY", desc: false }]);
+  });
+});
+
+describe("canExportPivot", () => {
+  const dim = chip(PivotChipType.Dimension, "domain");
+  const time = chip(PivotChipType.Time, V1TimeGrain.TIME_GRAIN_DAY);
+  const measure = chip(PivotChipType.Measure, "impressions");
+
+  it.each([
+    ["an empty pivot", [], [], [], false, false],
+    ["an empty flat table", [], [], [], true, false],
+    ["column dimensions without a measure", [], [dim], [], false, false],
+    [
+      "row and column dimensions without a measure",
+      [dim],
+      [time],
+      [],
+      false,
+      false,
+    ],
+    ["row dimensions without a measure", [dim], [], [], false, true],
+    ["a flat table of dimensions", [], [dim, time], [], true, true],
+    ["a measure alone", [], [], [measure], false, true],
+    ["column dimensions with a measure", [], [dim], [measure], false, true],
+  ])("%s", (_, rows, dimensions, measures, isFlat, expected) => {
+    expect(
+      canExportPivot(
+        rows,
+        { dimension: dimensions, measure: measures },
+        isFlat,
+      ),
+    ).toBe(expected);
   });
 });
 

@@ -85,6 +85,7 @@ type Encoding = {
   title?: unknown;
   format?: string;
   formatType?: string;
+  sort?: unknown;
   stack?: unknown;
   scale?: Record<string, unknown>;
   axis?: Record<string, unknown> | null;
@@ -417,7 +418,290 @@ describe("compileFlintSpec", () => {
       for (const item of node.items ?? []) item.items?.forEach(visit);
     };
     visit((view.scenegraph() as unknown as { root: SceneNode }).root);
-    expect(labels.map((label) => label.text)).toEqual(publishers);
+    // The series are listed by their total, the last of these publishers' the largest.
+    expect(labels.map((label) => label.text)).toEqual(
+      [...publishers].reverse(),
+    );
+  });
+
+  /** The labels of a compiled chart's legends, in the order Vega lists them. */
+  async function legendLabels(spec: unknown): Promise<string[]> {
+    vega.expressionFunction(
+      "rill_bid_price_sum",
+      (value: number) => `USD ${value}`,
+    );
+    const view = new vega.View(
+      vega.parse(
+        compile(spec as never, { config: { customFormatTypes: true } }).spec,
+      ),
+      { renderer: "none" },
+    );
+    await view.runAsync();
+    const labels: SceneNode[] = [];
+    const visit = (node: SceneNode) => {
+      if (node.role === "legend-label") labels.push(...(node.items ?? []));
+      for (const item of node.items ?? []) item.items?.forEach(visit);
+    };
+    visit((view.scenegraph() as unknown as { root: SceneNode }).root);
+    return labels.map((label) => String(label.text));
+  }
+
+  describe("series order", () => {
+    const totals: Record<string, number> = {
+      Yahoo: 100,
+      Google: 300,
+      Microsoft: 200,
+    };
+    // One row per publisher and day, each day's rows in the given order: a query ordered by
+    // time leaves that order to the database, and it changes from one run to the next.
+    const rowsInOrder = (publishers: string[], values = totals) =>
+      Array.from({ length: 4 }, (_, day) =>
+        publishers.map((publisher) => ({
+          timestamp: new Date(2026, 9, 1 + day),
+          publisher,
+          bid_price_sum: values[publisher] + day,
+        })),
+      ).flat();
+    const lineChart = (
+      publishers: string[],
+      color: Record<string, unknown> = {},
+      values = totals,
+    ) =>
+      compileFlintSpec({
+        spec: {
+          chartType: "Line Chart",
+          encodings: {
+            x: { field: "timestamp" },
+            y: { field: "bid_price_sum" },
+            color: { field: "publisher", ...color },
+          },
+        },
+        rows: rowsInOrder(publishers, values),
+        fields: deriveFlintFields(
+          ["timestamp", "publisher", "bid_price_sum"],
+          metricsView,
+          V1TimeGrain.TIME_GRAIN_DAY,
+        ),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      }).spec;
+
+    it("lists a chart's series by their total, whatever order their rows arrive in", async () => {
+      // Flint lists them as the rows arrive, so each of these drew its own order, and gave
+      // every publisher another color.
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(lineChart(arrival))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("lists the series of one total by name, whatever order their rows arrive in", async () => {
+      // Vega lists the values that tie on a scale's sort as their rows arrive, so two series
+      // of one total, or of no value at all, swapped places and colors between loads.
+      const tied = { Yahoo: 100, Google: 300, Microsoft: 100 };
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(lineChart(arrival, {}, tied))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("lists the series of a box plot by name", async () => {
+      // A box plot summarizes its rows, and has no total to place its series by.
+      const boxPlot = (arrival: string[]) =>
+        compileFlintSpec({
+          spec: {
+            chartType: "Boxplot",
+            encodings: {
+              x: { field: "device" },
+              y: { field: "bid_price_sum" },
+              color: { field: "publisher" },
+            },
+          },
+          rows: ["Phone", "Desktop"].flatMap((device) =>
+            rowsInOrder(arrival).map((row) => ({ ...row, device })),
+          ),
+          fields: deriveFlintFields(
+            ["device", "publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec;
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        const spec = boxPlot(arrival);
+        expect(viewOf(spec).encoding?.color?.sort).toBe("ascending");
+        expect(await legendLabels(spec)).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("orders the bars of a group as it orders their legend", () => {
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Grouped Bar Chart",
+          encodings: {
+            x: { field: "device" },
+            y: { field: "bid_price_sum" },
+            group: { field: "publisher" },
+          },
+        },
+        rows: ["Phone", "Desktop"].flatMap((device) =>
+          Object.entries(totals).map(([publisher, bid_price_sum]) => ({
+            device,
+            publisher,
+            bid_price_sum,
+          })),
+        ),
+        fields: deriveFlintFields(
+          ["device", "publisher", "bid_price_sum"],
+          metricsView,
+        ),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      });
+      // One column places the publishers, by their total and then by name.
+      const { color, xOffset } = viewOf(spec).encoding ?? {};
+      expect(color?.sort).toEqual({ field: "__rill_series_place", op: "min" });
+      expect(xOffset?.sort).toEqual(color?.sort);
+      expect(
+        (spec as unknown as { transform: unknown[] }).transform,
+      ).toHaveLength(2);
+    });
+
+    it("keeps an order the author gave the series", async () => {
+      const spec = lineChart(["Yahoo", "Microsoft", "Google"], {
+        sortOrder: "descending",
+      });
+      expect(viewOf(spec).encoding?.color?.sort).toBe("descending");
+      expect(await legendLabels(spec)).toEqual([
+        "Yahoo",
+        "Microsoft",
+        "Google",
+      ]);
+    });
+
+    it("lists a series the author typed as ordinal in its own order", async () => {
+      // Its values have an order of their own, such as years or levels, which their totals
+      // would scramble.
+      const byTotal = { Yahoo: 300, Google: 100, Microsoft: 200 };
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        const spec = lineChart(arrival, { type: "ordinal" }, byTotal);
+        expect(viewOf(spec).encoding?.color?.sort).toBe("ascending");
+        expect(await legendLabels(spec)).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("orders the series of a layer by the measure of the view it is layered in", async () => {
+      // A bullet chart draws its measure on the root view and its series on one of its layers.
+      const bulletChart = (arrival: string[]) =>
+        compileFlintSpec({
+          spec: {
+            chartType: "Bullet Chart",
+            encodings: {
+              x: { field: "device" },
+              y: { field: "bid_price_sum" },
+              color: { field: "publisher" },
+            },
+          },
+          rows: ["Phone", "Desktop"].flatMap((device) =>
+            arrival.map((publisher) => ({
+              device,
+              publisher,
+              bid_price_sum: totals[publisher],
+            })),
+          ),
+          fields: deriveFlintFields(
+            ["device", "publisher", "bid_price_sum"],
+            metricsView,
+          ),
+          size: { width: 600, height: 400 },
+          measureFields: ["bid_price_sum"],
+        }).spec;
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        expect(await legendLabels(bulletChart(arrival))).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
+    it("keeps the rows' order for a pie, whose slices are drawn in it", () => {
+      const { spec } = compileFlintSpec({
+        spec: {
+          chartType: "Donut Chart",
+          encodings: {
+            color: { field: "publisher" },
+            size: { field: "bid_price_sum" },
+          },
+        },
+        rows,
+        fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+        size: { width: 600, height: 400 },
+        measureFields: ["bid_price_sum"],
+      });
+      expect(viewOf(spec).encoding?.color?.sort).toBeNull();
+    });
+  });
+
+  it("formats a legend of a measure's values as the measure's axis is", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Scatter Plot",
+        encodings: {
+          x: { field: "total_records" },
+          y: { field: "impressions" },
+          color: { field: "publisher" },
+          size: { field: "bid_price_sum" },
+        },
+      },
+      rows: rows.map((row, i) => ({ ...row, impressions: 10 * (i + 1) })),
+      fields: deriveFlintFields(
+        ["publisher", "bid_price_sum", "total_records", "impressions"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    // Vega-Lite takes a legend's format from the legend alone. Left to Vega's own, the sizes of
+    // a currency measure read "1.0k" beside an axis that read "$1,000".
+    const size = viewOf(spec).encoding?.size;
+    expect(size?.formatType).toBeDefined();
+    expect(size?.legend?.formatType).toBe(size?.formatType);
+    expect(size?.legend?.format).toBeUndefined();
+    const labels = await legendLabels(spec);
+    expect(labels.some((label) => label.startsWith("USD "))).toBe(true);
+    // The publishers' legend is not a measure's.
+    expect(viewOf(spec).encoding?.color?.legend?.formatType).toBeUndefined();
   });
 
   it("keeps a color scheme the author chose", () => {

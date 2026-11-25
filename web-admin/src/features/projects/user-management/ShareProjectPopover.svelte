@@ -16,6 +16,7 @@
 
   export let organization: string;
   export let project: string;
+  export let manageProject: boolean;
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
@@ -52,6 +53,7 @@
     <ShareProjectForm
       {organization}
       {project}
+      {manageProject}
       {manageProjectAdmins}
       {manageOrgAdmins}
       {manageOrgMembers}

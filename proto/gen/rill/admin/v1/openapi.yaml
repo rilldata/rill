@@ -1517,6 +1517,11 @@ components:
                     type: string
                 description:
                     type: string
+                disableProjectDomainAccess:
+                    description: |-
+                        When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+                        Rules a project already has keep adding users.
+                    type: boolean
                 displayName:
                     type: string
                 faviconUrl:
@@ -1732,6 +1737,11 @@ components:
                     type: boolean
                 subpath:
                     type: string
+                tags:
+                    description: User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase.
+                    items:
+                        type: string
+                    type: array
                 updatedOn:
                     format: date-time
                     type: string
@@ -3424,6 +3434,8 @@ paths:
                                     type: string
                                 description:
                                     type: string
+                                disableProjectDomainAccess:
+                                    type: boolean
                                 displayName:
                                     type: string
                                 faviconAssetId:
@@ -4054,6 +4066,13 @@ paths:
                   required: true
                   schema:
                     type: string
+                - description: If set, only projects that have at least one of these tags are returned.
+                  in: query
+                  name: tags
+                  schema:
+                    items:
+                        type: string
+                    type: array
                 - in: query
                   name: pageSize
                   schema:
@@ -4128,6 +4147,13 @@ paths:
                                     type: boolean
                                 subpath:
                                     type: string
+                                tags:
+                                    description: |-
+                                        Tags for organizing the project, such as "prod" or "sandbox".
+                                        Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -4287,6 +4313,11 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                addTags:
+                                    description: Tags to add to the project. Tags the project already has are kept.
+                                    items:
+                                        type: string
+                                    type: array
                                 archiveAssetId:
                                     type: string
                                 description:
@@ -4323,6 +4354,13 @@ paths:
                                     type: string
                                 public:
                                     type: boolean
+                                removeTags:
+                                    description: |-
+                                        Tags to remove from the project. Tags the project doesn't have are ignored.
+                                        A tag can't be in both add_tags and remove_tags.
+                                    items:
+                                        type: string
+                                    type: array
                                 subpath:
                                     type: string
                                 superuserForceAccess:

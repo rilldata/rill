@@ -15,6 +15,8 @@ rill project edit [<project-name>] [flags]
 ```
       --project string          Project Name
       --description string      Project Description
+      --add-tag strings         Tags to add, such as prod or sandbox (repeat or separate with commas)
+      --remove-tag strings      Tags to remove (repeat or separate with commas)
       --primary-branch string   Primary branch name
       --public                  Make dashboards publicly accessible
       --path string             Project directory (default ".")

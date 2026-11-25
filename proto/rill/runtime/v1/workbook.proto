@@ -141,8 +141,21 @@ message WorkbookTableBlock {
   repeated string data_sheet_ids = 1;
 }
 
+// WorkbookTextBlock is the content of a markdown component.
 message WorkbookTextBlock {
+  // The text of a block that holds only text.
   string text = 1;
+  // The text and tables of a block that holds tables, in reading order. Takes the place of text.
+  repeated WorkbookTextPart parts = 2;
+}
+
+// WorkbookTextPart is a run of text or a table in a text block.
+message WorkbookTextPart {
+  oneof part {
+    string text = 1;
+    // The data sheet of a table, previewed like a table block and linked to its full sheet.
+    string data_sheet_id = 2;
+  }
 }
 
 // WorkbookNoteBlock is a short status message, e.g. "No data" or an error.

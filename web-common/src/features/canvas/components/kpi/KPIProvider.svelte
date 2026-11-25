@@ -294,6 +294,7 @@
   {comparisonLabel}
   {interval}
   sparkline={spec.sparkline}
+  size={spec.size}
   {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}

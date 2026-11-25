@@ -57,8 +57,11 @@ You can also manage project objects on the settings page, including public URLs 
 
 ![Project Settings](<https://cdn.rilldata.com/docs/screenshots/guide/administration/project-settings-general.png>)
 
+## Organize projects with tags
+Label projects with tags such as `prod`, `stage` or `sandbox`, for example to tell production projects apart from projects that are still being reviewed. Project admins add tags in the **Tags** section of the project's settings, and everyone can filter your organization's projects page by tag. See [Project Tags](/guide/administration/project-settings/project-tags).
+
 ## Managing a Rill project from the CLI
-Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, public access, etc. Run `rill project -h` for an overview of available commands.
+Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, tags, public access, etc. Run `rill project -h` for an overview of available commands.
 
 ### Refreshing the deployment
 

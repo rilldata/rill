@@ -25,6 +25,18 @@ KPI grids display key performance indicators in a compact grid format with compa
   codeLanguage="yaml"
 />
 
+Set `size` to make the KPI cards larger or smaller: `small`, `medium` (the default), `large` or `xlarge`. The size scales each card's value, labels, spacing and sparkline together. Larger cards need more width, so the grid fits fewer of them per row, and `small` fits more KPIs into the same space. In the visual editor, pick the size with the **Size** switcher in the KPI grid's properties.
+
+```yaml
+- kpi_grid:
+    metrics_view: auction_metrics
+    measures:
+      - requests
+    size: large
+```
+
+![The same KPI at the small, medium, large and xlarge sizes](/img/build/dashboard/canvas/kpi-sizes.png)
+
 Widgets follow the canvas time range and time comparison by default. Override either one with `time_filters`, which takes the same `tr` and `compare_tr` parameters as an explore URL. `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` turns delta and comparison off for that widget only. `compare_tr=inherit` follows the canvas comparison, and a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
 
 The aggregation grain works the same way with `grain`. Time-series charts and KPI sparklines bucket by the grain chosen in the canvas filter bar, and `grain=week` on its own keeps the canvas time range while bucketing that widget by week. A grain the time range cannot hold, such as `grain=month` on a seven day range, falls back to the canvas grain. Tables and pivots pick their grain through their time dimension instead.
@@ -133,6 +145,27 @@ Per-column overrides on an entry:
 In a pivot, only measures and the first row dimension render a column of their own. A measure's `width` applies to its column under every column-dimension value, and the first row dimension's `width` and `wrap` apply to the merged row-header column; row dimensions after the first take only `name` and `label`, and row dimensions never take `align`. Entries in `col_dimensions` are header groups spanning their measure columns, so they accept only `name` and `label`; to make a pivoted group wider, widen its measures. Sorting by a measure orders the rows by that measure's row total.
 
 In the canvas editor, the widget's sidebar has switches for fitting and wrapping and a sort selector, and each field chip opens a column settings menu with the label, width, wrapping, alignment, and number format. Dragging a column edge in the editor writes the width to the YAML, and clicking a header writes the sort. Viewers of the published dashboard can still resize and re-sort; their changes are not saved.
+
+### Height
+
+A table or pivot takes the height of its row. In the canvas editor, drag the bottom edge of the row to resize it. In YAML, set `height` on the row:
+
+```yaml
+rows:
+  - height: 140px
+    items:
+      - table:
+          metrics_view: auction_metrics
+          columns:
+            - pub_name
+            - requests
+```
+
+A row without a `height` shows a table at 300px and a pivot at 224px. A row with one can take a table or pivot down to 114px. That leaves room for the column header, the totals row, one data row, and a horizontal scrollbar; further rows scroll inside the widget. A title, a description, and local filter chips add their own height to that minimum: a table with only a title can go down to 174px. To size a row for a short table, allow 24px for each data row.
+
+When the row also holds other widgets, the tallest minimum applies: a table next to a chart is at least 320px tall.
+
+Earlier versions of Rill showed a table at 300px and a pivot at 224px even when the row's `height` was lower. Such a row now renders at its `height`, down to the minimum above. If a table or pivot shrinks after an upgrade, remove the row's `height` to get the default size back, or drag the row taller.
 
 ### Click to filter
 

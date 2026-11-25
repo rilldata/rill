@@ -112,18 +112,19 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
 	// When aud == nil, it means auth is disabled.
 	if aud == nil {
-		// If there's no authorization header, we set open claims since auth is disabled.
+		// Requests without a Rill dev JWT get open claims since auth is disabled.
+		openClaims := wrappedClaims{
+			claims: &runtime.SecurityClaims{
+				UserAttributes: map[string]any{"admin": true, "email": "", "name": ""},
+				Permissions:    runtime.AllPermissions,
+				SkipChecks:     true,
+			},
+		}
 		if authorizationHeader == "" {
-			return withClaimsProvider(ctx, wrappedClaims{
-				claims: &runtime.SecurityClaims{
-					UserAttributes: map[string]any{"admin": true, "email": "", "name": ""},
-					Permissions:    runtime.AllPermissions,
-					SkipChecks:     true,
-				},
-			}), nil
+			return withClaimsProvider(ctx, openClaims), nil
 		}
 
-		// If auth header is set when auth is disabled, it must be a devJWTClaims, which we parse without verifying the signature.
+		// If auth header is set when auth is disabled, parse it as a devJWTClaims without verifying the signature.
 		bearerToken := ""
 		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
 			bearerToken = strings.TrimSpace(authorizationHeader[6:])
@@ -135,6 +136,13 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		_, _, err := jwt.NewParser().ParseUnverified(bearerToken, claims)
 		if err != nil {
 			return nil, err
+		}
+
+		// Auth proxies in front of Rill Developer can add an Authorization header with their own (non-Rill) JWT.
+		// Dev JWTs issued by IssueDevJWT always have permissions, so a JWT without any is not ours: treat it as if no header was set.
+		// Otherwise the user isn't an admin, and admin-only resources (models, connectors, the project parser) are hidden from them.
+		if len(claims.Permissions) == 0 {
+			return withClaimsProvider(ctx, openClaims), nil
 		}
 		return withClaimsProvider(ctx, claims), nil
 	}

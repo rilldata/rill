@@ -281,12 +281,14 @@ describe("a Flint chart compiled with the project theme", () => {
   it("gives every series its own color, including one Flint does not count", async () => {
     const spec = compileChart("Line Chart", style);
 
-    // Three lines in the theme's three qualitative colors. Flint counts two series and hands
-    // the scale two inks, which would give the third line the first color again.
+    // Three lines in the theme's three qualitative colors, given out by the series' totals,
+    // largest first, and listed as the lines are drawn: the series Flint does not count, then
+    // EMEA and APAC. Flint counts two series and hands the scale two inks, which would give the
+    // third line the first color again.
     expect(await drawn(spec, style, "mark-line", "stroke")).toEqual([
-      "#0f62fe",
-      "rgb(238, 83, 150)",
       "#08bdba",
+      "rgb(238, 83, 150)",
+      "#0f62fe",
     ]);
   });
 
@@ -296,15 +298,16 @@ describe("a Flint chart compiled with the project theme", () => {
     // Flint lists the two series it counts as the color scale's domain, which leaves the
     // third without a fill.
     expect(await drawn(spec, style, "mark-area", "fill")).toEqual([
-      "#0f62fe",
-      "rgb(238, 83, 150)",
       "#08bdba",
+      "rgb(238, 83, 150)",
+      "#0f62fe",
     ]);
   });
 
   it("colors that series from a preset's own palette", async () => {
     const preset = { extends: "economist" };
-    const economist = ["#006ba2", "#3ebcd2", "#ebb434"];
+    // The preset's first three colors, the largest series taking the first, as drawn above.
+    const economist = ["#ebb434", "#3ebcd2", "#006ba2"];
 
     for (const [chartType, mark, property] of [
       ["Line Chart", "mark-line", "stroke"],

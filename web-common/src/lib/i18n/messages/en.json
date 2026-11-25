@@ -696,6 +696,10 @@
   "canvas_show_other_bucket_label": "Show \"Other\" bucket",
   "canvas_show_totals_value": "Show totals value",
   "canvas_size_label": "Size",
+  "canvas_size_large_option": "L",
+  "canvas_size_medium_option": "M",
+  "canvas_size_small_option": "S",
+  "canvas_size_xlarge_option": "XL",
   "canvas_sort": "Sort",
   "canvas_sort_color_ascending": "Color ascending",
   "canvas_sort_color_descending": "Color descending",
@@ -1497,6 +1501,49 @@
   "field_list_dimensions": "DIMENSIONS",
   "field_list_measures": "MEASURES",
   "field_list_time": "TIME",
+  "file_explorer_delete_dependents": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This file depends on it and will have errors until you update it:",
+        "countPlural=other": "These {count} files depend on it and will have errors until you update them:"
+      }
+    }
+  ],
+  "file_explorer_delete_file_description": "The file {path} will be deleted from the project.",
+  "file_explorer_delete_folder_description": "The folder {path} and everything in it will be deleted from the project, including files the file explorer doesn't show, such as paths ignored in rill.yaml.",
+  "file_explorer_delete_resource_description": [
+    {
+      "declarations": ["input kind", "input name", "input path"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "The canvas dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=explore": "The explore dashboard {name} and its file {path} will be deleted from the project.",
+        "kind=metrics_view": "The metrics view {name} and its file {path} will be deleted from the project.",
+        "kind=model": "The model {name} and its file {path} will be deleted from the project.",
+        "kind=source": "The source {name} and its file {path} will be deleted from the project.",
+        "kind=*": "{name} and its file {path} will be deleted from the project."
+      }
+    }
+  ],
+  "file_explorer_delete_title": [
+    {
+      "declarations": ["input kind"],
+      "selectors": ["kind"],
+      "match": {
+        "kind=canvas": "Delete canvas dashboard?",
+        "kind=explore": "Delete explore dashboard?",
+        "kind=metrics_view": "Delete metrics view?",
+        "kind=model": "Delete model?",
+        "kind=source": "Delete source?",
+        "kind=folder": "Delete folder?",
+        "kind=*": "Delete file?"
+      }
+    }
+  ],
+  "file_explorer_delete_undo_cloud": "Until you publish, a file that existed when your branch last synced with production can be restored from the list of changed files, as it was at that sync; later edits to it are lost. A file added on this branch can't be restored in Rill; if it was committed, recover it from Git history.",
+  "file_explorer_delete_undo_developer": "This can't be undone in Rill. Deleted files can only be recovered from version control or a backup.",
   "filter_advanced_beta": "Advanced (BETA)",
   "filter_advanced_remove": "Remove",
   "filter_advanced_warning": "Advanced filters are a bleeding edge feature! There may be bugs.",
@@ -1801,7 +1848,10 @@
   "nav_tab_status": "Status",
   "org_check_out_projects": "Check out your projects below.",
   "org_new_project": "+ New project",
+  "org_no_projects_with_tags": "No projects have the selected tags.",
   "org_no_projects_yet": "This organization has no projects yet.",
+  "org_projects_tag_filter_clear": "Clear filter",
+  "org_projects_tag_filter_label": "Filter projects by tag",
   "org_role_admin_description": "Full access to org settings, members, and all projects",
   "org_role_editor_description": "Can create/manage projects and non-admin members",
   "org_role_guest_description": "Access to invited projects only",
@@ -1902,6 +1952,8 @@
   "project_bookmarks_title": "Project bookmarks",
   "project_branch_hibernated": "Branch hibernated",
   "project_branch_is_hibernated": "This branch is hibernated.",
+  "project_card_tags_label": "Tags",
+  "project_card_tags_more": "+{count}",
   "project_card_visibility_private": "This project is private",
   "project_card_visibility_public": "This project is public",
   "project_contact_admin_to_redeploy": "Contact the project's administrator to redeploy the project.",
@@ -2230,10 +2282,20 @@
   "settings_org_page_title": "Organization settings",
   "settings_org_title": "Organization",
   "settings_org_url_description": "Your org URL will be https://ui.rilldata.com/{slug}, to comply with our naming rules.",
+  "settings_project_domain_access_description": "Let project admins set up automatic project access for their email domain. Existing rules keep granting access when this is off.",
+  "settings_project_domain_access_title": "Project domain access",
   "settings_project_hibernated_notification": "Project hibernated",
   "settings_project_now_private_notification": "Project is now private",
   "settings_project_now_public_notification": "Project is now public",
   "settings_project_page_title": "Project settings",
+  "settings_project_tags_description": "Tags appear on your organization's projects page, where they can be used to filter projects.",
+  "settings_project_tags_invalid": "\"{tag}\" isn't a valid tag. Use up to 40 letters, digits, hyphens and underscores, starting with a letter or digit.",
+  "settings_project_tags_label": "Add tags such as prod, stage or sandbox to organize this project",
+  "settings_project_tags_placeholder": "Add a tag and press Enter",
+  "settings_project_tags_title": "Tags",
+  "settings_project_tags_too_many": "A project can have at most {max} tags.",
+  "settings_project_tags_update_failed": "Failed to update project tags",
+  "settings_project_tags_updated_notification": "Updated project tags",
   "settings_project_title": "Project",
   "settings_project_url_description": "Your project will be available at https://ui.rilldata.com/{org}/{slug}.",
   "settings_project_visibility_private": "This project is currently <strong>Private</strong>. Only members of the organization can access this project.",
@@ -2276,6 +2338,7 @@
   "status_action_view_logs": "View Logs",
   "status_action_view_partitions": "View Partitions",
   "status_all_statuses": "All statuses",
+  "status_all_tags": "All tags",
   "status_all_types": "All types",
   "status_cancel": "Cancel",
   "status_checking_errors": "Checking for errors...",
@@ -2688,6 +2751,12 @@
   "users_manage_groups_pending_hint": "This user has not accepted their invitation yet. They will join the selected groups when they accept it.",
   "users_groups_updated": "User groups updated",
   "users_error_updating_groups": "Failed to update user groups: {message}",
+  "users_domain_access_anyone": "Anyone with an @{domain} email",
+  "users_domain_access_joins_as": "Joins automatically as {role}",
+  "users_domain_access_load_failed": "Couldn't load this project's domain access rules.",
+  "users_domain_access_remove_confirm_desc": "People with an @{domain} email will no longer join this project automatically. Those who already joined keep their access. To add it back, run \"rill user whitelist setup {domain} --org {organization} --project {project} --role {role}\". For a domain other than your own email's, contact Rill support.",
+  "users_domain_access_remove_confirm_title": "Remove domain access for @{domain}?",
+  "users_domain_access_removed": "People with an @{domain} email no longer join automatically. Those who already joined keep their access.",
   "users_email_or_group_placeholder": "Email or group, separated by commas",
   "users_email_placeholder": "Add emails, separated by commas",
   "users_error": "Error",
