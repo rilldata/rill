@@ -2,6 +2,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { normalizeProjectTag } from "@rilldata/web-admin/features/projects/project-tags";
+  import { getTagFilterLabel } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { ArrayRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
@@ -16,28 +18,30 @@
 
   let open = $state(false);
 
-  let selected = $derived(selectedTagsStore.value);
+  // Tags in the URL match regardless of case, like the admin service's tags filter, so `?tags=Prod` selects `prod`.
+  let selected = $derived([
+    ...new Set(selectedTagsStore.value.map(normalizeProjectTag)),
+  ]);
   // Selected tags stay in the list even if no project has them anymore (e.g. from an old link), so they can be cleared.
   let options = $derived(
     [...new Set([...tags, ...selected])].sort((a, b) => a.localeCompare(b)),
   );
-  let label = $derived(
-    selected.length === 0
-      ? m.org_projects_tag_filter_all()
-      : selected.length === 1
-        ? selected[0]
-        : m.org_projects_tag_filter_more({
-            tag: selected[0],
-            count: selected.length - 1,
-          }),
-  );
+  let label = $derived(getTagFilterLabel(selected));
+
+  function toggle(tag: string) {
+    selectedTagsStore.setter(
+      selected.includes(tag)
+        ? selected.filter((t) => t !== tag)
+        : [...selected, tag],
+    );
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger
     class={cn(
       "flex flex-row items-center gap-x-2 h-7 px-3 rounded-[2px] border text-xs font-medium",
-      open || selected.length > 0
+      open
         ? "bg-surface-hover text-fg-accent"
         : "text-fg-secondary hover:bg-surface-hover",
     )}
@@ -55,7 +59,7 @@
       <DropdownMenu.CheckboxItem
         closeOnSelect={false}
         checked={selected.includes(tag)}
-        onCheckedChange={() => selectedTagsStore.toggle(tag)}
+        onCheckedChange={() => toggle(tag)}
       >
         <span class="truncate">{tag}</span>
       </DropdownMenu.CheckboxItem>

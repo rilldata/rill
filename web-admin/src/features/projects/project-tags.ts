@@ -8,14 +8,21 @@ const MAX_PROJECT_TAG_LENGTH = 40;
 const PROJECT_TAG_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}_-]*$/u;
 
 /**
- * Turns text typed as a tag into the form the admin service stores:
- * trimmed, lowercase and NFC-normalized.
+ * Returns the tag trimmed, lowercase and NFC-normalized,
+ * as the admin service normalizes tags before storing them or filtering by them.
+ */
+export function normalizeProjectTag(tag: string): string {
+  return tag.normalize("NFC").trim().toLowerCase();
+}
+
+/**
+ * Turns text typed as a tag into the form the admin service stores (see `normalizeProjectTag`).
  * If the admin service would still reject it, runs of other characters, such as spaces, become a hyphen,
  * so "Data Science" becomes "data-science".
  * Tags it accepts are kept as they are, so saving doesn't rename a tag set from the CLI, such as "prod-".
  */
 export function sanitizeProjectTag(input: string): string {
-  const tag = input.normalize("NFC").trim().toLowerCase();
+  const tag = normalizeProjectTag(input);
   if (isValidProjectTag(tag)) return tag;
   return tag.replace(/[^\p{L}\p{M}\p{N}_-]+/gu, "-").replace(/^[-_]+|-+$/g, "");
 }
@@ -41,11 +48,15 @@ export function getProjectTags(projects: V1Project[]): string[] {
   return [...tags].sort((a, b) => a.localeCompare(b));
 }
 
-/** Returns the projects that have any of the tags, or all projects if there are no tags. */
+/**
+ * Returns the projects that have any of the tags, or all projects if there are no tags.
+ * Tags match regardless of case, like the admin service's tags filter.
+ */
 export function filterProjectsByTags(
   projects: V1Project[],
   tags: string[],
 ): V1Project[] {
   if (tags.length === 0) return projects;
-  return projects.filter((p) => p.tags?.some((t) => tags.includes(t)));
+  const normalized = tags.map(normalizeProjectTag);
+  return projects.filter((p) => p.tags?.some((t) => normalized.includes(t)));
 }

@@ -76,5 +76,7 @@ describe("project tag filtering", () => {
     expect(names(["prod"])).toEqual(["revenue"]);
     expect(names(["eu", "sandbox"])).toEqual(["revenue", "revenue-review"]);
     expect(names(["missing"])).toEqual([]);
+    // Tags match regardless of case, like the admin service's tags filter.
+    expect(names(["Prod"])).toEqual(["revenue"]);
   });
 });
