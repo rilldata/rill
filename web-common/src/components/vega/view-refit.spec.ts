@@ -86,6 +86,38 @@ describe("refitOnPlotResize", () => {
     expect(legendOverhang(view)).toBeLessThanOrEqual(0);
   });
 
+  it("keeps fitting the plot after a run of the view fails", async () => {
+    let failing = false;
+    vega.expressionFunction("rill_test_fail_while_failing", (width: number) => {
+      if (failing) throw new Error("the run fails");
+      return width;
+    });
+    const spec = compile(barChart(wrappedByWidth)).spec;
+    spec.signals = [
+      ...(spec.signals ?? []),
+      {
+        name: "rill_test_failure",
+        update: "rill_test_fail_while_failing(width)",
+      },
+    ];
+    stubCanvasContext();
+    const view = new vega.View(vega.parse(spec), { renderer: "none" });
+    view.logLevel(vega.None);
+    refitOnPlotResize(view);
+    view.width(560).height(300);
+    await view.runAsync();
+
+    // Vega drops what was queued to run after a run that fails, the refit among it.
+    failing = true;
+    view.width(500);
+    await view.runAsync();
+    failing = false;
+
+    view.width(420);
+    await view.runAsync();
+    expect(legendOverhang(view)).toBeLessThanOrEqual(0);
+  });
+
   it("gives up on a layout that never settles", async () => {
     // A legend that lists more entries the more room the plot has: the entries take the room,
     // so the plot's height never holds.

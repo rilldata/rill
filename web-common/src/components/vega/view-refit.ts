@@ -22,10 +22,12 @@ const MAX_REFITS = 3;
 export function refitOnPlotResize(view: View): void {
   // Refits since the plot's size last held.
   let refits = 0;
-  let scheduled = false;
+  // The refit queued and yet to run: the run it waits for, by the count of the view's runs, and
+  // whether the callbacks queued after that run have begun to be called.
+  let queued: { after: number; begun: boolean } | undefined;
 
   const refit = () => {
-    scheduled = false;
+    queued = undefined;
     if (refits >= MAX_REFITS) {
       // A layout that never settles is left where it is, until the next change of size.
       refits = 0;
@@ -42,9 +44,23 @@ export function refitOnPlotResize(view: View): void {
 
   // The listeners are called while the dataflow runs, when it cannot be run again; the refit
   // waits for that run to end, and for Vega's own fit, which takes priority 1, to have applied.
+  // That fit sets the size in a run of its own, before the refit is called, and one refit is
+  // queued for both.
   const schedule = () => {
-    if (scheduled) return;
-    scheduled = true;
+    // `stamp`, the count of the view's runs, is Vega's but missing from its types.
+    const run = (view as View & { stamp(): number }).stamp();
+    if (queued && (queued.after === run || queued.begun)) return;
+    // A run that fails drops every callback queued after it, the refit among them, and the
+    // view's next run queues it again. Left waiting for it, the view was never fitted again.
+    const next = { after: run, begun: false };
+    queued = next;
+    view.runAfter(
+      () => {
+        next.begun = true;
+      },
+      true,
+      Number.MAX_SAFE_INTEGER,
+    );
     view.runAfter(refit, true);
   };
   view.addSignalListener("width", schedule);
