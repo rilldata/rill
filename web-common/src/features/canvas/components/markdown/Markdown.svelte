@@ -21,7 +21,12 @@
   const runtimeClient = useRuntimeClient();
 
   // Loads images that point at project assets, such as `<img src="public/logo.svg" />`.
-  const assets = new ProjectAssetLoader(runtimeClient);
+  // When the file of one changes, such as when it's saved in Rill Developer, the images are rendered again.
+  let assetsVersion = 0;
+  const assets = new ProjectAssetLoader(
+    runtimeClient,
+    () => (assetsVersion += 1),
+  );
   onDestroy(() => assets.destroy());
 
   $: specStore = component?.specStore;
@@ -121,7 +126,9 @@
       </div>
     {:else}
       {#await renderPromise then htmlContent}
-        {@html sanitizeMarkdownHtml(htmlContent)}
+        {#key assetsVersion}
+          {@html sanitizeMarkdownHtml(htmlContent)}
+        {/key}
       {/await}
     {/if}
   </div>

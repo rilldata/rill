@@ -137,8 +137,8 @@ describe("loadAssetImages", () => {
     await settle();
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      "http://runtime.test/v1/instances/inst/assets/javascript:alert(1)",
-      "http://runtime.test/v1/instances/inst/assets/https://tracker.example/pixel.png",
+      "http://runtime.test/v1/instances/inst/assets/javascript%3Aalert(1)",
+      "http://runtime.test/v1/instances/inst/assets/https%3A/tracker.example/pixel.png",
     ]);
     for (const img of node.querySelectorAll("img")) {
       expect(img.hasAttribute("src")).toBe(false);

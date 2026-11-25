@@ -9,7 +9,10 @@
   import { getImagePosition } from "./util";
 
   // A URL that isn't absolute is a project asset, such as `public/img/logo.svg`.
-  const assets = new ProjectAssetLoader(useRuntimeClient());
+  // Load it again when its file changes, such as when it's saved in Rill Developer.
+  const assets = new ProjectAssetLoader(useRuntimeClient(), () => {
+    if (activeUrl) void fetchImage(activeUrl);
+  });
   onDestroy(() => assets.destroy());
 
   export let component: ImageComponent;
