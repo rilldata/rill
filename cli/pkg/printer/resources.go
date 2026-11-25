@@ -83,6 +83,7 @@ func toProjectRow(o *adminv1.Project) *project {
 
 	return &project{
 		Name:         o.Name,
+		Tags:         strings.Join(o.Tags, ", "),
 		Public:       o.Public,
 		GithubURL:    githubURL,
 		Organization: o.OrgName,
@@ -91,6 +92,7 @@ func toProjectRow(o *adminv1.Project) *project {
 
 type project struct {
 	Name         string `header:"name" json:"name"`
+	Tags         string `header:"tags" json:"tags"`
 	Public       bool   `header:"public" json:"public"`
 	GithubURL    string `header:"github" json:"github"`
 	Organization string `header:"organization" json:"organization"`

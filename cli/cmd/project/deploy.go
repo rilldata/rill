@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -31,6 +32,7 @@ type DeployOpts struct {
 	RemoteName    string
 	Name          string
 	Description   string
+	Tags          []string
 	Public        bool
 	Provisioner   string
 	ProdVersion   string
@@ -68,8 +70,15 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		// just a hack to avoid re-validation when `rill project deploy` internally calls `rill project connect-github`
 		return nil
 	}
-	// expand project directory and get absolute path
+
+	// Validate the tags before the deploy flows create anything, such as an org or a repository
 	var err error
+	o.Tags, err = database.NormalizeProjectTags(o.Tags)
+	if err != nil {
+		return err
+	}
+
+	// expand project directory and get absolute path
 	o.GitPath, err = fileutil.ExpandHome(o.GitPath)
 	if err != nil {
 		return err
@@ -292,6 +301,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
+	deployCmd.Flags().StringSliceVar(&opts.Tags, "tag", nil, "Tags for a new project, such as prod or sandbox (repeat or separate with commas)")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner (superuser-only)")
 	if err := deployCmd.Flags().MarkHidden("provisioner"); err != nil {
@@ -396,6 +406,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		Org:           ch.Org,
 		Project:       opts.Name,
 		Description:   opts.Description,
+		Tags:          opts.Tags,
 		Provisioner:   opts.Provisioner,
 		ProdVersion:   opts.ProdVersion,
 		ProdSlots:     int64(opts.Slots),
@@ -476,6 +487,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		return err
 	}
 	proj := opts.pushToProject
+	if len(opts.Tags) > 0 {
+		ch.PrintfWarn("Ignoring --tag, which only applies when creating a project. Run `rill project edit %s --add-tag <tag>` to change the tags of an existing project.\n", proj.Name)
+	}
 	if proj.ManagedGitId != "" {
 		err := ch.GitHelper(ch.Org, proj.Name, opts.LocalProjectPath()).PushToManagedRepo(ctx, opts.ForcePush)
 		if err != nil {

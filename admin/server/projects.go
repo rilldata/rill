@@ -49,6 +49,7 @@ const runtimeAccessTokenEmbedTTL = 24 * time.Hour
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.StringSlice("args.tags", req.Tags),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
@@ -62,17 +63,26 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	}
 	pageSize := validPageSize(req.PageSize)
 
+	// Normalize the tags to filter by, so they match regardless of case
+	tags := make([]string, len(req.Tags))
+	for i, t := range req.Tags {
+		tags[i], err = database.NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
 	var projs []*database.Project
 	manageProjects := claims.OrganizationPermissions(ctx, org.ID).ManageProjects
 	if manageProjects {
-		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
+		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, tags, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
 		// Get projects the user is a (direct or group) member of, plus all public projects.
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, true, token.Val, pageSize)
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, true, tags, token.Val, pageSize)
 	} else {
-		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
+		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, tags, token.Val, pageSize)
 	}
 	if err != nil {
 		return nil, err
@@ -80,7 +90,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
 	// If additionally, the user is not an org member, return permission denied (instead of an empty slice).
-	if len(projs) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
+	// With a tags filter, an empty result doesn't mean that the user can't see any projects, so we return it as is.
+	if len(projs) == 0 && len(tags) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
 	}
 
@@ -122,7 +133,7 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, !req.Direct, pageToken.Val, pageSize)
+	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, !req.Direct, nil, pageToken.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -455,6 +466,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.description", req.Description),
+		attribute.StringSlice("args.tags", req.Tags),
 		attribute.Bool("args.public", req.Public),
 		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.provisioner", req.Provisioner),
@@ -492,6 +504,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Validate the tags before making any changes (such as starting a trial below)
+	tags, err := database.NormalizeProjectTags(req.Tags)
+	if err != nil {
+		return nil, err
 	}
 
 	// check if org has any blocking billing errors
@@ -561,6 +579,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		OrganizationID:       org.ID,
 		Name:                 req.Project,
 		Description:          req.Description,
+		Tags:                 tags,
 		Public:               req.Public,
 		CreatedByUserID:      userID,
 		DirectoryName:        req.DirectoryName,
@@ -669,6 +688,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}
+	if len(req.AddTags) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.add_tags", req.AddTags))
+	}
+	if len(req.RemoveTags) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.remove_tags", req.RemoveTags))
+	}
 	if req.Public != nil {
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
 	}
@@ -730,6 +755,16 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
+	}
+
+	// Validate tag changes before making any changes; the result is discarded, since UpdateProjectTags applies them to the latest tags below.
+	// The tags are written after the other fields; see database.DB.UpdateProjectTags for why they are written separately.
+	updateTags := len(req.AddTags) > 0 || len(req.RemoveTags) > 0
+	if updateTags {
+		_, err = database.ApplyProjectTagChanges(proj.Tags, req.AddTags, req.RemoveTags)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Enforce slot quotas when ProdSlots or DevSlots is being changed (superusers bypass)
@@ -905,6 +940,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// Tags don't impact deployments, so they are written directly to the database.
+	if updateTags {
+		proj, err = s.admin.DB.UpdateProjectTags(ctx, proj.ID, req.AddTags, req.RemoveTags)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// mark transfer from rill managed git repo if applicable
@@ -1896,7 +1939,8 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, gitRemote,
 	return repo.GetID(), installationID, nil
 }
 
-// SudoUpdateTags updates the tags for a project in organization for superusers
+// SudoUpdateAnnotations updates the annotations of a project for superusers.
+// Annotations are internal metadata, unlike the user-defined project tags set with UpdateProject.
 func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpdateAnnotationsRequest) (*adminv1.SudoUpdateAnnotationsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
@@ -2254,6 +2298,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		OrgId:               p.OrganizationID,
 		OrgName:             orgName,
 		Description:         p.Description,
+		Tags:                p.Tags,
 		Public:              p.Public,
 		CreatedByUserId:     safeStr(p.CreatedByUserID),
 		DirectoryName:       p.DirectoryName,

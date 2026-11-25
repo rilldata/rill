@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -338,22 +339,23 @@ func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, user
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*database.Project, error) {
+	// The tags filter matches projects with any of the tags; cardinality is NULL for a nil slice, so COALESCE makes nil and empty both mean "no filter".
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
-		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
+		WHERE p.org_id=$1 AND lower(p.name) > lower($2) AND (COALESCE(cardinality($4::TEXT[]), 0) = 0 OR p.tags && $4::TEXT[])
 		ORDER BY lower(p.name) LIMIT $3
-	`, orgID, afterProjectName, limit)
+	`, orgID, afterProjectName, limit, tags)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, tags []string, afterProjectName string, limit int) ([]*database.Project, error) {
 	var qry strings.Builder
-	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (")
+	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (COALESCE(cardinality($5::TEXT[]), 0) = 0 OR p.tags && $5::TEXT[]) AND (")
 	if includePublic {
 		qry.WriteString("p.public = true OR ")
 	}
@@ -366,20 +368,20 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	qry.WriteString(")) ORDER BY lower(p.name) LIMIT $4")
 
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), orgID, afterProjectName, userID, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), orgID, afterProjectName, userID, limit, tags)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
-		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > lower($2)
+		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > lower($2) AND (COALESCE(cardinality($4::TEXT[]), 0) = 0 OR p.tags && $4::TEXT[])
 		ORDER BY lower(p.name) LIMIT $3
-	`, orgID, afterProjectName, limit)
+	`, orgID, afterProjectName, limit, tags)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -442,9 +444,14 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
+	// Normalizing returns an empty slice instead of nil, as needed for the NOT NULL tags column.
+	tags, err := database.NormalizeProjectTags(opts.Tags)
+	if err != nil {
+		return nil, err
+	}
 
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO projects (
 			org_id,
 			name,
@@ -465,9 +472,10 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 			prod_version,
 			dev_slots,
 			dev_ttl_seconds,
-			override_disk_gb
+			override_disk_gb,
+			tags
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING *`,
 		opts.OrganizationID,
 		opts.Name,
 		opts.Description,
@@ -488,6 +496,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		opts.DevSlots,
 		opts.DevTTLSeconds,
 		opts.OverrideDiskGB,
+		tags,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -562,6 +571,41 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
+	}
+	return c.projectFromDTO(res)
+}
+
+func (c *connection) UpdateProjectTags(ctx context.Context, id string, add, remove []string) (*database.Project, error) {
+	ctx, tx, err := c.NewTx(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// The row lock makes concurrent updates wait for this one, so they apply their changes to the tags it writes.
+	res := &projectDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id = $1 FOR UPDATE", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project", err)
+	}
+
+	// When no tags are left, this returns an empty slice instead of nil, as needed for the NOT NULL tags column.
+	tags, err := database.ApplyProjectTagChanges(res.Tags, add, remove)
+	if err != nil {
+		return nil, err
+	}
+
+	if !slices.Equal(tags, []string(res.Tags)) {
+		res = &projectDTO{}
+		err = c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET tags = $1, updated_on = now() WHERE id = $2 RETURNING *", tags, id).StructScan(res)
+		if err != nil {
+			return nil, parseErr("project", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
 	}
 	return c.projectFromDTO(res)
 }
@@ -3777,11 +3821,12 @@ func (c *textArrayColumn) Scan(src any) error {
 	return pgtype.NewMap().SQLScanner((*[]string)(c)).Scan(src)
 }
 
-// projectDTO wraps database.Project, using jsonColumn to read the columns that database/sql can't scan into their native Go types.
+// projectDTO wraps database.Project, using jsonColumn and textArrayColumn to read the columns that database/sql can't scan into their native Go types.
 type projectDTO struct {
 	*database.Project
-	ProdVariables jsonColumn `db:"prod_variables"`
-	Annotations   jsonColumn `db:"annotations"`
+	Tags          textArrayColumn `db:"tags"`
+	ProdVariables jsonColumn      `db:"prod_variables"`
+	Annotations   jsonColumn      `db:"annotations"`
 }
 
 func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
@@ -3789,6 +3834,7 @@ func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) 
 	if err != nil {
 		return nil, err
 	}
+	dto.Project.Tags = dto.Tags
 
 	return dto.Project, nil
 }

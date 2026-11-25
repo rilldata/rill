@@ -15,6 +15,7 @@ rill project list [flags]
 ```
       --page-size uint32    Number of projects to return per page (default 50)
       --page-token string   Pagination token
+      --tag strings         Only list projects with any of these tags (repeat or separate with commas)
 ```
 
 ### Global flags

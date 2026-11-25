@@ -226,7 +226,7 @@ func (w *PaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *riv
 		limit := 10
 		afterProjectName := ""
 		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, f.OrgID, afterProjectName, limit)
+			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, f.OrgID, nil, afterProjectName, limit)
 			if err != nil {
 				return err
 			}

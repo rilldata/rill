@@ -4,9 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/text/unicode/norm"
 )
+
+// MaxProjectTags is the maximum number of tags a project can have.
+const MaxProjectTags = 10
+
+// MaxProjectTagLength is the maximum length of a project tag in characters.
+const MaxProjectTagLength = 40
 
 // Validate validates a struct based on struct tags and other custom rules registered
 func Validate(v any) error {
@@ -56,6 +66,10 @@ var validate *validator.Validate
 // slugRegexp is used to validate identifying names (e.g. "rill-data", not "Rill Data").
 var slugRegexp = regexp.MustCompile("^[_a-zA-Z0-9][-_a-zA-Z0-9]*$")
 
+// projectTagRegexp matches a normalized project tag: letters and digits in any script, combining marks, hyphens and underscores, starting with a letter or digit.
+// It excludes spaces, commas and other punctuation, so tags work as CLI arguments and as comma-separated URL parameters.
+var projectTagRegexp = regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{M}\p{N}_-]*$`)
+
 func init() {
 	validate = validator.New()
 
@@ -66,4 +80,68 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// ApplyProjectTagChanges returns a project's tags after adding and removing the given tags, normalized with NormalizeProjectTags.
+// It returns a validation error if a tag is invalid, a tag is both added and removed, or the result has more than MaxProjectTags tags.
+func ApplyProjectTagChanges(current, add, remove []string) ([]string, error) {
+	removed := make(map[string]bool, len(remove))
+	for _, t := range remove {
+		t, err := NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+		removed[t] = true
+	}
+
+	res := slices.Clone(current)
+	for _, t := range add {
+		t, err := NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+		if removed[t] {
+			return nil, NewValidationError(fmt.Sprintf("tag %q can't be both added and removed", t))
+		}
+		res = append(res, t)
+	}
+	res = slices.DeleteFunc(res, func(t string) bool { return removed[t] })
+
+	return NormalizeProjectTags(res)
+}
+
+// NormalizeProjectTags normalizes a project's tags with NormalizeProjectTag, then deduplicates and sorts them.
+// It returns a validation error if a tag is invalid or there are more than MaxProjectTags tags.
+func NormalizeProjectTags(tags []string) ([]string, error) {
+	res := make([]string, 0, len(tags))
+	for _, t := range tags {
+		t, err := NormalizeProjectTag(t)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, t)
+	}
+	slices.Sort(res)
+	res = slices.Compact(res)
+	if len(res) > MaxProjectTags {
+		return nil, NewValidationError(fmt.Sprintf("a project can have at most %d tags", MaxProjectTags))
+	}
+	return res, nil
+}
+
+// NormalizeProjectTag returns the tag trimmed and lowercased.
+// It returns a validation error if the tag is empty, longer than MaxProjectTagLength or contains characters that projectTagRegexp doesn't allow.
+func NormalizeProjectTag(tag string) (string, error) {
+	// NFC makes composed and decomposed spellings of the same letter (e.g. "é") the same tag.
+	tag = norm.NFC.String(strings.ToLower(strings.TrimSpace(tag)))
+	if tag == "" {
+		return "", NewValidationError("project tags must not be empty")
+	}
+	if utf8.RuneCountInString(tag) > MaxProjectTagLength {
+		return "", NewValidationError(fmt.Sprintf("project tag %q is longer than %d characters", tag, MaxProjectTagLength))
+	}
+	if !projectTagRegexp.MatchString(tag) {
+		return "", NewValidationError(fmt.Sprintf("project tag %q must start with a letter or digit and contain only letters, digits, hyphens and underscores", tag))
+	}
+	return tag, nil
 }

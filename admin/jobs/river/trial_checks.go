@@ -293,7 +293,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 		limit := 10
 		afterProjectName := ""
 		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, nil, afterProjectName, limit)
 			if err != nil {
 				return err
 			}
