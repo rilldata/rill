@@ -20,9 +20,12 @@ import {
 } from "@rilldata/web-common/runtime-client/sse";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { waitForControllerRestart } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
+import { waitForProjectParser } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 
 const MAX_RETRIES = 3;
+// Upper bound on the readiness wait before each reconnect.
+const READINESS_TIMEOUT_MS = 20_000;
 
 /**
  * Idle-timeout presets.
@@ -105,7 +108,20 @@ export class FileAndResourceWatcher {
           await options.onBeforeReconnect?.();
           // .env and OLAP changes restart the controller. Opening the stream
           // while it is closed consumes retries and can leave a fatal page.
-          await waitForControllerRestart(this.runtimeClient, this.queryClient);
+          // The wait only spares those retries, so it must not fail or hold up
+          // the reconnect: when it errors (e.g. the project parser is hidden
+          // from a non-admin user), or its request is still pending at the
+          // timeout (e.g. queued behind slow queries), open the stream anyway
+          // and let that attempt decide.
+          await Promise.race([
+            waitForProjectParser(this.runtimeClient, this.queryClient),
+            asyncWait(READINESS_TIMEOUT_MS),
+          ]).catch((error: unknown) => {
+            console.warn(
+              "Reconnecting before the runtime reported ready",
+              error,
+            );
+          });
         },
       },
       decoders: {
