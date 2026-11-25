@@ -1434,7 +1434,8 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
  * series' place in the order as a column instead, and the scale is sorted by that.
  *
  * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
- * listed by name alone.
+ * listed by name alone. So are the series the author typed as ordinal: their values, such as
+ * years or levels, have an order of their own, which their totals would scramble.
  *
  * A layer draws the measure of the view it is layered in where it does not draw one of its own,
  * as a bullet chart's bars do.
@@ -1494,7 +1495,10 @@ function orderViewSeries(
     ) {
       continue;
     }
-    if (COMPOSITE_MARKS.has(markType as string)) {
+    if (
+      encoding.type === "ordinal" ||
+      COMPOSITE_MARKS.has(markType as string)
+    ) {
       encoding.sort = "ascending";
       continue;
     }

@@ -596,6 +596,24 @@ describe("compileFlintSpec", () => {
       ]);
     });
 
+    it("lists a series the author typed as ordinal in its own order", async () => {
+      // Its values have an order of their own, such as years or levels, which their totals
+      // would scramble.
+      const byTotal = { Yahoo: 300, Google: 100, Microsoft: 200 };
+      for (const arrival of [
+        ["Yahoo", "Google", "Microsoft"],
+        ["Microsoft", "Yahoo", "Google"],
+      ]) {
+        const spec = lineChart(arrival, { type: "ordinal" }, byTotal);
+        expect(viewOf(spec).encoding?.color?.sort).toBe("ascending");
+        expect(await legendLabels(spec)).toEqual([
+          "Google",
+          "Microsoft",
+          "Yahoo",
+        ]);
+      }
+    });
+
     it("orders the series of a layer by the measure of the view it is layered in", async () => {
       // A bullet chart draws its measure on the root view and its series on one of its layers.
       const bulletChart = (arrival: string[]) =>
