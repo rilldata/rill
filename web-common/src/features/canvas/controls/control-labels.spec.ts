@@ -46,17 +46,18 @@ describe("control labels", () => {
   it("summarizes values", () => {
     const filter = { kind: "filter", target: "publisher" };
     expect(controlSummary(filter, [], fieldLabel)).toBe("All");
+    expect(controlSummary(filter, ["Acme"], fieldLabel)).toBe("Acme");
     expect(controlSummary(filter, ["Acme", "Globex"], fieldLabel)).toBe(
-      "Acme, Globex",
+      "Acme +1 other",
     );
     expect(controlSummary(filter, ["a", "b", "c"], fieldLabel)).toBe(
-      "3 selected",
+      "a +2 others",
     );
     expect(controlSummary({ kind: "time_range" }, ["P7D"], fieldLabel)).toBe(
       "Last 7 Days",
     );
     expect(controlSummary({ kind: "time_range" }, [], fieldLabel)).toBe(
-      "Same as canvas",
+      "Inherit from canvas",
     );
   });
 });

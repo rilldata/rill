@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { derived } from "svelte/store";
   import { SlidersHorizontal } from "lucide-svelte";
@@ -77,6 +78,25 @@
     );
   }
 
+  // The filter bar's filters on the other dimensions, per metrics view a filter control reads
+  // its values from. Required filters among them keep the values query from running without them.
+  function filtersFor(
+    control: AppliedControl,
+    views: string[],
+  ): Map<string, V1Expression> | undefined {
+    if (control.control.kind !== ControlKind.Filter) return undefined;
+    const filters = new Map<string, V1Expression>();
+    for (const view of views) {
+      const filter =
+        canvasEntity.expressionFilterManager.getOtherDimensionsFilter(
+          control.control.fields?.[view] ?? control.control.target ?? "",
+          view,
+        );
+      if (filter) filters.set(view, filter);
+    }
+    return filters;
+  }
+
   // In exports there is nothing to click, so a control reads as text: "Metric: Impressions".
   function staticText(control: AppliedControl): string {
     const label =
@@ -121,6 +141,7 @@
 
 {#snippet inputs()}
   {#each controls as control (control.urlKey)}
+    {@const views = metricsViewsFor(control)}
     <!-- Pointing at a control of a level shows which widgets it changes (see CanvasComponent). -->
     <div
       class={controls.length > 1 ? "flex-none" : "min-w-0"}
@@ -135,9 +156,10 @@
       <ControlInput
         {control}
         {fieldLabel}
-        metricsViewNames={metricsViewsFor(control)}
+        metricsViewNames={views}
         {timeStart}
         {timeEnd}
+        filters={filtersFor(control, views)}
         onChange={(values) => canvasEntity.controls.set(control, values)}
       />
     </div>

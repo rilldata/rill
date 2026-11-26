@@ -64,6 +64,8 @@ func TestParseCanvasControlsErrors(t *testing.T) {
 		{"several defaults", `[{filter: a, default: [x, y]}]`, "'multiple' is not set", true},
 		{"default not an option", `[{filter: a, options: [x], default: y}]`, "is not one of the 'options'", true},
 		{"duplicate names", `[{filter: a}, {filter: a}]`, "duplicate control name", true},
+		{"two time ranges", `[{time: range, options: [P7D]}, {time: range, name: other, options: [P14D]}]`, `control "time_range" on the same level already changes the time range`, false},
+		{"two filters on a dimension", `[{filter: a}, {filter: a, name: b}]`, `already changes filter "a"`, true},
 		{"bad name", `[{slot: x.field, name: "x field", options: [a]}]`, "invalid control name", true},
 		{"bad display", `[{filter: a, display: slider}]`, "invalid 'display'", true},
 		{"fields on swap", `[{measure: a, options: [a], fields: {m: b}}]`, "'fields' is only supported", true},

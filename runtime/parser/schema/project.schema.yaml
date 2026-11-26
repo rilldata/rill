@@ -4716,6 +4716,7 @@ definitions:
       Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
       or to every item nested in the container, tab group, tab or canvas it is declared on.
       When several levels declare a control for the same target, the nearest one wins.
+      A level can declare only one control per target, e.g. one `time: range` control.
       On a row entry, `controls` is only valid for a tab group or a container.
     items:
       type: object

@@ -20,7 +20,6 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import EditableCanvasContainer from "./EditableCanvasContainer.svelte";
-  import ChangedControls from "./controls/ChangedControls.svelte";
   import LevelControls from "./controls/LevelControls.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
@@ -963,7 +962,6 @@
   builder
   bind:clientWidth
 >
-  <ChangedControls {canvasEntity} {maxWidth} />
   <!-- The canvas's viewer controls, with the button that adds one. It shows on a canvas
        without controls too, once there's a metrics view to choose fields from. -->
   <LevelControls

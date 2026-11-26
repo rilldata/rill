@@ -47,6 +47,7 @@ _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this
 _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
 or to every item nested in the container, tab group, tab or canvas it is declared on.
 When several levels declare a control for the same target, the nearest one wins.
+A level can declare only one control per target, e.g. one `time: range` control.
 On a row entry, `controls` is only valid for a tab group or a container.
 
 
@@ -122,6 +123,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
     or to every item nested in the container, tab group, tab or canvas it is declared on.
     When several levels declare a control for the same target, the nearest one wins.
+    A level can declare only one control per target, e.g. one `time: range` control.
     On a row entry, `controls` is only valid for a tab group or a container.
 
 
@@ -162,6 +164,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
   - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
   or to every item nested in the container, tab group, tab or canvas it is declared on.
   When several levels declare a control for the same target, the nearest one wins.
+  A level can declare only one control per target, e.g. one `time: range` control.
   On a row entry, `controls` is only valid for a tab group or a container.
 
 
@@ -208,6 +211,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     - **`controls`** - _[array of object]_ - Viewer controls: settings that viewers can change. A control applies to the item it is declared on,
     or to every item nested in the container, tab group, tab or canvas it is declared on.
     When several levels declare a control for the same target, the nearest one wins.
+    A level can declare only one control per target, e.g. one `time: range` control.
     On a row entry, `controls` is only valid for a tab group or a container.
 
 

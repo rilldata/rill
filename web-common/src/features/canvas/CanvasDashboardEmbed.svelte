@@ -3,7 +3,6 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import StaticRowsBlock from "./StaticRowsBlock.svelte";
-  import ChangedControls from "./controls/ChangedControls.svelte";
   import LevelControls from "./controls/LevelControls.svelte";
   import CanvasTabGroupView from "./CanvasTabGroupView.svelte";
   import { layoutBlockKey } from "./stores/layout-blocks";
@@ -78,7 +77,6 @@
 
 {#if canvasName}
   <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
-    <ChangedControls {canvasEntity} {maxWidth} />
     <LevelControls {canvasEntity} scopes={[[]]} {maxWidth} />
     {#each blocks as block (layoutBlockKey(block))}
       {#if block.kind === "tab-group"}

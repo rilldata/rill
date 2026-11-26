@@ -4,7 +4,10 @@
   import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { getQueryServiceMetricsViewAggregationQueryKey } from "@rilldata/web-common/runtime-client";
+  import {
+    getQueryServiceMetricsViewAggregationQueryKey,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { ChevronDown } from "lucide-svelte";
   import {
@@ -27,6 +30,7 @@
     metricsViewNames = [],
     timeStart,
     timeEnd,
+    filters = undefined,
     onChange,
   }: {
     control: AppliedControl;
@@ -36,6 +40,9 @@
     metricsViewNames?: string[];
     timeStart?: string;
     timeEnd?: string;
+    // The filter bar's filters per metrics view. A filter control's values are searched within
+    // them, less any filter on its own dimension, like the values of a filter bar chip.
+    filters?: Map<string, V1Expression>;
     // Null resets the control to its default.
     onChange: (values: ControlValue[] | null) => void;
   } = $props();
@@ -72,6 +79,7 @@
         values,
         timeStart,
         timeEnd,
+        metricsViewWheres: filters,
         enabled: queriesValues && open,
       },
     ),
@@ -104,6 +112,21 @@
   });
 
   let summary = $derived(controlSummary(spec, values, fieldLabel));
+
+  // A time control without a default of its own leaves the widgets on the time range or grain
+  // they inherit, which viewers can go back to like any other option.
+  let offersInherit = $derived(
+    (kind === ControlKind.TimeRange || kind === ControlKind.TimeGrain) &&
+      defaultControlValues(spec) === null,
+  );
+  // Multi-select controls can't go back to their default by picking one option, so they get a
+  // footer action: clearing a filter, or bringing back the widget's own fields or the default.
+  let footerAction = $derived.by(() => {
+    if (!multiple || isDefault) return "";
+    return isFilter && !spec.default?.length
+      ? m.common_clear_selection()
+      : m.canvas_reset_to_default();
+  });
 
   let asButtons = $derived(
     !multiple &&
@@ -171,7 +194,9 @@
           type="button"
           class:selected={selected(option)}
           aria-pressed={selected(option)}
-          onclick={() => onChange([option])}
+          onclick={() =>
+            // Pressing the picked range or grain again goes back to the inherited one.
+            onChange(offersInherit && selected(option) ? null : [option])}
         >
           {optionLabel(option)}
         </button>
@@ -218,6 +243,17 @@
             >{m.common_retry()}</DropdownMenu.Item
           >
         {:else}
+          {#if offersInherit}
+            <DropdownMenu.CheckboxItem
+              checked={isDefault}
+              onCheckedChange={() => {
+                onChange(null);
+                open = false;
+              }}
+            >
+              {m.canvas_inherit_from_canvas()}
+            </DropdownMenu.CheckboxItem>
+          {/if}
           {#each options as option (controlValueKey(option))}
             <DropdownMenu.CheckboxItem
               closeOnSelect={!multiple}
@@ -233,10 +269,10 @@
             </div>
           {/each}
         {/if}
-        {#if !isDefault}
+        {#if footerAction}
           <DropdownMenu.Separator />
           <DropdownMenu.Item onclick={() => onChange(null)}>
-            {m.canvas_control_reset()}
+            {footerAction}
           </DropdownMenu.Item>
         {/if}
       </DropdownMenu.Content>

@@ -501,8 +501,24 @@
   "canvas_container_viewer_note": "Viewers don't see the container: its rows show as regular rows.",
   "canvas_control_all": "All",
   "canvas_control_dialog_add_title": "Add viewer control",
-  "canvas_control_dialog_affects": "Widgets changed at this level: {count}",
+  "canvas_control_dialog_affects": [
+    {
+      "declarations": [
+        "input count",
+        "input names",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Changes 1 widget at this level: {names}",
+        "countPlural=other": "Changes {count} widgets at this level: {names}"
+      }
+    }
+  ],
   "canvas_control_dialog_affects_none": "No widget at this level shows this field, so the control would change nothing.",
+  "canvas_control_dialog_affects_none_filter": "No widget at this level has this dimension, so the control would change nothing.",
+  "canvas_control_dialog_affects_none_time": "No widget at this level has a time dimension, so the control would change nothing.",
+  "canvas_control_dialog_level_conflict": "{level} already has the control “{name}” for this, and only one of them would apply. Edit that control instead.",
   "canvas_control_dialog_allowed_values": "Allowed values",
   "canvas_control_dialog_allowed_values_hint": "Comma-separated. Leave empty to offer every value of the dimension.",
   "canvas_control_dialog_applies_to": "Applies to",
@@ -546,13 +562,10 @@
   "canvas_control_level_group": "Tab group “{name}”",
   "canvas_control_level_item": "This widget",
   "canvas_control_level_tab": "Tab “{name}”",
-  "canvas_control_reset": "Reset",
   "canvas_control_search": "Search",
   "canvas_control_load_error": "Could not load values.",
   "canvas_control_null": "(null)",
   "canvas_control_no_values": "No values",
-  "canvas_control_selected_count": "{count} selected",
-  "canvas_control_same_as_canvas": "Same as canvas",
   "canvas_controls_adjust": "Adjust ({count})",
   "canvas_controls_changed": "Changed from the default view",
   "canvas_controls_reset_all": "Reset controls",

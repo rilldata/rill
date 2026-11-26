@@ -3,6 +3,7 @@
   import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
   import type { YAMLPath } from "../layout-util";
   import type { ControlLevelRef } from "./control-edit";
+  import ChangedControls from "./ChangedControls.svelte";
   import ControlBar from "./ControlBar.svelte";
   import AddControlButton from "./editor/AddControlButton.svelte";
 
@@ -34,6 +35,12 @@
   let controls = $derived(
     controlsForScopes($all, scopes).filter((c) => !c.locked),
   );
+  let changed = $derived(canvasEntity.controls.changed);
+  let changedKeys = $derived(
+    controls
+      .filter((c) => $changed.some((d) => d.urlKey === c.urlKey))
+      .map((c) => c.urlKey),
+  );
 </script>
 
 {#if $enabled && (controls.length || add?.whenEmpty)}
@@ -52,6 +59,11 @@
         levels={add.levels}
         levelPath={add.levelPath}
         compact={controls.length > 0}
+      />
+    {/if}
+    {#if changedKeys.length}
+      <ChangedControls
+        onReset={() => canvasEntity.controls.reset(changedKeys)}
       />
     {/if}
   </div>

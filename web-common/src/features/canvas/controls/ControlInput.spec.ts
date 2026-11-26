@@ -51,7 +51,7 @@ beforeEach(() => {
 });
 
 function control(
-  values: ControlValue[],
+  values: ControlValue[] | null,
   extra: AppliedControl["control"] = {},
 ): AppliedControl {
   return {
@@ -101,7 +101,7 @@ describe("slot menus", () => {
   it("starts from the fields the widget shows", async () => {
     const { onChange } = show(kpis(null));
     expect(screen.getByRole("button", { name: "country" })).toHaveTextContent(
-      "spend, clicks",
+      "spend +1 other",
     );
     await open();
     const checked = screen
@@ -236,9 +236,81 @@ describe("filter value menus", () => {
   });
 });
 
-it("queries values only from widgets affected by this level control", async () => {
+describe("going back to the default", () => {
+  const range = (values: ControlValue[] | null, extra = {}) =>
+    control(values, {
+      kind: "time_range",
+      target: "",
+      label: "country",
+      options: ["PT24H", "P7D", "P14D", "P4W", "P3M"],
+      ...extra,
+    });
+
+  it("offers a time control's inherited range as an option, not a reset", async () => {
+    const { onChange } = show(range(["P7D"]));
+    expect(screen.getByRole("button", { name: "country" })).toHaveTextContent(
+      "Last 7 Days",
+    );
+    await open();
+    const inherit = await screen.findByRole("menuitemcheckbox", {
+      name: "Inherit from canvas",
+    });
+    expect(inherit).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByRole("menuitem", { name: "Reset" })).toBeNull();
+    await fireEvent.click(inherit);
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("checks the inherited range on the default, and has none with a default of its own", async () => {
+    const inheriting = show(range(null));
+    expect(screen.getByRole("button", { name: "country" })).toHaveTextContent(
+      "Inherit from canvas",
+    );
+    await open();
+    expect(
+      await screen.findByRole("menuitemcheckbox", {
+        name: "Inherit from canvas",
+      }),
+    ).toHaveAttribute("aria-checked", "true");
+    inheriting.view.unmount();
+
+    show(range(["P14D"], { default: ["P7D"] }));
+    await open();
+    await screen.findByRole("menuitemcheckbox", { name: "Last 7 Days" });
+    expect(
+      screen.queryByRole("menuitemcheckbox", { name: "Inherit from canvas" }),
+    ).toBeNull();
+  });
+
+  it("goes back to the inherited range when the picked button is pressed again", async () => {
+    const { onChange } = show(
+      range(["P7D"], { options: ["P7D", "P14D"], display: "buttons" }),
+    );
+    await fireEvent.click(screen.getByRole("button", { name: "Last 7 Days" }));
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    await fireEvent.click(screen.getByRole("button", { name: "Last 14 Days" }));
+    expect(onChange).toHaveBeenLastCalledWith(["P14D"]);
+  });
+
+  it("clears a multi-select filter from the footer", async () => {
+    search.set({ data: ["Acme", "Globex"], isLoading: false });
+    const { onChange } = show(control(["Acme"], { multiple: true }));
+    await open();
+    await fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Clear selection" }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+});
+
+it("queries values only from widgets affected by this level control, within the filter bar", async () => {
   const publisher = control([]);
   const inherited = writable([publisher]);
+  // The filter bar filters the other dimensions of "inside"; a filter on "country" itself is left out.
+  const deviceFilter = { cond: { op: "OPERATION_IN" } };
+  const getOtherDimensionsFilter = vi.fn((name: string, view: string) =>
+    name === "country" && view === "inside" ? deviceFilter : undefined,
+  );
   const entity = {
     controls: {
       enabled: writable(true),
@@ -258,6 +330,7 @@ it("queries values only from widgets affected by this level control", async () =
       ]),
     ),
     timeFilterManager: { timeStart: undefined, timeEnd: undefined },
+    expressionFilterManager: { getOtherDimensionsFilter },
   } as unknown as CanvasEntity;
   render(ControlBar, { controls: [publisher], canvasEntity: entity });
   await open();
@@ -266,7 +339,9 @@ it("queries values only from widgets affected by this level control", async () =
       expect.anything(),
       ["inside"],
       "country",
-      expect.anything(),
+      expect.objectContaining({
+        metricsViewWheres: new Map([["inside", deviceFilter]]),
+      }),
     ),
   );
   inherited.set([]);

@@ -6,7 +6,9 @@ import {
   controlToYAML,
   countItemsUsingField,
   draftFromYAML,
+  findLevelConflict,
   findRepeatedOption,
+  listAffectedItems,
   moveControl,
   moveControlToLevel,
   readControls,
@@ -334,6 +336,86 @@ describe("countItemsUsingField", () => {
     expect(
       countItemsUsingField(doc, ["rows", 0, "items", 1], "measure", "spend"),
     ).toBe(0);
+  });
+});
+
+describe("listAffectedItems", () => {
+  const TIMED = `type: canvas
+controls:
+  - time: range
+    options: [P7D, P14D]
+rows:
+  - items:
+      - width: 6
+        bar_chart:
+          title: Bids per publisher
+          metrics_view: bids
+          x: { field: publisher }
+          y: { field: total_bids }
+      - width: 6
+        markdown:
+          content: Notes
+  - name: views
+    tabs:
+      - label: Recent
+        controls:
+          - time: range
+            options: [PT24H]
+        rows:
+          - items:
+              - width: 12
+                name: recent_kpis
+                kpi_grid:
+                  metrics_view: bids
+                  measures: [total_bids]
+`;
+  const hasMetricsView = (spec: Record<string, unknown>) =>
+    typeof spec.metrics_view === "string";
+
+  it("names the widgets a time control changes, by title, leaving out those a nearer one reaches", () => {
+    const doc = parseDocument(TIMED);
+    expect(
+      listAffectedItems(
+        doc,
+        [],
+        "time_range",
+        "",
+        "time_range",
+        hasMetricsView,
+      ),
+    ).toEqual([{ name: "bar_chart", title: "Bids per publisher" }]);
+    expect(
+      listAffectedItems(
+        doc,
+        ["rows", 1, "tabs", 0],
+        "time_range",
+        "",
+        "time_range",
+        hasMetricsView,
+      ),
+    ).toEqual([{ name: "recent_kpis", title: "recent_kpis" }]);
+  });
+});
+
+describe("findLevelConflict", () => {
+  const doc = parseDocument(`type: canvas
+controls:
+  - time: range
+    options: [P7D]
+  - filter: publisher
+    name: pub
+rows: []
+`);
+
+  it("finds another control of the level that changes the same thing", () => {
+    expect(findLevelConflict(doc, [], "time_range", "")).toBe("time_range");
+    expect(findLevelConflict(doc, [], "time_grain", "")).toBe("");
+    expect(findLevelConflict(doc, [], "filter", "publisher")).toBe("pub");
+    expect(findLevelConflict(doc, [], "filter", "domain")).toBe("");
+  });
+
+  it("leaves out the control being edited", () => {
+    expect(findLevelConflict(doc, [], "time_range", "", "time_range")).toBe("");
   });
 });
 

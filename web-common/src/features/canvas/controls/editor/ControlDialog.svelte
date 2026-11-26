@@ -11,10 +11,13 @@
   import { untrack } from "svelte";
   import { get } from "svelte/store";
   import type { YAMLPath } from "../../layout-util";
-  import { slotFields } from "../apply-fields";
+  import { slotFields, specUsesField } from "../apply-fields";
   import {
-    countItemsUsingField,
+    controlToYAML,
+    defaultControlName,
+    findLevelConflict,
     findRepeatedOption,
+    listAffectedItems,
     listFieldTargets,
     TIME_GRAIN_OPTIONS,
     type ControlDraft,
@@ -219,17 +222,77 @@
   );
 
   // The name the control will have, which items' `ignore_controls` refer to.
-  let controlName = $derived(name.trim() || field);
-  let affected = $derived(
-    isSwap && field
-      ? countItemsUsingField(
+  let controlName = $derived(
+    name.trim() ||
+      defaultControlName(
+        controlToYAML({
+          kind,
+          field,
+          options: [],
+          default: [],
+          multiple: false,
+          display: "",
+          label: "",
+          name: "",
+        }),
+      ),
+  );
+  // Whether a widget's component spec is one the control changes: a swap needs the field in it,
+  // a filter the dimension in its metrics view, and a time control a time dimension there.
+  function changesSpec(spec: Record<string, unknown>): boolean {
+    if (isSwap) return specUsesField(spec, field);
+    const view =
+      typeof spec.metrics_view === "string"
+        ? $metricsViews[spec.metrics_view]?.state?.validSpec
+        : undefined;
+    if (isFilter) return !!view?.dimensions?.some((d) => d.name === field);
+    return !!view?.timeDimension;
+  }
+  // The widgets the control would change at the chosen level, listed so the designer sees
+  // which ones follow it. A slot control only ever changes its own widget.
+  let affectedItems = $derived(
+    !isSlot && (!needsField || field)
+      ? listAffectedItems(
           $parsedContent,
           level.path,
           kind,
           field,
           controlName,
+          changesSpec,
         )
       : null,
+  );
+  let affected = $derived(affectedItems?.length ?? null);
+  const MAX_LISTED_ITEMS = 4;
+  let allAffectedNames = $derived(
+    affectedItems?.map((i) => i.title).join(", ") ?? "",
+  );
+  let affectedNames = $derived.by(() => {
+    if (!affectedItems?.length) return "";
+    const titles = affectedItems.map((i) => `“${i.title}”`);
+    const listed = titles.slice(0, MAX_LISTED_ITEMS).join(", ");
+    return titles.length > MAX_LISTED_ITEMS
+      ? `${listed} ${m.dashboard_others({ count: titles.length - MAX_LISTED_ITEMS })}`
+      : listed;
+  });
+
+  // Another control on the level that changes the same thing. Only the first of two applies,
+  // so the runtime rejects the second.
+  let originalName = $derived(
+    seed.initial ? defaultControlName(controlToYAML(seed.initial)) : "",
+  );
+  let levelConflict = $derived(
+    !needsField || field
+      ? findLevelConflict(
+          $parsedContent,
+          level.path,
+          kind,
+          field,
+          !isNew && level.path.join("/") === seed.levelPath.join("/")
+            ? originalName
+            : "",
+        )
+      : "",
   );
   // A swap to a field a widget already shows would show it twice. The runtime rejects that control
   // on the widget itself; under a control of an enclosing level, the widget keeps its own field.
@@ -266,6 +329,7 @@
       !nameError &&
       !optionsError &&
       !(onItem && repeated) &&
+      !levelConflict &&
       // On a widget, a swap of a field it doesn't show would change nothing.
       !(onItem && affected === 0),
   );
@@ -444,7 +508,10 @@
             {/each}
           </div>
           {#if optionsError}
-            <span class="text-xs text-fg-secondary">{optionsError}</span>
+            <!-- Saving waits for this, so it reads as an error. -->
+            <span class="text-xs text-destructive" role="alert">
+              {optionsError}
+            </span>
           {/if}
           {#if isSlot}
             <span class="text-xs text-fg-secondary">
@@ -488,7 +555,7 @@
             sameWidth
             full
             value={resolvedOptions.includes(defaultValue) ? defaultValue : ""}
-            placeholder={m.canvas_control_same_as_canvas()}
+            placeholder={m.canvas_inherit_from_canvas()}
             clearable
             options={resolvedOptions.map((value) => ({
               value,
@@ -514,19 +581,39 @@
         />
       {/if}
 
-      {#if affected !== null}
-        <p class="text-xs" class:text-fg-secondary={affected > 0}>
+      {#if levelConflict}
+        <p class="text-xs text-destructive" role="alert">
+          {m.canvas_control_dialog_level_conflict({
+            level: controlLevelLabel(level),
+            name: levelConflict,
+          })}
+        </p>
+      {:else if affected !== null}
+        <p
+          class="text-xs"
+          class:text-fg-secondary={affected > 0}
+          title={allAffectedNames || undefined}
+        >
           {affected > 0
-            ? m.canvas_control_dialog_affects({ count: affected })
-            : m.canvas_control_dialog_affects_none()}
+            ? m.canvas_control_dialog_affects({
+                count: affected,
+                names: affectedNames,
+              })
+            : isSwap
+              ? m.canvas_control_dialog_affects_none()
+              : isFilter
+                ? m.canvas_control_dialog_affects_none_filter()
+                : m.canvas_control_dialog_affects_none_time()}
         </p>
       {/if}
 
       <div class="grid gap-x-3" class:grid-cols-2={!isSlot}>
+        <!-- The Select next to it puts its label further from its field. -->
         <Input
           id="canvas-control-label"
           capitalizeLabel={false}
           size="md"
+          labelGap={2}
           label={m.canvas_control_dialog_label()}
           optional
           bind:value={label}

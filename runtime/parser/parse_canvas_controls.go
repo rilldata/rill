@@ -27,6 +27,8 @@ func parseCanvasControls(controls []*canvasControlYAML, onItem bool) ([]*runtime
 	}
 	res := make([]*runtimev1.CanvasControl, 0, len(controls))
 	seen := make(map[string]bool, len(controls))
+	// Two controls of a level that change the same thing compete, and only the first would apply.
+	targets := make(map[string]string, len(controls))
 	for i, c := range controls {
 		if c == nil {
 			return nil, fmt.Errorf("control %d is empty", i)
@@ -39,9 +41,26 @@ func parseCanvasControls(controls []*canvasControlYAML, onItem bool) ([]*runtime
 			return nil, fmt.Errorf("control %d: duplicate control name %q: set a different 'name' on one of them", i, ctrl.Name)
 		}
 		seen[ctrl.Name] = true
+		key := canvas.ControlTargetKey(ctrl)
+		if prev, ok := targets[key]; ok {
+			return nil, fmt.Errorf("control %d: control %q on the same level already changes %s, and only one of them would apply: remove one of them", i, prev, controlTargetDescription(ctrl))
+		}
+		targets[key] = ctrl.Name
 		res = append(res, ctrl)
 	}
 	return res, nil
+}
+
+// controlTargetDescription says what a control changes, for errors: `the time range` or `filter "publisher"`.
+func controlTargetDescription(c *runtimev1.CanvasControl) string {
+	switch c.Kind {
+	case canvas.ControlKindTimeRange:
+		return "the time range"
+	case canvas.ControlKindTimeGrain:
+		return "the time grain"
+	default:
+		return fmt.Sprintf("%s %q", c.Kind, c.Target)
+	}
 }
 
 func parseCanvasControl(c *canvasControlYAML, onItem bool) (*runtimev1.CanvasControl, error) {

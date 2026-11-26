@@ -501,8 +501,24 @@
   "canvas_container_viewer_note": "뷰어에게는 컨테이너가 보이지 않으며, 컨테이너의 행은 일반 행으로 표시됩니다.",
   "canvas_control_all": "전체",
   "canvas_control_dialog_add_title": "뷰어 컨트롤 추가",
-  "canvas_control_dialog_affects": "이 수준에서 변경되는 위젯: {count}개",
+  "canvas_control_dialog_affects": [
+    {
+      "declarations": [
+        "input count",
+        "input names",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "이 수준에서 위젯 1개를 변경합니다: {names}",
+        "countPlural=other": "이 수준에서 위젯 {count}개를 변경합니다: {names}"
+      }
+    }
+  ],
   "canvas_control_dialog_affects_none": "이 수준에 이 필드를 표시하는 위젯이 없어 컨트롤이 아무것도 변경하지 않습니다.",
+  "canvas_control_dialog_affects_none_filter": "이 수준에 이 차원을 가진 위젯이 없어 컨트롤이 아무것도 변경하지 않습니다.",
+  "canvas_control_dialog_affects_none_time": "이 수준에 시간 차원을 가진 위젯이 없어 컨트롤이 아무것도 변경하지 않습니다.",
+  "canvas_control_dialog_level_conflict": "{level}에 이미 같은 대상을 바꾸는 컨트롤 “{name}”이(가) 있으며 둘 중 하나만 적용됩니다. 대신 그 컨트롤을 편집하세요.",
   "canvas_control_dialog_allowed_values": "허용 값",
   "canvas_control_dialog_allowed_values_hint": "쉼표로 구분합니다. 비워 두면 차원의 모든 값을 제공합니다.",
   "canvas_control_dialog_applies_to": "적용 대상",
@@ -546,13 +562,10 @@
   "canvas_control_level_group": "“{name}” 탭 그룹",
   "canvas_control_level_item": "이 위젯",
   "canvas_control_level_tab": "“{name}” 탭",
-  "canvas_control_reset": "초기화",
   "canvas_control_search": "검색",
   "canvas_control_load_error": "값을 불러오지 못했습니다.",
   "canvas_control_null": "(null)",
   "canvas_control_no_values": "값 없음",
-  "canvas_control_selected_count": "{count}개 선택됨",
-  "canvas_control_same_as_canvas": "캔버스와 동일",
   "canvas_controls_adjust": "조정 ({count})",
   "canvas_controls_changed": "기본 보기에서 변경됨",
   "canvas_controls_reset_all": "컨트롤 초기화",

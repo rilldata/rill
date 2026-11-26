@@ -105,9 +105,14 @@ export class ControlsManager {
 
   /** Resets every control to its default. Other URL state is left as it is. */
   resetAll() {
+    this.reset(get(this.all).map((c) => c.urlKey));
+  }
+
+  /** Resets the controls with these URL keys to their defaults, e.g. those of one level's bar. */
+  reset(urlKeys: string[]) {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    for (const { urlKey } of get(this.all)) params.delete(urlKey);
+    for (const urlKey of urlKeys) params.delete(urlKey);
     this.navigate(params);
   }
 

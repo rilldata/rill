@@ -385,14 +385,76 @@ export function countItemsUsingField(
   controlName = field,
 ): number {
   if (!field) return 0;
-  return itemsUnderLevel(doc, path, kind, field, controlName).filter(
-    ({ specs }) => specs.some((spec) => specUsesField(spec, field)),
+  return listAffectedItems(doc, path, kind, field, controlName, (spec) =>
+    specUsesField(spec, field),
   ).length;
+}
+
+/** An item a control would change: its name, and the title viewers see if it has one. */
+export interface AffectedItem {
+  name: string;
+  title: string;
+}
+
+/**
+ * The items under a level that a control would change, in canvas order: those `applies` accepts
+ * a component spec of, less the ones that opt out with `ignore_controls` or that a nearer
+ * control of the same kind and field reaches. `applies` decides per kind, e.g. a swap needs the
+ * field in the spec and a filter needs the dimension in the spec's metrics view.
+ */
+export function listAffectedItems(
+  doc: Document | undefined,
+  path: YAMLPath,
+  kind: EditableControlKind,
+  field: string,
+  controlName: string,
+  applies: (spec: Record<string, unknown>) => boolean,
+): AffectedItem[] {
+  return itemsUnderLevel(doc, path, kind, field, controlName)
+    .filter(({ specs }) => specs.some(applies))
+    .map(({ name, specs }) => ({ name, title: itemTitle(name, specs) }));
+}
+
+/** The title viewers see on an item, or its name if it has none. */
+function itemTitle(name: string, specs: Record<string, unknown>[]): string {
+  const title = specs.find((spec) => typeof spec.title === "string")?.title as
+    | string
+    | undefined;
+  return title?.trim() || name;
+}
+
+/**
+ * The name of another control on the level that changes the same thing as one of this kind and
+ * field, or "" if there is none. Two such controls on one level compete and only the first
+ * applies, so the runtime rejects the second; `exceptName` is the control being edited.
+ */
+export function findLevelConflict(
+  doc: Document | undefined,
+  path: YAMLPath,
+  kind: EditableControlKind,
+  field: string,
+  exceptName = "",
+): string {
+  const [key, value] = controlTargetEntry(kind, field);
+  const conflict = readControls(doc, path).find(
+    (c) => c[key] === value && defaultControlName(c) !== exceptName,
+  );
+  return conflict ? defaultControlName(conflict) : "";
+}
+
+/** The YAML key and value that say what a control of this kind changes, e.g. `time: range`. */
+function controlTargetEntry(
+  kind: EditableControlKind,
+  field: string,
+): [string, string] {
+  if (kind === ControlKind.TimeRange) return ["time", "range"];
+  if (kind === ControlKind.TimeGrain) return ["time", "grain"];
+  return [kind, field];
 }
 
 /**
  * The first option of a swap that an item under the level already shows next to the field, so
- * choosing it would show that field twice there. The runtime reports such a control and leaves it
+ * choosing it would show that field twice there. The item is named by its title, if it has one. The runtime reports such a control and leaves it
  * out, so the editor checks before writing it.
  */
 export function findRepeatedOption(
@@ -416,7 +478,7 @@ export function findRepeatedOption(
       const option = options.find(
         (o) => o !== field && swapRepeatsField(spec, field, o),
       );
-      if (option) return { option, item: name };
+      if (option) return { option, item: itemTitle(name, specs) };
     }
   }
   return null;
@@ -439,10 +501,13 @@ function itemsUnderLevel(
   if (!isRecord(root)) return [];
 
   // The names of a level's controls of the same kind and field.
+  const [targetKey, target] = controlTargetEntry(kind, field);
   const sameControls = (level: Record<string, unknown>) =>
     Array.isArray(level.controls)
       ? level.controls
-          .filter((c): c is RawControl => isRecord(c) && c[kind] === field)
+          .filter(
+            (c): c is RawControl => isRecord(c) && c[targetKey] === target,
+          )
           .map(defaultControlName)
       : [];
   const own = isItemPath(path);

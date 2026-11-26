@@ -49,7 +49,10 @@ export function controlLabel(
     : "";
 }
 
-/** A control's current values in a few words, e.g. "Acme, Globex" or "3 selected". */
+/**
+ * A control's current values in a few words, as a filter chip shows them: "Acme" or "Acme +2 others".
+ * Without values, a filter reads "All" and a time control "Inherit from canvas".
+ */
 export function controlSummary(
   control: V1CanvasControl,
   values: ControlValue[],
@@ -58,14 +61,11 @@ export function controlSummary(
   if (values.length === 0) {
     return control.kind === ControlKind.Filter
       ? m.canvas_control_all()
-      : m.canvas_control_same_as_canvas();
+      : m.canvas_inherit_from_canvas();
   }
-  if (values.length <= 2) {
-    return values
-      .map((v) => controlOptionLabel(control, v, fieldLabel))
-      .join(", ");
-  }
-  return m.canvas_control_selected_count({ count: values.length });
+  const first = controlOptionLabel(control, values[0], fieldLabel);
+  if (values.length === 1) return first;
+  return `${first} ${m.dashboard_others({ count: values.length - 1 })}`;
 }
 
 /** First display name for each field in the canvas's metrics views. */

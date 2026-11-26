@@ -134,8 +134,16 @@ test.describe("canvas viewer controls", () => {
     await page.reload();
     await expect(page.getByText("Sum of Bid Price per Domain")).toBeVisible();
 
-    // Resetting goes back to what the YAML says and clears the URL.
+    // The container's row says it changed, on the line of its controls, and resets them alone.
     await page.getByRole("button", { name: "Reset controls" }).click();
+    await expect(page.getByText("Total records per Domain")).toBeVisible();
+    await expect(page).not.toHaveURL(/c\.story\./);
+    await expect(page.getByText("Changed from the default view")).toHaveCount(
+      0,
+    );
+
+    // The widget's own control goes back by picking its default.
+    await by.getByRole("button", { name: "Publisher" }).click();
     await expect(page.getByText("Total records per Publisher")).toBeVisible();
     await expect(page).not.toHaveURL(/c\./);
   });

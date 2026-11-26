@@ -13,6 +13,7 @@ function canvas(enabled: boolean) {
     controls: {
       enabled: writable(enabled),
       all: writable<AppliedControl[]>([]),
+      changed: writable<AppliedControl[]>([]),
     },
   } as unknown as CanvasEntity;
 }
