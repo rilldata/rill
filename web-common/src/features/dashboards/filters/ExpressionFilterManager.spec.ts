@@ -1040,11 +1040,10 @@ describe("exclude mode for a filter without values", () => {
     expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
       false,
     );
-    // The chip edits its manager directly.
+    // The chip edits its manager directly; closing it without a value still drops the pending exclude.
     const chipManager = filterManager.filterManagersMap[
       AD_BIDS_PUBLISHER_DIMENSION
     ] as DimensionFilterManager;
-    chipManager.setSelectedValues(["Google"], false);
     chipManager.clear();
     expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
       false,

@@ -11,6 +11,7 @@ import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/pro
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { toStore, type Readable } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
+import { untrack } from "svelte";
 import {
   type DimensionOrMeasureManager,
   JoinerFilterManager,
@@ -134,9 +135,10 @@ export class ExpressionFilterManager implements UrlParamsStore {
       ) as JoinerFilterManager,
     );
     this.on("filter-changed", () => {
-      this.topLevelJoiner?.removeEmptyManagers();
       // A chip edits its manager directly, so this is where a filter added from the filter bar is seen.
+      // Reset before removing empty managers so that a chip closed without a value still counts.
       this.resetPendingExcludesWithManager();
+      this.topLevelJoiner?.removeEmptyManagers();
       this.storeSync.stateChanged();
     });
 
@@ -392,9 +394,12 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   private resetPendingExcludesWithManager() {
-    for (const name of this.pendingExcludes.keys()) {
-      if (this.filterManagersMap[name]) this.pendingExcludes.set(name, false);
-    }
+    // Untracked so that callers running inside an effect don't start depending on these maps.
+    untrack(() => {
+      for (const name of this.pendingExcludes.keys()) {
+        if (this.filterManagersMap[name]) this.pendingExcludes.set(name, false);
+      }
+    });
   }
 
   public measureFilterAction(
