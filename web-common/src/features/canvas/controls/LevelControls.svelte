@@ -49,7 +49,7 @@
     style:max-width={maxWidth ? `${maxWidth}px` : undefined}
   >
     {#if controls.length}
-      <div class="min-w-0 flex-1">
+      <div class="bar">
         <ControlBar {controls} {canvasEntity} />
       </div>
     {/if}
@@ -72,5 +72,12 @@
 <style lang="postcss">
   .level-controls {
     @apply pointer-events-auto flex w-full items-center gap-x-3 px-2 py-1;
+  }
+
+  /* The bar takes the room the controls need and the rest of the line, so it can tell when
+     they fit again after folding into "Adjust (n)". */
+  .bar {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 </style>
