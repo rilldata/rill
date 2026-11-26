@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { parseDocument } from "yaml";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   addControl,
   controlLevelsForItem,
   controlToYAML,
   countItemsUsingField,
   draftFromYAML,
+  filterBarTimeRanges,
   findLevelConflict,
   findRepeatedOption,
   listAffectedItems,
@@ -527,5 +529,23 @@ describe("findRepeatedOption", () => {
       option: "spend",
       item: "kpi_grid",
     });
+  });
+});
+
+describe("filterBarTimeRanges", () => {
+  it("offers the canvas's time_ranges as the filter bar lists them", () => {
+    expect(
+      filterBarTimeRanges(
+        [{ range: "P7D" }, { range: "rill-MTD" }, { range: "inf" }],
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+    ).toEqual(["P7D", "rill-MTD", "inf"]);
+  });
+
+  it("offers the default ranges for the smallest grain otherwise", () => {
+    const ranges = filterBarTimeRanges([], V1TimeGrain.TIME_GRAIN_DAY);
+    expect(ranges).toContain("7D");
+    expect(ranges).toContain("MTD");
+    expect(ranges).not.toContain("24h");
   });
 });

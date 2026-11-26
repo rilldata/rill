@@ -15,6 +15,7 @@
   import {
     controlToYAML,
     defaultControlName,
+    filterBarTimeRanges,
     findLevelConflict,
     findRepeatedOption,
     listAffectedItems,
@@ -25,7 +26,7 @@
     type EditableControlKind,
   } from "../control-edit";
   import { controlOptionLabel } from "../control-labels";
-  import { ControlKind } from "../controls";
+  import { ControlKind, offeredTimeGrains } from "../controls";
   import { controlKindLabel, controlLevelLabel } from "./labels";
 
   // The form for one viewer control. It's open while mounted.
@@ -52,21 +53,29 @@
     onCancel: () => void;
   } = $props();
 
-  const TIME_RANGE_PRESETS = [
-    "PT6H",
-    "PT24H",
-    "P7D",
-    "P14D",
-    "P4W",
-    "P3M",
-    "P6M",
-    "P12M",
-  ];
   const NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
   // The form starts from the props as they are when the dialog opens; later changes to them
   // (e.g. the document reconciling) must not reset what the builder typed.
   const seed = untrack(() => ({ initial, levels, levelPath }));
+
+  // Time controls offer what the canvas's filter bar offers: its time ranges, and the grains its
+  // metrics views offer.
+  const timePresets = untrack(() => {
+    const { yamlConfigProvider, metricsViewsProvider } =
+      canvas.dashboardProvider;
+    return {
+      ranges: filterBarTimeRanges(
+        yamlConfigProvider.timeRanges,
+        metricsViewsProvider.largestMinTimeGrain,
+        metricsViewsProvider.maxQueryTimeRange,
+      ),
+      grains: offeredTimeGrains(
+        TIME_GRAIN_OPTIONS,
+        metricsViewsProvider.availableTimeGrains,
+      ),
+    };
+  });
 
   let kind = $state<EditableControlKind>(
     seed.initial?.kind ?? ControlKind.Measure,
@@ -81,7 +90,7 @@
   let customRangesText = $state(
     seed.initial?.kind === ControlKind.TimeRange
       ? seed.initial.options
-          .filter((o) => !TIME_RANGE_PRESETS.includes(o))
+          .filter((o) => !timePresets.ranges.includes(o))
           .join(", ")
       : "",
   );
@@ -135,6 +144,12 @@
   );
   let isSlot = $derived(kind === ControlKind.Slot);
   let isFilter = $derived(kind === ControlKind.Filter);
+  // The filter bar's `single_select` keeps a dimension's filter to one value, and its controls too.
+  let singleSelect = $derived(
+    isFilter &&
+      !!field &&
+      canvas.dashboardProvider.yamlConfigProvider.isSingleSelectFilter(field),
+  );
   let needsField = $derived(isSwap || isFilter || isSlot);
   // A slot control belongs to its widget.
   let level = $derived(
@@ -202,19 +217,19 @@
     }
     if (kind === ControlKind.TimeRange) {
       return [
-        ...TIME_RANGE_PRESETS.filter((o) => options.includes(o)),
+        ...timePresets.ranges.filter((o) => options.includes(o)),
         ...splitList(customRangesText),
       ];
     }
-    return TIME_GRAIN_OPTIONS.filter((o) => options.includes(o));
+    return timePresets.grains.filter((o) => options.includes(o));
   });
 
   let checklist = $derived(
     isSwap || isSlot
       ? fieldOptions
       : (kind === ControlKind.TimeRange
-          ? TIME_RANGE_PRESETS
-          : TIME_GRAIN_OPTIONS
+          ? timePresets.ranges
+          : timePresets.grains
         ).map((value) => ({
           value,
           label: controlOptionLabel({ kind }, value, (name) => name),
@@ -370,7 +385,7 @@
           : defaultValue
             ? [defaultValue]
             : [],
-        multiple: (isFilter && multiple) || isSlot,
+        multiple: (isFilter && multiple && !singleSelect) || isSlot,
         display: display === "buttons" || display === "dropdown" ? display : "",
         label: label.trim(),
         name: name.trim(),
@@ -464,11 +479,24 @@
           optional
           bind:value={defaultText}
         />
-        <div class="flex items-center gap-x-2">
-          <Switch id="canvas-control-multiple" small bind:checked={multiple} />
-          <label for="canvas-control-multiple" class="text-sm">
-            {m.canvas_control_dialog_multiple()}
-          </label>
+        <div class="flex flex-col gap-y-1">
+          <div class="flex items-center gap-x-2">
+            <Switch
+              id="canvas-control-multiple"
+              small
+              checked={multiple && !singleSelect}
+              disabled={singleSelect}
+              onCheckedChange={(checked) => (multiple = checked)}
+            />
+            <label for="canvas-control-multiple" class="text-sm">
+              {m.canvas_control_dialog_multiple()}
+            </label>
+          </div>
+          {#if singleSelect}
+            <span class="text-xs text-fg-secondary">
+              {m.canvas_control_dialog_multiple_single_select()}
+            </span>
+          {/if}
         </div>
       {:else}
         <div class="flex flex-col gap-y-1">

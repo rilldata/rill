@@ -168,6 +168,8 @@ export class CanvasEntity {
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor
   firstTimeLoad = true;
+  // The canvas spec processSpec last handled, to tell which viewer controls an edit changed.
+  private processedSpec: V1CanvasSpec | undefined;
 
   private subscribers = 0;
   // Set by dispose.
@@ -333,6 +335,9 @@ export class CanvasEntity {
     const { canvas, components, metricsViews, filePath } = response;
     const validSpec = canvas;
     if (!validSpec) return;
+
+    this.controls.forgetEdited(this.processedSpec, validSpec);
+    this.processedSpec = validSpec;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
 

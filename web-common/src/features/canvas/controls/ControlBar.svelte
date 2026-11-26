@@ -15,6 +15,7 @@
     ControlKind,
     filterValueViews,
     controlMetricsViews,
+    offeredTimeGrains,
     type AppliedControl,
   } from "./controls";
   import ControlInput from "./ControlInput.svelte";
@@ -97,6 +98,19 @@
     return filters;
   }
 
+  // A grain control offers only the grains the canvas's metrics views offer, which can change
+  // after the control was written.
+  let availableTimeGrains = $derived(
+    canvasEntity.dashboardProvider.metricsViewsProvider.availableTimeGrains,
+  );
+  function withOfferedGrains(control: AppliedControl): AppliedControl {
+    if (control.control.kind !== ControlKind.TimeGrain) return control;
+    const options = control.control.options ?? [];
+    const offered = offeredTimeGrains(options, availableTimeGrains);
+    if (!offered.length || offered.length === options.length) return control;
+    return { ...control, control: { ...control.control, options: offered } };
+  }
+
   // In exports there is nothing to click, so a control reads as text: "Metric: Impressions".
   function staticText(control: AppliedControl): string {
     const label =
@@ -154,7 +168,7 @@
       onmouseleave={() => canvasEntity.controls.hovered.set(null)}
     >
       <ControlInput
-        {control}
+        control={withOfferedGrains(control)}
         {fieldLabel}
         metricsViewNames={views}
         {timeStart}

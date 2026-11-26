@@ -1,8 +1,11 @@
+import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import type {
   V1CanvasControl,
   V1CanvasRow,
   V1CanvasSpec,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { DateTimeUnit } from "luxon";
 
 /**
  * Viewer controls of a canvas: which controls apply to which item, and how their values are
@@ -86,9 +89,10 @@ function resolve(
   control: V1CanvasControl,
   level: ControlLevel,
   scope: string[],
+  singleSelect: ReadonlySet<string>,
 ): ResolvedControl {
   return {
-    control,
+    control: followSingleSelect(control, singleSelect),
     level,
     scope,
     urlKey: controlUrlKey(scope, control.name ?? ""),
@@ -100,8 +104,27 @@ function resolveAll(
   controls: V1CanvasControl[] | undefined,
   level: ControlLevel,
   scope: string[],
+  singleSelect: ReadonlySet<string>,
 ): ResolvedControl[] {
-  return (controls ?? []).map((c) => resolve(c, level, scope));
+  return (controls ?? []).map((c) => resolve(c, level, scope, singleSelect));
+}
+
+/**
+ * A filter control on a dimension the canvas lists under `filters.single_select` holds one value,
+ * whatever its own `multiple` says, so it follows that setting as the filter bar does. Its default
+ * keeps the last value, as the filter bar chip narrows a filter.
+ */
+function followSingleSelect(
+  control: V1CanvasControl,
+  singleSelect: ReadonlySet<string>,
+): V1CanvasControl {
+  if (control.kind !== ControlKind.Filter || !control.multiple) return control;
+  const dimensions = [
+    control.target ?? "",
+    ...Object.values(control.fields ?? {}),
+  ];
+  if (!dimensions.some((d) => singleSelect.has(d))) return control;
+  return { ...control, multiple: false, default: control.default?.slice(-1) };
 }
 
 /** Every control declared anywhere on the canvas. */
@@ -109,16 +132,24 @@ export function collectControls(
   spec: V1CanvasSpec | undefined,
 ): ResolvedControl[] {
   if (!spec) return [];
-  const res = resolveAll(spec.controls, "canvas", []);
+  const singleSelect = new Set(spec.singleSelectFilters ?? []);
+  const res = resolveAll(spec.controls, "canvas", [], singleSelect);
   const walk = (rows: V1CanvasRow[] | undefined) => {
     for (const row of rows ?? []) {
       const group = row.tabGroup;
       if (group) {
         const groupName = group.name ?? "";
-        res.push(...resolveAll(group.controls, "group", [groupName]));
+        res.push(
+          ...resolveAll(group.controls, "group", [groupName], singleSelect),
+        );
         for (const tab of group.tabs ?? []) {
           res.push(
-            ...resolveAll(tab.controls, "tab", [groupName, tab.name ?? ""]),
+            ...resolveAll(
+              tab.controls,
+              "tab",
+              [groupName, tab.name ?? ""],
+              singleSelect,
+            ),
           );
           walk(tab.rows);
         }
@@ -126,15 +157,20 @@ export function collectControls(
       const container = row.container;
       if (container) {
         res.push(
-          ...resolveAll(container.controls, "container", [
-            container.name ?? "",
-          ]),
+          ...resolveAll(
+            container.controls,
+            "container",
+            [container.name ?? ""],
+            singleSelect,
+          ),
         );
         walk(container.rows);
       }
       for (const item of row.items ?? []) {
         if (item.name) {
-          res.push(...resolveAll(item.controls, "item", [item.name]));
+          res.push(
+            ...resolveAll(item.controls, "item", [item.name], singleSelect),
+          );
         }
       }
     }
@@ -154,10 +190,11 @@ export function controlsForPath(
   path: (string | number)[],
 ): ResolvedControl[] {
   if (!spec || path[0] !== "rows") return [];
+  const singleSelect = new Set(spec.singleSelectFilters ?? []);
 
   // Levels enclosing the item, outermost first.
   const enclosing: ResolvedControl[][] = [
-    resolveAll(spec.controls, "canvas", []),
+    resolveAll(spec.controls, "canvas", [], singleSelect),
   ];
   let rows = spec.rows ?? [];
   let i = 1;
@@ -170,9 +207,16 @@ export function controlsForPath(
       const tab = group?.tabs?.[Number(path[i + 2])];
       if (!group || !tab) return [];
       const groupName = group.name ?? "";
-      enclosing.push(resolveAll(group.controls, "group", [groupName]));
       enclosing.push(
-        resolveAll(tab.controls, "tab", [groupName, tab.name ?? ""]),
+        resolveAll(group.controls, "group", [groupName], singleSelect),
+      );
+      enclosing.push(
+        resolveAll(
+          tab.controls,
+          "tab",
+          [groupName, tab.name ?? ""],
+          singleSelect,
+        ),
       );
       rows = tab.rows ?? [];
       i += 4; // row index, "tabs", tab index, "rows"
@@ -182,7 +226,12 @@ export function controlsForPath(
       const container = row.container;
       if (!container) return [];
       enclosing.push(
-        resolveAll(container.controls, "container", [container.name ?? ""]),
+        resolveAll(
+          container.controls,
+          "container",
+          [container.name ?? ""],
+          singleSelect,
+        ),
       );
       rows = container.rows ?? [];
       i += 2; // row index, "rows"
@@ -199,7 +248,9 @@ export function controlsForPath(
       seen.add(c.targetKey);
       res.push(c);
     };
-    if (item.name) resolveAll(item.controls, "item", [item.name]).forEach(add);
+    if (item.name) {
+      resolveAll(item.controls, "item", [item.name], singleSelect).forEach(add);
+    }
     if (!item.ignoreAllControls) {
       const ignored = new Set(item.ignoreControls ?? []);
       for (const level of enclosing.reverse()) {
@@ -273,11 +324,21 @@ export function parseControlValue(
     return { values: defaultControlValues(control), valid: false };
   }
 
+  // A filter that holds one value keeps the last of several, as a filter bar chip does once its
+  // dimension is single-select, e.g. after `filters.single_select` lists it.
+  if (
+    control.kind === ControlKind.Filter &&
+    !control.multiple &&
+    values.length > 1
+  ) {
+    values = values.slice(-1);
+  }
+
   const options = control.options ?? [];
   const allowed =
     options.length === 0 ||
     values.every((v) => typeof v === "string" && options.includes(v));
-  const countOk = control.multiple ? true : values.length <= 1;
+  const countOk = control.multiple || values.length <= 1;
   // Only a filter can be cleared: the other kinds always need a value.
   const emptyOk = values.length > 0 || control.kind === ControlKind.Filter;
   if (!allowed || !countOk || !emptyOk) {
@@ -359,6 +420,22 @@ export function controlsForScopes(
         (d) => d.targetKey === c.targetKey && d.scope.length > c.scope.length,
       ),
   );
+}
+
+/**
+ * The grains among a time grain control's options that the metrics views offer, as the filter
+ * bar's grain picker does: their `time_grains`, or the grains at or above their smallest time
+ * grain. All of them while the metrics views aren't known.
+ */
+export function offeredTimeGrains(
+  grains: string[],
+  available: V1TimeGrain[],
+): string[] {
+  if (!available.length) return grains;
+  return grains.filter((grain) => {
+    const v1Grain = DateTimeUnitToV1TimeGrain[grain as DateTimeUnit];
+    return !!v1Grain && available.includes(v1Grain);
+  });
 }
 
 /** Metrics views of widgets to which each resolved control actually applies. */

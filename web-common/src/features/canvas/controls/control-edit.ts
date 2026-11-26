@@ -1,3 +1,9 @@
+import { bucketYamlRanges } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+import type {
+  V1ExploreTimeRange,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
+import type { Duration } from "luxon";
 import { isSeq, type Document } from "yaml";
 import type { ComponentInputParam } from "../inspector/types";
 import type { YAMLPath } from "../layout-util";
@@ -94,6 +100,30 @@ export const TIME_GRAIN_OPTIONS = [
   "quarter",
   "year",
 ];
+
+/**
+ * The time ranges the canvas's filter bar offers, written as its menu writes them: the canvas's
+ * `time_ranges`, or the default ranges for the metrics views' smallest time grain.
+ */
+export function filterBarTimeRanges(
+  timeRanges: V1ExploreTimeRange[],
+  minTimeGrain: V1TimeGrain | undefined,
+  maxQueryTimeRange?: Duration,
+): string[] {
+  const buckets = bucketYamlRanges(
+    timeRanges,
+    minTimeGrain,
+    true,
+    maxQueryTimeRange,
+  );
+  const ranges = [
+    ...buckets.latest,
+    ...buckets.periodToDate,
+    ...buckets.previous,
+    ...buckets.custom,
+  ].map((r) => (r.asOfLabel ? r.toString() : r.interval.toString()));
+  return buckets.allTime ? [...ranges, "inf"] : ranges;
+}
 
 // Keys of a control's YAML that the editor's form owns. Other keys (such as `fields`) are kept.
 const MANAGED_KEYS = [

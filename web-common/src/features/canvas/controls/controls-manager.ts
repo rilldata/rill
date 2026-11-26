@@ -116,10 +116,43 @@ export class ControlsManager {
     this.navigate(params);
   }
 
-  private navigate(params: URLSearchParams) {
+  /**
+   * Drops the URL values of controls that an edit of the canvas removed or changed: a removed
+   * control leaves nothing behind in the URL, or in the last-visited state the preview restores,
+   * and an edited one starts from its new default.
+   */
+  forgetEdited(
+    previous: V1CanvasSpec | undefined,
+    next: V1CanvasSpec | undefined,
+  ) {
+    if (!previous || !next || typeof window === "undefined") return;
+    const definitions = new Map(
+      collectControls(next).map((c) => [c.urlKey, JSON.stringify(c.control)]),
+    );
+    const params = new URLSearchParams(window.location.search);
+    const stale = collectControls(previous).filter(
+      (c) =>
+        params.has(c.urlKey) &&
+        definitions.get(c.urlKey) !== JSON.stringify(c.control),
+    );
+    if (!stale.length) return;
+    for (const c of stale) params.delete(c.urlKey);
+    // The edit didn't come from the viewer: no history entry, and the editor keeps its focus.
+    this.navigate(params, {
+      replaceState: true,
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
+  private navigate(
+    params: URLSearchParams,
+    options?: Parameters<typeof goto>[1],
+  ) {
     const search = params.toString();
     this.onNavigate(search);
-    goto(`?${search}`).catch(console.error);
+    const url = `?${search}`;
+    (options ? goto(url, options) : goto(url)).catch(console.error);
   }
 }
 

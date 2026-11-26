@@ -331,6 +331,7 @@ it("queries values only from widgets affected by this level control, within the 
     ),
     timeFilterManager: { timeStart: undefined, timeEnd: undefined },
     expressionFilterManager: { getOtherDimensionsFilter },
+    dashboardProvider: { metricsViewsProvider: { availableTimeGrains: [] } },
   } as unknown as CanvasEntity;
   render(ControlBar, { controls: [publisher], canvasEntity: entity });
   await open();
@@ -353,4 +354,36 @@ it("queries values only from widgets affected by this level control, within the 
       expect.anything(),
     ),
   );
+});
+
+it("offers only the grains the canvas's metrics views offer", async () => {
+  const grain = control(null, {
+    kind: "time_grain",
+    target: "",
+    label: "country",
+    options: ["hour", "day", "week"],
+    display: "dropdown",
+  });
+  const entity = {
+    controls: {
+      enabled: writable(true),
+      changed: writable([]),
+      hovered: writable(null),
+    },
+    exportMode: writable(false),
+    _metricsViews: writable({}),
+    componentsStore: writable(new Map()),
+    timeFilterManager: { timeStart: undefined, timeEnd: undefined },
+    dashboardProvider: {
+      metricsViewsProvider: {
+        availableTimeGrains: ["TIME_GRAIN_DAY", "TIME_GRAIN_WEEK"],
+      },
+    },
+  } as unknown as CanvasEntity;
+  render(ControlBar, { controls: [grain], canvasEntity: entity });
+  await open();
+  const names = (await screen.findAllByRole("menuitemcheckbox")).map((item) =>
+    item.textContent?.trim(),
+  );
+  expect(names).toEqual(["Inherit from canvas", "Day", "Week"]);
 });

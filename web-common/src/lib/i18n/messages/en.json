@@ -538,6 +538,7 @@
   "canvas_control_dialog_kind": "Viewers choose",
   "canvas_control_dialog_label": "Label",
   "canvas_control_dialog_multiple": "Viewers can pick several values",
+  "canvas_control_dialog_multiple_single_select": "The canvas filter bar's single_select setting limits this dimension to one value.",
   "canvas_control_dialog_name": "URL name",
   "canvas_control_dialog_name_hint": "Identifies the control in dashboard links. Changing it breaks links that set this control.",
   "canvas_control_dialog_need_option": "Pick at least one option.",

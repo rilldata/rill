@@ -538,6 +538,7 @@
   "canvas_control_dialog_kind": "Los lectores eligen",
   "canvas_control_dialog_label": "Etiqueta",
   "canvas_control_dialog_multiple": "Los lectores pueden elegir varios valores",
+  "canvas_control_dialog_multiple_single_select": "La configuración single_select de la barra de filtros del lienzo limita esta dimensión a un solo valor.",
   "canvas_control_dialog_name": "Nombre en la URL",
   "canvas_control_dialog_name_hint": "Identifica el control en los enlaces del panel. Cambiarlo rompe los enlaces que fijan este control.",
   "canvas_control_dialog_need_option": "Elige al menos una opción.",

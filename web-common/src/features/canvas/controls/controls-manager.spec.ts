@@ -139,6 +139,53 @@ describe("ControlsManager", () => {
     expect(goto).toHaveBeenCalledWith("?");
   });
 
+  describe("after an edit of the canvas", () => {
+    const edited = (controls: V1CanvasSpec["controls"]) => ({
+      ...SPEC,
+      controls,
+    });
+
+    it("drops the values of removed and changed controls, and keeps the others", () => {
+      window.history.replaceState(
+        {},
+        "",
+        "/canvas?c.total_bids=spend&tr=P7D&c.deep_dive.publisher=Globex",
+      );
+      const onNavigate = vi.fn();
+      const manager = new ControlsManager(
+        writable(SPEC),
+        writable(new URLSearchParams()),
+        writable(true),
+        onNavigate,
+      );
+      const options = { replaceState: true, keepFocus: true, noScroll: true };
+
+      manager.forgetEdited(SPEC, edited([]));
+      expect(onNavigate).toHaveBeenCalledWith(
+        "tr=P7D&c.deep_dive.publisher=Globex",
+      );
+      expect(goto).toHaveBeenLastCalledWith(
+        "?tr=P7D&c.deep_dive.publisher=Globex",
+        options,
+      );
+
+      const fewerOptions = [{ ...SPEC.controls![0], options: ["total_bids"] }];
+      manager.forgetEdited(SPEC, edited(fewerOptions));
+      expect(goto).toHaveBeenLastCalledWith(
+        "?tr=P7D&c.deep_dive.publisher=Globex",
+        options,
+      );
+    });
+
+    it("leaves the URL alone when no control with a value changed", () => {
+      window.history.replaceState({}, "", "/canvas?c.total_bids=spend");
+      const { manager } = setup();
+      manager.forgetEdited(SPEC, { ...SPEC, displayName: "Renamed" });
+      manager.forgetEdited(undefined, edited([]));
+      expect(goto).not.toHaveBeenCalled();
+    });
+  });
+
   it("ignores URL values while controls are disabled", () => {
     const { manager, flag } = setup("c.total_bids=spend", false);
     expect(values(manager)["c.total_bids"]).toEqual(["total_bids"]);

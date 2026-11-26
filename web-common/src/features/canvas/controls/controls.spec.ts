@@ -104,6 +104,45 @@ describe("collectControls", () => {
   });
 });
 
+describe("single-select filters", () => {
+  const multi = {
+    kind: "filter",
+    target: "publisher",
+    name: "publisher",
+    multiple: true,
+    default: ["Google", "Meta"],
+  };
+  const resolved = (singleSelectFilters: string[], fields = {}) =>
+    collectControls({
+      singleSelectFilters,
+      controls: [{ ...multi, fields }],
+      rows: [{ items: [{ name: "chart", controls: [multi] }] }],
+    }).map((c) => c.control);
+
+  it("holds one value when the canvas lists the dimension under single_select", () => {
+    for (const control of resolved(["publisher"])) {
+      expect(control).toMatchObject({ multiple: false, default: ["Meta"] });
+      expect(parseControlValue(control, "Google,Yahoo")).toEqual({
+        values: ["Yahoo"],
+        valid: true,
+      });
+    }
+    expect(resolved(["pub_name"], { ads: "pub_name" })[0].multiple).toBe(false);
+    expect(resolved([]).map((c) => c.multiple)).toEqual([true, true]);
+  });
+
+  it("follows it for the widget's own controls too", () => {
+    const spec = {
+      singleSelectFilters: ["publisher"],
+      rows: [{ items: [{ name: "chart", controls: [multi] }] }],
+    };
+    expect(
+      controlsForPath(spec, ["rows", 0, "items", 0, "bar_chart"])[0].control
+        .multiple,
+    ).toBe(false);
+  });
+});
+
 describe("URL keys and values", () => {
   it("escapes dots and separators in key parts", () => {
     expect(controlUrlKey(["a.b", "c,d"], "x")).toBe("c.a%2Eb.c%2Cd.x");
