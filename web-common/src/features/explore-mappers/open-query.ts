@@ -3,6 +3,7 @@ import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/
 import { type MetricsResolverQueryMapperArgs } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getRuntimeServiceGetResourceQueryOptions,
   getRuntimeServiceListResourcesQueryKey,
   runtimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
@@ -36,10 +37,20 @@ export async function openQuery({
       metricsViewName,
     );
 
+    // A filter on the time dimension is moved to the explore's time range.
+    const metricsViewResp = await queryClient.fetchQuery(
+      getRuntimeServiceGetResourceQueryOptions(client, {
+        name: { kind: ResourceKind.MetricsView, name: metricsViewName },
+      }),
+    );
+    const timeDimension =
+      metricsViewResp.resource?.metricsView?.state?.validSpec?.timeDimension;
+
     // Generate the final explore URL
     exploreURL = generateExploreLink(
       mapArgs,
       exploreName,
+      timeDimension,
       organization,
       project,
     );
@@ -95,12 +106,16 @@ async function findExploreForMetricsView(
 function generateExploreLink(
   args: MetricsResolverQueryMapperArgs,
   exploreName: string,
+  timeDimension: string | undefined,
   organization?: string | undefined,
   project?: string | undefined,
 ): string {
   const url = getUrlForExplore(exploreName, organization, project);
 
-  const searchParams = convertMetricsResolverQueryToUrlParams(args);
+  const searchParams = convertMetricsResolverQueryToUrlParams(
+    args,
+    timeDimension,
+  );
 
   searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);

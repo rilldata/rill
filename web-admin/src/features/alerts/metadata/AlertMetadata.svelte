@@ -112,23 +112,26 @@
     }
   }
 
-  $: exploreUrlQuery = createQuery(
-    getMappedExploreUrlQueryOptions(
-      runtimeClient,
-      {
-        type: "query",
-        request: {
-          exploreName: $exploreName.data ?? "",
-          queryName,
-          queryArgsJson,
-        },
-        options: {
-          exploreProtoState: alertSpec?.annotations?.web_open_state,
-        },
+  $: exploreUrlQueryOptions = getMappedExploreUrlQueryOptions(
+    runtimeClient,
+    {
+      type: "query",
+      request: {
+        exploreName: $exploreName.data ?? "",
+        queryName,
+        queryArgsJson,
       },
-      { organization, project, embedded },
-    ),
+      options: {
+        exploreProtoState: alertSpec?.annotations?.web_open_state,
+      },
+    },
+    { organization, project, embedded },
   );
+  // Until the explore name loads, the url would fall back to the metrics view's name.
+  $: exploreUrlQuery = createQuery({
+    ...exploreUrlQueryOptions,
+    enabled: exploreUrlQueryOptions.enabled && $exploreName.data !== undefined,
+  });
   $: exploreUrl = $exploreUrlQuery.data;
 
   // Actions

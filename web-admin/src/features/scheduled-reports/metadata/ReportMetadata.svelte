@@ -129,13 +129,17 @@
           },
         }
   ) as MappedExploreUrlSource;
-  $: exploreUrlQuery = createQuery(
-    getMappedExploreUrlQueryOptions(runtimeClient, exploreUrlSource, {
-      organization,
-      project,
-      embedded,
-    }),
+  $: exploreUrlQueryOptions = getMappedExploreUrlQueryOptions(
+    runtimeClient,
+    exploreUrlSource,
+    { organization, project, embedded },
   );
+  // Until the explore name loads, the url would fall back to the metrics view's name.
+  $: exploreUrlQuery = createQuery({
+    ...exploreUrlQueryOptions,
+    enabled:
+      exploreUrlQueryOptions.enabled && $dashboardName.data !== undefined,
+  });
 
   // Canvas reports link to the canvas page with the captured state applied.
   $: canvasUrl = (() => {

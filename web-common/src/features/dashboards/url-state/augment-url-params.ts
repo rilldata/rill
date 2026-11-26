@@ -2,6 +2,7 @@ import { page } from "$app/state";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 
 /**
  * Builds the `web_open_state` of an alert or a report:
@@ -19,7 +20,7 @@ export function augmentUrlParams(
 ) {
   const urlParams = existingAnnotations
     ? convertStateParamToUrlParams(kind, existingAnnotations["web_open_state"])
-    : new URLSearchParams(page.url.search);
+    : expandCompressedParams(new URLSearchParams(page.url.search));
 
   expressionFilterManager.applyFilterToParams(urlParams);
   timeFilterManager.applyFilterToParams(urlParams);
@@ -32,6 +33,7 @@ export function augmentUrlParams(
 /**
  * Parses a saved `web_open_state`.
  * Explore state without a leading `?` predates url params and is a base64 encoded proto.
+ * Compressed state is expanded, since `gzipped_state` replaces any params added next to it.
  */
 export function convertStateParamToUrlParams(
   kind: "explore" | "canvas",
@@ -39,7 +41,7 @@ export function convertStateParamToUrlParams(
 ) {
   if (!state) return new URLSearchParams();
   if (kind === "canvas" || state.startsWith("?")) {
-    return new URLSearchParams(state);
+    return expandCompressedParams(new URLSearchParams(state));
   }
   return convertProtoToUrlParams(state);
 }

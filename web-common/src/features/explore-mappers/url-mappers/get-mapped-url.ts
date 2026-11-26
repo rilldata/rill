@@ -16,10 +16,12 @@ import {
   type AIResolverProps,
   mapAIResolverPropsToMetricsResolverQuery,
 } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
-import type {
-  V1MetricsViewAggregationRequest,
-  V1MetricsViewComparisonRequest,
+import {
+  getRuntimeServiceGetExploreQueryOptions,
+  type V1MetricsViewAggregationRequest,
+  type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 /**
  * What an explore url is mapped from:
@@ -42,7 +44,8 @@ export type MappedExploreUrlSource =
  * Mapping can fetch data (resolving time ranges, toplists for comparison measure filters), so it runs as a query:
  * callers get loading and error states, and results are cached across components.
  *
- * The specs are not fetched here; the url is validated when the explore is built from it.
+ * The url is validated when the explore is built from it,
+ * so specs are only fetched where the mapping itself needs them (the time dimension).
  */
 export function getMappedExploreUrlQueryOptions(
   client: RuntimeClient,
@@ -53,8 +56,10 @@ export function getMappedExploreUrlQueryOptions(
     queryKey: ["mapped-explore-url", client.instanceId, source, ctx] as const,
     queryFn: () => getMappedExploreUrl(client, source, ctx),
     enabled: canMapExploreUrl(source),
-    // Relative time ranges are resolved to absolute ones, so a cached url stays valid.
-    staleTime: Infinity,
+    // Relative time ranges are resolved to absolute ones against the execution time,
+    // so a cached url stays valid; without one they are resolved against now, which moves on.
+    staleTime:
+      source.type === "query" && !source.request.executionTime ? 0 : Infinity,
   };
 }
 
@@ -68,10 +73,17 @@ export async function getMappedExploreUrl(
 ) {
   if (source.type === "ai") {
     const path = getDashboardPath(ctx, "explore", source.exploreName);
-    // The resolver query's metrics view is not part of the url, so the explore's spec is not needed.
-    const search = convertMetricsResolverQueryToUrlParams({
-      query: mapAIResolverPropsToMetricsResolverQuery(source.props, ""),
-    }).toString();
+    // The resolver query's metrics view is not part of the url,
+    // but a filter on the time dimension is moved to the explore's time range.
+    const exploreResp = await queryClient.fetchQuery(
+      getRuntimeServiceGetExploreQueryOptions(client, {
+        name: source.exploreName,
+      }),
+    );
+    const search = convertMetricsResolverQueryToUrlParams(
+      { query: mapAIResolverPropsToMetricsResolverQuery(source.props, "") },
+      exploreResp.metricsView?.metricsView?.state?.validSpec?.timeDimension,
+    ).toString();
     return search ? `${path}?${search}` : path;
   }
 

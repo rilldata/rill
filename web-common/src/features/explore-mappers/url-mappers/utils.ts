@@ -3,7 +3,12 @@ import {
   convertV1TimeRangeToComparisonTimeOption,
   convertV1TimeRangeToTimeFilterParams,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { type V1TimeRange } from "@rilldata/web-common/runtime-client";
+import {
+  getRuntimeServiceGetResourceQueryOptions,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
@@ -16,6 +21,23 @@ export async function convertAPITimeRangesToUrlParams(
 ) {
   const urlParams = new URLSearchParams();
   if (!reqTimeRange) return urlParams;
+
+  // Metrics views without a time dimension have no time range to show;
+  // the runtime ignores a time range that does not name a time dimension.
+  const timeDimension =
+    reqTimeRange.timeDimension || reqComparisonTimeRange?.timeDimension;
+  if (!timeDimension) {
+    const metricsViewResp = await queryClient.fetchQuery(
+      getRuntimeServiceGetResourceQueryOptions(client, {
+        name: { kind: ResourceKind.MetricsView, name: metricsViewName },
+      }),
+    );
+    if (
+      !metricsViewResp.resource?.metricsView?.state?.validSpec?.timeDimension
+    ) {
+      return urlParams;
+    }
+  }
 
   const { timeRange, timeZone } =
     convertV1TimeRangeToTimeFilterParams(reqTimeRange);
