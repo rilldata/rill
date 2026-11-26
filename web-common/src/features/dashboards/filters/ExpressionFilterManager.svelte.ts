@@ -64,8 +64,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     dimensions: DimensionFilterManager[];
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
-  // Exclude mode chosen for a dimension filter that has no values yet, keyed by dimension name.
+  // Exclude mode chosen for a dimension that has no filter manager, keyed by dimension name.
   // An empty filter writes no param, so its manager is dropped and the mode would otherwise be lost.
+  // Once a manager exists it holds the mode itself, so the pending one is reset.
   // Only dimensions registered through `keepExcludeModeWhileEmpty` are tracked,
   // so the mode never carries over to a filter added elsewhere, from the filter bar for example.
   private readonly pendingExcludes = new SvelteMap<string, boolean>();
@@ -134,6 +135,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
     );
     this.on("filter-changed", () => {
       this.topLevelJoiner?.removeEmptyManagers();
+      // A chip edits its manager directly, so this is where a filter added from the filter bar is seen.
+      this.resetPendingExcludesWithManager();
       this.storeSync.stateChanged();
     });
 
@@ -257,6 +260,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
+    this.resetPendingExcludesWithManager();
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
@@ -324,10 +328,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     }
   }
 
-  // TODO: add return type based on callback type?
-  public dimensionFilterAction(
+  public dimensionFilterAction<T>(
     name: string,
-    callback: (dimensionFilterManager: DimensionFilterManager) => any,
+    callback: (dimensionFilterManager: DimensionFilterManager) => T,
     // Anything other than the filter bar reaches the managers through here,
     // so this is where a caller names itself as the cause of the change.
     source?: FilterChangeSource,
@@ -341,8 +344,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
-    // A filter without values starts from the exclude mode chosen for it.
-    if (!dimensionFilterManager.expr && this.pendingExcludes.get(name)) {
+    // A new manager starts from the exclude mode chosen for the dimension.
+    if (!this.filterManagersMap[name] && this.pendingExcludes.get(name)) {
       dimensionFilterManager.exclude = true;
     }
 
@@ -353,11 +356,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
     if (dimensionFilterManager.expr) {
       this.topLevelJoiner.maybeAddDimensionFilter(dimensionFilterManager);
     }
-    // Once the filter has values it holds the exclude mode itself.
+    // A manager left out of the filter is dropped, so its exclude mode is kept here.
     if (this.pendingExcludes.has(name)) {
       this.pendingExcludes.set(
         name,
-        !dimensionFilterManager.expr && dimensionFilterManager.exclude,
+        !this.filterManagersMap[name] && dimensionFilterManager.exclude,
       );
     }
     return ret;
@@ -365,14 +368,14 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   /**
    * Whether the filter on dimension `name` excludes its values.
-   * Falls back to the pending exclude mode while the filter has no values.
+   * Falls back to the pending exclude mode while the dimension has no filter manager.
    */
   public isDimensionExcluded(name: string) {
     const manager = this.filterManagersMap[name];
-    const exclude =
-      manager instanceof DimensionFilterManager && manager.exclude;
-    if (manager?.expr) return exclude;
-    return exclude || !!this.pendingExcludes.get(name);
+    if (manager) {
+      return manager instanceof DimensionFilterManager && manager.exclude;
+    }
+    return !!this.pendingExcludes.get(name);
   }
 
   /**
@@ -386,6 +389,12 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return () => {
       this.pendingExcludes.delete(name);
     };
+  }
+
+  private resetPendingExcludesWithManager() {
+    for (const name of this.pendingExcludes.keys()) {
+      if (this.filterManagersMap[name]) this.pendingExcludes.set(name, false);
+    }
   }
 
   public measureFilterAction(

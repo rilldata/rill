@@ -1031,6 +1031,31 @@ describe("exclude mode for a filter without values", () => {
     );
   });
 
+  it("drops exclude once a filter is added from the filter bar", () => {
+    const filterManager = createFilterManager();
+    filterManager.keepExcludeModeWhileEmpty(AD_BIDS_PUBLISHER_DIMENSION);
+
+    toggleExclude(filterManager);
+    filterManager.addNewFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
+      false,
+    );
+    // The chip edits its manager directly.
+    const chipManager = filterManager.filterManagersMap[
+      AD_BIDS_PUBLISHER_DIMENSION
+    ] as DimensionFilterManager;
+    chipManager.setSelectedValues(["Google"], false);
+    chipManager.clear();
+    expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
+      false,
+    );
+
+    toggleValue(filterManager, "Facebook");
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    );
+  });
+
   it("forgets exclude once the view stops tracking it", () => {
     const filterManager = createFilterManager();
     const stopTracking = filterManager.keepExcludeModeWhileEmpty(
