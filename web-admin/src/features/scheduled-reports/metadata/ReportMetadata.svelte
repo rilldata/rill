@@ -11,7 +11,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
-  import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
+  import {
+    getDashboardPath,
+    getSpecQuery,
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
@@ -152,7 +155,16 @@
     ).toString();
     return search ? `${path}?${search}` : path;
   })();
-  $: dashboardUrl = isCanvasReport ? canvasUrl : $exploreUrlQuery.data;
+  // The link is shown once the url is mapped; if mapping fails it still opens the explore, without the report's state.
+  $: dashboardUrl = isCanvasReport
+    ? canvasUrl
+    : $exploreUrlQuery.isError
+      ? getDashboardPath(
+          { organization, project, embedded },
+          "explore",
+          $dashboardName.data ?? "",
+        )
+      : $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();
@@ -266,10 +278,12 @@
                   </TooltipContent>
                 </Tooltip>
               </div>
-            {:else}
+            {:else if dashboardUrl}
               <a href={dashboardUrl}>
                 {dashboardTitle}
               </a>
+            {:else}
+              {dashboardTitle}
             {/if}
           </MetadataValue>
         {:else}

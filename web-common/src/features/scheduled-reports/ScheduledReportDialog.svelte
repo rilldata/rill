@@ -342,7 +342,8 @@
     );
     const webOpenState = augmentUrlParams(
       isCanvasReport ? "canvas" : "explore",
-      props.mode === "edit" ? props.reportSpec.annotations : undefined,
+      // An edited report keeps its own state, never the current page's url.
+      props.mode === "edit" ? (props.reportSpec.annotations ?? {}) : undefined,
       expressionFilterManager,
       timeFilterManager,
       (urlParams) => {

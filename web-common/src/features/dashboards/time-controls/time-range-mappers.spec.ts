@@ -138,6 +138,16 @@ describe("convertV1TimeRangeToComparisonTimeOption", () => {
       );
     });
   }
+
+  it("keeps an unparsable absolute comparison as is instead of throwing", () => {
+    const urlParams = convertV1TimeRangesToTimeFilterUrlParams(
+      { expression: "P7D" },
+      { start: "garbage", end: "2024-02-01T00:00:00Z" },
+    );
+    expect(urlParams.get(ExploreStateURLParams.ComparisonTimeRange)).toBe(
+      "garbage,2024-02-01T00:00:00Z",
+    );
+  });
 });
 
 describe("convertV1TimeRangesToTimeFilterUrlParams", () => {

@@ -217,7 +217,10 @@
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
           webOpenState: augmentUrlParams(
             "explore",
-            props.mode === "edit" ? props.alertSpec?.annotations : undefined,
+            // An edited alert keeps its own state, never the current page's url.
+            props.mode === "edit"
+              ? (props.alertSpec?.annotations ?? {})
+              : undefined,
             expressionFilterManager,
             timeFilterManager,
           ),

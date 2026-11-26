@@ -8,6 +8,7 @@
   import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createQuery } from "@tanstack/svelte-query";
+  import { toStore } from "svelte/store";
   import {
     type DashboardPathContext,
     getSpecQuery,
@@ -34,8 +35,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  // svelte-ignore state_referenced_locally
-  const query = getSpecQuery(reportSpec);
+  const query = $derived(getSpecQuery(reportSpec));
 
   // Reports without a query can't be mapped to a dashboard, so open the report page instead.
   $effect(() => {
@@ -44,24 +44,26 @@
     }
   });
 
-  // svelte-ignore state_referenced_locally
+  // A store of the options keeps the query in sync with the props, e.g. when the route is reused for another report.
   const exploreUrlQuery = createQuery(
-    getMappedExploreUrlQueryOptions(
-      runtimeClient,
-      {
-        type: "query",
-        request: {
-          exploreName,
-          ...query,
-          executionTime: executionTime ?? undefined,
+    toStore(() =>
+      getMappedExploreUrlQueryOptions(
+        runtimeClient,
+        {
+          type: "query",
+          request: {
+            exploreName,
+            ...query,
+            executionTime: executionTime ?? undefined,
+          },
+          options: {
+            exploreProtoState: reportSpec.annotations?.web_open_state,
+            forceOpenPivot: true,
+            ignoreFilters,
+          },
         },
-        options: {
-          exploreProtoState: reportSpec.annotations?.web_open_state,
-          forceOpenPivot: true,
-          ignoreFilters,
-        },
-      },
-      pathContext,
+        pathContext,
+      ),
     ),
   );
 

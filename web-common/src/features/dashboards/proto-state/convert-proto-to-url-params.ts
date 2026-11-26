@@ -19,6 +19,7 @@ import {
   createAndExpression,
   createSubQueryExpression,
   getAllIdentifiers,
+  maybeWrapAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
@@ -38,9 +39,13 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers.ts";
 import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param.ts";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param.ts";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
 import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
+import { convertAbsoluteTimeRangeToUrlParam } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
 /**
  * Converts the legacy base64 encoded proto dashboard state to explore url params.
@@ -117,7 +122,7 @@ function convertProtoFiltersToUrlParams(dashboard: DashboardState) {
   // Explore state keeps measure filters collapsed into the where filter as subqueries.
   // Older protos stored them separately in `having`, so merge those back in.
   if (dashboard.having.length) {
-    expr ??= createAndExpression([]);
+    expr = maybeWrapAndExpression(expr) ?? createAndExpression([]);
 
     dashboard.having.forEach((h) => {
       if (!h.filter) return;
@@ -152,15 +157,17 @@ function convertProtoTimeFieldsToUrlParams(
     if (timeRangeName) {
       urlParams.set(ExploreStateURLParams.TimeRange, timeRangeName);
     }
+
+    // The grain only applies along with its time range; without it the explore keeps its adaptive grain.
+    if (dashboard.timeGrain) {
+      const grain =
+        V1TimeGrainToToken[FromProtoTimeGrainMap[dashboard.timeGrain]];
+      if (grain) urlParams.set(ExploreStateURLParams.TimeGrain, grain);
+    }
   }
 
-  if (dashboard.timeGrain) {
-    const grain =
-      V1TimeGrainToToken[FromProtoTimeGrainMap[dashboard.timeGrain]];
-    if (grain) urlParams.set(ExploreStateURLParams.TimeGrain, grain);
-  }
-
-  // `showTimeComparison` is always written to the proto, so only a state with a comparison range sets the comparison.
+  // `showTimeComparison` is always written to the proto, so it is only read along with a comparison range,
+  // or when it turns the comparison on.
   if (dashboard.compareTimeRange) {
     // backwards compatibility
     const compareTimeRangeName = dashboard.showTimeComparison
@@ -171,6 +178,15 @@ function convertProtoTimeFieldsToUrlParams(
     urlParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
       compareTimeRangeName,
+    );
+  } else if (dashboard.showTimeComparison) {
+    // The explore used to derive the comparison range from its time range config,
+    // which needs the specs and the full time range; the url has no param for that,
+    // so this falls back to the previous period, the default when the explore configures no comparison.
+    // Older encoders always wrote the comparison range along with the flag, so this is not expected in practice.
+    urlParams.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      TimeComparisonOption.CONTIGUOUS,
     );
   }
 
@@ -204,7 +220,11 @@ function convertProtoTimeRangeToUrlParam(timeRange: DashboardTimeRange) {
 
   // Check custom first since TimeRangePreset has CUSTOM as well
   if (timeRange.timeStart && timeRange.timeEnd) {
-    return `${timeRange.timeStart.toDate().toISOString()},${timeRange.timeEnd.toDate().toISOString()}`;
+    // The legacy encoder stored milliseconds in `seconds`, so `Timestamp.toDate` cannot be used.
+    return convertAbsoluteTimeRangeToUrlParam(
+      new Date(Number(timeRange.timeStart.seconds)),
+      new Date(Number(timeRange.timeEnd.seconds)),
+    );
   }
 
   // backwards compatibility

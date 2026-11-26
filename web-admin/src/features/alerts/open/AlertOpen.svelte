@@ -8,6 +8,7 @@
   import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createQuery } from "@tanstack/svelte-query";
+  import { toStore } from "svelte/store";
   import {
     type DashboardPathContext,
     getSpecQuery,
@@ -35,8 +36,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  // svelte-ignore state_referenced_locally
-  const query = getSpecQuery(alertSpec);
+  const query = $derived(getSpecQuery(alertSpec));
 
   // Alerts without a query can't be mapped to a dashboard, so open the alert page instead.
   $effect(() => {
@@ -45,23 +45,25 @@
     }
   });
 
-  // svelte-ignore state_referenced_locally
+  // A store of the options keeps the query in sync with the props, e.g. when the route is reused for another alert.
   const exploreUrlQuery = createQuery(
-    getMappedExploreUrlQueryOptions(
-      runtimeClient,
-      {
-        type: "query",
-        request: {
-          exploreName,
-          ...query,
-          executionTime: executionTime ?? undefined,
+    toStore(() =>
+      getMappedExploreUrlQueryOptions(
+        runtimeClient,
+        {
+          type: "query",
+          request: {
+            exploreName,
+            ...query,
+            executionTime: executionTime ?? undefined,
+          },
+          options: {
+            exploreProtoState: alertSpec.annotations?.web_open_state,
+            ignoreFilters,
+          },
         },
-        options: {
-          exploreProtoState: alertSpec.annotations?.web_open_state,
-          ignoreFilters,
-        },
-      },
-      pathContext,
+        pathContext,
+      ),
     ),
   );
 

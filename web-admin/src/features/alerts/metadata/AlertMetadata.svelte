@@ -44,6 +44,7 @@
   import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
   import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
+  import { getDashboardPath } from "@rilldata/web-common/features/explore-mappers/utils";
 
   export let organization: string;
   export let project: string;
@@ -132,7 +133,14 @@
     ...exploreUrlQueryOptions,
     enabled: exploreUrlQueryOptions.enabled && $exploreName.data !== undefined,
   });
-  $: exploreUrl = $exploreUrlQuery.data;
+  // The link is shown once the url is mapped; if mapping fails it still opens the explore, without the alert's state.
+  $: exploreUrl = $exploreUrlQuery.isError
+    ? getDashboardPath(
+        { organization, project, embedded },
+        "explore",
+        $exploreName.data ?? "",
+      )
+    : $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();
@@ -219,10 +227,12 @@
                   </TooltipContent>
                 </Tooltip>
               </div>
-            {:else}
+            {:else if exploreUrl}
               <a href={exploreUrl}>
                 {dashboardTitle}
               </a>
+            {:else}
+              {dashboardTitle}
             {/if}
           </MetadataValue>
         {:else}

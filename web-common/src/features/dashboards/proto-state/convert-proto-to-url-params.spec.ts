@@ -31,8 +31,13 @@ import {
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
-const Start = Timestamp.fromDate(new Date("2024-01-01T00:00:00Z"));
-const End = Timestamp.fromDate(new Date("2024-02-01T00:00:00Z"));
+// The legacy encoder stored milliseconds in `seconds`.
+const Start = new Timestamp({
+  seconds: BigInt(new Date("2024-01-01T00:00:00Z").getTime()),
+});
+const End = new Timestamp({
+  seconds: BigInt(new Date("2024-02-01T00:00:00Z").getTime()),
+});
 
 const TestCases: {
   title: string;
@@ -46,6 +51,29 @@ const TestCases: {
         createAndExpression([
           createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
         ]),
+      ),
+      having: [
+        {
+          name: AD_BIDS_DOMAIN_DIMENSION,
+          filter: toExpressionProto(
+            createBinaryExpression(
+              AD_BIDS_IMPRESSIONS_MEASURE,
+              V1Operation.OPERATION_GT,
+              10,
+            ),
+          ),
+        },
+      ],
+    },
+    expected: {
+      f: "publisher IN ('Google') AND domain having (impressions GT 10)",
+    },
+  },
+  {
+    title: "legacy measure filters with a filter that is not a joiner",
+    state: {
+      where: toExpressionProto(
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
       ),
       having: [
         {
@@ -101,6 +129,19 @@ const TestCases: {
       showTimeComparison: false,
     },
     expected: { tr: "P7D", compare_tr: "" },
+  },
+  {
+    title: "time comparison turned on without a comparison range",
+    state: {
+      timeRange: { name: "P7D" },
+      showTimeComparison: true,
+    },
+    expected: { tr: "P7D", compare_tr: "rill-PP" },
+  },
+  {
+    title: "time grain without a time range",
+    state: { timeGrain: TimeGrain.TIME_GRAIN_DAY },
+    expected: {},
   },
   {
     title: "explore view",

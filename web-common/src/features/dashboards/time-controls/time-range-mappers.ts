@@ -264,12 +264,17 @@ export function convertAbsoluteTimeRangeToRillTime(
 /**
  * Formats an absolute range as the explore url's custom range, `start,end`.
  * Both ends are normalized to ISO strings with milliseconds, which the comparison and highlighted range params require.
+ * Invalid dates are kept as is, so the explore reports them instead of this throwing.
  */
 export function convertAbsoluteTimeRangeToUrlParam(
   start: string | Date,
   end: string | Date,
 ) {
-  return `${new Date(start).toISOString()},${new Date(end).toISOString()}`;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()))
+    return `${String(start)},${String(end)}`;
+  return `${startDate.toISOString()},${endDate.toISOString()}`;
 }
 
 // Returns the comparison option whose rill time offset ends the expression, such as "-1W" in "P7D offset -1W".
