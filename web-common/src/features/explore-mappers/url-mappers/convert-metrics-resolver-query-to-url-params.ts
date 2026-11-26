@@ -1,9 +1,10 @@
-import {
-  mapResolverExpressionToV1Expression,
-  type MetricsResolverQueryMapperArgs,
-} from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
+import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-resolver-expression-to-v1-expression.ts";
+import type { MetricsResolverQueryMapperArgs } from "@rilldata/web-common/features/explore-mappers/url-mappers/types.ts";
 import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
-import { filterIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers.ts";
 import {
@@ -11,10 +12,14 @@ import {
   ToURLParamSortTypeMap,
   ToURLParamTimeDimensionMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
+import { isAbsoluteTimeRange } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
-import { convertAbsoluteTimeRangeToUrlParam } from "@rilldata/web-common/features/explore-mappers/url-mappers/utils.ts";
+import {
+  convertAbsoluteTimeRangeToRillTime,
+  convertAbsoluteTimeRangeToUrlParam,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import type {
@@ -38,6 +43,8 @@ export function convertMetricsResolverQueryToUrlParams(
 ) {
   const searchParams = new URLSearchParams();
   const query = args.query;
+  // The runtime evaluates a query without a zone in UTC.
+  const timeZone = query.time_zone ?? "UTC";
 
   // Dimensions with a time floor are the time dimension at a grain; they are shown as time columns or charts.
   const dimensions = query.dimensions ?? [];
@@ -62,7 +69,7 @@ export function convertMetricsResolverQueryToUrlParams(
   }
 
   copyParamsToTarget(
-    convertResolverTimeRangesToUrlParams(query, args),
+    convertResolverTimeRangesToUrlParams(query, args, timeZone),
     searchParams,
   );
 
@@ -70,12 +77,18 @@ export function convertMetricsResolverQueryToUrlParams(
     convertResolverWhereToUrlParams(
       query,
       timeDimension ?? timeDimensions[0]?.compute?.time_floor?.dimension,
+      timeZone,
     ),
     searchParams,
   );
 
-  if (query.time_zone) {
-    searchParams.set(ExploreStateURLParams.TimeZone, query.time_zone);
+  // Absolute time ranges are written as wall-clock times in the zone, so it is pinned for them.
+  const timeRangeParam = searchParams.get(ExploreStateURLParams.TimeRange);
+  if (
+    query.time_zone ||
+    (timeRangeParam && isAbsoluteTimeRange(timeRangeParam))
+  ) {
+    searchParams.set(ExploreStateURLParams.TimeZone, timeZone);
   }
 
   copyParamsToTarget(
@@ -94,21 +107,23 @@ export function convertMetricsResolverQueryToUrlParams(
 function convertResolverTimeRangesToUrlParams(
   query: MetricsResolverQuery,
   args: MetricsResolverQueryMapperArgs,
+  timeZone: string,
 ) {
   const searchParams = new URLSearchParams();
 
   if (args.resolvedTimeRange) {
     searchParams.set(
       ExploreStateURLParams.TimeRange,
-      convertAbsoluteTimeRangeToUrlParam(
+      convertAbsoluteTimeRangeToRillTime(
         args.resolvedTimeRange.start!,
         args.resolvedTimeRange.end!,
+        timeZone,
       ),
     );
   } else {
     searchParams.set(
       ExploreStateURLParams.TimeRange,
-      convertResolverTimeRangeToUrlParam(query.time_range),
+      convertResolverTimeRangeToUrlParam(query.time_range, timeZone),
     );
   }
 
@@ -121,21 +136,35 @@ function convertResolverTimeRangesToUrlParams(
       ),
     );
   } else if (query.comparison_time_range) {
+    // The comparison param takes an absolute range as UTC instants.
+    const { start, end } = query.comparison_time_range;
     searchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      convertResolverTimeRangeToUrlParam(query.comparison_time_range),
+      start && end
+        ? convertAbsoluteTimeRangeToUrlParam(start, end)
+        : convertResolverTimeRangeToUrlParam(
+            query.comparison_time_range,
+            timeZone,
+          ),
     );
   }
 
   return searchParams;
 }
 
-function convertResolverTimeRangeToUrlParam(timeRange: TimeRange | undefined) {
+function convertResolverTimeRangeToUrlParam(
+  timeRange: TimeRange | undefined,
+  timeZone: string,
+) {
   // Default to "All Time" when no time range is specified
   if (!timeRange) return TimeRangePreset.ALL_TIME;
 
   if (timeRange.start && timeRange.end) {
-    return convertAbsoluteTimeRangeToUrlParam(timeRange.start, timeRange.end);
+    return convertAbsoluteTimeRangeToRillTime(
+      timeRange.start,
+      timeRange.end,
+      timeZone,
+    );
   } else if (timeRange.expression) {
     return timeRange.expression;
   } else if (timeRange.iso_duration) {
@@ -153,23 +182,28 @@ function convertResolverTimeRangeToUrlParam(timeRange: TimeRange | undefined) {
 function convertResolverWhereToUrlParams(
   query: MetricsResolverQuery,
   timeDimension: string | undefined,
+  timeZone: string,
 ) {
   const searchParams = new URLSearchParams();
   let where = mapResolverExpressionToV1Expression(query.where);
   if (!where) return searchParams;
 
   if (timeDimension) {
-    const timeRange = parseTimeRangeFromFilters(
+    const timeRangeParam = parseTimeRangeFromFilters(
       where,
       timeDimension,
-      query.time_zone ?? "UTC",
+      timeZone,
     );
-    if (timeRange?.start && timeRange.end) {
-      searchParams.set(
-        ExploreStateURLParams.TimeRange,
-        convertAbsoluteTimeRangeToUrlParam(timeRange.start, timeRange.end),
+    if (timeRangeParam) {
+      searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+      // The range is written as wall-clock times in the zone, so it is pinned.
+      searchParams.set(ExploreStateURLParams.TimeZone, timeZone);
+      // Wrapped so a lone condition on the time dimension is removed as well;
+      // only the children of a joiner are filtered.
+      where = filterIdentifiers(
+        createAndExpression([where]),
+        (_, i) => i !== timeDimension,
       );
-      where = filterIdentifiers(where, (_, i) => i !== timeDimension);
     }
   }
 

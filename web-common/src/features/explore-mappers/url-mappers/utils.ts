@@ -1,5 +1,6 @@
 import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
+  convertAbsoluteTimeRangeToRillTime,
   convertV1TimeRangeToComparisonTimeOption,
   convertV1TimeRangeToTimeFilterParams,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
@@ -24,23 +25,29 @@ export async function convertAPITimeRangesToUrlParams(
 
   // Metrics views without a time dimension have no time range to show;
   // the runtime ignores a time range that does not name a time dimension.
-  const timeDimension =
-    reqTimeRange.timeDimension || reqComparisonTimeRange?.timeDimension;
-  if (!timeDimension) {
-    const metricsViewResp = await queryClient.fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(client, {
-        name: { kind: ResourceKind.MetricsView, name: metricsViewName },
-      }),
-    );
-    if (
-      !metricsViewResp.resource?.metricsView?.state?.validSpec?.timeDimension
-    ) {
-      return urlParams;
+  const metricsViewResp = await queryClient.fetchQuery(
+    getRuntimeServiceGetResourceQueryOptions(client, {
+      name: { kind: ResourceKind.MetricsView, name: metricsViewName },
+    }),
+  );
+  if (!metricsViewResp.resource?.metricsView?.state?.validSpec?.timeDimension) {
+    // A range on another time dimension does filter the query,
+    // but the explore has no time controls to show it.
+    const timeDimension =
+      reqTimeRange.timeDimension || reqComparisonTimeRange?.timeDimension;
+    if (timeDimension) {
+      throw new Error(
+        `The explore cannot show this query's time range on "${timeDimension}".`,
+      );
     }
+    return urlParams;
   }
 
-  const { timeRange, timeZone } =
+  const { timeRange, timeZone: reqTimeZone } =
     convertV1TimeRangeToTimeFilterParams(reqTimeRange);
+  // The runtime resolves in UTC without a zone.
+  // Pin the url to the resolving zone so the dashboard reads the resolved range in the same zone.
+  const timeZone = reqTimeZone ?? "UTC";
   if (timeRange) {
     // Resolve time range overriding ref to `executionTime` and set to custom.
     // This keeps the time range consistent regardless of when the link is opened.
@@ -53,45 +60,28 @@ export async function convertAPITimeRangesToUrlParams(
       executionTime,
     });
     const resolvedAbsTimeRange = absTimeRangeResp.resolvedTimeRanges?.[0];
-    if (resolvedAbsTimeRange) {
+    if (resolvedAbsTimeRange?.start && resolvedAbsTimeRange.end) {
       urlParams.set(
         ExploreStateURLParams.TimeRange,
-        `${resolvedAbsTimeRange.start} to ${resolvedAbsTimeRange.end}`,
+        convertAbsoluteTimeRangeToRillTime(
+          resolvedAbsTimeRange.start,
+          resolvedAbsTimeRange.end,
+          timeZone,
+        ),
       );
     }
   }
 
-  if (timeZone) {
-    urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
-  }
+  urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
 
   if (reqComparisonTimeRange) {
-    // The explore url only takes an absolute comparison as `start,end`.
-    const comparisonParam =
-      reqComparisonTimeRange.start && reqComparisonTimeRange.end
-        ? convertAbsoluteTimeRangeToUrlParam(
-            reqComparisonTimeRange.start,
-            reqComparisonTimeRange.end,
-          )
-        : convertV1TimeRangeToComparisonTimeOption(
-            reqTimeRange,
-            reqComparisonTimeRange,
-          );
+    const comparisonParam = convertV1TimeRangeToComparisonTimeOption(
+      reqComparisonTimeRange,
+    );
     if (comparisonParam) {
       urlParams.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
     }
   }
 
   return urlParams;
-}
-
-/**
- * Formats an absolute range as the explore url's custom range, `start,end`.
- * Both ends are normalized to ISO strings with milliseconds, which the comparison and highlighted range params require.
- */
-export function convertAbsoluteTimeRangeToUrlParam(
-  start: string | Date,
-  end: string | Date,
-) {
-  return `${new Date(start).toISOString()},${new Date(end).toISOString()}`;
 }

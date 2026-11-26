@@ -21,7 +21,10 @@ import {
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import {
+  convertExpressionToFilterParam,
+  convertFilterParamToExpression,
+} from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -68,7 +71,12 @@ export async function convertAggregationRequestToUrlParams({
   );
 
   copyParamsToTarget(
-    await convertFiltersToUrlParams(client, req, ignoreFilters),
+    await convertFiltersToUrlParams(
+      client,
+      req,
+      ignoreFilters,
+      searchParams.get(ExploreStateURLParams.Filters),
+    ),
     searchParams,
   );
 
@@ -112,10 +120,15 @@ export async function convertAggregationRequestToUrlParams({
   return searchParams;
 }
 
+/**
+ * @param savedFilterParam The saved state's filter param.
+ * The request only carries the expression, so the saved param tells which dimensions use an In List filter.
+ */
 async function convertFiltersToUrlParams(
   client: RuntimeClient,
   req: V1MetricsViewAggregationRequest,
   ignoreFilters: boolean | undefined,
+  savedFilterParam: string | null,
 ) {
   const searchParams = new URLSearchParams();
 
@@ -162,9 +175,12 @@ async function convertFiltersToUrlParams(
   }
 
   if (where) {
+    const { dimensionsWithInlistFilter } = savedFilterParam
+      ? convertFilterParamToExpression(savedFilterParam)
+      : { dimensionsWithInlistFilter: [] };
     searchParams.set(
       ExploreStateURLParams.Filters,
-      convertExpressionToFilterParam(where, []),
+      convertExpressionToFilterParam(where, dimensionsWithInlistFilter),
     );
   }
 

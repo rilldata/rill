@@ -1,9 +1,13 @@
 import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import {
   convertTimeManagerComparisonRangeToV1TimeRange,
-  convertV1TimeRangeToSelectedComparisonTimeRange,
   convertV1TimeRangesToTimeFilterUrlParams,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import {
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_METRICS_INIT_WITH_TIME,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
@@ -66,29 +70,28 @@ describe("convertTimeManagerComparisonRangeToV1TimeRange", () => {
   }
 });
 
-describe("convertV1TimeRangeToSelectedComparisonTimeRange", () => {
-  const TimeRangeSummary = {
-    min: "2024-01-01T00:00:00Z",
-    max: "2024-02-01T00:00:00Z",
-  };
-
+describe("convertV1TimeRangeToComparisonTimeOption", () => {
   const TestCases: {
     title: string;
+    timeRange: V1TimeRange;
     comparisonTimeRange: V1TimeRange;
     expected: TimeComparisonOption;
   }[] = [
     {
       title: "reads the comparison from the offset of an expression",
+      timeRange: { expression: "P7D" },
       comparisonTimeRange: { expression: "P7D offset -1W" },
       expected: TimeComparisonOption.WEEK,
     },
     {
       title: "reads the previous period from the offset of an expression",
+      timeRange: { expression: "P1D" },
       comparisonTimeRange: { expression: "P1D offset -1P" },
       expected: TimeComparisonOption.CONTIGUOUS,
     },
     {
       title: "reads the comparison from a legacy offset",
+      timeRange: { isoDuration: "P1D" },
       comparisonTimeRange: {
         isoDuration: "P1D",
         isoOffset: TimeComparisonOption.DAY,
@@ -97,20 +100,42 @@ describe("convertV1TimeRangeToSelectedComparisonTimeRange", () => {
     },
     {
       title: "reads the previous period from a legacy offset",
+      timeRange: { isoDuration: "P7D" },
       comparisonTimeRange: { isoDuration: "P7D", isoOffset: "P7D" },
+      expected: TimeComparisonOption.CONTIGUOUS,
+    },
+    {
+      title:
+        "reads the previous period from a legacy duration without an offset",
+      timeRange: { isoDuration: "P7D" },
+      comparisonTimeRange: { isoDuration: "P7D" },
       expected: TimeComparisonOption.CONTIGUOUS,
     },
   ];
 
-  for (const { title, comparisonTimeRange, expected } of TestCases) {
+  for (const { title, timeRange, comparisonTimeRange, expected } of TestCases) {
     it(title, () => {
-      expect(
-        convertV1TimeRangeToSelectedComparisonTimeRange(
-          comparisonTimeRange,
-          TimeRangeSummary,
-          TimeRangeSummary.max,
-        )?.name,
-      ).toBe(expected);
+      const urlParams = convertV1TimeRangesToTimeFilterUrlParams(
+        timeRange,
+        comparisonTimeRange,
+      );
+      expect(urlParams.get(ExploreStateURLParams.ComparisonTimeRange)).toBe(
+        expected,
+      );
+
+      // The dashboard opens with the comparison on.
+      const { partialExploreState, errors } =
+        convertURLSearchParamsToExploreState(
+          urlParams,
+          AD_BIDS_METRICS_INIT_WITH_TIME,
+          AD_BIDS_EXPLORE_INIT,
+          {},
+        );
+      expect(errors).toEqual([]);
+      expect(partialExploreState.showTimeComparison).toBe(true);
+      expect(partialExploreState.selectedComparisonTimeRange?.name).toBe(
+        expected,
+      );
     });
   }
 });
@@ -129,7 +154,7 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
         end: "2026-03-02T05:00:00Z",
         timeZone: "America/New_York",
       },
-      expectedTimeRange: "2026-03-01T00:00:00.000Z to 2026-03-02T00:00:00.000Z",
+      expectedTimeRange: "2026-03-01T00:00:00.000Z,2026-03-02T00:00:00.000Z",
       expectedTimeZone: "America/New_York",
     },
     {
@@ -139,7 +164,7 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
         start: "2026-03-01T05:00:00Z",
         end: "2026-03-02T05:00:00Z",
       },
-      expectedTimeRange: "2026-03-01T05:00:00.000Z to 2026-03-02T05:00:00.000Z",
+      expectedTimeRange: "2026-03-01T05:00:00.000Z,2026-03-02T05:00:00.000Z",
       expectedTimeZone: "UTC",
     },
     {

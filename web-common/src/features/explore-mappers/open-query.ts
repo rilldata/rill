@@ -1,6 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
-import { type MetricsResolverQueryMapperArgs } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
+import type { MetricsResolverQueryMapperArgs } from "@rilldata/web-common/features/explore-mappers/url-mappers/types.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetResourceQueryOptions,

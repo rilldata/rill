@@ -2,8 +2,8 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type {
   MapQueryRequest,
   MapQueryStateOptions,
-} from "@rilldata/web-common/features/explore-mappers/map-to-explore.ts";
-import type { QueryRequests } from "@rilldata/web-common/features/explore-mappers/types.ts";
+  QueryRequests,
+} from "@rilldata/web-common/features/explore-mappers/url-mappers/types.ts";
 import {
   convertRequestKeysToCamelCase,
   type DashboardPathContext,
