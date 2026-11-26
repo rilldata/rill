@@ -271,13 +271,6 @@ export async function maybeDeleteFileArtifact(
   return deleteFileArtifact(client, filePath, force);
 }
 
-export async function waitForControllerRestart(
-  client: RuntimeClient,
-  queryClient: QueryClient,
-) {
-  await waitForProjectParserVersion(client, 1, queryClient);
-}
-
 function extractMessage(msg: string) {
   if (msg.endsWith("directory not empty")) return "directory not empty";
   return msg;

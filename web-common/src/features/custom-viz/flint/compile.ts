@@ -105,6 +105,7 @@ export function compileFlintSpec({
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
   deferToTheme(vegaSpec, authored);
+  orderSeries(vegaSpec);
   applyMeasureFormatters(vegaSpec, measureFields);
   switch (spec.chartType) {
     case "Bump Chart":
@@ -124,6 +125,7 @@ export function compileFlintSpec({
       break;
   }
   labelDerivedEncodings(vegaSpec, fields, measureFields);
+  formatMeasureLegends(vegaSpec);
   labelFoldedSeries(vegaSpec, fields);
   formatDiscreteTimeAxes(vegaSpec, fields.semantic_types);
   formatNormalizedStackAxes(vegaSpec);
@@ -1400,6 +1402,122 @@ function dropFlintLegendLayout(legend: Record<string, unknown>): void {
   }
 }
 
+/** The channels a series is drawn on apart from its color: the bars of a group, a line's dash, a point's shape. */
+const SERIES_CHANNELS = [
+  "color",
+  "fill",
+  "stroke",
+  "xOffset",
+  "yOffset",
+  "strokeDash",
+  "shape",
+];
+
+/** The columns a series' total, and its place among the series by it, are derived into. */
+const SERIES_TOTAL_FIELD = "__rill_series_total";
+const SERIES_PLACE_FIELD = "__rill_series_place";
+
+/**
+ * Flint lists a chart's series in the order their rows arrive (`sort: null`), in the legend and so
+ * in the colors they take. The query of a chart over time is ordered by time, which leaves the
+ * order of each bucket's rows to the database: it changed from one load to the next, and every
+ * series changed color with it.
+ *
+ * Where the author gave the series no order (`sortBy`, `sortOrder`), they are ordered by their
+ * total of the measure the chart draws, largest first, as a built-in chart orders the values it
+ * splits by. A chart with a measure on both axes, or on neither, keeps the rows' order, and so
+ * does a pie, whose slices are drawn in that order. So do the series of Flint's own columns.
+ *
+ * Series of one total are ordered by name. Vega-Lite sorts a scale by a single field, and Vega
+ * lists the values that tie on it as their rows arrive, so sorting by the total alone left such
+ * series, those of no value among them, to swap colors as before. The view derives each
+ * series' place in the order as a column instead, and the scale is sorted by that.
+ *
+ * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
+ * listed by name alone. So are the series the author typed as ordinal: their values, such as
+ * years or levels, have an order of their own, which their totals would scramble.
+ *
+ * A layer draws the measure of the view it is layered in where it does not draw one of its own,
+ * as a bullet chart's bars do.
+ */
+function orderSeries(
+  view: Record<string, unknown>,
+  inherited: Record<string, EncodingRecord> = {},
+): void {
+  const own = encodingsOf(view);
+  const encodings = { ...inherited, ...own };
+  orderViewSeries(view, own, encodings);
+  for (const { view: child, layered } of childViews(view)) {
+    orderSeries(child, layered ? encodings : {});
+  }
+}
+
+/** Orders the series a view draws itself, by the measure it draws or is layered over. */
+function orderViewSeries(
+  view: Record<string, unknown>,
+  own: Record<string, EncodingRecord>,
+  encodings: Record<string, EncodingRecord>,
+): void {
+  const mark = view.mark as string | Record<string, unknown> | undefined;
+  const markType = typeof mark === "object" ? mark.type : mark;
+  if (markType === "arc") return;
+  const measures = [encodings.x, encodings.y].filter(
+    (encoding) =>
+      encoding &&
+      !Array.isArray(encoding) &&
+      encoding.type === "quantitative" &&
+      typeof encoding.field === "string" &&
+      !encoding.field.startsWith("__") &&
+      !encoding.bin,
+  );
+  if (measures.length !== 1) return;
+  // The column each field's series are placed in: several channels may draw one field.
+  const places = new Map<string, string>();
+  for (const channel of SERIES_CHANNELS) {
+    // A series drawn by the view this one is layered in is ordered there.
+    const encoding = own[channel];
+    if (
+      !encoding ||
+      Array.isArray(encoding) ||
+      !isDiscrete(encoding) ||
+      encoding.sort !== null ||
+      typeof encoding.field !== "string" ||
+      encoding.field.startsWith("__")
+    ) {
+      continue;
+    }
+    if (
+      encoding.type === "ordinal" ||
+      COMPOSITE_MARKS.has(markType as string)
+    ) {
+      encoding.sort = "ascending";
+      continue;
+    }
+    let place = places.get(encoding.field);
+    if (!place) {
+      const suffix = places.size ? `_${places.size + 1}` : "";
+      const total = SERIES_TOTAL_FIELD + suffix;
+      place = SERIES_PLACE_FIELD + suffix;
+      places.set(encoding.field, place);
+      view.transform = [
+        ...((view.transform as unknown[] | undefined) ?? []),
+        {
+          joinaggregate: [{ op: "sum", field: measures[0].field, as: total }],
+          groupby: [encoding.field],
+        },
+        {
+          window: [{ op: "dense_rank", as: place }],
+          sort: [
+            { field: total, order: "descending" },
+            { field: encoding.field, order: "ascending" },
+          ],
+        },
+      ];
+    }
+    encoding.sort = { field: place, op: "min" };
+  }
+}
+
 /** The series key of Flint's multi-measure fold; its values are the folded fields' names. */
 const SERIES_KEY = "__flint_series_key";
 
@@ -1516,18 +1634,30 @@ const LEGEND_CHANNELS = new Set([
  */
 function layersOf(spec: Record<string, unknown>): Record<string, unknown>[] {
   const views = [spec];
+  for (const { view } of childViews(spec)) views.push(...layersOf(view));
+  return views;
+}
+
+/**
+ * The views nested directly in a view, each with whether it is a layer: of them, only a layer
+ * draws the encoding of the view it is in.
+ */
+function childViews(
+  spec: Record<string, unknown>,
+): { view: Record<string, unknown>; layered: boolean }[] {
+  const children: { view: Record<string, unknown>; layered: boolean }[] = [];
   const wrapped = spec.spec;
   if (wrapped && typeof wrapped === "object") {
-    views.push(...layersOf(wrapped as Record<string, unknown>));
+    children.push({ view: wrapped as Record<string, unknown>, layered: false });
   }
   for (const key of ["layer", "hconcat", "vconcat", "concat"]) {
-    const children = spec[key];
-    if (!Array.isArray(children)) continue;
-    for (const child of children as Record<string, unknown>[]) {
-      views.push(...layersOf(child));
+    const nested = spec[key];
+    if (!Array.isArray(nested)) continue;
+    for (const view of nested as Record<string, unknown>[]) {
+      children.push({ view, layered: key === "layer" });
     }
   }
-  return views;
+  return children;
 }
 
 function encodingsOf(
@@ -1612,6 +1742,34 @@ function labelDerivedEncodings(
       ) {
         encoding.title = fields.field_display_names[encoding.field];
       }
+    }
+  }
+}
+
+/**
+ * A legend of a measure's values, the sizes of a bubble chart or the colors of a heatmap, printed
+ * them in Vega's own number format: a rate of 0.5% read "5m" beside an axis that read "0.5%".
+ * Vega-Lite takes a legend's format from the legend alone, so each legend of an encoding that was
+ * given a measure's formatter states it too. Flint's own `format` goes, as it does on an axis.
+ */
+function formatMeasureLegends(spec: Record<string, unknown>): void {
+  for (const view of layersOf(spec)) {
+    for (const [channel, encoding] of channelsOf(view)) {
+      if (
+        Array.isArray(encoding) ||
+        !(LEGEND_CHANNELS.has(channel) || COLOR_CHANNELS.has(channel)) ||
+        encoding.type !== "quantitative" ||
+        typeof encoding.formatType !== "string" ||
+        encoding.legend === null
+      ) {
+        continue;
+      }
+      const legend: Record<string, unknown> = {
+        ...encoding.legend,
+        formatType: encoding.formatType,
+      };
+      delete legend.format;
+      encoding.legend = legend;
     }
   }
 }

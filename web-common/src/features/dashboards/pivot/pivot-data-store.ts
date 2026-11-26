@@ -65,6 +65,7 @@ import {
   getTotalColumnCount,
   getUriMeasuresForDimensions,
   isTimeDimension,
+  pivotShowsData,
   splitPivotChips,
 } from "./pivot-utils";
 import {
@@ -158,8 +159,11 @@ export function createPivotDataStore(
     }
 
     if (
-      (!rowDimensionNames.length && !measureNames.length) ||
-      (colDimensionNames.length && !measureNames.length)
+      !pivotShowsData({
+        rowDimensions: rowDimensionNames.length,
+        columnDimensions: colDimensionNames.length,
+        measures: measureNames.length,
+      })
     ) {
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(config.pivot.columns);

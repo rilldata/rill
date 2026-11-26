@@ -105,6 +105,16 @@ Set project-wide default time ranges and available options for all canvas dashbo
 [Learn more about canvas defaults →](/developers/build/project-configuration#canvas-defaults)
 ::: 
 
+## Banner
+
+Add a `banner` to show a message above the dashboard, for example to announce a data delay or to link to documentation:
+
+```yaml
+banner: "**Heads up:** the March numbers are *preliminary*. See the [release notes](https://example.com/notes)."
+```
+
+The banner supports inline markdown: bold, italics, strikethrough, inline code, and links, which open in a new tab. Quote the value so that YAML reads the markdown characters as text. A banner is a single line, so block-level markdown such as headings, lists, and images isn't rendered.
+
 ## Default Filters
 
 Dashboard creators can configure default filters to establish a consistent starting point for viewers. Filters are defined as Metrics SQL WHERE expressions, keyed by the metrics view name they apply to.

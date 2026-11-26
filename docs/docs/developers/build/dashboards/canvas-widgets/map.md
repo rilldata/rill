@@ -246,7 +246,7 @@ To shade regions that aren't built in, such as Nielsen DMAs, sales territories, 
 
 | Property | Required | Description |
 |----------|----------|-------------|
-| `file` | Yes | Path of the boundary file from the project root. It must be directly inside one of the project's [`public_paths`](/reference/project-files/rill-yaml#public_paths), which default to `public`; files in subfolders aren't served. |
+| `file` | Yes | Path of the boundary file from the project root. It can be anywhere under one of the project's [`public_paths`](/reference/project-files/rill-yaml#public_paths), which default to `public`, including in a subfolder such as `public/maps/dma.topojson`. |
 | `id` | Yes | Feature property that identifies each region. The values of `dimension` are matched against it, ignoring case, punctuation, and leading zeros. Features without this property use their top-level GeoJSON `id` instead. |
 | `name` | No | Feature property shown as the region name in tooltips. Defaults to the `id` property. |
 

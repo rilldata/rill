@@ -5,7 +5,8 @@ import {
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 import { generateYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import {
   generateSourceYAML,
   prepareSourceFormData,
@@ -19,7 +20,7 @@ export function getConnectorYAML({
   formValues,
   envEditSession,
 }: {
-  connector: V1ConnectorDriver;
+  connector: PartialMessage<ConnectorDriver>;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
   envEditSession: EnvEditSession;
@@ -56,7 +57,7 @@ export function getSourceYAML({
   outputConnector,
 }: {
   connectorName: string;
-  connector: V1ConnectorDriver;
+  connector: PartialMessage<ConnectorDriver>;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
   envEditSession: EnvEditSession;

@@ -12,6 +12,7 @@
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { structToJson } from "@rilldata/web-common/lib/proto-utils";
   import {
     createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
@@ -161,7 +162,8 @@
             .filter((connector) => connector.driver!.implementsOlap)
             .some((connector) => {
               const isDuckDB = connector.driver!.name === "duckdb";
-              const isMotherDuck = isDuckDB && !!connector.config?.access_token;
+              const isMotherDuck =
+                isDuckDB && !!structToJson(connector.config)?.access_token;
               const isDuckDBButNotMotherDuck = isDuckDB && !isMotherDuck;
               return !isDuckDBButNotMotherDuck;
             });

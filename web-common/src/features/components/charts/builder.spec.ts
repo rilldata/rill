@@ -1,6 +1,10 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
-import { createPositionEncoding } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  createColorEncoding,
+  createPositionEncoding,
+  createSizeEncoding,
+} from "@rilldata/web-common/features/components/charts/builder";
 import { generateVLBarChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/bar-chart/spec";
 import { generateVLLineChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/line-chart/spec";
 import chroma from "chroma-js";
@@ -83,6 +87,72 @@ describe("chart builder Vega field escaping", () => {
     expect(() => parseExpression(tooltipExpression!)).not.toThrow();
     expect(JSON.stringify(vegaSpec)).toContain(
       "Alpha [Beta](https://x.test/p)",
+    );
+  });
+});
+
+describe("measure legends", () => {
+  const data = chartDataForDimensionValue("unused");
+
+  /** The legends Vega-Lite compiles for a chart of one mark and these encodings. */
+  async function compiledLegends(
+    encoding: Record<string, unknown>,
+    legend?: object,
+  ) {
+    stubCanvasContext();
+    const { compile } = await import("vega-lite");
+    return (
+      compile(
+        {
+          data: { values: [{ post_title: "a", post_count: 1 }] },
+          mark: "point",
+          encoding,
+        } as TopLevelSpec,
+        { config: { customFormatTypes: true, ...(legend && { legend }) } },
+      ).spec.legends ?? []
+    );
+  }
+
+  it("formats a measure's legend with the measure's formatter", async () => {
+    const color = createColorEncoding(
+      { field: "post_count", type: "quantitative" },
+      data,
+    );
+    const size = createSizeEncoding(
+      { field: "post_count", type: "quantitative" },
+      data,
+      { field: "post_title", type: "nominal" },
+    );
+    // Vega's own number format read "1.8M" for revenue, beside a tooltip that read "$1.8M".
+    for (const encoding of [{ color }, { size }]) {
+      const legends = await compiledLegends(encoding);
+      expect(legends).toHaveLength(1);
+      expect(JSON.stringify(legends[0].encode?.labels)).toContain(
+        "post_count(",
+      );
+    }
+
+    // A dimension's legend prints its values as they are.
+    expect(
+      createColorEncoding({ field: "post_title", type: "nominal" }, data),
+    ).not.toHaveProperty("legend");
+  });
+
+  it("gives a hidden legend nothing of its own", async () => {
+    // `legendOrientation: none` turns legends off in the chart's config, and Vega-Lite draws
+    // any legend that states a property whatever that config says.
+    const hidden = { legendOrientation: "none" } as const;
+    const color = createColorEncoding(
+      { field: "post_count", type: "quantitative", ...hidden },
+      data,
+    );
+    const size = createSizeEncoding(
+      { field: "post_count", type: "quantitative" },
+      data,
+      { field: "post_title", type: "nominal", ...hidden },
+    );
+    expect(await compiledLegends({ color, size }, { disable: true })).toEqual(
+      [],
     );
   });
 });

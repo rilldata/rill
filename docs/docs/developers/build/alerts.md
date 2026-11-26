@@ -11,6 +11,12 @@ Alerts in Rill allow you to monitor your data and receive notifications when spe
 
 When you create an alert via a YAML file, it appears in the UI marked as `Created through code`.
 
+:::note Alerts run in Rill Cloud
+
+Alerts defined in YAML run after you deploy the project to [Rill Cloud](/developers/deploy/deploy-dashboard). Rill Developer doesn't run them or send their notifications, and `refresh.run_in_dev: true` doesn't change that.
+
+:::
+
 :::tip Using live connectors?
 
 If you're using [live connectors](/developers/build/connectors/olap) (ClickHouse, Druid, Pinot, StarRocks, etc.), **alerts are your primary tool for data quality monitoring**. Since live connectors don't create local models, [data quality tests](/developers/build/models/data-quality-tests) won't run. Use alerts instead to validate your data on a schedule.

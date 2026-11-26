@@ -643,10 +643,7 @@ export function getConnectorServiceListBucketsInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -727,10 +724,7 @@ export function getConnectorServiceListObjectsInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -814,10 +808,7 @@ export function getConnectorServiceOLAPListTablesInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -907,10 +898,7 @@ export function getConnectorServiceListDatabaseSchemasInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -995,10 +983,7 @@ export function getConnectorServiceListTablesInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<

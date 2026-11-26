@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { getMinWidth, getOptimalColumns } from "./index";
+import {
+  getBigNumberMinWidth,
+  getMinWidth,
+  getOptimalColumns,
+  KPI_SIZES,
+  KPI_VALUE_FONT_SIZES,
+  resolveKPISize,
+} from "./index";
 
 describe("getMinWidth", () => {
   it("returns correct width for sparkline right", () => {
-    expect(getMinWidth("right")).toBe(328); // SPARK_RIGHT_MIN
+    expect(getMinWidth("right")).toBe(328); // sparkline + gap + big number + padding
   });
 
   it("returns correct width for sparkline bottom", () => {
-    expect(getMinWidth("bottom")).toBe(192); // BIG_NUMBER_MIN_WIDTH + padding
+    expect(getMinWidth("bottom")).toBe(192); // big number + padding
   });
 
   it("returns correct width for sparkline none", () => {
@@ -16,6 +23,83 @@ describe("getMinWidth", () => {
 
   it("returns correct width for undefined", () => {
     expect(getMinWidth(undefined)).toBe(192);
+  });
+
+  it("keeps the default widths for the medium size", () => {
+    expect(getMinWidth("bottom", "medium")).toBe(getMinWidth("bottom"));
+    expect(getMinWidth("right", "medium")).toBe(getMinWidth("right"));
+    expect(getBigNumberMinWidth("medium")).toBe(getBigNumberMinWidth());
+  });
+
+  it("grows with the size preset", () => {
+    for (const sparkline of ["none", "bottom", "right"] as const) {
+      const widths = (["small", "medium", "large", "xlarge"] as const).map(
+        (size) => getMinWidth(sparkline, size),
+      );
+      expect(widths).toEqual([...widths].sort((a, b) => a - b));
+      expect(new Set(widths).size).toBe(widths.length);
+    }
+  });
+});
+
+describe("getBigNumberMinWidth", () => {
+  it("keeps today's medium column widths for each number of comparison values", () => {
+    expect([0, 1, 2, 3].map((n) => getBigNumberMinWidth("medium", n))).toEqual([
+      130, 140, 150, 160,
+    ]);
+  });
+
+  // A formatted value's width is proportional to its font size, so a column
+  // that grows at least as fast as the font fits every value the medium
+  // column fits. Before, the xlarge column with two comparison values was
+  // 294px, too narrow for "1,234,567" (142px at 30px, so 303px at 64px).
+  it("grows at least in proportion to the value's font size", () => {
+    for (const size of KPI_SIZES) {
+      for (const n of [0, 1, 2, 3]) {
+        expect(
+          getBigNumberMinWidth(size, n) / KPI_VALUE_FONT_SIZES[size],
+        ).toBeGreaterThanOrEqual(
+          getBigNumberMinWidth("medium", n) / KPI_VALUE_FONT_SIZES.medium,
+        );
+      }
+    }
+    expect(getBigNumberMinWidth("xlarge", 2)).toBeGreaterThanOrEqual(
+      (142 * 64) / 30,
+    );
+  });
+});
+
+describe("resolveKPISize", () => {
+  it("returns the preset when it is one of the sizes", () => {
+    expect(resolveKPISize("small")).toBe("small");
+    expect(resolveKPISize("xlarge")).toBe("xlarge");
+  });
+
+  it("falls back to medium when the size is absent or unknown", () => {
+    expect(resolveKPISize(undefined)).toBe("medium");
+    expect(resolveKPISize("")).toBe("medium");
+    expect(resolveKPISize("huge")).toBe("medium");
+    expect(resolveKPISize(48)).toBe("medium");
+  });
+});
+
+describe("grid columns per size", () => {
+  // Four KPIs in a full-width widget of a 1200px canvas.
+  const columns = (size: Parameters<typeof getMinWidth>[1]) =>
+    getOptimalColumns(4, 1180, getMinWidth("bottom", size));
+
+  it("fits fewer cards per row as the size grows", () => {
+    expect(columns("small")).toBe(4);
+    expect(columns("medium")).toBe(4);
+    expect(columns("large")).toBe(4);
+    expect(columns("xlarge")).toBe(2);
+  });
+
+  it("fits more small cards than medium ones in a narrow widget", () => {
+    const narrow = (size: Parameters<typeof getMinWidth>[1]) =>
+      getOptimalColumns(4, 580, getMinWidth("bottom", size));
+    expect(narrow("small")).toBe(4);
+    expect(narrow("medium")).toBe(2);
   });
 });
 

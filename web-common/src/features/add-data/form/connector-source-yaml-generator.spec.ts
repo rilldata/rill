@@ -2,7 +2,8 @@ import { postgresSchema } from "@rilldata/web-common/features/templates/schemas/
 import { processFileContent } from "@rilldata/web-common/features/templates/file-encoding.ts";
 import { describe, expect, it } from "vitest";
 import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/connector-source-yaml-generator.ts";
 import { clickhouseSchema } from "@rilldata/web-common/features/templates/schemas/clickhouse.ts";
 import { ducklakeSchema } from "@rilldata/web-common/features/templates/schemas/ducklake.ts";
@@ -11,7 +12,7 @@ import { EnvEditSession } from "@rilldata/web-common/features/env-management/env
 
 describe("getConnectorYAML", () => {
   describe("clickhouse", () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const schema = clickhouseSchema;
     const formValuesWithoutPassword = {
       host: "ch.example.com",
@@ -295,7 +296,7 @@ describe("getConnectorYAML", () => {
   });
 
   describe("ducklake", () => {
-    const connector: V1ConnectorDriver = { name: "ducklake" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "ducklake" };
     const schema = ducklakeSchema;
 
     describe("direct attach field", () => {
@@ -520,7 +521,7 @@ describe("getConnectorYAML", () => {
   });
 
   describe("https", () => {
-    const connector: V1ConnectorDriver = { name: "https" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "https" };
     const schema = httpsSchema;
     const formValuesWithoutAuth = {
       auth_method: "with_headers",
@@ -704,7 +705,7 @@ describe("getConnectorYAML", () => {
 
 describe("PostgreSQL certificate secrets", () => {
   it("stores uploaded contents in project variables and only references them in YAML", async () => {
-    const connector: V1ConnectorDriver = { name: "postgres" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "postgres" };
     const schema = postgresSchema;
     const { envEditSession, testEnvs } = await makeTestEnvEditSession(
       connector.name,

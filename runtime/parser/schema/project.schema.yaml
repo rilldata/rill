@@ -2645,7 +2645,7 @@ definitions:
             description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
           banner:
             type: string
-            description: Refers to the custom banner displayed in the header of a Canvas dashboard.
+            description: Refers to the custom banner displayed in the header of a Canvas dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           rows:
@@ -2891,7 +2891,7 @@ definitions:
             description: Refers to the description of the explore dashboard
           banner:
             type: string
-            description: Refers to the custom banner displayed at the header of an explore dashboard
+            description: Refers to the custom banner displayed at the header of an explore dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:
@@ -3056,7 +3056,7 @@ definitions:
     title: Alert YAML
     id: alerts
     type: object
-    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`. Alerts defined in YAML run after you deploy the project to Rill Cloud; Rill Developer doesn't run them or send their notifications.
     examples:
       - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
         type: alert
@@ -3090,7 +3090,7 @@ definitions:
           refresh:
             $ref: '#/definitions/schedule_properties'
             description: |
-                  Refresh schedule for the alert
+                  Refresh schedule for the alert. Alerts only run in Rill Cloud, so `run_in_dev` doesn't make them run in Rill Developer.
                     ```yaml
                     refresh:
                       cron: "* * * * *"
@@ -3617,8 +3617,7 @@ definitions:
           kpi:
             $ref: '#/definitions/kpi_properties'
           kpi_grid:
-            type: object
-            description: Grid of KPIs
+            $ref: '#/definitions/kpi_grid_properties'
           table:
             $ref: '#/definitions/table_properties'
           pivot:
@@ -3816,6 +3815,61 @@ definitions:
       - measure
       - time_range
     additionalProperties: false
+
+  # KPI Grid Properties
+  kpi_grid_properties:
+    type: object
+    description: Grid of KPI cards, one per measure, each with the measure's value, an optional time comparison and an optional sparkline
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measures:
+        type: array
+        items:
+          type: string
+        description: Measures to display, one card each. An entry is the name of a measure of the metrics view or of one of the component's `adhoc_measures`.
+      adhoc_measures:
+        type: array
+        description: Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+      comparison:
+        type: array
+        items:
+          type: string
+          enum: ["previous", "delta", "percent_change"]
+        description: Comparison values shown under each KPI while the component shows a time comparison, any of `previous` (the comparison period's value), `delta` (absolute change) and `percent_change`. Defaults to `delta` and `percent_change`.
+      sparkline:
+        type: string
+        enum: ["bottom", "right", "none"]
+        description: Where to draw each KPI's sparkline, `bottom` (below the value), `right` (beside the value) or `none`. Defaults to `bottom`.
+      size:
+        type: string
+        enum: ["small", "medium", "large", "xlarge"]
+        description: Size of the KPI cards, `small`, `medium`, `large` or `xlarge`. Scales the value, the labels, the spacing and the minimum width of each card together, so a larger size fits fewer cards per row. Defaults to `medium`.
+      hide_time_range:
+        type: boolean
+        description: Hide the time range shown under each KPI. Defaults to false.
+      title:
+        type: string
+        description: KPI grid title
+      description:
+        type: string
+        description: KPI grid description
+      show_description_as_tooltip:
+        type: boolean
+        description: Show the description as a tooltip on the title instead of below it
+      time_filters:
+        type: string
+        description: Time range and comparison for this KPI grid, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+      dimension_filters:
+        type: string
+        description: SQL filter expression applied to this KPI grid only, such as `country IN ('US')`
+      hide_local_filters:
+        type: boolean
+        description: Hide the local filter chips on the KPI grid; the filters still apply to its queries
+    required:
+      - metrics_view
+      - measures
 
   # A field entry of a table or pivot: the field name, or an object with the name and per-column presentation overrides.
   table_field_entry:
@@ -4018,10 +4072,10 @@ definitions:
     properties:
       url:
         type: string
-        description: Image URL. Used in light mode, and in dark mode when `dark_url` is not set.
+        description: Image URL, or the path of an image file in the project's `public` directory (for example `public/img/logo.svg`). Used in light mode, and in dark mode when `dark_url` is not set.
       dark_url:
         type: string
-        description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
+        description: Image URL or project file path to use when the dashboard is displayed in dark mode. Defaults to `url`.
       title:
         type: string
         description: Image title
@@ -5017,7 +5071,7 @@ definitions:
             description: Description for the explore view.
           banner:
             type: string
-            description: Custom banner displayed at the header of the explore view.
+            description: Custom banner displayed at the header of the explore view. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:

@@ -17,7 +17,7 @@ import { exploreExactSurface } from "../exact-measures/explore-surfaces";
 import type { StateManagers } from "../state-managers/state-managers";
 import { toExportConditionalFormats } from "./pivot-conditional-formatting";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasuresForRequest } from "./pivot-utils";
+import { pivotShowsData, prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -34,12 +34,15 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
+  // Read from the dashboard: the pivot config reports a nested table while the time range summary refetches.
+  const isFlat = get(ctx.selectors.pivot.isFlat);
 
   if (!validSpecStore.data?.explore || !timeFilterManager.ready)
     return undefined;
 
+  if (!canExportPivot(rows, columns, isFlat)) return undefined;
+
   const enableComparison = configStore.enableComparison;
-  const isFlat = configStore.isFlat;
   const comparisonTime = configStore.comparisonTime;
   const pivotState = configStore.pivot;
 
@@ -97,6 +100,22 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   };
 
   return query;
+}
+
+// Whether the pivot's fields show data to export, under the same rule as the pivot's empty state.
+// An export without such fields fails in the runtime and the browser lands on the raw error,
+// and column dimensions without a measure export bare counts.
+// A pivot whose filters match no rows stays exportable, so a scheduled report over a rolling range keeps working.
+export function canExportPivot(
+  rows: PivotChipData[],
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
+  isFlat: boolean,
+): boolean {
+  return pivotShowsData({
+    rowDimensions: isFlat ? columns.dimension.length : rows.length,
+    columnDimensions: isFlat ? 0 : columns.dimension.length,
+    measures: columns.measure.length,
+  });
 }
 
 // The conditional formats of the pivot's measures, which Excel exports keep.

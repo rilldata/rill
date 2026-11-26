@@ -234,7 +234,7 @@ allOf:
     properties:
       public_paths:
         type: array
-        description: List of file or directory paths to expose over HTTP. Defaults to ['./public']
+        description: List of file or directory paths to expose over HTTP. Files in subdirectories of a listed directory are exposed as well. Defaults to ['./public']
         items:
           type: string
       ignore_paths:

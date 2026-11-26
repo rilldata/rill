@@ -228,9 +228,31 @@ export function getTemporalAxisLabelExpr(format: string | undefined) {
   ].join(" ");
 }
 
+/**
+ * The legend of a measure, formatted as the measure's axis and tooltip are. Left to Vega's own
+ * number format, a legend read "1.8M" for revenue and "5m" for a rate of 0.5%.
+ *
+ * Vega-Lite draws a legend that states anything of its own even where the chart's config turns
+ * legends off, so a chart whose legend is hidden (`legendOrientation: none`) is given none.
+ */
+function createMeasureLegend(
+  measure: string,
+  legendField: FieldConfig | string | undefined,
+): { legend?: { formatType: string } } {
+  if (isFieldConfig(legendField) && legendField.legendOrientation === "none") {
+    return {};
+  }
+  return { legend: { formatType: sanitizeFieldName(measure) } };
+}
+
+/**
+ * The size encoding of a measure. `legendField` is the field whose `legendOrientation` places the
+ * chart's legends, the size legend among them.
+ */
 export function createSizeEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
+  legendField?: FieldConfig | string,
 ): MarkPropDef<Field, number> {
   if (!field) return {};
   const metaData = data.fields[field.field];
@@ -242,6 +264,7 @@ export function createSizeEncoding(
       zero: false,
       range: [40, 400], // Set minimum size to 40 (increased from default ~30)
     },
+    ...createMeasureLegend(field.field, legendField),
   };
 }
 
@@ -262,6 +285,8 @@ export function createColorEncoding(
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
       ...(colorValues?.length && { sort: colorValues }),
+      ...(colorField.type === "quantitative" &&
+        createMeasureLegend(colorField.field, colorField)),
     };
 
     // Ideally we would want to use conditional statements to set the color
@@ -393,16 +418,13 @@ export function createDefaultTooltipEncoding(
   return tooltip;
 }
 
+/**
+ * Where a chart's legend goes. Its columns, and how many entries and how much of each label it
+ * shows, follow the chart's size: `fitLegends` lays every chart's legends out when it is rendered.
+ */
 export function getLegendConfig(
   orientation: ChartLegend,
 ): Config<ExprRef | SignalRef> {
-  let columns: number | ExprRef = 1;
-  let symbolLimit: number | ExprRef = 40;
-  if (orientation === "top" || orientation === "bottom") {
-    columns = { expr: "floor(width / 140)" };
-  } else if (orientation === "right" || orientation === "left") {
-    symbolLimit = { expr: "floor(height / 13 )" };
-  }
   if (orientation === "none") {
     return {
       legend: {
@@ -413,9 +435,6 @@ export function getLegendConfig(
   return {
     legend: {
       orient: orientation,
-      columns: columns,
-      labelLimit: 140,
-      symbolLimit: symbolLimit,
     },
   };
 }

@@ -1,8 +1,8 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import {
-  createRuntimeServiceAnalyzeConnectors,
-  type V1AnalyzedConnector,
-} from "@rilldata/web-common/runtime-client";
+import { createRuntimeServiceAnalyzeConnectors } from "@rilldata/web-common/runtime-client";
+import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { structToJson } from "@rilldata/web-common/lib/proto-utils";
+import { isDuckLakeConnector } from "@rilldata/web-common/features/connectors/connectors-utils";
 import { connectorInfoMap } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
 type ConnectorForSchema = {
@@ -50,7 +50,7 @@ export function getConnectorsWithMetricsViewSupport(
   );
 }
 
-function groupBySchema(connectors: V1AnalyzedConnector[]) {
+function groupBySchema(connectors: AnalyzedConnector[]) {
   const seenDriver = new Set<string>();
   const connectorsForSchema: ConnectorForSchema[] = [];
   connectors.forEach((connector) => {
@@ -68,38 +68,18 @@ function groupBySchema(connectors: V1AnalyzedConnector[]) {
   return connectorsForSchema;
 }
 
-export function inferSchemaForConnector(connector: V1AnalyzedConnector) {
+export function inferSchemaForConnector(connector: AnalyzedConnector) {
   if (!connector.driver?.name) return "";
   // TODO: some schema will share driver name, differentiate them.
   const driverName = connector.driver.name;
   switch (driverName) {
-    case "duckdb":
-      if (
-        (
-          connector.config as Record<string, string> | undefined
-        )?.path?.startsWith("md:")
-      )
-        return "motherduck";
-      if (isDuckLakeConnector(connector)) return "ducklake";
+    case "duckdb": {
+      const config = structToJson(connector.config);
+      if (String(config?.path ?? "").startsWith("md:")) return "motherduck";
+      if (isDuckLakeConnector(connector, config)) return "ducklake";
       break;
+    }
   }
 
   return driverName;
-}
-
-function isDuckLakeConnector(connector: V1AnalyzedConnector): boolean {
-  const attachCandidates: unknown[] = [
-    (connector.config as Record<string, unknown> | undefined)?.attach,
-    (connector.projectConfig as Record<string, unknown> | undefined)?.attach,
-    (connector.presetConfig as Record<string, unknown> | undefined)?.attach,
-  ];
-  if (
-    attachCandidates.some(
-      (v) => typeof v === "string" && v.includes("ducklake:"),
-    )
-  ) {
-    return true;
-  }
-  const name = connector.name ?? "";
-  return name === "ducklake" || name.startsWith("ducklake_");
 }
