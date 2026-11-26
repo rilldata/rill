@@ -1,5 +1,3 @@
-import type { DirEntry } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
-import type { PartialMessage } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import { transformFileList } from "./transform-file-list";
 
@@ -11,7 +9,7 @@ describe("transformFileList", () => {
         { path: "/file1.yaml", isDir: false },
         { path: "/file2.py", isDir: false },
         { path: "/file3.md", isDir: false },
-      ] as PartialMessage<DirEntry>[],
+      ],
       expectedStructure: {
         name: "",
         path: "/",
@@ -27,7 +25,7 @@ describe("transformFileList", () => {
         { path: "/dir1/dir4", isDir: true },
         { path: "/dir2/dir3", isDir: true },
         { path: "/dir2/dir3/fileAB.sql", isDir: false },
-      ] as PartialMessage<DirEntry>[],
+      ],
       expectedStructure: {
         name: "",
         path: "/",
@@ -73,7 +71,7 @@ describe("transformFileList", () => {
         { path: "/models/events.sql", isDir: false },
         { path: "/models/staging", isDir: true },
         { path: "/rill.yaml", isDir: false },
-      ] as PartialMessage<DirEntry>[],
+      ],
       expectedStructure: {
         name: "",
         path: "/",

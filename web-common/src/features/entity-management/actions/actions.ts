@@ -16,8 +16,6 @@ import {
   runtimeServicePutFile,
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
-import type { PutFileRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
-import type { PartialMessage } from "@bufbuild/protobuf";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import {
@@ -35,7 +33,7 @@ import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelt
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
-  runtimeServicePutFileBody: Omit<PartialMessage<PutFileRequest>, "instanceId">,
+  runtimeServicePutFileBody: Parameters<typeof runtimeServicePutFile>[1],
 ) {
   const projectParserStartingVersion = await getProjectParserVersion(client);
 
