@@ -85,10 +85,14 @@ export async function convertAggregationRequestToUrlParams({
     );
   }
 
-  // everything after this can be loaded from the dashboard state if present
-  if (urlState) return searchParams;
-
+  // Reports open in pivot with the request's rows and columns,
+  // since the saved state is the view the report was created from and goes stale once the rows or columns are edited.
+  // The rest of the saved state, e.g. row limit and totals, is kept.
   if (forceOpenPivot) {
+    // The saved sort may be the explore view's sort, which does not apply to the pivot.
+    searchParams.delete(ExploreStateURLParams.SortBy);
+    searchParams.delete(ExploreStateURLParams.SortType);
+    searchParams.delete(ExploreStateURLParams.SortDirection);
     searchParams.set(ExploreStateURLParams.WebView, ExploreUrlWebView.Pivot);
     copyParamsToTarget(
       convertAggregationRequestToPivotUrlParams(req),
@@ -96,6 +100,9 @@ export async function convertAggregationRequestToUrlParams({
     );
     return searchParams;
   }
+
+  // Alerts open the saved dashboard state if present.
+  if (urlState) return searchParams;
 
   copyParamsToTarget(
     convertAggregationRequestToExploreUrlParams(req),

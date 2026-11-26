@@ -36,6 +36,7 @@ describe("convertAggregationRequestToUrlParams", () => {
   const TestCases: {
     title: string;
     req: V1MetricsViewAggregationRequest;
+    urlState?: string;
     forceOpenPivot?: boolean;
     expected: Record<string, string>;
   }[] = [
@@ -97,13 +98,48 @@ describe("convertAggregationRequestToUrlParams", () => {
         sort_dir: "ASC",
       },
     },
+    {
+      title: "pivot when forced overrides the saved view and sort",
+      req: {
+        metricsView: AD_BIDS_METRICS_NAME,
+        dimensions: [
+          { name: AD_BIDS_PUBLISHER_DIMENSION },
+          { name: AD_BIDS_DOMAIN_DIMENSION },
+        ],
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        pivotOn: [AD_BIDS_DOMAIN_DIMENSION],
+      },
+      urlState: `?view=explore&expand_dim=${AD_BIDS_PUBLISHER_DIMENSION}&sort_by=${AD_BIDS_IMPRESSIONS_MEASURE}&sort_dir=DESC&sort_type=value`,
+      forceOpenPivot: true,
+      expected: {
+        view: "pivot",
+        expand_dim: AD_BIDS_PUBLISHER_DIMENSION,
+        rows: AD_BIDS_PUBLISHER_DIMENSION,
+        cols: `${AD_BIDS_DOMAIN_DIMENSION},${AD_BIDS_IMPRESSIONS_MEASURE}`,
+        table_mode: "nest",
+      },
+    },
+    {
+      title: "saved view is kept when not forced to pivot",
+      req: {
+        metricsView: AD_BIDS_METRICS_NAME,
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+      },
+      urlState: `?view=explore&expand_dim=${AD_BIDS_PUBLISHER_DIMENSION}`,
+      expected: {
+        view: "explore",
+        expand_dim: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+    },
   ];
 
-  for (const { title, req, forceOpenPivot, expected } of TestCases) {
+  for (const { title, req, urlState, forceOpenPivot, expected } of TestCases) {
     it(title, async () => {
       const urlParams = await convertAggregationRequestToUrlParams({
         client: NoopClient,
         req,
+        urlState,
         forceOpenPivot,
       });
       expect(Object.fromEntries(urlParams.entries())).toEqual(expected);
