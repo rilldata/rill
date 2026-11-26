@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const clientChannelSize = 128
+
 type Buffer struct {
 	clients  map[chan *runtimev1.Log]struct{}
 	mu       sync.RWMutex
@@ -44,13 +46,16 @@ func (b *Buffer) AddEntry(lvl runtimev1.LogLevel, t time.Time, msg, payload stri
 	})
 
 	for client := range b.clients {
-		client <- message
+		select {
+		case client <- message:
+		default:
+		}
 	}
 	return nil
 }
 
 func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback, minLvl runtimev1.LogLevel) error {
-	messageChannel := make(chan *runtimev1.Log)
+	messageChannel := make(chan *runtimev1.Log, clientChannelSize)
 	b.addClient(messageChannel)
 	defer b.removeClient(messageChannel)
 
