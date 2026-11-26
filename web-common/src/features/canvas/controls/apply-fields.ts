@@ -1,3 +1,5 @@
+import { chartEphemeralMeasureNames } from "@rilldata/web-common/features/components/charts/ephemeral-measures";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { ControlKind, type AppliedControl } from "./controls";
 
 /**
@@ -76,25 +78,22 @@ export function specUsesField(spec: unknown, field: string): boolean {
 }
 
 /**
- * Whether swapping `from` for `to` in a component's spec would list a field twice, e.g. a table
- * column or a KPI the spec already shows. The runtime rejects such a control (listsFieldTwice in
- * runtime/canvas/controls.go); keep them in sync.
+ * Whether a component's spec shows a field twice: in one list of fields (a table column or a KPI,
+ * say), on both axes of a chart (x and y, or y1 and y2), or in both the rows and the columns of
+ * a pivot. The runtime implements the same rules (showsFieldTwice in runtime/canvas/controls.go);
+ * keep them in sync.
  */
-export function swapRepeatsField(
-  spec: unknown,
-  from: string,
-  to: string,
-): boolean {
+export function showsFieldTwice(spec: unknown, field: string): boolean {
+  const nameOf = (entry: unknown) =>
+    entry && typeof entry === "object" && !Array.isArray(entry)
+      ? (entry as Record<string, unknown>).name
+      : entry;
   const visit = (value: unknown, key: string): boolean => {
     if (Array.isArray(value)) {
       const isFieldList = SWAP_LIST_KEYS.has(key);
       let count = 0;
       for (const child of value as unknown[]) {
-        const name =
-          child && typeof child === "object" && !Array.isArray(child)
-            ? (child as Record<string, unknown>).name
-            : child;
-        if (isFieldList && name === to) count++;
+        if (isFieldList && nameOf(child) === field) count++;
         if (visit(child, key)) return true;
       }
       return count > 1;
@@ -104,7 +103,39 @@ export function swapRepeatsField(
     }
     return false;
   };
-  return visit(swapFields(spec, new Map([[from, to]])), "");
+  if (visit(spec, "")) return true;
+  if (!spec || typeof spec !== "object") return false;
+
+  const props = spec as Record<string, unknown>;
+  const fieldAt = (key: string) => {
+    const value = props[key];
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>).field
+      : undefined;
+  };
+  for (const [a, b] of [
+    ["x", "y"],
+    ["y1", "y2"],
+  ]) {
+    if (fieldAt(a) === field && fieldAt(b) === field) return true;
+  }
+  const inList = (key: string) =>
+    Array.isArray(props[key]) &&
+    (props[key] as unknown[]).some((entry) => nameOf(entry) === field);
+  return inList("row_dimensions") && inList("col_dimensions");
+}
+
+/**
+ * Whether swapping `from` for `to` in a component's spec would show a field twice (see
+ * showsFieldTwice). The runtime rejects such a control on the item itself; an item under a
+ * control of an enclosing level keeps its own field instead (see applyFieldControls).
+ */
+export function swapRepeatsField(
+  spec: unknown,
+  from: string,
+  to: string,
+): boolean {
+  return showsFieldTwice(swapFields(spec, new Map([[from, to]])), to);
 }
 
 function setPath(
@@ -132,7 +163,36 @@ function setPath(
   };
 }
 
-export function applyFieldControls<T>(spec: T, controls: AppliedControl[]): T {
+/**
+ * Applies the controls to a component's spec. A swap leaves the component on its own field when
+ * the component's metrics view lacks the chosen field (`hasField`, when known) or when the swaps
+ * would show the chosen field twice in it, the same as the runtime accepts for a control of an
+ * enclosing level (see ValidateControls).
+ */
+/** The fields a component's spec sets at a slot's path: the names in a list, or the one field. */
+export function slotFields(spec: unknown, path: string): string[] {
+  let value: unknown = spec;
+  for (const key of path.split(".")) {
+    value =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)[key]
+        : undefined;
+  }
+  const list = Array.isArray(value) ? (value as unknown[]) : [value];
+  return list
+    .map((entry) =>
+      entry && typeof entry === "object" && !Array.isArray(entry)
+        ? (entry as Record<string, unknown>).name
+        : entry,
+    )
+    .filter((name): name is string => typeof name === "string" && !!name);
+}
+
+export function applyFieldControls<T>(
+  spec: T,
+  controls: AppliedControl[],
+  hasField?: (kind: "measure" | "dimension", name: string) => boolean,
+): T {
   if (!spec || controls.length === 0) return spec;
 
   const swaps = new Map<string, string>();
@@ -148,15 +208,26 @@ export function applyFieldControls<T>(spec: T, controls: AppliedControl[]): T {
       control.target &&
       typeof to === "string" &&
       to &&
-      to !== control.target
+      to !== control.target &&
+      (!hasField || hasField(control.kind, to))
     ) {
       swaps.set(control.target, to);
     }
   }
 
   let result = spec as Record<string, unknown>;
-  if (swaps.size > 0) {
-    result = swapFields(result, swaps) as Record<string, unknown>;
+  // Drop the swaps whose field the result would show twice, until none does.
+  // Swaps are checked together, so exchanging two fields is fine.
+  while (swaps.size > 0) {
+    const swapped = swapFields(result, swaps) as Record<string, unknown>;
+    const repeated = [...swaps].filter(([, to]) =>
+      showsFieldTwice(swapped, to),
+    );
+    if (repeated.length === 0) {
+      result = swapped;
+      break;
+    }
+    for (const [from] of repeated) swaps.delete(from);
   }
 
   for (const { control, values } of controls) {
@@ -171,4 +242,27 @@ export function applyFieldControls<T>(spec: T, controls: AppliedControl[]): T {
   }
 
   return result as T;
+}
+
+/**
+ * A `hasField` for applyFieldControls: whether a component's metrics view has the measure (or
+ * the component defines it as an adhoc measure) or the dimension. Undefined while the metrics
+ * view is unknown, so swaps apply as chosen until it loads.
+ */
+export function componentFields(
+  metricsView: V1MetricsViewSpec | undefined,
+  spec: unknown,
+): ((kind: "measure" | "dimension", name: string) => boolean) | undefined {
+  if (!metricsView) return undefined;
+  const adhoc = chartEphemeralMeasureNames(
+    (spec ?? {}) as Parameters<typeof chartEphemeralMeasureNames>[0],
+  );
+  const timeDimension = metricsView.timeDimension;
+  return (kind, name) =>
+    kind === "measure"
+      ? adhoc.has(name) || !!metricsView.measures?.some((m) => m.name === name)
+      : !!metricsView.dimensions?.some((d) => d.name === name) ||
+        (!!timeDimension &&
+          (name === timeDimension ||
+            name.startsWith(`${timeDimension}_rill_`)));
 }

@@ -49,7 +49,10 @@
   let kind = $derived(spec.kind);
   let isFilter = $derived(kind === ControlKind.Filter);
   let multiple = $derived(!!spec.multiple);
-  let values = $derived(control.values ?? []);
+  // On its default, a slot control shows the fields the widget's YAML sets there.
+  let values = $derived(control.values ?? control.shownValues ?? []);
+  // Only a filter can be cleared; the other kinds always keep a value.
+  let keepsOne = $derived(multiple && !isFilter);
 
   let label = $derived(controlLabel(spec, fieldLabel));
 
@@ -136,11 +139,23 @@
       open = false;
       return;
     }
-    onChange(
-      selected(value)
-        ? values.filter((v) => controlValueKey(v) !== controlValueKey(value))
-        : [...values, value],
-    );
+    // A pick starts from what the widget shows, as far as the options allow.
+    const current = isFilter
+      ? values
+      : values.filter((v) =>
+          options.some((o) => controlValueKey(o) === controlValueKey(v)),
+        );
+    const next = selected(value)
+      ? current.filter((v) => controlValueKey(v) !== controlValueKey(value))
+      : [...current, value];
+    if (keepsOne && next.length === 0) return;
+    // Picking the widget's own fields again goes back to the default.
+    const shown = control.shownValues;
+    const backToShown =
+      !!shown &&
+      shown.length === next.length &&
+      shown.every((v, i) => controlValueKey(v) === controlValueKey(next[i]));
+    onChange(backToShown ? null : next);
   }
 </script>
 
@@ -207,6 +222,7 @@
             <DropdownMenu.CheckboxItem
               closeOnSelect={!multiple}
               checked={selected(option)}
+              disabled={keepsOne && selected(option) && values.length === 1}
               onCheckedChange={() => toggle(option)}
             >
               {optionLabel(option)}

@@ -58,6 +58,21 @@ describe("applyFieldControls", () => {
     expect(result.y.fields).toEqual(["clicks", "spend"]);
   });
 
+  it("leaves the component on its own field for a choice it can't show", () => {
+    const kpis = { metrics_view: "spend", measures: ["spend", "clicks"] };
+    const hasField = (_: string, name: string) => name !== "win_rate";
+    // Clicks is already a KPI, and win_rate isn't in the metrics view.
+    for (const to of ["clicks", "win_rate"]) {
+      const swap = applied({ kind: "measure", target: "spend" }, [to]);
+      expect(applyFieldControls(kpis, [swap], hasField)).toBe(kpis);
+    }
+    const swap = applied({ kind: "measure", target: "spend" }, ["impressions"]);
+    expect(applyFieldControls(kpis, [swap], hasField).measures).toEqual([
+      "impressions",
+      "clicks",
+    ]);
+  });
+
   it("sets a slot to one field or a list", () => {
     const one = applied({ kind: "slot", target: "color.field" }, ["country"]);
     expect(applyFieldControls(spec, [one]).color).toEqual({ field: "country" });
@@ -111,5 +126,16 @@ describe("swapRepeatsField", () => {
         "device",
       ),
     ).toBe(false);
+  });
+
+  it("catches a swap that would put a field on both axes or in a pivot's rows and columns", () => {
+    const heatmap = { x: { field: "device" }, y: { field: "country" } };
+    expect(swapRepeatsField(heatmap, "device", "country")).toBe(true);
+    const pivot = {
+      row_dimensions: ["device"],
+      col_dimensions: [{ name: "country" }],
+    };
+    expect(swapRepeatsField(pivot, "device", "country")).toBe(true);
+    expect(swapRepeatsField(pivot, "device", "region")).toBe(false);
   });
 });

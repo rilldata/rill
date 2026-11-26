@@ -138,27 +138,30 @@ rows:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
 
-	// A swap from x to y would show y twice in the table: the control is reported and left out, but the canvas stays up.
+	// A swap on the table from x to y would show y twice in it: the control is reported and left out, but the canvas stays up.
 	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
 type: canvas
 controls:
   - filter: foo
-  - measure: x
-    options: [x, y]
 rows:
   - items:
-      - table:
+      - name: t
+        controls:
+          - measure: x
+            options: [x, y]
+        table:
           metrics_view: mv1
           columns: [foo, x, y]
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
-	require.Contains(t, c1.Meta.ReconcileError, `control "x" option "y" is already shown`)
+	require.Contains(t, c1.Meta.ReconcileError, `control "x" option "y" is already shown in item "t"`)
 	valid := c1.GetCanvas().State.ValidSpec
 	require.NotNil(t, valid)
 	require.Len(t, valid.Controls, 1)
 	require.Equal(t, "foo", valid.Controls[0].Name)
-	require.Len(t, c1.GetCanvas().Spec.Controls, 2)
+	require.Empty(t, valid.Rows[0].Items[0].Controls)
+	require.Len(t, c1.GetCanvas().Spec.Rows[0].Items[0].Controls, 1)
 }
 
 func TestCanvasValidateMetricsViewTimeConsistency(t *testing.T) {

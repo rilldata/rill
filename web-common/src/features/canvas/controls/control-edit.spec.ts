@@ -142,11 +142,22 @@ describe("draftFromYAML", () => {
     expect(controlToYAML(parsed!)).toEqual(yaml);
   });
 
-  it("reads a scalar default and can't edit a slot control", () => {
+  it("reads a scalar default", () => {
     expect(draftFromYAML({ time: "grain", default: "day" })?.default).toEqual([
       "day",
     ]);
-    expect(draftFromYAML({ slot: "color.field", options: ["a"] })).toBeNull();
+  });
+
+  it("round-trips a slot control for a list of fields", () => {
+    const yaml = {
+      slot: "measures",
+      label: "KPIs",
+      options: ["spend", "clicks", "impressions"],
+      multiple: true,
+    };
+    const parsed = draftFromYAML(yaml);
+    expect(parsed).toMatchObject({ kind: "slot", field: "measures" });
+    expect(controlToYAML(parsed!)).toEqual(yaml);
   });
 });
 

@@ -50,11 +50,11 @@ When several levels declare a control for the same target, the nearest one wins.
 On a row entry, `controls` is only valid for a tab group or a container.
 
 
-  - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+  - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own measure when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-  - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+  - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own dimension when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-  - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+  - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `measures` or `color.field`. Only valid on an item. Viewers start from the fields the item sets there.
 
   - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
 
@@ -72,7 +72,7 @@ On a row entry, `controls` is only valid for a tab group or a container.
 
     - **option 2** - _[array of string]_ - (no description)
 
-  - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+  - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`, where it is required for a property that holds a list of fields, such as `measures`, and not allowed for one that holds a single field.
 
   - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
 
@@ -125,11 +125,11 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     On a row entry, `controls` is only valid for a tab group or a container.
 
 
-      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own measure when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own dimension when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `measures` or `color.field`. Only valid on an item. Viewers start from the fields the item sets there.
 
       - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
 
@@ -147,7 +147,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
         - **option 2** - _[array of string]_ - (no description)
 
-      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`, where it is required for a property that holds a list of fields, such as `measures`, and not allowed for one that holds a single field.
 
       - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
 
@@ -165,11 +165,11 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
   On a row entry, `controls` is only valid for a tab group or a container.
 
 
-    - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+    - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own measure when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-    - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+    - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own dimension when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-    - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+    - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `measures` or `color.field`. Only valid on an item. Viewers start from the fields the item sets there.
 
     - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
 
@@ -187,7 +187,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
       - **option 2** - _[array of string]_ - (no description)
 
-    - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+    - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`, where it is required for a property that holds a list of fields, such as `measures`, and not allowed for one that holds a single field.
 
     - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
 
@@ -211,11 +211,11 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
     On a row entry, `controls` is only valid for a tab group or a container.
 
 
-      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+      - **`measure`** - _[string]_ - A measure that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own measure when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+      - **`dimension`** - _[string]_ - A dimension that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own dimension when viewers pick that option; on a control declared on the item itself, such an option is an error.
 
-      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+      - **`slot`** - _[string]_ - A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `measures` or `color.field`. Only valid on an item. Viewers start from the fields the item sets there.
 
       - **`filter`** - _[string]_ - A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
 
@@ -233,7 +233,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
         - **option 2** - _[array of string]_ - (no description)
 
-      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`.
+      - **`multiple`** - _[boolean]_ - Lets viewers select several values. Only for `filter` and `slot`, where it is required for a property that holds a list of fields, such as `measures`, and not allowed for one that holds a single field.
 
       - **`display`** - _[string]_ - How the control is shown. Chosen automatically if omitted.
 

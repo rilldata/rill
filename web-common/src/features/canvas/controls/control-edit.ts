@@ -1,4 +1,5 @@
 import { isSeq, type Document } from "yaml";
+import type { ComponentInputParam } from "../inspector/types";
 import type { YAMLPath } from "../layout-util";
 import { defaultBlockName, setKeyBeforeContent } from "../stores/block-edit";
 import { specUsesField, swapRepeatsField } from "./apply-fields";
@@ -10,10 +11,11 @@ import { ControlKind } from "./controls";
  * a tab ([..., "tabs", t]) or an item ([..., "items", c]).
  */
 
-/** The kinds of control the editor can create and edit. Slot controls are YAML-only. */
+/** The kinds of control the editor can create and edit. */
 export type EditableControlKind =
   | typeof ControlKind.Measure
   | typeof ControlKind.Dimension
+  | typeof ControlKind.Slot
   | typeof ControlKind.Filter
   | typeof ControlKind.TimeRange
   | typeof ControlKind.TimeGrain;
@@ -21,7 +23,10 @@ export type EditableControlKind =
 /** A control as the editor's form holds it. */
 export interface ControlDraft {
   kind: EditableControlKind;
-  /** The measure or dimension the control swaps or filters. Unused for time controls. */
+  /**
+   * The measure or dimension the control swaps or filters, or for a slot control the widget's
+   * property whose fields viewers pick (e.g. `measures`). Unused for time controls.
+   */
   field: string;
   options: string[];
   /** Default values. Unused for swaps, whose default is `field`. */
@@ -32,6 +37,37 @@ export interface ControlDraft {
   label: string;
   /** "" uses the default name (see defaultControlName). */
   name: string;
+}
+
+/** A widget property whose fields a slot control lets viewers pick, e.g. a KPI grid's `measures`. */
+export interface SlotTarget {
+  target: string;
+  label: string;
+  /** The kinds of field the property holds. */
+  allowed: ("measure" | "dimension")[];
+}
+
+/**
+ * The properties of a widget that hold a list of measures or dimensions (its inspector inputs
+ * that pick several fields), which viewers can pick with a slot control.
+ */
+export function listFieldTargets(
+  inputs: Partial<Record<string, ComponentInputParam>>,
+): SlotTarget[] {
+  return Object.entries(inputs).flatMap(([target, config]) => {
+    if (
+      !config ||
+      (config.type !== "multi_fields" && config.type !== "multi_fields_format")
+    ) {
+      return [];
+    }
+    const allowed = (config.meta?.allowedTypes ?? []).filter(
+      (t): t is "measure" | "dimension" => t === "measure" || t === "dimension",
+    );
+    return allowed.length
+      ? [{ target, label: config.label ?? target, allowed }]
+      : [];
+  });
 }
 
 export type ControlLevelKind =
@@ -63,6 +99,7 @@ export const TIME_GRAIN_OPTIONS = [
 const MANAGED_KEYS = [
   "measure",
   "dimension",
+  "slot",
   "filter",
   "time",
   "name",
@@ -90,7 +127,7 @@ export function readControls(
     : [];
 }
 
-/** The form values for a control's YAML, or null for a control the form can't edit (a slot control). */
+/** The form values for a control's YAML, or null for a control the form can't edit. */
 export function draftFromYAML(raw: RawControl): ControlDraft | null {
   let kind: EditableControlKind;
   let field = "";
@@ -100,6 +137,9 @@ export function draftFromYAML(raw: RawControl): ControlDraft | null {
   } else if (typeof raw.dimension === "string") {
     kind = ControlKind.Dimension;
     field = raw.dimension;
+  } else if (typeof raw.slot === "string") {
+    kind = ControlKind.Slot;
+    field = raw.slot;
   } else if (typeof raw.filter === "string") {
     kind = ControlKind.Filter;
     field = raw.filter;
@@ -147,7 +187,9 @@ export function controlToYAML(
       : draft.options;
   if (options.length) res.options = options;
 
-  const multiple = draft.kind === ControlKind.Filter && draft.multiple;
+  const multiple =
+    (draft.kind === ControlKind.Filter || draft.kind === ControlKind.Slot) &&
+    draft.multiple;
   // A swap's default is its field; other defaults must be among the options, if there are any.
   const defaults = isSwap
     ? []
@@ -159,7 +201,7 @@ export function controlToYAML(
   if (draft.display) res.display = draft.display;
 
   for (const [key, value] of Object.entries(existing)) {
-    if (!MANAGED_KEYS.includes(key) && key !== "slot") res[key] = value;
+    if (!MANAGED_KEYS.includes(key)) res[key] = value;
   }
   return res;
 }

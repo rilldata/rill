@@ -254,6 +254,31 @@ describe("level and widget selectors", () => {
       ),
     ).toEqual([]);
   });
+  it("leaves out a tab group's control that the shown tab overrides", () => {
+    const tabGrain = collectControls({
+      rows: [
+        {
+          tabGroup: {
+            name: "group",
+            tabs: [
+              {
+                name: "mobile",
+                controls: [{ kind: "time_grain", name: "grain" }],
+              },
+            ],
+          },
+        },
+      ],
+    }).map((c) => ({ ...c, values: null })) as AppliedControl[];
+    const scopes = [["group"], ["group", "mobile"]];
+    expect(controlsForScopes(all, scopes).map((c) => c.urlKey)).toEqual([
+      "c.group.time_grain",
+      "c.group.mobile.os",
+    ]);
+    expect(
+      controlsForScopes([...all, ...tabGrain], scopes).map((c) => c.urlKey),
+    ).toEqual(["c.group.mobile.os", "c.group.mobile.grain"]);
+  });
   it("uses only widgets whose resolved controls include the control", () => {
     const components = [
       {

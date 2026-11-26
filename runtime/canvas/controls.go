@@ -159,9 +159,11 @@ func SwapField(props map[string]any, from, to string) (map[string]any, bool) {
 }
 
 // ValidateControls checks the controls of a canvas against its items, components and metrics views.
-// A control fails when an option of a field swap doesn't work in an item that uses the field or would show a field twice in it,
+// A control fails when an option of a field swap doesn't work in an item that uses the field,
 // when it names a field that none of the canvas's metrics views has,
-// or when it is a slot control whose property the item doesn't set.
+// or when it is a slot control whose property the item doesn't set or that doesn't match the property (one field or a list).
+// A swap option that would show a field twice in an item, or that the item's metrics view lacks, fails a control declared on the item;
+// an item under a control of an enclosing level keeps its own field for that option instead.
 // An item's ignore_controls must also name controls of its enclosing levels.
 //
 // It returns the spec without the controls that fail, so a broken control doesn't take down a canvas that works without it,
@@ -285,9 +287,15 @@ func validateItemControls(ic ItemControls, components map[string]*runtimev1.Comp
 	if mv == nil {
 		return
 	}
+	item := cmp.Or(ic.Item.Name, ic.Item.Component)
 	for _, c := range ic.Controls {
 		switch c.Kind {
 		case ControlKindMeasure, ControlKindDimension:
+			// A control of an enclosing level leaves the item on its own field for an option it already shows
+			// or its metrics view lacks, like applyFieldControls in the frontend does,
+			// so one item doesn't take the control away from the others.
+			// A control declared on the item itself must work for every option.
+			own := slices.Contains(ic.Item.Controls, c)
 			for _, opt := range c.Options {
 				if opt == c.Target {
 					continue
@@ -296,12 +304,18 @@ func validateItemControls(ic ItemControls, components map[string]*runtimev1.Comp
 				if !used {
 					break
 				}
-				if listsFieldTwice(swapped, opt) {
-					fail(c, fmt.Errorf("control %q option %q is already shown in component %q, so choosing it would show it twice", c.Name, opt, ic.Item.Component))
+				if showsFieldTwice(swapped, opt) {
+					if !own {
+						continue
+					}
+					fail(c, fmt.Errorf("control %q option %q is already shown in item %q, so choosing it would show it twice", c.Name, opt, item))
 					break
 				}
+				if !own && !itemHasField(mv, mvName, props, c.Kind, opt) {
+					continue
+				}
 				if err := ValidateRendererProperties(comp.Renderer, swapped, metricsViews, false); err != nil {
-					fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
+					fail(c, fmt.Errorf("control %q option %q doesn't work in item %q: %w", c.Name, opt, item, err))
 					break
 				}
 			}
@@ -313,12 +327,20 @@ func validateItemControls(ic ItemControls, components map[string]*runtimev1.Comp
 				cur = m[key]
 			}
 			if cur == nil {
-				fail(c, fmt.Errorf("control %q: component %q doesn't set %q", c.Name, ic.Item.Component, c.Target))
+				fail(c, fmt.Errorf("control %q: item %q doesn't set %q", c.Name, item, c.Target))
+				continue
+			}
+			// Viewers pick several fields for a list and one for a single field.
+			if _, isList := cur.([]any); isList && !c.Multiple {
+				fail(c, fmt.Errorf("control %q: %q of item %q is a list of fields, so the control needs `multiple: true`", c.Name, c.Target, item))
+				continue
+			} else if !isList && c.Multiple {
+				fail(c, fmt.Errorf("control %q: %q of item %q holds one field, so the control can't be `multiple`", c.Name, c.Target, item))
 				continue
 			}
 			for _, opt := range c.Options {
 				if !metricsViewHasMeasure(mv, opt) && !metricsViewHasDimension(mv, opt) {
-					fail(c, fmt.Errorf("control %q option %q is not a measure or dimension of metrics view %q (component %q)", c.Name, opt, mvName, ic.Item.Component))
+					fail(c, fmt.Errorf("control %q option %q is not a measure or dimension of metrics view %q (item %q)", c.Name, opt, mvName, item))
 					break
 				}
 				var value any = opt
@@ -327,7 +349,7 @@ func validateItemControls(ic ItemControls, components map[string]*runtimev1.Comp
 				}
 				selected := setControlSlot(props, strings.Split(c.Target, "."), value)
 				if err := ValidateRendererProperties(comp.Renderer, selected, metricsViews, false); err != nil {
-					fail(c, fmt.Errorf("control %q option %q doesn't work in component %q: %w", c.Name, opt, ic.Item.Component, err))
+					fail(c, fmt.Errorf("control %q option %q doesn't work in item %q: %w", c.Name, opt, item, err))
 					break
 				}
 			}
@@ -363,6 +385,47 @@ func withoutControls(spec *runtimev1.CanvasSpec, drop map[*runtimev1.CanvasContr
 		*controls = kept
 	}, nil)
 	return res
+}
+
+// showsFieldTwice reports whether the renderer properties show the field twice:
+// in one list of fields, on both axes of a chart (x and y, or y1 and y2), or in both the rows and columns of a pivot.
+// The frontend's swapRepeatsField implements the same rules; keep them in sync.
+func showsFieldTwice(props map[string]any, field string) bool {
+	if listsFieldTwice(props, field) {
+		return true
+	}
+	fieldAt := func(key string) string {
+		m, _ := props[key].(map[string]any)
+		s, _ := m["field"].(string)
+		return s
+	}
+	for _, axes := range [][2]string{{"x", "y"}, {"y1", "y2"}} {
+		if fieldAt(axes[0]) == field && fieldAt(axes[1]) == field {
+			return true
+		}
+	}
+	inList := func(key string) bool {
+		list, _ := props[key].([]any)
+		return slices.ContainsFunc(list, func(v any) bool {
+			if m, ok := v.(map[string]any); ok {
+				v = m["name"]
+			}
+			return v == field
+		})
+	}
+	return inList("row_dimensions") && inList("col_dimensions")
+}
+
+// itemHasField reports whether an item's metrics view has the measure (or the item defines it as an adhoc measure) or the dimension.
+func itemHasField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, kind, name string) bool {
+	if kind == ControlKindDimension {
+		return metricsViewHasDimension(mv, name) || name == mv.TimeDimension || isEncodedTimeDimension(mv, name)
+	}
+	if metricsViewHasMeasure(mv, name) {
+		return true
+	}
+	adhoc, err := ephemeralMeasureNames(props, mvName, mv)
+	return err == nil && adhoc[name]
 }
 
 // listsFieldTwice reports whether a list of fields in the renderer properties (see swapListKeys) names the field more than once.

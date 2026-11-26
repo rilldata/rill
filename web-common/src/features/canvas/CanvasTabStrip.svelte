@@ -38,6 +38,8 @@
   export let onSelectGroup: (() => void) | undefined = undefined;
   // Duplicate the whole group (offered from each tab's ⋯ menu).
   export let onDuplicateGroup: (() => void) | undefined = undefined;
+  // Add a viewer control to the tab or its group (offered from each tab's ⋯ menu).
+  export let onAddControl: ((tabIndex: number) => void) | undefined = undefined;
   // Fired (edit mode) on mousedown on the strip's grip handle or empty area, so the parent can
   // start dragging the whole tab group to another position on the canvas.
   export let onGroupMouseDown: ((event: MouseEvent) => void) | undefined =
@@ -301,11 +303,14 @@
                     <ArrowRight size="14px" />
                     Move right
                   </DropdownMenu.Item>
-                  {#if onDuplicateGroup}
+                  {#if onDuplicateGroup || onAddControl}
                     <DropdownMenu.Separator />
                     <BlockMenuItems
                       kind="tab-group"
                       onDuplicate={onDuplicateGroup}
+                      onAddControl={onAddControl
+                        ? () => onAddControl?.(index)
+                        : undefined}
                     />
                   {/if}
                   <DropdownMenu.Separator />

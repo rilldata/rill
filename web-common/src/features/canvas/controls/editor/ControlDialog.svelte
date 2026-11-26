@@ -9,10 +9,13 @@
   import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { untrack } from "svelte";
+  import { get } from "svelte/store";
   import type { YAMLPath } from "../../layout-util";
+  import { slotFields } from "../apply-fields";
   import {
     countItemsUsingField,
     findRepeatedOption,
+    listFieldTargets,
     TIME_GRAIN_OPTIONS,
     type ControlDraft,
     type ControlLevelRef,
@@ -107,12 +110,36 @@
   let metricsViews = $derived(canvas._metricsViews);
   let parsedContent = $derived(canvas.parsedContent);
 
+  // The widget the dialog's item level holds, if it offers one: viewers can pick the fields of
+  // its properties that hold a list of them, such as a KPI grid's measures (a slot control).
+  let itemLevel = $derived(levels.find((l) => l.kind === "item"));
+  let components = $derived(canvas.componentsStore);
+  let component = $derived.by(() => {
+    if (!itemLevel) return undefined;
+    const key = itemLevel.path.join("/");
+    return [...$components.values()].find(
+      (c) => c.pathInYAML.slice(0, -1).join("/") === key,
+    );
+  });
+  let slotTargets = $derived(
+    component
+      ? listFieldTargets(component.inputParams(component.type).options)
+      : [],
+  );
+
   let isSwap = $derived(
     kind === ControlKind.Measure || kind === ControlKind.Dimension,
   );
+  let isSlot = $derived(kind === ControlKind.Slot);
   let isFilter = $derived(kind === ControlKind.Filter);
-  let needsField = $derived(isSwap || isFilter);
-  let level = $derived(levels[Number(levelIndex)] ?? levels[0]);
+  let needsField = $derived(isSwap || isFilter || isSlot);
+  // A slot control belongs to its widget.
+  let level = $derived(
+    isSlot && itemLevel ? itemLevel : (levels[Number(levelIndex)] ?? levels[0]),
+  );
+  let slotTarget = $derived(
+    isSlot ? slotTargets.find((t) => t.target === field) : undefined,
+  );
 
   // Measures or dimensions of the metrics views in play, by name.
   let fields = $derived.by(() => {
@@ -120,17 +147,26 @@
     const views = metricsViewName
       ? [$metricsViews[metricsViewName]]
       : Object.values($metricsViews);
+    const withMeasures =
+      kind === ControlKind.Measure || !!slotTarget?.allowed.includes("measure");
+    const withDimensions =
+      kind === ControlKind.Dimension ||
+      isFilter ||
+      !!slotTarget?.allowed.includes("dimension");
     for (const view of views) {
       const spec = view?.state?.validSpec;
-      const list =
-        kind === ControlKind.Measure ? spec?.measures : spec?.dimensions;
-      for (const f of list ?? []) {
+      const list = [
+        ...(withDimensions ? (spec?.dimensions ?? []) : []),
+        ...(withMeasures ? (spec?.measures ?? []) : []),
+      ];
+      for (const f of list) {
         if (f.name && !res.has(f.name))
           res.set(f.name, f.displayName || f.name);
       }
     }
     // Keep a field the control already names, even if no metrics view has it now.
-    for (const f of [field, ...(isSwap ? options : [])]) {
+    const named = isSlot ? options : [field, ...(isSwap ? options : [])];
+    for (const f of named) {
       if (f && !res.has(f)) res.set(f, f);
     }
     return res;
@@ -153,6 +189,10 @@
   // The options as they'd be written, per kind.
   let resolvedOptions = $derived.by(() => {
     if (isFilter) return splitList(valuesText);
+    if (isSlot)
+      return fieldOptions
+        .map((o) => o.value)
+        .filter((v) => options.includes(v));
     if (isSwap) {
       const picked = options.filter((o) => o !== field && fields.has(o));
       return field ? [field, ...picked] : picked;
@@ -167,7 +207,7 @@
   });
 
   let checklist = $derived(
-    isSwap
+    isSwap || isSlot
       ? fieldOptions
       : (kind === ControlKind.TimeRange
           ? TIME_RANGE_PRESETS
@@ -191,7 +231,8 @@
         )
       : null,
   );
-  // A swap to a field a widget already shows would show it twice; the runtime rejects that control.
+  // A swap to a field a widget already shows would show it twice. The runtime rejects that control
+  // on the widget itself; under a control of an enclosing level, the widget keeps its own field.
   let repeated = $derived(
     isSwap && field
       ? findRepeatedOption(
@@ -211,7 +252,7 @@
       : "",
   );
   let optionsError = $derived.by(() => {
-    if (isSwap && resolvedOptions.length < 2) {
+    if ((isSwap || isSlot) && resolvedOptions.length < 2) {
       return m.canvas_control_dialog_need_two_options();
     }
     if (!isSwap && !isFilter && resolvedOptions.length < 1) {
@@ -219,8 +260,14 @@
     }
     return "";
   });
+  let onItem = $derived(level.kind === "item");
   let valid = $derived(
-    (!needsField || !!field) && !nameError && !optionsError && !repeated,
+    (!needsField || !!field) &&
+      !nameError &&
+      !optionsError &&
+      !(onItem && repeated) &&
+      // On a widget, a swap of a field it doesn't show would change nothing.
+      !(onItem && affected === 0),
   );
 
   function setKind(next: string) {
@@ -229,6 +276,15 @@
     field = "";
     options = [];
     defaultValue = "";
+    if (kind === ControlKind.Slot && slotTargets[0]) {
+      setSlotTarget(slotTargets[0].target);
+    }
+  }
+
+  // Viewers start from the fields the widget shows, so those are offered by default.
+  function setSlotTarget(target: string) {
+    field = target;
+    options = component ? slotFields(get(component.specStore), target) : [];
   }
 
   function toggleOption(value: string, checked: boolean) {
@@ -250,7 +306,7 @@
           : defaultValue
             ? [defaultValue]
             : [],
-        multiple: isFilter && multiple,
+        multiple: (isFilter && multiple) || isSlot,
         display: display === "buttons" || display === "dropdown" ? display : "",
         label: label.trim(),
         name: name.trim(),
@@ -286,6 +342,7 @@
         options={[
           ControlKind.Measure,
           ControlKind.Dimension,
+          ...(slotTargets.length || isSlot ? [ControlKind.Slot] : []),
           ControlKind.Filter,
           ControlKind.TimeRange,
           ControlKind.TimeGrain,
@@ -293,7 +350,21 @@
         onChange={setKind}
       />
 
-      {#if needsField}
+      {#if isSlot}
+        <Select
+          id="canvas-control-slot"
+          label={m.canvas_control_dialog_slot_target()}
+          size="md"
+          sameWidth
+          full
+          value={field}
+          options={slotTargets.map((t) => ({
+            value: t.target,
+            label: t.label,
+          }))}
+          onChange={setSlotTarget}
+        />
+      {:else if needsField}
         <Select
           id="canvas-control-field"
           label={kind === ControlKind.Measure
@@ -340,13 +411,15 @@
           <InputLabel
             id="canvas-control-options"
             capitalize={false}
-            label={kind === ControlKind.Measure
-              ? m.canvas_control_dialog_options_measure()
-              : kind === ControlKind.Dimension
-                ? m.canvas_control_dialog_options_dimension()
-                : kind === ControlKind.TimeRange
-                  ? m.canvas_control_dialog_options_time_range()
-                  : m.canvas_control_dialog_options_time_grain()}
+            label={isSlot
+              ? m.canvas_control_dialog_options_slot()
+              : kind === ControlKind.Measure
+                ? m.canvas_control_dialog_options_measure()
+                : kind === ControlKind.Dimension
+                  ? m.canvas_control_dialog_options_dimension()
+                  : kind === ControlKind.TimeRange
+                    ? m.canvas_control_dialog_options_time_range()
+                    : m.canvas_control_dialog_options_time_grain()}
           />
           <div
             class="checklist"
@@ -373,9 +446,21 @@
           {#if optionsError}
             <span class="text-xs text-fg-secondary">{optionsError}</span>
           {/if}
-          {#if repeated}
+          {#if isSlot}
+            <span class="text-xs text-fg-secondary">
+              {m.canvas_control_dialog_slot_hint()}
+            </span>
+          {/if}
+          {#if repeated && onItem}
             <span class="text-xs text-destructive" role="alert">
               {m.canvas_control_dialog_repeated({
+                field: fields.get(repeated.option) ?? repeated.option,
+                item: repeated.item,
+              })}
+            </span>
+          {:else if repeated}
+            <span class="text-xs text-fg-secondary">
+              {m.canvas_control_dialog_repeated_kept({
                 field: fields.get(repeated.option) ?? repeated.option,
                 item: repeated.item,
               })}
@@ -395,7 +480,7 @@
           />
         {/if}
 
-        {#if !isSwap}
+        {#if !isSwap && !isSlot}
           <Select
             id="canvas-control-default"
             label={m.canvas_control_dialog_default()}
@@ -414,7 +499,7 @@
         {/if}
       {/if}
 
-      {#if levels.length > 1}
+      {#if levels.length > 1 && !isSlot}
         <Select
           id="canvas-control-level"
           label={m.canvas_control_dialog_applies_to()}
@@ -437,7 +522,7 @@
         </p>
       {/if}
 
-      <div class="grid grid-cols-2 gap-x-3">
+      <div class="grid gap-x-3" class:grid-cols-2={!isSlot}>
         <Input
           id="canvas-control-label"
           capitalizeLabel={false}
@@ -446,25 +531,27 @@
           optional
           bind:value={label}
         />
-        <Select
-          id="canvas-control-display"
-          label={m.canvas_control_dialog_display()}
-          size="md"
-          sameWidth
-          full
-          bind:value={display}
-          options={[
-            { value: "auto", label: m.canvas_control_dialog_display_auto() },
-            {
-              value: "buttons",
-              label: m.canvas_control_dialog_display_buttons(),
-            },
-            {
-              value: "dropdown",
-              label: m.canvas_control_dialog_display_dropdown(),
-            },
-          ]}
-        />
+        {#if !isSlot}
+          <Select
+            id="canvas-control-display"
+            label={m.canvas_control_dialog_display()}
+            size="md"
+            sameWidth
+            full
+            bind:value={display}
+            options={[
+              { value: "auto", label: m.canvas_control_dialog_display_auto() },
+              {
+                value: "buttons",
+                label: m.canvas_control_dialog_display_buttons(),
+              },
+              {
+                value: "dropdown",
+                label: m.canvas_control_dialog_display_dropdown(),
+              },
+            ]}
+          />
+        {/if}
       </div>
 
       <Input

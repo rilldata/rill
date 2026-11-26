@@ -37,7 +37,8 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ComponentRefComponent } from "../components/component-ref";
-  import { readControls } from "../controls/control-edit";
+  import { slotFields } from "../controls/apply-fields";
+  import { listFieldTargets, readControls } from "../controls/control-edit";
   import { controlRequest } from "../controls/editor/control-request";
 
   export let component: BaseCanvasComponent;
@@ -121,7 +122,8 @@
   ][];
 
   // "Let viewers choose" under a field input: opens the dialog for a control that lets
-  // viewers swap that field (see ViewerControlsEditor).
+  // viewers swap that field, or pick the fields of a list such as a KPI grid's measures
+  // (see ViewerControlsEditor).
   const { canvasControls } = featureFlags;
   $: ({ _metricsViews, parsedContent } = component.parent);
   $: offersControls =
@@ -130,11 +132,18 @@
     ? $_metricsViews[metricsView]?.state?.validSpec
     : undefined;
   $: itemPath = component.pathInYAML.slice(0, -1);
-  // Fields the item's own controls already swap.
+  // Fields the item's own controls already swap, and properties whose fields they let viewers pick.
+  $: itemControls = readControls($parsedContent, itemPath);
   $: controlledFields = new Set(
-    readControls($parsedContent, itemPath).flatMap((c) =>
+    itemControls.flatMap((c) =>
       [c.measure, c.dimension].filter((f) => typeof f === "string"),
     ),
+  );
+  $: controlledSlots = new Set(
+    itemControls.flatMap((c) => (typeof c.slot === "string" ? [c.slot] : [])),
+  );
+  $: slotTargets = new Set(
+    listFieldTargets(inputParams).map((target) => target.target),
   );
 
   // The measure or dimension a field input holds, if a viewer control could swap it.
@@ -158,6 +167,23 @@
       return { kind: "dimension", field };
     }
     return null;
+  }
+
+  // A list of fields: viewers pick among the ones it shows, and the designer can offer more.
+  function letViewersPick(key: string) {
+    controlRequest.set({
+      itemPath: itemPath.join("/"),
+      draft: {
+        kind: "slot",
+        field: key,
+        options: slotFields(localParamValues, key),
+        default: [],
+        multiple: true,
+        display: "",
+        label: "",
+        name: "",
+      },
+    });
   }
 
   function letViewersChoose(kind: "measure" | "dimension", field: string) {
@@ -504,6 +530,14 @@
               type="button"
               class="viewers-choose"
               onclick={() => letViewersChoose(swappable.kind, swappable.field)}
+            >
+              {m.canvas_control_let_viewers_choose()}
+            </button>
+          {:else if slotTargets.has(key) && !controlledSlots.has(key)}
+            <button
+              type="button"
+              class="viewers-choose"
+              onclick={() => letViewersPick(key)}
             >
               {m.canvas_control_let_viewers_choose()}
             </button>

@@ -4723,13 +4723,13 @@ definitions:
       properties:
         measure:
           type: string
-          description: A measure that viewers can swap for one of the `options`, wherever the affected items use it.
+          description: A measure that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own measure when viewers pick that option; on a control declared on the item itself, such an option is an error.
         dimension:
           type: string
-          description: A dimension that viewers can swap for one of the `options`, wherever the affected items use it.
+          description: A dimension that viewers can swap for one of the `options`, wherever the affected items use it. An item that already shows an option, or whose metrics view lacks it, keeps its own dimension when viewers pick that option; on a control declared on the item itself, such an option is an error.
         slot:
           type: string
-          description: A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `row_dimensions` or `color.field`. Only valid on an item.
+          description: A property of the item's component whose field (or fields, with `multiple`) viewers choose, such as `measures` or `color.field`. Only valid on an item. Viewers start from the fields the item sets there.
         filter:
           type: string
           description: A dimension that viewers can filter. Applies to items whose metrics view has the dimension, together with the global filters.
@@ -4757,7 +4757,7 @@ definitions:
                 type: string
         multiple:
           type: boolean
-          description: Lets viewers select several values. Only for `filter` and `slot`.
+          description: Lets viewers select several values. Only for `filter` and `slot`, where it is required for a property that holds a list of fields, such as `measures`, and not allowed for one that holds a single field.
         display:
           type: string
           enum: [dropdown, buttons]

@@ -79,6 +79,63 @@ async function open() {
   });
 }
 
+describe("slot menus", () => {
+  // A KPI grid's measures, which viewers pick from three, on their default.
+  const kpis = (values: ControlValue[] | null): AppliedControl => ({
+    control: {
+      name: "measures",
+      label: "country",
+      kind: "slot",
+      target: "measures",
+      multiple: true,
+      options: ["spend", "clicks", "impressions"],
+    },
+    values,
+    shownValues: ["spend", "clicks"],
+    level: "item",
+    scope: ["kpis"],
+    urlKey: "c.kpis.measures",
+    targetKey: "slot:measures",
+  });
+
+  it("starts from the fields the widget shows", async () => {
+    const { onChange } = show(kpis(null));
+    expect(screen.getByRole("button", { name: "country" })).toHaveTextContent(
+      "spend, clicks",
+    );
+    await open();
+    const checked = screen
+      .getAllByRole("menuitemcheckbox")
+      .map((item) => item.getAttribute("aria-checked"));
+    expect(checked).toEqual(["true", "true", "false"]);
+    await fireEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "impressions" }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith([
+      "spend",
+      "clicks",
+      "impressions",
+    ]);
+  });
+
+  it("keeps one field, and goes back to the default with the widget's own fields", async () => {
+    const one = show(kpis(["spend"]));
+    await open();
+    const spend = screen.getByRole("menuitemcheckbox", { name: "spend" });
+    expect(spend).toHaveAttribute("aria-disabled", "true");
+    await fireEvent.click(spend);
+    expect(one.onChange).not.toHaveBeenCalled();
+    one.view.unmount();
+
+    const { onChange } = show(kpis(["spend"]));
+    await open();
+    await fireEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "clicks" }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+});
+
 describe("filter value menus", () => {
   it("checks and removes a numeric option whose URL value is text", async () => {
     search.set({ data: [1, 2, "1"], isLoading: false });

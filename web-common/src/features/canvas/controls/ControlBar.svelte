@@ -84,7 +84,7 @@
       controlKindLabel(control.control.kind ?? "");
     const summary = controlSummary(
       control.control,
-      control.values ?? [],
+      control.values ?? control.shownValues ?? [],
       fieldLabel,
     );
     return `${label}: ${summary}`;

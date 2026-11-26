@@ -212,4 +212,58 @@ test.describe("canvas viewer controls", () => {
     await expectProjectFile(page, CANVAS, ["name: bar_chart"], ["controls:"]);
     await expect(page.getByRole("group", { name: "Metric" })).toHaveCount(0);
   });
+
+  test("adds a control from the canvas and from a widget's menu", async ({
+    page,
+  }) => {
+    await putProjectFile(page, "/rill.yaml", RILL_YAML);
+    await putProjectFile(page, CANVAS, EDIT_CANVAS_YAML);
+    await waitForReconciliation(page);
+    await page.reload();
+    await gotoNavEntry(page, CANVAS);
+
+    // A widget's menu offers the widget and the canvas around it.
+    const chart = page.locator("article").filter({
+      hasText: "Total records per Publisher",
+    });
+    await chart.hover();
+    await chart.getByRole("button", { name: "Component menu" }).click();
+    await page.getByRole("menuitem", { name: "Add viewer control" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("Applies to")).toBeVisible();
+    await expect(dialog.getByText("This widget")).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toHaveCount(0);
+
+    // The button at the top of the canvas adds a control for the whole canvas.
+    await page.getByRole("button", { name: "Add viewer control" }).click();
+    await expect(dialog.getByText("Applies to")).toHaveCount(0);
+    await dialog.locator("#canvas-control-field").click();
+    await page
+      .getByRole("option", { name: "Total records", exact: true })
+      .click();
+    await dialog.getByLabel("Sum of Bid Price").click();
+    await dialog.getByRole("button", { name: "Add control" }).click();
+
+    await expectProjectFile(
+      page,
+      CANVAS,
+      [
+        "controls:\n  - measure: total_records\n    options:\n      - total_records\n      - bid_price_sum\n",
+      ],
+      ["name: bar_chart"],
+    );
+    // The canvas's control bar shows, and works, in the editor.
+    const control = page.getByRole("group", { name: "total_records" });
+    await control.getByRole("button", { name: "Sum of Bid Price" }).click();
+    await expect(
+      page.getByText("Sum of Bid Price per Publisher"),
+    ).toBeVisible();
+    // The button stays after the bar, for another control.
+    await expect(
+      page
+        .locator(".level-controls")
+        .getByRole("button", { name: "Add control" }),
+    ).toBeVisible();
+  });
 });

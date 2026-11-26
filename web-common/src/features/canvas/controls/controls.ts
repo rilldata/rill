@@ -44,6 +44,11 @@ export type ControlValue = string | number | boolean | null;
 /** A control in effect for an item (null values mean its default applies). */
 export interface AppliedControl extends ResolvedControl {
   values: ControlValue[] | null;
+  /**
+   * For a slot control: the fields the item's YAML sets there, which viewers see and start from
+   * while the control is on its default.
+   */
+  shownValues?: ControlValue[];
   /** True when the embedding page fixed the control's value: viewers don't see or change it. */
   locked?: boolean;
 }
@@ -335,14 +340,24 @@ export function controlValueKey(value: ControlValue): string {
   return value === null ? "null:" : `value:${String(value)}`;
 }
 
-/** Visible controls declared on the requested levels, shared by live and PDF renders. */
+/**
+ * Visible controls declared on the requested levels, shared by live and PDF renders.
+ * A control is left out when a nearer one of the levels (a tab, under its tab group) declares a
+ * control for the same target, since that one wins for the widgets shown there.
+ */
 export function controlsForScopes(
   controls: AppliedControl[],
   scopes: string[][],
 ): AppliedControl[] {
   const keys = new Set(scopes.map((scope) => JSON.stringify(scope)));
-  return controls.filter(
+  const shown = controls.filter(
     (c) => c.level !== "item" && !c.locked && keys.has(JSON.stringify(c.scope)),
+  );
+  return shown.filter(
+    (c) =>
+      !shown.some(
+        (d) => d.targetKey === c.targetKey && d.scope.length > c.scope.length,
+      ),
   );
 }
 

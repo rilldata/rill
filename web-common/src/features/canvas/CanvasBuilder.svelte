@@ -964,7 +964,18 @@
   bind:clientWidth
 >
   <ChangedControls {canvasEntity} {maxWidth} />
-  <LevelControls {canvasEntity} scopes={[[]]} {maxWidth} />
+  <!-- The canvas's viewer controls, with the button that adds one. It shows on a canvas
+       without controls too, once there's a metrics view to choose fields from. -->
+  <LevelControls
+    {canvasEntity}
+    scopes={[[]]}
+    {maxWidth}
+    add={{
+      levels: [{ kind: "canvas", path: [], name: "" }],
+      levelPath: [],
+      whenEmpty: !!defaultMetrics,
+    }}
+  />
   {#each blocks as block, blockIndex (layoutBlockKey(block))}
     {#if block.kind === "tab-group"}
       <EditableCanvasTabGroup

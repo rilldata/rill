@@ -103,23 +103,38 @@ func TestValidateControls(t *testing.T) {
 		})},
 		"table": {Renderer: "table", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "columns": []any{"device", "spend", "impressions"}})},
 		"kpis":  {Renderer: "kpi_grid", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "measures": []any{"spend", "impressions"}})},
+		"board": {Renderer: "leaderboard", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "measures": []any{"spend"}, "dimensions": []any{"device"}})},
+		"pivot": {Renderer: "pivot", RendererProperties: newProps(map[string]any{"metrics_view": "bids", "measures": []any{"spend"}, "row_dimensions": []any{"device"}, "col_dimensions": []any{"country"}})},
+		"heat": {Renderer: "heatmap", RendererProperties: newProps(map[string]any{
+			"metrics_view": "bids",
+			"x":            map[string]any{"field": "device", "type": "nominal"},
+			"y":            map[string]any{"field": "country", "type": "nominal"},
+			"color":        map[string]any{"field": "spend", "type": "quantitative"},
+		})},
 	}
 	mvs := map[string]*runtimev1.MetricsViewSpec{
 		"bids": {
-			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{{Name: "device"}, {Name: "country"}},
-			Measures:   []*runtimev1.MetricsViewSpec_Measure{{Name: "spend"}, {Name: "impressions"}, {Name: "clicks"}},
+			TimeDimension: "ts",
+			Dimensions:    []*runtimev1.MetricsViewSpec_Dimension{{Name: "device"}, {Name: "country"}},
+			Measures:      []*runtimev1.MetricsViewSpec_Measure{{Name: "spend"}, {Name: "impressions"}, {Name: "clicks"}},
 		},
-		"wins": {Measures: []*runtimev1.MetricsViewSpec_Measure{{Name: "win_rate"}}},
+		"wins": {
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{{Name: "team"}},
+			Measures:   []*runtimev1.MetricsViewSpec_Measure{{Name: "win_rate"}},
+		},
 	}
 	measure := func(target string, options ...string) *runtimev1.CanvasControl {
 		return &runtimev1.CanvasControl{Kind: ControlKindMeasure, Target: target, Name: target, Options: options}
+	}
+	dimension := func(target string, options ...string) *runtimev1.CanvasControl {
+		return &runtimev1.CanvasControl{Kind: ControlKindDimension, Target: target, Name: target, Options: options}
 	}
 
 	for _, tt := range []struct {
 		name      string
 		component string
 		control   *runtimev1.CanvasControl
-		canvas    *runtimev1.CanvasControl // A canvas control that the item's control overrides.
+		canvas    *runtimev1.CanvasControl // A canvas control for the item's field.
 		ignore    []string
 		err       string
 	}{
@@ -127,13 +142,18 @@ func TestValidateControls(t *testing.T) {
 		{name: "option missing from the item's metrics view", component: "chart", control: measure("spend", "spend", "win_rate"), err: `option "win_rate" doesn't work`},
 		{name: "unused field with a missing option", component: "chart", control: measure("clicks", "clicks", "nope"), err: `option "nope" is not a measure of any metrics view`},
 		{name: "unused field with existing options", component: "chart", control: measure("clicks", "clicks", "impressions")},
-		{name: "swap repeats a table column", component: "table", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "table"`},
-		{name: "swap repeats a kpi", component: "kpis", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "kpis"`},
+		{name: "swap repeats a table column", component: "table", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in item "table"`},
+		{name: "swap repeats a kpi", component: "kpis", control: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in item "kpis"`},
 		{name: "swap to a new kpi", component: "kpis", control: measure("spend", "spend", "clicks")},
-		{name: "canvas control in effect once the item's control is left out", component: "table", control: measure("spend", "spend", "win_rate"), canvas: measure("spend", "spend", "impressions"), err: `option "impressions" is already shown in component "table"`},
+		{name: "swap puts a field in the rows and columns of a pivot", component: "pivot", control: dimension("device", "device", "country"), err: `option "country" is already shown in item "pivot"`},
+		{name: "swap puts a field on both axes", component: "heat", control: dimension("device", "device", "country"), err: `option "country" is already shown in item "heat"`},
+		// A control of an enclosing level leaves such an item on its own field, and stays for the other items.
+		{name: "canvas control option the item already shows", component: "table", canvas: measure("spend", "spend", "impressions")},
+		{name: "canvas control option the item's metrics view lacks", component: "chart", canvas: measure("spend", "spend", "win_rate")},
+		{name: "canvas control in effect once the item's control is left out", component: "board", control: dimension("device", "device", "team"), canvas: dimension("device", "device", "ts"), err: `option "ts" doesn't work in item "board"`},
 		{name: "slot", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "x.field", Name: "x_field", Options: []string{"device", "country"}}},
 		{name: "slot with a missing option", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "x.field", Name: "x_field", Options: []string{"device", "nope"}}, err: `option "nope"`},
-		{name: "slot the component doesn't set", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "color.field", Name: "color_field", Options: []string{"device"}}, err: `component "chart" doesn't set "color.field"`},
+		{name: "slot the component doesn't set", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindSlot, Target: "color.field", Name: "color_field", Options: []string{"device"}}, err: `item "chart" doesn't set "color.field"`},
 		{name: "filter", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindFilter, Target: "country", Name: "country"}},
 		{name: "filter on a missing dimension", component: "chart", control: &runtimev1.CanvasControl{Kind: ControlKindFilter, Target: "region", Name: "region"}, err: `filters on "region", which is not a dimension`},
 		{name: "ignored control", component: "chart", ignore: []string{"canvas_metric"}},
@@ -175,14 +195,16 @@ func TestValidateControlSlots(t *testing.T) {
 	}
 	for _, tt := range []struct {
 		name, renderer, target, option string
-		multiple, valid                bool
+		multiple                       bool
 		props                          map[string]any
+		err                            string
 	}{
-		{"dimension", "bar_chart", "x.field", "country", false, true, nil},
-		{"measure in dimension slot", "bar_chart", "x.field", "spend", false, false, nil},
-		{"list in scalar slot", "bar_chart", "x.field", "device", true, false, nil},
-		{"dimension list", "pivot", "row_dimensions", "country", true, true, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}},
-		{"measure in dimension list", "pivot", "row_dimensions", "spend", true, false, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}},
+		{"dimension", "bar_chart", "x.field", "country", false, nil, ""},
+		{"measure in dimension slot", "bar_chart", "x.field", "spend", false, nil, `control "pick" option "spend" doesn't work`},
+		{"list in scalar slot", "bar_chart", "x.field", "device", true, nil, `"x.field" of item "chart" holds one field, so the control can't be`},
+		{"dimension list", "pivot", "row_dimensions", "country", true, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}, ""},
+		{"measure in dimension list", "pivot", "row_dimensions", "spend", true, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}, `control "pick" option "spend" doesn't work`},
+		{"one field for a list", "pivot", "row_dimensions", "country", false, map[string]any{"measures": []any{"spend"}, "row_dimensions": []any{"device"}}, `"row_dimensions" of item "chart" is a list of fields, so the control needs`},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			props := tt.props
@@ -195,10 +217,10 @@ func TestValidateControlSlots(t *testing.T) {
 			ctrl := &runtimev1.CanvasControl{Kind: ControlKindSlot, Name: "pick", Target: tt.target, Options: []string{tt.option}, Multiple: tt.multiple}
 			spec := &runtimev1.CanvasSpec{Rows: []*runtimev1.CanvasRow{{Items: []*runtimev1.CanvasItem{{Component: "chart", Controls: []*runtimev1.CanvasControl{ctrl}}}}}}
 			_, err = ValidateControls(spec, map[string]*runtimev1.ComponentSpec{"chart": {Renderer: tt.renderer, RendererProperties: pb}}, map[string]*runtimev1.MetricsViewSpec{"bids": mv})
-			if tt.valid {
+			if tt.err == "" {
 				require.NoError(t, err)
 			} else {
-				require.ErrorContains(t, err, `control "pick" option`)
+				require.ErrorContains(t, err, tt.err)
 			}
 			require.Equal(t, props, pb.AsMap())
 		})

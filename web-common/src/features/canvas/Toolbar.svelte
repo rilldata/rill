@@ -8,10 +8,12 @@
     Columns,
     Download,
     FileSpreadsheet,
+    SlidersHorizontal,
   } from "lucide-svelte";
   import { buildExportFilename } from "@rilldata/web-common/features/exports/filename";
   import { componentCsv } from "@rilldata/web-common/features/exports/csv";
   import { downloadBlob } from "@rilldata/web-common/features/exports/xlsx/client";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { get } from "svelte/store";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
@@ -27,6 +29,9 @@
     // Optional: wrap this component's row into a new tab group or container. Only provided
     // for top-level rows (the rows of a block cannot be nested into another block).
     onWrapRow?: (kind: BlockKind) => void;
+    // Optional: add a viewer control to the component or a level around it. Shown with the
+    // canvasControls flag on.
+    onAddControl?: () => void;
     editable?: boolean;
     component: BaseCanvasComponent;
     navigationEnabled?: boolean;
@@ -38,6 +43,7 @@
     onDuplicate,
     onDownloadPng,
     onWrapRow,
+    onAddControl,
     editable = false,
     component,
     navigationEnabled = true,
@@ -60,6 +66,8 @@
     "combo_chart",
     "custom_chart",
   ] as const;
+
+  const { canvasControls } = featureFlags;
 
   let showExplore = $derived(
     navigationEnabled &&
@@ -117,7 +125,7 @@
         align="end"
         sideOffset={8}
         alignOffset={-4}
-        class="w-40"
+        class="min-w-40"
       >
         <DropdownMenu.Item onclick={onDuplicate}>
           <Copy size="14px" />
@@ -131,6 +139,12 @@
           <DropdownMenu.Item onclick={() => onWrapRow?.("container")}>
             <BoxSelect size="14px" />
             {m.canvas_component_wrap_in_container()}
+          </DropdownMenu.Item>
+        {/if}
+        {#if onAddControl && $canvasControls}
+          <DropdownMenu.Item onclick={onAddControl}>
+            <SlidersHorizontal size="14px" />
+            {m.canvas_viewer_controls_add_viewer()}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />

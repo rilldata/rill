@@ -1,4 +1,7 @@
-import { applyFieldControls } from "@rilldata/web-common/features/canvas/controls/apply-fields";
+import {
+  applyFieldControls,
+  componentFields,
+} from "@rilldata/web-common/features/canvas/controls/apply-fields";
 import {
   andControlFilters,
   applyTimeControls,
@@ -136,8 +139,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.pathInYAML = path;
     this.controls = parent.controls.forPath(() => this.pathInYAML);
     this.viewSpecStore = derived(
-      [this.specStore, this.controls],
-      ([spec, controls]) => applyFieldControls(spec, controls),
+      [
+        this.specStore,
+        this.controls,
+        parent.metricsView.getMetricsViewFromName(this.metricsViewName),
+      ],
+      ([spec, controls, { metricsView }]) =>
+        applyFieldControls(spec, controls, componentFields(metricsView, spec)),
     );
 
     this.resource.set(resource);
