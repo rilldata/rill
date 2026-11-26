@@ -98,6 +98,9 @@ export async function handleFileEvent(
         break;
     }
 
+    // Lets components that show the file, such as canvas images, load it again.
+    eventBus.emit("project-file-changed", event.path);
+
     // Keep the cloud editor's commit button in sync with the working tree.
     resetGitStatusQuery(queryClient, instanceId);
   }

@@ -62,6 +62,7 @@
       message: {
         type: "default",
         message: validSpec?.banner ?? "",
+        includesMarkdown: true,
         iconType: "alert",
       },
     });
