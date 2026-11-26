@@ -522,6 +522,7 @@
   "canvas_control_dialog_allowed_values": "Allowed values",
   "canvas_control_dialog_allowed_values_hint": "Comma-separated. Leave empty to offer every value of the dimension.",
   "canvas_control_dialog_applies_to": "Applies to",
+  "canvas_control_dialog_applies_to_hint": "A level takes one control for each thing it changes, so the choices below leave out what this level's controls already change.",
   "canvas_control_dialog_custom_ranges": "Other time ranges",
   "canvas_control_dialog_custom_ranges_hint": "Comma-separated ISO 8601 durations or Rill time expressions, such as P2W.",
   "canvas_control_dialog_default": "Default",

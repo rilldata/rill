@@ -133,9 +133,9 @@ See the [`controls`](/reference/project-files/canvas-dashboards#controls) refere
 
 You can also add controls in the visual editor:
 
-- **Whole canvas:** Click **Add viewer control** at the top of the canvas.
-- **Container, tab group or tab:** Select **Add viewer control** in the container's three-dot menu or in a tab's menu.
-- **One widget:** Select **Add viewer control** in the widget's three-dot menu, or click **Let viewers choose** next to one of its fields in the right-hand panel. Next to a list of fields, such as a KPI grid's measures, **Let viewers choose** lets viewers pick which of them the widget shows.
+- **Whole canvas:** Click **Add control** at the top of the canvas.
+- **Container, tab group or tab:** Select **Add control** in the container's three-dot menu or in a tab's menu.
+- **One widget:** Select **Add control** in the widget's three-dot menu, or click **Let viewers choose** next to one of its fields in the right-hand panel. Next to a list of fields, such as a KPI grid's measures, **Let viewers choose** lets viewers pick which of them the widget shows.
 
 Pick what viewers can change and the options they can choose from, then click **Add control**. To edit, reorder or remove controls, select the level and use **Viewer controls** in the right-hand panel. For the whole canvas, click an empty part of the canvas first.
 

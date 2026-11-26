@@ -522,6 +522,7 @@
   "canvas_control_dialog_allowed_values": "허용 값",
   "canvas_control_dialog_allowed_values_hint": "쉼표로 구분합니다. 비워 두면 차원의 모든 값을 제공합니다.",
   "canvas_control_dialog_applies_to": "적용 대상",
+  "canvas_control_dialog_applies_to_hint": "한 수준에는 바꾸는 대상마다 컨트롤을 하나만 둘 수 있으므로, 아래 선택지에서는 이 수준의 컨트롤이 이미 바꾸는 항목이 빠집니다.",
   "canvas_control_dialog_custom_ranges": "기타 시간 범위",
   "canvas_control_dialog_custom_ranges_hint": "쉼표로 구분한 ISO 8601 기간 또는 Rill 시간 표현식(예: P2W).",
   "canvas_control_dialog_default": "기본값",

@@ -8,7 +8,6 @@ import {
   countItemsUsingField,
   draftFromYAML,
   filterBarTimeRanges,
-  findLevelConflict,
   findRepeatedOption,
   listAffectedItems,
   moveControl,
@@ -400,28 +399,6 @@ rows:
   });
 });
 
-describe("findLevelConflict", () => {
-  const doc = parseDocument(`type: canvas
-controls:
-  - time: range
-    options: [P7D]
-  - filter: publisher
-    name: pub
-rows: []
-`);
-
-  it("finds another control of the level that changes the same thing", () => {
-    expect(findLevelConflict(doc, [], "time_range", "")).toBe("time_range");
-    expect(findLevelConflict(doc, [], "time_grain", "")).toBe("");
-    expect(findLevelConflict(doc, [], "filter", "publisher")).toBe("pub");
-    expect(findLevelConflict(doc, [], "filter", "domain")).toBe("");
-  });
-
-  it("leaves out the control being edited", () => {
-    expect(findLevelConflict(doc, [], "time_range", "", "time_range")).toBe("");
-  });
-});
-
 describe("takenOnLevel", () => {
   const doc = parseDocument(`type: canvas
 controls:
@@ -435,22 +412,22 @@ rows:
           metrics_view: mv
 `);
 
-  it("tells which kinds and fields the level's controls already change", () => {
+  it("names the control of the level that already changes the same thing", () => {
     const taken = takenOnLevel(doc, []);
-    expect(taken("time_range", "")).toBe(true);
-    expect(taken("time_grain", "")).toBe(false);
-    expect(taken("filter", "publisher")).toBe(true);
-    expect(taken("filter", "domain")).toBe(false);
-    expect(taken("dimension", "publisher")).toBe(false);
+    expect(taken("time_range", "")).toBe("time_range");
+    expect(taken("time_grain", "")).toBe("");
+    expect(taken("filter", "publisher")).toBe("pub");
+    expect(taken("filter", "domain")).toBe("");
+    expect(taken("dimension", "publisher")).toBe("");
     expect(takenOnLevel(doc, ["rows", 0, "items", 0])("time_range", "")).toBe(
-      false,
+      "",
     );
   });
 
   it("leaves out the control being edited", () => {
     const taken = takenOnLevel(doc, [], "pub");
-    expect(taken("filter", "publisher")).toBe(false);
-    expect(taken("time_range", "")).toBe(true);
+    expect(taken("filter", "publisher")).toBe("");
+    expect(taken("time_range", "")).toBe("time_range");
   });
 });
 

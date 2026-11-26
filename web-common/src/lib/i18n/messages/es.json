@@ -522,6 +522,7 @@
   "canvas_control_dialog_allowed_values": "Valores permitidos",
   "canvas_control_dialog_allowed_values_hint": "Separados por comas. Déjalo vacío para ofrecer todos los valores de la dimensión.",
   "canvas_control_dialog_applies_to": "Se aplica a",
+  "canvas_control_dialog_applies_to_hint": "Un nivel admite un control por cada cosa que cambia, así que las opciones de abajo omiten lo que ya cambian los controles de este nivel.",
   "canvas_control_dialog_custom_ranges": "Otros intervalos de tiempo",
   "canvas_control_dialog_custom_ranges_hint": "Duraciones ISO 8601 o expresiones de tiempo de Rill separadas por comas, como P2W.",
   "canvas_control_dialog_default": "Valor por defecto",

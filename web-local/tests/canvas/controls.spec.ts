@@ -238,14 +238,19 @@ test.describe("canvas viewer controls", () => {
     await chart.getByRole("button", { name: "Component menu" }).click();
     await page.getByRole("menuitem", { name: "Add control" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Applies to")).toBeVisible();
+    await expect(dialog.getByText("Applies to", { exact: true })).toBeVisible();
     await expect(dialog.getByText("This widget")).toBeVisible();
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toHaveCount(0);
 
     // The button at the top of the canvas adds a control for the whole canvas.
-    await page.getByRole("button", { name: "Add control" }).click();
-    await expect(dialog.getByText("Applies to")).toHaveCount(0);
+    await page
+      .locator("#canvas-scroll-container")
+      .getByRole("button", { name: "Add control", exact: true })
+      .click();
+    await expect(dialog.getByText("Applies to", { exact: true })).toHaveCount(
+      0,
+    );
     await dialog.locator("#canvas-control-field").click();
     await page
       .getByRole("option", { name: "Total records", exact: true })

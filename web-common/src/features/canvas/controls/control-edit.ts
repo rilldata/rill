@@ -454,42 +454,30 @@ function itemTitle(name: string, specs: Record<string, unknown>[]): string {
 }
 
 /**
- * The name of another control on the level that changes the same thing as one of this kind and
- * field, or "" if there is none. Two such controls on one level compete and only the first
- * applies, so the runtime rejects the second; `exceptName` is the control being edited.
- */
-export function findLevelConflict(
-  doc: Document | undefined,
-  path: YAMLPath,
-  kind: EditableControlKind,
-  field: string,
-  exceptName = "",
-): string {
-  const [key, value] = controlTargetEntry(kind, field);
-  const conflict = readControls(doc, path).find(
-    (c) => c[key] === value && defaultControlName(c) !== exceptName,
-  );
-  return conflict ? defaultControlName(conflict) : "";
-}
-
-/**
- * A test of whether the level already has a control that changes what one of this kind and field
- * would, leaving out the control named `exceptName` (see `findLevelConflict`). The editor offers
- * only the kinds, fields and levels that are free, rather than a choice it would then reject.
+ * A lookup of the level's controls by what they change: for a kind and field, the name of the
+ * first other control on the level that changes the same thing, or "" if there is none.
+ * Two such controls on one level compete and only the first applies, so the runtime rejects the
+ * second; the editor offers only the kinds, fields and levels that are free.
+ * `exceptName` is the control being edited.
  */
 export function takenOnLevel(
   doc: Document | undefined,
   path: YAMLPath,
   exceptName = "",
-): (kind: EditableControlKind, field: string) => boolean {
-  const taken = new Set<string>();
+): (kind: EditableControlKind, field: string) => string {
+  const names = new Map<string, string>();
   for (const c of readControls(doc, path)) {
-    if (defaultControlName(c) === exceptName) continue;
+    const name = defaultControlName(c);
+    if (name === exceptName) continue;
     for (const key of ["time", "measure", "dimension", "slot", "filter"]) {
-      if (typeof c[key] === "string") taken.add(`${key}:${c[key]}`);
+      const target = `${key}:${String(c[key])}`;
+      if (typeof c[key] === "string" && !names.has(target)) {
+        names.set(target, name);
+      }
     }
   }
-  return (kind, field) => taken.has(controlTargetEntry(kind, field).join(":"));
+  return (kind, field) =>
+    names.get(controlTargetEntry(kind, field).join(":")) ?? "";
 }
 
 /** The YAML key and value that say what a control of this kind changes, e.g. `time: range`. */

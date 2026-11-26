@@ -16,7 +16,6 @@
     controlToYAML,
     defaultControlName,
     filterBarTimeRanges,
-    findLevelConflict,
     findRepeatedOption,
     listAffectedItems,
     listFieldTargets,
@@ -152,9 +151,7 @@
       canvas.dashboardProvider.yamlConfigProvider.isSingleSelectFilter(field),
   );
   let needsField = $derived(isSwap || isFilter || isSlot);
-  let chosenLevel = $derived(levels[Number(levelIndex)] ?? levels[0]);
-  // A slot control belongs to its widget.
-  let level = $derived(isSlot && itemLevel ? itemLevel : chosenLevel);
+  let level = $derived(levels[Number(levelIndex)] ?? levels[0]);
   let slotTarget = $derived(
     isSlot ? slotTargets.find((t) => t.target === field) : undefined,
   );
@@ -295,7 +292,8 @@
     seed.initial ? defaultControlName(controlToYAML(seed.initial)) : "",
   );
   // A level takes one control per thing it changes, so the form offers no kind, field or level
-  // that would make a second one there, rather than reporting the conflict.
+  // that would make a second one there, rather than reporting the conflict. The level comes first
+  // in the form, since the choices after it depend on it.
   function takenAt(path: YAMLPath) {
     return takenOnLevel(
       $parsedContent,
@@ -303,14 +301,17 @@
       !isNew && path.join("/") === seed.levelPath.join("/") ? originalName : "",
     );
   }
-  let takenHere = $derived(takenAt(chosenLevel.path));
-  let freeSlotTargets = $derived.by(() => {
-    const taken = itemLevel ? takenAt(itemLevel.path) : takenHere;
-    return slotTargets.filter(
-      (t) =>
-        (isSlot && t.target === field) || !taken(ControlKind.Slot, t.target),
-    );
-  });
+  let takenHere = $derived(takenAt(level.path));
+  // A slot control belongs to its widget, so it's offered on the widget's level only.
+  let freeSlotTargets = $derived(
+    level.kind === "item"
+      ? slotTargets.filter(
+          (t) =>
+            (isSlot && t.target === field) ||
+            !takenHere(ControlKind.Slot, t.target),
+        )
+      : [],
+  );
   let kindOptions = $derived(
     [
       ControlKind.Measure,
@@ -334,8 +335,9 @@
   let levelOptions = $derived(
     levels.flatMap((l, i) =>
       String(i) === levelIndex ||
-      (needsField && !field) ||
-      !takenAt(l.path)(kind, field)
+      (isSlot
+        ? l.kind === "item"
+        : (needsField && !field) || !takenAt(l.path)(kind, field))
         ? [{ value: String(i), label: controlLevelLabel(l) }]
         : [],
     ),
@@ -344,17 +346,7 @@
   // so the runtime rejects the second. The choices on offer avoid it; this catches the rest, such
   // as the canvas changing while the dialog is open.
   let levelConflict = $derived(
-    !needsField || field
-      ? findLevelConflict(
-          $parsedContent,
-          level.path,
-          kind,
-          field,
-          !isNew && level.path.join("/") === seed.levelPath.join("/")
-            ? originalName
-            : "",
-        )
-      : "",
+    !needsField || field ? takenHere(kind, field) : "",
   );
   // A swap to a field a widget already shows would show it twice. The runtime rejects that control
   // on the widget itself; under a control of an enclosing level, the widget keeps its own field.
@@ -458,6 +450,19 @@
     </Dialog.Header>
 
     <div class="form">
+      {#if levels.length > 1}
+        <Select
+          id="canvas-control-level"
+          label={m.canvas_control_dialog_applies_to()}
+          tooltip={m.canvas_control_dialog_applies_to_hint()}
+          size="md"
+          sameWidth
+          full
+          bind:value={levelIndex}
+          options={levelOptions}
+        />
+      {/if}
+
       <Select
         id="canvas-control-kind"
         label={m.canvas_control_dialog_kind()}
@@ -632,18 +637,6 @@
             onChange={(value) => (defaultValue = value)}
           />
         {/if}
-      {/if}
-
-      {#if levels.length > 1 && !isSlot}
-        <Select
-          id="canvas-control-level"
-          label={m.canvas_control_dialog_applies_to()}
-          size="md"
-          sameWidth
-          full
-          bind:value={levelIndex}
-          options={levelOptions}
-        />
       {/if}
 
       {#if levelConflict}
