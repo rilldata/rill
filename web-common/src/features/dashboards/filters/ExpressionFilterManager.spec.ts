@@ -1031,19 +1031,37 @@ describe("exclude mode for a filter without values", () => {
     );
   });
 
-  it("drops exclude once a filter is added from the filter bar", () => {
+  it("starts a chip added from the filter bar in exclude", () => {
     const filterManager = createFilterManager();
     filterManager.keepExcludeModeWhileEmpty(AD_BIDS_PUBLISHER_DIMENSION);
 
     toggleExclude(filterManager);
     filterManager.addNewFilter(AD_BIDS_PUBLISHER_DIMENSION);
     expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
-      false,
+      true,
     );
-    // The chip edits its manager directly; closing it without a value still drops the pending exclude.
+
+    // The chip is dismissed without a value, so its empty manager stays until the next change.
+    toggleValue(filterManager, "Facebook");
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Facebook')`,
+    );
+  });
+
+  it("follows the mode committed from the chip", () => {
+    const filterManager = createFilterManager();
+    filterManager.keepExcludeModeWhileEmpty(AD_BIDS_PUBLISHER_DIMENSION);
+
+    toggleExclude(filterManager);
+    filterManager.addNewFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    // The chip edits its manager directly.
     const chipManager = filterManager.filterManagersMap[
       AD_BIDS_PUBLISHER_DIMENSION
     ] as DimensionFilterManager;
+    chipManager.setSelectedValues(["Google"], false);
+    expect(publisherParam(filterManager)).toEqual(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
     chipManager.clear();
     expect(filterManager.isDimensionExcluded(AD_BIDS_PUBLISHER_DIMENSION)).toBe(
       false,
@@ -1662,11 +1680,10 @@ describe("dimensionFilterAction", () => {
   it("returns the callback result", () => {
     const filterManager = createFilterManager();
 
-    // The callback return type is `any`, hence the cast.
     const result = filterManager.dimensionFilterAction(
       AD_BIDS_PUBLISHER_DIMENSION,
       (manager) => manager.selectedValues.length,
-    ) as number;
+    );
 
     expect(result).toBe(0);
   });

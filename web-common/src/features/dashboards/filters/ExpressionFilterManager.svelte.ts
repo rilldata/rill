@@ -65,11 +65,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
     dimensions: DimensionFilterManager[];
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
-  // Exclude mode chosen for a dimension that has no filter manager, keyed by dimension name.
-  // An empty filter writes no param, so its manager is dropped and the mode would otherwise be lost.
-  // Once a manager exists it holds the mode itself, so the pending one is reset.
-  // Only dimensions registered through `keepExcludeModeWhileEmpty` are tracked,
-  // so the mode never carries over to a filter added elsewhere, from the filter bar for example.
+  // Exclude mode of a dimension, keyed by dimension name, kept while its filter has no values.
+  // Only dimensions registered through `keepExcludeModeWhileEmpty` are tracked.
   private readonly pendingExcludes = new SvelteMap<string, boolean>();
 
   // Shared with every manager below this one, so a chip edit reports itself
@@ -122,6 +119,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
     const unsubYamlConfig = yamlConfigProvider.on("update", () => {
       this.topLevelJoiner.addRequiredAndPinnedFilters();
       this.topLevelJoiner.enforceSingleSelectFilters();
+      this.applyPendingExcludes();
     });
     this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
@@ -135,9 +133,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
       ) as JoinerFilterManager,
     );
     this.on("filter-changed", () => {
-      // A chip edits its manager directly, so this is where a filter added from the filter bar is seen.
-      // Reset before removing empty managers so that a chip closed without a value still counts.
-      this.resetPendingExcludesWithManager();
+      // A chip edits its manager directly, so this is where a mode chosen in the filter bar is seen.
+      this.syncPendingExcludes();
       this.topLevelJoiner?.removeEmptyManagers();
       this.storeSync.stateChanged();
     });
@@ -262,7 +259,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
-    this.resetPendingExcludesWithManager();
+    // Empty pinned and required filters are rebuilt here, so they take the mode back first.
+    this.applyPendingExcludes();
+    this.syncPendingExcludes();
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
@@ -315,6 +314,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       );
       if (!dfm) return;
 
+      this.applyPendingExclude(dfm);
       this.topLevelJoiner.maybeAddDimensionFilter(dfm);
       this.temporaryFilterName = name;
     } else if (this.metricsViewsProvider.measureSpecs[name]) {
@@ -346,10 +346,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
-    // A new manager starts from the exclude mode chosen for the dimension.
-    if (!this.filterManagersMap[name] && this.pendingExcludes.get(name)) {
-      dimensionFilterManager.exclude = true;
-    }
+    this.applyPendingExclude(dimensionFilterManager);
 
     const ret = dimensionFilterManager.runWithSource(source, () =>
       callback(dimensionFilterManager),
@@ -358,12 +355,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     if (dimensionFilterManager.expr) {
       this.topLevelJoiner.maybeAddDimensionFilter(dimensionFilterManager);
     }
-    // A manager left out of the filter is dropped, so its exclude mode is kept here.
+    // A new manager left out of the filter is never seen by `syncPendingExcludes`, so its mode is kept here.
     if (this.pendingExcludes.has(name)) {
-      this.pendingExcludes.set(
-        name,
-        !this.filterManagersMap[name] && dimensionFilterManager.exclude,
-      );
+      this.pendingExcludes.set(name, dimensionFilterManager.exclude);
     }
     return ret;
   }
@@ -393,11 +387,36 @@ export class ExpressionFilterManager implements UrlParamsStore {
     };
   }
 
-  private resetPendingExcludesWithManager() {
+  /** Starts an empty manager from the exclude mode kept for its dimension. */
+  private applyPendingExclude(dimensionFilterManager: DimensionFilterManager) {
+    if (
+      !dimensionFilterManager.expr &&
+      untrack(() => this.pendingExcludes.get(dimensionFilterManager.name))
+    ) {
+      dimensionFilterManager.exclude = true;
+    }
+  }
+
+  private applyPendingExcludes() {
     // Untracked so that callers running inside an effect don't start depending on these maps.
     untrack(() => {
       for (const name of this.pendingExcludes.keys()) {
-        if (this.filterManagersMap[name]) this.pendingExcludes.set(name, false);
+        const manager = this.filterManagersMap[name];
+        if (manager instanceof DimensionFilterManager) {
+          this.applyPendingExclude(manager);
+        }
+      }
+    });
+  }
+
+  private syncPendingExcludes() {
+    // Untracked so that callers running inside an effect don't start depending on these maps.
+    untrack(() => {
+      for (const name of this.pendingExcludes.keys()) {
+        const manager = this.filterManagersMap[name];
+        if (manager instanceof DimensionFilterManager) {
+          this.pendingExcludes.set(name, manager.exclude);
+        }
       }
     });
   }
