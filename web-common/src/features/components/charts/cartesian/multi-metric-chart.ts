@@ -23,6 +23,7 @@ import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
+  centerGroupedBars,
   createColorEncoding,
   createConfigWithLegend,
   createMultiLayerBaseSpec,
@@ -117,7 +118,12 @@ export function generateVLMultiMetricChartSpec(
   // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
     x: {
-      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      ...createPositionEncoding(
+        config.x,
+        data,
+        horizontal ? "y" : "x",
+        vegaConfig,
+      ),
       bandPosition: 0,
     },
   };
@@ -310,9 +316,10 @@ export function generateVLMultiMetricChartSpec(
       spec.layer = layers;
       break;
     }
-    case "stacked_bar": {
+    case "stacked_bar":
+    case "stacked_bar_normalized": {
       const stackedBarEncoding: Partial<Encoding<Field>> = {
-        y: stackedYEncoding,
+        y: markType === "stacked_bar" ? stackedYEncoding : normalizedYEncoding,
         color: baseColorEncoding,
       };
 
@@ -327,34 +334,13 @@ export function generateVLMultiMetricChartSpec(
 
       spec.layer = [
         hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: stackedBarEncoding,
-        },
-      ];
-      break;
-    }
-    case "stacked_bar_normalized": {
-      const normalizedBarEncoding: Partial<Encoding<Field>> = {
-        y: normalizedYEncoding,
-        color: baseColorEncoding,
-      };
-
-      if (hasComparison) {
-        const xOffset: OffsetDef<Field> = {
-          field: "period",
-          sort: { field: SortOrderField },
-        };
-        normalizedBarEncoding.xOffset = xOffset;
-        normalizedBarEncoding.opacity = opacityComparisonEncodingPeriod;
-      }
-
-      spec.layer = [
-        hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: normalizedBarEncoding,
-        },
+        centerGroupedBars(
+          {
+            mark: { type: "bar", clip: true, width: { band: 0.9 } },
+            encoding: stackedBarEncoding,
+          },
+          vegaConfig,
+        ),
       ];
       break;
     }
@@ -379,10 +365,13 @@ export function generateVLMultiMetricChartSpec(
 
       spec.layer = [
         hoverRuleLayer,
-        {
-          mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: barEncoding,
-        },
+        centerGroupedBars(
+          {
+            mark: { type: "bar", clip: true, width: { band: 0.9 } },
+            encoding: barEncoding,
+          },
+          vegaConfig,
+        ),
       ];
       break;
     }

@@ -81,10 +81,15 @@ export function createSingleLayerBaseSpec(
 type PositionChannel = "x" | "y" | "theta";
 type AxisProps = NonNullable<PositionFieldDef<Field>["axis"]>;
 
+/**
+ * The encoding of a position channel for a field. `config` is the chart's own config, with the
+ * widget's `vl_config`; the layout of a categorical x-axis's labels takes it into account.
+ */
 export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
   channel: PositionChannel,
+  config?: Config<ExprRef | SignalRef>,
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
@@ -113,7 +118,7 @@ export function createPositionEncoding(
       field.axisOrient === "none"
         ? null
         : {
-            ...createAxisLabelLayout(field, data, channel),
+            ...createAxisLabelLayout(field, data, channel, config),
             ...(field.axisOrient && { orient: field.axisOrient }),
             ...(field.type === "quantitative" && {
               formatType: sanitizeFieldName(field.field),
@@ -139,6 +144,24 @@ const ANGLED_LABEL_MIN_BAND_PX = 16;
 // of the whole chart the labels end up with is smaller than this fraction.
 const ROTATED_LABEL_MAX_HEIGHT_FRACTION = 0.5;
 const ROTATED_LABEL_MIN_LIMIT_PX = 60;
+// Whether the axis a label belongs to runs along the top of the chart. It is read from the axis
+// when the label is drawn, because the side can be set on the field (`axisOrient`) as well as in
+// the chart's or the theme's config.
+const AXIS_ON_TOP = `item.mark.group.orient === "top"`;
+// The sections of a chart's config that Vega-Lite reads the properties of a categorical x-axis
+// from. Which of them apply to a chart depends on its scale and on the side its axis is on.
+const CATEGORICAL_X_AXIS_CONFIGS = [
+  "axis",
+  "axisX",
+  "axisTop",
+  "axisBottom",
+  "axisDiscrete",
+  "axisBand",
+  "axisPoint",
+  "axisXDiscrete",
+  "axisXBand",
+  "axisXPoint",
+] as const;
 
 /**
  * Axis label angle, truncation and overlap handling for a position field.
@@ -151,12 +174,17 @@ const ROTATED_LABEL_MIN_LIMIT_PX = 60;
  * truncated with an ellipsis at a fraction of the plot height so the marks always keep room.
  * An explicit angle is kept as is with the same truncation, so a vertical label can never take over
  * the chart. Categorical labels are never thinned: a reader cannot infer a hidden category.
+ * Every label is anchored on the center of its band: an upright label is centered on it, and a
+ * rotated label meets it with the end of its text nearest the axis, through the middle of the line.
+ * A `labelAlign` or `labelBaseline` that `config` (the chart's own config, with the widget's
+ * `vl_config`) sets for the axis is left to it, because a property on the encoding overrides it.
  * Other channels and field types only pass through an explicit `labelAngle`.
  */
 export function createAxisLabelLayout(
   field: FieldConfig,
   data: ChartDataResult,
   channel: PositionChannel,
+  config?: Config<ExprRef | SignalRef>,
 ): Partial<AxisProps> {
   const isCategoricalX =
     channel === "x" && (field.type === "nominal" || field.type === "ordinal");
@@ -175,13 +203,20 @@ export function createAxisLabelLayout(
   const band = `(width / ${Math.max(1, labels.length)})`;
   const uprightLimit = `${band} - 4`;
   const rotatedLimit = `max(${ROTATED_LABEL_MIN_LIMIT_PX}, height * ${ROTATED_LABEL_MAX_HEIGHT_FRACTION})`;
+  const setInConfig = (property: "labelAlign" | "labelBaseline") =>
+    CATEGORICAL_X_AXIS_CONFIGS.some(
+      (section) => config?.[section]?.[property] !== undefined,
+    );
 
   if (field.labelAngle !== undefined) {
+    const upright = field.labelAngle % 180 === 0;
     return {
       labelAngle: field.labelAngle,
-      labelLimit: {
-        expr: field.labelAngle % 180 === 0 ? uprightLimit : rotatedLimit,
-      },
+      // Vega-Lite aligns a label of a fixed angle on its tick. For a rotated one it may pick the
+      // top or bottom baseline, which hangs the label from a corner, so only that is overridden.
+      ...(!upright &&
+        !setInConfig("labelBaseline") && { labelBaseline: "middle" as const }),
+      labelLimit: { expr: upright ? uprightLimit : rotatedLimit },
       labelOverlap: false,
     };
   }
@@ -196,6 +231,20 @@ export function createAxisLabelLayout(
     labelAngle: {
       expr: `(${fitsUpright} ? 0 : (${fitsAngled} ? -45 : -90))`,
     },
+    // The anchor is spelled out because Vega-Lite's default does not hold for an angle driven by
+    // a signal: the alignment it derives yields `null` for an upright label, and Vega draws a
+    // text mark without an alignment from its left edge. The label then starts at the center of
+    // its bar instead of being centered under it.
+    ...(!setInConfig("labelAlign") && {
+      labelAlign: {
+        expr: `${fitsUpright} ? "center" : (${AXIS_ON_TOP} ? "left" : "right")`,
+      },
+    }),
+    ...(!setInConfig("labelBaseline") && {
+      labelBaseline: {
+        expr: `${fitsUpright} ? (${AXIS_ON_TOP} ? "bottom" : "top") : "middle"`,
+      },
+    }),
     labelLimit: { expr: `${fitsUpright} ? ${uprightLimit} : ${rotatedLimit}` },
     labelOverlap: false,
   };
@@ -216,6 +265,58 @@ export function createStackOverride(
   colorField: string | undefined,
 ): { stack?: null } {
   return field?.zeroBasedOrigin === false && !colorField ? { stack: null } : {};
+}
+
+/**
+ * Centers the bars that share a category's band on the middle of that band, where the axis label
+ * is anchored. Such bars are spread side by side by the `xOffset` channel: one per color value,
+ * measure or comparison period.
+ *
+ * The builders size a bar as a share of its band and leave the rest as the gap to its neighbors.
+ * With an offset channel, Vega-Lite takes the bar's width from its slot inside the band but the
+ * inset that centers it from the whole band. Every bar is then pushed right by more than its own
+ * gap, so the group sits right of its label and overhangs the band. The gap is moved into the
+ * offset scale's padding instead, which draws the same bars evenly around the middle of the band.
+ * It is added to the padding that `config` (the chart's own config, with the widget's `vl_config`)
+ * already gives the offset scale, so the bars keep the width they had.
+ *
+ * A layer without an offset channel is returned as is.
+ */
+export function centerGroupedBars(
+  barLayer: UnitSpec<Field>,
+  config: Config<ExprRef | SignalRef> | undefined,
+): UnitSpec<Field> {
+  const { mark, encoding } = barLayer;
+  const xOffset = encoding?.xOffset;
+  if (typeof mark !== "object" || mark.type !== "bar") return barLayer;
+  if (!xOffset || !("field" in xOffset)) return barLayer;
+  const { width } = mark;
+  if (typeof width !== "object" || !("band" in width)) return barLayer;
+
+  const inner = config?.scale?.offsetBandPaddingInner ?? 0;
+  const outer = config?.scale?.offsetBandPaddingOuter ?? 0;
+  // Padding driven by a signal cannot be added to here; such a chart is left as it was.
+  if (typeof inner !== "number" || typeof outer !== "number") return barLayer;
+
+  // The bar's gap as a share of a slot's step: the band it is cut from is what the padding leaves.
+  const gap = (1 - width.band) * (1 - inner);
+  // Rounded so that 1 - 0.9 reads as 0.1 in the spec.
+  const round = (value: number) => Number(value.toFixed(4));
+  return {
+    ...barLayer,
+    mark: { ...mark, width: { band: 1 } },
+    encoding: {
+      ...encoding,
+      xOffset: {
+        ...xOffset,
+        scale: {
+          ...xOffset.scale,
+          paddingInner: round(inner + gap),
+          paddingOuter: round(outer + gap / 2),
+        },
+      },
+    },
+  };
 }
 
 export function getTemporalAxisLabelExpr(format: string | undefined) {

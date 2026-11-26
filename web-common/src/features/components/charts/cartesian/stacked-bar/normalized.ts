@@ -2,6 +2,7 @@ import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util"
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
 import {
   buildHoverRuleLayer,
+  centerGroupedBars,
   createCartesianMultiValueTooltipChannel,
   createColorEncoding,
   createConfigWithLegend,
@@ -144,7 +145,12 @@ export function generateVLStackedBarNormalizedSpec(
   // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
     x: {
-      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      ...createPositionEncoding(
+        config.x,
+        data,
+        horizontal ? "y" : "x",
+        vegaConfig,
+      ),
       bandPosition: 0,
     },
   };
@@ -187,7 +193,7 @@ export function generateVLStackedBarNormalizedSpec(
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
     hoverRuleLayer,
-    barLayer,
+    centerGroupedBars(barLayer, vegaConfig),
   ];
 
   spec.layer = layers;
