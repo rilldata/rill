@@ -500,7 +500,7 @@
   "canvas_container_ungroup": "Ungroup",
   "canvas_container_viewer_note": "Viewers don't see the container: its rows show as regular rows.",
   "canvas_control_all": "All",
-  "canvas_control_dialog_add_title": "Add viewer control",
+  "canvas_control_dialog_add_title": "Add control",
   "canvas_control_dialog_affects": [
     {
       "declarations": [
@@ -510,8 +510,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Changes 1 widget at this level: {names}",
-        "countPlural=other": "Changes {count} widgets at this level: {names}"
+        "countPlural=one": "Applies to 1 widget at this level: {names}",
+        "countPlural=other": "Applies to {count} widgets at this level: {names}"
       }
     }
   ],
@@ -530,7 +530,7 @@
   "canvas_control_dialog_display_auto": "Automatic",
   "canvas_control_dialog_display_buttons": "Buttons",
   "canvas_control_dialog_display_dropdown": "Dropdown",
-  "canvas_control_dialog_edit_title": "Edit viewer control",
+  "canvas_control_dialog_edit_title": "Edit control",
   "canvas_control_dialog_field_dimension": "Dimension shown by default",
   "canvas_control_dialog_field_filter": "Dimension to filter",
   "canvas_control_dialog_field_measure": "Measure shown by default",
@@ -588,7 +588,6 @@
   "canvas_tabs": "Tabs",
   "canvas_viewer_controls": "Viewer controls",
   "canvas_viewer_controls_add": "Add control",
-  "canvas_viewer_controls_add_viewer": "Add viewer control",
   "canvas_viewer_controls_edit": "Edit control",
   "canvas_viewer_controls_hint_canvas": "Apply to every widget on the canvas.",
   "canvas_viewer_controls_hint_container": "Apply to every widget in this container.",

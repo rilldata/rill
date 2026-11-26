@@ -236,7 +236,7 @@ test.describe("canvas viewer controls", () => {
     });
     await chart.hover();
     await chart.getByRole("button", { name: "Component menu" }).click();
-    await page.getByRole("menuitem", { name: "Add viewer control" }).click();
+    await page.getByRole("menuitem", { name: "Add control" }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Applies to")).toBeVisible();
     await expect(dialog.getByText("This widget")).toBeVisible();
@@ -244,7 +244,7 @@ test.describe("canvas viewer controls", () => {
     await expect(dialog).toHaveCount(0);
 
     // The button at the top of the canvas adds a control for the whole canvas.
-    await page.getByRole("button", { name: "Add viewer control" }).click();
+    await page.getByRole("button", { name: "Add control" }).click();
     await expect(dialog.getByText("Applies to")).toHaveCount(0);
     await dialog.locator("#canvas-control-field").click();
     await page

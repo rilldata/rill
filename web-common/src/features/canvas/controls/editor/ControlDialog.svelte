@@ -20,6 +20,7 @@
     findRepeatedOption,
     listAffectedItems,
     listFieldTargets,
+    takenOnLevel,
     TIME_GRAIN_OPTIONS,
     type ControlDraft,
     type ControlLevelRef,
@@ -151,10 +152,9 @@
       canvas.dashboardProvider.yamlConfigProvider.isSingleSelectFilter(field),
   );
   let needsField = $derived(isSwap || isFilter || isSlot);
+  let chosenLevel = $derived(levels[Number(levelIndex)] ?? levels[0]);
   // A slot control belongs to its widget.
-  let level = $derived(
-    isSlot && itemLevel ? itemLevel : (levels[Number(levelIndex)] ?? levels[0]),
-  );
+  let level = $derived(isSlot && itemLevel ? itemLevel : chosenLevel);
   let slotTarget = $derived(
     isSlot ? slotTargets.find((t) => t.target === field) : undefined,
   );
@@ -291,11 +291,58 @@
       : listed;
   });
 
-  // Another control on the level that changes the same thing. Only the first of two applies,
-  // so the runtime rejects the second.
   let originalName = $derived(
     seed.initial ? defaultControlName(controlToYAML(seed.initial)) : "",
   );
+  // A level takes one control per thing it changes, so the form offers no kind, field or level
+  // that would make a second one there, rather than reporting the conflict.
+  function takenAt(path: YAMLPath) {
+    return takenOnLevel(
+      $parsedContent,
+      path,
+      !isNew && path.join("/") === seed.levelPath.join("/") ? originalName : "",
+    );
+  }
+  let takenHere = $derived(takenAt(chosenLevel.path));
+  let freeSlotTargets = $derived.by(() => {
+    const taken = itemLevel ? takenAt(itemLevel.path) : takenHere;
+    return slotTargets.filter(
+      (t) =>
+        (isSlot && t.target === field) || !taken(ControlKind.Slot, t.target),
+    );
+  });
+  let kindOptions = $derived(
+    [
+      ControlKind.Measure,
+      ControlKind.Dimension,
+      ...(freeSlotTargets.length || isSlot ? [ControlKind.Slot] : []),
+      ControlKind.Filter,
+      ControlKind.TimeRange,
+      ControlKind.TimeGrain,
+    ]
+      .filter(
+        (k) =>
+          k === kind ||
+          (k !== ControlKind.TimeRange && k !== ControlKind.TimeGrain) ||
+          !takenHere(k, ""),
+      )
+      .map((value) => ({ value, label: controlKindLabel(value) })),
+  );
+  let freeFieldOptions = $derived(
+    fieldOptions.filter((o) => o.value === field || !takenHere(kind, o.value)),
+  );
+  let levelOptions = $derived(
+    levels.flatMap((l, i) =>
+      String(i) === levelIndex ||
+      (needsField && !field) ||
+      !takenAt(l.path)(kind, field)
+        ? [{ value: String(i), label: controlLevelLabel(l) }]
+        : [],
+    ),
+  );
+  // Another control on the level that changes the same thing. Only the first of two applies,
+  // so the runtime rejects the second. The choices on offer avoid it; this catches the rest, such
+  // as the canvas changing while the dialog is open.
   let levelConflict = $derived(
     !needsField || field
       ? findLevelConflict(
@@ -355,8 +402,8 @@
     field = "";
     options = [];
     defaultValue = "";
-    if (kind === ControlKind.Slot && slotTargets[0]) {
-      setSlotTarget(slotTargets[0].target);
+    if (kind === ControlKind.Slot && freeSlotTargets[0]) {
+      setSlotTarget(freeSlotTargets[0].target);
     }
   }
 
@@ -418,14 +465,7 @@
         sameWidth
         full
         value={kind}
-        options={[
-          ControlKind.Measure,
-          ControlKind.Dimension,
-          ...(slotTargets.length || isSlot ? [ControlKind.Slot] : []),
-          ControlKind.Filter,
-          ControlKind.TimeRange,
-          ControlKind.TimeGrain,
-        ].map((value) => ({ value, label: controlKindLabel(value) }))}
+        options={kindOptions}
         onChange={setKind}
       />
 
@@ -437,7 +477,7 @@
           sameWidth
           full
           value={field}
-          options={slotTargets.map((t) => ({
+          options={freeSlotTargets.map((t) => ({
             value: t.target,
             label: t.label,
           }))}
@@ -456,7 +496,7 @@
           full
           enableSearch
           bind:value={field}
-          options={fieldOptions}
+          options={freeFieldOptions}
         />
       {/if}
 
@@ -602,10 +642,7 @@
           sameWidth
           full
           bind:value={levelIndex}
-          options={levels.map((l, i) => ({
-            value: String(i),
-            label: controlLevelLabel(l),
-          }))}
+          options={levelOptions}
         />
       {/if}
 

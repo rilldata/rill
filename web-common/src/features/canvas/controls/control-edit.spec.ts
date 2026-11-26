@@ -15,6 +15,7 @@ import {
   moveControlToLevel,
   readControls,
   removeControl,
+  takenOnLevel,
   updateControl,
   type ControlDraft,
 } from "./control-edit";
@@ -418,6 +419,38 @@ rows: []
 
   it("leaves out the control being edited", () => {
     expect(findLevelConflict(doc, [], "time_range", "", "time_range")).toBe("");
+  });
+});
+
+describe("takenOnLevel", () => {
+  const doc = parseDocument(`type: canvas
+controls:
+  - time: range
+    options: [P7D]
+  - filter: publisher
+    name: pub
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv
+`);
+
+  it("tells which kinds and fields the level's controls already change", () => {
+    const taken = takenOnLevel(doc, []);
+    expect(taken("time_range", "")).toBe(true);
+    expect(taken("time_grain", "")).toBe(false);
+    expect(taken("filter", "publisher")).toBe(true);
+    expect(taken("filter", "domain")).toBe(false);
+    expect(taken("dimension", "publisher")).toBe(false);
+    expect(takenOnLevel(doc, ["rows", 0, "items", 0])("time_range", "")).toBe(
+      false,
+    );
+  });
+
+  it("leaves out the control being edited", () => {
+    const taken = takenOnLevel(doc, [], "pub");
+    expect(taken("filter", "publisher")).toBe(false);
+    expect(taken("time_range", "")).toBe(true);
   });
 });
 

@@ -6,8 +6,8 @@
   import type { BlockKind } from "./stores/block-edit";
 
   // The block-level items of a dropdown menu, shown for the handlers that are passed:
-  // the tab strip offers Duplicate and Add viewer control for its group in each tab's menu,
-  // the container chip offers all of them. Add viewer control needs the canvasControls flag.
+  // the tab strip offers Duplicate and Add control for its group in each tab's menu,
+  // the container chip offers all of them. Add control needs the canvasControls flag.
   let {
     kind,
     onDuplicate,
@@ -51,7 +51,7 @@
     onclick={onAddControl}
   >
     <SlidersHorizontal size="14px" />
-    {m.canvas_viewer_controls_add_viewer()}
+    {m.canvas_viewer_controls_add()}
   </DropdownMenu.Item>
 {/if}
 {#if onUngroup}

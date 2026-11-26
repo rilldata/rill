@@ -27,9 +27,7 @@ const add = {
 describe("LevelControls", () => {
   it("offers to add a viewer control to an empty canvas in the editor", () => {
     render(LevelControls, { canvasEntity: canvas(true), scopes: [[]], add });
-    expect(
-      screen.getByRole("button", { name: "Add viewer control" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add control" })).toBeTruthy();
   });
 
   it("shows nothing on an empty level without the editor's add target", () => {

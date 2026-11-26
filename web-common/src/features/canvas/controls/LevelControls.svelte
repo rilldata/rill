@@ -21,8 +21,8 @@
     // Set to center the bar like a canvas row.
     maxWidth?: number;
     // In the editor: where the add button after the bar adds a control. The levels are the
-    // ones the dialog offers, and `whenEmpty` keeps the button, as "Add viewer control", on a
-    // level without controls (the canvas; blocks offer it in their menus instead).
+    // ones the dialog offers, and `whenEmpty` keeps the button on a level without controls
+    // (the canvas; blocks offer it in their menus instead).
     add?: {
       levels: ControlLevelRef[];
       levelPath: YAMLPath;
@@ -58,7 +58,6 @@
         canvas={canvasEntity}
         levels={add.levels}
         levelPath={add.levelPath}
-        compact={controls.length > 0}
       />
     {/if}
     {#if changedKeys.length}

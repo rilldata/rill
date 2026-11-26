@@ -472,6 +472,26 @@ export function findLevelConflict(
   return conflict ? defaultControlName(conflict) : "";
 }
 
+/**
+ * A test of whether the level already has a control that changes what one of this kind and field
+ * would, leaving out the control named `exceptName` (see `findLevelConflict`). The editor offers
+ * only the kinds, fields and levels that are free, rather than a choice it would then reject.
+ */
+export function takenOnLevel(
+  doc: Document | undefined,
+  path: YAMLPath,
+  exceptName = "",
+): (kind: EditableControlKind, field: string) => boolean {
+  const taken = new Set<string>();
+  for (const c of readControls(doc, path)) {
+    if (defaultControlName(c) === exceptName) continue;
+    for (const key of ["time", "measure", "dimension", "slot", "filter"]) {
+      if (typeof c[key] === "string") taken.add(`${key}:${c[key]}`);
+    }
+  }
+  return (kind, field) => taken.has(controlTargetEntry(kind, field).join(":"));
+}
+
 /** The YAML key and value that say what a control of this kind changes, e.g. `time: range`. */
 function controlTargetEntry(
   kind: EditableControlKind,

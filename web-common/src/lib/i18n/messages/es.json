@@ -500,7 +500,7 @@
   "canvas_container_ungroup": "Desagrupar",
   "canvas_container_viewer_note": "Los usuarios no ven el contenedor: sus filas se muestran como filas normales.",
   "canvas_control_all": "Todos",
-  "canvas_control_dialog_add_title": "Añadir control para lectores",
+  "canvas_control_dialog_add_title": "Añadir control",
   "canvas_control_dialog_affects": [
     {
       "declarations": [
@@ -510,8 +510,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Cambia 1 widget en este nivel: {names}",
-        "countPlural=other": "Cambia {count} widgets en este nivel: {names}"
+        "countPlural=one": "Se aplica a 1 widget en este nivel: {names}",
+        "countPlural=other": "Se aplica a {count} widgets en este nivel: {names}"
       }
     }
   ],
@@ -530,7 +530,7 @@
   "canvas_control_dialog_display_auto": "Automático",
   "canvas_control_dialog_display_buttons": "Botones",
   "canvas_control_dialog_display_dropdown": "Desplegable",
-  "canvas_control_dialog_edit_title": "Editar control para lectores",
+  "canvas_control_dialog_edit_title": "Editar control",
   "canvas_control_dialog_field_dimension": "Dimensión mostrada por defecto",
   "canvas_control_dialog_field_filter": "Dimensión a filtrar",
   "canvas_control_dialog_field_measure": "Medida mostrada por defecto",
@@ -588,7 +588,6 @@
   "canvas_tabs": "Pestañas",
   "canvas_viewer_controls": "Controles para lectores",
   "canvas_viewer_controls_add": "Añadir control",
-  "canvas_viewer_controls_add_viewer": "Añadir control para lectores",
   "canvas_viewer_controls_edit": "Editar control",
   "canvas_viewer_controls_hint_canvas": "Se aplican a todos los widgets del lienzo.",
   "canvas_viewer_controls_hint_container": "Se aplican a todos los widgets de este contenedor.",

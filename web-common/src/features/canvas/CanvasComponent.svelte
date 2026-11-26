@@ -88,7 +88,7 @@
 
   $: allowBorder = !hideBorder.has(renderer);
 
-  // The menu's "Add viewer control" opens the control dialog for this widget, with the levels
+  // The menu's "Add control" opens the control dialog for this widget, with the levels
   // around it to choose from. Widgets referencing a component file and widgets without a
   // metrics view don't offer it, as in the inspector.
   $: canAddControl =

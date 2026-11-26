@@ -6,18 +6,15 @@
   import type { ControlLevelRef } from "../control-edit";
   import AddControlDialog from "./AddControlDialog.svelte";
 
-  // The editor's on-canvas button for adding a viewer control to a level. It reads
-  // "Add viewer control" where the level has none yet, and "Add control" after a control bar.
+  // The editor's on-canvas button for adding a viewer control to a level, alone or after its control bar.
   let {
     canvas,
     levels,
     levelPath,
-    compact = false,
   }: {
     canvas: CanvasEntity;
     levels: ControlLevelRef[];
     levelPath: YAMLPath;
-    compact?: boolean;
   } = $props();
 
   let open = $state(false);
@@ -34,9 +31,7 @@
   }}
 >
   <Plus size="12px" />
-  {compact
-    ? m.canvas_viewer_controls_add()
-    : m.canvas_viewer_controls_add_viewer()}
+  {m.canvas_viewer_controls_add()}
 </button>
 
 {#if open}

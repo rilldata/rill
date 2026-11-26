@@ -500,7 +500,7 @@
   "canvas_container_ungroup": "그룹 해제",
   "canvas_container_viewer_note": "뷰어에게는 컨테이너가 보이지 않으며, 컨테이너의 행은 일반 행으로 표시됩니다.",
   "canvas_control_all": "전체",
-  "canvas_control_dialog_add_title": "뷰어 컨트롤 추가",
+  "canvas_control_dialog_add_title": "컨트롤 추가",
   "canvas_control_dialog_affects": [
     {
       "declarations": [
@@ -510,8 +510,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "이 수준에서 위젯 1개를 변경합니다: {names}",
-        "countPlural=other": "이 수준에서 위젯 {count}개를 변경합니다: {names}"
+        "countPlural=one": "이 수준의 위젯 1개에 적용됩니다: {names}",
+        "countPlural=other": "이 수준의 위젯 {count}개에 적용됩니다: {names}"
       }
     }
   ],
@@ -530,7 +530,7 @@
   "canvas_control_dialog_display_auto": "자동",
   "canvas_control_dialog_display_buttons": "버튼",
   "canvas_control_dialog_display_dropdown": "드롭다운",
-  "canvas_control_dialog_edit_title": "뷰어 컨트롤 편집",
+  "canvas_control_dialog_edit_title": "컨트롤 편집",
   "canvas_control_dialog_field_dimension": "기본으로 표시할 차원",
   "canvas_control_dialog_field_filter": "필터링할 차원",
   "canvas_control_dialog_field_measure": "기본으로 표시할 측정값",
@@ -588,7 +588,6 @@
   "canvas_tabs": "탭",
   "canvas_viewer_controls": "뷰어 컨트롤",
   "canvas_viewer_controls_add": "컨트롤 추가",
-  "canvas_viewer_controls_add_viewer": "뷰어 컨트롤 추가",
   "canvas_viewer_controls_edit": "컨트롤 편집",
   "canvas_viewer_controls_hint_canvas": "캔버스의 모든 위젯에 적용됩니다.",
   "canvas_viewer_controls_hint_container": "이 컨테이너의 모든 위젯에 적용됩니다.",

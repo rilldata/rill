@@ -144,7 +144,7 @@
         {#if onAddControl && $canvasControls}
           <DropdownMenu.Item onclick={onAddControl}>
             <SlidersHorizontal size="14px" />
-            {m.canvas_viewer_controls_add_viewer()}
+            {m.canvas_viewer_controls_add()}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />
