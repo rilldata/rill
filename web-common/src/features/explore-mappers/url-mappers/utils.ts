@@ -73,6 +73,17 @@ export async function convertAPITimeRangesToUrlParams(
   }
 
   urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
+  // The range was resolved on the request's time dimension, so the explore filters on it too.
+  if (
+    reqTimeRange.timeDimension &&
+    reqTimeRange.timeDimension !==
+      metricsViewResp.resource.metricsView.state.validSpec.timeDimension
+  ) {
+    urlParams.set(
+      ExploreStateURLParams.TimeDimension,
+      reqTimeRange.timeDimension,
+    );
+  }
 
   if (reqComparisonTimeRange) {
     const comparisonParam = convertV1TimeRangeToComparisonTimeOption(

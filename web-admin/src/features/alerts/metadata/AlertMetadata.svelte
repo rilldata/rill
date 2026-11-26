@@ -227,6 +227,16 @@
                   </TooltipContent>
                 </Tooltip>
               </div>
+            {:else if $exploreUrlQuery.isError}
+              <div class="flex flex-col gap-y-1">
+                {dashboardTitle}
+                <span class="text-xs text-fg-secondary">
+                  {m.alert_dashboard_state_load_failed()}
+                </span>
+                <a href={exploreUrl}>
+                  {m.alert_dashboard_open_without_filters()}
+                </a>
+              </div>
             {:else if exploreUrl}
               <a href={exploreUrl}>
                 {dashboardTitle}

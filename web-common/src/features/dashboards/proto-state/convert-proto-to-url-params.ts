@@ -45,7 +45,10 @@ import {
 } from "@rilldata/web-common/lib/time/types.ts";
 import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
-import { convertAbsoluteTimeRangeToUrlParam } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import {
+  convertAbsoluteTimeRangeToRillTime,
+  convertAbsoluteTimeRangeToUrlParam,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
 /**
  * Converts the legacy base64 encoded proto dashboard state to explore url params.
@@ -153,7 +156,11 @@ function convertProtoTimeFieldsToUrlParams(
   const urlParams = new URLSearchParams();
 
   if (dashboard.timeRange) {
-    const timeRangeName = convertProtoTimeRangeToUrlParam(dashboard.timeRange);
+    const timeRangeName = convertProtoTimeRangeToUrlParam(
+      dashboard.timeRange,
+      // Rill time reads an absolute time range as wall-clock times in the dashboard's zone.
+      dashboard.selectedTimezone || "UTC",
+    );
     if (timeRangeName) {
       urlParams.set(ExploreStateURLParams.TimeRange, timeRangeName);
     }
@@ -210,21 +217,33 @@ function convertProtoTimeFieldsToUrlParams(
 
   if (dashboard.selectedTimezone !== undefined) {
     urlParams.set(ExploreStateURLParams.TimeZone, dashboard.selectedTimezone);
+  } else if (dashboard.timeRange?.timeStart && dashboard.timeRange.timeEnd) {
+    // The absolute time range was written in UTC, so the explore's default zone must not apply.
+    urlParams.set(ExploreStateURLParams.TimeZone, "UTC");
   }
 
   return urlParams;
 }
 
-function convertProtoTimeRangeToUrlParam(timeRange: DashboardTimeRange) {
+/**
+ * @param timeZone When set, an absolute range is written as a rill time range of wall-clock times in the zone,
+ * as the primary time range param needs.
+ * Otherwise it is written as UTC instants, as the comparison and highlighted time range params need.
+ */
+function convertProtoTimeRangeToUrlParam(
+  timeRange: DashboardTimeRange,
+  timeZone?: string,
+) {
   const rangeName = timeRange.name;
 
   // Check custom first since TimeRangePreset has CUSTOM as well
   if (timeRange.timeStart && timeRange.timeEnd) {
     // The legacy encoder stored milliseconds in `seconds`, so `Timestamp.toDate` cannot be used.
-    return convertAbsoluteTimeRangeToUrlParam(
-      new Date(Number(timeRange.timeStart.seconds)),
-      new Date(Number(timeRange.timeEnd.seconds)),
-    );
+    const start = new Date(Number(timeRange.timeStart.seconds));
+    const end = new Date(Number(timeRange.timeEnd.seconds));
+    return timeZone
+      ? convertAbsoluteTimeRangeToRillTime(start, end, timeZone)
+      : convertAbsoluteTimeRangeToUrlParam(start, end);
   }
 
   // backwards compatibility

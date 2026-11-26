@@ -44,7 +44,7 @@ export function mapResolverExpressionToV1Expression(
         op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
         exprs: expr.cond.exprs
           ?.map(mapResolverExpressionToV1Expression)
-          .filter(Boolean) as V1Expression[] | undefined,
+          .filter((expr) => expr !== undefined),
       },
     });
     return flattenInExpressionValues(condExpr);

@@ -208,7 +208,7 @@ describe("getFilterParamsFromAggregationRequest", () => {
     });
 
     expect(params.get("tr")).toEqual(
-      "2026-03-01T00:00:00.000Z to 2026-03-02T00:00:00.000Z",
+      "2026-03-01T00:00:00.000Z,2026-03-02T00:00:00.000Z",
     );
   });
 

@@ -106,10 +106,22 @@ const TestCases: {
       selectedTimezone: "Asia/Kathmandu",
     },
     expected: {
-      tr: "2024-01-01T00:00:00.000Z,2024-02-01T00:00:00.000Z",
+      // Wall-clock times in Kathmandu (+05:45) for the saved instants.
+      tr: "2024-01-01T05:45:00.000Z,2024-02-01T05:45:00.000Z",
+      // The comparison param takes UTC instants.
       compare_tr: "2024-01-01T00:00:00.000Z,2024-02-01T00:00:00.000Z",
       grain: "day",
       tz: "Asia/Kathmandu",
+    },
+  },
+  {
+    title: "custom time range without a time zone",
+    state: {
+      timeRange: { name: "CUSTOM", timeStart: Start, timeEnd: End },
+    },
+    expected: {
+      tr: "2024-01-01T00:00:00.000Z,2024-02-01T00:00:00.000Z",
+      tz: "UTC",
     },
   },
   {

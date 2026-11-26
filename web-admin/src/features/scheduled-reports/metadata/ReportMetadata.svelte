@@ -156,9 +156,10 @@
     return search ? `${path}?${search}` : path;
   })();
   // The link is shown once the url is mapped; if mapping fails it still opens the explore, without the report's state.
+  $: exploreUrlFailed = !isCanvasReport && $exploreUrlQuery.isError;
   $: dashboardUrl = isCanvasReport
     ? canvasUrl
-    : $exploreUrlQuery.isError
+    : exploreUrlFailed
       ? getDashboardPath(
           { organization, project, embedded },
           "explore",
@@ -277,6 +278,16 @@
                     {m.report_dashboard_not_exist()}
                   </TooltipContent>
                 </Tooltip>
+              </div>
+            {:else if exploreUrlFailed}
+              <div class="flex flex-col gap-y-1">
+                {dashboardTitle}
+                <span class="text-xs text-fg-secondary">
+                  {m.report_dashboard_state_load_failed()}
+                </span>
+                <a href={dashboardUrl}>
+                  {m.report_dashboard_open_without_filters()}
+                </a>
               </div>
             {:else if dashboardUrl}
               <a href={dashboardUrl}>

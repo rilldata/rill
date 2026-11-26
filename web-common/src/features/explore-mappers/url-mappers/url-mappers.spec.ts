@@ -366,6 +366,39 @@ describe("convertAggregationRequestToUrlParams with a runtime", () => {
         expand_dim: AD_BIDS_DOMAIN_DIMENSION,
       },
     },
+    {
+      title: "time range on a time dimension other than the default",
+      req: {
+        metricsView: AD_BIDS_METRICS_NAME,
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        timeRange: { expression: "7D", timeDimension: "created_at" },
+      },
+      expected: {
+        tr: "2024-01-01T05:00:00.000Z,2024-01-08T05:00:00.000Z",
+        tz: "UTC",
+        td: "created_at",
+        view: "explore",
+        expand_dim: AD_BIDS_DOMAIN_DIMENSION,
+      },
+    },
+    {
+      // The default time dimension is left out, so the url stays the same as without one.
+      title: "time range on the default time dimension",
+      req: {
+        metricsView: AD_BIDS_METRICS_NAME,
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        timeRange: {
+          expression: "7D",
+          timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+        },
+      },
+      expected: {
+        tr: "2024-01-01T05:00:00.000Z,2024-01-08T05:00:00.000Z",
+        tz: "UTC",
+        view: "explore",
+        expand_dim: AD_BIDS_DOMAIN_DIMENSION,
+      },
+    },
   ];
 
   for (const {
