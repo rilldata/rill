@@ -12,7 +12,8 @@
     inferModelNameFromSQL,
     inferSourceName,
   } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import type { PartialMessage } from "@bufbuild/protobuf";
+  import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { getSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
   import {
     getRequiredFieldsForValues,
@@ -29,7 +30,7 @@
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { getFormClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
 
-  export let connectorDriver: V1ConnectorDriver;
+  export let connectorDriver: PartialMessage<ConnectorDriver>;
   export let schema: MultiStepFormSchema | null;
   export let superFormsParams: ReturnType<typeof createConnectorForm>;
   export let labels = defaultFormLabels;

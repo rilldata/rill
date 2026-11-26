@@ -19,33 +19,6 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   sqlName?: string;
 }
 
-export interface ConnectorDriverProperty {
-  key?: string;
-  type?: ConnectorDriverPropertyType;
-  required?: boolean;
-  displayName?: string;
-  description?: string;
-  docsUrl?: string;
-  hint?: string;
-  default?: string;
-  placeholder?: string;
-  secret?: boolean;
-  noPrompt?: boolean;
-}
-
-export type ConnectorDriverPropertyType =
-  (typeof ConnectorDriverPropertyType)[keyof typeof ConnectorDriverPropertyType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorDriverPropertyType = {
-  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_NUMBER: "TYPE_NUMBER",
-  TYPE_BOOLEAN: "TYPE_BOOLEAN",
-  TYPE_STRING: "TYPE_STRING",
-  TYPE_FILE: "TYPE_FILE",
-  TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
-} as const;
-
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
@@ -347,39 +320,8 @@ export interface V1AnalystAgentContext {
   timeEnd?: string;
 }
 
-export interface V1AnalyzeConnectorsResponse {
-  connectors?: V1AnalyzedConnector[];
-}
-
 export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
-}
-
-export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
-
-export type V1AnalyzedConnectorProvisionArgs = { [key: string]: unknown };
-
-/**
- * AnalyzedConnector contains information about a connector that is referenced in the project files.
- */
-export interface V1AnalyzedConnector {
-  name?: string;
-  driver?: V1ConnectorDriver;
-  config?: V1AnalyzedConnectorConfig;
-  presetConfig?: V1AnalyzedConnectorPresetConfig;
-  projectConfig?: V1AnalyzedConnectorProjectConfig;
-  envConfig?: V1AnalyzedConnectorEnvConfig;
-  provision?: boolean;
-  provisionArgs?: V1AnalyzedConnectorProvisionArgs;
-  hasAnonymousAccess?: boolean;
-  usedBy?: V1ResourceName[];
-  errorMessage?: string;
 }
 
 export interface V1AnalyzedVariable {
@@ -738,43 +680,6 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: unknown };
-
-export type V1ConnectorProvisionArgs = { [key: string]: unknown };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
-  templatedProperties?: string[];
-  provision?: boolean;
-  provisionArgs?: V1ConnectorProvisionArgs;
-}
-
-/**
- * ConnectorDriver represents a connector driver available in the runtime.
- */
-export interface V1ConnectorDriver {
-  name?: string;
-  configProperties?: ConnectorDriverProperty[];
-  sourceProperties?: ConnectorDriverProperty[];
-  displayName?: string;
-  description?: string;
-  docsUrl?: string;
-  implementsRegistry?: boolean;
-  implementsCatalog?: boolean;
-  implementsRepo?: boolean;
-  implementsAdmin?: boolean;
-  implementsAi?: boolean;
-  implementsSqlStore?: boolean;
-  implementsOlap?: boolean;
-  implementsObjectStore?: boolean;
-  implementsFileStore?: boolean;
-  implementsNotifier?: boolean;
-  implementsWarehouse?: boolean;
-}
-
 export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
@@ -835,31 +740,6 @@ export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
 
-export type V1CreateInstanceRequestVariables = { [key: string]: string };
-
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
-
-/**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  frontendUrl?: string;
-}
-
-export interface V1CreateInstanceResponse {
-  instance?: V1Instance;
-}
-
 export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
@@ -874,10 +754,6 @@ export interface V1DefaultMetricsSQLFilter {
 }
 
 export interface V1DeleteFileResponse {
-  [key: string]: unknown;
-}
-
-export interface V1DeleteInstanceResponse {
   [key: string]: unknown;
 }
 
@@ -904,10 +780,6 @@ export interface V1UIAction {
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
-}
-
-export interface V1EditInstanceResponse {
-  instance?: V1Instance;
 }
 
 /**
@@ -1310,10 +1182,6 @@ export interface V1GetFileResponse {
   updatedOn?: string;
 }
 
-export interface V1GetInstanceResponse {
-  instance?: V1Instance;
-}
-
 export interface V1GetLogsResponse {
   logs?: V1Log[];
 }
@@ -1410,45 +1278,6 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export type V1InstanceVariables = { [key: string]: string };
-
-export type V1InstanceProjectVariables = { [key: string]: string };
-
-export type V1InstanceFeatureFlags = { [key: string]: boolean };
-
-export type V1InstanceAnnotations = { [key: string]: string };
-
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  projectDisplayName?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  featureFlags?: V1InstanceFeatureFlags;
-  annotations?: V1InstanceAnnotations;
-  aiInstructions?: string;
-  aiPrompts?: V1AIPrompt[];
-  frontendUrl?: string;
-  theme?: string;
-  embedOpenUrl?: string;
-}
-
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
 
 export interface V1InstanceHealth {
@@ -1489,10 +1318,6 @@ export interface V1ListBucketsResponse {
   buckets?: string[];
 }
 
-export interface V1ListConnectorDriversResponse {
-  connectors?: V1ConnectorDriver[];
-}
-
 export interface V1ListConversationsResponse {
   conversations?: V1Conversation[];
 }
@@ -1518,16 +1343,6 @@ export interface V1ListGitBranchesResponse {
 export interface V1ListGitCommitsResponse {
   commits?: V1GitCommit[];
   nextPageToken?: string;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
-export interface V1ListNotifierConnectorsResponse {
-  /** Note: In this list, the Connector.config property will always be empty. */
-  connectors?: V1Connector[];
 }
 
 export interface V1ListObjectsResponse {
@@ -2985,21 +2800,6 @@ export type RuntimeServiceListInstancesParams = {
 
 export type RuntimeServiceGetInstanceParams = {
   sensitive?: boolean;
-};
-
-export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
-
-/**
- * Request message for RuntimeService.EditInstance.
-See message Instance for field descriptions.
- */
-export type RuntimeServiceEditInstanceBody = {
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
 };
 
 export type RuntimeServiceCompleteBody = {

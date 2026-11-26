@@ -19,6 +19,7 @@ import {
 } from "@tanstack/svelte-query";
 import {
   AnalyzeConnectorsRequest,
+  AnalyzeConnectorsResponse,
   AnalyzeVariablesRequest,
   CompleteRequest,
   CreateAIMemoryRequest,
@@ -41,6 +42,7 @@ import {
   GetExploreRequest,
   GetFileRequest,
   GetInstanceRequest,
+  GetInstanceResponse,
   GetLogsRequest,
   GetModelPartitionsRequest,
   GetResourceRequest,
@@ -59,15 +61,18 @@ import {
   IssueDevJWTRequest,
   ListAIMemoriesRequest,
   ListConnectorDriversRequest,
+  ListConnectorDriversResponse,
   ListConversationsRequest,
   ListExamplesRequest,
   ListFilesRequest,
   ListGitBranchesRequest,
   ListGitCommitsRequest,
   ListInstancesRequest,
+  ListInstancesResponse,
   ListMCPServersRequest,
   ListMCPServersResponse,
   ListNotifierConnectorsRequest,
+  ListNotifierConnectorsResponse,
   ListResourcesRequest,
   ListToolsRequest,
   PingRequest,
@@ -89,7 +94,6 @@ import {
   UpdateConversationResponse,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
 import type {
-  V1AnalyzeConnectorsResponse,
   V1AnalyzeVariablesResponse,
   V1CompleteResponse,
   V1CreateAIMemoryResponse,
@@ -105,7 +109,6 @@ import type {
   V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
-  V1GetInstanceResponse,
   V1GetLogsResponse,
   V1GetModelPartitionsResponse,
   V1GetResourceResponse,
@@ -120,14 +123,11 @@ import type {
   V1IssueDevJWTRequest,
   V1IssueDevJWTResponse,
   V1ListAIMemoriesResponse,
-  V1ListConnectorDriversResponse,
   V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
   V1ListGitBranchesResponse,
   V1ListGitCommitsResponse,
-  V1ListInstancesResponse,
-  V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
   V1ListToolsResponse,
   V1PingResponse,
@@ -355,16 +355,11 @@ export async function runtimeServiceListInstances(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: { signal?: AbortSignal },
-): Promise<V1ListInstancesResponse> {
-  const r = await client.runtimeService.listInstances(
-    ListInstancesRequest.fromJson(
-      stripUndefined(request) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ListInstancesResponse;
+): Promise<ListInstancesResponse> {
+  const r = await client.runtimeService.listInstances(request, {
+    signal: options?.signal,
+  });
+  return r;
 }
 
 export function getRuntimeServiceListInstancesQueryKey(
@@ -380,42 +375,42 @@ export function getRuntimeServiceListInstancesQueryKey(
 }
 
 export function getRuntimeServiceListInstancesQueryOptions<
-  TData = V1ListInstancesResponse,
+  TData = ListInstancesResponse,
 >(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListInstancesResponse, ConnectError, TData>
+      CreateQueryOptions<ListInstancesResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ListInstancesResponse, ConnectError, TData> & {
+): CreateQueryOptions<ListInstancesResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceListInstancesQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ListInstancesResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ListInstancesResponse> = ({ signal }) =>
     runtimeServiceListInstances(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ListInstancesResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ListInstancesResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createRuntimeServiceListInstances<
-  TData = V1ListInstancesResponse,
+  TData = ListInstancesResponse,
 >(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListInstancesResponse, ConnectError, TData>
+      CreateQueryOptions<ListInstancesResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -435,19 +430,12 @@ export async function runtimeServiceGetInstance(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1GetInstanceResponse> {
+): Promise<GetInstanceResponse> {
   const r = await client.runtimeService.getInstance(
-    GetInstanceRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GetInstanceResponse;
+  return r;
 }
 
 export function getRuntimeServiceGetInstanceQueryKey(
@@ -458,40 +446,40 @@ export function getRuntimeServiceGetInstanceQueryKey(
 }
 
 export function getRuntimeServiceGetInstanceQueryOptions<
-  TData = V1GetInstanceResponse,
+  TData = GetInstanceResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1GetInstanceResponse, ConnectError, TData>
+      CreateQueryOptions<GetInstanceResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1GetInstanceResponse, ConnectError, TData> & {
+): CreateQueryOptions<GetInstanceResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceGetInstanceQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1GetInstanceResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<GetInstanceResponse> = ({ signal }) =>
     runtimeServiceGetInstance(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1GetInstanceResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<GetInstanceResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetInstance<TData = V1GetInstanceResponse>(
+export function createRuntimeServiceGetInstance<TData = GetInstanceResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1GetInstanceResponse, ConnectError, TData>
+      CreateQueryOptions<GetInstanceResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1193,16 +1181,11 @@ export async function runtimeServiceListConnectorDrivers(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: { signal?: AbortSignal },
-): Promise<V1ListConnectorDriversResponse> {
-  const r = await client.runtimeService.listConnectorDrivers(
-    ListConnectorDriversRequest.fromJson(
-      stripUndefined(request) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ListConnectorDriversResponse;
+): Promise<ListConnectorDriversResponse> {
+  const r = await client.runtimeService.listConnectorDrivers(request, {
+    signal: options?.signal,
+  });
+  return r;
 }
 
 export function getRuntimeServiceListConnectorDriversQueryKey(
@@ -1218,44 +1201,42 @@ export function getRuntimeServiceListConnectorDriversQueryKey(
 }
 
 export function getRuntimeServiceListConnectorDriversQueryOptions<
-  TData = V1ListConnectorDriversResponse,
+  TData = ListConnectorDriversResponse,
 >(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListConnectorDriversResponse, ConnectError, TData>
+      CreateQueryOptions<ListConnectorDriversResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ListConnectorDriversResponse, ConnectError, TData> & {
+): CreateQueryOptions<ListConnectorDriversResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceListConnectorDriversQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ListConnectorDriversResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ListConnectorDriversResponse> = ({ signal }) =>
     runtimeServiceListConnectorDrivers(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<
-    V1ListConnectorDriversResponse,
-    ConnectError,
-    TData
-  > & { queryKey: QueryKey };
+  } as CreateQueryOptions<ListConnectorDriversResponse, ConnectError, TData> & {
+    queryKey: QueryKey;
+  };
 }
 
 export function createRuntimeServiceListConnectorDrivers<
-  TData = V1ListConnectorDriversResponse,
+  TData = ListConnectorDriversResponse,
 >(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListConnectorDriversResponse, ConnectError, TData>
+      CreateQueryOptions<ListConnectorDriversResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1275,19 +1256,12 @@ export async function runtimeServiceAnalyzeConnectors(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1AnalyzeConnectorsResponse> {
+): Promise<AnalyzeConnectorsResponse> {
   const r = await client.runtimeService.analyzeConnectors(
-    AnalyzeConnectorsRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1AnalyzeConnectorsResponse;
+  return r;
 }
 
 export function getRuntimeServiceAnalyzeConnectorsQueryKey(
@@ -1303,42 +1277,42 @@ export function getRuntimeServiceAnalyzeConnectorsQueryKey(
 }
 
 export function getRuntimeServiceAnalyzeConnectorsQueryOptions<
-  TData = V1AnalyzeConnectorsResponse,
+  TData = AnalyzeConnectorsResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1AnalyzeConnectorsResponse, ConnectError, TData>
+      CreateQueryOptions<AnalyzeConnectorsResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1AnalyzeConnectorsResponse, ConnectError, TData> & {
+): CreateQueryOptions<AnalyzeConnectorsResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1AnalyzeConnectorsResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<AnalyzeConnectorsResponse> = ({ signal }) =>
     runtimeServiceAnalyzeConnectors(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1AnalyzeConnectorsResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<AnalyzeConnectorsResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createRuntimeServiceAnalyzeConnectors<
-  TData = V1AnalyzeConnectorsResponse,
+  TData = AnalyzeConnectorsResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1AnalyzeConnectorsResponse, ConnectError, TData>
+      CreateQueryOptions<AnalyzeConnectorsResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1358,19 +1332,12 @@ export async function runtimeServiceGetConnectorOAuthConfig(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<PartialMessage<GetConnectorOAuthConfigResponse>> {
+): Promise<GetConnectorOAuthConfigResponse> {
   const r = await client.runtimeService.getConnectorOAuthConfig(
-    GetConnectorOAuthConfigRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as PartialMessage<GetConnectorOAuthConfigResponse>;
+  return r;
 }
 
 export function getRuntimeServiceGetConnectorOAuthConfigQueryKey(
@@ -1386,56 +1353,45 @@ export function getRuntimeServiceGetConnectorOAuthConfigQueryKey(
 }
 
 export function getRuntimeServiceGetConnectorOAuthConfigQueryOptions<
-  TData = PartialMessage<GetConnectorOAuthConfigResponse>,
+  TData = GetConnectorOAuthConfigResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<
-        PartialMessage<GetConnectorOAuthConfigResponse>,
-        ConnectError,
-        TData
-      >
+      CreateQueryOptions<GetConnectorOAuthConfigResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<
-  PartialMessage<GetConnectorOAuthConfigResponse>,
-  ConnectError,
-  TData
-> & { queryKey: QueryKey } {
+): CreateQueryOptions<GetConnectorOAuthConfigResponse, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetConnectorOAuthConfigQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<
-    PartialMessage<GetConnectorOAuthConfigResponse>
-  > = ({ signal }) =>
-    runtimeServiceGetConnectorOAuthConfig(client, request, { signal });
+  const queryFn: QueryFunction<GetConnectorOAuthConfigResponse> = ({
+    signal,
+  }) => runtimeServiceGetConnectorOAuthConfig(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateQueryOptions<
-    PartialMessage<GetConnectorOAuthConfigResponse>,
+    GetConnectorOAuthConfigResponse,
     ConnectError,
     TData
   > & { queryKey: QueryKey };
 }
 
 export function createRuntimeServiceGetConnectorOAuthConfig<
-  TData = PartialMessage<GetConnectorOAuthConfigResponse>,
+  TData = GetConnectorOAuthConfigResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<
-        PartialMessage<GetConnectorOAuthConfigResponse>,
-        ConnectError,
-        TData
-      >
+      CreateQueryOptions<GetConnectorOAuthConfigResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1455,19 +1411,12 @@ export async function runtimeServiceListNotifierConnectors(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ListNotifierConnectorsResponse> {
+): Promise<ListNotifierConnectorsResponse> {
   const r = await client.runtimeService.listNotifierConnectors(
-    ListNotifierConnectorsRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ListNotifierConnectorsResponse;
+  return r;
 }
 
 export function getRuntimeServiceListNotifierConnectorsQueryKey(
@@ -1483,45 +1432,44 @@ export function getRuntimeServiceListNotifierConnectorsQueryKey(
 }
 
 export function getRuntimeServiceListNotifierConnectorsQueryOptions<
-  TData = V1ListNotifierConnectorsResponse,
+  TData = ListNotifierConnectorsResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListNotifierConnectorsResponse, ConnectError, TData>
+      CreateQueryOptions<ListNotifierConnectorsResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ListNotifierConnectorsResponse, ConnectError, TData> & {
+): CreateQueryOptions<ListNotifierConnectorsResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceListNotifierConnectorsQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ListNotifierConnectorsResponse> = ({
-    signal,
-  }) => runtimeServiceListNotifierConnectors(client, request, { signal });
+  const queryFn: QueryFunction<ListNotifierConnectorsResponse> = ({ signal }) =>
+    runtimeServiceListNotifierConnectors(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateQueryOptions<
-    V1ListNotifierConnectorsResponse,
+    ListNotifierConnectorsResponse,
     ConnectError,
     TData
   > & { queryKey: QueryKey };
 }
 
 export function createRuntimeServiceListNotifierConnectors<
-  TData = V1ListNotifierConnectorsResponse,
+  TData = ListNotifierConnectorsResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ListNotifierConnectorsResponse, ConnectError, TData>
+      CreateQueryOptions<ListNotifierConnectorsResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -2595,27 +2543,27 @@ export function createRuntimeServiceListGitBranches<
 }
 
 export function getRuntimeServiceListInstancesInfiniteQueryOptions<
-  TData = InfiniteData<V1ListInstancesResponse>,
+  TData = InfiniteData<ListInstancesResponse>,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListInstancesRequest>, "pageToken">,
   options?: {
     query?: Partial<
       CreateInfiniteQueryOptions<
-        V1ListInstancesResponse,
+        ListInstancesResponse,
         ConnectError,
         TData,
-        V1ListInstancesResponse,
+        ListInstancesResponse,
         QueryKey,
         string | undefined
       >
     >;
   },
 ): CreateInfiniteQueryOptions<
-  V1ListInstancesResponse,
+  ListInstancesResponse,
   ConnectError,
   TData,
-  V1ListInstancesResponse,
+  ListInstancesResponse,
   QueryKey,
   string | undefined
 > & { queryKey: QueryKey } {
@@ -2635,34 +2583,31 @@ export function getRuntimeServiceListInstancesInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
-    V1ListInstancesResponse,
+    ListInstancesResponse,
     ConnectError,
     TData,
-    V1ListInstancesResponse,
+    ListInstancesResponse,
     QueryKey,
     string | undefined
   > & { queryKey: QueryKey };
 }
 
 export function createRuntimeServiceListInstancesInfinite<
-  TData = InfiniteData<V1ListInstancesResponse>,
+  TData = InfiniteData<ListInstancesResponse>,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListInstancesRequest>, "pageToken">,
   options?: {
     query?: Partial<
       CreateInfiniteQueryOptions<
-        V1ListInstancesResponse,
+        ListInstancesResponse,
         ConnectError,
         TData,
-        V1ListInstancesResponse,
+        ListInstancesResponse,
         QueryKey,
         string | undefined
       >
@@ -2722,10 +2667,7 @@ export function getRuntimeServiceListResourcesInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -2812,10 +2754,7 @@ export function getRuntimeServiceGetModelPartitionsInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<
@@ -2902,10 +2841,7 @@ export function getRuntimeServiceListGitCommitsInfiniteQueryOptions<
         { signal },
       ),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      ((lastPage as Record<string, unknown>)?.nextPageToken as
-        | string
-        | undefined) || undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateInfiniteQueryOptions<

@@ -1,4 +1,4 @@
-import type { Value } from "@bufbuild/protobuf";
+import type { JsonObject, Struct, Value } from "@bufbuild/protobuf";
 
 /** A protobuf-es oneof field as generated for a `case` selector. */
 type OneofSelector =
@@ -39,4 +39,14 @@ export function getOneofValue<
 
 export function valueAsNumber(val: Value | undefined) {
   return getOneofValue(val, "kind", "numberValue") ?? 0;
+}
+
+/**
+ * Converts a `google.protobuf.Struct` message to the plain JSON object it represents,
+ * which is the shape the JSON bridge used to return for Struct fields.
+ */
+export function structToJson(
+  struct: Struct | undefined,
+): JsonObject | undefined {
+  return struct?.toJson() as JsonObject | undefined;
 }
