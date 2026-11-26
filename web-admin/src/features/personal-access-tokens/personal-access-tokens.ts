@@ -1,10 +1,11 @@
 import {
+  adminServiceIssueUserAuthToken,
   adminServiceListUserAuthTokens,
   getAdminServiceListUserAuthTokensQueryKey,
   type V1UserAuthToken,
 } from "@rilldata/web-admin/client";
 import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
-import { createQuery } from "@tanstack/svelte-query";
+import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
 
 // Personal access tokens are the user tokens issued under the "Created manually" auth client.
@@ -67,6 +68,29 @@ export function getTokenTTLMinutes(
 ): number {
   if (!expiresOn) return 0;
   return Math.max(1, Math.round(expiresOn.diff(now, "minutes").minutes));
+}
+
+/**
+ * Issues a personal access token for the current user and refreshes the token list.
+ * It calls the API function rather than a mutation, so the secret stays out of TanStack's mutation cache.
+ */
+export async function issuePersonalAccessToken(
+  queryClient: QueryClient,
+  displayName: string,
+  expiration: TokenExpiration,
+  customDate: DateTime | null,
+): Promise<{ token: string; expiresOn: DateTime | null }> {
+  const now = DateTime.now();
+  const expiresOn = getTokenExpiryDate(expiration, customDate, now);
+  const resp = await adminServiceIssueUserAuthToken("current", {
+    clientId: PERSONAL_ACCESS_TOKEN_CLIENT_ID,
+    displayName,
+    ttlMinutes: String(getTokenTTLMinutes(expiresOn, now)),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: getAdminServiceListUserAuthTokensQueryKey("current"),
+  });
+  return { token: resp.token ?? "", expiresOn };
 }
 
 /**

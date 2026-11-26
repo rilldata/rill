@@ -30,8 +30,10 @@
       cell: ({ row }) =>
         renderComponent(TokenPrefixCell, { prefix: row.original.prefix }),
     },
+    // Date columns sort by timestamp.
     {
-      accessorKey: "createdOn",
+      id: "createdOn",
+      accessorFn: (token) => Date.parse(token.createdOn ?? ""),
       header: m.access_tokens_column_created(),
       cell: ({ row }) =>
         renderComponent(TokenDateCell, {
@@ -40,7 +42,12 @@
         }),
     },
     {
-      accessorKey: "usedOn",
+      id: "usedOn",
+      // A token that was never used sorts as the least recently used.
+      accessorFn: (token) => {
+        const usedOn = getTokenLastUsedOn(token);
+        return usedOn ? Date.parse(usedOn) : 0;
+      },
       header: m.access_tokens_column_last_used(),
       cell: ({ row }) =>
         renderComponent(TokenDateCell, {
@@ -49,7 +56,10 @@
         }),
     },
     {
-      accessorKey: "expiresOn",
+      id: "expiresOn",
+      // A token that never expires sorts after every expiry date.
+      accessorFn: (token) =>
+        token.expiresOn ? Date.parse(token.expiresOn) : Infinity,
       header: m.access_tokens_column_expires(),
       cell: ({ row }) =>
         renderComponent(TokenExpiresCell, {

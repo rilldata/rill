@@ -17,8 +17,10 @@
   let createOpen = $state(false);
   // The revoke dialog is rendered outside the table:
   // revoking refreshes the list, which would unmount a dialog rendered in a row.
+  // It is remounted for every token, so an error from an earlier attempt doesn't carry over.
   let revokingToken = $state<V1UserAuthToken | null>(null);
   let revokeOpen = $state(false);
+  let revokeCount = $state(0);
 </script>
 
 <svelte:head>
@@ -60,9 +62,14 @@
         <DelayedSpinner isLoading size="24px" />
       </div>
     {:else if $tokensQuery.isError}
-      <p class="text-destructive text-sm">
-        {m.access_tokens_load_failed({ message: $tokensQuery.error.message })}
-      </p>
+      <div class="flex flex-col items-start gap-y-2">
+        <p class="text-destructive text-sm">
+          {m.access_tokens_load_failed({ message: $tokensQuery.error.message })}
+        </p>
+        <Button type="secondary" onClick={() => void $tokensQuery.refetch()}>
+          {m.common_retry()}
+        </Button>
+      </div>
     {:else if tokens.length === 0}
       <div
         class="flex flex-col items-center gap-y-3 rounded-sm border border-dashed px-6 py-12 text-center"
@@ -86,6 +93,7 @@
         {tokens}
         onRevoke={(token) => {
           revokingToken = token;
+          revokeCount++;
           revokeOpen = true;
         }}
       />
@@ -96,5 +104,7 @@
 <CreateTokenDialog bind:open={createOpen} />
 
 {#if revokingToken}
-  <RevokeTokenDialog bind:open={revokeOpen} token={revokingToken} />
+  {#key revokeCount}
+    <RevokeTokenDialog bind:open={revokeOpen} token={revokingToken} />
+  {/key}
 {/if}

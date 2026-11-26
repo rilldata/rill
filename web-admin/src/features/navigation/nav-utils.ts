@@ -156,6 +156,10 @@ export function isAuthPage({ route }: Pick<Page, "route">): boolean {
   return !!route.id?.startsWith("/-/auth");
 }
 
+export function isAccountPage({ route }: Pick<Page, "route">): boolean {
+  return !!route.id?.startsWith("/-/account");
+}
+
 /**
  * Returns true if the page is a page that is part of the onboarding flow.
  * Project invite page, org/project welcome page, and project create page are all onboarding pages as of now.

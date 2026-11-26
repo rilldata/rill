@@ -1,8 +1,4 @@
 <script lang="ts">
-  import {
-    createAdminServiceIssueUserAuthToken,
-    getAdminServiceListUserAuthTokensQueryKey,
-  } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -10,35 +6,37 @@
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { DateTime } from "luxon";
+  import type { DateTime } from "luxon";
   import ExpirationHint from "./ExpirationHint.svelte";
   import ExpirationSelect from "./ExpirationSelect.svelte";
   import {
     DEFAULT_TOKEN_EXPIRATION,
     formatTokenDate,
     getTokenExpiryDate,
-    getTokenTTLMinutes,
-    PERSONAL_ACCESS_TOKEN_CLIENT_ID,
+    issuePersonalAccessToken,
     TOKEN_NAME_MAX_LENGTH,
     type TokenExpiration,
   } from "./personal-access-tokens";
 
   // Rendered inside the dialog's content, so every opening starts from an empty form.
-  let { onDone }: { onDone: () => void } = $props();
+  // The dialog reads `submitting` to stay open until a request settles,
+  // so a token is never issued without its secret being shown.
+  let {
+    onDone,
+    submitting = $bindable(false),
+  }: { onDone: () => void; submitting?: boolean } = $props();
 
   const formId = "create-access-token-form";
 
   const queryClient = useQueryClient();
-  const issueToken = createAdminServiceIssueUserAuthToken();
 
   let name = $state("");
   let expiration = $state<TokenExpiration>(DEFAULT_TOKEN_EXPIRATION);
   let customDate = $state<DateTime | null>(null);
   let submitted = $state(false);
-  let submitting = $state(false);
   let apiError = $state("");
   let copied = $state(false);
-  // The secret is only in the issue response, so it is shown once and kept out of the query cache.
+  // The secret is only in the issue response, so it is shown once and kept only here.
   let issued = $state<{
     token: string;
     name: string;
@@ -61,25 +59,16 @@
 
     submitting = true;
     apiError = "";
-    const now = DateTime.now();
-    const tokenExpiresOn = getTokenExpiryDate(expiration, customDate, now);
+    // The name can still be edited while the request runs.
+    const tokenName = trimmedName;
     try {
-      const resp = await $issueToken.mutateAsync({
-        userId: "current",
-        data: {
-          clientId: PERSONAL_ACCESS_TOKEN_CLIENT_ID,
-          displayName: trimmedName,
-          ttlMinutes: String(getTokenTTLMinutes(tokenExpiresOn, now)),
-        },
-      });
-      issued = {
-        token: resp.token ?? "",
-        name: trimmedName,
-        expiresOn: tokenExpiresOn,
-      };
-      void queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUserAuthTokensQueryKey("current"),
-      });
+      const { token, expiresOn } = await issuePersonalAccessToken(
+        queryClient,
+        tokenName,
+        expiration,
+        customDate,
+      );
+      issued = { token, name: tokenName, expiresOn };
     } catch (e) {
       const error = e as HTTPError;
       apiError =
@@ -136,7 +125,9 @@
   </form>
 
   <Dialog.Footer>
-    <Button type="secondary" onClick={onDone}>{m.common_cancel()}</Button>
+    <Button type="secondary" onClick={onDone} disabled={submitting}>
+      {m.common_cancel()}
+    </Button>
     <Button
       type="primary"
       submitForm

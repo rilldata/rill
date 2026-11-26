@@ -1,22 +1,17 @@
 <script lang="ts">
-  import {
-    createAdminServiceIssueUserAuthToken,
-    getAdminServiceListUserAuthTokensQueryKey,
-  } from "@rilldata/web-admin/client";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { DateTime } from "luxon";
+  import type { DateTime } from "luxon";
   import ExpirationHint from "./ExpirationHint.svelte";
   import ExpirationSelect from "./ExpirationSelect.svelte";
   import {
     ACCOUNT_TOKENS_PATH,
     DEFAULT_TOKEN_EXPIRATION,
     getTokenExpiryDate,
-    getTokenTTLMinutes,
-    PERSONAL_ACCESS_TOKEN_CLIENT_ID,
+    issuePersonalAccessToken,
     TOKEN_NAME_MAX_LENGTH,
     type TokenExpiration,
   } from "./personal-access-tokens";
@@ -30,13 +25,13 @@
   } = $props();
 
   const queryClient = useQueryClient();
-  const issueTokenMutation = createAdminServiceIssueUserAuthToken();
 
   // svelte-ignore state_referenced_locally
   let name = $state(m.mcp_token_name_default({ project }));
   let expiration = $state<TokenExpiration>(DEFAULT_TOKEN_EXPIRATION);
   let customDate = $state<DateTime | null>(null);
   let error = $state<string | null>(null);
+  let issuing = $state(false);
 
   let trimmedName = $derived(name.trim());
   let nameError = $derived(
@@ -49,27 +44,19 @@
   async function issueToken() {
     error = null;
     issuedToken = null;
-    const now = DateTime.now();
+    issuing = true;
     try {
-      const resp = await $issueTokenMutation.mutateAsync({
-        userId: "current",
-        data: {
-          displayName: trimmedName,
-          clientId: PERSONAL_ACCESS_TOKEN_CLIENT_ID,
-          ttlMinutes: String(
-            getTokenTTLMinutes(
-              getTokenExpiryDate(expiration, customDate, now),
-              now,
-            ),
-          ),
-        },
-      });
-      issuedToken = resp.token ?? null;
-      void queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUserAuthTokensQueryKey("current"),
-      });
+      const { token } = await issuePersonalAccessToken(
+        queryClient,
+        trimmedName,
+        expiration,
+        customDate,
+      );
+      issuedToken = token || null;
     } catch (e) {
       error = (e as HTTPError).response?.data?.message || m.mcp_token_failed();
+    } finally {
+      issuing = false;
     }
   }
 </script>
@@ -110,9 +97,9 @@
     <Button
       type="primary"
       onClick={issueToken}
-      disabled={$issueTokenMutation.isPending || !trimmedName || !!nameError}
+      disabled={issuing || !trimmedName || !!nameError}
     >
-      {$issueTokenMutation.isPending ? m.mcp_issuing() : m.mcp_create_token()}
+      {issuing ? m.mcp_issuing() : m.mcp_create_token()}
     </Button>
   </div>
 

@@ -46,8 +46,12 @@
   }
 </script>
 
+<!-- Closing is blocked while the request runs, so its result can't land on another token's dialog. -->
 <AlertDialog bind:open>
-  <AlertDialogContent>
+  <AlertDialogContent
+    noCancel={$revokeToken.isPending}
+    escapeKeydownBehavior={$revokeToken.isPending ? "ignore" : "close"}
+  >
     <AlertDialogHeader>
       <AlertDialogTitle>
         {m.access_tokens_revoke_title({ name: token.displayName ?? "" })}
@@ -63,7 +67,11 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button type="tertiary" onClick={() => (open = false)}>
+      <Button
+        type="tertiary"
+        onClick={() => (open = false)}
+        disabled={$revokeToken.isPending}
+      >
         {m.common_cancel()}
       </Button>
       <Button
