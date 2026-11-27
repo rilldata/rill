@@ -10,10 +10,13 @@ import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -22,8 +25,12 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import { convertAggregationRequestToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-aggregation-request-to-url-params";
 import { convertComparisonRequestToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-comparison-request-to-url-params";
 import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params";
+import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url";
 import {
+  MetricsViewSpecDimensionType,
+  type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
   V1MetricsViewComparisonMeasureType,
   V1Operation,
   V1TimeGrain,
@@ -367,22 +374,8 @@ describe("convertAggregationRequestToUrlParams with a runtime", () => {
       },
     },
     {
-      title: "time range on a time dimension other than the default",
-      req: {
-        metricsView: AD_BIDS_METRICS_NAME,
-        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
-        timeRange: { expression: "7D", timeDimension: "created_at" },
-      },
-      expected: {
-        tr: "2024-01-01T05:00:00.000Z,2024-01-08T05:00:00.000Z",
-        tz: "UTC",
-        td: "created_at",
-        view: "explore",
-        expand_dim: AD_BIDS_DOMAIN_DIMENSION,
-      },
-    },
-    {
       // The default time dimension is left out, so the url stays the same as without one.
+      // A saved `td` is cleared, since the query is what the alert or report ran.
       title: "time range on the default time dimension",
       req: {
         metricsView: AD_BIDS_METRICS_NAME,
@@ -392,11 +385,11 @@ describe("convertAggregationRequestToUrlParams with a runtime", () => {
           timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
         },
       },
+      // Saved state keeps its own view, so only the time params are written.
+      urlState: `?${ExploreStateURLParams.TimeDimension}=${AD_BIDS_OFFSET_TIMESTAMP_DIMENSION}`,
       expected: {
         tr: "2024-01-01T05:00:00.000Z,2024-01-08T05:00:00.000Z",
         tz: "UTC",
-        view: "explore",
-        expand_dim: AD_BIDS_DOMAIN_DIMENSION,
       },
     },
   ];
@@ -471,6 +464,97 @@ describe("convertAggregationRequestToUrlParams with a runtime", () => {
       "rill-PP",
     );
     expectParsesWithoutErrors(urlParams);
+  });
+
+  describe("time range on a time dimension other than the default", () => {
+    const MetricsViewWithTwoTimeDimensions: V1MetricsViewSpec = {
+      ...AD_BIDS_METRICS_INIT_WITH_TIME,
+      dimensions: [
+        ...AD_BIDS_INIT_DIMENSIONS,
+        {
+          name: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+          type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+        },
+      ],
+    };
+    const ExploreWithOffsetTimestamp: V1ExploreSpec = {
+      ...AD_BIDS_EXPLORE_INIT,
+      dimensions: [
+        ...AD_BIDS_EXPLORE_INIT.dimensions!,
+        AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+      ],
+    };
+    const ExploreWithOffsetTimestampName = "AdBids_explore_offset_timestamp";
+
+    beforeEach(() => {
+      mocks.mockMetricsExplore(
+        ExploreWithOffsetTimestampName,
+        MetricsViewWithTwoTimeDimensions,
+        ExploreWithOffsetTimestamp,
+      );
+      mocks.mockMetricsExplore(
+        AD_BIDS_EXPLORE_NAME,
+        MetricsViewWithTwoTimeDimensions,
+        AD_BIDS_EXPLORE_INIT,
+      );
+    });
+
+    function getMappedUrlForExplore(exploreName: string) {
+      return getMappedExploreUrl(
+        client,
+        {
+          type: "query",
+          request: {
+            exploreName,
+            queryName: "MetricsViewAggregation",
+            queryArgsJson: JSON.stringify({
+              metricsView: AD_BIDS_METRICS_NAME,
+              dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+              timeRange: {
+                expression: "7D",
+                timeDimension: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+              },
+            } satisfies V1MetricsViewAggregationRequest),
+            executionTime: "2024-01-08T05:00:00Z",
+          },
+          options: {},
+        },
+        { organization: "org", project: "project" },
+      );
+    }
+
+    it("opens the explore on the query's time dimension", async () => {
+      const url = await getMappedUrlForExplore(ExploreWithOffsetTimestampName);
+      const urlParams = new URL(url, "http://localhost").searchParams;
+      expect(Object.fromEntries(urlParams.entries())).toEqual({
+        tr: "2024-01-01T05:00:00.000Z,2024-01-08T05:00:00.000Z",
+        tz: "UTC",
+        td: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+        view: "explore",
+        expand_dim: AD_BIDS_DOMAIN_DIMENSION,
+      });
+
+      const { partialExploreState, errors } =
+        convertURLSearchParamsToExploreState(
+          urlParams,
+          MetricsViewWithTwoTimeDimensions,
+          ExploreWithOffsetTimestamp,
+          {},
+        );
+      expect(errors).toEqual([]);
+      expect(partialExploreState.selectedTimeDimension).toBe(
+        AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+      );
+    });
+
+    // The explore would drop the time dimension and show the range on the default one.
+    it("fails when the explore does not expose the time dimension", async () => {
+      await expect(
+        getMappedUrlForExplore(AD_BIDS_EXPLORE_NAME),
+      ).rejects.toThrow(
+        `time range on "${AD_BIDS_OFFSET_TIMESTAMP_DIMENSION}"`,
+      );
+    });
   });
 
   describe("metrics view without a time dimension", () => {

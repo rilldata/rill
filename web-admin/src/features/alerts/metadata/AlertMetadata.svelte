@@ -12,6 +12,7 @@
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
+  import DashboardMetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/DashboardMetadataValue.svelte";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
@@ -23,10 +24,7 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import { AlertNotifyRowsLimitDefault } from "@rilldata/web-common/features/alerts/form-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
@@ -216,35 +214,18 @@
       >
         {#if dashboardTitle}
           <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
-          <MetadataValue>
-            {#if dashboardDoesNotExist}
-              <div class="flex items-center gap-x-1">
-                {dashboardTitle}
-                <Tooltip distance={8}>
-                  <CancelCircle size="16px" className="text-red-500" />
-                  <TooltipContent slot="tooltip-content">
-                    {m.alert_dashboard_not_exist()}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            {:else if $exploreUrlQuery.isError}
-              <div class="flex flex-col gap-y-1">
-                {dashboardTitle}
-                <span class="text-xs text-fg-secondary">
-                  {m.alert_dashboard_state_load_failed()}
-                </span>
-                <a href={exploreUrl}>
-                  {m.alert_dashboard_open_without_filters()}
-                </a>
-              </div>
-            {:else if exploreUrl}
-              <a href={exploreUrl}>
-                {dashboardTitle}
-              </a>
-            {:else}
-              {dashboardTitle}
-            {/if}
-          </MetadataValue>
+          <DashboardMetadataValue
+            title={dashboardTitle}
+            href={exploreUrl}
+            state={dashboardDoesNotExist
+              ? "missing"
+              : $exploreUrlQuery.isError
+                ? "stateLoadFailed"
+                : "ok"}
+            notExistMessage={m.alert_dashboard_not_exist()}
+            stateLoadFailedMessage={m.alert_dashboard_state_load_failed()}
+            openWithoutStateLabel={m.alert_dashboard_open_without_filters()}
+          />
         {:else}
           <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
           <MetadataValue>

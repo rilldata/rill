@@ -66,6 +66,7 @@ export function convertTimeManagerRangeToV1TimeRange(
     return {
       expression: requestedTimeRange,
       timeZone: timeFilterManager.timeZone,
+      timeDimension: timeFilterManager.timeDimension,
     };
   } catch {
     // Legacy presets that are not rill time are handled below.
@@ -96,6 +97,7 @@ export function convertTimeManagerRangeToV1TimeRange(
   }
 
   timeRange.timeZone = timeFilterManager.timeZone;
+  timeRange.timeDimension = timeFilterManager.timeDimension;
 
   return timeRange;
 }
@@ -113,12 +115,16 @@ export function convertTimeManagerComparisonRangeToV1TimeRange(
     return undefined;
   }
 
+  // The runtime requires the comparison to be on the same time dimension as the primary range.
+  const timeDimension = timeRange.timeDimension;
+
   // A custom comparison is stored as `start to end`, so it is sent as the resolved interval.
   // The full window, since `comparisonTimeStart`/`comparisonTimeEnd` follow a scrub.
   if (timeFilterManager.isCustomComparison) {
     return {
       start: timeFilterManager.comparisonInterval?.start.toUTC().toISO(),
       end: timeFilterManager.comparisonInterval?.end.toUTC().toISO(),
+      timeDimension,
     };
   }
 
@@ -132,12 +138,13 @@ export function convertTimeManagerComparisonRangeToV1TimeRange(
       return {
         expression:
           rt.toString() + " offset " + TIME_COMPARISON[name]?.rillTimeOffset,
+        timeDimension,
       };
     }
     isoDuration = timeRange.expression;
   }
 
-  const comparisonTimeRange: V1TimeRange = {};
+  const comparisonTimeRange: V1TimeRange = { timeDimension };
   switch (name) {
     default:
       comparisonTimeRange.isoOffset = name;
@@ -168,6 +175,9 @@ export function convertV1TimeRangesToTimeFilterUrlParams(
   urlParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
   if (timeZone) {
     urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
+  }
+  if (timeRange.timeDimension) {
+    urlParams.set(ExploreStateURLParams.TimeDimension, timeRange.timeDimension);
   }
 
   if (comparisonTimeRange) {

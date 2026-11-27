@@ -5,10 +5,7 @@
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
   import {
@@ -41,6 +38,7 @@
     useReport,
     useReportDashboardName,
   } from "../selectors";
+  import DashboardMetadataValue from "./DashboardMetadataValue.svelte";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
@@ -268,35 +266,18 @@
       >
         {#if dashboardTitle}
           <MetadataLabel>{m.report_dashboard()}</MetadataLabel>
-          <MetadataValue>
-            {#if dashboardDoesNotExist}
-              <div class="flex items-center gap-x-1">
-                {dashboardTitle}
-                <Tooltip distance={8}>
-                  <CancelCircle size="16px" className="text-red-500" />
-                  <TooltipContent slot="tooltip-content">
-                    {m.report_dashboard_not_exist()}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            {:else if exploreUrlFailed}
-              <div class="flex flex-col gap-y-1">
-                {dashboardTitle}
-                <span class="text-xs text-fg-secondary">
-                  {m.report_dashboard_state_load_failed()}
-                </span>
-                <a href={dashboardUrl}>
-                  {m.report_dashboard_open_without_filters()}
-                </a>
-              </div>
-            {:else if dashboardUrl}
-              <a href={dashboardUrl}>
-                {dashboardTitle}
-              </a>
-            {:else}
-              {dashboardTitle}
-            {/if}
-          </MetadataValue>
+          <DashboardMetadataValue
+            title={dashboardTitle}
+            href={dashboardUrl}
+            state={dashboardDoesNotExist
+              ? "missing"
+              : exploreUrlFailed
+                ? "stateLoadFailed"
+                : "ok"}
+            notExistMessage={m.report_dashboard_not_exist()}
+            stateLoadFailedMessage={m.report_dashboard_state_load_failed()}
+            openWithoutStateLabel={m.report_dashboard_open_without_filters()}
+          />
         {:else}
           <MetadataLabel>{m.report_name_label()}</MetadataLabel>
           <MetadataValue>

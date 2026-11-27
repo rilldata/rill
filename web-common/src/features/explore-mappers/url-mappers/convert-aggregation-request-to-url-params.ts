@@ -59,6 +59,8 @@ export async function convertAggregationRequestToUrlParams({
 
   const searchParams = convertStateParamToUrlParams("explore", urlState);
 
+  // The query's time dimension replaces the saved one, and a query on the default time dimension leaves it out.
+  if (req.timeRange) searchParams.delete(ExploreStateURLParams.TimeDimension);
   copyParamsToTarget(
     await convertAPITimeRangesToUrlParams(
       client,

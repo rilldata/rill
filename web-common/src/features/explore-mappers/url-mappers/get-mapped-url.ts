@@ -22,6 +22,7 @@ import {
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 /**
  * What an explore url is mapped from:
@@ -45,7 +46,8 @@ export type MappedExploreUrlSource =
  * callers get loading and error states, and results are cached across components.
  *
  * The url is validated when the explore is built from it,
- * so specs are only fetched where the mapping itself needs them (the time dimension).
+ * so specs are only fetched where the mapping itself needs them (the time dimension),
+ * or where the explore would silently drop a param (a time dimension it does not expose).
  */
 export function getMappedExploreUrlQueryOptions(
   client: RuntimeClient,
@@ -90,9 +92,30 @@ export async function getMappedExploreUrl(
   const { request, options } = source;
   const { exploreName, metricsViewName, searchParams } =
     await convertQueryRequestToUrlParams(client, request, options);
-
   // backwards compatibility for older alerts created on metrics explore directly
-  const path = getDashboardPath(ctx, "explore", exploreName || metricsViewName);
+  const targetExploreName = exploreName || metricsViewName;
+
+  // The explore drops a time dimension it does not expose and falls back to the default one,
+  // which would show a different time window than the query's.
+  const timeDimension = searchParams.get(ExploreStateURLParams.TimeDimension);
+  if (timeDimension) {
+    const exploreResp = await queryClient.fetchQuery(
+      getRuntimeServiceGetExploreQueryOptions(client, {
+        name: targetExploreName,
+      }),
+    );
+    if (
+      !exploreResp.explore?.explore?.state?.validSpec?.dimensions?.includes(
+        timeDimension,
+      )
+    ) {
+      throw new Error(
+        `The explore cannot show this query's time range on "${timeDimension}".`,
+      );
+    }
+  }
+
+  const path = getDashboardPath(ctx, "explore", targetExploreName);
   const search = searchParams.toString();
   return search ? `${path}?${search}` : path;
 }

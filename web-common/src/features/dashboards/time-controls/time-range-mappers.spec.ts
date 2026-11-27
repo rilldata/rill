@@ -6,6 +6,7 @@ import {
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_METRICS_INIT_WITH_TIME,
+  AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -51,6 +52,20 @@ describe("convertTimeManagerComparisonRangeToV1TimeRange", () => {
       timeRange: { isoDuration: "P1D", timeZone: "UTC" },
       comparison: TimeComparisonOption.DAY,
       expected: { isoDuration: "P1D", isoOffset: TimeComparisonOption.DAY },
+    },
+    {
+      // The runtime rejects a comparison on a different time dimension than the primary range
+      title: "keeps the time dimension of the primary range",
+      timeRange: {
+        expression: "7D",
+        timeZone: "UTC",
+        timeDimension: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+      },
+      comparison: TimeComparisonOption.WEEK,
+      expected: {
+        expression: "7D offset -1W",
+        timeDimension: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+      },
     },
   ];
 
@@ -156,6 +171,7 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
     timeRange: V1TimeRange;
     expectedTimeRange: string;
     expectedTimeZone: string | null;
+    expectedTimeDimension?: string;
   }[] = [
     {
       title: "keeps the saved zone of an absolute range",
@@ -183,6 +199,17 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
       expectedTimeRange: "7D as of watermark/D+1D",
       expectedTimeZone: null,
     },
+    {
+      // Otherwise saving the form would drop the time dimension from the query
+      title: "keeps the time dimension of the range",
+      timeRange: {
+        expression: "7D",
+        timeDimension: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+      },
+      expectedTimeRange: "7D",
+      expectedTimeZone: null,
+      expectedTimeDimension: AD_BIDS_OFFSET_TIMESTAMP_DIMENSION,
+    },
   ];
 
   for (const {
@@ -190,6 +217,7 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
     timeRange,
     expectedTimeRange,
     expectedTimeZone,
+    expectedTimeDimension,
   } of TestCases) {
     it(title, () => {
       const params = convertV1TimeRangesToTimeFilterUrlParams(
@@ -200,6 +228,9 @@ describe("convertV1TimeRangesToTimeFilterUrlParams", () => {
         expectedTimeRange,
       );
       expect(params.get(ExploreStateURLParams.TimeZone)).toBe(expectedTimeZone);
+      expect(params.get(ExploreStateURLParams.TimeDimension)).toBe(
+        expectedTimeDimension ?? null,
+      );
     });
   }
 });
