@@ -297,6 +297,9 @@ function fromFilterUrlParam(
   dimensionsWithInlistFilter?: string[];
   errors?: Error[];
 } {
+  // An empty param is no filter, e.g. one filled in from defaults to keep a default filter from applying.
+  if (filter === "") return { expr: createAndExpression([]) };
+
   try {
     const { expr: exprFromFilter, dimensionsWithInlistFilter } =
       convertFilterParamToExpression(filter);

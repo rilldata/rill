@@ -3,44 +3,43 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
-import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import {
-  capEphemeralMeasureDefs,
-  loadEphemeralMeasureLibrary,
-  mergeEphemeralMeasureDefs,
-} from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
+import { loadEphemeralMeasureLibrary } from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
-import { ephemeralMeasureNamesInUse } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
-import { MAX_EPHEMERAL_MEASURES } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
-import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
-import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
-import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
-import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
+import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+import { getExploreUrlParamsFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getMostRecentExploreUrlParams } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { getExploreUrlParamsFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
+import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import {
+  addEphemeralMeasureLibraryToUrlParams,
+  mergeExploreUrlParams,
+  normalizeExploreUrlParams,
+} from "@rilldata/web-common/features/dashboards/url-state/merge-explore-url-params";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { derived, get } from "svelte/store";
-import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
 /**
  * Loads data from explore and metrics view specs, along with all time range query.
- * Mainly outputs an initial explore state based on various conditions. Check initExploreState CompoundQuery for more info.
- * Also has a method to get a partial explore state based on url params.
+ * Mainly outputs the initial explore url params based on various conditions. Check initExploreUrlParams for more info.
+ * Also has a method to get the explore url params for a url.
+ * The params are converted to an explore state by the consumers.
  */
 export class DashboardStateDataLoader {
   // These can be used to show a loading status
@@ -48,31 +47,31 @@ export class DashboardStateDataLoader {
   public readonly fullTimeRangeQuery: CompoundQueryResult<V1MetricsViewTimeRangeResponse>;
 
   // Default explore state show when there is no data in session/local storage or a home bookmark.
+  // Used to back-fill fields that have no param on the current view.
   public readonly rillDefaultExploreState: CompoundQueryResult<ExploreState>;
-  // Explore state from yaml config
-  public readonly exploreStateFromYAMLConfig: CompoundQueryResult<
-    Partial<ExploreState>
-  >;
+  // Url params for the rill default explore state. Used to fill in params and to remove default params from the url.
+  public readonly rillDefaultExploreUrlParams: CompoundQueryResult<URLSearchParams>;
+  // Url params for the fields set in the yaml config.
+  public readonly exploreUrlParamsFromYAMLConfig: CompoundQueryResult<URLSearchParams>;
 
   /**
-   * The explore state used to populate the store with initial explore.
-   * This is a cascading merge of various states in order,
+   * The url params used to populate the store with the initial explore.
+   * One source provides the params and the others fill in what it leaves out, see mergeExploreUrlParams:
    * 1. Session storage if url params doesn't have params other than `view` and `measure` for TDD
-   * 2. Params directly from the url. If sessions storage is not present then the rill defaults are merged into this for empty params.
-   * 3. Bookmark or token state if provided.
-   * 4. Dashboard config from yaml.
-   * 5. Rill opinionated defaults.
+   * 2. Params directly from the url, filled with rill defaults.
+   * 3. Otherwise the home bookmark with the most recent params over it.
+   * The yaml config and rill opinionated defaults fill in the rest.
    */
-  public readonly initExploreState: CompoundQueryResult<
-    ExploreState | undefined
+  public readonly initExploreUrlParams: CompoundQueryResult<
+    URLSearchParams | undefined
   >;
 
   public constructor(
     private readonly client: RuntimeClient,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
-    private readonly bookmarkOrTokenExploreState:
-      | CompoundQueryResult<Partial<ExploreState> | null>
+    private readonly bookmarkUrlParams:
+      | CompoundQueryResult<URLSearchParams | null>
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
     public readonly disableInitSessionDashboardState: boolean,
@@ -83,85 +82,47 @@ export class DashboardStateDataLoader {
       this.validSpecQuery,
     );
 
-    this.rillDefaultExploreState = getCompoundQuery(
-      [this.validSpecQuery, this.fullTimeRangeQuery],
-      ([validSpecResp, metricsViewTimeRangeResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView;
-        const exploreSpec = validSpecResp?.explore;
-
-        if (
-          !metricsViewSpec ||
-          !exploreSpec ||
-          // safeguard to make sure time range summary is loaded for metrics view with time dimension
-          (metricsViewSpec.timeDimension &&
-            !metricsViewTimeRangeResp?.timeRangeSummary)
-        ) {
-          return undefined;
-        }
-
-        return getRillDefaultExploreState(
-          metricsViewSpec,
-          exploreSpec,
-          metricsViewTimeRangeResp?.timeRangeSummary,
-        );
-      },
+    this.rillDefaultExploreState = this.getFromSpecs(
+      getRillDefaultExploreState,
+    );
+    this.rillDefaultExploreUrlParams = this.getFromSpecs(
+      getRillDefaultExploreUrlParams,
+    );
+    this.exploreUrlParamsFromYAMLConfig = this.getFromSpecs(
+      getExploreUrlParamsFromYAMLConfig,
     );
 
-    this.exploreStateFromYAMLConfig = getCompoundQuery(
-      [this.validSpecQuery, this.fullTimeRangeQuery],
-      ([validSpecResp, metricsViewTimeRangeResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView;
-        const exploreSpec = validSpecResp?.explore;
-
-        if (
-          !metricsViewSpec ||
-          !exploreSpec ||
-          // safeguard to make sure time range summary is loaded for metrics view with time dimension
-          (metricsViewSpec.timeDimension &&
-            !metricsViewTimeRangeResp?.timeRangeSummary)
-        ) {
-          return undefined;
-        }
-
-        return getExploreStateFromYAMLConfig(
-          metricsViewSpec,
-          exploreSpec,
-          metricsViewTimeRangeResp?.timeRangeSummary,
-        );
-      },
-    );
-
-    this.initExploreState = getCompoundQuery(
+    this.initExploreUrlParams = getCompoundQuery(
       [
         this.validSpecQuery,
-        this.rillDefaultExploreState,
-        this.exploreStateFromYAMLConfig,
-        ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
+        this.rillDefaultExploreUrlParams,
+        this.exploreUrlParamsFromYAMLConfig,
+        ...(bookmarkUrlParams ? [bookmarkUrlParams] : []),
       ],
       ([
         validSpecResp,
-        rillDefaultExploreState,
-        exploreStateFromYAMLConfig,
-        bookmarkOrTokenExploreState,
+        rillDefaultExploreUrlParams,
+        exploreUrlParamsFromYAMLConfig,
+        bookmarkUrlParams,
       ]) => {
         const metricsViewSpec = validSpecResp?.metricsView;
         const exploreSpec = validSpecResp?.explore;
         if (
           !metricsViewSpec ||
           !exploreSpec ||
-          !rillDefaultExploreState ||
-          !exploreStateFromYAMLConfig
+          !rillDefaultExploreUrlParams ||
+          !exploreUrlParamsFromYAMLConfig
         ) {
           return undefined;
         }
 
-        return this.getMergedExploreState({
+        return this.getMergedExploreUrlParams({
           metricsViewSpec,
           exploreSpec,
           urlSearchParams: get(page).url.searchParams,
-          bookmarkOrTokenExploreState,
-          exploreStateFromYAMLConfig,
-          rillDefaultExploreState,
+          bookmarkUrlParams,
+          exploreUrlParamsFromYAMLConfig,
+          rillDefaultExploreUrlParams,
           backButtonUsed: false,
           skipSessionStorage: this.disableInitSessionDashboardState,
         });
@@ -169,9 +130,9 @@ export class DashboardStateDataLoader {
     );
   }
 
-  // The decision to get the exploreState from url params depends on the navigation type.
+  // The decision to get the params from the url depends on the navigation type.
   // So we cannot go the derived store route.
-  public getExploreStateFromURLParams(
+  public getExploreUrlParamsFromURL(
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
@@ -180,32 +141,70 @@ export class DashboardStateDataLoader {
       return undefined;
     const metricsViewSpec = validSpecResp.data.metricsView;
     const exploreSpec = validSpecResp.data.explore;
-    const { data: rillDefaultExploreState } = get(this.rillDefaultExploreState);
-    const { data: exploreStateFromYAMLConfig } = get(
-      this.exploreStateFromYAMLConfig,
+    const { data: rillDefaultExploreUrlParams } = get(
+      this.rillDefaultExploreUrlParams,
+    );
+    const { data: exploreUrlParamsFromYAMLConfig } = get(
+      this.exploreUrlParamsFromYAMLConfig,
     );
 
-    if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
+    if (!rillDefaultExploreUrlParams || !exploreUrlParamsFromYAMLConfig) {
       return undefined;
     }
 
     // Pressing back button and going back to empty url state should not restore from session store
     const backButtonUsed = type === "popstate";
 
-    return this.getMergedExploreState({
+    return this.getMergedExploreUrlParams({
       metricsViewSpec,
       exploreSpec,
       urlSearchParams,
-      bookmarkOrTokenExploreState: this.bookmarkOrTokenExploreState
-        ? get(this.bookmarkOrTokenExploreState).data
+      bookmarkUrlParams: this.bookmarkUrlParams
+        ? get(this.bookmarkUrlParams).data
         : null,
-      exploreStateFromYAMLConfig,
-      rillDefaultExploreState,
+      exploreUrlParamsFromYAMLConfig,
+      rillDefaultExploreUrlParams,
       backButtonUsed,
       // This should not be disabled when disableInitSessionDashboardState is set.
       // While going between views, we still need session storage to save the state.
       skipSessionStorage: false,
     });
+  }
+
+  /**
+   * Derives a value from the specs and the full time range,
+   * once the time range summary is loaded for a metrics view with a time dimension.
+   */
+  private getFromSpecs<T>(
+    getter: (
+      metricsViewSpec: V1MetricsViewSpec,
+      exploreSpec: V1ExploreSpec,
+      timeRangeSummary: V1TimeRangeSummary | undefined,
+    ) => T,
+  ): CompoundQueryResult<T> {
+    return getCompoundQuery(
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
+        const metricsViewSpec = validSpecResp?.metricsView;
+        const exploreSpec = validSpecResp?.explore;
+
+        if (
+          !metricsViewSpec ||
+          !exploreSpec ||
+          // safeguard to make sure time range summary is loaded for metrics view with time dimension
+          (metricsViewSpec.timeDimension &&
+            !metricsViewTimeRangeResp?.timeRangeSummary)
+        ) {
+          return undefined;
+        }
+
+        return getter(
+          metricsViewSpec,
+          exploreSpec,
+          metricsViewTimeRangeResp?.timeRangeSummary,
+        );
+      },
+    );
   }
 
   /**
@@ -300,115 +299,66 @@ export class DashboardStateDataLoader {
   }
 
   /**
-   * Decides the order of merging of various explore state source.
-   * Returns a cascading merged state of the sources.
+   * Gathers the sources of explore url params and merges them, see mergeExploreUrlParams.
    */
-  private getMergedExploreState({
+  private getMergedExploreUrlParams({
     metricsViewSpec,
     exploreSpec,
     urlSearchParams,
-    bookmarkOrTokenExploreState,
-    exploreStateFromYAMLConfig,
-    rillDefaultExploreState,
+    bookmarkUrlParams,
+    exploreUrlParamsFromYAMLConfig,
+    rillDefaultExploreUrlParams,
     backButtonUsed,
     skipSessionStorage,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
     urlSearchParams: URLSearchParams;
-    bookmarkOrTokenExploreState: Partial<ExploreState> | null | undefined;
-    exploreStateFromYAMLConfig: Partial<ExploreState>;
-    rillDefaultExploreState: ExploreState;
+    bookmarkUrlParams: URLSearchParams | null | undefined;
+    exploreUrlParamsFromYAMLConfig: URLSearchParams;
+    rillDefaultExploreUrlParams: URLSearchParams;
     backButtonUsed: boolean;
     skipSessionStorage: boolean;
   }) {
     urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
-    skipSessionStorage ||= backButtonUsed;
-    const exploreStateFromSessionStorage = skipSessionStorage
-      ? null
-      : getPartialExploreStateFromSessionStorage(
-          this.exploreName,
-          this.storageNamespacePrefix,
-          urlSearchParams,
-          metricsViewSpec,
-          exploreSpec,
-        );
+    const sessionParams =
+      skipSessionStorage || backButtonUsed
+        ? undefined
+        : getExploreUrlParamsFromSessionStorage(
+            this.exploreName,
+            this.storageNamespacePrefix,
+            urlSearchParams,
+          );
 
-    const { partialExploreState: partialExploreStateFromUrl } =
-      convertURLSearchParamsToExploreState(
-        urlSearchParams,
-        metricsViewSpec,
-        exploreSpec,
-        {},
-      );
-
-    // Loaded up front: the most recent state's ad-hoc selections are validated
-    // against these definitions, and they are merged into the final state below.
+    // Loaded up front: the most recent params' ad-hoc names are validated
+    // against these definitions, and they are added to the merged params below.
     const libraryEphemeralMeasures = this.loadEphemeralMeasureLibrary(
       metricsViewSpec,
       exploreSpec,
     );
 
-    const { mostRecentPartialExploreState } = getMostRecentPartialExploreState(
-      this.exploreName,
-      this.storageNamespacePrefix,
-      metricsViewSpec,
-      exploreSpec,
-      libraryEphemeralMeasures,
-    );
-
-    const shouldSkipOtherSources =
-      // If the url has some params that do not map to session storage then we need to only use state from url back-filled with rill defaults.
-      (urlSearchParams.size > 0 && !exploreStateFromSessionStorage) ||
-      // The exception to this is when back button is pressed and the user landed on empty url.
-      backButtonUsed;
-
-    const exploreStateOrder = [
-      // 1st priority is the state from url params. For certain params the state is from session storage.
-      // We need the state from session storage to make sure any state is not cleared while the user is still on the page but came back from a different dashboard.
-      // TODO: move all this logic based on url params to a "fromURL" method. Will replace convertURLSearchParamsToExploreState
-      exploreStateFromSessionStorage ??
-        (urlSearchParams.size > 0 ? partialExploreStateFromUrl : null),
-      // Next priority is the most recent state user had visited. This is a small subset of the full state.
-      shouldSkipOtherSources || this.disableMostRecentDashboardState
-        ? null
-        : mostRecentPartialExploreState,
-      // Next priority is one of the other source defined.
-      // For cloud dashboard it would be home bookmark if present.
-      // For shared url it would be the saved state in token
-      shouldSkipOtherSources ? null : bookmarkOrTokenExploreState,
-      // Next priority is the defaults from yaml config.
-      shouldSkipOtherSources ? null : exploreStateFromYAMLConfig,
-      // Finally the fallback of rill default explore which will have the complete set of config.
-      rillDefaultExploreState,
-    ];
-
-    const nonEmptyExploreStateOrder = exploreStateOrder.filter(
-      Boolean,
-    ) as Partial<ExploreState>[];
-    const finalExploreState = cascadingExploreStateMerge(
-      nonEmptyExploreStateOrder,
-    ) as ExploreState;
-    // Restore ad-hoc measure definitions from the library. The URL only
-    // carries the definitions the page shows, so this is what brings back
-    // hidden definitions and ones created in another explore on the same
-    // metrics view. Definitions from the state win over stored copies, and the
-    // total is capped at what a URL can carry so a shared link never drops one;
-    // definitions the state uses are kept ahead of unused ones.
-    if (libraryEphemeralMeasures.length) {
-      finalExploreState.ephemeralMeasures = capEphemeralMeasureDefs(
-        mergeEphemeralMeasureDefs(
-          finalExploreState.ephemeralMeasures ?? [],
+    const mostRecentParams = this.disableMostRecentDashboardState
+      ? undefined
+      : getMostRecentExploreUrlParams(
+          this.exploreName,
+          this.storageNamespacePrefix,
+          metricsViewSpec,
+          exploreSpec,
           libraryEphemeralMeasures,
-        ),
-        ephemeralMeasureNamesInUse(finalExploreState),
-        MAX_EPHEMERAL_MEASURES,
-      );
-    }
-    correctExploreState(metricsViewSpec, finalExploreState);
+        );
 
-    return finalExploreState;
+    const urlParams = mergeExploreUrlParams({
+      urlParams: normalizeExploreUrlParams(urlSearchParams),
+      sessionParams,
+      mostRecentParams,
+      bookmarkParams: bookmarkUrlParams,
+      yamlParams: exploreUrlParamsFromYAMLConfig,
+      rillDefaultParams: rillDefaultExploreUrlParams,
+      backButtonUsed,
+    });
+    addEphemeralMeasureLibraryToUrlParams(urlParams, libraryEphemeralMeasures);
+    return urlParams;
   }
 
   /**

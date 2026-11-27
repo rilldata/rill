@@ -292,8 +292,13 @@ function fromExploreUrlParams(
       errors.push(getMultiFieldError("dimension", missingDimensions));
     }
 
+    // Compared against the explore's dimensions that the metrics view still defines,
+    // without time dimensions since leaderboards do not show them.
+    const isNonTimeDimension = (d: string) =>
+      dimensions.get(d)?.type !== "DIMENSION_TYPE_TIME";
     partialExploreState.allDimensionsVisible =
-      selectedDimensions.length === explore.dimensions?.length;
+      selectedDimensions.filter(isNonTimeDimension).length ===
+      [...dimensions.keys()].filter(isNonTimeDimension).length;
     partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 

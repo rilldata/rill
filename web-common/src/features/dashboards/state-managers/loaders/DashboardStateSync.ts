@@ -6,7 +6,7 @@ import {
   upsertIntoEphemeralMeasureLibrary,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
-import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { saveMostRecentExploreUrlParams } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -18,13 +18,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import { convertURLSearchParamsToFullExploreState } from "@rilldata/web-common/features/dashboards/url-state/convert-url-params-to-full-explore-state";
 import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
@@ -34,16 +33,13 @@ export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
 /**
  * Keeps explore state and url in sync.
- * If there is no explore state present initialised the explore state using DashboardStateDataLoader.initExploreState.
+ * If there is no explore state present initialised the explore state using DashboardStateDataLoader.initExploreUrlParams.
  *
  * prevUrl is used to make sure there is no redirect loop.
  */
 export class DashboardStateSync {
   private readonly exploreStore: Readable<ExploreState | undefined>;
   private readonly timeControlStore: TimeControlStore;
-  // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
-  // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
-  private readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
 
   private readonly unsubInit: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
@@ -82,26 +78,28 @@ export class DashboardStateSync {
       exploreName,
     );
 
-    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParams(
-      dataLoader.validSpecQuery,
-      dataLoader.fullTimeRangeQuery,
-    );
-
     this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
     this.timeFilterParamsTracker = timeFilterManager.storeSync;
 
     this.unsubInit = derived(
-      [dataLoader.initExploreState],
+      [dataLoader.initExploreUrlParams, dataLoader.rillDefaultExploreState],
       (states) => states,
-    ).subscribe(([initExploreState]) => {
-      // initExploreState is not ready yet. Either data is still loading or dashboard is not reconciled yet.
+    ).subscribe(([initExploreUrlParams, rillDefaultExploreState]) => {
+      // Re-triggered by a refetch of a dependant query after init. See handleExploreInit.
+      if (this.updating || this.initialized) return;
+      // initExploreUrlParams is not ready yet. Either data is still loading or dashboard is not reconciled yet.
       if (
-        initExploreState.isLoading ||
-        initExploreState.data?.activePage === undefined
+        initExploreUrlParams.isLoading ||
+        !initExploreUrlParams.data ||
+        !rillDefaultExploreState.data
       )
         return;
 
-      void this.handleExploreInit(initExploreState.data);
+      const initExploreState = this.convertUrlParamsToExploreState(
+        initExploreUrlParams.data,
+        rillDefaultExploreState.data,
+      );
+      void this.handleExploreInit(initExploreState);
     });
 
     this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
@@ -137,13 +135,31 @@ export class DashboardStateSync {
     this.lastEphemeralMeasures = next;
   }
 
+  /**
+   * Converts the merged params from the data loader to the explore state for the store.
+   * Errors are discarded: invalid params are dropped and filled from the rill default state.
+   */
+  private convertUrlParamsToExploreState(
+    urlParams: URLSearchParams,
+    rillDefaultExploreState: ExploreState,
+  ) {
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const { exploreState } = convertURLSearchParamsToFullExploreState(
+      urlParams,
+      validSpecData?.metricsView ?? {},
+      validSpecData?.explore ?? {},
+      rillDefaultExploreState,
+    );
+    return exploreState;
+  }
+
   public getUrlForExploreState(exploreState: ExploreState) {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const pageState = get(page);
     const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreUrlParams,
     );
     // Type-safety
     if (!rillDefaultExploreURLParams) return pageState.url;
@@ -177,7 +193,7 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreUrlParams,
     );
 
     // Ensure dashboard data is loaded before we proceed.
@@ -194,7 +210,7 @@ export class DashboardStateSync {
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
     // Update session storage with the initial state
-    updateExploreSessionStore(
+    const exploreUrlParams = updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
       initExploreState,
@@ -204,11 +220,13 @@ export class DashboardStateSync {
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with the initial state
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        initExploreState,
-      );
+      if (exploreUrlParams) {
+        saveMostRecentExploreUrlParams(
+          this.exploreName,
+          this.extraPrefix,
+          exploreUrlParams,
+        );
+      }
       // Definitions from the URL or a bookmark join the library; a missing
       // definition on init is not a deletion, so only upsert here.
       upsertIntoEphemeralMeasureLibrary(
@@ -261,13 +279,17 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreUrlParams,
+    );
+
+    const { data: rillDefaultExploreState } = get(
+      this.dataLoader.rillDefaultExploreState,
     );
 
     // Type-safety
-    if (!rillDefaultExploreURLParams) return;
+    if (!rillDefaultExploreURLParams || !rillDefaultExploreState) return;
 
-    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+    const urlParams = this.dataLoader.getExploreUrlParamsFromURL(
       urlSearchParams,
       type,
     );
@@ -275,7 +297,11 @@ export class DashboardStateSync {
     // This can be undefined when one of the queries has not loaded yet.
     // Rest of the code can be indeterminate when queries have not loaded.
     // This shouldn't ideally happen.
-    if (!partialExplore) return;
+    if (!urlParams) return;
+    const partialExplore = this.convertUrlParamsToExploreState(
+      urlParams,
+      rillDefaultExploreState,
+    );
 
     const pageState = get(page);
 
@@ -308,7 +334,7 @@ export class DashboardStateSync {
     // Get the full updated state and save to session storage
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
+    const exploreUrlParams = updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
       updatedExploreState,
@@ -318,11 +344,13 @@ export class DashboardStateSync {
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state from url
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        updatedExploreState,
-      );
+      if (exploreUrlParams) {
+        saveMostRecentExploreUrlParams(
+          this.exploreName,
+          this.extraPrefix,
+          exploreUrlParams,
+        );
+      }
       this.syncEphemeralMeasureLibrary(
         exploreSpec,
         updatedExploreState.ephemeralMeasures,
@@ -366,7 +394,7 @@ export class DashboardStateSync {
     const newUrl = this.getUrlForExploreState(exploreState);
 
     // Update the session storage with the new explore state.
-    updateExploreSessionStore(
+    const exploreUrlParams = updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
       exploreState,
@@ -377,11 +405,13 @@ export class DashboardStateSync {
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state.
       // Since we do not update the state per action we do it here as blanket update.
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        exploreState,
-      );
+      if (exploreUrlParams) {
+        saveMostRecentExploreUrlParams(
+          this.exploreName,
+          this.extraPrefix,
+          exploreUrlParams,
+        );
+      }
       this.syncEphemeralMeasureLibrary(
         exploreSpec,
         exploreState.ephemeralMeasures,

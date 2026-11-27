@@ -1,55 +1,32 @@
-import { getExploreStateFromHomeBookmarkUrl } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
-import {
-  createAndExpression,
-  createBinaryExpression,
-  createInExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import {
-  AD_BIDS_DOMAIN_DIMENSION,
-  AD_BIDS_EXPLORE_INIT,
-  AD_BIDS_METRICS_INIT,
-  AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_TIME_RANGE_SUMMARY,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
-import {
-  V1Operation,
-  type V1ExploreSpec,
-} from "@rilldata/web-common/runtime-client";
+import { getUrlParamsFromHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("$app/stores", () => ({ page: {} }));
 
-describe("getExploreStateFromHomeBookmarkUrl", () => {
-  // What the runtime parses from `defaults.filters: publisher = 'Contoso'`.
-  const exploreWithDefaultFilter: V1ExploreSpec = {
-    ...AD_BIDS_EXPLORE_INIT,
-    defaultPreset: {
-      where: createBinaryExpression(
-        AD_BIDS_PUBLISHER_DIMENSION,
-        V1Operation.OPERATION_EQ,
-        "Contoso",
-      ),
-    },
-  };
-  const whereFilterOf = (urlSearch: string) =>
-    getExploreStateFromHomeBookmarkUrl(
-      urlSearch,
-      AD_BIDS_METRICS_INIT,
-      exploreWithDefaultFilter,
-      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-    ).whereFilter;
+describe("getUrlParamsFromHomeBookmark", () => {
+  const paramsOf = (urlSearch: string) =>
+    getUrlParamsFromHomeBookmark({ urlSearch }).toString();
 
   it("opens a bookmark saved without a filter unfiltered, whatever the explore's default filter", () => {
     // Bookmarks saved today hold an empty filter param. Older ones hold none.
-    expect(whereFilterOf("tr=P7D&f=")).toEqual(createAndExpression([]));
-    expect(whereFilterOf("tr=P7D")).toEqual(createAndExpression([]));
+    // The empty param keeps the explore's default filter from filling it in.
+    expect(paramsOf("tr=P7D&f=")).toEqual("tr=P7D&f=");
+    expect(paramsOf("tr=P7D")).toEqual("tr=P7D&f=");
   });
 
   it("keeps the filter the bookmark was saved with", () => {
-    expect(whereFilterOf("tr=P7D&f=domain IN ('fabrikam.com')")).toEqual(
-      createAndExpression([
-        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["fabrikam.com"]),
-      ]),
+    expect(paramsOf("tr=P7D&f=domain IN ('fabrikam.com')")).toEqual(
+      new URLSearchParams("tr=P7D&f=domain IN ('fabrikam.com')").toString(),
+    );
+  });
+
+  it("expands a compressed bookmark before checking for a filter", () => {
+    const compressed = new URLSearchParams({
+      gzipped_state: compressUrlParams("tr=P7D&f=domain IN ('fabrikam.com')"),
+    });
+    expect(paramsOf(compressed.toString())).toEqual(
+      new URLSearchParams("tr=P7D&f=domain IN ('fabrikam.com')").toString(),
     );
   });
 });

@@ -11,6 +11,7 @@ import { getValidComparisonOption } from "@rilldata/web-common/features/dashboar
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getExploreDefaultFilter } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
@@ -61,6 +62,39 @@ export function getExploreStateFromYAMLConfig(
       exploreFields,
     ),
   };
+}
+
+/**
+ * Url params for the fields the yaml config sets, used to fill in params other sources leave out.
+ * Unlike {@link createUrlForExploreYAMLDefaultState} it has no time range when the yaml sets none:
+ * the time controls resolve one anyway, which would hide the rill default one.
+ */
+export function getExploreUrlParamsFromYAMLConfig(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+    metricsViewSpec,
+    exploreSpec,
+    timeRangeSummary,
+  );
+  const timeControlState = getTimeControlState(
+    metricsViewSpec,
+    exploreSpec,
+    timeRangeSummary,
+    exploreStateFromYAMLConfig as ExploreState,
+  );
+  const urlParams = convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    metricsViewSpec,
+    exploreStateFromYAMLConfig,
+    timeControlState,
+  );
+  if (!exploreStateFromYAMLConfig.selectedTimeRange) {
+    urlParams.delete(ExploreStateURLParams.TimeRange);
+  }
+  return urlParams;
 }
 
 export function createUrlForExploreYAMLDefaultState(

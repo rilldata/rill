@@ -1,8 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import {
   ExploreUrlWebView,
@@ -30,6 +28,7 @@ export function getKeyForSessionStore(
  * Save the current explore state as "most recent explore" state in sessionStorage.
  * Makes sure to update all views with global and common fields.
  * Stores in url params format so that the converter code is shared.
+ * Returns the full params of the current view.
  */
 export function updateExploreSessionStore(
   exploreName: string,
@@ -44,7 +43,7 @@ export function updateExploreSessionStore(
     V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE;
   const curWebView = ToURLParamViewMap[apiWebView];
   // type guard
-  if (!curWebView) return;
+  if (!curWebView) return undefined;
 
   // Build the url search params for the entire state
   const urlSearchParams = convertPartialExploreStateToUrlParams(
@@ -106,20 +105,20 @@ export function updateExploreSessionStore(
       otherWebViewUrlParams.toString(),
     );
   }
+
+  return urlSearchParams;
 }
 
 /**
- * Returns explore state filled with extra fields stored when user last visited a particular view.
+ * Returns the params stored when the user last visited the view in the url.
  * 1. If no param is set then load the params for the default view from session storage.
  * 2. If only view param is set then load the params from session storage.
  * 3. If view=ttd and `measure` is the only other param set load from session storage.
  */
-export function getPartialExploreStateFromSessionStorage(
+export function getExploreUrlParamsFromSessionStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   searchParams: URLSearchParams,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
 ) {
   if (shouldSkipSessionStorage(searchParams)) {
     return undefined;
@@ -133,38 +132,25 @@ export function getPartialExploreStateFromSessionStorage(
     viewFromUrl,
   );
 
+  let storedUrlSearch: string | null = null;
   try {
-    const storedUrlSearch = sessionStorage.getItem(key);
-    if (!storedUrlSearch) return undefined;
-    const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
-
-    const { partialExploreState: storedExploreState } =
-      convertURLSearchParamsToExploreState(
-        storedUrlSearchParams,
-        metricsViewSpec,
-        exploreSpec,
-        {},
-      );
-
-    // TDD is different from other views. It has a variable that is expanded measure.
-    // So we need to copy over the actual measure from current url but keep other params.
-    if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
-      // type safety
-      storedExploreState.tdd ??= {
-        expandedMeasureName: "",
-        chartType: TDDChart.DEFAULT,
-        pinIndex: -1,
-      };
-      // copy over the expanded measure from current url search params.
-      storedExploreState.tdd.expandedMeasureName = searchParams.get(
-        ExploreStateURLParams.ExpandedMeasure,
-      ) as string;
-    }
-
-    return storedExploreState;
+    storedUrlSearch = sessionStorage.getItem(key);
   } catch {
-    return undefined;
+    // Reading storage throws when the browser blocks it, e.g. in an embed with third-party cookies blocked.
   }
+  if (!storedUrlSearch) return undefined;
+  const storedUrlParams = new URLSearchParams(storedUrlSearch);
+
+  // TDD is different from other views. It has a variable that is expanded measure.
+  // So we need to copy over the actual measure from current url but keep other params.
+  if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
+    storedUrlParams.set(
+      ExploreStateURLParams.ExpandedMeasure,
+      searchParams.get(ExploreStateURLParams.ExpandedMeasure) ?? "",
+    );
+  }
+
+  return storedUrlParams;
 }
 
 export function clearExploreSessionStore(
