@@ -1,5 +1,5 @@
 import type { V1ThemeFont } from "@rilldata/web-common/runtime-client";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadThemeFont,
@@ -11,12 +11,12 @@ const HOST = "https://runtime.example.com";
 
 // Registered faces outlive a dashboard by design, so each test uses projects of its own.
 let nextInstance = 0;
-function newProject(): RuntimeClient {
-  return {
+function newProject(jwt = "token"): RuntimeClient {
+  return new RuntimeClient({
     host: HOST,
     instanceId: `inst${++nextInstance}`,
-    getJwt: () => "token",
-  } as unknown as RuntimeClient;
+    jwt,
+  });
 }
 
 function font(family: string, ...paths: string[]): V1ThemeFont {
@@ -160,6 +160,24 @@ describe("loadThemeFont", () => {
       "700 normal",
       "100 900 italic",
     ]);
+  });
+
+  it("waits for an expired token to be refreshed before fetching a file", async () => {
+    // An unsigned JWT that expired a minute ago: the runtime would refuse it with a 401.
+    const exp = Math.floor(Date.now() / 1000) - 60;
+    const client = newProject(
+      `eyJhbGciOiJub25lIn0.${btoa(JSON.stringify({ exp })).replace(/=+$/, "")}.signature`,
+    );
+    client.setJwtRefresher(() => Promise.resolve("fresh-token"));
+    files[assetURL(client, "public/Fresh.woff2")] = new ArrayBuffer(8);
+
+    const resolved = await load(client, font("Fresh", "public/Fresh.woff2"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      assetURL(client, "public/Fresh.woff2"),
+      { headers: { Authorization: "Bearer fresh-token" } },
+    );
+    expect(facesOf(resolved.faceFamily)).toEqual(["400 normal"]);
   });
 
   it("downloads a file once, however many dashboards and panels use the theme", async () => {

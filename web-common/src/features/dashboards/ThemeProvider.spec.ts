@@ -1,3 +1,4 @@
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { RUNTIME_CONTEXT_KEY } from "@rilldata/web-common/runtime-client/v2/context";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -13,10 +14,10 @@ describe("ThemeProvider", () => {
     // Vega measures labels as it lays a chart out, so a chart that saw the family before the
     // browser could draw with it would keep the fallback font's metrics.
     let finishDownload: (response: unknown) => void = () => {};
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => new Promise((resolve) => (finishDownload = resolve))),
+    const fetchMock = vi.fn(
+      () => new Promise((resolve) => (finishDownload = resolve)),
     );
+    vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal(
       "FontFace",
       class {
@@ -40,9 +41,7 @@ describe("ThemeProvider", () => {
     );
     render(ThemeChartFontHarness, {
       props: { theme },
-      context: new Map([
-        [RUNTIME_CONTEXT_KEY, { ...project, getJwt: () => undefined }],
-      ]),
+      context: new Map([[RUNTIME_CONTEXT_KEY, new RuntimeClient(project)]]),
     });
 
     const chartFont = screen.getByTestId("chart-font");
@@ -52,6 +51,8 @@ describe("ThemeProvider", () => {
       "font-family: var(--theme-font-family);",
     );
 
+    // The file is requested once the client has checked that its token is fresh.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     finishDownload({
       ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),

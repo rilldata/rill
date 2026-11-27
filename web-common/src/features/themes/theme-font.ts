@@ -8,6 +8,7 @@
  */
 
 import { protoBase64 } from "@bufbuild/protobuf";
+import { fetchProjectAsset } from "@rilldata/web-common/features/canvas/components/project-assets";
 import type {
   V1ThemeFont,
   V1ThemeFontFile,
@@ -201,7 +202,8 @@ function registerFontFile(
     faceFamily,
     settled: Promise.resolve(),
   };
-  entry.settled = fetchFontFile(client, file.path ?? "")
+  entry.settled = fetchProjectAsset(client, (file.path ?? "").split("/"))
+    .then((response) => response.arrayBuffer())
     .then(async (data) => {
       const face = new FontFace(faceFamily, data, {
         ...descriptors,
@@ -225,21 +227,4 @@ function registerFontFile(
 
 function fontFormat(path: string | undefined): string {
   return path?.split(".").pop()?.toLowerCase() ?? "woff2";
-}
-
-async function fetchFontFile(
-  client: RuntimeClient,
-  path: string,
-): Promise<ArrayBuffer> {
-  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-  const headers: Record<string, string> = {};
-  const jwt = client.getJwt();
-  if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-
-  const response = await fetch(
-    `${client.host}/v1/instances/${client.instanceId}/assets/${encodedPath}`,
-    { headers },
-  );
-  if (!response.ok) throw new Error(`HTTP status ${response.status}`);
-  return response.arrayBuffer();
 }
