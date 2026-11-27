@@ -45,24 +45,34 @@ const rows = [
 
 type SceneNode = {
   role?: string;
+  name?: string;
   items?: SceneNode[];
   text?: unknown;
   datum?: Record<string, unknown>;
   opacity?: number;
+  stroke?: string;
+  y?: number;
 };
 
 /**
  * Renders a compiled spec headless and returns the items Vega drew in the given role, such as
- * "axis-label" or "mark". Items label overlap removal hid are left out.
+ * "axis-label" or "mark", of the marks whose name matches `name` where it is given. Items label
+ * overlap removal hid are left out.
  */
-async function renderRole(spec: unknown, role: string): Promise<SceneNode[]> {
+async function renderRole(
+  spec: unknown,
+  role: string,
+  name?: RegExp,
+): Promise<SceneNode[]> {
   const view = new vega.View(vega.parse(compile(spec as never).spec), {
     renderer: "none",
   });
   await view.runAsync();
   const found: SceneNode[] = [];
   const visit = (node: SceneNode) => {
-    if (node.role === role) found.push(...(node.items ?? []));
+    if (node.role === role && (!name || name.test(node.name ?? ""))) {
+      found.push(...(node.items ?? []));
+    }
     for (const item of node.items ?? []) item.items?.forEach(visit);
   };
   visit((view.scenegraph() as unknown as { root: SceneNode }).root);
@@ -551,48 +561,67 @@ describe("compileFlintSpec", () => {
       }
     });
 
-    it("lists the series of a faceted chart by name, whatever order their rows arrive in", async () => {
+    it("lists the series of a Sparkline by name, in its colors and its rows, whatever order their rows arrive in", async () => {
       // Vega-Lite placed the series within each panel, where a Sparkline's series, one to a
       // panel, all came first, and threw on the window that placed them: no chart was drawn.
-      const sparkline = (arrival: string[]) =>
+      // Flint stacks the rows of every column in the order the series arrive.
+      const sparkline = (x: string, arrival: string[]) =>
         compileFlintSpec({
           spec: {
             chartType: "Sparkline",
             encodings: {
-              x: { field: "timestamp" },
+              x: { field: x },
               y: { field: "bid_price_sum" },
               color: { field: "publisher" },
             },
           },
-          rows: rowsInOrder(arrival),
+          rows: rowsInOrder(arrival).map((row) => ({
+            ...row,
+            total_records: row.timestamp.getDate(),
+          })),
           fields: deriveFlintFields(
-            ["timestamp", "publisher", "bid_price_sum"],
+            ["timestamp", "total_records", "publisher", "bid_price_sum"],
             metricsView,
             V1TimeGrain.TIME_GRAIN_DAY,
           ),
           size: { width: 600, height: 400 },
         }).spec;
-      for (const arrival of [
-        ["Yahoo", "Google", "Microsoft"],
-        ["Microsoft", "Yahoo", "Google"],
-      ]) {
-        const lines = (await renderRole(sparkline(arrival), "mark")).filter(
-          (mark) =>
-            (mark as { stroke?: unknown }).stroke && mark.datum?.publisher,
-        );
-        // Vega-Lite's own colors, given out by name.
-        expect(
-          Object.fromEntries(
-            lines.map((line) => [
-              line.datum?.publisher,
-              (line as { stroke?: unknown }).stroke,
+      // A trend over time, and one over a measure, which leaves no single measure to order by.
+      for (const x of ["timestamp", "total_records"]) {
+        for (const arrival of [
+          ["Yahoo", "Google", "Microsoft"],
+          ["Microsoft", "Yahoo", "Google"],
+        ]) {
+          const spec = sparkline(x, arrival);
+          const lines = (await renderRole(spec, "mark")).filter(
+            (mark) => mark.stroke && mark.datum?.publisher,
+          );
+          // Vega-Lite's own colors, given out by name.
+          expect(
+            Object.fromEntries(
+              lines.map((line) => [line.datum?.publisher, line.stroke]),
+            ),
+            x,
+          ).toEqual({
+            Google: "#4c78a8",
+            Microsoft: "#f58518",
+            Yahoo: "#e45756",
+          });
+          // Each row of the names, trends and values columns, from the top.
+          const cells = (await renderRole(spec, "scope", /_cell$/)).sort(
+            (a, b) => (a.y ?? 0) - (b.y ?? 0),
+          );
+          expect(
+            cells.map((cell) => cell.datum?.publisher),
+            x,
+          ).toEqual(
+            ["Google", "Microsoft", "Yahoo"].flatMap((name) => [
+              name,
+              name,
+              name,
             ]),
-          ),
-        ).toEqual({
-          Google: "#4c78a8",
-          Microsoft: "#f58518",
-          Yahoo: "#e45756",
-        });
+          );
+        }
       }
     });
 
