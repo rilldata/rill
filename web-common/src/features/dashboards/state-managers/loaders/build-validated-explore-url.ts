@@ -1,10 +1,7 @@
-import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
-import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { convertURLSearchParamsToFullExploreState } from "@rilldata/web-common/features/dashboards/url-state/convert-url-params-to-full-explore-state";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -60,26 +57,19 @@ export async function buildValidatedExploreUrl(
     timeRangeSummary = timeRangeResp.timeRangeSummary;
   }
 
-  const cleanedParams = cleanEmbedUrlParams(searchParams);
-  const { partialExploreState, errors } = convertURLSearchParamsToExploreState(
-    cleanedParams,
-    metricsViewSpec,
-    exploreSpec,
-    {},
-  );
-
-  // Back-fill rill opinionated defaults so that fields not present in the url (like time range)
-  // resolve to a complete, valid state.
+  // Rill opinionated defaults back-fill fields not present in the url (like time range),
+  // so that they resolve to a complete, valid state.
   const rillDefaultExploreState = getRillDefaultExploreState(
     metricsViewSpec,
     exploreSpec,
     timeRangeSummary,
   );
-  const exploreState = cascadingExploreStateMerge([
-    partialExploreState,
+  const { exploreState, errors } = convertURLSearchParamsToFullExploreState(
+    cleanEmbedUrlParams(searchParams),
+    metricsViewSpec,
+    exploreSpec,
     rillDefaultExploreState,
-  ]) as ExploreState;
-  correctExploreState(metricsViewSpec, exploreState);
+  );
 
   const timeControlsState = getTimeControlState(
     metricsViewSpec,

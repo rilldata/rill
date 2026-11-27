@@ -332,7 +332,6 @@ describe("mapChartSpecToMetricsResolverQuery opens an explore", () => {
         urlParams,
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
         AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-        {},
       ).errors,
     ).toEqual([]);
     return Object.fromEntries(urlParams.entries());

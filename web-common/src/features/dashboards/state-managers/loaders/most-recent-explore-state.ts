@@ -1,13 +1,41 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
+import {
+  ExploreUrlWebView,
+  FromURLParamsSortTypeMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
-import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+
+// The subset of the explore view's params that is kept long term.
+// Ad-hoc measure definitions are stored per metrics view instead; see ephemeral-measures/library.ts.
+const MostRecentExploreURLParams = [
+  ExploreStateURLParams.TimeZone,
+  ExploreStateURLParams.VisibleMeasures,
+  ExploreStateURLParams.VisibleDimensions,
+  ExploreStateURLParams.SortBy,
+  ExploreStateURLParams.SortType,
+  ExploreStateURLParams.SortDirection,
+  ExploreStateURLParams.LeaderboardMeasures,
+  ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+];
 
 function getKeyForLocalStore(
+  exploreName: string,
+  storageNamespacePrefix: string | undefined,
+) {
+  return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}:most_recent_params`.toLowerCase();
+}
+
+// Key of the explore state saved as JSON, before the params were saved instead.
+function getLegacyKeyForLocalStore(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
 ) {
@@ -15,100 +43,213 @@ function getKeyForLocalStore(
 }
 
 /**
- * `ephemeralMeasures` are the ad-hoc definitions restored from the
- * per-metrics-view library. The saved state does not store definitions, only
- * selections that may name them, so they must be known before the saved
- * selections are validated or the ad-hoc visible and sort measures are dropped.
+ * Returns the most recent explore view params, validated against the specs.
+ * Stale names are cleaned the way `validateAndCleanExploreState` does it:
+ * visible fields that are all stale are dropped so that other sources fill them,
+ * a stale sort measure falls back to the first visible one,
+ * and stale leaderboard measures are dropped while the valid ones are kept.
+ * The url parser would instead drop a stale sort and the whole leaderboard measure list.
+ *
+ * `ephemeralMeasures` are the ad-hoc definitions restored from the per-metrics-view library.
+ * The saved params do not hold definitions, only names that may refer to them,
+ * so they must be known before validation or the ad-hoc names are dropped.
  */
-export function getMostRecentPartialExploreState(
+export function getMostRecentExploreUrlParams(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   ephemeralMeasures: EphemeralMeasureDef[] = [],
 ) {
-  const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
+  let partialExploreState: Partial<ExploreState> | undefined;
   try {
-    const rawExploreState = localStorage.getItem(key);
-    if (!rawExploreState) {
-      // Return this so that destructuring is simple
-      return { mostRecentPartialExploreState: undefined, errors: [] };
-    }
-
-    const stateFromLocalStorage = JSON.parse(
-      rawExploreState,
-    ) as Partial<ExploreState>;
-    if (ephemeralMeasures.length) {
-      stateFromLocalStorage.ephemeralMeasures = ephemeralMeasures;
-    }
-    const errors = validateAndCleanExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      stateFromLocalStorage,
+    const rawParams = localStorage.getItem(
+      getKeyForLocalStore(exploreName, storageNamespacePrefix),
     );
-    return { mostRecentPartialExploreState: stateFromLocalStorage, errors };
+    if (rawParams !== null) {
+      partialExploreState = decodeMostRecentUrlParams(
+        new URLSearchParams(rawParams),
+        exploreSpec,
+      );
+    } else {
+      const rawExploreState = localStorage.getItem(
+        getLegacyKeyForLocalStore(exploreName, storageNamespacePrefix),
+      );
+      if (rawExploreState) {
+        partialExploreState = JSON.parse(
+          rawExploreState,
+        ) as Partial<ExploreState>;
+      }
+    }
   } catch {
-    // no-op
+    // Reading storage throws when the browser blocks it, and parsing throws on a corrupt entry.
   }
-  // Return this so that destructuring is simple
-  return { mostRecentPartialExploreState: undefined, errors: [] };
+  if (!partialExploreState) return undefined;
+
+  if (ephemeralMeasures.length) {
+    partialExploreState.ephemeralMeasures = ephemeralMeasures;
+  }
+  validateAndCleanExploreState(
+    metricsViewSpec,
+    exploreSpec,
+    partialExploreState,
+  );
+
+  const params = convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    metricsViewSpec,
+    partialExploreState,
+    undefined,
+  );
+  // The time zone is only written along with a time range, which the most recent state does not have.
+  if (partialExploreState.selectedTimezone) {
+    params.set(
+      ExploreStateURLParams.TimeZone,
+      partialExploreState.selectedTimezone,
+    );
+  }
+  return pickMostRecentUrlParams(params);
 }
 
 /**
- * We only want to save a subset of the most recent explore state in the long term local storage.
- * This method selects the exact fields we want to save in the local storage.
+ * Saves the long term subset of the explore view's params.
+ * Other views' params are not saved.
  */
-export function saveMostRecentPartialExploreState(
+export function saveMostRecentExploreUrlParams(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: ExploreState,
+  urlParams: URLSearchParams,
 ) {
-  if (
-    exploreState.activePage !== DashboardState_ActivePage.DEFAULT &&
-    exploreState.activePage !== DashboardState_ActivePage.DIMENSION_TABLE
-  ) {
-    // We are not saving any state for non-explore pages
-    return;
-  }
+  const view = urlParams.get(
+    ExploreStateURLParams.WebView,
+  ) as ExploreUrlWebView | null;
+  if (view && view !== ExploreUrlWebView.Explore) return;
 
-  setMostRecentExploreStateInLocalStorage(exploreName, storageNamespacePrefix, {
-    selectedTimezone: exploreState.selectedTimezone,
-
-    // Ad-hoc measure definitions are stored per metrics view instead; see
-    // ephemeral-measures/library.ts.
-    visibleMeasures: exploreState.visibleMeasures,
-    allMeasuresVisible: exploreState.allMeasuresVisible,
-    visibleDimensions: exploreState.visibleDimensions,
-    allDimensionsVisible: exploreState.allDimensionsVisible,
-
-    leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
-    leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
-    leaderboardShowContextForAllMeasures:
-      exploreState.leaderboardShowContextForAllMeasures,
-    sortDirection: exploreState.sortDirection,
-    dashboardSortType: exploreState.dashboardSortType,
-  });
+  setMostRecentExploreUrlParamsInLocalStorage(
+    exploreName,
+    storageNamespacePrefix,
+    pickMostRecentUrlParams(urlParams),
+  );
 }
 
 export function clearMostRecentExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
 ) {
-  const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
-  localStorage.removeItem(key);
+  localStorage.removeItem(
+    getKeyForLocalStore(exploreName, storageNamespacePrefix),
+  );
+  localStorage.removeItem(
+    getLegacyKeyForLocalStore(exploreName, storageNamespacePrefix),
+  );
 }
 
-export function setMostRecentExploreStateInLocalStorage(
+export function setMostRecentExploreUrlParamsInLocalStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: Partial<ExploreState>,
+  urlParams: URLSearchParams,
 ) {
   try {
     localStorage.setItem(
       getKeyForLocalStore(exploreName, storageNamespacePrefix),
-      JSON.stringify(exploreState),
+      urlParams.toString(),
+    );
+    // The params replace the legacy state.
+    localStorage.removeItem(
+      getLegacyKeyForLocalStore(exploreName, storageNamespacePrefix),
     );
   } catch {
     // Writing storage throws when the quota is exceeded or the browser blocks it, e.g. in an embed.
   }
+}
+
+/**
+ * Writes the most recent state the way it was saved before params were saved instead.
+ * Used to test that the legacy state still loads.
+ */
+export function setLegacyMostRecentExploreStateInLocalStorage(
+  exploreName: string,
+  storageNamespacePrefix: string | undefined,
+  exploreState: Partial<ExploreState>,
+) {
+  localStorage.setItem(
+    getLegacyKeyForLocalStore(exploreName, storageNamespacePrefix),
+    JSON.stringify(exploreState),
+  );
+}
+
+/**
+ * Decodes the saved params into the state fields they map to, without validating names.
+ * The url parser is not used since it validates while parsing,
+ * which leaves nothing for `validateAndCleanExploreState` to clean.
+ */
+function decodeMostRecentUrlParams(
+  params: URLSearchParams,
+  exploreSpec: V1ExploreSpec,
+) {
+  const partialExploreState: Partial<ExploreState> = {};
+
+  const timeZone = params.get(ExploreStateURLParams.TimeZone);
+  if (timeZone) partialExploreState.selectedTimezone = timeZone;
+
+  const measures = params.get(ExploreStateURLParams.VisibleMeasures);
+  if (measures) {
+    partialExploreState.visibleMeasures =
+      measures === "*"
+        ? [...(exploreSpec.measures ?? [])]
+        : measures.split(",");
+  }
+
+  const dimensions = params.get(ExploreStateURLParams.VisibleDimensions);
+  if (dimensions) {
+    partialExploreState.visibleDimensions =
+      dimensions === "*"
+        ? [...(exploreSpec.dimensions ?? [])]
+        : dimensions.split(",");
+  }
+
+  const sortBy = params.get(ExploreStateURLParams.SortBy);
+  if (sortBy) partialExploreState.leaderboardSortByMeasureName = sortBy;
+
+  const sortType = params.get(ExploreStateURLParams.SortType);
+  if (sortType && sortType in FromURLParamsSortTypeMap) {
+    partialExploreState.dashboardSortType = Number(
+      ToLegacySortTypeMap[FromURLParamsSortTypeMap[sortType]],
+    );
+  }
+
+  const sortDirection = params.get(ExploreStateURLParams.SortDirection);
+  if (sortDirection) {
+    partialExploreState.sortDirection =
+      sortDirection === "ASC"
+        ? SortDirection.ASCENDING
+        : SortDirection.DESCENDING;
+  }
+
+  const leaderboardMeasures = params.get(
+    ExploreStateURLParams.LeaderboardMeasures,
+  );
+  if (leaderboardMeasures) {
+    partialExploreState.leaderboardMeasureNames =
+      leaderboardMeasures.split(",");
+  }
+
+  const showContext = params
+    .get(ExploreStateURLParams.LeaderboardShowContextForAllMeasures)
+    ?.toLowerCase();
+  if (showContext) {
+    partialExploreState.leaderboardShowContextForAllMeasures =
+      showContext === "true" || showContext === "1";
+  }
+
+  return partialExploreState;
+}
+
+function pickMostRecentUrlParams(urlParams: URLSearchParams) {
+  const params = new URLSearchParams();
+  MostRecentExploreURLParams.forEach((param) => {
+    const value = urlParams.get(param);
+    if (value !== null) params.set(param, value);
+  });
+  return params;
 }

@@ -151,7 +151,7 @@ function dashboardKey(kind: string, name: string) {
 
 // Search string that restores the bookmark's state on its dashboard, with a leading "?"; empty when the bookmark has no state.
 // Legacy explore bookmarks store their state as proto data instead of url params;
-// the explore page resolves that data through the "state" url param (see convertURLToExplorePreset).
+// the explore page resolves that data through the "state" url param (see normalizeExploreUrlParams).
 // Canvas bookmarks never used that format, so their data is used as the search as-is, matching the canvas bookmark dropdown.
 function bookmarkUrlSearch(bookmark: V1Bookmark) {
   let urlSearch = bookmark.urlSearch;

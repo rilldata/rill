@@ -48,7 +48,6 @@ function expectParsesWithoutErrors(urlParams: URLSearchParams) {
     urlParams,
     AD_BIDS_METRICS_INIT_WITH_TIME,
     AD_BIDS_EXPLORE_INIT,
-    {},
   );
   expect(errors).toEqual([]);
 }
@@ -539,7 +538,6 @@ describe("convertAggregationRequestToUrlParams with a runtime", () => {
           urlParams,
           MetricsViewWithTwoTimeDimensions,
           ExploreWithOffsetTimestamp,
-          {},
         );
       expect(errors).toEqual([]);
       expect(partialExploreState.selectedTimeDimension).toBe(

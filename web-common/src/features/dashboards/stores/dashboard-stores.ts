@@ -287,7 +287,7 @@ const metricsViewReducers = {
       if (!partialExploreState.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      // Partial comes from getMergedExploreState and is already corrected
+      // Partial comes from convertURLSearchParamsToFullExploreState and is already corrected
     });
   },
 

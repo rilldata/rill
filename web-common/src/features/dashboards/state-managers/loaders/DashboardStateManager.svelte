@@ -10,7 +10,6 @@
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import DashboardLoading from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardLoading.svelte";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -26,8 +25,8 @@
 
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
-  export let bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<ExploreState> | null>
+  export let bookmarkUrlParams:
+    | CompoundQueryResult<URLSearchParams | null>
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
   export let disableInitSessionDashboardState: boolean = false;
@@ -49,7 +48,7 @@
     client,
     exploreName,
     storageNamespacePrefix,
-    bookmarkOrTokenExploreState,
+    bookmarkUrlParams,
     disableMostRecentDashboardState,
     disableInitSessionDashboardState,
   );
@@ -69,15 +68,15 @@
     );
   }
 
-  let initExploreState:
-    | CompoundQueryResult<ExploreState | undefined>
+  let initExploreUrlParams:
+    | CompoundQueryResult<URLSearchParams | undefined>
     | undefined;
-  $: if (dataLoader) ({ initExploreState } = dataLoader);
+  $: if (dataLoader) ({ initExploreUrlParams } = dataLoader);
 
   let error: Error | null;
   let isLoading: boolean;
-  $: if (initExploreState) {
-    ({ isLoading, error } = $initExploreState as {
+  $: if (initExploreUrlParams) {
+    ({ isLoading, error } = $initExploreUrlParams as {
       isLoading: boolean;
       error: Error | null;
     });

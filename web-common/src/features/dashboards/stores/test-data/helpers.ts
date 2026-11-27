@@ -12,15 +12,21 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { getExploreUrlParamsFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
+import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
+import { convertURLSearchParamsToFullExploreState } from "@rilldata/web-common/features/dashboards/url-state/convert-url-params-to-full-explore-state";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import {
+  mergeExploreUrlParams,
+  normalizeExploreUrlParams,
+} from "@rilldata/web-common/features/dashboards/url-state/merge-explore-url-params";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
@@ -62,18 +68,48 @@ export function getInitExploreStateForTest(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1MetricsViewTimeRangeResponse | undefined = undefined,
 ) {
-  const defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
+  return convertURLSearchParamsToFullExploreStateForTest(
+    new URLSearchParams(),
     metricsViewSpec,
+    exploreSpec,
     timeRangeSummary?.timeRangeSummary,
-  );
-  const { partialExploreState } = convertPresetToExploreState(
+  ).exploreState;
+}
+
+/**
+ * Converts url params to a full explore state the way the dashboard loader does on a visit without a session:
+ * a url without params opens with the yaml and rill defaults,
+ * while params missing from a url with params are filled from the rill defaults only.
+ */
+export function convertURLSearchParamsToFullExploreStateForTest(
+  urlParams: URLSearchParams,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const mergedUrlParams = mergeExploreUrlParams({
+    urlParams: normalizeExploreUrlParams(urlParams),
+    sessionParams: undefined,
+    mostRecentParams: undefined,
+    bookmarkParams: undefined,
+    yamlParams: getExploreUrlParamsFromYAMLConfig(
+      metricsViewSpec,
+      exploreSpec,
+      timeRangeSummary,
+    ),
+    rillDefaultParams: getRillDefaultExploreUrlParams(
+      metricsViewSpec,
+      exploreSpec,
+      timeRangeSummary,
+    ),
+    backButtonUsed: false,
+  });
+  return convertURLSearchParamsToFullExploreState(
+    mergedUrlParams,
     metricsViewSpec,
     exploreSpec,
-    defaultExplorePreset,
+    getRillDefaultExploreState(metricsViewSpec, exploreSpec, timeRangeSummary),
   );
-  applyAdaptiveTimeGrain(partialExploreState, metricsViewSpec);
-  return partialExploreState as ExploreState;
 }
 
 // Wrapper function to simplify assert call

@@ -3,10 +3,12 @@ import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/fe
 import {
   type PivotChipData,
   PivotChipType,
-  type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import {
+  setLegacyMostRecentExploreStateInLocalStorage,
+  setMostRecentExploreUrlParamsInLocalStorage,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForComponentTests,
@@ -43,7 +45,6 @@ import {
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -151,21 +152,9 @@ describe("DashboardStateManager", () => {
     };
     const PageURLForRillDefaultState =
       "tr=P7D&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
-    const BookmarkSourceQueryResult = readable({
-      data: {
-        selectedTimeRange: {
-          name: "PT24H",
-          interval: V1TimeGrain.TIME_GRAIN_HOUR,
-        } as DashboardTimeControls,
-        showTimeComparison: true,
-        selectedComparisonTimeRange: {
-          name: TimeComparisonOption.CONTIGUOUS,
-        } as DashboardTimeControls,
-      },
-      error: null,
-      isFetching: false,
-      isLoading: false,
-    });
+    const BookmarkSourceQueryResult = bookmarkQueryResult(
+      "tr=PT24H&compare_tr=rill-PP",
+    );
 
     it("Should load base dashboard state", async () => {
       renderDashboardStateManager();
@@ -219,7 +208,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should drop pivot fields repeated in the 'other source' of dashboard state", async () => {
-      // A legacy home bookmark loads through proto state, not the url parser,
+      // The url parser keeps repeated pivot fields,
       // so the final correction has to dedupe what the merge hands it.
       const publisher: PivotChipData = {
         id: AD_BIDS_PUBLISHER_DIMENSION,
@@ -237,18 +226,9 @@ describe("DashboardStateManager", () => {
         type: PivotChipType.Measure,
       };
       renderDashboardStateManager(
-        readable({
-          data: {
-            activePage: DashboardState_ActivePage.PIVOT,
-            pivot: {
-              rows: [publisher, publisher],
-              columns: [publisher, domain, impressions, impressions],
-            } as PivotState,
-          },
-          error: null,
-          isFetching: false,
-          isLoading: false,
-        }),
+        bookmarkQueryResult(
+          "view=pivot&rows=publisher,publisher&cols=publisher,domain,impressions,impressions",
+        ),
       );
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -258,17 +238,13 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-      });
+      setMostRecentExploreUrlParamsInLocalStorage(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        new URLSearchParams(
+          "measures=bid_price&dims=domain&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price",
+        ),
+      );
       renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -305,6 +281,45 @@ describe("DashboardStateManager", () => {
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+    });
+
+    it("Should load most recent dashboard state saved before params were saved", async () => {
+      setLegacyMostRecentExploreStateInLocalStorage(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        {
+          selectedTimezone: "UTC",
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          allMeasuresVisible: false,
+          visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+          allDimensionsVisible: false,
+
+          leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+          leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+          sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+          dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+        },
+      );
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        selectedTimeRange: ExploreStateSubsetForYAMLState.selectedTimeRange,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      pageMock.assertSearchParams(
+        "tr=P7D&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=ASC&leaderboard_measures=bid_price",
+      );
     });
 
     it("Should load from session dashboard state", async () => {
@@ -350,17 +365,13 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should not load local storage or session storage when disabled", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-      });
+      setMostRecentExploreUrlParamsInLocalStorage(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        new URLSearchParams(
+          "measures=bid_price&dims=domain&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price",
+        ),
+      );
       setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
@@ -534,12 +545,7 @@ describe("DashboardStateManager", () => {
 
     it("Should let the filter of a bookmark win over the default filter", async () => {
       renderDashboardStateManager(
-        readable({
-          data: { whereFilter: OtherFilter, dimensionsWithInlistFilter: [] },
-          error: null,
-          isFetching: false,
-          isLoading: false,
-        }),
+        bookmarkQueryResult("f=domain IN ('fabrikam.com')"),
       );
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -610,17 +616,13 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-      });
+      setMostRecentExploreUrlParamsInLocalStorage(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        new URLSearchParams(
+          "measures=bid_price&dims=domain&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price",
+        ),
+      );
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -650,17 +652,13 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should validate most recent dashboard state and correct invalid fields", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
-        visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-      });
+      setMostRecentExploreUrlParamsInLocalStorage(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        new URLSearchParams(
+          `measures=${AD_BIDS_PUBLISHER_COUNT_MEASURE}&dims=${AD_BIDS_COUNTRY_DIMENSION}&sort_by=${AD_BIDS_PUBLISHER_COUNT_MEASURE}&sort_type=value&sort_dir=ASC&leaderboard_measures=${AD_BIDS_PUBLISHER_COUNT_MEASURE}`,
+        ),
+      );
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -730,8 +728,8 @@ describe("DashboardStateManager", () => {
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
 function renderDashboardStateManager(
-  bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<ExploreState> | undefined>
+  bookmarkUrlParams:
+    | CompoundQueryResult<URLSearchParams | null>
     | undefined = undefined,
   disableMostRecentDashboardState: boolean = false,
   disableInitSessionDashboardState: boolean = false,
@@ -740,7 +738,7 @@ function renderDashboardStateManager(
   const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
-      bookmarkOrTokenExploreState,
+      bookmarkUrlParams,
       disableMostRecentDashboardState,
       disableInitSessionDashboardState,
       onLoad,
@@ -757,6 +755,17 @@ function renderDashboardStateManager(
   });
 
   return { queryClient, renderResults };
+}
+
+function bookmarkQueryResult(
+  urlSearch: string,
+): CompoundQueryResult<URLSearchParams | null> {
+  return readable({
+    data: new URLSearchParams(urlSearch),
+    error: null,
+    isFetching: false,
+    isLoading: false,
+  });
 }
 
 function assertExploreStateSubset(exploreStateSubset: Partial<ExploreState>) {

@@ -14,14 +14,12 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -262,10 +260,15 @@ Unexpected " ".`,
     errors: [
       `Selected measure: "imps" is not valid.`,
       `Selected dimension: "pub" is not valid.`,
+      // The url has no sort, so the rill default one fills it in, but the url hides that measure.
+      `Selected sort by measure: "impressions" is not valid. It is hidden.`,
     ],
     entity: {
       visibleMeasures: ["bid_price"],
       allMeasuresVisible: false,
+      // Moved off the hidden measure by correctExploreState.
+      leaderboardSortByMeasureName: "bid_price",
+      leaderboardMeasureNames: ["bid_price"],
       visibleDimensions: ["domain"],
       allDimensionsVisible: false,
     },
@@ -397,16 +400,11 @@ describe("direct convertURLSearchParamsToExploreState variations", () => {
         ),
       );
       const initState = getCleanMetricsExploreForAssertion();
-      const defaultExplorePreset = getDefaultExplorePreset(
-        AD_BIDS_EXPLORE_INIT,
-        AD_BIDS_METRICS_INIT,
-        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-      );
 
       const errorsFromUrl = applyURLToExploreState(
         new URL(url),
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_INIT,
-        defaultExplorePreset,
         getFilterManager(),
       );
       expect(errorsFromUrl.map((e) => e.message)).toEqual(errors);
@@ -464,7 +462,6 @@ describe("legacy state url param", () => {
         }),
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         staleExploreSpec,
-        {},
       );
 
     expect(partialExploreState.whereFilter).toEqual(
@@ -503,7 +500,6 @@ describe("single-select filters", () => {
         ...AD_BIDS_EXPLORE_INIT,
         singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
       },
-      {},
     );
 
     expect(partialExploreState.whereFilter).toEqual(

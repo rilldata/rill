@@ -2,7 +2,7 @@
   import { invalidate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
-  import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { getHomeBookmarkUrlParams } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import {
@@ -68,10 +68,8 @@
     });
   }
 
-  $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
+  $: bookmarkUrlParamsQuery = getHomeBookmarkUrlParams(
     project?.id,
-    runtimeClient,
-    metricsViewName,
     exploreName,
   );
 
@@ -119,7 +117,7 @@
         <DashboardStateManager
           {exploreName}
           storageNamespacePrefix={`${orgName}__${projectName}__`}
-          bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
+          bookmarkUrlParams={bookmarkUrlParamsQuery}
           disableMostRecentDashboardState={$disablePersistentDashboardState}
           disableInitSessionDashboardState={$disablePersistentDashboardState}
         >

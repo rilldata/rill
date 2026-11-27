@@ -290,7 +290,6 @@ function getRillDefaultTDDViewState() {
 function getRillDefaultPivotViewState() {
   return <Partial<ExploreState>>{
     pivot: {
-      active: false,
       rows: [],
       columns: [],
       sorting: [],

@@ -1,19 +1,20 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
+  AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DIMENSION_TABLE_PRESET,
+  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_VIEW,
   AD_BIDS_NAME,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -78,7 +79,6 @@ import {
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -96,7 +96,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { convertURLSearchParamsToExploreState } from "./convertURLSearchParamsToExploreState";
 
 vi.stubEnv("TZ", "UTC");
 
@@ -111,7 +110,8 @@ const TestCases: {
   mutations: TestDashboardMutation[];
   preset?: V1ExplorePreset;
   expectedSearch: string;
-  // This is to assert edge case when some state gets populated from timeControlStore
+  // State restored from the legacy protobuf state that differs from the state it was made from.
+  // The legacy state is converted to url params, so it is held to the same validation as a url.
   extraExploreState?: Partial<ExploreState>;
   // Mainly tests that close certain views.
   // Closing view would retain some state of the old view in protobuf state
@@ -182,6 +182,11 @@ const TestCases: {
     preset: AD_BIDS_PRESET,
     expectedSearch:
       "tr=P7D&tz=Asia%2FKathmandu&compare_tr=7D+offset+-7D&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC",
+    // The url parser only takes the comparison options and custom ranges, not rill time.
+    extraExploreState: {
+      selectedComparisonTimeRange: undefined,
+      showTimeComparison: false,
+    },
   },
 
   {
@@ -274,6 +279,13 @@ const TestCases: {
     ],
     expectedSearch:
       "measures=impressions%2Cpublisher_count&dims=publisher%2Ccountry",
+    // A list of dimensions in the url does not take time dimensions.
+    extraExploreState: {
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+      ],
+    },
   },
   {
     title:
@@ -287,6 +299,14 @@ const TestCases: {
     ],
     expectedSearch:
       "measures=impressions%2Cpublisher_count%2Cbid_price&dims=publisher%2Ccountry%2Cdomain",
+    // A list of dimensions in the url does not take time dimensions.
+    extraExploreState: {
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+    },
   },
   {
     title:
@@ -325,6 +345,16 @@ const TestCases: {
     ],
     expectedSearch:
       "measures=bid_price%2Cpublisher_count%2Cimpressions&dims=domain%2Ccountry%2Cpublisher&sort_by=bid_price",
+    extraExploreState: {
+      // The legacy state keeps the leaderboard measure from before the toggle, which the sort is corrected to.
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      // A list of dimensions in the url does not take time dimensions.
+      visibleDimensions: [
+        AD_BIDS_DOMAIN_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+        AD_BIDS_PUBLISHER_DIMENSION,
+      ],
+    },
   },
 
   {
@@ -358,6 +388,11 @@ const TestCases: {
     preset: AD_BIDS_PRESET,
     expectedSearch:
       "tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price",
+    // The sort measure is hidden, which the url parser drops.
+    extraExploreState: {
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+    },
   },
   {
     title: "Leaderboard configs with multiple measures",
@@ -417,22 +452,6 @@ const TestCases: {
     mutations: [AD_BIDS_OPEN_IMP_TDD, AD_BIDS_CLOSE_TDD],
     expectedSearch: "",
   },
-  {
-    title:
-      "Time dimensional details with preset and has time dimensional details in state same as presets",
-    mutations: [AD_BIDS_OPEN_IMP_TDD],
-    preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
-    expectedSearch: "view=tdd&measure=impressions&chart_type=stacked_bar",
-  },
-  {
-    title:
-      "Time dimensional details with preset and has time dimensional details in state different than presets",
-    mutations: [AD_BIDS_CLOSE_TDD],
-    preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
-    expectedSearch: "chart_type=stacked_bar",
-    legacyNotSupported: true,
-  },
-
   {
     title: "Pivot with no preset and has pivot in state",
     mutations: [
@@ -606,11 +625,6 @@ describe("Human readable URL state variations", () => {
           explore,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
-        const defaultExplorePreset = getDefaultExplorePreset(
-          explore,
-          AD_BIDS_METRICS_VIEW,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-        );
 
         await applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,
@@ -637,8 +651,8 @@ describe("Human readable URL state variations", () => {
         const defaultUrl = new URL("http://localhost");
         const errors = applyURLToExploreState(
           defaultUrl,
+          AD_BIDS_METRICS_VIEW,
           explore,
-          defaultExplorePreset,
           getFilterManager(),
         );
         expect(errors.length).toEqual(0);
@@ -671,12 +685,6 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
-        const defaultExplorePreset = getDefaultExplorePreset(
-          explore,
-          AD_BIDS_METRICS_VIEW,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-        );
-
         const initState = getCleanMetricsExploreForAssertion();
         await applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,
@@ -692,15 +700,13 @@ describe("Human readable URL state variations", () => {
           getProtoFromDashboardState(curState, explore),
         );
         // get back the entity from url params
-        const { partialExploreState: entityFromUrl } =
-          convertURLSearchParamsToExploreState(
-            url.searchParams,
-            AD_BIDS_METRICS_VIEW,
-            explore,
-            defaultExplorePreset,
-          );
-        // The adaptive grain is derived from the range before use, as correctExploreState does on load.
-        applyAdaptiveTimeGrain(entityFromUrl, AD_BIDS_METRICS_VIEW);
+        applyURLToExploreState(
+          url,
+          AD_BIDS_METRICS_VIEW,
+          explore,
+          getFilterManager(),
+        );
+        const entityFromUrl = getCleanMetricsExploreForAssertion();
         const expectedEntity = {
           ...curState,
           ...(extraExploreState ?? {}),
@@ -719,18 +725,15 @@ describe("Human readable URL state variations", () => {
         expect(entityFromUrl).toEqual(expectedEntity);
 
         // go back to default url
-        const defaultUrl = new URL("http://localhost");
-        const { partialExploreState: entityFromDefaultUrl } =
-          convertURLSearchParamsToExploreState(
-            defaultUrl.searchParams,
-            AD_BIDS_METRICS_VIEW,
-            explore,
-            defaultExplorePreset,
-          );
-        applyAdaptiveTimeGrain(entityFromDefaultUrl, AD_BIDS_METRICS_VIEW);
+        applyURLToExploreState(
+          new URL("http://localhost"),
+          AD_BIDS_METRICS_VIEW,
+          explore,
+          getFilterManager(),
+        );
 
         // assert that the entity we got back matches the original
-        expect(entityFromDefaultUrl).toEqual(initState);
+        expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
       });
     }
   });
@@ -749,12 +752,6 @@ describe("Human readable URL state variations", () => {
       AD_BIDS_EXPLORE,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
-    const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE,
-      AD_BIDS_METRICS_VIEW,
-      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-    );
-
     await applyMutationsToDashboard(
       AD_BIDS_EXPLORE_NAME,
       [
@@ -785,15 +782,15 @@ describe("Human readable URL state variations", () => {
     // reset the explore state
     applyURLToExploreState(
       new URL("http://localhost"),
+      AD_BIDS_METRICS_VIEW,
       AD_BIDS_EXPLORE,
-      defaultExplorePreset,
       getFilterManager(),
     );
     // reapply the compressed url
     applyURLToExploreState(
       url,
+      AD_BIDS_METRICS_VIEW,
       AD_BIDS_EXPLORE,
-      defaultExplorePreset,
       getFilterManager(),
     );
 
@@ -826,17 +823,11 @@ describe("Human readable URL state variations", () => {
         explore,
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
       );
-      const defaultExplorePreset = getDefaultExplorePreset(
-        explore,
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-      );
-      return { explore, defaultExploreUrlSearch, defaultExplorePreset };
+      return { explore, defaultExploreUrlSearch };
     }
 
     it("should preserve time dimension sort (rill format) after URL roundtrip", async () => {
-      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
-        setupAndRoundtrip();
+      const { explore, defaultExploreUrlSearch } = setupAndRoundtrip();
 
       await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
         AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
@@ -867,8 +858,8 @@ describe("Human readable URL state variations", () => {
       url.search = urlParams.toString();
       applyURLToExploreState(
         url,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
         explore,
-        defaultExplorePreset,
         getFilterManager(),
       );
 
@@ -879,8 +870,7 @@ describe("Human readable URL state variations", () => {
     });
 
     it("should preserve minimized accessor sort after URL roundtrip", async () => {
-      const { explore, defaultExploreUrlSearch, defaultExplorePreset } =
-        setupAndRoundtrip();
+      const { explore, defaultExploreUrlSearch } = setupAndRoundtrip();
 
       await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
         AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
@@ -911,8 +901,8 @@ describe("Human readable URL state variations", () => {
       url.search = urlParams.toString();
       applyURLToExploreState(
         url,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
         explore,
-        defaultExplorePreset,
         getFilterManager(),
       );
 
