@@ -311,3 +311,89 @@ rows:
     await expect(dataRows(page)).toContainText("Facebook");
   });
 });
+
+test.describe("canvas table height", () => {
+  test.use({ project: "AdBids" });
+  test.describe.configure({ timeout: 180_000 });
+
+  test("a row height takes a table below its default height", async ({
+    page,
+  }) => {
+    const table = (title = "", description = "") => `  - items:
+      - table:
+          metrics_view: AdBids_metrics${title && `\n          title: ${title}`}${description && `\n          description: ${description}`}
+          columns:
+            - publisher
+            - total_records
+        width: 12`;
+    const rowHeight = (index: number) =>
+      page
+        .locator(`#canvas-row-${index}`)
+        .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    await gotoNavEntry(page, CANVAS_FILE);
+    // Row 0 has no height, row 1 the height the editor fills into rows
+    // without one, and rows 2 to 4 a height of their own.
+    await setCanvasYaml(
+      page,
+      `type: canvas
+display_name: "Table heights"
+defaults:
+  time_range: PT24H
+rows:
+${table()}
+${table()}
+    height: 40px
+${table()}
+    height: 140px
+${table("Short table")}
+    height: 120px
+${table("Described table", "With a description")}
+    height: 120px
+`,
+    );
+    // The new canvas has replaced the fixture once its titled table shows.
+    await expect(
+      page.locator("#canvas-row-3").getByText("Short table"),
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(dataRows(page).first()).toBeVisible({ timeout: 90_000 });
+
+    await expect.poll(() => rowHeight(0)).toBe(300);
+    await expect.poll(() => rowHeight(1)).toBe(300);
+    await expect.poll(() => rowHeight(2)).toBe(140);
+    // A header takes its rendered height on top of the 114px minimum, and
+    // the table under it 22px of padding and border: 38px for a title alone,
+    // 51px with a description.
+    await expect.poll(() => rowHeight(3)).toBe(174);
+    await expect.poll(() => rowHeight(4)).toBe(187);
+
+    // Dragging the bottom edge of the first row follows the pointer below the
+    // default height and stops at the minimum.
+    const handle = page.locator(
+      '#canvas-row-0 button.cursor-row-resize[data-row="0"]',
+    );
+    const box = await handle.boundingBox();
+    if (!box) throw new Error("row resize handle not found");
+    // Press off-center: hovering shows the add-widget menu over the middle.
+    const x = box.x + box.width / 5;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 60, { steps: 4 });
+    await page.mouse.move(x, y - 120, { steps: 4 });
+    await expect.poll(() => rowHeight(0)).toBe(180);
+    await page.mouse.move(x, y - 400, { steps: 4 });
+    await expect.poll(() => rowHeight(0)).toBe(114);
+    await page.mouse.up();
+
+    // The other rows are untouched, and the YAML takes the new height.
+    await expect.poll(() => rowHeight(0)).toBe(114);
+    await expect.poll(() => rowHeight(1)).toBe(300);
+    await page.getByRole("button", { name: "Switch to code editor" }).click();
+    await validateYamlContents(page, [
+      "height: 114px",
+      "height: 40px",
+      "height: 140px",
+    ]);
+  });
+});

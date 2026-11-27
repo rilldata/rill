@@ -103,6 +103,22 @@ describe("rasterizeNode", () => {
     expect(vi.mocked(toPng)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(toJpeg)).not.toHaveBeenCalled();
   });
+
+  // A canvas with no area, or one over the browser's size limits, serializes to
+  // an empty data URL instead of throwing. Embedding it fails the whole export
+  // (jsPDF can't size it, and the workbook endpoint rejects it as not a PNG).
+  it("fails when the browser returns no image", async () => {
+    vi.mocked(toPng).mockResolvedValueOnce("data:,");
+
+    await expect(
+      rasterizeNode(cardWith("<svg></svg>"), {
+        backgroundColor: "#fff",
+        fontEmbedCSS: "",
+        warmUpCanvas: false,
+        format: "png",
+      }),
+    ).rejects.toThrow("no PNG image");
+  });
 });
 
 describe("inlineSvgStyles", () => {

@@ -107,10 +107,14 @@ describe("generateVLBarChartSpec orientation", () => {
     );
 
     expect(at(spec, "layer.1.encoding.xOffset")).toBeUndefined();
+    // The gap between the bars is the offset scale's padding, which keeps the pair centered
+    // on its category; see `centerGroupedBars`.
     expect(at(spec, "layer.1.encoding.yOffset")).toEqual({
       field: MeasureKeyField,
       sort: { field: SortOrderField },
+      scale: { paddingInner: 0.1, paddingOuter: 0.05 },
     });
+    expect(at(spec, "layer.1.mark.height")).toEqual({ band: 1 });
     expect(at(spec, "layer.1.encoding.opacity")).toBeDefined();
   });
 

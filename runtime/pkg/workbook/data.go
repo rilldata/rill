@@ -76,10 +76,7 @@ func (w *writer) writeDataSheet(name string, ds *runtimev1.WorkbookDataSheet) er
 		for j, col := range ds.Columns {
 			// Validated by the sizing pass above.
 			cell, _ := cellValue(col, rowValue(r, j))
-			format := columnFormat(col)
-			if format == "" && col.Type == runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER && i < len(ds.RowNumberFormats) {
-				format = ds.RowNumberFormats[i]
-			}
+			format := cellFormat(ds, col, i)
 			var style int
 			if isTotals {
 				style, err = w.styles.totalsStyle(format)

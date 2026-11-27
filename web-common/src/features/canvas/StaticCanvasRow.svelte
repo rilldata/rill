@@ -4,7 +4,11 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import { normalizeSizeArray } from "./layout-util";
+  import {
+    DEFAULT_ROW_HEIGHT,
+    isRowHeightSet,
+    normalizeSizeArray,
+  } from "./layout-util";
   import type { Row } from "./stores/row";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
@@ -35,7 +39,7 @@
 <RowWrapper
   {zIndex}
   {maxWidth}
-  height={$height}
+  height={$height ?? DEFAULT_ROW_HEIGHT}
   {heightUnit}
   {id}
   {tabGroupName}
@@ -44,7 +48,11 @@
 >
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
-    <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
+    <ItemWrapper
+      type={component?.type}
+      zIndex={4 - columnIndex}
+      rowHasHeight={isRowHeightSet($height)}
+    >
       {#if component}
         <CanvasComponent
           {component}

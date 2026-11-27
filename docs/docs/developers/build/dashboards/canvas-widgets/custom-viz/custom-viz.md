@@ -203,6 +203,8 @@ spec:
     x: { field: "{{ .params.measure }}" }
 ```
 
+A chart's series, the values on `color` or `group`, are listed in the legend and take their colors in order of their total, largest first, the order built-in charts list a split dimension in. Series with the same total are listed by name. A series typed `ordinal` is listed in ascending order of its values instead, which for text is alphabetical. Set `sortOrder` on a series' encoding to list it by its values in the direction you choose. A pie or donut keeps the order of the query's rows, which its slices are drawn in.
+
 Leave out `type` and `aggregate` unless the chart draws wrong without them. Rill already marks measures as quantitative, dimensions as nominal and time dimensions as temporal, and measures arrive aggregated; a hard-coded type can break the chart when a dashboard binds a different field.
 
 ### Field Semantics
@@ -219,11 +221,15 @@ Rill tells Flint what each selected field means, based on the metrics view:
 | A time dimension | A date at the grain it was bucketed at, from year down to day, or a timestamp below a day |
 | Any other dimension | A category |
 
-These decide zero baselines, tick spacing and the kind of color scale. Axis labels and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
+These decide zero baselines, tick spacing and the kind of color scale. Axis labels, legends and tooltips format each measure with its own format, the same as everywhere else in Rill, and titles use display names.
 
 ### Colors
 
 Series colors come from the `tableau10` scheme, and a measure bound to `color` is drawn with a sequential scheme such as `blues`. Set `scheme` on the `color` encoding to choose another. Charts drawn in a single color use the dashboard theme's primary color. To color series with the [theme's palette](/developers/build/dashboards/customization#changing-themes--colors) instead, [convert the component](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#use-the-theme-palette) and remove the scheme.
+
+### Legends
+
+A chart's legend sits above the plot and is laid out to fit the widget, the same way as a [built-in chart's legend](/developers/build/dashboards/canvas-widgets/chart#legends): its entries wrap to the plot's width and take up to about a third of the chart's height, and where they don't all fit the legend ends with the number left out, such as `…12 entries`. The legends of a chart with two, such as the colors and sizes of a bubble chart, stand one above the other. Two legends that each list a dimension's values, such as a chart's colors and shapes, share that third of the height between them.
 
 ### Chart Properties
 
@@ -330,9 +336,77 @@ rows:
 
 Bound values must be literals: strings, numbers or booleans. Params that have a default can be left out. A custom viz follows the canvas's time range, time grain and dimension filters like any other widget.
 
+## Move a Large Chart Out of the Canvas File
+
+Rill doesn't parse a project file larger than 128 KB, and reports it with an error such as `size 136050 bytes exceeds max size of 131072 bytes`. The limit applies to each file on its own. A canvas file reaches it when its widgets carry a lot of YAML, most often inline `custom_chart` widgets with long Vega-Lite specs.
+
+A component file is the way around it. Moving a chart into its own file takes the chart's YAML out of the canvas file, which keeps only a reference, and the component file has a 128 KB limit of its own.
+
+Create a file under `viz/` with `type: component`, and move the widget's `custom_chart` block into it unchanged:
+
+```yaml
+# viz/spend_by_advertiser.yaml
+type: component
+display_name: Spend by advertiser
+
+custom_chart:
+  metrics_sql:
+    - |
+      SELECT advertiser_name, overall_spend
+      FROM bids_metrics
+      ORDER BY overall_spend DESC
+      LIMIT 20
+  vega_spec: |-
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": { "type": "fit", "contains": "padding" },
+      "data": { "name": "query1" },
+      "mark": "bar",
+      "encoding": {
+        "x": { "field": "advertiser_name", "type": "nominal" },
+        "y": { "field": "overall_spend", "type": "quantitative" }
+      }
+    }
+```
+
+In the canvas, replace the widget with a reference to the component, which is named after its file:
+
+```yaml
+# dashboards/overview.yaml
+rows:
+  - items:
+      - component: spend_by_advertiser
+        width: 6
+```
+
+A component without params is drawn the same way as the inline widget: every query still runs, and the canvas's time range and filters apply to the metrics view in the first query's `FROM`.
+
+To draw the same chart for other metrics views or fields, declare [params](#params), replace the names in the query and the spec with `{{ .params.<name> }}`, and bind them in each canvas item:
+
+```yaml
+# dashboards/overview.yaml
+rows:
+  - items:
+      - component: ranked_bars
+        params:
+          metrics_view: bids_metrics
+          dimension: advertiser_name
+          measure: overall_spend
+        width: 6
+```
+
+A few things to know:
+
+- A component that declares params runs one query. A chart that reads several datasets, such as `query1` and `query2`, has to stay without params.
+- The preview in the component file's editor runs only the first query, so a chart that also reads `query2` looks incomplete there. The canvas draws it in full.
+- A component file that is itself larger than 128 KB fails the same way. Keep data out of the spec: read it from the query rather than inlining `values`.
+- [Personal canvases](/developers/embed/iframe#personal-canvases-in-embeds) can't reference component files. Every widget on a personal canvas is defined inline.
+
 ## Limits
 
-- A component runs one query, so a chart can't combine two datasets.
+- A component that declares params or a chart `spec` runs one query, so its chart can't combine two datasets.
 - When a category axis has more values than fit in the widget, the chart drops the extra rows and says so above the chart.
 - A custom viz doesn't draw time comparisons.
-- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` only after it has been converted.
+- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` after it has been converted, or when an inline chart has been [moved into it](#move-a-large-chart-out-of-the-canvas-file).

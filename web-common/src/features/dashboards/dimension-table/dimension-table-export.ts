@@ -13,8 +13,8 @@ import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
-  mapTimeManagerComparisonRangeToV1TimeRange,
-  mapTimeManagerRangeToV1TimeRange,
+  convertTimeManagerComparisonRangeToV1TimeRange,
+  convertTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -48,7 +48,7 @@ export function getDimensionTableExportQuery(
 
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
-    timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
+    timeRange = convertTimeManagerRangeToV1TimeRange(timeFilterManager);
   } else {
     timeRange = {
       start: timeFilterManager.timeStart,
@@ -60,7 +60,7 @@ export function getDimensionTableExportQuery(
   let comparisonTimeRange: V1TimeRange | undefined;
   if (timeFilterManager.showComparison) {
     if (isScheduled) {
-      comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+      comparisonTimeRange = convertTimeManagerComparisonRangeToV1TimeRange(
         timeFilterManager,
         timeRange,
       );

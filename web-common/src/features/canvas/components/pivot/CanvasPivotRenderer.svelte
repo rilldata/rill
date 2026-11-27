@@ -43,6 +43,10 @@
   export let component: PivotCanvasComponent;
   export let editable = false;
 
+  // The space left for the table. A short row leaves little of it,
+  // so the loading, empty and error states adapt to its height.
+  let contentRect: DOMRectReadOnly | undefined;
+
   // Column drags and header-click sorts are written back to the YAML only in
   // the editor. Without a file artifact `updateYAML` is a no-op but the spec
   // store would still drift from the file, so both conditions are required.
@@ -147,6 +151,7 @@
 </script>
 
 <div
+  bind:contentRect
   class="size-full overflow-hidden flex flex-col gap-y-1"
   style:max-height="inherit"
   class:p-4={hasHeader}
@@ -156,13 +161,17 @@
     <ComponentError error={schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     {#if $pivotDataStore?.error?.length}
-      <PivotError errors={$pivotDataStore.error} />
+      <PivotError
+        errors={$pivotDataStore.error}
+        availableHeight={contentRect?.height}
+      />
     {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
       <PivotEmpty
         assembled={$pivotDataStore.assembled}
         isFetching={$pivotDataStore.isFetching}
         {hasColumnAndNoMeasure}
         isEmbedded={EmbedStore.isEmbedded()}
+        availableHeight={contentRect?.height}
       />
     {:else}
       {#if columnTruncation}

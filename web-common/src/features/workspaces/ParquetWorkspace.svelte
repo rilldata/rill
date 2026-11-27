@@ -7,6 +7,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { structToJson } from "@rilldata/web-common/lib/proto-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createParquetPreviewQuery } from "./parquet-preview";
 
@@ -30,7 +31,7 @@
     const repo = instance?.connectors?.find(
       (c) => c.name === instance?.repoConnector,
     );
-    const dsn = repo?.config?.dsn;
+    const dsn = structToJson(repo?.config)?.dsn;
     return typeof dsn === "string" ? dsn : "";
   });
 

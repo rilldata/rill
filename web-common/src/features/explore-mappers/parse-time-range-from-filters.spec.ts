@@ -9,10 +9,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import {
-  type DashboardTimeControls,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types.ts";
-import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -22,7 +18,7 @@ describe("parseTimeRangeFromFilters", () => {
   const TestCases: {
     title: string;
     expression: V1Expression;
-    expectedTimeRange: DashboardTimeControls;
+    expectedTimeRange: string;
   }[] = [
     {
       title: "equality time dimension filter",
@@ -31,11 +27,7 @@ describe("parseTimeRangeFromFilters", () => {
         V1Operation.OPERATION_EQ,
         "2025-10-10T10:00:00Z",
       ),
-      expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-10T10:00:00Z"),
-        end: new Date("2025-10-10T11:00:00Z"),
-      },
+      expectedTimeRange: "2025-10-10T10:00:00.000Z,2025-10-10T11:00:00.000Z",
     },
     {
       title: "less than time dimension filter",
@@ -44,9 +36,7 @@ describe("parseTimeRangeFromFilters", () => {
         V1Operation.OPERATION_LT,
         "2025-10-10T10:00:00Z",
       ),
-      expectedTimeRange: {
-        name: "earliest to 2025-10-10T10:00:00.000Z",
-      } as DashboardTimeControls,
+      expectedTimeRange: "earliest to 2025-10-10T10:00:00.000Z",
     },
     {
       title: "less than or equals time dimension filter",
@@ -55,9 +45,7 @@ describe("parseTimeRangeFromFilters", () => {
         V1Operation.OPERATION_LTE,
         "2025-10-10T10:00:00Z",
       ),
-      expectedTimeRange: {
-        name: "earliest to 2025-10-10T11:00:00.000Z",
-      } as DashboardTimeControls,
+      expectedTimeRange: "earliest to 2025-10-10T11:00:00.000Z",
     },
     {
       title: "greater than time dimension filter",
@@ -66,9 +54,7 @@ describe("parseTimeRangeFromFilters", () => {
         V1Operation.OPERATION_GT,
         "2025-10-10T10:00:00Z",
       ),
-      expectedTimeRange: {
-        name: "2025-10-10T11:00:00.000Z to watermark",
-      } as DashboardTimeControls,
+      expectedTimeRange: "2025-10-10T11:00:00.000Z to watermark",
     },
     {
       title: "greater than or equals time dimension filter",
@@ -77,9 +63,7 @@ describe("parseTimeRangeFromFilters", () => {
         V1Operation.OPERATION_GTE,
         "2025-10-10T10:00:00Z",
       ),
-      expectedTimeRange: {
-        name: "2025-10-10T10:00:00.000Z to watermark",
-      } as DashboardTimeControls,
+      expectedTimeRange: "2025-10-10T10:00:00.000Z to watermark",
     },
     {
       title:
@@ -97,11 +81,7 @@ describe("parseTimeRangeFromFilters", () => {
           "2025-10-22T00:00:00Z",
         ),
       ]),
-      expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-04T00:00:00Z"),
-        end: new Date("2025-10-23T00:00:00Z"),
-      },
+      expectedTimeRange: "2025-10-04T00:00:00.000Z,2025-10-23T00:00:00.000Z",
     },
   ];
 

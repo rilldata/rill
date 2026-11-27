@@ -334,7 +334,10 @@ kpi_grid:
     - percent_change  # Percentage change
     - previous        # Previous period value
   sparkline: right    # right, bottom, none
+  size: large         # small, medium (default), large, xlarge
 ```
+
+`size` scales each card's value, labels and spacing together. Use `large` or `xlarge` for one to three headline KPIs, and `small` to fit many KPIs into a compact row. Larger sizes fit fewer cards per row.
 
 **With dimension filters:**
 

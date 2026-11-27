@@ -197,7 +197,15 @@ func validate(req *runtimev1.CanvasWorkbookExportRequest) error {
 						return validationErrorf("KPI %q of block %q references unknown trend column %q", v.Label, b.Component, v.TrendColumn)
 					}
 				}
-			case *runtimev1.WorkbookBlock_Text, *runtimev1.WorkbookBlock_Note:
+			case *runtimev1.WorkbookBlock_Text:
+				for _, p := range c.Text.Parts {
+					if id, ok := p.Part.(*runtimev1.WorkbookTextPart_DataSheetId); ok {
+						if _, ok := dataSheets[id.DataSheetId]; !ok {
+							return validationErrorf("text %q references unknown data sheet %q", b.Component, id.DataSheetId)
+						}
+					}
+				}
+			case *runtimev1.WorkbookBlock_Note:
 			default:
 				return validationErrorf("block %q has no content", b.Component)
 			}

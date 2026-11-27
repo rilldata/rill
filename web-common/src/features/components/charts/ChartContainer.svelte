@@ -25,7 +25,7 @@
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
-  import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+  import { convertV1TimeRangesToTimeFilterUrlParams } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
   const hasParentTheme = hasContext(THEME_STORE_CONTEXT_KEY);
   const parentThemeStore = getContext<Writable<Theme | undefined>>(
@@ -98,17 +98,14 @@
     // A chart without a time range has no time filter, rather than the metrics view's default one.
     { skipDefaultTimeRange: true },
   );
-  let timeParams = $derived.by(() => {
-    const params = new URLSearchParams();
-    setTimeFilterParamsFromV1TimeRanges(
-      params,
+  let timeParams = $derived(
+    convertV1TimeRangesToTimeFilterUrlParams(
       $timeAndFilterStore.timeRange,
       $timeAndFilterStore.showTimeComparison
         ? $timeAndFilterStore.comparisonTimeRange
         : undefined,
-    );
-    return params;
-  });
+    ),
+  );
   $effect(() => {
     const params = timeParams;
     untrack(() => timeFilterManager.storeSync.setUrlParams(params));

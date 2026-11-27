@@ -10,8 +10,6 @@ import {
   getQueryFromUrl,
   getResolvedTimeRangesFromMessage,
 } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
-import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
-import { maybeGetExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -21,6 +19,7 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 
 const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
 const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
@@ -29,7 +28,7 @@ const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
 /**
  * Creates a store that contains a mapper function that maps a metrics resolver query to url with explore params.
  * Uses {@link getMetricsViewAndExploreSpecsQueryOptions} to get ListResources query to get metrics view and explore specs.
- * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
+ * Calls {@link convertMetricsResolverQueryToUrlParams} to get explore url params from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url with explore params.
  */
 export function getMetricsResolverQueryToUrlMapperStore(
@@ -63,7 +62,6 @@ export function getMetricsResolverQueryToUrlMapperStore(
 
       const mapper = (url: URL): string =>
         mapMetricsResolverQueryToUrl(
-          conversation.runtimeClient.instanceId,
           url,
           page,
           metricsViewAndExploreSpecs,
@@ -80,14 +78,9 @@ export function getMetricsResolverQueryToUrlMapperStore(
 }
 
 export function mapMetricsResolverQueryToUrl(
-  instanceId: string,
   url: URL,
   pageState: Page,
-  {
-    metricsViewSpecsMap,
-    exploreForMetricViewsMap,
-    exploreSpecsMap,
-  }: MetricsViewAndExploreSpecs,
+  { metricsViewSpecsMap, exploreForMetricViewsMap }: MetricsViewAndExploreSpecs,
   messages: V1Message[],
 ) {
   let query: MetricsResolverQuery;
@@ -130,25 +123,14 @@ export function mapMetricsResolverQueryToUrl(
   const metricsViewSpec = metricsViewSpecsMap.get(metricsViewName);
   const exploreName = exploreForMetricViewsMap.get(metricsViewName);
   if (!metricsViewSpec || !exploreName) return url.href;
-  const exploreSpec = exploreSpecsMap.get(exploreName);
-  if (!exploreSpec) return url.href;
 
-  const partialExploreState = mapMetricsResolverQueryToDashboard(
-    metricsViewSpec,
-    exploreSpec,
+  const urlSearchParams = convertMetricsResolverQueryToUrlParams(
     {
       query,
       ...resolvedTimeRanges,
     },
+    metricsViewSpec.timeDimension,
   );
-
-  const urlSearchParams = maybeGetExplorePageUrlSearchParams(
-    instanceId,
-    partialExploreState,
-    metricsViewSpec,
-    exploreSpec,
-  );
-  if (!urlSearchParams) return url.href;
 
   const exploreUrl = getUrlForExplore(
     exploreName,

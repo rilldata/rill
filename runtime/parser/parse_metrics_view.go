@@ -35,6 +35,8 @@ type MetricsViewYAML struct {
 	Watermark         string           `yaml:"watermark"`
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
 	TimeGrains        []string         `yaml:"time_grains"`
+	BaseTimeGrain     string           `yaml:"base_time_grain"`
+	BaseTimeZone      string           `yaml:"base_time_zone"`
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	MaxQueryTimeRange string           `yaml:"max_query_time_range"`
@@ -297,6 +299,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	timeGrains, err := parseTimeGrains(tmp.TimeGrains, smallestTimeGrain)
 	if err != nil {
 		return err
+	}
+
+	baseTimeGrain, err := parseStandardTimeGrain(tmp.BaseTimeGrain)
+	if err != nil {
+		return fmt.Errorf(`invalid "base_time_grain": %w`, err)
+	}
+	if baseTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && tmp.TimeDimension == "" {
+		return errors.New(`"base_time_grain" requires a "timeseries" to be defined`)
+	}
+	if tmp.BaseTimeZone != "" {
+		if baseTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			return errors.New(`"base_time_zone" requires "base_time_grain" to be set`)
+		}
+		if _, err := time.LoadLocation(tmp.BaseTimeZone); err != nil {
+			return fmt.Errorf(`invalid "base_time_zone" %q: %w`, tmp.BaseTimeZone, err)
+		}
 	}
 
 	if tmp.DefaultTimeRange != "" {
@@ -920,6 +938,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.DataTimeRange = tmp.DataTimeRange
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.TimeGrains = timeGrains
+	spec.BaseTimeGrain = baseTimeGrain
+	spec.BaseTimeZone = tmp.BaseTimeZone
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 	spec.MaxQueryTimeRange = tmp.MaxQueryTimeRange

@@ -1,17 +1,17 @@
 import {
-  type V1ListFilesResponse,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceGetInstance,
   runtimeServiceListFiles,
   runtimeServiceUnpackEmpty,
 } from "@rilldata/web-common/runtime-client";
+import type { ListFilesResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { EMPTY_PROJECT_TITLE } from "./constants";
 
 export async function isProjectInitialized(client: RuntimeClient) {
   try {
-    const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+    const files = await queryClient.fetchQuery<ListFilesResponse>({
       queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
       queryFn: ({ signal }) => {
         return runtimeServiceListFiles(client, {}, { signal });

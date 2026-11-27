@@ -308,7 +308,33 @@ _[object]_ - (no description)
 
 ### `kpi_grid`
 
-_[object]_ - Grid of KPIs
+_[object]_ - Grid of KPI cards, one per measure, each with the measure's value, an optional time comparison and an optional sparkline
+
+  - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
+
+  - **`measures`** - _[array of string]_ - Measures to display, one card each. An entry is the name of a measure of the metrics view or of one of the component's `adhoc_measures`. _(required)_
+
+  - **`adhoc_measures`** - _[array]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+
+  - **`comparison`** - _[array of string]_ - Comparison values shown under each KPI while the component shows a time comparison, any of `previous` (the comparison period's value), `delta` (absolute change) and `percent_change`. Defaults to `delta` and `percent_change`.
+
+  - **`sparkline`** - _[string]_ - Where to draw each KPI's sparkline, `bottom` (below the value), `right` (beside the value) or `none`. Defaults to `bottom`.
+
+  - **`size`** - _[string]_ - Size of the KPI cards, `small`, `medium`, `large` or `xlarge`. Scales the value, the labels, the spacing and the minimum width of each card together, so a larger size fits fewer cards per row. Defaults to `medium`.
+
+  - **`hide_time_range`** - _[boolean]_ - Hide the time range shown under each KPI. Defaults to false.
+
+  - **`title`** - _[string]_ - KPI grid title
+
+  - **`description`** - _[string]_ - KPI grid description
+
+  - **`show_description_as_tooltip`** - _[boolean]_ - Show the description as a tooltip on the title instead of below it
+
+  - **`time_filters`** - _[string]_ - Time range and comparison for this KPI grid, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+
+  - **`dimension_filters`** - _[string]_ - SQL filter expression applied to this KPI grid only, such as `country IN ('US')`
+
+  - **`hide_local_filters`** - _[boolean]_ - Hide the local filter chips on the KPI grid; the filters still apply to its queries
 
 ### `table`
 
@@ -488,7 +514,17 @@ _[object]_ - Leaderboard
 
 _[object]_ - (no description)
 
-  - **`content`** - _[string]_ - Markdown content _(required)_
+  - **`content`** - _[string]_ - Markdown text to display. Supports templating, with the `metrics_sql` and `metrics_sql_rows` functions to insert the results of [Metrics SQL](/developers/build/metrics-view/metrics-sql) queries, which follow the canvas time range and filters. See [Dynamic Markdown](/developers/build/dashboards/canvas-widgets/misc#dynamic-markdown). _(required)_
+
+  - **`apply_formatting`** - _[boolean]_ - Format the measure values that `metrics_sql` and `metrics_sql_rows` return with each measure's `format_d3` or `format_preset` from the metrics view. Defaults to false.
+
+  - **`alignment`** - _[object]_ - Position of the text within the component
+
+    - **`horizontal`** - _[string]_ - Horizontal position of the text, one of `left` (default), `center` or `right`
+
+    - **`vertical`** - _[string]_ - Vertical position of the text, one of `top`, `middle` (default) or `bottom`
+
+  - **`time_filters`** - _[string]_ - Time range for the queries in `content`, as a `tr` URL parameter such as `tr=P7D`. Defaults to the canvas time range.
 
   - **`title`** - _[string]_ - Markdown title
 
@@ -500,9 +536,9 @@ _[object]_ - (no description)
 
 _[object]_ - (no description)
 
-  - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
+  - **`url`** - _[string]_ - Image URL, or the path of an image file in the project's `public` directory (for example `public/img/logo.svg`). Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
 
-  - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
+  - **`dark_url`** - _[string]_ - Image URL or project file path to use when the dashboard is displayed in dark mode. Defaults to `url`.
 
   - **`title`** - _[string]_ - Image title
 

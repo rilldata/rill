@@ -33,7 +33,7 @@ export function convertFilterParamToExpression(filter: string): {
 }
 
 export function convertExpressionToFilterParam(
-  expr: V1Expression,
+  expr: V1Expression | undefined,
   dimensionsWithInlistFilter: string[] = [],
   depth = 0,
 ): string {

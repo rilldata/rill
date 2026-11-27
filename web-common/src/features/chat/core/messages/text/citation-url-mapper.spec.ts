@@ -61,7 +61,7 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
         "http://localhost:3000/-/open-query?query=" +
         MetricsResolverQueryURLEncoded,
       expectedUrl:
-        "http://localhost:3000/explore/AdBids_explore?view=explore&measures=impressions&dims=publisher&expand_dim=publisher",
+        "http://localhost:3000/explore/AdBids_explore?dims=publisher&measures=impressions&tr=inf&view=explore&expand_dim=publisher",
     },
     {
       title: "Legacy citation url with additional bracket",
@@ -70,7 +70,7 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
         MetricsResolverQueryURLEncoded +
         "%7D",
       expectedUrl:
-        "http://localhost:3000/explore/AdBids_explore?view=explore&measures=impressions&dims=publisher&expand_dim=publisher",
+        "http://localhost:3000/explore/AdBids_explore?dims=publisher&measures=impressions&tr=inf&view=explore&expand_dim=publisher",
     },
 
     {
@@ -93,7 +93,7 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
       title: "Tool call based citation url with the correct call",
       url: "http://localhost:3000/-/ai/sess/message/query_call/-/open",
       expectedUrl:
-        "http://localhost:3000/explore/AdBids_explore?view=explore&measures=impressions&dims=publisher&expand_dim=publisher",
+        "http://localhost:3000/explore/AdBids_explore?dims=publisher&measures=impressions&tr=inf&view=explore&expand_dim=publisher",
     },
   ];
 
@@ -134,7 +134,6 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
   for (const { title, url, expectedUrl } of testCases) {
     it(title, () => {
       const result = mapMetricsResolverQueryToUrl(
-        "",
         new URL(url),
         mockPage,
         MockMetricsViewAndExploreSpecs,

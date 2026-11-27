@@ -1814,6 +1814,229 @@ explore:
 			require.Equal(t, float64(2480), rows[0].impressions)
 		})
 	})
+
+	t.Run("base_time_grain", func(t *testing.T) {
+		// base_daily holds one row per publisher and day at midnight UTC, like a Druid datasource ingested with a day query granularity.
+		// mv_daily declares this with base_time_grain, so bounds inside a day can still use its rollups.
+		// mv_daily_undeclared is the same metrics view without it, and mv_hourly wrongly declares day grain over the hourly base_events.
+		// mv_daily_declared_range also declares a data_time_range that ends mid-day, which must not be mistaken for rows between boundaries.
+		// mv_dst wrongly declares day grain in America/New_York over a table whose first row is at noon on a DST change day.
+		// mv_kathmandu stores one row per hour in Asia/Kathmandu (UTC+05:45), so its rows are at 15 minutes past each UTC hour.
+		mvYAML := func(model, extra string, rollups ...string) string {
+			res := fmt.Sprintf(`
+type: metrics_view
+version: 1
+model: %s
+timeseries: timestamp
+%s
+dimensions:
+  - name: publisher
+    column: publisher
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+explore:
+  skip: true
+rollups:
+`, model, extra)
+			for _, r := range rollups {
+				res += r
+			}
+			return res
+		}
+		rollupYAML := func(model, grain string) string {
+			return fmt.Sprintf("  - model: %s\n    time_grain: %s\n    dimensions: [publisher]\n    measures: [total_impressions]\n", model, grain)
+		}
+		files := map[string]string{
+			"rill.yaml":              "",
+			"models/base_events.sql": rollupTestFiles()["models/base_events.sql"],
+			// Impressions vary by day, so a range that selects different days gives a different total
+			"models/base_daily.sql": `
+SELECT ts AS timestamp, publisher, day(ts) AS impressions
+FROM generate_series(TIMESTAMP '2024-01-01', TIMESTAMP '2024-03-31', INTERVAL '1 DAY') t(ts)
+CROSS JOIN (VALUES ('Google'), ('Facebook')) p(publisher)`,
+			"models/rollup_daily_day.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
+FROM base_daily GROUP BY 1, 2`,
+			"models/rollup_daily_month.sql": `
+SELECT date_trunc('month', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
+FROM base_daily GROUP BY 1, 2`,
+			"models/rollup_hourly_day.sql": `
+SELECT date_trunc('day', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
+FROM base_events GROUP BY 1, 2`,
+			// Noon on March 10 and 11 and midnight on March 12, in New York; DST starts on March 10
+			"models/base_dst.sql": `
+SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
+FROM (VALUES (TIMESTAMP '2024-03-10 16:00:00'), (TIMESTAMP '2024-03-11 16:00:00'), (TIMESTAMP '2024-03-12 04:00:00')) t(ts)`,
+			// Midnight on March 10, 11 and 12 in New York
+			"models/rollup_dst_day.sql": `
+SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
+FROM (VALUES (TIMESTAMP '2024-03-10 05:00:00'), (TIMESTAMP '2024-03-11 04:00:00'), (TIMESTAMP '2024-03-12 04:00:00')) t(ts)`,
+			"models/base_kathmandu.sql": `
+SELECT ts AS timestamp, 'Google' AS publisher, 1 AS impressions
+FROM generate_series(TIMESTAMP '2024-01-01 00:15:00', TIMESTAMP '2024-01-31 23:15:00', INTERVAL '1 HOUR') t(ts)`,
+			"models/rollup_kathmandu_minute.sql": `
+SELECT date_trunc('minute', timestamp) AS timestamp, publisher, SUM(impressions) AS impressions
+FROM base_kathmandu GROUP BY 1, 2`,
+			"metrics_views/mv_daily.yaml":                mvYAML("base_daily", "base_time_grain: day", rollupYAML("rollup_daily_day", "day"), rollupYAML("rollup_daily_month", "month")),
+			"metrics_views/mv_daily_undeclared.yaml":     mvYAML("base_daily", "", rollupYAML("rollup_daily_day", "day"), rollupYAML("rollup_daily_month", "month")),
+			"metrics_views/mv_hourly.yaml":               mvYAML("base_events", "base_time_grain: day", rollupYAML("rollup_hourly_day", "day")),
+			"metrics_views/mv_daily_declared_range.yaml": mvYAML("base_daily", "base_time_grain: day\ndata_time_range: 2024-01-01T00:00:00Z to 2024-03-31T12:00:00Z", rollupYAML("rollup_daily_day", "day")),
+			"metrics_views/mv_dst.yaml":                  mvYAML("base_dst", "base_time_grain: day\nbase_time_zone: America/New_York", rollupYAML("rollup_dst_day", "day")+"    time_zone: America/New_York\n"),
+			"metrics_views/mv_kathmandu.yaml":            mvYAML("base_kathmandu", "base_time_grain: hour\nbase_time_zone: Asia/Kathmandu", rollupYAML("rollup_kathmandu_minute", "minute")),
+		}
+		customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+		// 1 project_parser + 9 models + 6 metrics views = 16 resources; 0 errors
+		testruntime.RequireReconcileState(t, customRT, customID, 16, 0, 0)
+
+		newExecutor := func(t *testing.T, name string) *executor.Executor {
+			r := testruntime.GetResource(t, customRT, customID, runtime.ResourceKindMetricsView, name)
+			mv := r.GetMetricsView().State.ValidSpec
+			require.NotNil(t, mv)
+			e, err := executor.New(context.Background(), customRT, customID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+			require.NoError(t, err)
+			t.Cleanup(e.Close)
+			return e
+		}
+
+		cases := []struct {
+			name     string
+			mv       string
+			start    time.Time
+			end      time.Time
+			timeZone string
+			want     string
+		}{
+			{
+				name:  "start_not_aligned",
+				mv:    "mv_daily",
+				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				// The start rounds up to Jan 16, which is not on a month boundary, so the month rollup is still rejected
+				want: "rollup_daily_day",
+			},
+			{
+				name:  "start_not_aligned_undeclared",
+				mv:    "mv_daily_undeclared",
+				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				want:  "base_daily",
+			},
+			{
+				// The base table has data after the end, so the end must be aligned too
+				name:  "end_not_aligned",
+				mv:    "mv_daily",
+				start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				want:  "rollup_daily_day",
+			},
+			{
+				// The start rounds up to Jan 1, which is on a month boundary, so the coarser month rollup is used
+				name:  "start_rounds_to_month",
+				mv:    "mv_daily",
+				start: time.Date(2023, 12, 31, 12, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				want:  "rollup_daily_month",
+			},
+			{
+				// Like a "now - 30d to now" range: the end is after the last row
+				name:  "end_after_data",
+				mv:    "mv_daily",
+				start: time.Date(2024, 3, 10, 12, 55, 0, 0, time.UTC),
+				end:   time.Date(2024, 4, 9, 12, 55, 0, 0, time.UTC),
+				want:  "rollup_daily_day",
+			},
+			{
+				// The rollups are bucketed in UTC days, which are not days in New York
+				name:     "time_zone_mismatch",
+				mv:       "mv_daily",
+				start:    time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				end:      time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				timeZone: "America/New_York",
+				want:     "base_daily",
+			},
+			{
+				// The base table's max timestamp is not on a day boundary, so the declaration is ignored
+				name:  "declaration_contradicted_by_data",
+				mv:    "mv_hourly",
+				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				want:  rollupTestBaseTable,
+			},
+			{
+				// The base table's min timestamp is at noon on a DST change day, which must not pass as being on a boundary
+				name:     "declaration_contradicted_next_to_dst_change",
+				mv:       "mv_dst",
+				start:    time.Date(2024, 3, 11, 12, 0, 0, 0, time.UTC),
+				end:      time.Date(2024, 3, 13, 4, 0, 0, 0, time.UTC),
+				timeZone: "America/New_York",
+				want:     "base_dst",
+			},
+			{
+				// The declared range ends mid-day, but the guard only applies to the table's actual bounds
+				name:  "declared_data_time_range",
+				mv:    "mv_daily_declared_range",
+				start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				want:  "rollup_daily_day",
+			},
+			{
+				// 12:20:30 UTC rounds up to 19:00 in Kathmandu, which is 13:15 UTC and on a minute boundary
+				name:  "base_time_zone_with_minute_offset",
+				mv:    "mv_kathmandu",
+				start: time.Date(2024, 1, 10, 12, 20, 30, 0, time.UTC),
+				end:   time.Date(2024, 1, 20, 0, 0, 0, 0, time.UTC),
+				want:  "rollup_kathmandu_minute",
+			},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				e := newExecutor(t, tc.mv)
+				qry := &metricsview.Query{
+					Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+					Measures:   []metricsview.Measure{{Name: "total_impressions"}},
+					TimeRange:  &metricsview.TimeRange{Start: tc.start, End: tc.end},
+					TimeZone:   tc.timeZone,
+				}
+				require.Equal(t, tc.want, queryAndGetTable(t, e, qry))
+			})
+		}
+
+		t.Run("same_results_as_base", func(t *testing.T) {
+			// Both bounds are inside a day: the rollup must return what the base table returns for the same bounds
+			totals := func(name string) (string, map[string]float64) {
+				e := newExecutor(t, name)
+				qry := &metricsview.Query{
+					Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+					Measures:   []metricsview.Measure{{Name: "total_impressions"}},
+					TimeRange: &metricsview.TimeRange{
+						Start: time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+						End:   time.Date(2024, 2, 10, 6, 0, 0, 0, time.UTC),
+					},
+				}
+				res, err := e.Query(context.Background(), qry, nil)
+				require.NoError(t, err)
+				defer res.Close()
+				totals := make(map[string]float64)
+				for res.Next() {
+					var publisher string
+					var impressions float64
+					require.NoError(t, res.Scan(&publisher, &impressions))
+					totals[publisher] = impressions
+				}
+				require.NoError(t, res.Err())
+				return e.LatestQueryTable(), totals
+			}
+
+			rollupTable, rollupTotals := totals("mv_daily")
+			baseTable, baseTotals := totals("mv_daily_undeclared")
+			require.Equal(t, "rollup_daily_day", rollupTable)
+			require.Equal(t, "base_daily", baseTable)
+			// Jan 16 to 31 and Feb 1 to 10: (16+...+31) + (1+...+10) = 376 + 55 = 431
+			require.Equal(t, map[string]float64{"Google": 431, "Facebook": 431}, baseTotals)
+			require.Equal(t, baseTotals, rollupTotals)
+		})
+	})
 }
 
 // queryAndGetTable runs e.Query and returns which table was used (base or rollup).

@@ -1,5 +1,3 @@
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
-
 /**
  * Formats a connector name for display with proper capitalization.
  * Handles known connectors (duckdb, clickhouse, etc.) with correct casing.
@@ -31,11 +29,21 @@ export function formatConnectorName(connector: string | undefined): string {
  * a DuckLake catalog, or (as a fallback when configs are redacted or callers
  * only have the connector name) by a `ducklake` / `ducklake_*` name.
  *
- * Accepts a full V1Connector (with type + config) or a partial object holding
- * just a name — the latter is what web-local has access to via
- * `instance.olapConnector`.
+ * Accepts a connector with its type and plain JSON config
+ * (convert a `Connector` message's `Struct` config with `structToJson`),
+ * or a partial object holding just a name;
+ * the latter is what web-local has access to via `instance.olapConnector`.
  */
-export function getOlapEngineLabel(connector: V1Connector | undefined): string {
+export function getOlapEngineLabel(
+  connector:
+    | {
+        name?: string;
+        type?: string;
+        config?: Record<string, unknown>;
+        provision?: boolean;
+      }
+    | undefined,
+): string {
   if (!connector) return "DuckDB";
 
   const name = connector.name ?? "";

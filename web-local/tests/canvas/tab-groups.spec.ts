@@ -30,6 +30,38 @@ rows:
     height: 128px
 `;
 
+const PIVOT_TAB_CANVAS = "/dashboards/pivot_tab_canvas.yaml";
+
+// The pivot sits in the second tab, behind a widget on the same metrics view.
+const PIVOT_TAB_CANVAS_YAML = `type: canvas
+display_name: Pivot tab canvas
+rows:
+  - name: views
+    tabs:
+      - label: Summary
+        rows:
+          - items:
+              - kpi_grid:
+                  metrics_view: AdBids_metrics
+                  measures:
+                    - total_records
+                width: 12
+            height: 128px
+      - label: Breakdown
+        rows:
+          - items:
+              - pivot:
+                  metrics_view: AdBids_metrics
+                  row_dimensions:
+                    - publisher
+                  col_dimensions:
+                    - domain
+                  measures:
+                    - total_records
+                width: 12
+            height: 400px
+`;
+
 test.describe("canvas tab groups", () => {
   test.use({ project: "AdBids" });
 
@@ -87,5 +119,35 @@ test.describe("canvas tab groups", () => {
       ["rows:\n  - items:", "content: First row", "  - name: deep_dive"],
       ["name: group-1"],
     );
+  });
+
+  // A pivot that mounts once the canvas's queries are cached, as in a tab opened later,
+  // used to link to an empty Explore pivot, and a viewer's sort was dropped.
+  test("links a pivot in a later tab to Explore with its rows, columns and sort", async ({
+    page,
+  }) => {
+    await putProjectFile(page, PIVOT_TAB_CANVAS, PIVOT_TAB_CANVAS_YAML);
+    await waitForReconciliation(page);
+    await gotoNavEntry(page, PIVOT_TAB_CANVAS);
+    await page.getByRole("button", { name: "Preview" }).click();
+
+    await page.getByRole("tab", { name: "Breakdown" }).click();
+    const pivot = page.locator("article.component-card", {
+      has: page.locator("table"),
+    });
+    const publisherHeader = pivot
+      .locator("thead button.header-cell")
+      .filter({ hasText: "Publisher" });
+    await expect(publisherHeader).toBeVisible({ timeout: 60_000 });
+    await publisherHeader.click();
+
+    await pivot.hover();
+    await pivot.getByRole("button", { name: /^Go to / }).click();
+    await page.waitForURL(/\/explore\//, { waitUntil: "commit" });
+    const params = new URL(page.url()).searchParams;
+    expect(params.get("view")).toBe("pivot");
+    expect(params.get("rows")).toBe("publisher");
+    expect(params.get("cols")).toBe("domain,total_records");
+    expect(params.get("sort_by")).toBe("publisher");
   });
 });

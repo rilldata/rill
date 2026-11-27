@@ -2,64 +2,127 @@ package server
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestAssetsHandler(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg"></svg>`
+	geojson := `{"type":"FeatureCollection","features":[]}`
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"rill.yaml":              "",
-			"public/regions.geojson": `{"type":"FeatureCollection","features":[]}`,
-			"private.geojson":        `{"type":"FeatureCollection","features":[]}`,
+			// The root is listed to check that it never makes the whole project public.
+			"rill.yaml":                   `public_paths: ["./public", "/static/", "/"]`,
+			".env":                        "token=confidential",
+			"secret.txt":                  "confidential",
+			"publicity/notes.txt":         "confidential",
+			"public/logo.png":             "png",
+			"public/img/logo.svg":         svg,
+			"public/img/brand/PHOTO.JPG":  "jpg",
+			"public/fonts/brand.woff2":    "woff2",
+			"public/maps/regions.geojson": geojson,
+			"public/page.html":            "<html></html>",
+			"static/app.css":              "body {}",
 		},
 	})
 
 	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
+	handler, err := srv.HTTPHandler(context.Background(), nil, false)
+	require.NoError(t, err)
+	// Use a real server, so the paths go through the ServeMux's cleaning and unescaping like real requests do.
+	httpSrv := httptest.NewServer(handler)
+	t.Cleanup(httpSrv.Close)
 
-	claims := &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadObjects}}
-	call := func(path string, header http.Header) *httptest.ResponseRecorder {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(auth.WithClaims(context.Background(), claims))
-		for k, v := range header {
-			req.Header[k] = v
-		}
-		req.SetPathValue("instance_id", instanceID)
-		req.SetPathValue("path", path)
-		httputil.Handler(srv.assetsHandler).ServeHTTP(rec, req)
-		return rec
+	get := func(t *testing.T, path string, header http.Header) (*http.Response, string) {
+		req, err := http.NewRequest(http.MethodGet, httpSrv.URL+"/v1/instances/"+instanceID+"/assets/"+path, http.NoBody)
+		require.NoError(t, err)
+		req.Header = header
+		res, err := httpSrv.Client().Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		return res, string(body)
 	}
 
-	// Serves files under a public path, with headers that keep them out of shared caches.
-	rec := call("public/regions.geojson", nil)
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.JSONEq(t, `{"type":"FeatureCollection","features":[]}`, rec.Body.String())
-	require.Equal(t, "private, no-cache", rec.Header().Get("Cache-Control"))
-	require.Equal(t, "application/json", rec.Header().Get("Content-Type"))
-	etag := rec.Header().Get("ETag")
-	require.NotEmpty(t, etag)
+	// Files in the public paths are served, at any depth, with a content type derived from the extension,
+	// and with headers that keep them out of shared caches.
+	served := []struct {
+		path        string
+		contentType string
+		body        string
+	}{
+		{"public/logo.png", "image/png", "png"},
+		{"public/img/logo.svg", "image/svg+xml", svg},
+		{"public/img/brand/PHOTO.JPG", "image/jpeg", "jpg"},
+		{"public/fonts/brand.woff2", "font/woff2", "woff2"},
+		{"public/maps/regions.geojson", "application/json", geojson},
+		{"static/app.css", "text/css; charset=utf-8", "body {}"},
+		// Types that aren't known to be passive are never served as something a browser renders.
+		{"public/page.html", "application/octet-stream", "<html></html>"},
+		// `..` segments that stay inside a public path are resolved.
+		{"public/img/%2e%2e/logo.png", "image/png", "png"},
+	}
+	for _, tt := range served {
+		t.Run(tt.path, func(t *testing.T) {
+			res, body := get(t, tt.path, nil)
+			require.Equal(t, http.StatusOK, res.StatusCode)
+			require.Equal(t, tt.contentType, res.Header.Get("Content-Type"))
+			require.Equal(t, "nosniff", res.Header.Get("X-Content-Type-Options"))
+			require.Contains(t, res.Header.Get("Content-Security-Policy"), "sandbox")
+			require.Equal(t, "private, no-cache", res.Header.Get("Cache-Control"))
+			require.NotEmpty(t, res.Header.Get("ETag"))
+			require.Equal(t, tt.body, body)
+		})
+	}
 
-	// Revalidates with the ETag.
-	rec = call("public/regions.geojson", http.Header{"If-None-Match": {etag}})
-	require.Equal(t, http.StatusNotModified, rec.Code)
-	require.Empty(t, rec.Body.String())
+	// A file is revalidated with its ETag.
+	res, _ := get(t, "public/maps/regions.geojson", nil)
+	res, body := get(t, "public/maps/regions.geojson", http.Header{"If-None-Match": {res.Header.Get("ETag")}})
+	require.Equal(t, http.StatusNotModified, res.StatusCode)
+	require.Empty(t, body)
 
-	// Missing files are not found.
-	rec = call("public/missing.geojson", nil)
-	require.Equal(t, http.StatusNotFound, rec.Code)
+	// Files outside the public paths are not served, however the path is spelled.
+	forbidden := []string{
+		"secret.txt",
+		".env",
+		"publicity/notes.txt",
+		"public/../secret.txt",
+		"public/%2e%2e/secret.txt",
+		"public/%2E%2E/.env",
+		"public/img/%2e%2e/%2e%2e/secret.txt",
+		"public/..%2fsecret.txt",
+		"public%2f..%2fsecret.txt",
+		"%2e%2e/secret.txt",
+		"public/%2e%2e/publicity/notes.txt",
+	}
+	for _, path := range forbidden {
+		t.Run(path, func(t *testing.T) {
+			res, body := get(t, path, nil)
+			require.Equal(t, http.StatusForbidden, res.StatusCode)
+			require.NotContains(t, body, "confidential")
+		})
+	}
 
-	// Files outside a public path are forbidden.
-	rec = call("private.geojson", nil)
-	require.Equal(t, http.StatusForbidden, rec.Code)
+	// The ServeMux redirects a path with `.` segments to its cleaned form.
+	// Go 1.26 escapes the `%` of `%2e` again in that redirect (fixed in Go 1.27),
+	// so the redirected path names a missing file inside the public path instead of being refused.
+	res, body = get(t, "public/./%2e%2e/secret.txt", nil)
+	require.Contains(t, []int{http.StatusForbidden, http.StatusNotFound}, res.StatusCode)
+	require.NotContains(t, body, "confidential")
+
+	// Missing files and directories, including a public path itself, are not found.
+	for _, path := range []string{"public/img/missing.png", "public/img", "public"} {
+		res, _ = get(t, path, nil)
+		require.Equal(t, http.StatusNotFound, res.StatusCode, path)
+	}
 }
