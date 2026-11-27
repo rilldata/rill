@@ -1321,7 +1321,7 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 
 			f, err := excelize.OpenReader(&buf)
 			require.NoError(t, err)
-			rows, err := f.GetRows("Sheet1")
+			rows, err := f.GetRows("Sheet1", excelize.Options{RawCellValue: true})
 			require.NoError(t, err)
 			headerRow := 0
 			if tt.includeHeader {
@@ -1387,6 +1387,239 @@ func TestMetricsViewsAggregation_export_xlsx_conditional_formats(t *testing.T) {
 		PreWriteHook: func(string) error { return nil },
 	})
 	require.NoError(t, err)
+}
+
+func TestMetricsViewsAggregation_export_xlsx_formatting(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{
+		"rill.yaml": "",
+		"sales.sql": `
+SELECT * FROM (VALUES
+	(TIMESTAMP '2024-01-10 10:00:00', DATE '2024-01-10', 'US', 'Shoes', 1000.0, 10, 2000),
+	(TIMESTAMP '2024-01-10 11:00:00', DATE '2024-01-10', 'US', 'Hats', 500.0, 5, 1000),
+	(TIMESTAMP '2024-01-11 10:00:00', DATE '2024-01-11', 'ES', 'Shoes', 800.0, 8, 1600),
+	(TIMESTAMP '2024-02-10 10:00:00', DATE '2024-02-10', 'US', 'Shoes', 1200.5, 12, 2000),
+	(TIMESTAMP '2024-02-10 11:00:00', DATE '2024-02-10', 'US', 'Hats', 450.25, 3, 1000),
+	(TIMESTAMP '2024-02-11 10:00:00', DATE '2024-02-11', 'ES', 'Shoes', 900.0, 9, 1500)
+) AS t(ts, day, country, product, revenue, orders, visits)`,
+		"sales_metrics.yaml": `
+type: metrics_view
+model: sales
+timeseries: ts
+dimensions:
+- column: day
+  display_name: Day
+- column: country
+  display_name: Country
+# Display names needn't be unique, but an Excel table's column names must be, ignoring case.
+- column: product
+  display_name: country
+measures:
+- name: revenue
+  display_name: Revenue
+  expression: SUM(revenue)
+  format_preset: currency_usd
+- name: conversion
+  display_name: Conversion
+  expression: SUM(orders) / SUM(visits)
+  format_preset: percentage
+- name: orders
+  display_name: Orders
+  expression: SUM(orders)
+  format_preset: humanize
+explore:
+  skip: true
+`,
+	}})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	const (
+		usd     = `"$"#,##0.00`
+		percent = "0.00%" // Every conversion is between 0.1% and 1%, so each shows two decimals.
+		integer = "#,##0"
+	)
+	tests := []struct {
+		name          string
+		dimensions    []*runtimev1.MetricsViewAggregationDimension
+		measures      []*runtimev1.MetricsViewAggregationMeasure
+		pivotOn       []string
+		includeHeader bool
+		// The column names, and the number format of each column's values ("" for none).
+		wantHeader  []string
+		wantFormats []string
+		// The raw values of the data rows, if checked.
+		wantRows [][]string
+	}{
+		{
+			name:       "flat with comparisons",
+			dimensions: []*runtimev1.MetricsViewAggregationDimension{{Name: "country"}, {Name: "product"}},
+			measures: []*runtimev1.MetricsViewAggregationMeasure{
+				{Name: "revenue"},
+				{Name: "revenue__delta_abs", Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{Measure: "revenue"}}},
+				{Name: "revenue__delta_rel", Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonRatio{ComparisonRatio: &runtimev1.MetricsViewAggregationMeasureComputeComparisonRatio{Measure: "revenue"}}},
+				{Name: "revenue__prev", Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{Measure: "revenue"}}},
+				{Name: "revenue__pct", Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{Measure: "revenue"}}},
+				{Name: "conversion"},
+				{Name: "orders"},
+			},
+			includeHeader: true,
+			wantHeader:    []string{"Country", "country (2)", "Revenue", "Revenue (Δ)", "Revenue (Δ%)", "Revenue (prev)", "Revenue (Σ%)", "Conversion", "Orders"},
+			wantFormats:   []string{"", "", usd, usd, "0.0%", usd, "0.0%", percent, integer},
+		},
+		{
+			// Each country gets a column per measure, after the dates.
+			// A timestamp truncated to a day in a time zone behind UTC is shown as a date: the day in that time zone.
+			name:        "pivot",
+			dimensions:  []*runtimev1.MetricsViewAggregationDimension{{Name: "day"}, {Name: "ts", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY, TimeZone: "America/Lima"}, {Name: "country"}},
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "revenue"}, {Name: "conversion"}},
+			pivotOn:     []string{"country"},
+			wantHeader:  []string{"Day", "Ts (day)", "ES_Revenue", "ES_Conversion", "US_Revenue", "US_Conversion"},
+			wantFormats: []string{"date", "date", usd, percent, usd, percent},
+		},
+		{
+			// Truncated in a time zone behind UTC, the days start at 05:00 UTC,
+			// but they are written as the days in that time zone, without a time of day.
+			name: "time zone",
+			dimensions: []*runtimev1.MetricsViewAggregationDimension{
+				{Name: "ts", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY, TimeZone: "America/Lima"},
+				{Name: "ts", Alias: "ts_month", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH, TimeZone: "America/Lima"},
+			},
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "revenue"}},
+			wantHeader:  []string{"Ts (day)", "Ts (month)", "Revenue"},
+			wantFormats: []string{"date", "date", usd},
+			// The serial numbers of 2024-02-10, 2024-02-11 and 2024-02-01.
+			wantRows: [][]string{{"45332", "45323", "1650.75"}, {"45333", "45323", "900"}},
+		},
+		{
+			// Ahead of UTC, the days start on the day before in UTC.
+			name: "time zone ahead of UTC",
+			dimensions: []*runtimev1.MetricsViewAggregationDimension{
+				{Name: "ts", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY, TimeZone: "Asia/Tokyo"},
+				{Name: "ts", Alias: "ts_month", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH, TimeZone: "Asia/Tokyo"},
+			},
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "revenue"}},
+			wantHeader:  []string{"Ts (day)", "Ts (month)", "Revenue"},
+			wantFormats: []string{"date", "date", usd},
+			wantRows:    [][]string{{"45332", "45323", "1650.75"}, {"45333", "45323", "900"}},
+		},
+		{
+			// A grain finer than a day keeps the time of day.
+			name:        "sub-day grain",
+			dimensions:  []*runtimev1.MetricsViewAggregationDimension{{Name: "ts", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, TimeZone: "America/Lima"}},
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: "revenue"}},
+			wantHeader:  []string{"Ts (hour)", "Revenue"},
+			wantFormats: []string{"date and time", usd},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := &queries.MetricsViewAggregation{
+				MetricsViewName: "sales_metrics",
+				Dimensions:      tt.dimensions,
+				Measures:        tt.measures,
+				Sort:            []*runtimev1.MetricsViewAggregationSort{{Name: tt.dimensions[0].Name}},
+				PivotOn:         tt.pivotOn,
+				TimeRange: &runtimev1.TimeRange{
+					Start: timestamppb.New(time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)),
+					End:   timestamppb.New(time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)),
+				},
+				SecurityClaims: testClaims(),
+			}
+			if tt.pivotOn == nil {
+				q.ComparisonTimeRange = &runtimev1.TimeRange{
+					Start: timestamppb.New(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+					End:   timestamppb.New(time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)),
+				}
+			}
+			var buf bytes.Buffer
+			err := q.Export(t.Context(), rt, instanceID, &buf, &runtime.ExportOptions{
+				Format:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				IncludeHeader: tt.includeHeader,
+				PreWriteHook:  func(string) error { return nil },
+			})
+			require.NoError(t, err)
+
+			f, err := excelize.OpenReader(&buf)
+			require.NoError(t, err)
+			const sheet = "Sheet1"
+			rows, err := f.GetRows(sheet, excelize.Options{RawCellValue: true})
+			require.NoError(t, err)
+			styleAt := func(col, row int) *excelize.Style {
+				cell, err := excelize.CoordinatesToCellName(col, row)
+				require.NoError(t, err)
+				id, err := f.GetCellStyle(sheet, cell)
+				require.NoError(t, err)
+				style, err := f.GetStyle(id)
+				require.NoError(t, err)
+				return style
+			}
+
+			// The header lines (title, date range, filters and a blank line): a bold title and muted lines below it.
+			headerRow := 1
+			if tt.includeHeader {
+				headerRow = 5
+				require.True(t, styleAt(1, 1).Font.Bold)
+				require.Equal(t, "6B7280", styleAt(1, 2).Font.Color)
+				require.Empty(t, styleAt(1, 4).Font.Color)
+			}
+
+			// A bold and frozen row of unique column names.
+			require.Equal(t, tt.wantHeader, rows[headerRow-1])
+			for col := range tt.wantHeader {
+				require.True(t, styleAt(col+1, headerRow).Font.Bold)
+			}
+			panes, err := f.GetPanes(sheet)
+			require.NoError(t, err)
+			require.True(t, panes.Freeze)
+			require.Equal(t, headerRow, panes.YSplit)
+			require.Equal(t, fmt.Sprintf("A%d", headerRow+1), panes.TopLeftCell)
+
+			if tt.wantRows != nil {
+				require.Equal(t, tt.wantRows, rows[headerRow:])
+			}
+
+			// The data as a table, with no totals row.
+			lastRow := len(rows)
+			require.Greater(t, lastRow, headerRow)
+			lastCell, err := excelize.CoordinatesToCellName(len(tt.wantHeader), lastRow)
+			require.NoError(t, err)
+			tables, err := f.GetTables(sheet)
+			require.NoError(t, err)
+			require.Len(t, tables, 1)
+			require.Equal(t, fmt.Sprintf("A%d:%s", headerRow, lastCell), tables[0].Range)
+
+			for col, want := range tt.wantFormats {
+				name, err := excelize.ColumnNumberToName(col + 1)
+				require.NoError(t, err)
+
+				// Columns are sized to their content: wider than the default for long names, but capped.
+				width, err := f.GetColWidth(sheet, name)
+				require.NoError(t, err)
+				require.GreaterOrEqual(t, width, float64(len(tt.wantHeader[col])+2), "column %s", name)
+				require.LessOrEqual(t, width, 60.0)
+
+				for row := headerRow + 1; row <= lastRow; row++ {
+					if col >= len(rows[row-1]) || rows[row-1][col] == "" {
+						continue
+					}
+					style := styleAt(col+1, row)
+					switch want {
+					case "":
+						require.Nil(t, style.CustomNumFmt, "cell %s%d", name, row)
+					case "date":
+						// Excel's built-in short date, which follows the reader's locale, and a whole number of days.
+						require.Equal(t, 14, style.NumFmt, "cell %s%d", name, row)
+						_, err := strconv.Atoi(rows[row-1][col])
+						require.NoError(t, err, "cell %s%d holds a date serial", name, row)
+					case "date and time":
+						require.Equal(t, 22, style.NumFmt, "cell %s%d", name, row)
+					default:
+						require.NotNil(t, style.CustomNumFmt, "cell %s%d", name, row)
+						require.Equal(t, want, *style.CustomNumFmt, "cell %s%d", name, row)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {

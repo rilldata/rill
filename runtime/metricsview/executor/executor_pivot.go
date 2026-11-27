@@ -126,7 +126,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		path, err := e.executeExport(ctx, "parquet", e.metricsView.Connector, map[string]any{
 			"sql":  underlyingSQL,
 			"args": args,
-		}, headers, nil)
+		}, driverutil.FileOptions{})
 		if err != nil {
 			return "", fmt.Errorf("failed to execute pre-pivot export: %w", err)
 		}
@@ -197,7 +197,14 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		// Execute the pivot export
 		path, err = e.executeExport(wrappedCtx, format, pivotConnector, map[string]any{
 			"sql": pivotSQL,
-		}, headers, pivot.conditionalFormats(conditionalFormats))
+		}, driverutil.FileOptions{
+			Headers:            headers,
+			ConditionalFormats: pivot.conditionalFormats(conditionalFormats),
+			NumberFormats: pivot.numberFormats(func(measure string) (driverutil.MeasureFormat, bool) {
+				return e.xlsxMeasureFormat(ast.Query, measure)
+			}),
+			TimeColumns: pivot.timeColumns(ast.Query),
+		})
 		if err != nil {
 			// Backstop for wide pivots that slip past checkPivotColumns (e.g. wide column types overflow the block size
 			// at a lower column count than the limit). DuckDB reports this as a "tuple width exceeds block size" error.
@@ -395,6 +402,34 @@ func (a *pivotAST) conditionalFormats(cfs []*runtimev1.MetricsViewAggregationCon
 			Stride: len(a.using),
 			Format: cf.Format,
 		})
+	}
+	return res
+}
+
+// numberFormats locates the columns of the measures in the output of SQL, like conditionalFormats,
+// and formats them with the format that format returns for each measure, if any.
+func (a *pivotAST) numberFormats(format func(measure string) (driverutil.MeasureFormat, bool)) []driverutil.XLSXNumberFormat {
+	var res []driverutil.XLSXNumberFormat
+	for i, measure := range a.using {
+		if f, ok := format(measure); ok {
+			res = append(res, driverutil.XLSXNumberFormat{
+				Column: len(a.keep) + i,
+				Stride: len(a.using),
+				Format: f,
+			})
+		}
+	}
+	return res
+}
+
+// timeColumns locates the kept dimensions truncated to a time grain in the output of SQL, which come first, and sets how XLSX files show them.
+// Pivoted dimensions become parts of column names, not columns.
+func (a *pivotAST) timeColumns(qry *metricsview.Query) []driverutil.XLSXTimeColumn {
+	var res []driverutil.XLSXTimeColumn
+	for i, dimension := range a.keep {
+		if c, ok := xlsxTimeColumn(qry, dimension, i); ok {
+			res = append(res, c)
+		}
 	}
 	return res
 }

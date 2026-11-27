@@ -7,17 +7,21 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/driverutil"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // executeExport enables exporting data from a connector to a temporary local file in the given format.
 // The inputConnector and inputProps must be valid for use in a ModelExecutor.
+// fileOpts set the header lines of CSV and XLSX files and the formats of XLSX files.
 //
 // executeExport works by simulating a model that outputs to a file.
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
-func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, headers []string, conditionalFormats []driverutil.XLSXConditionalFormat) (string, error) {
+func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, fileOpts driverutil.FileOptions) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
@@ -46,13 +50,14 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	}
 	defer or()
 
-	outputProps := map[string]any{
-		"path":                  tempPath,
-		"format":                format,
-		"headers":               headers,
-		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
-		"conditional_formats":   conditionalFormats,
+	// The file options go under the keys of their mapstructure tags, which the file driver decodes them from.
+	outputProps := map[string]any{}
+	if err := mapstructure.Decode(fileOpts, &outputProps); err != nil {
+		return "", err
 	}
+	outputProps["path"] = tempPath
+	outputProps["format"] = format
+	outputProps["file_size_limit_bytes"] = e.instanceCfg.DownloadLimitBytes
 
 	opts := &drivers.ModelExecutorOptions{
 		Env: &drivers.ModelEnv{
@@ -98,4 +103,64 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	}
 
 	return tempPath, nil
+}
+
+// xlsxMeasureFormat returns the format of a query measure's values in XLSX exports, if they take one.
+// A computed measure doesn't have a format of its own:
+// comparison values and deltas take the format of the measure they compare,
+// comparison ratios and percents of total are percentages,
+// links and comparison times are not numbers,
+// and other computed numbers are grouped integers or decimals.
+func (e *Executor) xlsxMeasureFormat(qry *metricsview.Query, name string) (driverutil.MeasureFormat, bool) {
+	base := name
+	for _, m := range qry.Measures {
+		if m.Name != name || m.Compute == nil {
+			continue
+		}
+		switch c := m.Compute; {
+		case c.ComparisonValue != nil:
+			base = c.ComparisonValue.Measure
+		case c.ComparisonDelta != nil:
+			base = c.ComparisonDelta.Measure
+		case c.ComparisonRatio != nil, c.PercentOfTotal != nil:
+			return driverutil.MeasureFormat{Preset: "percentage"}, true
+		case c.URI != nil, c.ComparisonTime != nil:
+			return driverutil.MeasureFormat{}, false
+		default:
+			return driverutil.MeasureFormat{}, true
+		}
+		break
+	}
+
+	for _, m := range e.metricsView.Measures {
+		if m.Name != base {
+			continue
+		}
+		format := driverutil.MeasureFormat{Preset: m.FormatPreset, D3: m.FormatD3}
+		// The locale's currency is the prefix and suffix that a "$" in the d3 format stands for.
+		if currency, ok := m.FormatD3Locale.AsMap()["currency"].([]any); ok && len(currency) == 2 {
+			prefix, ok1 := currency[0].(string)
+			suffix, ok2 := currency[1].(string)
+			if ok1 && ok2 {
+				format.D3Currency = &[2]string{prefix, suffix}
+			}
+		}
+		return format, true
+	}
+	return driverutil.MeasureFormat{}, true
+}
+
+// xlsxTimeColumn returns how an XLSX export shows the given column, if it holds a query dimension truncated to a time grain:
+// as dates for a day or a coarser grain, which are days in the query's time zone, or else as dates and times.
+func xlsxTimeColumn(qry *metricsview.Query, dimension string, column int) (driverutil.XLSXTimeColumn, bool) {
+	for _, d := range qry.Dimensions {
+		if d.Name == dimension && d.Compute != nil && d.Compute.TimeFloor != nil {
+			return driverutil.XLSXTimeColumn{
+				Column:   column,
+				Date:     d.Compute.TimeFloor.Grain.ToTimeutil().Compare(timeutil.TimeGrainDay) >= 0,
+				TimeZone: qry.TimeZone,
+			}, true
+		}
+	}
+	return driverutil.XLSXTimeColumn{}, false
 }

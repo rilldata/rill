@@ -1096,3 +1096,18 @@ func TestCompactNumberFormat(t *testing.T) {
 	require.Equal(t, "yyyy-mm-dd", compactNumberFormat("yyyy-mm-dd"))
 	require.Equal(t, "", compactNumberFormat(""))
 }
+
+// Excel compares a table's column names ignoring case, so display names that differ only in case are made unique too.
+func TestWriteUniqueHeaders(t *testing.T) {
+	req := testRequest(t)
+	req.DataSheets[1].Columns[1].DisplayName = "line item"
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+
+	rows, err := f.GetRows("Data - Line items")
+	require.NoError(t, err)
+	require.Equal(t, []string{"Line Item", "line item (2)", "Active", "Updated"}, rows[0])
+}

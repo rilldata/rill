@@ -15,35 +15,32 @@ import (
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/conditionalformat"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
-	"github.com/xuri/excelize/v2"
 )
 
 const maxParquetRowGroupSize = 512 * int64(datasize.MB)
 
-// XLSXConditionalFormat is a conditional format that an XLSX file applies to the data cells of some of its columns.
-type XLSXConditionalFormat struct {
-	// Column is the 0-based index of the first column the format applies to.
-	Column int
-	// Stride, if positive, also applies the format to every Stride-th column after Column,
-	// like the columns of a measure in a pivot, which repeat once per pivoted value.
-	Stride int
-	Format *runtimev1.ExportConditionalFormat
+// FileOptions configure the file ResultToFile writes.
+type FileOptions struct {
+	// Headers are lines written above the result in CSV and XLSX files.
+	Headers []string `mapstructure:"headers"`
+	// The rest only apply to XLSX files.
+	ConditionalFormats []XLSXConditionalFormat `mapstructure:"conditional_formats"`
+	NumberFormats      []XLSXNumberFormat      `mapstructure:"number_formats"`
+	TimeColumns        []XLSXTimeColumn        `mapstructure:"time_columns"`
 }
 
 // ResultToFile writes a result to fw in the given format.
-// headers are lines written above the result in CSV and XLSX files; conditionalFormats only apply to XLSX files.
-func ResultToFile(res *drivers.Result, fw io.Writer, format drivers.FileFormat, headers []string, conditionalFormats []XLSXConditionalFormat) error {
+func ResultToFile(res *drivers.Result, fw io.Writer, format drivers.FileFormat, opts FileOptions) error {
 	switch format {
 	case drivers.FileFormatParquet:
 		return writeParquet(res, fw)
 	case drivers.FileFormatCSV:
-		return writeCSV(res, fw, headers)
+		return writeCSV(res, fw, opts.Headers)
 	case drivers.FileFormatJSON:
 		return errors.New("json file output not currently supported")
 	case drivers.FileFormatXLSX:
-		return writeXLSX(res, fw, headers, conditionalFormats)
+		return writeXLSX(res, fw, opts)
 	default:
 		return fmt.Errorf("unsupported output format %q", format)
 	}
@@ -123,159 +120,6 @@ func writeCSV(res *drivers.Result, fw io.Writer, headers []string) error {
 	}
 
 	w.Flush()
-	return nil
-}
-
-func writeXLSX(res *drivers.Result, fw io.Writer, headers []string, conditionalFormats []XLSXConditionalFormat) error {
-	xf := excelize.NewFile()
-	defer func() { _ = xf.Close() }()
-
-	const sheet = "Sheet1"
-	sw, err := xf.NewStreamWriter(sheet)
-	if err != nil {
-		return err
-	}
-	idx := 1
-
-	// Write headers first if they're provided
-	for _, line := range headers {
-		row := []any{line} // Each line is a separate row
-		cell, err := excelize.CoordinatesToCellName(1, idx)
-		if err != nil {
-			return err
-		}
-		if err := sw.SetRow(cell, row, excelize.RowOpts{Hidden: false}); err != nil {
-			return err
-		}
-		idx++ // Move to the next row
-	}
-
-	row := make([]any, len(res.Schema.Fields))
-	for i, f := range res.Schema.Fields {
-		row[i] = f.Name
-	}
-	cell, err := excelize.CoordinatesToCellName(1, idx)
-	if err != nil {
-		return err
-	}
-	if err := sw.SetRow(cell, row, excelize.RowOpts{Height: 25, Hidden: false}); err != nil {
-		return err
-	}
-	idx++
-	firstDataRow := idx
-
-	// The columns of each conditional format, and the range of the numbers in them, which sets the ends of its color scale or data bar.
-	formatColumns := make([][]int, len(conditionalFormats))
-	domains := make([]conditionalformat.Domain, len(conditionalFormats))
-	for i, cf := range conditionalFormats {
-		step := cf.Stride
-		if step <= 0 {
-			// Only the first column.
-			step = len(res.Schema.Fields)
-		}
-		for col := cf.Column; col < len(res.Schema.Fields); col += step {
-			formatColumns[i] = append(formatColumns[i], col)
-		}
-	}
-
-	vals := make([]any, len(res.Schema.Fields))
-	for i := range vals {
-		vals[i] = new(any)
-	}
-
-	for res.Next() {
-		err := res.Scan(vals...)
-		if err != nil {
-			return err
-		}
-
-		for i, v := range vals {
-			v := *(v.(*any))
-			jval, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
-			if err != nil {
-				return fmt.Errorf("failed to convert to JSON value: %w", err)
-			}
-
-			var s any
-			if jval != nil {
-				switch tval := jval.(type) {
-				case time.Time:
-					t := res.Schema.Fields[i].Type
-					if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-						s = tval.In(time.UTC).Format(time.DateOnly)
-					} else if t != nil && t.Code == runtimev1.Type_CODE_TIME {
-						s = tval.In(time.UTC).Format(time.TimeOnly)
-					} else {
-						s = tval
-					}
-				case []any, map[string]any:
-					mres, err := json.Marshal(tval)
-					if err != nil {
-						return fmt.Errorf("failed to marshal JSON value: %w", err)
-					}
-					s = jsonval.TrimQuotes(string(mres))
-				default:
-					s = tval
-				}
-			}
-			row[i] = s
-		}
-		for i, cols := range formatColumns {
-			if conditionalFormats[i].Format.GetCellRule() != nil {
-				// Apply doesn't read a cell rule's domain.
-				continue
-			}
-			for _, col := range cols {
-				switch v := row[col].(type) {
-				case int64:
-					domains[i].Add(float64(v))
-				case uint64:
-					domains[i].Add(float64(v))
-				case float64:
-					domains[i].Add(v)
-				}
-			}
-		}
-
-		cell, err := excelize.CoordinatesToCellName(1, idx)
-		if err != nil {
-			return err
-		}
-		if err := sw.SetRow(cell, row); err != nil {
-			return err
-		}
-
-		idx++
-	}
-	if res.Err() != nil {
-		return res.Err()
-	}
-
-	// The stream writer writes the sheet's conditional formats when it is flushed.
-	if lastDataRow := idx - 1; lastDataRow >= firstDataRow {
-		for i, cf := range conditionalFormats {
-			ranges := make([]string, len(formatColumns[i]))
-			for j, col := range formatColumns[i] {
-				name, err := excelize.ColumnNumberToName(col + 1)
-				if err != nil {
-					return err
-				}
-				ranges[j] = fmt.Sprintf("%s%d:%s%d", name, firstDataRow, name, lastDataRow)
-			}
-			if err := conditionalformat.Apply(xf, sheet, ranges, domains[i], cf.Format); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err := sw.Flush(); err != nil {
-		return err
-	}
-
-	err = xf.Write(fw)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
