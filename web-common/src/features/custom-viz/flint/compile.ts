@@ -1435,7 +1435,10 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
  *
  * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
  * listed by name alone. So are the series the author typed as ordinal: their values, such as
- * years or levels, have an order of their own, which their totals would scramble.
+ * years or levels, have an order of their own, which their totals would scramble. So are the
+ * series of a view a facet draws in each of its panels: Vega-Lite derives the column within each
+ * panel, where a Sparkline's series, one to a panel, all came first, and it threw on the window
+ * that derives it, so the chart was not drawn.
  *
  * A layer draws the measure of the view it is layered in where it does not draw one of its own,
  * as a bullet chart's bars do.
@@ -1443,20 +1446,25 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
 function orderSeries(
   view: Record<string, unknown>,
   inherited: Record<string, EncodingRecord> = {},
+  faceted = false,
 ): void {
   const own = encodingsOf(view);
   const encodings = { ...inherited, ...own };
-  orderViewSeries(view, own, encodings);
+  orderViewSeries(view, own, encodings, faceted);
   for (const { view: child, layered } of childViews(view)) {
-    orderSeries(child, layered ? encodings : {});
+    orderSeries(child, layered ? encodings : {}, faceted || "facet" in view);
   }
 }
 
-/** Orders the series a view draws itself, by the measure it draws or is layered over. */
+/**
+ * Orders the series a view draws itself, by the measure it draws or is layered over, or by name
+ * in the panels of a facet.
+ */
 function orderViewSeries(
   view: Record<string, unknown>,
   own: Record<string, EncodingRecord>,
   encodings: Record<string, EncodingRecord>,
+  faceted: boolean,
 ): void {
   const mark = view.mark as string | Record<string, unknown> | undefined;
   const markType = typeof mark === "object" ? mark.type : mark;
@@ -1488,7 +1496,8 @@ function orderViewSeries(
     }
     if (
       encoding.type === "ordinal" ||
-      COMPOSITE_MARKS.has(markType as string)
+      COMPOSITE_MARKS.has(markType as string) ||
+      faceted
     ) {
       encoding.sort = "ascending";
       continue;
