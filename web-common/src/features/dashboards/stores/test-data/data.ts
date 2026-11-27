@@ -336,11 +336,6 @@ export const AD_BIDS_PRESET_WITHOUT_TIMESTAMP: V1ExplorePreset = {
 export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
   exploreExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
 };
-export const AD_BIDS_TIME_DIMENSION_DETAILS_PRESET: V1ExplorePreset = {
-  view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-  timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
-  timeDimensionChartType: "stacked_bar",
-};
 export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
   pivotRows: ["publisher", "time.hour"],

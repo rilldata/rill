@@ -4,10 +4,10 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_METRICS_VIEW,
+  AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { convertURLSearchParamsToFullExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import { normalizeExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/merge-explore-url-params";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
   createInEffectRoot,
@@ -18,8 +18,8 @@ import {
 import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1ExplorePreset,
   V1ExploreSpec,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
@@ -65,26 +65,35 @@ export function useTestFilterManager(specs: MetricsViewSpecs) {
   return () => filterManager;
 }
 
+/**
+ * Loads the url into the explore store, as the dashboard loader does on a visit without a session.
+ * See {@link convertURLSearchParamsToFullExploreStateForTest}.
+ */
 export function applyURLToExploreState(
   url: URL,
+  metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
   filterManager: ExpressionFilterManager,
 ) {
-  filterManager.storeSync.setUrlParams(url.searchParams);
+  filterManager.storeSync.setUrlParams(
+    normalizeExploreUrlParams(url.searchParams),
+  );
 
-  const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLSearchParamsToExploreState(
+  const { exploreState, errors } =
+    convertURLSearchParamsToFullExploreStateForTest(
       url.searchParams,
-      AD_BIDS_METRICS_VIEW,
+      metricsViewSpec,
       exploreSpec,
-      defaultExplorePreset,
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
-  // Derive the adaptive grain before merging, as correctExploreState does in DashboardStateDataLoader.
-  applyAdaptiveTimeGrain(partialExploreStateDefaultUrl, AD_BIDS_METRICS_VIEW);
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
-    partialExploreStateDefaultUrl,
+    // The full state leaves out an undefined time dimension, which is the primary one,
+    // so the store would keep the previous one. In the app the time filter manager resets it, but these tests do not run one.
+    {
+      ...exploreState,
+      selectedTimeDimension: exploreState.selectedTimeDimension,
+    },
     filterManager,
   );
   return errors;

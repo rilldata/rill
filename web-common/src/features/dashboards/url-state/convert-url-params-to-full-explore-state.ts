@@ -22,7 +22,6 @@ export function convertURLSearchParamsToFullExploreState(
     urlParams,
     metricsViewSpec,
     exploreSpec,
-    {},
   );
   const exploreState = cascadingExploreStateMerge([
     partialExploreState,

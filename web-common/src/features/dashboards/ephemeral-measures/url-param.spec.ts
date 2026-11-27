@@ -5,13 +5,11 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_VIEW,
   AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -118,15 +116,10 @@ describe("ephemeral measures URL state integration", () => {
   });
 
   function applyUrl(url: string) {
-    const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-    );
     return applyURLToExploreState(
       new URL(url),
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       AD_BIDS_EXPLORE_INIT,
-      defaultExplorePreset,
       getFilterManager(),
     );
   }
@@ -329,7 +322,6 @@ describe("ephemeral measures URL state integration", () => {
         reparsed,
         AD_BIDS_METRICS_VIEW,
         AD_BIDS_EXPLORE_INIT,
-        {},
       );
     expect(errors).toEqual([]);
     expect(partialExploreState.ephemeralMeasures).toEqual([
