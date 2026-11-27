@@ -18,7 +18,8 @@ import {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
-import { setTimeFilterParamsFromV1TimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import { convertV1TimeRangesToTimeFilterUrlParams } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
@@ -239,10 +240,12 @@ export function getFilterParamsFromAggregationRequest(
   const timeRange = (aggregationRequest.timeRange as V1TimeRange) ?? {
     isoDuration: TimeRangePreset.ALL_TIME,
   };
-  setTimeFilterParamsFromV1TimeRanges(
+  copyParamsToTarget(
+    convertV1TimeRangesToTimeFilterUrlParams(
+      timeRange,
+      aggregationRequest.comparisonTimeRange,
+    ),
     params,
-    timeRange,
-    aggregationRequest.comparisonTimeRange,
   );
 
   return params;

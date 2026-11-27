@@ -526,9 +526,9 @@ _[object]_ - (no description)
 
 _[object]_ - (no description)
 
-  - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
+  - **`url`** - _[string]_ - Image URL, or the path of an image file in the project's `public` directory (for example `public/img/logo.svg`). Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
 
-  - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
+  - **`dark_url`** - _[string]_ - Image URL or project file path to use when the dashboard is displayed in dark mode. Defaults to `url`.
 
   - **`title`** - _[string]_ - Image title
 

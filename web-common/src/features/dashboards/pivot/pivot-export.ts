@@ -1,7 +1,7 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { mapTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { convertTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   type MetricsViewSpecMeasure,
@@ -50,7 +50,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
-    timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
+    timeRange = convertTimeManagerRangeToV1TimeRange(timeFilterManager);
   } else {
     timeRange = {
       start: timeFilterManager.timeStart,

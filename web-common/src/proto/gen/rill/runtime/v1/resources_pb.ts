@@ -1475,6 +1475,22 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   timeGrains: TimeGrain[] = [];
 
   /**
+   * Time grain the base table stores time_dimension at: every row's timestamp is on a boundary of this grain in base_time_zone.
+   * Rollup routing uses it to round query time bounds up to the next boundary, since the base table has no rows between the two.
+   * This lets a time range that is not aligned to a rollup's grain use the rollup when the rounded range is aligned.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain base_time_grain = 40;
+   */
+  baseTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  /**
+   * IANA time zone of base_time_grain's boundaries. Defaults to UTC.
+   *
+   * @generated from field: string base_time_zone = 41;
+   */
+  baseTimeZone = "";
+
+  /**
    * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
    *
    * @generated from field: string watermark_expression = 20;
@@ -1625,6 +1641,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 38, name: "time_grains", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
+    { no: 40, name: "base_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 41, name: "base_time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },

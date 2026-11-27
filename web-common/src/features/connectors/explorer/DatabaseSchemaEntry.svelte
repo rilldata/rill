@@ -3,9 +3,9 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import {
     createRuntimeServiceGetInstance,
-    type V1AnalyzedConnector,
     type V1TableInfo,
   } from "../../../runtime-client";
+  import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
   import {
@@ -18,7 +18,7 @@
   import { onMount } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let connector: V1AnalyzedConnector;
+  export let connector: AnalyzedConnector;
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;

@@ -3240,6 +3240,10 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for SmallestTimeGrain
 
+	// no validation rules for BaseTimeGrain
+
+	// no validation rules for BaseTimeZone
+
 	// no validation rules for WatermarkExpression
 
 	// no validation rules for DataTimeRange

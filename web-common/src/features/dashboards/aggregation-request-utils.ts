@@ -8,8 +8,8 @@ import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dash
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import {
-  mapTimeManagerComparisonRangeToV1TimeRange,
-  mapTimeManagerRangeToV1TimeRange,
+  convertTimeManagerComparisonRangeToV1TimeRange,
+  convertTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import type {
   V1ExploreSpec,
@@ -39,8 +39,8 @@ export const aggregationRequestWithTimeRange = (
   timeFilterManager: TimeFilterManager,
 ) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
-    const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+    const timeRange = convertTimeManagerRangeToV1TimeRange(timeFilterManager);
+    const comparisonTimeRange = convertTimeManagerComparisonRangeToV1TimeRange(
       timeFilterManager,
       timeRange,
     );

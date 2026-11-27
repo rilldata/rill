@@ -4,6 +4,7 @@ import {
   runtimeServiceGetFile,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
+import { GetFileResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryFunction } from "@tanstack/svelte-query";
 
@@ -52,9 +53,9 @@ export class RuntimeFileIO implements FileIO {
     if (!this.client) return;
 
     // Optimistically update the query
-    queryClient.setQueryData(
+    queryClient.setQueryData<GetFileResponse>(
       getRuntimeServiceGetFileQueryKey(this.client.instanceId, { path }),
-      { blob },
+      new GetFileResponse({ blob }),
     );
 
     await runtimeServicePutFile(this.client, { path, blob });

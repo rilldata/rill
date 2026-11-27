@@ -46,7 +46,12 @@ describe("generateVLMultiMetricChartSpec orientation", () => {
     expect(at(spec, "layer.1.encoding.y")).toBeUndefined();
     expect(at(spec, "layer.1.encoding.yOffset.field")).toBe("Measure");
     expect(at(spec, "layer.1.encoding.xOffset")).toBeUndefined();
-    expect(at(spec, "layer.1.mark.height")).toEqual({ band: 0.9 });
+    // Grouped bars fill their slot; the gap is the offset scale's padding.
+    expect(at(spec, "layer.1.mark.height")).toEqual({ band: 1 });
+    expect(at(spec, "layer.1.encoding.yOffset.scale")).toEqual({
+      paddingInner: 0.1,
+      paddingOuter: 0.05,
+    });
     expect(at(spec, "layer.0.params.0.select.encodings")).toEqual(["y"]);
   });
 

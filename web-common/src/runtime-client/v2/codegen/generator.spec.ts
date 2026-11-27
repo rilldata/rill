@@ -5,6 +5,7 @@ import {
   generateServiceFile,
   generateIndex,
   extractMethods,
+  validateProtoMessageMethods,
   generateRawFunction,
   generateQueryMethod,
   generateInfiniteQueryMethod,
@@ -162,16 +163,6 @@ describe("extractMethods", () => {
     expect(
       extractMethods(migratedService).every((m) => m.usesProtoMessages),
     ).toBe(true);
-  });
-
-  it("throws when protoMessageMethods names a method the service does not generate", () => {
-    const partialService: ServiceDef = {
-      typeName: "rill.runtime.v1.QueryService",
-      methods: { columnTopK: migratedService.methods.columnTopK },
-    };
-    expect(() => extractMethods(partialService)).toThrow(
-      /protoMessageMethods.QueryService lists methods/,
-    );
   });
 
   it("extracts short type names", () => {
@@ -362,6 +353,24 @@ describe("generateMutationMethod", () => {
   it("references the raw function in mutationFn", () => {
     const code = generateMutationMethod(mutCtx).join("\n");
     expect(code).toContain("runtimeServicePutBar(client, request)");
+  });
+});
+
+// --- validateProtoMessageMethods ---
+
+describe("validateProtoMessageMethods", () => {
+  it("accepts services that generate every listed method", () => {
+    expect(() => validateProtoMessageMethods([migratedService])).not.toThrow();
+  });
+
+  it("throws when protoMessageMethods names a method the service does not generate", () => {
+    const partialService: ServiceDef = {
+      typeName: "rill.runtime.v1.QueryService",
+      methods: { columnTopK: migratedService.methods.columnTopK },
+    };
+    expect(() => validateProtoMessageMethods([partialService])).toThrow(
+      /protoMessageMethods.QueryService lists methods/,
+    );
   });
 });
 

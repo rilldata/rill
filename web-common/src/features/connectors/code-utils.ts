@@ -1,6 +1,5 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import {
-  type ConnectorDriverProperty,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetInstanceQueryKey,
@@ -8,8 +7,9 @@ import {
   runtimeServiceGetFile,
   runtimeServiceGetInstance,
   runtimeServicePutFile,
-  type V1ConnectorDriver,
 } from "../../runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -174,19 +174,22 @@ export function formatHeadersAsYamlMap(
 }
 
 export function generateYAML(
-  connector: V1ConnectorDriver,
+  connector: PartialMessage<ConnectorDriver>,
   formValues: Record<string, unknown>,
   envEditSession: EnvEditSession,
   options?: {
-    fieldFilter?: (
-      property:
-        | ConnectorDriverProperty
-        | { key?: string; type?: string; secret?: boolean; internal?: boolean },
-    ) => boolean;
-    orderedProperties?: Array<
-      | ConnectorDriverProperty
-      | { key?: string; type?: string; secret?: boolean; internal?: boolean }
-    >;
+    fieldFilter?: (property: {
+      key?: string;
+      type?: string;
+      secret?: boolean;
+      internal?: boolean;
+    }) => boolean;
+    orderedProperties?: Array<{
+      key?: string;
+      type?: string;
+      secret?: boolean;
+      internal?: boolean;
+    }>;
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];

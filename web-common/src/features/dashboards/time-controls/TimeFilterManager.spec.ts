@@ -7,8 +7,8 @@ import {
 import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import {
-  mapTimeManagerComparisonRangeToV1TimeRange,
-  mapTimeManagerRangeToV1TimeRange,
+  convertTimeManagerComparisonRangeToV1TimeRange,
+  convertTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import {
   DEFAULT_TIME_RANGE,
@@ -490,9 +490,9 @@ describe("TimeFilterManager", () => {
     expect(manager.comparisonTimeStart).toEqual(expected.start);
     expect(manager.comparisonTimeEnd).toEqual(expected.end);
     expect(
-      mapTimeManagerComparisonRangeToV1TimeRange(
+      convertTimeManagerComparisonRangeToV1TimeRange(
         manager,
-        mapTimeManagerRangeToV1TimeRange(manager),
+        convertTimeManagerRangeToV1TimeRange(manager),
       ),
     ).toEqual(expected);
 

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import { createExploreBookmarkLegacyDataTransformer } from "@rilldata/web-admin/features/bookmarks/explore-bookmark-legacy-data-transformer.ts";
   import {
     categorizeBookmarks,
     parseBookmarks,
@@ -14,6 +13,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQuery } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
+  import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -46,10 +46,6 @@
     exploreNameStore,
   );
 
-  // Transformer for legacy bookmark data that was stored in proto format.
-  const exploreBookmarkLegacyDataTransformer =
-    createExploreBookmarkLegacyDataTransformer(runtimeClient, exploreNameStore);
-
   // Stable query object for bookmarks for this explore
   const bookmarksQuery = createQuery(
     getBookmarksQueryOptions(
@@ -65,7 +61,8 @@
     bookmarks,
     $page.url.searchParams,
     $rillDefaultExploreURLParams,
-    $exploreBookmarkLegacyDataTransformer,
+    // Transformer for legacy bookmark data that was stored in proto format.
+    (data) => convertProtoToUrlParams(data).toString(),
   );
   // Categorize bookmarks into home, shared and personal bookmarks.
   $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);

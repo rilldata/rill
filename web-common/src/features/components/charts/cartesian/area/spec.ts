@@ -52,7 +52,7 @@ export function generateVLAreaChartSpec(
     data,
   );
 
-  const xEncoding = createPositionEncoding(config.x, data, "x");
+  const xEncoding = createPositionEncoding(config.x, data, "x", vegaConfig);
   xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
   spec.encoding = { x: xEncoding };
 

@@ -9,10 +9,10 @@
   import {
     useAlert,
     useAlertDashboardName,
-    useAlertDashboardState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
+  import DashboardMetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/DashboardMetadataValue.svelte";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
@@ -24,12 +24,8 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import { AlertNotifyRowsLimitDefault } from "@rilldata/web-common/features/alerts/form-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -37,11 +33,16 @@
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { alertDeleteMutationFactory } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { convertStateParamToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
+  import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
+  import { getDashboardPath } from "@rilldata/web-common/features/explore-mappers/utils";
 
   export let organization: string;
   export let project: string;
@@ -86,29 +87,58 @@
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
-
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
 
-  $: exploreUrl = getMappedExploreUrl(
-    {
-      exploreName: $exploreName.data,
-      queryName,
-      queryArgsJson,
-    },
-    {
-      exploreProtoState: alertSpec?.annotations?.web_open_state,
-    },
-    {
-      client: runtimeClient,
-      organization,
-      project,
-      embedded,
-    },
+  // The alert's request has no notion of in-list filters; the saved dashboard state does.
+  $: dimensionsWithInlistFilter = getDimensionsWithInlistFilter(
+    alertSpec?.annotations?.web_open_state,
   );
+  function getDimensionsWithInlistFilter(webOpenState: string | undefined) {
+    try {
+      const filterParam = convertStateParamToUrlParams(
+        "explore",
+        webOpenState,
+      ).get(ExploreStateURLParams.Filters);
+      if (!filterParam) return [];
+      return convertFilterParamToExpression(filterParam)
+        .dimensionsWithInlistFilter;
+    } catch {
+      // An unparsable state only loses the in-list display of the filters.
+      return [];
+    }
+  }
+
+  $: exploreUrlQueryOptions = getMappedExploreUrlQueryOptions(
+    runtimeClient,
+    {
+      type: "query",
+      request: {
+        exploreName: $exploreName.data ?? "",
+        queryName,
+        queryArgsJson,
+      },
+      options: {
+        exploreProtoState: alertSpec?.annotations?.web_open_state,
+      },
+    },
+    { organization, project, embedded },
+  );
+  // Until the explore name loads, the url would fall back to the metrics view's name.
+  $: exploreUrlQuery = createQuery({
+    ...exploreUrlQueryOptions,
+    enabled: exploreUrlQueryOptions.enabled && $exploreName.data !== undefined,
+  });
+  // The link is shown once the url is mapped; if mapping fails it still opens the explore, without the alert's state.
+  $: exploreUrl = $exploreUrlQuery.isError
+    ? getDashboardPath(
+        { organization, project, embedded },
+        "explore",
+        $exploreName.data ?? "",
+      )
+    : $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();
@@ -184,23 +214,18 @@
       >
         {#if dashboardTitle}
           <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
-          <MetadataValue>
-            {#if dashboardDoesNotExist}
-              <div class="flex items-center gap-x-1">
-                {dashboardTitle}
-                <Tooltip distance={8}>
-                  <CancelCircle size="16px" className="text-red-500" />
-                  <TooltipContent slot="tooltip-content">
-                    {m.alert_dashboard_not_exist()}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            {:else}
-              <a href={$exploreUrl}>
-                {dashboardTitle}
-              </a>
-            {/if}
-          </MetadataValue>
+          <DashboardMetadataValue
+            title={dashboardTitle}
+            href={exploreUrl}
+            state={dashboardDoesNotExist
+              ? "missing"
+              : $exploreUrlQuery.isError
+                ? "stateLoadFailed"
+                : "ok"}
+            notExistMessage={m.alert_dashboard_not_exist()}
+            stateLoadFailedMessage={m.alert_dashboard_state_load_failed()}
+            openWithoutStateLabel={m.alert_dashboard_open_without_filters()}
+          />
         {:else}
           <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
           <MetadataValue>
@@ -265,8 +290,7 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
-      dimensionsWithInlistFilter={$dashboardState.data
-        ?.dimensionsWithInlistFilter ?? []}
+      {dimensionsWithInlistFilter}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
