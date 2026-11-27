@@ -6,8 +6,8 @@ import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   V1FileEvent,
-  type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
+import { ListFilesResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createFileInvalidatorState,
@@ -69,9 +69,9 @@ vi.mock("@rilldata/web-common/runtime-client/sse", async (original) => ({
 
 const client = { instanceId: "default" } as RuntimeClient;
 const key = getRuntimeServiceListFilesQueryKey(client.instanceId, {});
-const fresh: V1ListFilesResponse = {
+const fresh = new ListFilesResponse({
   files: [{ path: "/rill.yaml" }, { path: "/connectors/new.yaml" }],
-};
+});
 
 function loadRoot() {
   return load({
@@ -121,9 +121,9 @@ describe("local root layout ListFiles", () => {
     "joins the fresh replacement after a %s supersedes its request",
     async (cause) => {
       // Cached data is what makes TanStack cancel rather than share the in-flight request.
-      queryClient.setQueryData(key, { files: [] });
-      const old = deferred<V1ListFilesResponse>();
-      const replacement = deferred<V1ListFilesResponse>();
+      queryClient.setQueryData(key, new ListFilesResponse());
+      const old = deferred<ListFilesResponse>();
+      const replacement = deferred<ListFilesResponse>();
       vi.mocked(runtimeServiceListFiles)
         .mockImplementationOnce(() => old.promise)
         .mockImplementationOnce(() => replacement.promise);
@@ -174,7 +174,7 @@ describe("local root layout ListFiles", () => {
       expect(result.value).toMatchObject({ initialized: true });
       expect(handleUninitializedProject).not.toHaveBeenCalled();
       expect(queryClient.getQueryData(key)).toEqual(fresh);
-      old.resolve({ files: [] });
+      old.resolve(new ListFilesResponse());
       await Promise.resolve();
       expect(queryClient.getQueryData(key)).toEqual(fresh);
       expect(runtimeServiceListFiles).toHaveBeenCalledTimes(2);
@@ -195,9 +195,9 @@ describe("local root layout ListFiles", () => {
   });
 
   it("propagates an error from the replacement without another request", async () => {
-    queryClient.setQueryData(key, { files: [] });
-    const old = deferred<V1ListFilesResponse>();
-    const replacement = deferred<V1ListFilesResponse>();
+    queryClient.setQueryData(key, new ListFilesResponse());
+    const old = deferred<ListFilesResponse>();
+    const replacement = deferred<ListFilesResponse>();
     const error = new Error("Permission denied");
     vi.mocked(runtimeServiceListFiles)
       .mockImplementationOnce(() => old.promise)
@@ -214,13 +214,13 @@ describe("local root layout ListFiles", () => {
     await background;
     expect((await result).error).toBe(error);
     expect(runtimeServiceListFiles).toHaveBeenCalledTimes(2);
-    old.resolve({ files: [] });
+    old.resolve(new ListFilesResponse());
   });
 
   it("rethrows the third cancellation unchanged instead of continuing indefinitely", async () => {
-    const requests: ReturnType<typeof deferred<V1ListFilesResponse>>[] = [];
+    const requests: ReturnType<typeof deferred<ListFilesResponse>>[] = [];
     vi.mocked(runtimeServiceListFiles).mockImplementation(() => {
-      const request = deferred<V1ListFilesResponse>();
+      const request = deferred<ListFilesResponse>();
       requests.push(request);
       return request.promise;
     });
@@ -241,6 +241,6 @@ describe("local root layout ListFiles", () => {
     expect(isCancelledError(final.error)).toBe(true);
     expect(final.error).toBe((await lastAwaiter).error);
     expect(runtimeServiceListFiles).toHaveBeenCalledTimes(3);
-    requests.forEach((request) => request.resolve({ files: [] }));
+    requests.forEach((request) => request.resolve(new ListFilesResponse()));
   });
 });

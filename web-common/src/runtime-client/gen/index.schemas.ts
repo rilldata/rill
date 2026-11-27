@@ -736,10 +736,6 @@ export interface V1ConvertExpressionToMetricsSQLResponse {
   sql?: string;
 }
 
-export interface V1CreateDirectoryResponse {
-  [key: string]: unknown;
-}
-
 export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
@@ -751,10 +747,6 @@ export interface V1DatabaseSchemaInfo {
 
 export interface V1DefaultMetricsSQLFilter {
   expression?: V1Expression;
-}
-
-export interface V1DeleteFileResponse {
-  [key: string]: unknown;
 }
 
 /**
@@ -775,11 +767,6 @@ export interface V1UIAction {
   id?: string;
   /** Human-readable accessible label for the action. */
   label?: string;
-}
-
-export interface V1DirEntry {
-  path?: string;
-  isDir?: boolean;
 }
 
 /**
@@ -1177,11 +1164,6 @@ export interface V1GetExploreResponse {
   metricsView?: V1Resource;
 }
 
-export interface V1GetFileResponse {
-  blob?: string;
-  updatedOn?: string;
-}
-
 export interface V1GetLogsResponse {
   logs?: V1Log[];
 }
@@ -1329,10 +1311,6 @@ export interface V1ListDatabaseSchemasResponse {
 
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
-}
-
-export interface V1ListFilesResponse {
-  files?: V1DirEntry[];
 }
 
 export interface V1ListGitBranchesResponse {
@@ -2140,10 +2118,6 @@ export interface V1ProjectParserState {
   watching?: boolean;
 }
 
-export interface V1PutFileResponse {
-  filePath?: string;
-}
-
 export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
@@ -2239,10 +2213,6 @@ export interface V1RefreshTriggerState {
 }
 
 export interface V1ReloadConfigResponse {
-  [key: string]: unknown;
-}
-
-export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
 
@@ -2882,32 +2852,6 @@ export type ConnectorServiceListObjectsParams = {
   pageToken?: string;
 };
 
-export type RuntimeServiceListFilesParams = {
-  glob?: string;
-};
-
-export type RuntimeServiceCreateDirectoryBody = {
-  path?: string;
-};
-
-export type RuntimeServiceGetFileParams = {
-  path?: string;
-};
-
-export type RuntimeServiceDeleteFileParams = {
-  path?: string;
-  force?: boolean;
-};
-
-export type RuntimeServicePutFileBody = {
-  path?: string;
-  blob?: string;
-  create?: boolean;
-  /** Will cause the operation to fail if the file already exists.
-It should only be set when create = true. */
-  createOnly?: boolean;
-};
-
 export type RuntimeServiceGenerateCanvasFileBody = {
   /** Metrics view name to base the canvas on. */
   metricsViewName?: string;
@@ -2941,11 +2885,6 @@ Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
   /** Optional prompt to guide AI generation. */
   prompt?: string;
-};
-
-export type RuntimeServiceRenameFileBody = {
-  fromPath?: string;
-  toPath?: string;
 };
 
 export type RuntimeServiceUnpackEmptyBody = {

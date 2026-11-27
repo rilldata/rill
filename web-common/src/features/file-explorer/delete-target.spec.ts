@@ -1,7 +1,4 @@
-import type {
-  V1DirEntry,
-  V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import { getFileDeleteTarget, getFolderDeleteTarget } from "./delete-target";
@@ -156,7 +153,7 @@ describe("getFolderDeleteTarget", () => {
     { path: "/drafts", isDir: true },
     { path: "/drafts/notes", isDir: true },
     { path: "/rill.yaml", isDir: false },
-  ] as V1DirEntry[]);
+  ]);
 
   it("lists every file in the folder, including nested folders", () => {
     expect(getFolderDeleteTarget(tree, "/dashboards")).toEqual({
