@@ -974,6 +974,48 @@ rollups:
 `,
 			wantErr: `must have a bounded start`,
 		},
+		{
+			name: "base_time_grain without timeseries",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+base_time_grain: day
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `"base_time_grain" requires a "timeseries" to be defined`,
+		},
+		{
+			name: "base_time_zone without base_time_grain",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+base_time_zone: America/New_York
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `"base_time_zone" requires "base_time_grain" to be set`,
+		},
+		{
+			name: "invalid base_time_zone",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+base_time_grain: day
+base_time_zone: Mars/Olympus
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `invalid "base_time_zone"`,
+		},
 	}
 
 	for _, tt := range tests {
