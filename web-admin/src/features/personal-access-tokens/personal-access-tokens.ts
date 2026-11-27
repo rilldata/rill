@@ -20,7 +20,16 @@ export const TOKEN_NAME_MAX_LENGTH = 64;
 // Tokens that expire within this many days are highlighted in the list.
 export const EXPIRES_SOON_DAYS = 7;
 
-export type TokenExpiration = "7d" | "30d" | "90d" | "1y" | "custom" | "none";
+export const TOKEN_EXPIRATIONS = [
+  "7d",
+  "30d",
+  "90d",
+  "1y",
+  "custom",
+  "none",
+] as const;
+
+export type TokenExpiration = (typeof TOKEN_EXPIRATIONS)[number];
 
 export const DEFAULT_TOKEN_EXPIRATION: TokenExpiration = "90d";
 
@@ -36,24 +45,27 @@ const EXPIRATION_PRESET_DAYS: Record<
 
 /**
  * Returns when a token issued at `now` with the given expiration would expire, or null if it never expires.
- * A custom date keeps the current time of day, so a token picked for tomorrow lasts a full day.
+ * `customDate` is the day picked for a custom expiration, as yyyy-MM-dd.
+ * It keeps the current time of day, so a token picked for tomorrow lasts a full day.
  */
 export function getTokenExpiryDate(
   expiration: TokenExpiration,
-  customDate: DateTime | null,
+  customDate: string,
   now: DateTime = DateTime.now(),
 ): DateTime | null {
   switch (expiration) {
     case "none":
       return null;
-    case "custom":
-      if (!customDate) return null;
-      return customDate.set({
+    case "custom": {
+      const day = DateTime.fromISO(customDate, { zone: now.zone });
+      if (!day.isValid) return null;
+      return day.set({
         hour: now.hour,
         minute: now.minute,
         second: now.second,
         millisecond: now.millisecond,
       });
+    }
     default:
       return now.plus({ days: EXPIRATION_PRESET_DAYS[expiration] });
   }
@@ -78,7 +90,7 @@ export async function issuePersonalAccessToken(
   queryClient: QueryClient,
   displayName: string,
   expiration: TokenExpiration,
-  customDate: DateTime | null,
+  customDate: string,
 ): Promise<{ token: string; expiresOn: DateTime | null }> {
   const now = DateTime.now();
   const expiresOn = getTokenExpiryDate(expiration, customDate, now);

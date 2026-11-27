@@ -26,9 +26,10 @@ test.describe("Personal access tokens", () => {
     await page.getByRole("button", { name: "New token" }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.locator("#access-token-name").fill(name);
-    await dialog.locator("#access-token-expiration").click();
-    await page.getByRole("option", { name: "7 days" }).click();
-    await page.waitForSelector("[role=listbox]", { state: "detached" });
+    const expiration = dialog.locator("#access-token-expiration");
+    await expiration.click();
+    await page.getByRole("menuitem", { name: "7 days" }).click();
+    await expect(expiration).toHaveText("7 days");
     await dialog.getByRole("button", { name: "Create token" }).click();
 
     // The token is shown once and authenticates as the user

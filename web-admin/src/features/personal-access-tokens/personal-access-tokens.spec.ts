@@ -20,19 +20,18 @@ describe("token expiration", () => {
     ["90d", 90 * 24 * 60],
     ["1y", 365 * 24 * 60],
   ])("issues %s as %i minutes", (expiration, minutes) => {
-    const expiresOn = getTokenExpiryDate(expiration, null, now);
+    const expiresOn = getTokenExpiryDate(expiration, "", now);
     expect(getTokenTTLMinutes(expiresOn, now)).toBe(minutes);
   });
 
   it("issues no expiration as 0 minutes", () => {
-    const expiresOn = getTokenExpiryDate("none", null, now);
+    const expiresOn = getTokenExpiryDate("none", "", now);
     expect(expiresOn).toBeNull();
     expect(getTokenTTLMinutes(expiresOn, now)).toBe(0);
   });
 
   it("keeps the current time of day for a custom date", () => {
-    const tomorrow = now.plus({ days: 1 }).startOf("day");
-    const expiresOn = getTokenExpiryDate("custom", tomorrow, now);
+    const expiresOn = getTokenExpiryDate("custom", "2026-11-26", now);
     expect(expiresOn?.toISO()).toBe("2026-11-26T14:30:15.250Z");
     expect(getTokenTTLMinutes(expiresOn, now)).toBe(24 * 60);
   });

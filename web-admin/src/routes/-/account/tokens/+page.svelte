@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { afterNavigate } from "$app/navigation";
   import type { V1UserAuthToken } from "@rilldata/web-admin/client";
   import CreateTokenDialog from "@rilldata/web-admin/features/personal-access-tokens/CreateTokenDialog.svelte";
   import PersonalAccessTokensTable from "@rilldata/web-admin/features/personal-access-tokens/PersonalAccessTokensTable.svelte";
@@ -8,9 +9,18 @@
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { KeyRoundIcon, PlusIcon } from "lucide-svelte";
+  import { ArrowLeftIcon, KeyRoundIcon, PlusIcon } from "lucide-svelte";
 
   const tokensQuery = createPersonalAccessTokensQuery();
+
+  // Back returns to the page the account page was opened from, or home when it was opened directly.
+  let backHref = $state("/");
+  afterNavigate(({ from }) => {
+    // On a full page load `from` has no URL.
+    if (from?.url && !from.route.id?.startsWith("/-/account")) {
+      backHref = from.url.pathname + from.url.search;
+    }
+  });
 
   let tokens = $derived($tokensQuery.data ?? []);
 
@@ -27,7 +37,17 @@
   <title>{m.access_tokens_page_head_title()}</title>
 </svelte:head>
 
-<ContentContainer title={m.access_tokens_page_title()} maxWidth={1100}>
+<ContentContainer maxWidth={1100}>
+  <a
+    href={backHref}
+    class="flex w-fit items-center gap-x-1 text-sm text-fg-secondary hover:text-fg-primary"
+  >
+    <ArrowLeftIcon size="14px" />
+    {m.common_back()}
+  </a>
+  <h1 class="text-2xl font-semibold text-fg-primary">
+    {m.access_tokens_page_title()}
+  </h1>
   <section class="flex flex-col gap-y-4 pt-4">
     <div class="flex items-start gap-x-6">
       <div class="flex flex-col gap-y-1">
