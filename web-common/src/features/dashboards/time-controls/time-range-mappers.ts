@@ -5,16 +5,13 @@ import {
 import { RillAllTimeInterval } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { DateTime } from "luxon";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
-  type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
   V1TimeGrain,
   type V1TimeRange,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
@@ -56,108 +53,7 @@ for (const preset in PreviousCompleteRangeMap) {
   ] = preset as TimeRangePreset;
 }
 
-export function mapV1TimeRangeToSelectedTimeRange(
-  timeRange: V1TimeRange,
-  timeRangeSummary: V1TimeRangeSummary,
-  end: string,
-) {
-  let selectedTimeRange: DashboardTimeControls;
-  let duration = timeRange.isoDuration;
-
-  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
-  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
-    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
-  }
-
-  if (timeRange.start && timeRange.end) {
-    selectedTimeRange = {
-      name: TimeRangePreset.CUSTOM,
-      start: new Date(timeRange.start),
-      end: new Date(timeRange.end),
-    };
-  } else if (timeRange.expression) {
-    try {
-      const rt = parseRillTime(timeRange.expression);
-      selectedTimeRange = {
-        name: rt.toString(),
-        interval: rt.byGrain ?? rt.rangeGrain,
-      } as DashboardTimeControls;
-    } catch {
-      return undefined;
-    }
-  } else if (duration && timeRangeSummary.min) {
-    selectedTimeRange = isoDurationToFullTimeRange(
-      duration,
-      new Date(timeRangeSummary.min),
-      new Date(end),
-    );
-  } else {
-    return undefined;
-  }
-
-  if (!selectedTimeRange.interval) {
-    selectedTimeRange.interval = timeRange.roundToGrain;
-  }
-
-  return selectedTimeRange;
-}
-
-export function mapV1TimeRangeToSelectedComparisonTimeRange(
-  timeRange: V1TimeRange,
-  timeRangeSummary: V1TimeRangeSummary,
-  end: string,
-) {
-  let selectedTimeRange: DashboardTimeControls;
-  let duration = timeRange.isoOffset;
-
-  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
-  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
-    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
-  }
-
-  // A comparison sent as the base expression with an offset, such as "P1D offset -1W"
-  const offsetOption = timeRange.expression
-    ? getComparisonOptionFromExpression(timeRange.expression)
-    : undefined;
-  if (offsetOption) {
-    duration = offsetOption;
-  }
-
-  if (timeRange.start && timeRange.end) {
-    selectedTimeRange = {
-      name: TimeComparisonOption.CUSTOM,
-      start: new Date(timeRange.start),
-      end: new Date(timeRange.end),
-    };
-  } else if (
-    offsetOption === TimeComparisonOption.CONTIGUOUS ||
-    (!offsetOption && timeRange.isoOffset === timeRange.isoDuration)
-  ) {
-    // Previous period is when offset = duration
-    selectedTimeRange = {
-      name: TimeComparisonOption.CONTIGUOUS,
-    } as DashboardTimeControls;
-  } else if (duration && timeRangeSummary.min) {
-    let isoDuration = duration;
-    if (duration in TIME_COMPARISON) {
-      isoDuration = TIME_COMPARISON[duration].offsetIso;
-    }
-    selectedTimeRange = isoDurationToFullTimeRange(
-      isoDuration,
-      new Date(timeRangeSummary.min),
-      new Date(end),
-    );
-    selectedTimeRange.name = duration as TimeComparisonOption;
-  } else {
-    return undefined;
-  }
-
-  selectedTimeRange.interval = timeRange.roundToGrain;
-
-  return selectedTimeRange;
-}
-
-export function mapTimeManagerRangeToV1TimeRange(
+export function convertTimeManagerRangeToV1TimeRange(
   timeFilterManager: TimeFilterManager | undefined,
 ): V1TimeRange | undefined {
   // The requested range rather than the resolved `timeRange`:
@@ -170,6 +66,7 @@ export function mapTimeManagerRangeToV1TimeRange(
     return {
       expression: requestedTimeRange,
       timeZone: timeFilterManager.timeZone,
+      timeDimension: timeFilterManager.timeDimension,
     };
   } catch {
     // Legacy presets that are not rill time are handled below.
@@ -200,11 +97,12 @@ export function mapTimeManagerRangeToV1TimeRange(
   }
 
   timeRange.timeZone = timeFilterManager.timeZone;
+  timeRange.timeDimension = timeFilterManager.timeDimension;
 
   return timeRange;
 }
 
-export function mapTimeManagerComparisonRangeToV1TimeRange(
+export function convertTimeManagerComparisonRangeToV1TimeRange(
   timeFilterManager: TimeFilterManager | undefined,
   timeRange: V1TimeRange | undefined,
 ): V1TimeRange | undefined {
@@ -217,12 +115,16 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
     return undefined;
   }
 
+  // The runtime requires the comparison to be on the same time dimension as the primary range.
+  const timeDimension = timeRange.timeDimension;
+
   // A custom comparison is stored as `start to end`, so it is sent as the resolved interval.
   // The full window, since `comparisonTimeStart`/`comparisonTimeEnd` follow a scrub.
   if (timeFilterManager.isCustomComparison) {
     return {
       start: timeFilterManager.comparisonInterval?.start.toUTC().toISO(),
       end: timeFilterManager.comparisonInterval?.end.toUTC().toISO(),
+      timeDimension,
     };
   }
 
@@ -236,12 +138,13 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
       return {
         expression:
           rt.toString() + " offset " + TIME_COMPARISON[name]?.rillTimeOffset,
+        timeDimension,
       };
     }
     isoDuration = timeRange.expression;
   }
 
-  const comparisonTimeRange: V1TimeRange = {};
+  const comparisonTimeRange: V1TimeRange = { timeDimension };
   switch (name) {
     default:
       comparisonTimeRange.isoOffset = name;
@@ -256,40 +159,43 @@ export function mapTimeManagerComparisonRangeToV1TimeRange(
 }
 
 /**
- * Sets the time filter url params a {@link TimeFilterManager} is seeded with from API time ranges,
+ * Converts API time ranges to the time filter url params a {@link TimeFilterManager} is seeded with,
  * e.g. those saved in a report's or an alert's aggregation request.
  */
-export function setTimeFilterParamsFromV1TimeRanges(
-  params: URLSearchParams,
+export function convertV1TimeRangesToTimeFilterUrlParams(
   timeRange: V1TimeRange | undefined,
   comparisonTimeRange: V1TimeRange | undefined,
 ) {
-  if (!timeRange) return;
+  const urlParams = new URLSearchParams();
+  if (!timeRange) return urlParams;
 
   const { timeRange: timeRangeParam, timeZone } =
-    mapV1TimeRangeToTimeFilterParams(timeRange);
-  if (!timeRangeParam) return;
-  params.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+    convertV1TimeRangeToTimeFilterParams(timeRange);
+  if (!timeRangeParam) return urlParams;
+  urlParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
   if (timeZone) {
-    params.set(ExploreStateURLParams.TimeZone, timeZone);
+    urlParams.set(ExploreStateURLParams.TimeZone, timeZone);
+  }
+  if (timeRange.timeDimension) {
+    urlParams.set(ExploreStateURLParams.TimeDimension, timeRange.timeDimension);
   }
 
   if (comparisonTimeRange) {
-    const comparisonParam = mapV1TimeRangeToComparisonTimeOption(
-      timeRange,
-      comparisonTimeRange,
-    );
+    const comparisonParam =
+      convertV1TimeRangeToComparisonTimeOption(comparisonTimeRange);
     if (comparisonParam) {
-      params.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
+      urlParams.set(ExploreStateURLParams.ComparisonTimeRange, comparisonParam);
     }
   }
+
+  return urlParams;
 }
 
 /**
  * Maps an API time range to the rill time range and zone a {@link TimeFilterManager} is seeded with.
  * The zone is undefined when the dashboard's default zone should apply.
  */
-function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
+export function convertV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
   timeRange: string | undefined;
   timeZone: string | undefined;
 } {
@@ -297,14 +203,12 @@ function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
     // An absolute range without a saved zone is pinned to UTC instead of the dashboard's default zone,
     // since its endpoints are UTC instants.
     const timeZone = timeRange.timeZone ?? "UTC";
-    // Rill time reads absolute times as wall-clock times in the zone.
-    const start = DateTime.fromISO(timeRange.start, { zone: "UTC" });
-    const end = DateTime.fromISO(timeRange.end, { zone: "UTC" });
-    if (!start.isValid || !end.isValid) {
-      return { timeRange: `${timeRange.start} to ${timeRange.end}`, timeZone };
-    }
     return {
-      timeRange: `${formatRillTimeWallClock(start, timeZone)} to ${formatRillTimeWallClock(end, timeZone)}`,
+      timeRange: convertAbsoluteTimeRangeToRillTime(
+        timeRange.start,
+        timeRange.end,
+        timeZone,
+      ),
       timeZone,
     };
   }
@@ -318,50 +222,73 @@ function mapV1TimeRangeToTimeFilterParams(timeRange: V1TimeRange): {
   };
 }
 
-export function mapV1TimeRangeToComparisonTimeOption(
-  primaryTimeRange: V1TimeRange,
+/**
+ * Maps an API comparison time range to the explore url's comparison param.
+ */
+export function convertV1TimeRangeToComparisonTimeOption(
   timeRange: V1TimeRange,
 ) {
-  let duration = timeRange.isoOffset;
-
-  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
-  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
-    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  if (timeRange.start && timeRange.end) {
+    return convertAbsoluteTimeRangeToUrlParam(timeRange.start, timeRange.end);
   }
 
-  if (timeRange.start && timeRange.end) {
-    return `${timeRange.start} to ${timeRange.end}`;
-  } else if (
-    timeRange.isoOffset &&
-    timeRange.isoOffset === timeRange.isoDuration
+  if (
+    timeRange.isoDuration &&
+    // Older saved queries set only the duration for the previous period.
+    (!timeRange.isoOffset || timeRange.isoOffset === timeRange.isoDuration)
   ) {
     return TimeComparisonOption.CONTIGUOUS;
-  } else if (timeRange.expression) {
-    if (
-      primaryTimeRange.expression &&
-      timeRange.expression.startsWith(primaryTimeRange.expression)
-    ) {
-      const offset = timeRange.expression.replace(
-        primaryTimeRange.expression + " offset ",
-        "",
-      );
-      for (const comparisonOption in TIME_COMPARISON) {
-        if (TIME_COMPARISON[comparisonOption].rillTimeOffset === offset) {
-          return comparisonOption;
-        }
-      }
-
-      return timeRange.expression;
-    }
-
-    return timeRange.expression;
   }
 
-  return duration;
+  if (timeRange.expression) {
+    // A comparison sent as the base expression with an offset, such as "P1D offset -1W".
+    return (
+      convertExpressionToComparisonOption(timeRange.expression) ??
+      timeRange.expression
+    );
+  }
+
+  return timeRange.isoOffset;
+}
+
+/**
+ * Formats an absolute range of UTC instants as a rill time range, `start,end`.
+ * Rill time reads absolute times as wall-clock times in the request's zone,
+ * so both ends are written as wall-clock times in `timeZone` to keep the same instants.
+ */
+export function convertAbsoluteTimeRangeToRillTime(
+  start: string | Date,
+  end: string | Date,
+  timeZone: string,
+) {
+  const [startDt, endDt] = [start, end].map((t) =>
+    typeof t === "string"
+      ? DateTime.fromISO(t, { zone: "UTC" })
+      : DateTime.fromJSDate(t, { zone: "UTC" }),
+  );
+  if (!startDt.isValid || !endDt.isValid)
+    return `${String(start)},${String(end)}`;
+  return `${formatRillTimeWallClock(startDt, timeZone)},${formatRillTimeWallClock(endDt, timeZone)}`;
+}
+
+/**
+ * Formats an absolute range as the explore url's custom range, `start,end`.
+ * Both ends are normalized to ISO strings with milliseconds, which the comparison and highlighted range params require.
+ * Invalid dates are kept as is, so the explore reports them instead of this throwing.
+ */
+export function convertAbsoluteTimeRangeToUrlParam(
+  start: string | Date,
+  end: string | Date,
+) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()))
+    return `${String(start)},${String(end)}`;
+  return `${startDate.toISOString()},${endDate.toISOString()}`;
 }
 
 // Returns the comparison option whose rill time offset ends the expression, such as "-1W" in "P7D offset -1W".
-function getComparisonOptionFromExpression(
+function convertExpressionToComparisonOption(
   expression: string,
 ): TimeComparisonOption | undefined {
   const offset = / offset (\S+)$/.exec(expression)?.[1];

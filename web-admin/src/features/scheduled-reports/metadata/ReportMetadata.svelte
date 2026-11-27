@@ -5,17 +5,13 @@
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import {
-    getMappedAIExploreUrl,
-    getMappedExploreUrl,
-  } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
-  import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
+  import {
+    getDashboardPath,
+    getSpecQuery,
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
@@ -33,7 +29,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { reportDeleteMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
@@ -42,6 +38,7 @@
     useReport,
     useReportDashboardName,
   } from "../selectors";
+  import DashboardMetadataValue from "./DashboardMetadataValue.svelte";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
@@ -52,6 +49,10 @@
     formatRefreshSchedule,
   } from "./utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import {
+    getMappedExploreUrlQueryOptions,
+    type MappedExploreUrlSource,
+  } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
 
   export let organization: string;
   export let project: string;
@@ -107,23 +108,39 @@
 
   $: ({ queryName, queryArgsJson } = getSpecQuery(reportSpec ?? {}));
 
-  $: exploreUrl = getMappedExploreUrl(
-    {
-      exploreName: isCanvasReport ? "" : ($dashboardName.data ?? ""),
-      queryName,
-      queryArgsJson,
-    },
-    {
-      exploreProtoState: reportSpec?.annotations?.web_open_state,
-      forceOpenPivot: true,
-    },
-    {
-      client: runtimeClient,
-      organization,
-      project,
-      embedded,
-    },
+  // AI reports link to the explore they analyze, with the report's scope (dimensions, measures, time ranges, filter) applied.
+  $: exploreUrlSource = (
+    isAIReport
+      ? {
+          type: "ai",
+          exploreName: $dashboardName.data ?? "",
+          props: (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
+        }
+      : {
+          type: "query",
+          request: {
+            // Canvas reports link to the canvas instead; an empty query keeps this disabled.
+            exploreName: isCanvasReport ? "" : ($dashboardName.data ?? ""),
+            queryName: isCanvasReport ? "" : queryName,
+            queryArgsJson: isCanvasReport ? "" : queryArgsJson,
+          },
+          options: {
+            exploreProtoState: reportSpec?.annotations?.web_open_state,
+            forceOpenPivot: true,
+          },
+        }
+  ) as MappedExploreUrlSource;
+  $: exploreUrlQueryOptions = getMappedExploreUrlQueryOptions(
+    runtimeClient,
+    exploreUrlSource,
+    { organization, project, embedded },
   );
+  // Until the explore name loads, the url would fall back to the metrics view's name.
+  $: exploreUrlQuery = createQuery({
+    ...exploreUrlQueryOptions,
+    enabled:
+      exploreUrlQueryOptions.enabled && $dashboardName.data !== undefined,
+  });
 
   // Canvas reports link to the canvas page with the captured state applied.
   $: canvasUrl = (() => {
@@ -136,17 +153,17 @@
     ).toString();
     return search ? `${path}?${search}` : path;
   })();
-  // AI reports link to the explore they analyze, with the report's scope (dimensions, measures, time ranges, filter) applied.
-  $: aiExploreUrl = getMappedAIExploreUrl(
-    (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
-    isAIReport ? ($dashboardName.data ?? "") : "",
-    { client: runtimeClient, organization, project, embedded },
-  );
+  // The link is shown once the url is mapped; if mapping fails it still opens the explore, without the report's state.
+  $: exploreUrlFailed = !isCanvasReport && $exploreUrlQuery.isError;
   $: dashboardUrl = isCanvasReport
     ? canvasUrl
-    : isAIReport
-      ? $aiExploreUrl
-      : $exploreUrl;
+    : exploreUrlFailed
+      ? getDashboardPath(
+          { organization, project, embedded },
+          "explore",
+          $dashboardName.data ?? "",
+        )
+      : $exploreUrlQuery.data;
 
   // Actions
   const queryClient = useQueryClient();
@@ -249,23 +266,18 @@
       >
         {#if dashboardTitle}
           <MetadataLabel>{m.report_dashboard()}</MetadataLabel>
-          <MetadataValue>
-            {#if dashboardDoesNotExist}
-              <div class="flex items-center gap-x-1">
-                {dashboardTitle}
-                <Tooltip distance={8}>
-                  <CancelCircle size="16px" className="text-red-500" />
-                  <TooltipContent slot="tooltip-content">
-                    {m.report_dashboard_not_exist()}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            {:else}
-              <a href={dashboardUrl}>
-                {dashboardTitle}
-              </a>
-            {/if}
-          </MetadataValue>
+          <DashboardMetadataValue
+            title={dashboardTitle}
+            href={dashboardUrl}
+            state={dashboardDoesNotExist
+              ? "missing"
+              : exploreUrlFailed
+                ? "stateLoadFailed"
+                : "ok"}
+            notExistMessage={m.report_dashboard_not_exist()}
+            stateLoadFailedMessage={m.report_dashboard_state_load_failed()}
+            openWithoutStateLabel={m.report_dashboard_open_without_filters()}
+          />
         {:else}
           <MetadataLabel>{m.report_name_label()}</MetadataLabel>
           <MetadataValue>

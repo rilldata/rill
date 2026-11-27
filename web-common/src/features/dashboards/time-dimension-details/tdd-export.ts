@@ -7,7 +7,7 @@ import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/ex
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { mapTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { convertTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { getTimeDimensionForComparison } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import type {
   V1ExploreSpec,
@@ -34,7 +34,7 @@ export function getTDDExportQuery(
   let timeRange: V1TimeRange | undefined;
   if (timeFilterManager.ready) {
     timeRange = isScheduled
-      ? mapTimeManagerRangeToV1TimeRange(timeFilterManager)
+      ? convertTimeManagerRangeToV1TimeRange(timeFilterManager)
       : { start: timeFilterManager.timeStart, end: timeFilterManager.timeEnd };
   }
 
