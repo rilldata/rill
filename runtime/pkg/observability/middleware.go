@@ -34,7 +34,11 @@ func Middleware(serviceName string, logger *zap.Logger, next http.Handler) http.
 
 // TracingMiddleware is HTTP middleware that adds tracing to the request.
 func TracingMiddleware(next http.Handler, serviceName string) http.Handler {
-	return otelhttp.NewHandler(next, serviceName)
+	// Keep the span name as the operation name;
+	// newer otelhttp versions default to "{method} {route}", which would rename existing spans.
+	return otelhttp.NewHandler(next, serviceName, otelhttp.WithSpanNameFormatter(func(operation string, _ *http.Request) string {
+		return operation
+	}))
 }
 
 // LoggingUnaryServerInterceptor is a gRPC unary interceptor that logs requests.

@@ -453,10 +453,17 @@ func (v rendererValidator) validateKPI(props map[string]any) error {
 	return nil
 }
 
+// kpiSizes lists the size presets of a kpi_grid's cards; "medium" is the default.
+var kpiSizes = []string{"small", "medium", "large", "xlarge"}
+
 // validateKPIGrid validates properties for kpi_grid.
 func (v rendererValidator) validateKPIGrid(props map[string]any) error {
 	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
+		return err
+	}
+
+	if err := v.validateOptionalStringEnum(props, "size", kpiSizes); err != nil {
 		return err
 	}
 

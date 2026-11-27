@@ -5,6 +5,7 @@
   import CheckCircleOutline from "../icons/CheckCircleOutline.svelte";
   import LoadingCircleOutline from "../icons/LoadingCircleOutline.svelte";
   import MoonCircleOutline from "../icons/MoonCircleOutline.svelte";
+  import { renderBannerMarkdown } from "./banner-markdown";
   import { XIcon } from "lucide-svelte";
 
   export let banner: BannerMessage;
@@ -31,7 +32,9 @@
     {#if banner.iconType in IconMap}
       <svelte:component this={IconMap[banner.iconType]} size="14px" />
     {/if}
-    {#if banner.includesHtml}
+    {#if banner.includesMarkdown}
+      <p class="banner-message">{@html renderBannerMarkdown(banner.message)}</p>
+    {:else if banner.includesHtml}
       <p class="banner-message">{@html DOMPurify.sanitize(banner.message)}</p>
     {:else}
       <p class="banner-message">{banner.message}</p>

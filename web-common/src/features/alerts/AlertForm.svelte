@@ -14,11 +14,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    getAlertDashboardName,
-    unwrapQueryData,
-    useAlertDashboardState,
-  } from "@rilldata/web-admin/features/alerts/selectors.ts";
+  import { getAlertDashboardName } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
@@ -37,9 +33,6 @@
     generateAlertName,
     isSomeFieldTainted,
   } from "@rilldata/web-common/features/alerts/utils.ts";
-  import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
@@ -63,6 +56,7 @@
   import { onDestroy } from "svelte";
   import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { augmentUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
@@ -97,12 +91,6 @@
 
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-
-  const exploreState =
-    props.mode === "create"
-      ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
   const { mutation } = provider;
 
@@ -227,9 +215,14 @@
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
-          webOpenState: getProtoFromDashboardState(
-            $exploreState as ExploreState,
-            exploreSpec,
+          webOpenState: augmentUrlParams(
+            "explore",
+            // An edited alert keeps its own state, never the current page's url.
+            props.mode === "edit"
+              ? (props.alertSpec?.annotations ?? {})
+              : undefined,
+            expressionFilterManager,
+            timeFilterManager,
           ),
         },
       },

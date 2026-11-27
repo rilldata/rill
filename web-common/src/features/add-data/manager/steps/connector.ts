@@ -11,10 +11,13 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
-  type V1ConnectorDriver,
-  type V1GetInstanceResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type {
+  ConnectorDriver,
+  GetInstanceResponse,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-project-initialized.ts";
 import {
   waitForProjectParser,
@@ -71,7 +74,7 @@ export async function createConnector({
   runtimeClient: RuntimeClient;
   queryClient: QueryClient;
   connectorName: string;
-  connectorDriver: V1ConnectorDriver;
+  connectorDriver: PartialMessage<ConnectorDriver>;
   schemaName?: string;
   formValues: Record<string, unknown>;
   validate: boolean;
@@ -343,12 +346,11 @@ async function unsetOlapConnectorInRillYAML(
   let retryCount = 0;
   while (retryCount < ConnectorUnsetCheckMaxRetries) {
     try {
-      const runtimeInstanceResp =
-        queryClient.getQueryData<V1GetInstanceResponse>(
-          getRuntimeServiceGetInstanceQueryKey(runtimeClient.instanceId, {
-            sensitive: true,
-          }),
-        );
+      const runtimeInstanceResp = queryClient.getQueryData<GetInstanceResponse>(
+        getRuntimeServiceGetInstanceQueryKey(runtimeClient.instanceId, {
+          sensitive: true,
+        }),
+      );
 
       if (
         !runtimeInstanceResp?.instance || // type safety

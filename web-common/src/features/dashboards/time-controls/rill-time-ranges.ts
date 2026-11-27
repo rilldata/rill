@@ -91,8 +91,8 @@ export async function fetchTimeRanges({
   client: RuntimeClient;
   metricsViewName: string;
   rillTimes: string[];
-  timeDimension?: string | undefined;
   timeZone: string | undefined;
+  timeDimension?: string | undefined;
   executionTime?: string;
   cacheBust?: boolean;
 }) {

@@ -216,7 +216,7 @@ Don't forget the leading `/` when specifying the path for `ignore_paths`. This p
 
 ### `public_paths`
 
-_[array of string]_ - List of file or directory paths to expose over HTTP. Defaults to ['./public']
+_[array of string]_ - List of file or directory paths to expose over HTTP. Files in subdirectories of a listed directory are exposed as well. Defaults to ['./public']
 
 ### `ignore_paths`
 

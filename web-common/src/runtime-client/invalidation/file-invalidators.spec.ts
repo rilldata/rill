@@ -233,6 +233,25 @@ describe("handleFileEvent", () => {
     expect(eventBus.emit).toHaveBeenCalledWith("env-file-updated", "/.env");
   });
 
+  it("emits project-file-changed when a file is written or deleted", async () => {
+    for (const event of [
+      V1FileEvent.FILE_EVENT_WRITE,
+      V1FileEvent.FILE_EVENT_DELETE,
+    ]) {
+      await handleFileEvent(
+        { path: "/public/logo.svg", event, isDir: false },
+        fakeQueryClient(),
+        fakeRuntimeClient,
+        makeState(),
+      );
+    }
+
+    expect(vi.mocked(eventBus.emit).mock.calls).toEqual([
+      ["project-file-changed", "/public/logo.svg"],
+      ["project-file-changed", "/public/logo.svg"],
+    ]);
+  });
+
   it("delete on /.env emits env-file-updated so the env store clears stale keys", async () => {
     const qc = fakeQueryClient();
     const state = makeState();

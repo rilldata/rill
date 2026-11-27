@@ -1,10 +1,6 @@
 <script lang="ts">
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import {
-    getAlertDashboardName,
-    unwrapQueryData,
-    useAlertDashboardState,
-  } from "@rilldata/web-admin/features/alerts/selectors.ts";
+  import { getAlertDashboardName } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
@@ -20,6 +16,7 @@
   import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { readable } from "svelte/store";
 
   let {
     onClose,
@@ -55,9 +52,7 @@
 
   // svelte-ignore state_referenced_locally
   const exploreStateStore =
-    props.mode === "create"
-      ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
+    props.mode === "create" ? useExploreState(props.exploreName) : readable({}); // TODO: handle edit in a better way
 
   // The creator of an alert created from an embed has a field for their email, which always gets the alert:
   // in an embed, if rill.yaml configures `embeds.open_url`, since only that email gets the open link to the embedder's app;
@@ -87,8 +82,7 @@
     if (
       provider.isLoading ||
       (isEmbedded && $embedOpenUrlQuery.isPending) ||
-      !exploreState ||
-      Object.keys(exploreState).length === 0
+      !exploreState
     ) {
       return undefined;
     }

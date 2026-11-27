@@ -7,6 +7,7 @@ import (
 )
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
+	var tags []string
 	var pageSize uint32
 	var pageToken string
 
@@ -21,6 +22,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{
 				Org:       ch.Org,
+				Tags:      tags,
 				PageSize:  pageSize,
 				PageToken: pageToken,
 			})
@@ -45,6 +47,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
+	listCmd.Flags().StringSliceVar(&tags, "tag", nil, "Only list projects with any of these tags (repeat or separate with commas)")
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 

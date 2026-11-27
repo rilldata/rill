@@ -192,8 +192,14 @@ function isBookmarkActive(
   curUrlParams: URLSearchParams,
   filtersOnly: boolean,
 ) {
-  if (!filtersOnly)
-    return bookmarkUrlParams.toString() === curUrlParams.toString();
+  if (!filtersOnly) {
+    // Legacy proto bookmarks are converted to params in a different order than the dashboard writes them.
+    const sortedBookmarkParams = new URLSearchParams(bookmarkUrlParams);
+    sortedBookmarkParams.sort();
+    const sortedCurParams = new URLSearchParams(curUrlParams);
+    sortedCurParams.sort();
+    return sortedBookmarkParams.toString() === sortedCurParams.toString();
+  }
 
   return [...bookmarkUrlParams.entries()].every(([key, value]) => {
     const curValue = curUrlParams.get(key);

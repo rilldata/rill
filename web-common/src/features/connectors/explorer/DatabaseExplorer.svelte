@@ -2,14 +2,14 @@
   import { slide } from "svelte/transition";
   import { extractErrorMessage } from "../../../lib/errors";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let connector: V1AnalyzedConnector;
+  export let connector: AnalyzedConnector;
   export let store: ConnectorExplorerStore;
 
   const client = useRuntimeClient();

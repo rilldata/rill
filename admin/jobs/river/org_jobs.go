@@ -207,7 +207,7 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 		}
 	}
 
-	res, err := w.admin.DB.FindProjectsForOrganization(ctx, job.Args.OrgID, "", 100)
+	res, err := w.admin.DB.FindProjectsForOrganization(ctx, job.Args.OrgID, nil, "", 100)
 	if err != nil {
 		return fmt.Errorf("failed to find projects for organization %s: %w", job.Args.OrgID, err)
 	}
@@ -251,7 +251,7 @@ func (w *HibernateInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[H
 	}
 
 	for _, org := range orgs {
-		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
+		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, nil, "", 100)
 		if err != nil {
 			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
 		}

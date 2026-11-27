@@ -12,6 +12,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, displayName, description, defaultProjectRole, billingEmail string
+	var disableProjectDomainAccess bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -72,6 +73,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.BillingEmail = &billingEmail
 			}
 
+			if cmd.Flags().Changed("disable-project-domain-access") {
+				flagSet = true
+				req.DisableProjectDomainAccess = &disableProjectDomainAccess
+			}
+
 			if !flagSet {
 				return fmt.Errorf("at least one flag must be set")
 			}
@@ -93,6 +99,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&defaultProjectRole, "default-project-role", "", "Default role for members on new projects (options: admin, editor, viewer, none)")
 	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
+	editCmd.Flags().BoolVar(&disableProjectDomainAccess, "disable-project-domain-access", false, "Stop project admins from adding new email domain access rules; existing rules keep working (set to false to allow new rules again)")
 
 	return editCmd
 }

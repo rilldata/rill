@@ -2,11 +2,16 @@ import { getFullInitExploreState } from "@rilldata/web-common/features/dashboard
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
+  TypeCode,
   V1TimeGrain,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_ADVANCED_MEASURES,
   AD_BIDS_EXPLORE_INIT,
@@ -16,6 +21,7 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_INIT_WITH_TIME,
+  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "./test-data/data";
@@ -171,5 +177,37 @@ describe("correctExploreState pivot fields", () => {
       dim("domain"),
       measure(AD_BIDS_IMPRESSIONS_MEASURE),
     ]);
+  });
+});
+
+describe("correctExploreState filters", () => {
+  it("converts legacy string filter values to the dimension's type", () => {
+    const metricsView = {
+      ...AD_BIDS_METRICS_INIT_WITH_TIME,
+      dimensions: [
+        ...(AD_BIDS_METRICS_INIT_WITH_TIME.dimensions ?? []),
+        { name: "year", dataType: { code: TypeCode.CODE_INT64 } },
+      ],
+    } as V1MetricsViewSpec;
+    const dashboard = getFullInitExploreState(
+      "AdBids",
+      getInitExploreStateForTest(
+        metricsView,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY,
+      ),
+    );
+    dashboard.whereFilter = createAndExpression([
+      createInExpression("year", ["2023", "not a number"]),
+      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["2023"]),
+    ]);
+
+    correctExploreState(metricsView, dashboard);
+    expect(dashboard.whereFilter).toEqual(
+      createAndExpression([
+        createInExpression("year", [2023, "not a number"]),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["2023"]),
+      ]),
+    );
   });
 });

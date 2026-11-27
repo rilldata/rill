@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import {
   getFileTypeFromPath,
   inferSourceName,
@@ -189,7 +190,7 @@ describe("buildDuckDbQuery", () => {
 
 describe("maybeRewriteToDuckDb", () => {
   it("should rewrite s3 with connector name", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.parquet",
     };
@@ -205,7 +206,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should not rewrite s3 without connector name — considered as public source", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.csv",
     };
@@ -216,7 +217,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite gcs", () => {
-    const connector: V1ConnectorDriver = { name: "gcs" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "gcs" };
     const formValues: Record<string, unknown> = {
       path: "gs://bucket/data.json",
     };
@@ -229,7 +230,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite azure", () => {
-    const connector: V1ConnectorDriver = { name: "azure" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "azure" };
     const formValues: Record<string, unknown> = {
       path: "azure://container/data.parquet",
     };
@@ -242,7 +243,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite https with connector name", () => {
-    const connector: V1ConnectorDriver = { name: "https" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "https" };
     const formValues: Record<string, unknown> = {
       path: "https://api.example.com/data",
     };
@@ -256,7 +257,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite https without connector name — no create_secrets", () => {
-    const connector: V1ConnectorDriver = { name: "https" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "https" };
     const formValues: Record<string, unknown> = {
       path: "https://example.com/data.csv",
     };
@@ -267,7 +268,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite local_file", () => {
-    const connector: V1ConnectorDriver = { name: "local_file" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "local_file" };
     const formValues: Record<string, unknown> = { path: "/data/file.parquet" };
     const [result, values] = maybeRewriteToDuckDb(connector, formValues);
     expect(result.name).toBe("duckdb");
@@ -276,7 +277,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should rewrite sqlite with sqlite_scan", () => {
-    const connector: V1ConnectorDriver = { name: "sqlite" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "sqlite" };
     const formValues: Record<string, unknown> = {
       db: "/data/app.db",
       table: "users",
@@ -291,7 +292,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should not rewrite clickhouse", () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const formValues: Record<string, unknown> = { sql: "SELECT 1" };
     const [result, values] = maybeRewriteToDuckDb(connector, formValues);
     expect(result.name).toBe("clickhouse");
@@ -299,7 +300,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should not rewrite postgres", () => {
-    const connector: V1ConnectorDriver = { name: "postgres" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "postgres" };
     const formValues: Record<string, unknown> = { sql: "SELECT 1" };
     const [result, values] = maybeRewriteToDuckDb(connector, formValues);
     expect(result.name).toBe("postgres");
@@ -307,7 +308,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should not mutate the original connector object", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.csv",
     };
@@ -316,7 +317,7 @@ describe("maybeRewriteToDuckDb", () => {
   });
 
   it("should preserve existing create_secrets_from_connectors for s3", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.csv",
       create_secrets_from_connectors: "existing_connector",
@@ -331,7 +332,7 @@ describe("maybeRewriteToDuckDb", () => {
 
 describe("generateSourceYAML", () => {
   it("should produce basic model YAML with SQL", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -352,7 +353,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should replace secret properties with env var placeholders", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -368,7 +369,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should quote string properties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -383,7 +384,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should not quote non-string properties", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -401,7 +402,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should filter out empty string values", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -418,7 +419,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should filter out undefined values", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -435,7 +436,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should always exclude the name field", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -452,7 +453,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should include dev section for warehouse connectors", async () => {
-    const connector: V1ConnectorDriver = {
+    const connector: PartialMessage<ConnectorDriver> = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
@@ -474,7 +475,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should skip dev section for redshift", async () => {
-    const connector: V1ConnectorDriver = {
+    const connector: PartialMessage<ConnectorDriver> = {
       name: "redshift",
       implementsWarehouse: true,
     };
@@ -493,7 +494,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should skip dev section for non-warehouse connectors", async () => {
-    const connector: V1ConnectorDriver = {
+    const connector: PartialMessage<ConnectorDriver> = {
       name: "duckdb",
       implementsWarehouse: false,
     };
@@ -512,7 +513,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should skip dev section when no SQL", async () => {
-    const connector: V1ConnectorDriver = {
+    const connector: PartialMessage<ConnectorDriver> = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
@@ -529,7 +530,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should use connectorInstanceName as connector value", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -544,7 +545,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should use originalDriverName in header comment", async () => {
-    const connector: V1ConnectorDriver = { name: "duckdb" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "duckdb" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -561,7 +562,7 @@ describe("generateSourceYAML", () => {
   });
 
   it("should handle env var conflict resolution with existingEnvBlob", async () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const { envEditSession } = await makeTestEnvEditSession(
       connector.name,
       undefined,
@@ -582,7 +583,7 @@ describe("generateSourceYAML", () => {
 
 describe("prepareSourceFormData", () => {
   it("should strip auth_method from form values", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       auth_method: "access_keys",
       path: "s3://bucket/data.parquet",
@@ -592,7 +593,7 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should strip connector-step fields for s3", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       aws_access_key_id: "AKID",
       aws_secret_access_key: "secret",
@@ -609,7 +610,7 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should apply DuckDB rewrite for s3", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       path: "s3://bucket/data.parquet",
     };
@@ -622,7 +623,7 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should not mutate original formValues", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     const formValues: Record<string, unknown> = {
       auth_method: "access_keys",
       aws_access_key_id: "AKID",
@@ -636,13 +637,13 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should not mutate original connector", () => {
-    const connector: V1ConnectorDriver = { name: "s3" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "s3" };
     prepareSourceFormData(connector, { path: "s3://bucket/data.csv" });
     expect(connector.name).toBe("s3");
   });
 
   it("should pass through non-rewritten connectors", () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const formValues: Record<string, unknown> = {
       sql: "SELECT * FROM events",
     };
@@ -652,7 +653,7 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should strip connector-step fields for clickhouse", () => {
-    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "clickhouse" };
     const formValues: Record<string, unknown> = {
       host: "ch.example.com",
       port: 8443,
@@ -671,7 +672,7 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should handle https with DuckDB rewrite and defaultToJson", () => {
-    const connector: V1ConnectorDriver = { name: "https" };
+    const connector: PartialMessage<ConnectorDriver> = { name: "https" };
     const formValues: Record<string, unknown> = {
       path: "https://api.example.com/data",
     };
@@ -681,7 +682,9 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should handle connector with no schema gracefully", () => {
-    const connector: V1ConnectorDriver = { name: "unknown_connector" };
+    const connector: PartialMessage<ConnectorDriver> = {
+      name: "unknown_connector",
+    };
     const formValues: Record<string, unknown> = {
       sql: "SELECT 1",
       some_field: "value",
@@ -694,7 +697,9 @@ describe("prepareSourceFormData", () => {
   });
 
   it("should strip auth_method even when no schema exists", () => {
-    const connector: V1ConnectorDriver = { name: "unknown_connector" };
+    const connector: PartialMessage<ConnectorDriver> = {
+      name: "unknown_connector",
+    };
     const formValues: Record<string, unknown> = {
       auth_method: "oauth",
       sql: "SELECT 1",

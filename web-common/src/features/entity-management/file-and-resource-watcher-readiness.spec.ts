@@ -110,6 +110,38 @@ describe("watcher readiness during a controller restart", () => {
     },
   );
 
+  // The readiness check can fail while the stream itself still opens, e.g.
+  // when the project parser is admin-only and the user isn't an admin.
+  // Counting those failures as attempts left the UI on its fatal error page.
+  it("reopens when the readiness check fails for another reason", async () => {
+    watcher.start("http://runtime/sse");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+
+    vi.mocked(runtimeServiceGetResource).mockRejectedValue({
+      code: 7,
+      message: "action not allowed",
+    });
+    transports[0].fire("close");
+    await vi.advanceTimersByTimeAsync(8_000);
+
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+  });
+
+  // A readiness request can stay pending, e.g. queued behind slow queries,
+  // while the stream itself is reachable. It must not hold up the reconnect.
+  it("reopens when the readiness request never returns", async () => {
+    watcher.start("http://runtime/sse");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+
+    vi.mocked(runtimeServiceGetResource).mockReturnValue(new Promise(() => {}));
+    transports[0].fire("close");
+    await vi.advanceTimersByTimeAsync(25_000);
+
+    expect(get(watcher.status)).toBe(ConnectionStatus.OPEN);
+  });
+
   it("still closes when the controller never becomes available", async () => {
     watcher.start("http://runtime/sse");
     await vi.advanceTimersByTimeAsync(5_000);

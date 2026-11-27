@@ -146,3 +146,45 @@ func TestTimeAligned(t *testing.T) {
 		})
 	}
 }
+
+func TestCeilTime(t *testing.T) {
+	utc := time.UTC
+	saoPaulo, err := time.LoadLocation("America/Sao_Paulo")
+	require.NoError(t, err)
+	havana, err := time.LoadLocation("America/Havana")
+	require.NoError(t, err)
+	kathmandu, err := time.LoadLocation("Asia/Kathmandu")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		t              time.Time
+		grain          runtimev1.TimeGrain
+		tz             *time.Location
+		firstDayOfWeek uint32
+		want           time.Time
+	}{
+		{"zero time", time.Time{}, runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Time{}},
+		{"day aligned", time.Date(2024, 1, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Date(2024, 1, 15, 0, 0, 0, 0, utc)},
+		{"day not aligned", time.Date(2024, 1, 15, 12, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Date(2024, 1, 16, 0, 0, 0, 0, utc)},
+		// DST changes at midnight are not rounded: Sao Paulo skipped midnight on 2018-11-04, and Havana repeated it on 2024-11-03
+		{"day without a midnight", time.Date(2018, 11, 4, 12, 0, 0, 0, saoPaulo), runtimev1.TimeGrain_TIME_GRAIN_DAY, saoPaulo, 1, time.Date(2018, 11, 4, 12, 0, 0, 0, saoPaulo)},
+		{"day before a skipped midnight", time.Date(2018, 11, 3, 23, 30, 0, 0, saoPaulo), runtimev1.TimeGrain_TIME_GRAIN_DAY, saoPaulo, 1, time.Date(2018, 11, 3, 23, 30, 0, 0, saoPaulo)},
+		{"day between repeated midnights", time.Date(2024, 11, 3, 4, 30, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, havana, 1, time.Date(2024, 11, 3, 4, 30, 0, 0, utc)},
+		{"week from Wednesday", time.Date(2024, 1, 3, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, time.Date(2024, 1, 8, 0, 0, 0, 0, utc)},
+		{"week aligned Monday", time.Date(2024, 1, 8, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, time.Date(2024, 1, 8, 0, 0, 0, 0, utc)},
+		{"week starting Sunday", time.Date(2024, 1, 3, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 7, time.Date(2024, 1, 7, 0, 0, 0, 0, utc)},
+		{"month into next year", time.Date(2024, 12, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, time.Date(2025, 1, 1, 0, 0, 0, 0, utc)},
+		{"quarter", time.Date(2024, 2, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, time.Date(2024, 4, 1, 0, 0, 0, 0, utc)},
+		{"year", time.Date(2024, 4, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_YEAR, utc, 1, time.Date(2025, 1, 1, 0, 0, 0, 0, utc)},
+		// Kathmandu is UTC+05:45, so its hours start at 15 minutes past each UTC hour
+		{"hour with minute offset", time.Date(2024, 1, 10, 12, 20, 30, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, kathmandu, 1, time.Date(2024, 1, 10, 13, 15, 0, 0, utc)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ceilTime(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
+			require.True(t, tt.want.Equal(got), "want %s, got %s", tt.want, got)
+		})
+	}
+}

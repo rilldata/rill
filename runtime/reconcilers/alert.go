@@ -525,7 +525,8 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Get admin metadata for the alert (if an admin service does not support sending alerts, alerts will still work, the notifications just won't have open/edit links).
+	// Get admin metadata for the alert.
+	// Alerts only run if the admin service supports them, i.e. in Rill Cloud and not in Rill Developer.
 	var adminMeta *drivers.AlertMetadata
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
@@ -549,12 +550,16 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	var executeErr error
 	if err != nil {
 		switch {
+		case errors.Is(err, drivers.ErrNotImplemented):
+			// Alerts aren't checked, and nothing is added to the execution history.
+			r.C.Logger.Info("Skipped alert: admin service does not support alerts", zap.String("name", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			return nil
 		case isEmbedCreatedAlert(a):
 			// Alerts created from an embed run as the identity that the admin service resolves for the embed user.
 			// Without it, they would run without any identity, so they fail instead (e.g. if the embed user is missing or inactive).
 			// The failure is added to the execution history, so the owner sees why the alert didn't run.
 			executeErr = fmt.Errorf("failed to get alert metadata: %w", err)
-		case !errors.Is(err, drivers.ErrNotImplemented):
+		default:
 			return fmt.Errorf("failed to get alert metadata: %w", err)
 		}
 	}
@@ -858,9 +863,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		executionTime = current.ExecutionTime.AsTime()
 	}
 
-	// Generate the notification message to send (if any)
+	// Generate the notification message to send (if any).
+	// Alerts don't notify without admin metadata.
+	// It's only missing for alerts created from an embed whose owner couldn't be resolved (see executeAll), and the alert is effectively paused.
 	var msg *drivers.AlertStatus
-	if notify {
+	if notify && adminMeta != nil {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 			if !a.Spec.NotifyOnRecover {
@@ -911,12 +918,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 	}
 
-	// Alerts created from an embed don't notify without admin metadata,
-	// since it's only missing if their owner couldn't be resolved (see executeAll), and the alert is effectively paused.
 	embedCreated := isEmbedCreatedAlert(a)
-	if embedCreated && adminMeta == nil {
-		msg = nil
-	}
 
 	// Alerts created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
 	// So their notifications have no edit link; they have an unsubscribe link,
@@ -981,24 +983,22 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						AttachmentTooLarge: attachmentTooLarge,
 					}
 
-					// Set recipient-specific URLs if available from admin metadata.
-					// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
-					if adminMeta != nil && adminMeta.RecipientURLs != nil {
-						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok && embedCreated {
-							if recipientURLs.EmbedOwner {
-								opts.OpenLink = embedLink
-							}
-							opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
-						} else if ok {
-							// Use recipient-specific URLs (with magic token)
-							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
-							if err != nil {
-								return fmt.Errorf("failed to build recipient open url: %w", err)
-							}
-							opts.OpenLink = openLink
-							opts.EditLink = recipientURLs.EditURL
-							opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
+					// Set recipient-specific URLs from admin metadata.
+					// If the admin service sent no links for this recipient, we leave the links blank (no clickthrough available).
+					if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok && embedCreated {
+						if recipientURLs.EmbedOwner {
+							opts.OpenLink = embedLink
 						}
+						opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
+					} else if ok {
+						// Use recipient-specific URLs (with magic token)
+						openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+						if err != nil {
+							return fmt.Errorf("failed to build recipient open url: %w", err)
+						}
+						opts.OpenLink = openLink
+						opts.EditLink = recipientURLs.EditURL
+						opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
 					}
 
 					err := r.C.Runtime.Email.SendAlertStatus(opts)
@@ -1018,22 +1018,17 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if err != nil {
 						return err
 					}
-					// Note: adminMeta may not always be available (if outside of cloud). In that case, we leave the links blank (no clickthrough available).
-					msg.OpenLink = ""
-					msg.EditLink = ""
-					msg.UnsubscribeLink = ""
-					if adminMeta != nil && adminMeta.RecipientURLs != nil {
-						urls, ok := adminMeta.RecipientURLs[""]
-						if !ok {
-							return fmt.Errorf("failed to get recipient URLs for anon user")
-						}
-						openLink, err := addExecutionTime(urls.OpenURL, executionTime)
-						if err != nil {
-							return fmt.Errorf("failed to build recipient open url: %w", err)
-						}
-						msg.OpenLink = openLink
-						msg.EditLink = urls.EditURL
+					// Notifiers other than email aren't tied to a user, so they use the URLs for anonymous recipients (see executeAll).
+					urls, ok := adminMeta.RecipientURLs[""]
+					if !ok {
+						return fmt.Errorf("failed to get recipient URLs for anon user")
 					}
+					openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+					if err != nil {
+						return fmt.Errorf("failed to build recipient open url: %w", err)
+					}
+					msg.OpenLink = openLink
+					msg.EditLink = urls.EditURL
 					start := time.Now()
 					defer func() {
 						totalLatency := time.Since(start).Milliseconds()

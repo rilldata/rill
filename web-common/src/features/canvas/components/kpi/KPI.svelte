@@ -26,7 +26,7 @@
   import { AlertTriangleIcon } from "lucide-svelte";
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
-  import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import { getBigNumberMinWidth, resolveKPISize } from ".";
 
   type Query<T> = QueryObserverResult<T, Error>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
@@ -41,6 +41,7 @@
   export let timeZone: string | undefined;
   export let interval: Interval;
   export let sparkline: KPISpec["sparkline"];
+  export let size: KPISpec["size"] = undefined;
   export let hideTimeRange: boolean | undefined;
   export let comparisonOptions: KPISpec["comparison"];
   export let showTimeComparison: boolean;
@@ -77,6 +78,9 @@
   $: showSparkline = hasTimeSeries && sparkline !== "none";
   $: isSparkRight = sparkline === "right";
 
+  // The size preset; the styles below key off `data-size`.
+  $: kpiSize = resolveKPISize(size);
+
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
   $: primaryTotal = (primaryTotalResult?.data?.data?.[0]?.[
@@ -106,7 +110,8 @@
       ? (currentValue - comparisonVal) / comparisonVal
       : null;
 
-  $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
+  // Capped at the card's width, so the value stays centered in a narrow card.
+  $: dataMinWidth = `min(${getBigNumberMinWidth(kpiSize, comparisonOptions?.length ?? 0)}px, 100%)`;
 
   // Single source of truth for all computed values
   $: computedValues = {
@@ -202,14 +207,14 @@
   }
 </script>
 
-<div class="wrapper" class:spark-right={isSparkRight}>
+<div class="wrapper" class:spark-right={isSparkRight} data-size={kpiSize}>
   <Tooltip.Root>
     <Tooltip.Trigger>
       {#snippet child({ props })}
         <div
           {...props}
           class="data-wrapper overflow-hidden cursor-pointer"
-          style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+          style:min-width={dataMinWidth}
           aria-label={m.kpi_data_aria({ measure: measure?.name ?? "" })}
           role="button"
           tabindex="0"
@@ -240,7 +245,7 @@
           </h2>
 
           <div
-            class="big-number h-9 grid place-content-center"
+            class="big-number grid place-content-center"
             class:hovered-value={hoveredPoints?.[0]?.value != null}
             role="button"
             tabindex="0"
@@ -250,11 +255,11 @@
             onblur={handleLeaveOrBlur}
           >
             {#if !supportsTotal}
-              <span class="text-fg-muted italic text-sm font-normal">
+              <span class="no-total text-fg-muted italic font-normal">
                 {m.kpi_no_total()}
               </span>
             {:else if primaryTotalResult.isError}
-              <AlertTriangleIcon class=" text-red-300" size="34px" />
+              <AlertTriangleIcon class="error-icon text-red-300" />
             {:else if primaryTotalResult.isLoading || !measure}
               <div class="loading h-6 w-16"></div>
             {:else if primaryTotalResult.data}
@@ -294,7 +299,6 @@
                     class="comparison-value {comparisonDeltaColorClass}"
                     class:ui-copy-disabled-faint={computedValues.delta === null}
                     class:italic={computedValues.delta === null}
-                    class:text-sm={computedValues.delta === null}
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("delta")}
@@ -376,7 +380,7 @@
       class:saturate-0={primarySparklineResult.isFetching}
     >
       {#if primarySparklineResult.isError}
-        <AlertTriangleIcon class="text-red-300" size="34px" />
+        <AlertTriangleIcon class="error-icon text-red-300" />
       {:else if primarySparklineResult.isLoading || !timeGrain || !timeZone || !measure?.name}
         <div
           class="size-full mt-2 !bg-theme-50 loading !rounded-md min-h-10"
@@ -399,8 +403,67 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex flex-col items-center justify-center size-full gap-2;
+    @apply flex flex-col items-center justify-center size-full;
+    gap: var(--kpi-gap);
     container-type: inline-size;
+
+    /*
+     * Size preset tokens, here for the default "medium". Each preset scales
+     * the card's text and spacing together; the grid scales the card padding
+     * and minimum width to match (see KPIGrid.svelte and getMinWidth).
+     */
+    --kpi-value-size: 1.875rem;
+    --kpi-value-height: 2.25rem;
+    --kpi-text-size: 0.875rem;
+    --kpi-text-height: 1.25rem;
+    --kpi-label-max-width: 10rem;
+    --kpi-gap: 0.5rem;
+    --kpi-sparkline-min-height: 3rem;
+
+    /*
+     * No font-size here on purpose: the text tokens are set on each text element.
+     * The card's own size only reaches the time range caption and the sparkline's dates,
+     * which keep the page's 12px at small and medium; large and xlarge set it below.
+     */
+  }
+
+  .wrapper[data-size="small"] {
+    --kpi-value-size: 1.25rem;
+    --kpi-value-height: 1.75rem;
+    --kpi-text-size: 0.75rem;
+    --kpi-text-height: 1rem;
+    --kpi-label-max-width: 8rem;
+    --kpi-gap: 0.25rem;
+    --kpi-sparkline-min-height: 2rem;
+  }
+
+  /*
+   * The larger values shrink with the card (cqi is relative to `.wrapper`)
+   * once it is narrower than their value column (see getBigNumberMinWidth),
+   * instead of being clipped. 18.75cqi is the medium ratio of a 30px value
+   * to its 160px column, so whatever fits a medium column fits here too.
+   */
+  .wrapper[data-size="large"] {
+    --kpi-value-size: min(2.75rem, 18.75cqi);
+    --kpi-value-height: 3.25rem;
+    --kpi-text-size: 1rem;
+    --kpi-text-height: 1.5rem;
+    --kpi-label-max-width: 14rem;
+    --kpi-gap: 0.75rem;
+    --kpi-sparkline-min-height: 4rem;
+    /* The time range caption and the sparkline's dates (see .wrapper). */
+    font-size: 0.875rem;
+  }
+
+  .wrapper[data-size="xlarge"] {
+    --kpi-value-size: min(4rem, 18.75cqi);
+    --kpi-value-height: 4.5rem;
+    --kpi-text-size: 1.125rem;
+    --kpi-text-height: 1.75rem;
+    --kpi-label-max-width: 18rem;
+    --kpi-gap: 1rem;
+    --kpi-sparkline-min-height: 5rem;
+    font-size: 1rem;
   }
 
   .wrapper.spark-right {
@@ -420,7 +483,9 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-fg-primary;
+    @apply text-center font-medium text-fg-primary;
+    font-size: var(--kpi-text-size);
+    line-height: var(--kpi-text-height);
   }
 
   :global(.dark) .measure-name {
@@ -428,11 +493,15 @@
   }
 
   .spark-right .measure-name {
-    @apply text-left max-w-40;
+    @apply text-left;
+    max-width: var(--kpi-label-max-width);
   }
 
   .big-number {
-    @apply text-3xl font-medium text-fg-primary;
+    @apply font-medium text-fg-primary;
+    font-size: var(--kpi-value-size);
+    line-height: var(--kpi-value-height);
+    height: var(--kpi-value-height);
   }
 
   :global(.dark) .big-number {
@@ -443,12 +512,37 @@
     @apply text-theme-500;
   }
 
+  /* Shown in place of the value of a measure that has no total. */
+  .no-total {
+    font-size: var(--kpi-text-size);
+    line-height: var(--kpi-text-height);
+  }
+
+  /*
+   * The error icons scale with the value:
+   * 2px shorter than its line, which keeps them at 34px at medium.
+   */
+  .wrapper :global(.error-icon) {
+    width: calc(var(--kpi-value-height) - 0.125rem);
+    height: calc(var(--kpi-value-height) - 0.125rem);
+  }
+
   .comparison-value-wrapper {
-    @apply flex items-center gap-x-2 text-sm -mb-[3px] truncate flex-none h-5;
+    @apply flex items-center gap-x-2 -mb-[3px] truncate flex-none;
+    font-size: var(--kpi-text-size);
+    line-height: var(--kpi-text-height);
+    height: var(--kpi-text-height);
+  }
+
+  /* The "vs <comparison>" label under the comparison values. */
+  .data-wrapper > p {
+    font-size: var(--kpi-text-size);
+    line-height: var(--kpi-text-height);
   }
 
   .sparkline-wrapper {
-    @apply size-full flex items-center justify-center flex-shrink min-h-12;
+    @apply size-full flex items-center justify-center flex-shrink;
+    min-height: var(--kpi-sparkline-min-height);
   }
 
   .spark-right .sparkline-wrapper {
@@ -473,6 +567,43 @@
     }
 
     .spark-right .measure-name {
+      max-width: 100% !important;
+      text-align: center !important;
+    }
+  }
+
+  /*
+   * The larger presets need a wider value column, so their side sparkline
+   * gives way earlier: once the card cannot fit the value column, the gap
+   * and about 100px of sparkline. These query the card itself (`.wrapper`).
+   */
+  @container (inline-size < 352px) {
+    [data-size="large"].spark-right .sparkline-wrapper {
+      display: none;
+    }
+
+    [data-size="large"].spark-right .data-wrapper {
+      align-items: center !important;
+      flex: 0 2 auto !important;
+    }
+
+    [data-size="large"].spark-right .measure-name {
+      max-width: 100% !important;
+      text-align: center !important;
+    }
+  }
+
+  @container (inline-size < 464px) {
+    [data-size="xlarge"].spark-right .sparkline-wrapper {
+      display: none;
+    }
+
+    [data-size="xlarge"].spark-right .data-wrapper {
+      align-items: center !important;
+      flex: 0 2 auto !important;
+    }
+
+    [data-size="xlarge"].spark-right .measure-name {
       max-width: 100% !important;
       text-align: center !important;
     }

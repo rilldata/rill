@@ -1,20 +1,14 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
-  createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  V1AlertSpec,
-  V1ExploreSpec,
-} from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { derived, type Readable, readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
 export function useAlerts(client: RuntimeClient, enabled = true) {
   return createRuntimeServiceListResources(
@@ -107,42 +101,6 @@ export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
         select: (data) =>
           !data.resource?.alert?.spec?.annotations?.["admin_owner_user_id"] &&
           !data.resource?.alert?.spec?.annotations?.["admin_embed_owner_id"],
-      },
-    },
-  );
-}
-
-export function useAlertDashboardState(
-  client: RuntimeClient,
-  alertSpec: V1AlertSpec | undefined,
-) {
-  if (!alertSpec) {
-    return readable({
-      data: <Partial<ExploreState>>{},
-    });
-  }
-
-  const exploreName = getExploreName(
-    alertSpec.annotations?.web_open_path ?? "",
-  );
-  const webState = alertSpec.annotations?.web_open_state ?? "";
-  if (!webState) {
-    return readable({
-      data: <Partial<ExploreState>>{},
-    });
-  }
-
-  return createRuntimeServiceGetExplore(
-    client,
-    { name: exploreName },
-    {
-      query: {
-        select: (data) =>
-          getDashboardStateFromUrl(
-            webState,
-            data.metricsView?.metricsView?.state?.validSpec ?? {},
-            data.explore?.explore?.state?.validSpec as V1ExploreSpec,
-          ),
       },
     },
   );

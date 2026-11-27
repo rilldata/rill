@@ -10,7 +10,7 @@ func sourceReader(paths []string, format string, ingestionProps map[string]any) 
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
 		// CSV reader
 		return generateReadCsvStatement(paths, ingestionProps)
-	} else if strings.Contains(format, ".parquet") {
+	} else if containsAny(format, []string{".parquet"}) {
 		// Parquet reader
 		return generateReadParquetStatement(paths, ingestionProps)
 	} else if containsAny(format, []string{".json", ".ndjson"}) {

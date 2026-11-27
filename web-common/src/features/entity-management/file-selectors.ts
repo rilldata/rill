@@ -2,8 +2,9 @@ import {
   createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { ListFilesResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import type { PartialMessage } from "@bufbuild/protobuf";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 
@@ -78,7 +79,7 @@ export async function getFileNamesInDirectory(
 }
 
 export function useFileNamesInDirectorySelector(
-  data: V1ListFilesResponse,
+  data: PartialMessage<ListFilesResponse>,
   directoryPath: string,
 ) {
   if (!data.files) {
@@ -141,7 +142,7 @@ export function useDirectoryNamesInDirectory(
 }
 
 export function useDirectoryNamesInDirectorySelector(
-  data: V1ListFilesResponse,
+  data: PartialMessage<ListFilesResponse>,
   directoryPath: string,
 ) {
   if (!data.files) {

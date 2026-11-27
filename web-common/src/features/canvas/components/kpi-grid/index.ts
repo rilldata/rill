@@ -17,6 +17,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import { DEFAULT_KPI_SIZE, KPI_SIZES, type KPISize } from "../kpi";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
@@ -34,6 +35,15 @@ export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "percent_change",
 ];
 
+// Labels of the Size switcher's options.
+// They are functions, so each label is read when the inspector opens.
+const KPI_SIZE_LABELS: Record<KPISize, () => string> = {
+  small: () => m.canvas_size_small_option(),
+  medium: () => m.canvas_size_medium_option(),
+  large: () => m.canvas_size_large_option(),
+  xlarge: () => m.canvas_size_xlarge_option(),
+};
+
 export interface KPIGridSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -43,6 +53,8 @@ export interface KPIGridSpec
   adhoc_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
+  // Size preset of the KPI cards. Defaults to "medium"
+  size?: KPISize;
   // Defaults to false if undefined;
   hide_time_range?: boolean;
   // Defaults to "delta" and "percent_change"
@@ -116,6 +128,19 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
           showInUI: false,
         },
         ...(hasTimeSeries ? timeSeriesOptions : {}),
+        size: {
+          type: "switcher_tab",
+          optional: true,
+          label: m.canvas_size_label(),
+          meta: {
+            default: DEFAULT_KPI_SIZE,
+            omitDefault: true,
+            options: KPI_SIZES.map((size) => ({
+              label: KPI_SIZE_LABELS[size](),
+              value: size,
+            })),
+          },
+        },
         ...getCommonOptions(),
       },
       filter: getFilterOptions(),

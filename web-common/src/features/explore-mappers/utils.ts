@@ -1,22 +1,12 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  mapV1TimeRangeToSelectedComparisonTimeRange,
-  mapV1TimeRangeToSelectedTimeRange,
-  PreviousCompleteRangeMap,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import {
   type ExploreLinkError,
   ExploreLinkErrorType,
 } from "@rilldata/web-common/features/explore-mappers/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  TimeComparisonOption,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
   getQueryServiceMetricsViewTimeRangeQueryKey,
@@ -28,104 +18,8 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1TimeRange,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
-// We are manually sending in duration, offset and round to grain for previous complete ranges.
-// This is to map back that split
-const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
-for (const preset in PreviousCompleteRangeMap) {
-  const range: V1TimeRange = PreviousCompleteRangeMap[preset];
-  PreviousCompleteRangeReverseMap[
-    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
-  ] = preset as TimeRangePreset;
-}
-
-export async function fillTimeRange(
-  client: RuntimeClient,
-  exploreSpec: V1ExploreSpec,
-  exploreState: ExploreState,
-  reqTimeRange: V1TimeRange | undefined,
-  reqComparisonTimeRange: V1TimeRange | undefined,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  executionTime?: string,
-) {
-  // Metrics views without a time dimension have no time range to fill;
-  // the runtime ignores a time range that does not name a time dimension.
-  if (!timeRangeSummary) {
-    // A range on another time dimension does filter the query,
-    // but the explore has no time controls to show it.
-    const timeDimension =
-      reqTimeRange?.timeDimension || reqComparisonTimeRange?.timeDimension;
-    if (timeDimension) {
-      throw new Error(
-        `The explore cannot show this query's time range on "${timeDimension}".`,
-      );
-    }
-    return;
-  }
-
-  const endTime =
-    executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
-
-  if (reqTimeRange) {
-    exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
-      reqTimeRange,
-      timeRangeSummary,
-      endTime,
-    );
-    if (
-      exploreState.selectedTimeRange?.start &&
-      exploreState.selectedTimeRange?.end &&
-      executionTime
-    ) {
-      exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
-    }
-  }
-
-  if (reqComparisonTimeRange) {
-    if (
-      (!reqComparisonTimeRange.isoOffset &&
-        reqComparisonTimeRange.isoDuration) ||
-      (reqComparisonTimeRange.isoOffset &&
-        reqComparisonTimeRange.isoOffset === reqComparisonTimeRange.isoDuration)
-    ) {
-      exploreState.selectedComparisonTimeRange = {
-        name: TimeComparisonOption.CONTIGUOUS,
-        start: undefined as unknown as Date,
-        end: undefined as unknown as Date,
-      };
-    } else {
-      exploreState.selectedComparisonTimeRange =
-        mapV1TimeRangeToSelectedComparisonTimeRange(
-          reqComparisonTimeRange,
-          timeRangeSummary,
-          endTime,
-        );
-    }
-
-    if (exploreState.selectedComparisonTimeRange) {
-      exploreState.selectedComparisonTimeRange.interval =
-        exploreState.selectedTimeRange?.interval;
-    }
-    exploreState.showTimeComparison = true;
-  }
-
-  // Resolve time range overriding ref to `executionTime` and set to custom.
-  // This keeps the time range consistent regardless of when the link is opened.
-  [exploreState.selectedTimeRange] = await resolveTimeRanges(
-    client,
-    exploreSpec,
-    [exploreState.selectedTimeRange],
-    exploreState.selectedTimezone,
-    executionTime,
-  );
-  if (exploreState.selectedTimeRange) {
-    exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
-  }
-}
 
 // Capture everything after "/explore/" up to the next path, query, or hash boundary.
 // This mirrors the backend's exploreNameFromAnnotations, which decodes the entire segment

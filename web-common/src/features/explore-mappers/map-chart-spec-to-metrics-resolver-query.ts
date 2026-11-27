@@ -109,7 +109,7 @@ const CHART_CHANNELS = [
 
 /**
  * Maps the spec of a `create_chart` call onto a metrics resolver query, so that
- * {@link mapMetricsResolverQueryToDashboard} can turn it into explore state the same way it does
+ * {@link convertMetricsResolverQueryToUrlParams} can turn it into explore url params the same way it does
  * for a `query_metrics_view` call. Quantitative fields become measures (all of `fields` for a
  * multi-measure chart), temporal fields become the time dimension floored at the chart's grain,
  * and every other field becomes a dimension. Time ranges and the `where` filter are shared with

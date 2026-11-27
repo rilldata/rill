@@ -6,6 +6,7 @@ import {
   buildTagIndex,
   type DimensionTag,
 } from "@rilldata/web-common/components/menu/tag-utils.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export function getAllTagsForResources(
   resources: V1Resource[],
@@ -20,8 +21,8 @@ export function getAllTagsForResources(
 
 export function getTagFilterLabel(tags: string[]) {
   return tags.length === 0
-    ? "All tags"
+    ? m.status_all_tags()
     : tags.length === 1
       ? tags[0]
-      : `${tags[0]}, +${tags.length - 1} other${tags.length > 2 ? "s" : ""}`;
+      : m.status_levels_selected({ first: tags[0], count: tags.length - 1 });
 }

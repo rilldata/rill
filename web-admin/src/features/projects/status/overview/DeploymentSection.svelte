@@ -16,6 +16,7 @@
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
 
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { structToJson } from "@rilldata/web-common/lib/proto-utils";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
@@ -115,7 +116,13 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
+  // Spread so every field the helper reads carries over; only the Struct config needs converting.
+  $: olapEngineLabel = getOlapEngineLabel(
+    olapConnector && {
+      ...olapConnector,
+      config: structToJson(olapConnector.config),
+    },
+  );
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );

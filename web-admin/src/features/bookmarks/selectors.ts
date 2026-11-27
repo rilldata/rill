@@ -19,7 +19,6 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -37,6 +36,7 @@ import type {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
+import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
 export function getBookmarksQueryOptions(
   orgAndProjectNameStore: OrgAndProjectNameStore,
@@ -156,18 +156,13 @@ export function getHomeBookmarkExploreState(
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
       const exploreSpec = exploreSpecResp?.explore ?? {};
 
-      if (homeBookmark.data) {
-        // Legacy bookmark data stored in proto format.
-        const exploreStateFromLegacyProto = getDashboardStateFromUrl(
-          homeBookmark.data,
-          metricsViewSpec,
-          exploreSpec,
-        );
-        return exploreStateFromLegacyProto;
-      }
+      const urlSearch = homeBookmark.data
+        ? // Legacy bookmark data stored in proto format.
+          convertProtoToUrlParams(homeBookmark.data).toString() // TODO: any way to avoid URLSearchParams => string => URLSearchParams?
+        : homeBookmark.urlSearch;
 
       return getExploreStateFromHomeBookmarkUrl(
-        homeBookmark.urlSearch ?? "",
+        urlSearch ?? "",
         metricsViewSpec,
         exploreSpec,
         timeRangeResp?.timeRangeSummary,

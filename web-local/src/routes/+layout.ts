@@ -7,8 +7,8 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
+import type { ListFilesResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
 import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
@@ -76,10 +76,10 @@ export async function load({ url, depends, untrack, route }) {
   // (e.g., files/[...file]/+page.ts) can access it before components render.
   fileArtifacts.setClient(client, new RuntimeFileIO());
 
-  let files: V1ListFilesResponse;
+  let files: ListFilesResponse;
   for (let attempt = 0; ; attempt++) {
     try {
-      files = await queryClient.fetchQuery<V1ListFilesResponse>({
+      files = await queryClient.fetchQuery<ListFilesResponse>({
         queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
         queryFn: ({ signal }) => {
           return runtimeServiceListFiles(client, {}, { signal });

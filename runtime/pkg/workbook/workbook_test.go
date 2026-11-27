@@ -714,6 +714,189 @@ func TestWriteNarrowBlocks(t *testing.T) {
 	require.Contains(t, ranges, "A19:I19")
 }
 
+func TestWriteTextParts(t *testing.T) {
+	// A markdown component's text and tables are laid out in reading order within its block,
+	// and a table whose rows hold different measures takes each row's number format.
+	textPart := func(text string) *runtimev1.WorkbookTextPart {
+		return &runtimev1.WorkbookTextPart{Part: &runtimev1.WorkbookTextPart_Text{Text: text}}
+	}
+	tablePart := func(id string) *runtimev1.WorkbookTextPart {
+		return &runtimev1.WorkbookTextPart{Part: &runtimev1.WorkbookTextPart_DataSheetId{DataSheetId: id}}
+	}
+	req := testRequest(t)
+	req.DataSheets = append(req.DataSheets, &runtimev1.WorkbookDataSheet{
+		Id:    "scorecard",
+		Title: "Scorecard",
+		Columns: []*runtimev1.WorkbookColumn{
+			{Name: "col_1", DisplayName: "Metric", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_STRING},
+			{Name: "col_2", DisplayName: "Actual", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER},
+			{Name: "col_3", DisplayName: "Progress", Type: runtimev1.WorkbookColumnType_WORKBOOK_COLUMN_TYPE_NUMBER, NumberFormat: "0.0%"},
+		},
+		Rows: []*structpb.ListValue{
+			row(t, "Spend", 1234567.891, 0.833),
+			row(t, "Deals", 12, 0.8),
+			row(t, "Win rate", 0.25, "n/a"),
+		},
+		RowNumberFormats: []string{`"$"#,##0.00`, "#,##0", "0.0%"},
+	})
+	req.DashboardSheets[0].Blocks = []*runtimev1.WorkbookBlock{
+		{
+			Component: "scorecard", Geometry: geo(0, 0, 600, 300),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Parts: []*runtimev1.WorkbookTextPart{
+				textPart("Scorecard\nFiscal year 2026"),
+				tablePart("scorecard"),
+				textPart("Targets are set per quarter."),
+			}}},
+		},
+		{
+			// Shorter than its table's preview.
+			Component: "short", Geometry: geo(620, 0, 300, 80),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Parts: []*runtimev1.WorkbookTextPart{tablePart("lines")}}},
+		},
+		{
+			// Cards that sit side by side on the dashboard read as more lines than the component is tall.
+			Component: "cards", Geometry: geo(0, 320, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: "Revenue\n$1.1M\nDeals\n140\nWin rate\n30%"}},
+		},
+		{
+			// Beside it, more cards that need more rows still.
+			Component: "more-cards", Geometry: geo(840, 320, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: "Spend\n$40K\nClicks\n9.1K\nCPC\n$4.40\nCTR\n1.2%"}},
+		},
+		{
+			Component: "styles-only", Geometry: geo(420, 320, 400, 100),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{}},
+		},
+		{
+			Component: "below", Title: "Below", Geometry: geo(0, 400, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
+		},
+		{
+			// More lines than the 500 rows the cap on a block's side would give.
+			Component: "long", Geometry: geo(0, 480, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: strings.Repeat("Line\n", 519) + "Last line"}},
+		},
+		{
+			Component: "after", Title: "After", Geometry: geo(0, 560, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
+		},
+		{
+			// More text than a cell holds.
+			Component: "huge", Geometry: geo(0, 640, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Text{Text: &runtimev1.WorkbookTextBlock{Text: strings.Repeat("Line\n", 7000)}},
+		},
+		{
+			Component: "end", Title: "End", Geometry: geo(0, 720, 400, 60),
+			Content: &runtimev1.WorkbookBlock_Note{Note: &runtimev1.WorkbookNoteBlock{Text: "No data"}},
+		},
+	}
+	var buf bytes.Buffer
+	require.NoError(t, Write(&buf, req))
+	f, err := excelize.OpenReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	defer f.Close()
+
+	const dashboard = "Campaign report"
+	cell := func(sheet, ref string) string {
+		v, err := f.GetCellValue(sheet, ref)
+		require.NoError(t, err)
+		return v
+	}
+	merged, err := f.GetMergeCells(dashboard)
+	require.NoError(t, err)
+	var ranges []string
+	for _, m := range merged {
+		ranges = append(ranges, m.GetStartAxis()+":"+m.GetEndAxis())
+	}
+
+	// The 600 by 300 px block spans nine columns and fourteen rows from row 8.
+	// The text above the table takes a row per line.
+	require.Equal(t, "Scorecard\nFiscal year 2026", cell(dashboard, "A8"))
+	require.Contains(t, ranges, "A8:I9")
+	// The table takes its header, its three rows and the link, with compact numbers in each row's format.
+	require.Equal(t, "Metric", cell(dashboard, "A10"))
+	require.Equal(t, "Actual", cell(dashboard, "D10"))
+	require.Equal(t, "Progress", cell(dashboard, "F10"))
+	require.Equal(t, "Spend", cell(dashboard, "A11"))
+	require.Equal(t, "$1.2M", cell(dashboard, "D11"))
+	require.Equal(t, "83.3%", cell(dashboard, "F11"))
+	require.Equal(t, "25.0%", cell(dashboard, "D13"))
+	// Text in a number column stays text.
+	require.Equal(t, "n/a", cell(dashboard, "F13"))
+	require.Equal(t, "Full data: Data - Scorecard (3 rows)", cell(dashboard, "A14"))
+	ok, link, err := f.GetCellHyperLink(dashboard, "A14")
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "'Data - Scorecard'!A1", link)
+	// A blank row, then the text below the table fills the rest of the block.
+	require.Equal(t, "", cell(dashboard, "A15"))
+	require.Equal(t, "Targets are set per quarter.", cell(dashboard, "A16"))
+	require.Contains(t, ranges, "A16:I21")
+
+	// A text block grows to fit its content instead of cutting it off, and pushes the blocks below it down.
+	// The 80 px block has three rows where its table's preview needs four, so the blocks below start a row later.
+	require.Equal(t, "Line Item", cell(dashboard, "J8"))
+	require.Equal(t, "Display", cell(dashboard, "J9"))
+	require.Equal(t, "43.2M", cell(dashboard, "L9"))
+	require.Equal(t, "Video", cell(dashboard, "J10"))
+	require.Equal(t, "Full data: Data - Line items (2 rows), 2 more columns", cell(dashboard, "J11"))
+	// The 60 px blocks have two rows each, for six and eight lines. They grow four and six rows,
+	// and the block 80 px below their tops moves by the larger growth, so it starts six more rows later.
+	require.Equal(t, "Revenue\n$1.1M\nDeals\n140\nWin rate\n30%", cell(dashboard, "A25"))
+	require.Contains(t, ranges, "A25:E30")
+	require.Equal(t, "Spend\n$40K\nClicks\n9.1K\nCPC\n$4.40\nCTR\n1.2%", cell(dashboard, "N25"))
+	require.Contains(t, ranges, "N25:R32")
+	require.Equal(t, "Below", cell(dashboard, "A35"))
+	// A long text keeps every one of its 520 rows, and the block below it starts after the last of them.
+	// It has more line feeds than a cell shows, so it fills cells of 254 lines, one below the other.
+	require.Contains(t, ranges, "A39:E292")
+	require.Contains(t, ranges, "A293:E546")
+	require.Equal(t, strings.Repeat("Line\n", 11)+"Last line", cell(dashboard, "A547"))
+	require.Contains(t, ranges, "A547:E558")
+	require.Equal(t, "After", cell(dashboard, "A561"))
+	// A text longer still fills more such cells and moves the blocks below it as far.
+	require.Equal(t, strings.Repeat("Line\n", 253)+"Line", cell(dashboard, "A565"))
+	require.Contains(t, ranges, "A565:E818")
+	require.Equal(t, strings.Repeat("Line\n", 253)+"Line", cell(dashboard, "A819"))
+	require.Equal(t, strings.Repeat("Line\n", 142), cell(dashboard, "A7423"))
+	require.Contains(t, ranges, "A7423:E7565")
+	require.Equal(t, "End", cell(dashboard, "A7568"))
+
+	// A block without text or tables leaves its cells alone instead of merging them into one empty cell.
+	require.Equal(t, "", cell(dashboard, "G25"))
+	for _, r := range ranges {
+		require.False(t, strings.HasPrefix(r, "G25:"), "unexpected merge %s", r)
+	}
+
+	const data = "Data - Scorecard"
+	require.Equal(t, "$1,234,567.89", cell(data, "B2"))
+	require.Equal(t, "12", cell(data, "B3"))
+	require.Equal(t, "25.0%", cell(data, "B4"))
+	require.Equal(t, "83.3%", cell(data, "C2"))
+	require.Equal(t, "n/a", cell(data, "C4"))
+}
+
+func TestCellTexts(t *testing.T) {
+	long := strings.Repeat("x", excelize.TotalCellChars)
+	tests := []struct {
+		name string
+		text string
+		want []string
+	}{
+		{"fits", "a\nb", []string{"a\nb"}},
+		{"line feeds", strings.Repeat("a\n", 300), []string{strings.Repeat("a\n", 253) + "a", strings.Repeat("a\n", 46)}},
+		{"characters", long[:20_000] + "\n" + long[:20_000], []string{long[:20_000], long[:20_000]}},
+		{"long line", "a\n" + long + "yz\nb", []string{"a", long, "yz\nb"}},
+		// A character outside the Basic Multilingual Plane takes two UTF-16 units and is never split.
+		{"surrogate pair", long[1:] + "😀", []string{long[1:], "😀"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, cellTexts(tt.text))
+		})
+	}
+}
+
 func TestWriteLongCanvas(t *testing.T) {
 	// Blocks far down a long canvas keep their own position instead of piling up at a cap.
 	req := testRequest(t)
@@ -860,6 +1043,15 @@ func TestValidate(t *testing.T) {
 				req.DashboardSheets[0].Blocks[4].GetTable().DataSheetIds = []string{"nope"}
 			},
 			want: `unknown data sheet "nope"`,
+		},
+		{
+			name: "text references unknown sheet",
+			mutate: func(req *runtimev1.CanvasWorkbookExportRequest) {
+				req.DashboardSheets[0].Blocks[5].GetText().Parts = []*runtimev1.WorkbookTextPart{
+					{Part: &runtimev1.WorkbookTextPart_DataSheetId{DataSheetId: "nope"}},
+				}
+			},
+			want: `text "md" references unknown data sheet "nope"`,
 		},
 		{
 			name: "kpi trend column unknown",

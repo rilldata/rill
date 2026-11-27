@@ -12,6 +12,7 @@
     Button,
     type ButtonType,
   } from "@rilldata/web-common/components/button/index.js";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   // A simple confirm/cancel alert dialog. Open state is controlled by the caller
   // (open + onOpenChange) so it can be driven by any kind of pending-action state.
@@ -31,7 +32,7 @@
     <AlertDialogFooter>
       <AlertDialogCancel>
         {#snippet child({ props })}
-          <Button {...props} large type="secondary">Cancel</Button>
+          <Button {...props} large type="secondary">{m.common_cancel()}</Button>
         {/snippet}
       </AlertDialogCancel>
       <AlertDialogAction>
