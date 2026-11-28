@@ -1272,6 +1272,23 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/reports/{name}"};
   }
 
+  // CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+  // It can only be called by the project's primary deployment, for the user of its session.
+  // It's currently only called by AI tools in the runtime, so it only delivers to project members:
+  // recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+  rpc CreateReportForUser(CreateReportForUserRequest) returns (CreateReportForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/reports/for-user",
+      body: "*"
+    };
+  }
+
+  // DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+  // It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+  rpc DeleteReportForUser(DeleteReportForUserRequest) returns (DeleteReportForUserResponse) {
+    option (google.api.http) = {delete: "/v1/projects/{project_id}/reports/{name}/for-user"};
+  }
+
   // TriggerReport triggers an ad-hoc report run
   rpc TriggerReport(TriggerReportRequest) returns (TriggerReportResponse) {
     option (google.api.http) = {
@@ -1315,6 +1332,23 @@ service AdminService {
   // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
   rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/alerts/{name}"};
+  }
+
+  // CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+  // It can only be called by the project's primary deployment, for the user of its session.
+  // It's currently only called by AI tools in the runtime, so it only notifies project members:
+  // recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+  rpc CreateAlertForUser(CreateAlertForUserRequest) returns (CreateAlertForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/alerts/for-user",
+      body: "*"
+    };
+  }
+
+  // DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+  // It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+  rpc DeleteAlertForUser(DeleteAlertForUserRequest) returns (DeleteAlertForUserResponse) {
+    option (google.api.http) = {delete: "/v1/projects/{project_id}/alerts/{name}/for-user"};
   }
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -3325,6 +3359,28 @@ message DeleteReportRequest {
 message DeleteReportResponse {
 }
 
+message CreateReportForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the report.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  ReportOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message CreateReportForUserResponse {
+  string name = 1;
+  // URL of the report's page.
+  string url = 2;
+}
+
+message DeleteReportForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the report.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string = {min_len: 1, not_contains: "/"}];
+}
+
+message DeleteReportForUserResponse {}
+
 message TriggerReportRequest {
   string org = 1;
   string project = 2;
@@ -3381,6 +3437,28 @@ message DeleteAlertRequest {
 
 message DeleteAlertResponse {
 }
+
+message CreateAlertForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the alert.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  AlertOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message CreateAlertForUserResponse {
+  string name = 1;
+  // URL of the alert's page.
+  string url = 2;
+}
+
+message DeleteAlertForUserRequest {
+  string project_id = 1 [(validate.rules).string.min_len = 1];
+  // User who owns the alert.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string = {min_len: 1, not_contains: "/"}];
+}
+
+message DeleteAlertForUserResponse {}
 
 message GenerateAlertYAMLRequest {
   string org = 1;

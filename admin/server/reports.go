@@ -340,26 +340,80 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
+	name, err := s.createManagedReport(ctx, proj, req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateReportResponse{
+		Name: name,
+	}, nil
+}
+
+// CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+func (s *Server) CreateReportForUser(ctx context.Context, req *adminv1.CreateReportForUserRequest) (*adminv1.CreateReportForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.CreateReports {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to create reports")
+	}
+
+	req.Options.EmailRecipients, err = s.recipientsForUser(ctx, proj, user, req.Options.EmailRecipients, req.Options.SlackUsers, req.Options.SlackChannels, req.Options.SlackWebhooks)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := s.createManagedReport(ctx, proj, req.Options, user.ID, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateReportForUserResponse{
+		Name: name,
+		Url:  s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, name),
+	}, nil
+}
+
+// createManagedReport adds a virtual file for a report created from the UI or by the AI, and waits for the report to be added to the runtime catalog.
+// It returns the report's name.
+func (s *Server) createManagedReport(ctx context.Context, proj *database.Project, opts *adminv1.ReportOptions, ownerID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) (string, error) {
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
+		return "", status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+	name, err := s.generateVirtualFileName(ctx, opts.DisplayName, func(ctx context.Context, name string) error {
 		_, err := s.admin.LookupReport(ctx, depl, name)
 		return err
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
+	data, err := s.yamlForManagedReport(opts, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
+		return "", status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
 
 	var embedOwnerIDPtr *string
@@ -375,17 +429,15 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		EmbedOwnerID: embedOwnerIDPtr,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
+		return "", fmt.Errorf("failed to insert virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reconcile report: %w", err)
+		return "", fmt.Errorf("failed to reconcile report: %w", err)
 	}
 
-	return &adminv1.CreateReportResponse{
-		Name: name,
-	}, nil
+	return name, nil
 }
 
 func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest) (*adminv1.EditReportResponse, error) {
@@ -669,17 +721,67 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
+	err = s.deleteManagedReport(ctx, proj, depl, req.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
-	}
-
-	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
-	if err != nil {
-		return nil, fmt.Errorf("failed to reconcile report: %w", err)
+		return nil, err
 	}
 
 	return &adminv1.DeleteReportResponse{}, nil
+}
+
+// DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+// Unlike DeleteReport, it only deletes the user's own reports, even if the user can manage other users' reports.
+func (s *Server) DeleteReportForUser(ctx context.Context, req *adminv1.DeleteReportForUserRequest) (*adminv1.DeleteReportForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.name", req.Name),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, _, err := s.userForPrimaryDeployment(ctx, proj, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("could not get report: %w", err)
+	}
+	annotations := parseReportAnnotations(spec.Annotations)
+	if !annotations.AdminManaged || annotations.AdminOwnerUserID != user.ID {
+		return nil, status.Error(codes.PermissionDenied, "can only delete reports the user owns")
+	}
+
+	err = s.deleteManagedReport(ctx, proj, depl, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.DeleteReportForUserResponse{}, nil
+}
+
+// deleteManagedReport deletes the virtual file of a report created from the UI or by the AI, and waits for the report to be removed from the runtime catalog.
+func (s *Server) deleteManagedReport(ctx context.Context, proj *database.Project, depl *database.Deployment, name string) error {
+	err := s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(name))
+	if err != nil {
+		return fmt.Errorf("failed to delete virtual file: %w", err)
+	}
+
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
+	if err != nil {
+		return fmt.Errorf("failed to reconcile report: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRequest) (*adminv1.TriggerReportResponse, error) {

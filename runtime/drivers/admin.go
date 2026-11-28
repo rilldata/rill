@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
@@ -24,6 +25,16 @@ type AdminService interface {
 	// DeleteConnectorOAuthToken removes a user's OAuth authorizations for a connector, including those granted for its earlier OAuth configurations.
 	// configHash identifies the current configuration.
 	DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error
+	// CreateAlertForUser creates an alert owned by a user, as the alert dialog creates it for them, and returns its name and the URL of its page.
+	// The alert can only notify members of the project, and notifies the user if opts has no recipients.
+	CreateAlertForUser(ctx context.Context, userID string, opts *adminv1.AlertOptions) (name, url string, err error)
+	// DeleteAlertForUser deletes an alert the user owns.
+	DeleteAlertForUser(ctx context.Context, userID, name string) error
+	// CreateReportForUser creates a report owned by a user, as the report dialog creates it for them, and returns its name and the URL of its page.
+	// The report can only be sent to members of the project, and is sent to the user if opts has no recipients.
+	CreateReportForUser(ctx context.Context, userID string, opts *adminv1.ReportOptions) (name, url string, err error)
+	// DeleteReportForUser deletes a report the user owns.
+	DeleteReportForUser(ctx context.Context, userID, name string) error
 }
 
 // MCPOAuthToken is a user's OAuth access token for an external MCP connector.

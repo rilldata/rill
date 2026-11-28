@@ -167,12 +167,16 @@ const (
 	AdminService_EditReport_FullMethodName                               = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName                        = "/rill.admin.v1.AdminService/UnsubscribeReport"
 	AdminService_DeleteReport_FullMethodName                             = "/rill.admin.v1.AdminService/DeleteReport"
+	AdminService_CreateReportForUser_FullMethodName                      = "/rill.admin.v1.AdminService/CreateReportForUser"
+	AdminService_DeleteReportForUser_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteReportForUser"
 	AdminService_TriggerReport_FullMethodName                            = "/rill.admin.v1.AdminService/TriggerReport"
 	AdminService_GenerateReportYAML_FullMethodName                       = "/rill.admin.v1.AdminService/GenerateReportYAML"
 	AdminService_CreateAlert_FullMethodName                              = "/rill.admin.v1.AdminService/CreateAlert"
 	AdminService_EditAlert_FullMethodName                                = "/rill.admin.v1.AdminService/EditAlert"
 	AdminService_UnsubscribeAlert_FullMethodName                         = "/rill.admin.v1.AdminService/UnsubscribeAlert"
 	AdminService_DeleteAlert_FullMethodName                              = "/rill.admin.v1.AdminService/DeleteAlert"
+	AdminService_CreateAlertForUser_FullMethodName                       = "/rill.admin.v1.AdminService/CreateAlertForUser"
+	AdminService_DeleteAlertForUser_FullMethodName                       = "/rill.admin.v1.AdminService/DeleteAlertForUser"
 	AdminService_GenerateAlertYAML_FullMethodName                        = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                             = "/rill.admin.v1.AdminService/GetAlertYAML"
 	AdminService_ListPersonalFiles_FullMethodName                        = "/rill.admin.v1.AdminService/ListPersonalFiles"
@@ -527,6 +531,14 @@ type AdminServiceClient interface {
 	UnsubscribeReport(ctx context.Context, in *UnsubscribeReportRequest, opts ...grpc.CallOption) (*UnsubscribeReportResponse, error)
 	// DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
 	DeleteReport(ctx context.Context, in *DeleteReportRequest, opts ...grpc.CallOption) (*DeleteReportResponse, error)
+	// CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session.
+	// It's currently only called by AI tools in the runtime, so it only delivers to project members:
+	// recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+	CreateReportForUser(ctx context.Context, in *CreateReportForUserRequest, opts ...grpc.CallOption) (*CreateReportForUserResponse, error)
+	// DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+	DeleteReportForUser(ctx context.Context, in *DeleteReportForUserRequest, opts ...grpc.CallOption) (*DeleteReportForUserResponse, error)
 	// TriggerReport triggers an ad-hoc report run
 	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
@@ -539,6 +551,14 @@ type AdminServiceClient interface {
 	UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error)
 	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
 	DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error)
+	// CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session.
+	// It's currently only called by AI tools in the runtime, so it only notifies project members:
+	// recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+	CreateAlertForUser(ctx context.Context, in *CreateAlertForUserRequest, opts ...grpc.CallOption) (*CreateAlertForUserResponse, error)
+	// DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+	DeleteAlertForUser(ctx context.Context, in *DeleteAlertForUserRequest, opts ...grpc.CallOption) (*DeleteAlertForUserResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -2065,6 +2085,26 @@ func (c *adminServiceClient) DeleteReport(ctx context.Context, in *DeleteReportR
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateReportForUser(ctx context.Context, in *CreateReportForUserRequest, opts ...grpc.CallOption) (*CreateReportForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateReportForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateReportForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteReportForUser(ctx context.Context, in *DeleteReportForUserRequest, opts ...grpc.CallOption) (*DeleteReportForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteReportForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteReportForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TriggerReportResponse)
@@ -2119,6 +2159,26 @@ func (c *adminServiceClient) DeleteAlert(ctx context.Context, in *DeleteAlertReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteAlertResponse)
 	err := c.cc.Invoke(ctx, AdminService_DeleteAlert_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateAlertForUser(ctx context.Context, in *CreateAlertForUserRequest, opts ...grpc.CallOption) (*CreateAlertForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAlertForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAlertForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteAlertForUser(ctx context.Context, in *DeleteAlertForUserRequest, opts ...grpc.CallOption) (*DeleteAlertForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAlertForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteAlertForUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2657,6 +2717,14 @@ type AdminServiceServer interface {
 	UnsubscribeReport(context.Context, *UnsubscribeReportRequest) (*UnsubscribeReportResponse, error)
 	// DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
 	DeleteReport(context.Context, *DeleteReportRequest) (*DeleteReportResponse, error)
+	// CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session.
+	// It's currently only called by AI tools in the runtime, so it only delivers to project members:
+	// recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+	CreateReportForUser(context.Context, *CreateReportForUserRequest) (*CreateReportForUserResponse, error)
+	// DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+	DeleteReportForUser(context.Context, *DeleteReportForUserRequest) (*DeleteReportForUserResponse, error)
 	// TriggerReport triggers an ad-hoc report run
 	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
@@ -2669,6 +2737,14 @@ type AdminServiceServer interface {
 	UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error)
 	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
 	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	// CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session.
+	// It's currently only called by AI tools in the runtime, so it only notifies project members:
+	// recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+	CreateAlertForUser(context.Context, *CreateAlertForUserRequest) (*CreateAlertForUserResponse, error)
+	// DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+	// It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+	DeleteAlertForUser(context.Context, *DeleteAlertForUserRequest) (*DeleteAlertForUserResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -3159,6 +3235,12 @@ func (UnimplementedAdminServiceServer) UnsubscribeReport(context.Context, *Unsub
 func (UnimplementedAdminServiceServer) DeleteReport(context.Context, *DeleteReportRequest) (*DeleteReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteReport not implemented")
 }
+func (UnimplementedAdminServiceServer) CreateReportForUser(context.Context, *CreateReportForUserRequest) (*CreateReportForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReportForUser not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteReportForUser(context.Context, *DeleteReportForUserRequest) (*DeleteReportForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteReportForUser not implemented")
+}
 func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReport not implemented")
 }
@@ -3176,6 +3258,12 @@ func (UnimplementedAdminServiceServer) UnsubscribeAlert(context.Context, *Unsubs
 }
 func (UnimplementedAdminServiceServer) DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateAlertForUser(context.Context, *CreateAlertForUserRequest) (*CreateAlertForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAlertForUser not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteAlertForUser(context.Context, *DeleteAlertForUserRequest) (*DeleteAlertForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlertForUser not implemented")
 }
 func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateAlertYAML not implemented")
@@ -5922,6 +6010,42 @@ func _AdminService_DeleteReport_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateReportForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReportForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateReportForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateReportForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateReportForUser(ctx, req.(*CreateReportForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteReportForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReportForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteReportForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteReportForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteReportForUser(ctx, req.(*DeleteReportForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_TriggerReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TriggerReportRequest)
 	if err := dec(in); err != nil {
@@ -6026,6 +6150,42 @@ func _AdminService_DeleteAlert_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).DeleteAlert(ctx, req.(*DeleteAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateAlertForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAlertForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAlertForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAlertForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAlertForUser(ctx, req.(*CreateAlertForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteAlertForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAlertForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteAlertForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteAlertForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteAlertForUser(ctx, req.(*DeleteAlertForUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6990,6 +7150,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_DeleteReport_Handler,
 		},
 		{
+			MethodName: "CreateReportForUser",
+			Handler:    _AdminService_CreateReportForUser_Handler,
+		},
+		{
+			MethodName: "DeleteReportForUser",
+			Handler:    _AdminService_DeleteReportForUser_Handler,
+		},
+		{
 			MethodName: "TriggerReport",
 			Handler:    _AdminService_TriggerReport_Handler,
 		},
@@ -7012,6 +7180,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteAlert",
 			Handler:    _AdminService_DeleteAlert_Handler,
+		},
+		{
+			MethodName: "CreateAlertForUser",
+			Handler:    _AdminService_CreateAlertForUser_Handler,
+		},
+		{
+			MethodName: "DeleteAlertForUser",
+			Handler:    _AdminService_DeleteAlertForUser_Handler,
 		},
 		{
 			MethodName: "GenerateAlertYAML",

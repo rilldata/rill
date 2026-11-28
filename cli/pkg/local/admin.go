@@ -170,6 +170,28 @@ func (l *localAdminService) DeleteConnectorOAuthToken(ctx context.Context, conne
 	return drivers.ErrNotImplemented
 }
 
+// CreateAlertForUser implements drivers.AdminService.
+// Alerts are only created for users in Rill Cloud.
+func (l *localAdminService) CreateAlertForUser(ctx context.Context, userID string, opts *adminv1.AlertOptions) (string, string, error) {
+	return "", "", drivers.ErrNotImplemented
+}
+
+// DeleteAlertForUser implements drivers.AdminService.
+func (l *localAdminService) DeleteAlertForUser(ctx context.Context, userID, name string) error {
+	return drivers.ErrNotImplemented
+}
+
+// CreateReportForUser implements drivers.AdminService.
+// Reports are only created for users in Rill Cloud.
+func (l *localAdminService) CreateReportForUser(ctx context.Context, userID string, opts *adminv1.ReportOptions) (string, string, error) {
+	return "", "", drivers.ErrNotImplemented
+}
+
+// DeleteReportForUser implements drivers.AdminService.
+func (l *localAdminService) DeleteReportForUser(ctx context.Context, userID, name string) error {
+	return drivers.ErrNotImplemented
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (l *localAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
