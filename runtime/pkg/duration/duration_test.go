@@ -36,6 +36,10 @@ func TestParseISO8601(t *testing.T) {
 }
 
 func TestTruncate(t *testing.T) {
+	halfHourZone := time.FixedZone("IST", 5*3600+1800)
+	quarterHourZone := time.FixedZone("NPT", 5*3600+2700)
+	copenhagen := must(time.LoadLocation("Europe/Copenhagen"))
+
 	// Test case structure
 	type testCase struct {
 		name             string
@@ -113,12 +117,20 @@ func TestTruncate(t *testing.T) {
 			expectedTime:     time.Date(2023, 3, 26, 3, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
 		},
 		{
-			name:             "Truncate to start of hour with fall DST",
+			name:             "Truncate to start of hour with fall DST (first occurrence, CEST)",
 			duration:         StandardDuration{Hour: 1},
-			inputTime:        time.Date(2023, 10, 29, 2, 15, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			inputTime:        time.Date(2023, 10, 29, 0, 15, 0, 0, time.UTC).In(copenhagen),
 			firstDayOfWeek:   1,
 			firstMonthOfYear: 1,
-			expectedTime:     time.Date(2023, 10, 29, 2, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			expectedTime:     time.Date(2023, 10, 29, 0, 0, 0, 0, time.UTC).In(copenhagen),
+		},
+		{
+			name:             "Truncate to start of hour with fall DST (second occurrence, CET)",
+			duration:         StandardDuration{Hour: 1},
+			inputTime:        time.Date(2023, 10, 29, 1, 15, 0, 0, time.UTC).In(copenhagen),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2023, 10, 29, 1, 0, 0, 0, time.UTC).In(copenhagen),
 		},
 		{
 			name:             "Truncate to start of same minute",
@@ -167,6 +179,24 @@ func TestTruncate(t *testing.T) {
 			firstDayOfWeek:   1, // Monday
 			firstMonthOfYear: 2, // February
 			expectedTime:     time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			// t.Truncate(time.Hour) aligns to UTC hour boundaries, which are at :30 in a +05:30 zone.
+			name:             "Truncate to start of hour in half-hour offset zone",
+			duration:         StandardDuration{Hour: 2},
+			inputTime:        time.Date(2022, 7, 15, 10, 45, 0, 0, halfHourZone),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2022, 7, 15, 10, 0, 0, 0, halfHourZone),
+		},
+		{
+			// The UTC truncation can even land in the previous local hour in a +05:45 zone.
+			name:             "Truncate to start of hour in quarter-hour offset zone",
+			duration:         StandardDuration{Hour: 2},
+			inputTime:        time.Date(2022, 7, 15, 10, 15, 0, 0, quarterHourZone),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2022, 7, 15, 10, 0, 0, 0, quarterHourZone),
 		},
 	}
 
