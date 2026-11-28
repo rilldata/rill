@@ -58,18 +58,15 @@ import type {
 function getRowsForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
-  key: string,
+  segments: string[],
 ): PivotDataRow[] {
   const rows: PivotDataRow[] = [];
-  // The totals row is not part of the table data and has no dimension values.
-  if (key === PIVOT_TOTALS_ROW_ID) return rows;
-
   // Each row stores its own value under rowDimensions[0] at every depth, so
   // match key segments against that to resolve a key to the actual values.
   const anchor = rowDimensions[0];
   let currentRows: PivotDataRow[] | undefined = tableData;
 
-  for (const [depth, segment] of expandKeySegments(key).entries()) {
+  for (const [depth, segment] of segments.entries()) {
     const node: PivotDataRow | undefined = currentRows?.find(
       (row) =>
         encodeExpandKeySegment(rowDimensions[depth], row[anchor]) === segment,
@@ -86,9 +83,13 @@ export function getValuesForExpandedKey(
   rowDimensions: string[],
   key: string,
 ): string[] {
-  return getRowsForExpandedKey(tableData, rowDimensions, key).map(
-    (row) => row[rowDimensions[0]] as string,
-  );
+  // The totals row is not part of the table data and has no dimension values.
+  if (key === PIVOT_TOTALS_ROW_ID) return [];
+  return getRowsForExpandedKey(
+    tableData,
+    rowDimensions,
+    expandKeySegments(key),
+  ).map((row) => row[rowDimensions[0]] as string);
 }
 
 /**
@@ -537,11 +538,7 @@ export function addExpandedDataToPivot(
     if (rowValues.length === 0) return;
     const segments = expandKeySegments(expandedRowData.expandIndex);
 
-    const rows = getRowsForExpandedKey(
-      pivotData,
-      rowDimensions,
-      expandedRowData.expandIndex,
-    );
+    const rows = getRowsForExpandedKey(pivotData, rowDimensions, segments);
     if (rows.length !== segments.length) return;
     const node = rows.at(-1);
 
