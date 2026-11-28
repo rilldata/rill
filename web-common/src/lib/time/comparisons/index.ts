@@ -1,11 +1,6 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import {
-  V1TimeGrain,
-  type V1TimeRange,
-} from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { V1TimeRange } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Duration, Interval } from "luxon";
 import { getTimeWidth } from "../transforms";
 import {
@@ -288,38 +283,29 @@ export function getTimeComparisonParametersForComponent(
   };
 }
 
-export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
-  if (
-    (!comparisonTimeRange.isoOffset && !comparisonTimeRange.expression) ||
-    comparisonTimeRange.isoOffset === TimeRangePreset.CUSTOM
-  ) {
-    return prettyFormatTimeRange(
-      Interval.fromDateTimes(
-        DateTime.fromISO(comparisonTimeRange.start ?? "").setZone("UTC"),
-        DateTime.fromISO(comparisonTimeRange.end ?? "").setZone("UTC"),
-      ),
-      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-    );
+// The comparison option of a comparison saved as a rill time expression,
+// from the offset convertTimeManagerComparisonRangeToV1TimeRange appends to the time range, such as "-1W" in "P7D offset -1W".
+export function getComparisonOptionFromExpression(expression: string) {
+  const offset = / offset (\S+)$/.exec(expression)?.[1];
+  if (!offset) return undefined;
+  return (Object.keys(TIME_COMPARISON) as TimeComparisonOption[]).find(
+    (option) => TIME_COMPARISON[option].rillTimeOffset === offset,
+  );
+}
+
+// The comparison option a comparison time range was saved with, if it was saved for one.
+export function getComparisonOption(
+  comparisonTimeRange: V1TimeRange,
+): TimeComparisonOption | undefined {
+  const { expression, isoDuration, isoOffset } = comparisonTimeRange;
+  if (expression) return getComparisonOptionFromExpression(expression);
+  if (isoOffset && isoOffset === isoDuration) {
+    return TimeComparisonOption.CONTIGUOUS;
   }
-  switch (true) {
-    case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
-      return m.time_all_time();
-    case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset ||
-      comparisonTimeRange.expression?.toLowerCase()?.endsWith("offset pp"):
-      return m.time_comparison_previous_period();
-    case comparisonTimeRange.isoOffset &&
-      comparisonTimeRange.isoOffset in TIME_COMPARISON:
-      return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
-    case comparisonTimeRange.expression &&
-      comparisonTimeRange.expression in TIME_COMPARISON:
-      return TIME_COMPARISON[comparisonTimeRange.expression].label;
-    default:
-      return m.time_last_duration({
-        duration: humaniseISODuration(
-          comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "",
-        ),
-      });
+  if (isoOffset && isoOffset in TIME_COMPARISON) {
+    return isoOffset as TimeComparisonOption;
   }
+  return undefined;
 }
 
 export function getComparisonLabelFromRange(
@@ -335,7 +321,7 @@ export function getComparisonLabelFromRange(
       return m.time_comparison_previous_period();
 
     case comparisonTimeRange in TIME_COMPARISON:
-      return TIME_COMPARISON[comparisonTimeRange].label;
+      return TIME_COMPARISON[comparisonTimeRange as TimeComparisonOption].label;
 
     default:
       return parsedRillTime.toString();

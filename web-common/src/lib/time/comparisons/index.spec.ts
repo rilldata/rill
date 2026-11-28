@@ -4,7 +4,10 @@ import {
 } from ".";
 import { TimeComparisonOption } from "../types";
 import { describe, it, expect } from "vitest";
-import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import {
+  getComparisonInterval,
+  getComparisonOption,
+} from "@rilldata/web-common/lib/time/comparisons";
 import { DateTime, Interval } from "luxon";
 
 const contiguousAndCustomComparisonRanges = [
@@ -350,6 +353,36 @@ describe("getAvailableComparisonsForTimeRange", () => {
         "UTC",
       );
       expect(actual).toEqual(test.output);
+    });
+  });
+});
+
+describe("getComparisonOption", () => {
+  const cases = [
+    {
+      comparison: { expression: "MTD as of latest/D offset -1M" },
+      option: TimeComparisonOption.MONTH,
+    },
+    {
+      comparison: { expression: "7D as of latest/D offset -1P" },
+      option: TimeComparisonOption.CONTIGUOUS,
+    },
+    {
+      comparison: { expression: "7D as of latest/D offset -7D" },
+      option: undefined,
+    },
+    {
+      comparison: { isoDuration: "P7D", isoOffset: "P7D" },
+      option: TimeComparisonOption.CONTIGUOUS,
+    },
+    {
+      comparison: { isoDuration: "P7D", isoOffset: TimeComparisonOption.WEEK },
+      option: TimeComparisonOption.WEEK,
+    },
+  ];
+  cases.forEach(({ comparison, option }) => {
+    it(`reads ${JSON.stringify(comparison)} as ${option}`, () => {
+      expect(getComparisonOption(comparison)).toBe(option);
     });
   });
 });
