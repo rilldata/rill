@@ -72,7 +72,16 @@ const valueCriteria = {
   value2: "",
 };
 
-function renderDataTab() {
+const profitMeasure = {
+  name: "profit",
+  displayName: "Profit",
+  expression: "revenue - cost",
+};
+
+function renderDataTab(
+  values: Partial<AlertFormValues> = {},
+  aiConditionAllowed = false,
+) {
   const form = writable({
     metricsViewName: "orders",
     exploreName: "orders_explore",
@@ -80,6 +89,7 @@ function renderDataTab() {
     splitByDimension: "country",
     notifyRowsLimit: "5",
     criteria: [percentOfTotalCriteria, valueCriteria],
+    ...values,
   } as AlertFormValues);
   render(AlertDialogDataTab, {
     props: {
@@ -90,16 +100,18 @@ function renderDataTab() {
       expressionFilterManager: {} as ExpressionFilterManager,
       timeFilterManager: {} as TimeFilterManager,
       dashboardConfigProvider: {} as DashboardConfigProvider,
-      aiConditionAllowed: false,
+      aiConditionAllowed,
     },
   });
   return form;
 }
 
+async function openSelect(label: string) {
+  await fireEvent.keyDown(screen.getByLabelText(label), { key: "Enter" });
+}
+
 async function pickSplitBy(label: string) {
-  await fireEvent.keyDown(screen.getByLabelText(m.alert_form_data_split_by()), {
-    key: "Enter",
-  });
+  await openSelect(m.alert_form_data_split_by());
   await fireEvent.pointerUp(
     await screen.findByRole("option", { name: label }),
     {
@@ -123,5 +135,37 @@ describe("AlertDialogDataTab", () => {
 
     expect(get(form).splitByDimension).toBe("");
     expect(get(form).criteria).toEqual([percentOfTotalCriteria, valueCriteria]);
+  });
+
+  // The AI resolver only gets measure names, so the analyst can't resolve an ephemeral measure's formula.
+  it("drops an ephemeral measure when switching to an AI condition", async () => {
+    const form = renderDataTab(
+      { measure: profitMeasure.name, ephemeralMeasures: [profitMeasure] },
+      true,
+    );
+
+    await openSelect(m.alert_form_data_measure());
+    expect(
+      await screen.findByRole("option", { name: profitMeasure.displayName }),
+    ).toBeInTheDocument();
+    await fireEvent.keyDown(
+      screen.getByLabelText(m.alert_form_data_measure()),
+      {
+        key: "Escape",
+      },
+    );
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.alert_form_condition_type_ai() }),
+    );
+
+    expect(get(form).measure).toBe("");
+    await openSelect(m.alert_form_data_measure());
+    expect(
+      await screen.findByRole("option", { name: "Revenue" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: profitMeasure.displayName }),
+    ).toBeNull();
   });
 });

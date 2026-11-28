@@ -111,11 +111,11 @@ _[oneOf]_ - Data source for the alert _(required)_
 
     - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
 
-  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports and alerts.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. Required for alerts, where it is the condition that the analysis checks.
 
       - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
@@ -263,4 +263,28 @@ notify:
     slack:
         channels:
             - '#rill-cloud-alerts'
+```
+
+```yaml
+# Example: To send an email when an AI analysis finds that a condition written in words holds
+type: alert
+display_name: Weekly revenue drop
+# AI alerts must run on a cron schedule of at most once an hour, and can't set `refresh.every`, `refresh.ref_update` or `intervals`.
+refresh:
+    cron: 0 9 * * *
+    time_zone: America/New_York
+# AI alerts must set the Rill Cloud user whose access and AI session the analysis runs with.
+for:
+    user_id: <user-id>
+# The prompt is the condition; the alert fails, and notifies, when the analysis finds that it holds.
+data:
+    ai:
+        prompt: Revenue dropped by more than 10% compared with the previous 7 days
+        explore: sales_explore
+        time_range:
+            expression: 7D as of latest/D+1D # the last 7 days with data
+notify:
+    email:
+        recipients:
+            - jane@example.com
 ```

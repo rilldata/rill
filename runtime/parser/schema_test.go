@@ -110,21 +110,32 @@ func TestJSONSchemaForResourceType(t *testing.T) {
 	}
 }
 
-// TestThemeSchemaExamples checks that the theme examples in the schema, which are published in the docs, parse as themes.
-func TestThemeSchemaExamples(t *testing.T) {
-	schema, err := JSONSchemaForResourceType(ResourceKindTheme)
-	require.NoError(t, err)
-	require.NotEmpty(t, schema.Examples)
-
-	files := map[string]string{"rill.yaml": ""}
-	for i, example := range schema.Examples {
-		data, err := yaml.Marshal(example)
-		require.NoError(t, err)
-		files[fmt.Sprintf("themes/example_%d.yaml", i)] = string(data)
+// TestSchemaExamples checks that the examples in the schema, which are published in the docs, parse as resources of their kind.
+func TestSchemaExamples(t *testing.T) {
+	tests := []struct {
+		kind ResourceKind
+		dir  string
+	}{
+		{kind: ResourceKindTheme, dir: "themes"},
+		{kind: ResourceKindAlert, dir: "alerts"},
 	}
+	for _, tt := range tests {
+		t.Run(tt.dir, func(t *testing.T) {
+			schema, err := JSONSchemaForResourceType(tt.kind)
+			require.NoError(t, err)
+			require.NotEmpty(t, schema.Examples)
 
-	p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
-	require.NoError(t, err)
-	require.Empty(t, p.Errors)
-	require.Len(t, p.Resources, len(schema.Examples))
+			files := map[string]string{"rill.yaml": ""}
+			for i, example := range schema.Examples {
+				data, err := yaml.Marshal(example)
+				require.NoError(t, err)
+				files[fmt.Sprintf("%s/example_%d.yaml", tt.dir, i)] = string(data)
+			}
+
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Empty(t, p.Errors)
+			require.Len(t, p.Resources, len(schema.Examples))
+		})
+	}
 }

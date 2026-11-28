@@ -93,6 +93,18 @@ func TestAlertsAndReportsForUser(t *testing.T) {
 		require.ErrorIs(t, err, drivers.ErrResourceNotFound)
 	})
 
+	t.Run("doesn't delete for a user who lost access to the project", func(t *testing.T) {
+		formerUser, _ := f.fix.NewUser(t)
+		_, err := f.owner.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{Org: f.org, Project: f.project, Email: formerUser.Email, Role: database.ProjectRoleNameViewer})
+		require.NoError(t, err)
+		name, _, err := f.adm.CreateAlertForUser(ctx, formerUser.ID, alertOpts())
+		require.NoError(t, err)
+
+		_, err = f.owner.RemoveProjectMemberUser(ctx, &adminv1.RemoveProjectMemberUserRequest{Org: f.org, Project: f.project, Email: formerUser.Email})
+		require.NoError(t, err)
+		require.Equal(t, codes.PermissionDenied, status.Code(f.adm.DeleteAlertForUser(ctx, formerUser.ID, name)))
+	})
+
 	t.Run("creates and deletes reports", func(t *testing.T) {
 		opts := &adminv1.ReportOptions{
 			DisplayName:   "Weekly revenue",
