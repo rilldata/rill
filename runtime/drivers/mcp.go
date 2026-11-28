@@ -25,16 +25,7 @@ type MCPService interface {
 }
 
 // MCPOAuthConfig is the per-user OAuth configuration of an MCP server.
-type MCPOAuthConfig struct {
-	ServerURL    string
-	ClientID     string
-	ClientSecret string
-	Scopes       []string
-	// AuthorizationParams are extra query parameters for the authorization endpoint.
-	AuthorizationParams map[string]string
-	// Hash identifies the configuration. It changes when any other field changes, which invalidates existing authorizations.
-	Hash string
-}
+type MCPOAuthConfig = OAuthConfig
 
 // MCPCallOptions describes the caller of an MCP request.
 type MCPCallOptions struct {

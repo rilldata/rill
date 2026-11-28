@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const defaultTimestampsCacheTTL = 5 * time.Minute
-
 func init() {
 	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
 }
@@ -115,13 +113,7 @@ func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bo
 
 	// When spec has rollups and MV-level caching is disabled, use TTL-based caching to ensure rollup timestamp queries are cached
 	if !ok && len(r.mv.Rollups) > 0 {
-		ttl := defaultTimestampsCacheTTL
-		if r.mv.CacheTimestampsTtlSeconds > 0 {
-			ttl = time.Duration(r.mv.CacheTimestampsTtlSeconds) * time.Second
-		}
-		bucket := time.Now().Truncate(ttl).Unix()
-		key = []byte(fmt.Sprintf("ts:%d", bucket))
-		ok = true
+		key, ok = r.executor.TimestampsTTLCacheKey()
 	}
 
 	key = append(key, []byte(r.args.TimeDimension)...)

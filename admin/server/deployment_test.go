@@ -28,7 +28,7 @@ func TestDeploymentJWTs(t *testing.T) {
 	adm := testadmin.NewWithOptionalRuntime(t, true)
 
 	// Create test users. Note: the first user becomes a superuser, so we let the second one own the org/project to avoid confounding effects.
-	_, _ = adm.NewUser(t)
+	u0, _ := adm.NewUser(t)
 	u1, u1Client := adm.NewUser(t)
 
 	// Create empty test project
@@ -79,6 +79,18 @@ func TestDeploymentJWTs(t *testing.T) {
 
 		perms := c.Instances[depl.RuntimeInstanceID]
 		requireHasPerms(t, perms, runtime.ReadInstance, runtime.ReadResolvers, runtime.EditTrigger)
+	})
+
+	t.Run("GetDeploymentCredentials for user ID (View as)", func(t *testing.T) {
+		creds, err := u1Client.GetDeploymentCredentials(t.Context(), &adminv1.GetDeploymentCredentialsRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+			For:     &adminv1.GetDeploymentCredentialsRequest_UserId{UserId: u0.ID},
+		})
+		require.NoError(t, err)
+
+		// The runtime uses the subject's personal connector credentials, such as a Databricks OAuth token.
+		require.Equal(t, u0.ID, decodeJWT(t, creds.AccessToken).Subject)
 	})
 
 	t.Run("GetDeployment for non-Rill email", func(t *testing.T) {

@@ -21,8 +21,13 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 // Exec implements drivers.OLAPStore.
+// It uses the service credential.
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Query(ctx, stmt)
+	db, err := c.getServiceDB(ctx)
+	if err != nil {
+		return err
+	}
+	res, err := c.query(ctx, db, stmt)
 	if err != nil {
 		return err
 	}
@@ -48,7 +53,22 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 }
 
 // Query implements drivers.OLAPStore.
+// It runs as the caller if the connector uses per-user OAuth.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	var res *drivers.Result
+	err := c.withRetry(ctx, func(ctx context.Context, db *sqlx.DB) error {
+		var err error
+		res, err = c.query(ctx, db, stmt)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// query runs stmt on db.
+func (c *connection) query(ctx context.Context, db *sqlx.DB, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.config.LogQueries {
 		fields := []zap.Field{
 			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
@@ -68,13 +88,8 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		ctx = driverctx.NewContextWithQueryTags(ctx, stmt.QueryAttributes)
 	}
 
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if stmt.DryRun {
-		_, err = db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		_, err := db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
 		return nil, err
 	}
 
@@ -93,12 +108,13 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 }
 
 // QuerySchema implements drivers.OLAPStore.
+// It uses the service credential.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	if c.config.LogQueries {
 		c.logger.Info("databricks query schema", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args), observability.ZapCtx(ctx))
 	}
 
-	db, err := c.getDB(ctx)
+	db, err := c.getServiceDB(ctx)
 	if err != nil {
 		return nil, err
 	}

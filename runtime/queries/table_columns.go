@@ -33,6 +33,10 @@ func (q *TableColumns) Deps() []*runtimev1.ResourceName {
 	}
 }
 
+func (q *TableColumns) OLAPConnector() string {
+	return q.Connector
+}
+
 func (q *TableColumns) MarshalResult() *runtime.QueryResult {
 	var size int64
 	if len(q.Result.ProfileColumns) > 0 {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
@@ -67,6 +68,12 @@ type Query interface {
 	Export(ctx context.Context, rt *Runtime, instanceID string, w io.Writer, opts *ExportOptions) error
 }
 
+// olapConnectorQuery is implemented by queries that read an OLAP connector directly.
+type olapConnectorQuery interface {
+	// OLAPConnector returns the connector's name, or an empty string for the instance's default OLAP connector.
+	OLAPConnector() string
+}
+
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
 	// Emit a generic billable query metric. This is one of the two query frameworks (the other is runtime.Resolve);
 	// the legacy Query interface here is used by the gRPC QueryService (dashboards, CLI).
@@ -77,6 +84,20 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	// If key is empty, skip caching
 	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
+	// Results of connectors that use per-user OAuth depend on the caller, so they are never cached or shared.
+	if q, ok := query.(olapConnectorQuery); ok {
+		olap, release, err := r.OLAP(ctx, instanceID, q.OLAPConnector())
+		if err != nil {
+			return err
+		}
+		oc, ok := olap.(drivers.OAuthConfigurer)
+		perUser := ok && oc.OAuthConfig() != nil
+		release()
+		if perUser {
+			return query.Resolve(ctx, r, instanceID, priority)
+		}
 	}
 
 	// Get dependency cache keys and optionally the underlying OLAP connector
