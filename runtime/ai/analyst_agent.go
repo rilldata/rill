@@ -210,6 +210,8 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
+	// The alert tools are dropped automatically by Complete when no user is present to confirm what they create (see checkAlertReportAccess).
+	tools = append(tools, CreateAlertName, ListAlertsName, DeleteAlertName)
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}

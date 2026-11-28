@@ -252,7 +252,7 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	// Every check of an AI alert runs an AI analysis, so AI alerts are checked on a schedule of at most once an hour.
 	if resolver == "ai" {
-		err := validateAIAlertSchedule(tmp.Refresh)
+		err := ValidateAIAlertSchedule(tmp.Refresh)
 		if err != nil {
 			return err
 		}
@@ -454,9 +454,10 @@ func (p *Parser) parseAlert(node *Node) error {
 	return nil
 }
 
-// validateAIAlertSchedule checks that an AI alert is checked on a cron schedule that runs at most once an hour.
+// ValidateAIAlertSchedule checks that an AI alert is checked on a cron schedule that runs at most once an hour.
+// The AI tools that create alerts call it too, to explain the limit before saving.
 // AI alerts can't be checked when their data refreshes or on a ticker, which can run far more often.
-func validateAIAlertSchedule(raw *ScheduleYAML) error {
+func ValidateAIAlertSchedule(raw *ScheduleYAML) error {
 	if raw != nil && raw.Disable {
 		return nil
 	}
