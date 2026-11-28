@@ -297,7 +297,7 @@ func typeFromDuckDBType(typ string) string {
 }
 
 func fileExtToFormat(ext string) (string, error) {
-	switch ext {
+	switch strings.ToLower(ext) {
 	case ".csv":
 		return "CSV", nil
 	case ".tsv":
