@@ -152,3 +152,27 @@ func timeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firs
 		return false
 	}
 }
+
+// ceilTime returns t if it is on a boundary of the given grain, otherwise the next boundary after it.
+// Like timeAligned, it uses calendar quarters and years; a zero t is returned unchanged.
+// It also returns t unchanged when a DST change falls between the boundaries around t,
+// since a midnight can then be skipped or repeated; rollup routing then uses the query's own bounds.
+func ceilTime(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firstDayOfWeek uint32) time.Time {
+	if t.IsZero() {
+		return t
+	}
+	tg := timeutil.TimeGrainFromAPI(grain)
+	floor := timeutil.TruncateTime(t, tg, tz, int(firstDayOfWeek), 1)
+	if floor.Equal(t) {
+		return t
+	}
+	next := timeutil.OffsetTime(floor, tg, 1, tz)
+
+	_, tOffset := t.In(tz).Zone()
+	_, floorOffset := floor.In(tz).Zone()
+	_, nextOffset := next.In(tz).Zone()
+	if floorOffset != tOffset || nextOffset != tOffset || !next.After(t) {
+		return t
+	}
+	return next
+}

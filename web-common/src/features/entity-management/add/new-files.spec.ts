@@ -11,6 +11,7 @@ import {
 import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { fileArtifacts } from "../file-artifacts.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { PutFileResponse } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 
 vi.mock("@rilldata/web-common/runtime-client", async (original) => ({
   ...(await original<typeof import("@rilldata/web-common/runtime-client")>()),
@@ -55,7 +56,9 @@ describe("createResourceAndNavigate canvas creation", () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     getResource.mockReset().mockResolvedValue({ resource });
-    vi.mocked(runtimeServicePutFile).mockReset().mockResolvedValue({});
+    vi.mocked(runtimeServicePutFile)
+      .mockReset()
+      .mockResolvedValue(new PutFileResponse());
   });
   afterEach(() => {
     vi.restoreAllMocks();

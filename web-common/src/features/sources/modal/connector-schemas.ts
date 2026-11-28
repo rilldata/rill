@@ -1,4 +1,5 @@
-import type { V1ConnectorDriver } from "../../../runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import type {
   ConnectorCategory,
   MultiStepFormSchema,
@@ -180,11 +181,11 @@ export function getDocsCategory(
 }
 
 /**
- * Build a V1ConnectorDriver-compatible object from a schema name.
+ * Build a `ConnectorDriver`-compatible object from a schema name.
  */
 export function toConnectorDriver(
   schemaName: string,
-): V1ConnectorDriver | null {
+): PartialMessage<ConnectorDriver> | null {
   const schema = getConnectorSchema(schemaName);
   if (!schema) return null;
   const category = schema["x-category"];

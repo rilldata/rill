@@ -107,4 +107,103 @@ describe("VegaLiteRenderer", () => {
     expect(change).not.toHaveBeenCalled();
     expect(container.querySelectorAll(".mark-arc path")).toHaveLength(2);
   });
+
+  it("lays out a legend of many series to fit the chart", async () => {
+    const series = Array.from({ length: 24 }, (_, i) => `Series ${i + 1}`);
+    const { container } = render(VegaLiteRenderer, {
+      props: {
+        spec: {
+          width: "container",
+          autosize: { type: "fit" },
+          data: { name: "metrics-view" },
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "value", type: "quantitative" },
+            color: { field: "series", type: "nominal" },
+          },
+        },
+        data: {
+          "metrics-view": series.map((name, i) => ({
+            series: name,
+            category: "a",
+            value: i + 1,
+          })),
+        },
+        renderer: "svg",
+        viewVL: undefined as unknown as vega.View,
+      },
+    });
+
+    const labels = () =>
+      [...container.querySelectorAll(".role-legend-label text")].map(
+        (label) => label.textContent,
+      );
+    await waitFor(() => expect(labels().length).toBeGreaterThan(0));
+    // Left to Vega, all 24 run in one row, most of it past the chart's edge. Fitted, the legend
+    // wraps to the plot's width, takes the rows a third of the chart's 290px holds, and says how
+    // many entries it left out.
+    expect(labels().length).toBeLessThan(series.length);
+    expect(labels().at(-1)).toMatch(/^…\d+ entries$/);
+    const rows = new Set(
+      [...container.querySelectorAll(".role-legend-entry .role-scope > g")].map(
+        (entry) =>
+          /,\s*(-?[\d.]+)\)/.exec(entry.getAttribute("transform") ?? "")?.[1],
+      ),
+    );
+    expect(rows.size).toBeGreaterThan(1);
+    expect(rows.size).toBe(5);
+  });
+
+  it("lays a legend out again by the labels of new data", async () => {
+    const rowsOf = (series: string[]) =>
+      series.map((name, i) => ({ series: name, category: "a", value: i + 1 }));
+    const short = Array.from({ length: 8 }, (_, i) => `S${i + 1}`);
+    const long = short.map((name) => `${name} of the display catalogue`);
+    const { container, rerender } = render(VegaLiteRenderer, {
+      props: {
+        spec: {
+          width: "container",
+          autosize: { type: "fit" },
+          data: { name: "metrics-view" },
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "value", type: "quantitative" },
+            color: {
+              field: "series",
+              type: "nominal",
+              legend: { orient: "top" },
+            },
+          },
+        },
+        data: { "metrics-view": rowsOf(long) },
+        renderer: "svg",
+        viewVL: undefined as unknown as vega.View,
+      },
+    });
+    const labels = () =>
+      [...container.querySelectorAll(".role-legend-label text")].map(
+        (label) => label.textContent,
+      );
+    const columns = () =>
+      new Set(
+        [
+          ...container.querySelectorAll(".role-legend-entry .role-scope > g"),
+        ].map(
+          (entry) =>
+            /translate\((-?[\d.]+)/.exec(
+              entry.getAttribute("transform") ?? "",
+            )?.[1],
+        ),
+      ).size;
+    await waitFor(() => expect(labels()).toHaveLength(long.length));
+    expect(columns()).toBe(2);
+
+    // The labels are read from the data the chart is given, and its legend follows them: eight
+    // short names stand side by side, where columns as wide as a label may run held two.
+    await rerender({ data: { "metrics-view": rowsOf(short) } });
+    await waitFor(() => expect(labels()).toEqual(short));
+    await waitFor(() => expect(columns()).toBe(short.length));
+  });
 });

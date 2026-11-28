@@ -15,6 +15,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  AnalyzeConnectorsResponse,
+  GetFileResponse,
+  GetInstanceResponse,
+  PutFileResponse,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import {
   ResourceKind,
   SingletonProjectParserName,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -116,21 +122,26 @@ describe("ClickHouse connector readiness", () => {
     fileArtifacts.setClient(client, new RuntimeFileIO());
     queryClient.setQueryData(parserKey, { resource: parser(1) });
     queryClient.setQueryDefaults(explorerKey, { staleTime: Infinity });
-    queryClient.setQueryData(explorerKey, { connectors: [{ name: "duckdb" }] });
-    vi.mocked(runtimeServiceAnalyzeConnectors).mockResolvedValue({
-      connectors: [
-        {
-          name: connectorName,
-          driver: { name: "clickhouse", implementsOlap: true },
-        },
-      ],
-    });
-    vi.mocked(runtimeServiceGetFile).mockResolvedValue({
-      blob: "olap_connector: duckdb\n",
-    });
-    vi.mocked(runtimeServiceGetInstance).mockResolvedValue({
-      instance: { olapConnector: connectorName },
-    });
+    queryClient.setQueryData(
+      explorerKey,
+      new AnalyzeConnectorsResponse({ connectors: [{ name: "duckdb" }] }),
+    );
+    vi.mocked(runtimeServiceAnalyzeConnectors).mockResolvedValue(
+      new AnalyzeConnectorsResponse({
+        connectors: [
+          {
+            name: connectorName,
+            driver: { name: "clickhouse", implementsOlap: true },
+          },
+        ],
+      }),
+    );
+    vi.mocked(runtimeServiceGetFile).mockResolvedValue(
+      new GetFileResponse({ blob: "olap_connector: duckdb\n" }),
+    );
+    vi.mocked(runtimeServiceGetInstance).mockResolvedValue(
+      new GetInstanceResponse({ instance: { olapConnector: connectorName } }),
+    );
     vi.mocked(runtimeServiceGetResource).mockImplementation(
       async (_, params) => {
         if (params.name?.kind === ResourceKind.ProjectParser) {
@@ -145,7 +156,7 @@ describe("ClickHouse connector readiness", () => {
     });
     vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
       if (body.path === connectorPath) parsed = true;
-      return {};
+      return new PutFileResponse();
     });
   });
 
@@ -176,7 +187,7 @@ describe("ClickHouse connector readiness", () => {
             queryClient.setQueryData(parserKey, { resource: parser(2) });
           }
         }, parseDelay);
-        return {};
+        return new PutFileResponse();
       });
       vi.mocked(runtimeServiceGetResource).mockImplementation(
         async (_, params) => {
@@ -227,7 +238,7 @@ describe("ClickHouse connector readiness", () => {
     let parsedAt = Infinity;
     vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
       if (body.path === connectorPath) parsedAt = Date.now() + 900;
-      return {};
+      return new PutFileResponse();
     });
     vi.mocked(runtimeServiceGetResource).mockImplementation(
       async (_, params) => {
@@ -329,9 +340,9 @@ describe("ClickHouse connector readiness", () => {
   });
 
   it("reports a timeout if the OLAP setting is never applied", async () => {
-    vi.mocked(runtimeServiceGetInstance).mockResolvedValue({
-      instance: { olapConnector: "duckdb" },
-    });
+    vi.mocked(runtimeServiceGetInstance).mockResolvedValue(
+      new GetInstanceResponse({ instance: { olapConnector: "duckdb" } }),
+    );
     const outcome = await submit(false);
     await vi.advanceTimersByTimeAsync(21_000);
 
@@ -417,18 +428,21 @@ describe("ClickHouse connector readiness", () => {
         getRuntimeServiceGetInstanceQueryKey(client.instanceId, {
           sensitive: true,
         }),
-        { instance: { olapConnector: "duckdb" } },
+        new GetInstanceResponse({ instance: { olapConnector: "duckdb" } }),
       );
       vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
         if (body.path === "rill.yaml") configAppliedAt = Date.now() + 1_000;
-        return {};
+        return new PutFileResponse();
       });
-      vi.mocked(runtimeServiceGetInstance).mockImplementation(async () => ({
-        instance: {
-          olapConnector:
-            Date.now() >= configAppliedAt ? connectorName : "duckdb",
-        },
-      }));
+      vi.mocked(runtimeServiceGetInstance).mockImplementation(
+        async () =>
+          new GetInstanceResponse({
+            instance: {
+              olapConnector:
+                Date.now() >= configAppliedAt ? connectorName : "duckdb",
+            },
+          }),
+      );
       vi.mocked(runtimeServiceGetResource).mockImplementation(
         async (_, params) => {
           // Updating the instance precedes the end of the controller restart.

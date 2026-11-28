@@ -169,6 +169,14 @@ banner: Your custom message here!
 
 ![Banner](/img/explore/dashboard101/banner.png)
 
+Banners support inline markdown: `**bold**`, `*italics*`, `~~strikethrough~~`, `` `code` ``, and `[links](https://example.com)`, which open in a new tab. Quote the value so that YAML reads the markdown characters as text:
+
+```yaml
+banner: "**Scheduled maintenance:** data will be delayed on *Friday*. See the [status page](https://status.example.com)."
+```
+
+A banner is a single line, so block-level markdown such as headings, lists, and images isn't rendered. Canvas dashboards support the same `banner` property.
+
 ## Reference
 
 - [Filters & Comparisons](/guide/dashboards/filters)

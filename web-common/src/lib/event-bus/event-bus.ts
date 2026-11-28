@@ -18,6 +18,8 @@ export interface Events {
   "start-chat": string;
   "rill-yaml-updated": void;
   "env-file-updated": string;
+  // A project file was written or deleted; the payload is its path, such as `/public/logo.svg`.
+  "project-file-changed": string;
   "remote-changes-detected": void;
 }
 

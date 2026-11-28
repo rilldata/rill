@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import type { PartialMessage } from "@bufbuild/protobuf";
+  import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  export let connector: V1ConnectorDriver;
+  export let connector: PartialMessage<ConnectorDriver>;
 </script>
 
 <div>

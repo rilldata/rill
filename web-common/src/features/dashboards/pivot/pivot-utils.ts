@@ -631,6 +631,23 @@ export function canEnablePivotComparison(
   return true;
 }
 
+/**
+ * Whether the pivot's fields show any data: a measure, or row dimensions without column dimensions.
+ * It takes the counts after a flat table's dimension columns are moved into rows, as `getPivotConfig` does.
+ */
+export function pivotShowsData({
+  rowDimensions,
+  columnDimensions,
+  measures,
+}: {
+  rowDimensions: number;
+  columnDimensions: number;
+  measures: number;
+}): boolean {
+  if (measures > 0) return true;
+  return rowDimensions > 0 && columnDimensions === 0;
+}
+
 export function getSortFilteredMeasureBody(
   measureBody: V1MetricsViewAggregationMeasure[],
   sortPivotBy: V1MetricsViewAggregationSort[],

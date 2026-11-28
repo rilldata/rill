@@ -1,6 +1,7 @@
 package reconcilers_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -20,7 +22,7 @@ import (
 )
 
 func TestLegacyAlert(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -181,7 +183,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 }
 
 func TestAlert(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -341,6 +343,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 
 func TestAlertNotifyRows(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/bar.sql": `
@@ -476,6 +479,7 @@ notify:
 
 func TestAlertNotifyRowsColumns(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/bar.sql": `
@@ -594,7 +598,7 @@ notify:
 }
 
 func TestAlertDataYAMLSQL(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 -- @materialize: true
@@ -721,7 +725,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 }
 
 func TestAlertDataYAMLMetricsSQL(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -927,6 +931,7 @@ func must[T any](v T, err error) T {
 
 func TestAlertExportAttach(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/bar.sql": `
@@ -1078,6 +1083,7 @@ notify:
 
 func TestAlertExportAttachTooLarge(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			// Exports to a CSV file of more than 10 MB (with fewer rows than the alert check's row cap)
@@ -1133,4 +1139,48 @@ notify:
 	require.Len(t, emails, 1)
 	require.Contains(t, emails[0].Body, "too large to attach to this email")
 	require.Empty(t, emails[0].Attachments)
+}
+
+// TestAlertWithoutAdminSupport checks that alerts don't run if the admin service doesn't support them, like in Rill Developer.
+func TestAlertWithoutAdminSupport(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"alerts/a1.yaml": `
+type: alert
+data:
+  sql: SELECT 'Denmark' AS country
+notify:
+  email:
+    recipients:
+    - somebody@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Empty(t, a1.State.ExecutionHistory)
+	require.Empty(t, rt.Email.Sender.(*email.TestSender).Emails)
+}
+
+// alertAdmin is an admin service that returns alert metadata the way the admin service does for alerts that aren't created from an embed:
+// email recipients get an open and an unsubscribe link, and anonymous recipients (e.g. Slack) get an open and an edit link.
+type alertAdmin struct {
+	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
+}
+
+func (a *alertAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	return &drivers.Config{}, nil
+}
+
+func (a *alertAdmin) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+	urls := make(map[string]drivers.AlertURLs)
+	for _, recipient := range emailRecipients {
+		urls[recipient] = drivers.AlertURLs{OpenURL: "https://example.com/open", UnsubscribeURL: "https://example.com/unsubscribe"}
+	}
+	if anonRecipients {
+		urls[""] = drivers.AlertURLs{OpenURL: "https://example.com/open", EditURL: "https://example.com/edit"}
+	}
+	return &drivers.AlertMetadata{RecipientURLs: urls}, nil
 }

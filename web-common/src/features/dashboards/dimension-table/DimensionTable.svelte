@@ -62,9 +62,7 @@ TableCells – the cell contents.
   } = getStateManagers();
 
   let excludeMode = $derived(
-    expressionFilterManager.sortedFilterManagers.dimensions.find(
-      (dfm) => dfm.name === dimensionName,
-    )?.exclude ?? false,
+    expressionFilterManager.isDimensionExcluded(dimensionName),
   );
   let isBeingCompared = $derived($isBeingComparedReadable(dimensionName));
 

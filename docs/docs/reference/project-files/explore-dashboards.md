@@ -26,7 +26,7 @@ _[string]_ - Refers to the description of the explore dashboard
 
 ### `banner`
 
-_[string]_ - Refers to the custom banner displayed at the header of an explore dashboard
+_[string]_ - Refers to the custom banner displayed at the header of an explore dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
 
 ### `ai_prompts`
 

@@ -1,8 +1,5 @@
 import { getSmallestUnitInDateTime } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
-import {
-  type DashboardTimeControls,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types.ts";
+import { formatRillTimeWallClock } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import {
   type V1Expression,
   V1Operation,
@@ -10,13 +7,14 @@ import {
 import { DateTime } from "luxon";
 
 /**
- * Parses time range from filter expressions containing time dimension filters.
+ * Parses a rill time range from filter expressions containing time dimension filters.
+ * Times are written as wall-clock times in `timezone`, since rill time reads absolute times in the dashboard's zone.
  * This is a best effort attempt only, there are a lot more possibility with multiple instances of time dimension filters.
  *
  * Strategy:
  * - Traverses filter tree to find time dimension comparisons
  * - Sets start/end boundaries from first matching gt/gte/eq (start) and lt/lte/eq (end)
- * - Falls back to timeRangeSummary min/max if one boundary is missing
+ * - Falls back to `earliest` or `watermark` if one boundary is missing
  * - Ignores OR expressions (conservative approach - only handles AND chains)
  * - Ignores any other complex combinations of time dimension filters.
  */
@@ -24,7 +22,7 @@ export function parseTimeRangeFromFilters(
   filter: V1Expression,
   timeDimension: string,
   timezone: string,
-): DashboardTimeControls | undefined {
+): string | undefined {
   let start: DateTime | undefined = undefined;
   let end: DateTime | undefined = undefined;
 
@@ -96,24 +94,14 @@ export function parseTimeRangeFromFilters(
     }
   }
 
-  if (!end && start) {
-    return {
-      name: `${start.toISO()} to watermark`,
-    } as DashboardTimeControls;
-  }
-  if (!start && end) {
-    return {
-      name: `earliest to ${end.toISO()}`,
-    } as DashboardTimeControls;
-  }
-
-  if (!end || !start) return undefined;
-
-  return {
-    name: TimeRangePreset.CUSTOM,
-    start: start.toJSDate(),
-    end: end.toJSDate(),
-  };
+  if (!start && !end) return undefined;
+  const startPoint = start
+    ? formatRillTimeWallClock(start, timezone)
+    : "earliest";
+  const endPoint = end ? formatRillTimeWallClock(end, timezone) : "watermark";
+  // Rill time has no open-ended absolute range, so an open end is written as a point in time.
+  if (!start || !end) return `${startPoint} to ${endPoint}`;
+  return `${startPoint},${endPoint}`;
 }
 
 function offsetMinUnit(time: DateTime): DateTime {

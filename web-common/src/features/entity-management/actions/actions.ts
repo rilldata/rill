@@ -15,7 +15,6 @@ import {
   runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
-  type RuntimeServicePutFileBody,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
@@ -34,7 +33,7 @@ import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelt
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
-  runtimeServicePutFileBody: RuntimeServicePutFileBody,
+  runtimeServicePutFileBody: Parameters<typeof runtimeServicePutFile>[1],
 ) {
   const projectParserStartingVersion = await getProjectParserVersion(client);
 
@@ -269,13 +268,6 @@ export async function maybeDeleteFileArtifact(
 ) {
   if (!fileArtifacts.hasFileArtifact(filePath)) return;
   return deleteFileArtifact(client, filePath, force);
-}
-
-export async function waitForControllerRestart(
-  client: RuntimeClient,
-  queryClient: QueryClient,
-) {
-  await waitForProjectParserVersion(client, 1, queryClient);
 }
 
 function extractMessage(msg: string) {

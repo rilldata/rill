@@ -1,5 +1,3 @@
-import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
@@ -7,12 +5,9 @@ import {
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
-import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import {
   type ChartTimeRange,
@@ -22,12 +17,7 @@ import {
   mapChartSpecToMetricsResolverQuery,
   mapFlintChartArgsToMetricsResolverQuery,
 } from "@rilldata/web-common/features/explore-mappers/map-chart-spec-to-metrics-resolver-query.ts";
-import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
-import {
-  DashboardState_ActivePage,
-  DashboardState_LeaderboardSortDirection,
-} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Expression } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { describe, expect, it } from "vitest";
@@ -332,99 +322,99 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
 
 // The replay route feeds the mapped query to the same explore mapper as a `query_metrics_view` call.
 describe("mapChartSpecToMetricsResolverQuery opens an explore", () => {
-  function exploreStateFor(spec: CreateChartSpec) {
-    return mapMetricsResolverQueryToDashboard(
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-      AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+  function urlParamsFor(spec: CreateChartSpec) {
+    const urlParams = convertMetricsResolverQueryToUrlParams(
       { query: mapChartSpecToMetricsResolverQuery(spec) },
+      AD_BIDS_TIMESTAMP_DIMENSION,
     );
+    expect(
+      convertURLSearchParamsToExploreState(
+        urlParams,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+        {},
+      ).errors,
+    ).toEqual([]);
+    return Object.fromEntries(urlParams.entries());
   }
 
   it("opens a bar chart as a filtered dimension table sorted by its measure", () => {
-    const state = exploreStateFor({
-      metrics_view: AD_BIDS_METRICS_NAME,
-      time_range: timeRange,
-      where: {
-        cond: {
-          op: "in",
-          exprs: [
-            { name: AD_BIDS_DOMAIN_DIMENSION },
-            { val: ["a.com", "b.com"] },
-          ],
-        },
-      } as unknown as Expression,
-      x: { field: AD_BIDS_PUBLISHER_DIMENSION, type: "nominal", sort: "-y" },
-      y: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
-    });
-    expect(state).toMatchObject({
-      activePage: DashboardState_ActivePage.DIMENSION_TABLE,
-      selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
-      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
-      selectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date(timeRange.start),
-        end: new Date(timeRange.end),
-      },
-      whereFilter: createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
-        "a.com",
-        "b.com",
-      ]),
+    expect(
+      urlParamsFor({
+        metrics_view: AD_BIDS_METRICS_NAME,
+        time_range: timeRange,
+        where: {
+          cond: {
+            op: "in",
+            exprs: [
+              { name: AD_BIDS_DOMAIN_DIMENSION },
+              { val: ["a.com", "b.com"] },
+            ],
+          },
+        } as unknown as Expression,
+        x: { field: AD_BIDS_PUBLISHER_DIMENSION, type: "nominal", sort: "-y" },
+        y: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
+      }),
+    ).toEqual({
+      dims: AD_BIDS_PUBLISHER_DIMENSION,
+      measures: AD_BIDS_IMPRESSIONS_MEASURE,
+      f: `${AD_BIDS_DOMAIN_DIMENSION} IN ('a.com','b.com')`,
+      tr: "2024-01-01T00:00:00.000Z,2024-12-31T23:59:59.000Z",
+      tz: "UTC",
+      view: "explore",
+      expand_dim: AD_BIDS_PUBLISHER_DIMENSION,
+      sort_by: AD_BIDS_IMPRESSIONS_MEASURE,
+      sort_dir: "DESC",
+      sort_type: "value",
     });
   });
 
   it("opens a line chart over time as a time dimension detail at the chart's grain", () => {
-    const state = exploreStateFor({
-      metrics_view: AD_BIDS_METRICS_NAME,
-      time_range: timeRange,
-      comparison_time_range: comparisonTimeRange,
-      time_grain: V1TimeGrain.TIME_GRAIN_WEEK,
-      x: { field: AD_BIDS_TIMESTAMP_DIMENSION, type: "temporal" },
-      y: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
+    expect(
+      urlParamsFor({
+        metrics_view: AD_BIDS_METRICS_NAME,
+        time_range: timeRange,
+        comparison_time_range: comparisonTimeRange,
+        time_grain: V1TimeGrain.TIME_GRAIN_WEEK,
+        x: { field: AD_BIDS_TIMESTAMP_DIMENSION, type: "temporal" },
+        y: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
+      }),
+    ).toEqual({
+      measures: AD_BIDS_IMPRESSIONS_MEASURE,
+      tr: "2024-01-01T00:00:00.000Z,2024-12-31T23:59:59.000Z",
+      tz: "UTC",
+      compare_tr: "2023-01-01T00:00:00.000Z,2023-12-31T23:59:59.000Z",
+      // The time dimension is the chart's axis, not a dimension of the explore.
+      view: "tdd",
+      measure: AD_BIDS_IMPRESSIONS_MEASURE,
+      grain: "week",
     });
-    expect(state).toMatchObject({
-      activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-      tdd: {
-        expandedMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        chartType: TDDChart.DEFAULT,
-      },
-      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-      selectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        interval: V1TimeGrain.TIME_GRAIN_WEEK,
-      },
-      showTimeComparison: true,
-    });
-    // The time dimension is the chart's axis, not a dimension of the explore.
-    expect(state.visibleDimensions).toBeUndefined();
   });
 
   it("opens a heatmap as a flat pivot of both dimensions", () => {
-    const state = exploreStateFor({
-      metrics_view: AD_BIDS_METRICS_NAME,
-      time_range: timeRange,
-      color: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
-      x: {
-        field: AD_BIDS_PUBLISHER_DIMENSION,
-        type: "nominal",
-        sort: ["Facebook", "Google"],
-      },
-      y: { field: AD_BIDS_DOMAIN_DIMENSION, type: "nominal", sort: "-color" },
-    });
-    expect(state).toMatchObject({
-      activePage: DashboardState_ActivePage.PIVOT,
-      pivot: {
-        tableMode: "flat",
-        rows: [],
-        columns: [
-          { id: AD_BIDS_PUBLISHER_DIMENSION, type: PivotChipType.Dimension },
-          { id: AD_BIDS_DOMAIN_DIMENSION, type: PivotChipType.Dimension },
-          { id: AD_BIDS_IMPRESSIONS_MEASURE, type: PivotChipType.Measure },
-        ],
-        sorting: [{ id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true }],
-      },
+    expect(
+      urlParamsFor({
+        metrics_view: AD_BIDS_METRICS_NAME,
+        time_range: timeRange,
+        color: { field: AD_BIDS_IMPRESSIONS_MEASURE, type: "quantitative" },
+        x: {
+          field: AD_BIDS_PUBLISHER_DIMENSION,
+          type: "nominal",
+          sort: ["Facebook", "Google"],
+        },
+        y: { field: AD_BIDS_DOMAIN_DIMENSION, type: "nominal", sort: "-color" },
+      }),
+    ).toEqual({
+      dims: `${AD_BIDS_PUBLISHER_DIMENSION},${AD_BIDS_DOMAIN_DIMENSION}`,
+      measures: AD_BIDS_IMPRESSIONS_MEASURE,
+      tr: "2024-01-01T00:00:00.000Z,2024-12-31T23:59:59.000Z",
+      tz: "UTC",
+      view: "pivot",
+      rows: "",
+      cols: `${AD_BIDS_PUBLISHER_DIMENSION},${AD_BIDS_DOMAIN_DIMENSION},${AD_BIDS_IMPRESSIONS_MEASURE}`,
+      table_mode: "flat",
+      sort_by: AD_BIDS_IMPRESSIONS_MEASURE,
+      sort_dir: "DESC",
     });
   });
 });
@@ -532,40 +522,24 @@ describe("mapFlintChartArgsToMetricsResolverQuery", () => {
 
   it("opens the explore in the chart's time zone, UTC when the chart names none", () => {
     const open = (time_range: ChartTimeRange) => {
-      const state = mapMetricsResolverQueryToDashboard(
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-        {
-          query: mapFlintChartArgsToMetricsResolverQuery(
-            {
-              chart_spec: {
-                chartType: "Line Chart",
-                encodings: {
-                  x: AD_BIDS_TIMESTAMP_DIMENSION,
-                  y: AD_BIDS_IMPRESSIONS_MEASURE,
-                },
+      return convertMetricsResolverQueryToUrlParams({
+        query: mapFlintChartArgsToMetricsResolverQuery(
+          {
+            chart_spec: {
+              chartType: "Line Chart",
+              encodings: {
+                x: AD_BIDS_TIMESTAMP_DIMENSION,
+                y: AD_BIDS_IMPRESSIONS_MEASURE,
               },
-              data: { metrics_view: AD_BIDS_METRICS_NAME, time_range },
             },
-            {
-              [AD_BIDS_TIMESTAMP_DIMENSION]: "time",
-              [AD_BIDS_IMPRESSIONS_MEASURE]: "measure",
-            },
-          ),
-        },
-      );
-      // What `openQuery` writes into the explore's URL.
-      return convertPartialExploreStateToUrlParams(
-        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-        state,
-        getTimeControlState(
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-          state,
+            data: { metrics_view: AD_BIDS_METRICS_NAME, time_range },
+          },
+          {
+            [AD_BIDS_TIMESTAMP_DIMENSION]: "time",
+            [AD_BIDS_IMPRESSIONS_MEASURE]: "measure",
+          },
         ),
-      ).get(ExploreStateURLParams.TimeZone);
+      }).get(ExploreStateURLParams.TimeZone);
     };
 
     expect(open({ ...timeRange, time_zone: "Asia/Kolkata" })).toBe(

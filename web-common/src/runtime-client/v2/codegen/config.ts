@@ -106,6 +106,20 @@ export const protoMessageMethods: Record<string, string[]> = {
     "columnTimeSeries",
     "columnTopK",
   ],
+  RuntimeService: [
+    "analyzeConnectors",
+    "createDirectory",
+    "deleteFile",
+    "getConnectorOAuthConfig",
+    "getFile",
+    "getInstance",
+    "listConnectorDrivers",
+    "listFiles",
+    "listInstances",
+    "listNotifierConnectors",
+    "putFile",
+    "renameFile",
+  ],
 };
 
 /** Whether a method's request and response are proto messages instead of Orval JSON types. */

@@ -1,5 +1,7 @@
+import type { JsonObject } from "@bufbuild/protobuf";
 import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
-import type { V1AnalyzedConnector } from "../../runtime-client";
+import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { structToJson } from "@rilldata/web-common/lib/proto-utils";
 
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
@@ -135,6 +137,35 @@ export function makeTablePreviewHref(
 }
 
 /**
+ * Detects DuckLake connectors, which use the duckdb driver with an `attach` clause pointing at a DuckLake catalog
+ * (e.g. `'ducklake:metadata.ducklake' AS ...`).
+ * Detection covers both the resolved config and the raw project/preset config,
+ * so it still works when the runtime redacts the merged config.
+ * It falls back to the default connector name written by the DuckLake tile.
+ * Callers should check that the driver is duckdb first,
+ * and pass the already decoded `connector.config` so the resolved `Struct` is only decoded once.
+ */
+export function isDuckLakeConnector(
+  connector: AnalyzedConnector,
+  config: JsonObject | undefined,
+): boolean {
+  const attachCandidates: unknown[] = [
+    config?.attach,
+    structToJson(connector.projectConfig)?.attach,
+    structToJson(connector.presetConfig)?.attach,
+  ];
+  if (
+    attachCandidates.some(
+      (v) => typeof v === "string" && v.includes("ducklake:"),
+    )
+  ) {
+    return true;
+  }
+  const name = connector.name ?? "";
+  return name === "ducklake" || name.startsWith("ducklake_");
+}
+
+/**
  * Determines the correct icon key for a connector based on its configuration.
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
@@ -142,41 +173,26 @@ export function makeTablePreviewHref(
  * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
  * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
-export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
+export function getConnectorIconKey(connector: AnalyzedConnector): string {
+  const config = structToJson(connector.config);
+
   // Special case: MotherDuck connectors use md: path prefix
-  const path = connector.config?.path;
+  const path = config?.path;
   if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
   }
 
-  // Special case: DuckLake connectors use an `attach` clause pointing at a
-  // DuckLake catalog (e.g. `'ducklake:metadata.ducklake' AS ...`).
-  // Detection covers both resolved config and the raw project/preset config
-  // so the icon still shows even when the runtime redacts merged config, and
-  // falls back to the default connector name written by the DuckLake tile.
-  if (connector.driver?.name === "duckdb") {
-    const attachCandidates: unknown[] = [
-      connector.config?.attach,
-      connector.projectConfig?.attach,
-      connector.presetConfig?.attach,
-    ];
-    const isDuckLakeAttach = attachCandidates.some(
-      (v) => typeof v === "string" && v.includes("ducklake:"),
-    );
-    const name = connector.name ?? "";
-    if (
-      isDuckLakeAttach ||
-      name === "ducklake" ||
-      name.startsWith("ducklake_")
-    ) {
-      return "ducklake";
-    }
+  if (
+    connector.driver?.name === "duckdb" &&
+    isDuckLakeConnector(connector, config)
+  ) {
+    return "ducklake";
   }
 
   // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn
   if (connector.driver?.name === "clickhouse") {
-    const host = connector.config?.host;
-    const dsn = connector.config?.dsn;
+    const host = config?.host;
+    const dsn = config?.dsn;
 
     if (
       (typeof host === "string" && host.includes("clickhouse.cloud")) ||
@@ -188,8 +204,8 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
   // Special case: Supabase connectors have "supabase.com" in host or dsn
   if (connector.driver?.name === "postgres") {
-    const host = connector.config?.host;
-    const dsn = connector.config?.dsn;
+    const host = config?.host;
+    const dsn = config?.dsn;
 
     if (
       (typeof host === "string" && host.includes("supabase")) ||
