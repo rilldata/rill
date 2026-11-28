@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,7 +19,7 @@ import (
 const CreateReportName = "create_report"
 
 // CreateReport creates a scheduled report for the current user through the admin service, as the report dialog creates it:
-// the report is owned by the user, listed in their reports, and they can edit or delete it on its page.
+// the report is owned by the user, listed in their reports, and they can delete it on its page, and edit it there unless it's an AI report.
 type CreateReport struct {
 	Runtime *runtime.Runtime
 }
@@ -49,7 +50,7 @@ type ReportExport struct {
 	Format        string `json:"format,omitempty" jsonschema:"'csv' (default), 'xlsx' or 'parquet'."`
 	Limit         uint64 `json:"limit,omitempty" jsonschema:"Maximum number of rows. 0 for no limit."`
 	IncludeHeader bool   `json:"include_header,omitempty" jsonschema:"For CSV and XLSX: add a header with the report's name, filters and time range above the data."`
-	Attach        bool   `json:"attach,omitempty" jsonschema:"Attach the export to the email instead of only linking to it. Requires open_mode 'creator'."`
+	Attach        bool   `json:"attach,omitempty" jsonschema:"Attach the export to the email instead of only linking to it. Requires open_mode 'creator'. Slack messages only link to it, so when sending to Slack users it also needs an email recipient."`
 }
 
 func (t *CreateReport) Spec() *mcp.Tool {
@@ -58,11 +59,11 @@ func (t *CreateReport) Spec() *mcp.Tool {
 		Title: "Create scheduled report",
 		Description: "Creates a scheduled report for the current user: an export of an explore dashboard's data, or an analysis written by the AI, sent by email or Slack on a schedule. " +
 			"Use it when the user asks to be sent data or a summary regularly, for example 'send me the sales by country every Monday'. " +
-			"The report belongs to the user, and they can edit or delete it on its page. Only create a file in the project's code instead when the user explicitly asks for that. " +
+			"The report belongs to the user, and they can delete it on its page, and edit an 'explore_data' report there. Only create a file in the project's code instead when the user explicitly asks for that. " +
 			confirmBeforeCreating +
 			"Reports open with each recipient's own permissions by default (open_mode 'recipient'). " +
 			"Sending to Slack users or attaching the export needs open_mode 'creator': when the user asks for either, say so in the preview, explaining that with 'creator' every recipient sees the data with the user's permissions, without logging in, and only use it if they agree. " +
-			"This tool can't change reports: to change one, give the user the URL of its page from list_reports, where they can edit it. " +
+			"This tool can't change reports: to change an 'explore_data' report, give the user the URL of its page from list_reports, where they can edit it; to change an 'ai' report, which its page can't edit, create a new one and delete the old one. " +
 			"Give the user the report's URL from the response.",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -164,7 +165,7 @@ func (t *CreateReport) setExploreData(ctx context.Context, args *CreateReportArg
 	if err != nil {
 		return err
 	}
-	if err := checkExploreFields(explore, args.Explore, args.Measures, append(append([]string{}, args.Dimensions...), whereDims...)); err != nil {
+	if err := checkExploreFields(explore, args.Explore, args.Measures, slices.Concat(args.Dimensions, whereDims)); err != nil {
 		return err
 	}
 
@@ -190,7 +191,7 @@ func (t *CreateReport) setExploreData(ctx context.Context, args *CreateReportArg
 		format = "csv"
 	}
 	opts.ExportFormat, err = parser.ParseExportFormat(format)
-	if err != nil || opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+	if err != nil || opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED || opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
 		return fmt.Errorf("invalid export format %q: use 'csv', 'xlsx' or 'parquet'", export.Format)
 	}
 	// Like the report dialog, a Parquet export has no header.
@@ -199,6 +200,10 @@ func (t *CreateReport) setExploreData(ctx context.Context, args *CreateReportArg
 	}
 	if export.Attach && opts.WebOpenMode != "creator" {
 		return errors.New("invalid input: attaching the export needs open_mode 'creator', since the export is run once for every recipient: ask the user")
+	}
+	// The report only attaches the export to emails, and the user's email is only the default recipient when there are no others.
+	if export.Attach && len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) > 0 {
+		return errors.New("invalid input: the export is only attached to emails, and Slack messages link to it: ask the user for an email recipient, or don't attach it")
 	}
 	opts.ExportLimit = export.Limit
 	opts.ExportIncludeHeader = export.IncludeHeader

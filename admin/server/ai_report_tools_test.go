@@ -122,6 +122,27 @@ func TestAIReportTools(t *testing.T) {
 		require.ErrorContains(t, err, "not a member of the project")
 	})
 
+	t.Run("rejects exports it can't deliver", func(t *testing.T) {
+		args := &ai.CreateReportArgs{
+			DisplayName: "Revenue",
+			Kind:        "explore_data",
+			Explore:     "e1",
+			Measures:    []string{"revenue"},
+			TimeRange:   "7D as of latest/D",
+			Export:      &ai.ReportExport{Format: "EXPORT_FORMAT_UNSPECIFIED"},
+			Schedule:    weekly,
+		}
+		_, err := createReport(args)
+		require.ErrorContains(t, err, "invalid export format")
+
+		// Slack messages only link to the export, so an attachment needs an email recipient
+		args.Export = &ai.ReportExport{Attach: true}
+		args.OpenMode = "creator"
+		args.Recipients = &ai.Recipients{SlackUsers: []string{f.viewerUser.Email}}
+		_, err = createReport(args)
+		require.ErrorContains(t, err, "only attached to emails")
+	})
+
 	t.Run("lists and deletes the user's own reports", func(t *testing.T) {
 		var list *ai.ListReportsResult
 		_, err := s.CallTool(ctx, ai.RoleUser, ai.ListReportsName, &list, &ai.ListReportsArgs{})
@@ -130,7 +151,9 @@ func TestAIReportTools(t *testing.T) {
 		for _, r := range list.Reports {
 			require.Contains(t, []string{dataReport, aiReport}, r.Name)
 			require.Equal(t, "e1", r.Dashboard)
+			require.Equal(t, r.Name == aiReport, r.AI)
 			require.Equal(t, "0 9 * * 1", r.Schedule)
+			require.Equal(t, "Europe/Madrid", r.TimeZone)
 		}
 
 		deleteReport := func(confirmed bool) *ai.DeleteResourceResult {

@@ -242,12 +242,15 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item
-                onclick={handleEditReport}
-                disabled={!dashboardIsValid}
-              >
-                {m.report_edit()}
-              </DropdownMenu.Item>
+              <!-- The dialog only edits an export's query, so saving an AI report from it would drop its analysis -->
+              {#if !isAIReport}
+                <DropdownMenu.Item
+                  onclick={handleEditReport}
+                  disabled={!dashboardIsValid}
+                >
+                  {m.report_edit()}
+                </DropdownMenu.Item>
+              {/if}
               <DropdownMenu.Item onclick={handleDeleteReport}>
                 {m.report_delete()}
               </DropdownMenu.Item>

@@ -28,15 +28,19 @@ type ReportInfo struct {
 	DisplayName string `json:"display_name"`
 	// Dashboard is the explore or canvas the report is on, if any.
 	Dashboard string `json:"dashboard,omitempty"`
-	Schedule  string `json:"schedule,omitempty"`
-	URL       string `json:"url,omitempty"`
+	// AI is true for an analysis written by the AI, which its page can't edit.
+	AI       bool   `json:"ai,omitempty"`
+	Schedule string `json:"schedule,omitempty"`
+	// TimeZone is the time zone of the schedule's cron expression.
+	TimeZone string `json:"time_zone,omitempty"`
+	URL      string `json:"url,omitempty"`
 }
 
 func (t *ListReports) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        ListReportsName,
 		Title:       "List my scheduled reports",
-		Description: "Lists the current user's own scheduled reports, with the URL of the page where the user can see, edit and delete each one. Use it when the user asks what reports they have, wants to change one (give them its URL) or delete one (with delete_report). Reports of other users and reports written in the project's code are not listed.",
+		Description: "Lists the current user's own scheduled reports, with the URL of the page where the user can see and delete each one, and edit it unless it's an AI report (ai is true). Use it when the user asks what reports they have, wants to change one (give them its URL; to change an AI report, create a new one and delete the old one) or delete one (with delete_report). Reports of other users and reports written in the project's code are not listed.",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
 			IdempotentHint:  true,
@@ -66,10 +70,16 @@ func (t *ListReports) Handler(ctx context.Context, args *ListReportsArgs) (*List
 			Name:        r.Meta.Name.Name,
 			DisplayName: spec.DisplayName,
 			Dashboard:   spec.Annotations["explore"],
+			AI:          spec.Resolver == "ai",
 			Schedule:    spec.RefreshSchedule.GetCron(),
+			TimeZone:    spec.RefreshSchedule.GetTimeZone(),
 		}
 		if info.Dashboard == "" {
 			info.Dashboard = spec.Annotations["canvas"]
+		}
+		// A cron without a time zone runs in UTC.
+		if info.Schedule != "" && info.TimeZone == "" {
+			info.TimeZone = "UTC"
 		}
 		info.URL, err = resourcePageURL(ctx, t.Runtime, "reports", info.Name)
 		if err != nil {

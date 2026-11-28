@@ -49,7 +49,7 @@ type Recipients struct {
 // CreatedResource is the result of the tools that create an alert or report.
 type CreatedResource struct {
 	Name           string `json:"name" jsonschema:"Name of the alert or report."`
-	URL            string `json:"url" jsonschema:"URL of its page, where the user can see, edit and delete it. Give it to the user."`
+	URL            string `json:"url" jsonschema:"URL of its page, where the user can see and manage it. Give it to the user."`
 	ReconcileError string `json:"reconcile_error,omitempty" jsonschema:"Error it has, if any. Tell the user."`
 }
 
