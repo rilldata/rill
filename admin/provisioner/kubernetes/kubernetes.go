@@ -271,7 +271,13 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		return nil, err
 	}
 
-	_, err = p.clientset.AppsV1().Deployments(p.Spec.Namespace).Apply(ctx, depl.WithName(names.Deployment).WithLabels(labels).WithAnnotations(annotations), applyOptions)
+	// Record the values CheckResource compares against on the deployment, so it only re-provisions when they actually change
+	deplAnnotations := map[string]string{
+		"organization_plan":          opts.Annotations["organization_plan"],
+		"organization_custom_domain": opts.Annotations["organization_custom_domain"],
+	}
+
+	_, err = p.clientset.AppsV1().Deployments(p.Spec.Namespace).Apply(ctx, depl.WithName(names.Deployment).WithLabels(labels).WithAnnotations(annotations).WithAnnotations(deplAnnotations), applyOptions)
 	if err != nil {
 		return nil, err
 	}
