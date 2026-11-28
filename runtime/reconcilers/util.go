@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/robfig/cron/v3"
 )
 
@@ -142,6 +143,41 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 		return t1, nil
 	}
 	return t2, nil
+}
+
+// computeInheritedWatermark returns the earliest watermark of the refs of an alert or report, and false if none of them has one.
+// Explores, which AI alerts and reports reference, inherit the watermark of their metrics view.
+func computeInheritedWatermark(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName, priority int) (time.Time, bool, error) {
+	var t time.Time
+	for _, ref := range refs {
+		// Resolving the explore's metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := c.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
+		q := &queries.ResourceWatermark{
+			ResourceKind: ref.Kind,
+			ResourceName: ref.Name,
+		}
+		err := c.Runtime.Query(ctx, c.InstanceID, q, priority)
+		if err != nil {
+			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
+		}
+
+		if q.Result != nil && (t.IsZero() || q.Result.Before(t)) {
+			t = *q.Result
+		}
+	}
+
+	return t, !t.IsZero(), nil
 }
 
 // exploreNameFromAnnotations extracts the explore name from resource annotations.

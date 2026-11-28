@@ -127,6 +127,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			FailRowsTruncated:   s.FailRowsTruncated,
+			Reason:              slackTextEscaper.Replace(s.Reason), // Escaped but not truncated, since it's the whole message
 			OpenLink:            htemplate.URL(s.OpenLink),
 			EditLink:            htemplate.URL(s.EditLink),
 		}
@@ -297,6 +298,7 @@ type AlertFailData struct {
 	FailRowLines        []string         // One line per row that matched the alert criteria, if several rows are listed
 	FailRowsLeadColumn  string           // The column whose value leads each of FailRowLines
 	FailRowsTruncated   bool             // True if more rows matched the alert criteria than are listed
+	Reason              string           // The AI analysis's reason when an AI alert fires, shown instead of the rows
 	OpenLink            htemplate.URL
 	EditLink            htemplate.URL
 }

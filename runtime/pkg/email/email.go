@@ -104,6 +104,7 @@ type AlertStatus struct {
 	FailColumns        []string   // Column names of FailRows, in the order of the alert query's result
 	FailRows           [][]string // Display values of the rows that matched the alert criteria
 	FailRowsTruncated  bool       // True if more rows matched the alert criteria than FailRows contains
+	Reason             string     // The AI analysis's reason when an AI alert fires; it's shown instead of the fail rows
 	ExecutionError     string
 	OpenLink           string
 	EditLink           string
@@ -131,6 +132,7 @@ func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 			FailColumns:         opts.FailColumns,
 			FailRows:            opts.FailRows,
 			FailRowsTruncated:   opts.FailRowsTruncated,
+			Reason:              opts.Reason,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
@@ -158,6 +160,7 @@ type alertFailData struct {
 	FailColumns         []string
 	FailRows            [][]string
 	FailRowsTruncated   bool
+	Reason              string
 	OpenLink            template.URL
 	EditLink            template.URL
 	UnsubscribeLink     template.URL

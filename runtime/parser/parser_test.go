@@ -2170,6 +2170,105 @@ notify:
 	})
 }
 
+func TestAIAlertSchedule(t *testing.T) {
+	ctx := context.Background()
+	aiAlert := func(extra string) string {
+		return `
+type: alert
+data:
+  ai:
+    prompt: Revenue dropped sharply
+    explore: e1
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+` + extra
+	}
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Checked hourly
+		`alerts/a1.yaml`: aiAlert(`
+refresh:
+  cron: 5 * * * *
+for:
+  user_id: u1
+`),
+		// Checked on data refreshes
+		`alerts/a2.yaml`: aiAlert(`
+for:
+  user_id: u1
+`),
+		// Checked every 30 minutes
+		`alerts/a3.yaml`: aiAlert(`
+refresh:
+  cron: "*/30 * * * *"
+for:
+  user_id: u1
+`),
+		`alerts/a4.yaml`: aiAlert(`
+refresh:
+  cron: "@every 30m"
+for:
+  user_id: u1
+`),
+		// Checked on data refreshes too
+		`alerts/a5.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+  ref_update: true
+for:
+  user_id: u1
+`),
+		// Checked for several intervals at once
+		`alerts/a6.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+intervals:
+  duration: PT1H
+for:
+  user_id: u1
+`),
+		// Without a user to run as
+		`alerts/a7.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+`),
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindExplore, Name: "e1"}},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "5 * * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt":  "Revenue dropped sharply",
+					"explore": "e1",
+				})),
+				QueryFor:        &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: "u1"},
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 5,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{Message: `AI alerts must set "refresh.cron"`, FilePath: "/alerts/a2.yaml"},
+		{Message: `AI alerts can run at most once an hour, but "refresh.cron" "*/30 * * * *" runs more often`, FilePath: "/alerts/a3.yaml"},
+		{Message: `AI alerts can run at most once an hour, but "refresh.cron" "@every 30m" runs more often`, FilePath: "/alerts/a4.yaml"},
+		{Message: `AI alerts can't set "refresh.ref_update"`, FilePath: "/alerts/a5.yaml"},
+		{Message: `AI alerts can't set "intervals", since every interval is a separate AI analysis`, FilePath: "/alerts/a6.yaml"},
+		{Message: `AI alerts must set "for.user_id", the user whose access and AI session the analysis runs with`, FilePath: "/alerts/a7.yaml"},
+	})
+}
+
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

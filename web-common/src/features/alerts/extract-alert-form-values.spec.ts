@@ -1,3 +1,4 @@
+import { AIConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
 import {
   V1ExportFormat,
@@ -92,5 +93,31 @@ describe("getExistingAlertInitialFormValues", () => {
   it("defaults the rows limit for alerts without one", () => {
     const values = getExistingAlertInitialFormValues(getAlertSpec({}), "mv1");
     expect(values.notifyRowsLimit).toEqual("5");
+  });
+
+  it("reads an AI alert's condition and the data it is narrowed to", () => {
+    const values = getExistingAlertInitialFormValues(
+      {
+        displayName: "Revenue drop",
+        resolver: "ai",
+        resolverProperties: {
+          prompt: "Revenue dropped",
+          explore: "e1",
+          measures: ["revenue"],
+          dimensions: ["country"],
+        },
+        // An AI alert created through the API has no dashboard annotations.
+        annotations: {},
+      },
+      "mv1",
+    );
+    expect(values).toMatchObject({
+      conditionType: AIConditionType,
+      aiCondition: "Revenue dropped",
+      exploreName: "e1",
+      metricsViewName: "mv1",
+      measure: "revenue",
+      splitByDimension: "country",
+    });
   });
 });

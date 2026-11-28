@@ -12,6 +12,13 @@
   export let timeZone: string;
   export let currentExecution: V1AlertExecution | null;
   export let result: V1AssertionResult;
+
+  // The fail row of an AI alert's check is the AI's verdict: its reason and the conversation behind it.
+  $: reason =
+    result.status === V1AssertionStatus.ASSERTION_STATUS_FAIL &&
+    result.failRow?.ai_session_id
+      ? String(result.failRow.reason ?? "")
+      : "";
 </script>
 
 <div class="flex gap-x-2 items-center px-4 py-[10px]">
@@ -22,5 +29,7 @@
   <AlertHistoryStatusChip {currentExecution} {result} />
   {#if result.status === V1AssertionStatus.ASSERTION_STATUS_ERROR}
     <span class="text-red-600">{result.errorMessage}</span>
+  {:else if reason}
+    <span class="text-fg-secondary text-sm truncate">{reason}</span>
   {/if}
 </div>

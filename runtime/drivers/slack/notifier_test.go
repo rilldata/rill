@@ -58,6 +58,21 @@ func TestSendAlertFail(t *testing.T) {
 	require.Len(t, texts, 3)
 	require.Contains(t, texts[2], "The first 2 rows that matched your alert criteria are listed by *country*:")
 	require.Contains(t, texts[2], "More rows matched your alert criteria.")
+
+	// An AI alert shows the analysis's reason instead of rows, and links to the analysis
+	reason := strings.Repeat("Revenue fell 40% against the previous four weeks. ", 5)
+	require.NoError(t, n.SendAlertStatus(&drivers.AlertStatus{
+		DisplayName:   "Revenue drop",
+		ExecutionTime: time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC),
+		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		Reason:        reason,
+		OpenLink:      "https://example.com/open?session_id=s1",
+		EditLink:      "https://example.com/edit",
+	}))
+	require.Len(t, texts, 4)
+	require.Contains(t, texts[3], "The AI analysis found that the condition holds:\n\n"+reason+"\n")
+	require.Contains(t, texts[3], "<https://example.com/open?session_id=s1|View full analysis>")
+	require.NotContains(t, texts[3], "matched your alert criteria")
 }
 
 func TestSlackText(t *testing.T) {

@@ -20,6 +20,7 @@ type AlertStatus struct {
 	FailColumns       []string   // Column names of FailRows, in the order of the alert query's result
 	FailRows          [][]string // Display values of the rows that matched the alert criteria; it has at most the alert's rows limit
 	FailRowsTruncated bool       // True if more rows matched the alert criteria than FailRows contains
+	Reason            string     // The AI analysis's reason when an AI alert fires; it's shown instead of the fail rows
 	ExecutionError    string
 	OpenLink          string
 	EditLink          string

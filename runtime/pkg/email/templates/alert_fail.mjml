@@ -26,7 +26,15 @@
           {{ .DisplayName }}
         </mj-text>
 
-        <mj-raw>{{ if eq (len .FailRows) 1 }}</mj-raw>
+        <mj-raw>{{ if .Reason }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The AI analysis found that the condition holds:
+        </mj-text>
+
+        <mj-text padding-bottom="0px">
+          {{ .Reason }}
+        </mj-text>
+        <mj-raw>{{ else if eq (len .FailRows) 1 }}</mj-raw>
         <mj-text padding-bottom="0px">
           Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:
         </mj-text>
@@ -77,7 +85,7 @@
         <mj-spacer height="20px" />
 
         <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
-          Open in browser
+          {{ if .Reason }}View full analysis{{ else }}Open in browser{{ end }}
         </mj-button>
         
         <mj-spacer height="20px" />

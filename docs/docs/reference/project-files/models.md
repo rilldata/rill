@@ -178,11 +178,11 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
     - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
 
-  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports and alerts.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. Required for alerts, where it is the condition that the analysis checks.
 
       - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
@@ -272,11 +272,11 @@ _[oneOf]_ - Refers to how your data is partitioned; cannot be used with state. (
 
     - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
 
-  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+  - **option 7** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports and alerts.
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. Required for alerts, where it is the condition that the analysis checks.
 
       - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 

@@ -36,7 +36,10 @@ type aiProps struct {
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
 	// IsReport indicates if the AI resolver is used for an automated report.
-	IsReport     bool           `mapstructure:"is_report"`
+	IsReport bool `mapstructure:"is_report"`
+	// IsAlert indicates if the AI resolver checks an AI alert's condition, which is the prompt.
+	// It then returns a row with the analysis's summary if the condition holds, and no rows if it doesn't.
+	IsAlert      bool           `mapstructure:"is_alert"`
 	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
@@ -224,6 +227,7 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		ComparisonTimeEnd:   r.props.ComparisonTimeRange.End,
 		DisableCharts:       r.args.CreateSharedSession, // Disable charts if creating shared session
 		IsReport:            r.props.IsReport,
+		IsAlert:             r.props.IsAlert,
 	}
 
 	routerArgs := &ai.RouterAgentArgs{
@@ -254,6 +258,32 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		if err != nil {
 			return nil, fmt.Errorf("failed to create shared session: %w", err)
 		}
+	}
+
+	// An AI alert returns a row if its condition holds, which the alert reconciler notifies like any alert's rows.
+	// The row's reason is the analysis's summary, whose numbers the analyst checked against its query results.
+	if r.props.IsAlert {
+		reason := extractSummary(result.Response)
+		if reason == "" {
+			reason = result.Response
+		}
+		var rows []map[string]any
+		switch result.AlertOutcome {
+		case ai.AlertOutcomeMet:
+			rows = append(rows, map[string]any{"reason": reason, "ai_session_id": session.ID()})
+		case ai.AlertOutcomeNotMet:
+		case ai.AlertOutcomeCannotDetermine:
+			return nil, fmt.Errorf("the AI analysis could not determine whether the condition holds: %s", reason)
+		default:
+			return nil, fmt.Errorf("the AI analysis returned no verdict on the condition")
+		}
+		schema := &runtimev1.StructType{
+			Fields: []*runtimev1.StructType_Field{
+				{Name: "reason", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+				{Name: "ai_session_id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+			},
+		}
+		return runtime.NewMapsResolverResult(rows, schema), nil
 	}
 
 	// Extract summary from the response (from <summary> tag or fallback to truncation)
@@ -357,6 +387,8 @@ func (r *aiResolver) generateTitle() string {
 	title := "AI Session"
 	if r.props.IsReport {
 		title = "Report"
+	} else if r.props.IsAlert {
+		title = "Alert"
 	}
 	title = fmt.Sprintf("%s - %s", title, r.args.ExecutionTime.Format(time.RFC822))
 	if r.props.Explore != "" {

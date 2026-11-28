@@ -21,7 +21,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -631,7 +630,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	// Evaluate watermark unless refs check failed.
 	watermark := triggerTime
 	if a.Spec.WatermarkInherit {
-		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
+		t, ok, err := computeInheritedWatermark(ctx, r.C, self.Meta.Refs, alertQueryPriority)
 		if err != nil {
 			return err
 		}
@@ -734,18 +733,31 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
 
+	props := a.Spec.ResolverProperties.AsMap()
+	args := map[string]any{
+		"priority":       alertQueryPriority,
+		"execution_time": executionTime,
+		"format":         true,
+		"limit":          rowsLimit + 1, // The extra row tells whether more rows matched than the notifications include.
+	}
+	claims := alertQueryClaims(a, adminMeta, nil)
+	if a.Spec.Resolver == "ai" {
+		// The ai resolver judges the prompt as the alert's condition, and returns a row if it holds.
+		props["is_alert"] = true
+		// Share the analysis, so every recipient's link can open it, like an AI report in creator mode.
+		args["create_shared_session"] = true
+		// The analysis runs in a session owned by the user the alert runs for (the parser requires one), with the permissions an AI report gets.
+		claims.UserID = a.Spec.GetQueryForUserId()
+		claims.Permissions = []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}
+	}
+
 	res, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
-		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		ResolverProperties: props,
 		ProjectDeclared:    false, // Alert templates never access project variables (the parser rejects references to them).
-		Args: map[string]any{
-			"priority":       alertQueryPriority,
-			"execution_time": executionTime,
-			"format":         true,
-			"limit":          rowsLimit + 1, // The extra row tells whether more rows matched than the notifications include.
-		},
-		Claims: alertQueryClaims(a, adminMeta, nil),
+		Args:               args,
+		Claims:             claims,
 	})
 	if err != nil {
 		return nil, alertFailRows{}, fmt.Errorf("failed to resolve alert: %w", err)
@@ -867,6 +879,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	// Alerts don't notify without admin metadata.
 	// It's only missing for alerts created from an embed whose owner couldn't be resolved (see executeAll), and the alert is effectively paused.
 	var msg *drivers.AlertStatus
+	var aiSessionID string
 	if notify && adminMeta != nil {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
@@ -895,12 +908,19 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				DisplayName:       a.Spec.DisplayName,
-				ExecutionTime:     executionTime,
-				Status:            current.Result.Status,
-				FailColumns:       failRows.columns,
-				FailRows:          failRows.rows,
-				FailRowsTruncated: failRows.truncated,
+				DisplayName:   a.Spec.DisplayName,
+				ExecutionTime: executionTime,
+				Status:        current.Result.Status,
+			}
+			if a.Spec.Resolver == "ai" {
+				// An AI alert's fail row is the analysis's verdict: show its reason instead of the row, and link to the analysis.
+				failRow := current.Result.FailRow.AsMap()
+				msg.Reason, _ = failRow["reason"].(string)
+				aiSessionID, _ = failRow["ai_session_id"].(string)
+			} else {
+				msg.FailColumns = failRows.columns
+				msg.FailRows = failRows.rows
+				msg.FailRowsTruncated = failRows.truncated
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.NotifyOnError {
@@ -978,6 +998,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						FailColumns:        msg.FailColumns,
 						FailRows:           msg.FailRows,
 						FailRowsTruncated:  msg.FailRowsTruncated,
+						Reason:             msg.Reason,
 						ExecutionError:     msg.ExecutionError,
 						Attachment:         attachment,
 						AttachmentTooLarge: attachmentTooLarge,
@@ -992,7 +1013,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
 					} else if ok {
 						// Use recipient-specific URLs (with magic token)
-						openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+						openLink, err := alertOpenLink(recipientURLs.OpenURL, executionTime, aiSessionID)
 						if err != nil {
 							return fmt.Errorf("failed to build recipient open url: %w", err)
 						}
@@ -1023,7 +1044,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if !ok {
 						return fmt.Errorf("failed to get recipient URLs for anon user")
 					}
-					openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+					openLink, err := alertOpenLink(urls.OpenURL, executionTime, aiSessionID)
 					if err != nil {
 						return fmt.Errorf("failed to build recipient open url: %w", err)
 					}
@@ -1111,28 +1132,6 @@ func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.
 		return nil, false, nil
 	}
 	return attachment, false, nil
-}
-
-// computeInheritedWatermark computes the inherited watermark for the alert.
-// It returns false if the watermark could not be computed.
-func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
-	var t time.Time
-	for _, ref := range refs {
-		q := &queries.ResourceWatermark{
-			ResourceKind: ref.Kind,
-			ResourceName: ref.Name,
-		}
-		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, alertQueryPriority)
-		if err != nil {
-			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
-		}
-
-		if q.Result != nil && (t.IsZero() || q.Result.Before(t)) {
-			t = *q.Result
-		}
-	}
-
-	return t, !t.IsZero(), nil
 }
 
 // calculateAlertExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
@@ -1318,7 +1317,9 @@ func alertQueryForAttributes(a *runtimev1.Alert, adminMeta *drivers.AlertMetadat
 	return nil
 }
 
-func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
+// alertOpenLink builds a notification's open link, which opens the alert's data at the check's execution time.
+// An AI alert's link also names the session of its analysis, which the open page redirects to.
+func alertOpenLink(openURL string, executionTime time.Time, aiSessionID string) (string, error) {
 	u, err := url.Parse(openURL)
 	if err != nil {
 		return "", err
@@ -1328,6 +1329,9 @@ func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
 		return "", err
 	}
 	q.Set("execution_time", executionTime.UTC().Format(time.RFC3339))
+	if aiSessionID != "" {
+		q.Set("session_id", aiSessionID)
+	}
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }

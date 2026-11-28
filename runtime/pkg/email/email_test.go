@@ -150,6 +150,16 @@ func TestAlertFail(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, mock.body, "The first 2 rows that matched your alert criteria are:")
 	require.Contains(t, mock.body, "More rows matched your alert criteria.")
+
+	// An AI alert shows the analysis's reason instead of rows, and links to the analysis
+	opts.FailColumns, opts.FailRows, opts.FailRowsTruncated = nil, nil, false
+	opts.Reason = "Revenue fell 40% against the previous four weeks."
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The AI analysis found that the condition holds:")
+	require.Contains(t, mock.body, opts.Reason)
+	require.Contains(t, mock.body, "View full analysis")
+	require.NotContains(t, mock.body, "matched your alert criteria")
 }
 
 func TestAlertRecover(t *testing.T) {

@@ -55,8 +55,16 @@ export function convertV1ExpressionToMapstructure(
     };
   }
 
+  // A measure filter's subquery names its dimension and measures as objects, as Go's metricsview.Subquery does
+  // (the inverse of mapResolverExpressionToV1Expression).
   if (expr.subquery) {
-    result.subquery = expr.subquery;
+    const { dimension, measures, where, having } = expr.subquery;
+    result.subquery = {
+      dimension: { name: dimension },
+      measures: measures?.map((name) => ({ name })) ?? [],
+      ...(where ? { where: convertV1ExpressionToMapstructure(where) } : {}),
+      ...(having ? { having: convertV1ExpressionToMapstructure(having) } : {}),
+    };
   }
 
   return result;

@@ -1,4 +1,8 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
+import {
+  type AIAlertResolverProps,
+  isAIAlertSpec,
+} from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
@@ -53,6 +57,10 @@ export function useAlertDashboardName(client: RuntimeClient, name: string) {
 export function getAlertDashboardName(alertSpec: V1AlertSpec): string {
   if (alertSpec.annotations.web_open_path)
     return getExploreName(alertSpec.annotations.web_open_path);
+
+  // AI alerts name the explore the AI looks at in the resolver's properties.
+  if (isAIAlertSpec(alertSpec))
+    return (alertSpec.resolverProperties as AIAlertResolverProps).explore ?? "";
 
   const queryArgsJson = JSON.parse(
     (alertSpec.resolverProperties.query_args_json as string) ||
