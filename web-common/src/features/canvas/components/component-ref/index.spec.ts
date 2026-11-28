@@ -40,6 +40,10 @@ describe("ComponentRefComponent", () => {
     const parent = {
       allowUnvalidatedSpec: false,
       exportMode: writable(false),
+      controls: { forPath: () => writable([]) },
+      metricsView: {
+        getMetricsViewFromName: () => writable({ metricsView: undefined }),
+      },
       client: {},
       dashboardProvider: { yamlConfigProvider: {} },
       timeFilterManager: {},

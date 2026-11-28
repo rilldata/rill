@@ -1,3 +1,6 @@
+import { ControlsManager } from "@rilldata/web-common/features/canvas/controls/controls-manager";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { goto } from "$app/navigation";
 import {
   selectedInSurface,
@@ -103,6 +106,9 @@ export class CanvasEntity {
   // edit that moves blocks keeps their keys.
   private readonly blocks = new Map<string, TabGroup | RowsBlock>();
 
+  // Viewer controls (see features/canvas/controls) and their values, which live in the URL
+  controls: ControlsManager;
+
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
   dashboardProvider: CanvasDashboardConfigProvider;
@@ -162,6 +168,8 @@ export class CanvasEntity {
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor
   firstTimeLoad = true;
+  // The canvas spec processSpec last handled, to tell which viewer controls an edit changed.
+  private processedSpec: V1CanvasSpec | undefined;
 
   private subscribers = 0;
   // Set by dispose.
@@ -186,6 +194,14 @@ export class CanvasEntity {
       this.themeName,
       this.specStore,
       this.client,
+    );
+
+    this.controls = new ControlsManager(
+      derived(this.specStore, ($spec) => $spec.data?.canvas),
+      this.searchParams,
+      featureFlags.canvasControls,
+      (search) => this.saveSnapshot(search),
+      EmbedStore.getInstance()?.lockedControls,
     );
 
     // Let the embed layer (CanvasDashboardEmbed) drive themeName;
@@ -319,6 +335,9 @@ export class CanvasEntity {
     const { canvas, components, metricsViews, filePath } = response;
     const validSpec = canvas;
     if (!validSpec) return;
+
+    this.controls.forgetEdited(this.processedSpec, validSpec);
+    this.processedSpec = validSpec;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
 

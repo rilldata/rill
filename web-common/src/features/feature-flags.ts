@@ -83,6 +83,9 @@ class FeatureFlags {
   deploy = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
   cloudEditing = new FeatureFlag("user", false);
+  // Gates viewer controls on canvases: the control bars and the editor's options for them.
+  // With the flag off, controls in the YAML stay on their defaults.
+  canvasControls = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
   customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);

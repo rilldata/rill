@@ -308,6 +308,7 @@ const EmbedParams = [
   "open_name",
   "open_report",
   "open_execution_time",
+  "locked_controls",
 ];
 export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);

@@ -64,8 +64,10 @@ export interface MeasuredBlock {
   widthPx: number;
   heightPx: number;
   rowIndex: number;
-  // The label band above an exported tab (see CanvasPdfExportTab) rather than a component card.
-  isTabLabel: boolean;
+  // A band above some rows rather than a component card: an exported tab's label
+  // (CanvasPdfExportTab) or a level's viewer controls (CanvasPdfExportControls).
+  // Bands frame the widgets; neither export counts them as widgets.
+  isBand: boolean;
   tabGroup?: string;
   tab?: string;
 }
@@ -90,7 +92,7 @@ export function measureCanvasBlocks(
       widthPx: rect.width,
       heightPx: rect.height,
       rowIndex: rowIndexFor(target, rowContainer),
-      isTabLabel: target.classList.contains("pdf-tab-label-row"),
+      isBand: isBand(target),
       tabGroup: section?.dataset.tabGroup,
       tab: section?.dataset.tab,
     });
@@ -125,11 +127,11 @@ function isDrawn(target: HTMLElement, rect: DOMRect): boolean {
 
 // Rasterizes the filter bar (optional) and each canvas block into images
 // positioned relative to the canvas content area: every component card plus the
-// label band above each exported tab (see captureTargetsIn). A widget whose
+// bands of tab labels and viewer controls (see captureTargetsIn). A widget whose
 // capture fails keeps its place without an image (see CapturedBlock.dataUrl)
-// rather than aborting the whole export; a tab label that fails is left out,
+// rather than aborting the whole export; a band that fails is left out,
 // as the filter bar is, since the note shown in a failed block's place speaks
-// of a widget. The filter bar and the tab labels only frame the widgets, so
+// of a widget. The filter bar and the bands only frame the widgets, so
 // this throws when there is no widget to export or none could be captured.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
@@ -143,7 +145,7 @@ export async function captureCanvasBlocks(
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
   const targets = measureCanvasBlocks(rowContainer);
-  if (targets.every((target) => target.isTabLabel)) {
+  if (targets.every((target) => target.isBand)) {
     throw new Error("Nothing to export on this canvas.");
   }
 
@@ -210,7 +212,7 @@ export async function captureCanvasBlocks(
     } catch (e) {
       console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
-    if (dataUrl || !target.isTabLabel) {
+    if (dataUrl || !target.isBand) {
       blocks.push({
         id: target.id,
         dataUrl,
@@ -221,7 +223,7 @@ export async function captureCanvasBlocks(
         rowIndex: target.rowIndex,
       });
     }
-    if (dataUrl && !target.isTabLabel) capturedWidget = true;
+    if (dataUrl && !target.isBand) capturedWidget = true;
     done += 1;
     reportProgress();
   }
@@ -236,12 +238,13 @@ export async function captureCanvasBlocks(
 // The units to rasterize, in document order: every component card (top-level
 // rows and exported tab rows alike, since the export view flattens tab groups
 // into plain rows) plus the label band above each exported tab (see
-// CanvasPdfExportTab). Capturing the bands keeps it visible in the PDF which
-// tab the rows below belong to.
+// CanvasPdfExportTab) and the band of each level's viewer controls (see
+// CanvasPdfExportControls). Capturing the bands keeps it visible in the PDF which
+// tab the rows below belong to, and which choices their charts reflect.
 export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
   return Array.from(
     rowContainer.querySelectorAll<HTMLElement>(
-      "article.component-card, section.pdf-tab-label-row",
+      "article.component-card, section.pdf-tab-label-row, section.pdf-controls-row",
     ),
   );
 }
@@ -252,15 +255,20 @@ export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
 // that follows it, so the label and the tab's first row paginate as one unit
 // and the label can never be stranded alone at the bottom of a page (paginate
 // sizes a row by the vertical extent of its blocks). A label with no following
-// row (an empty tab) keeps its own index.
+// row (an empty tab) keeps its own index. The band of a level's viewer controls
+// (see CanvasPdfExportControls) attaches to the row below it the same way.
 export function rowIndexFor(
   target: HTMLElement,
   rowContainer: HTMLElement,
 ): number {
   let section: Element | null = target.closest("section");
   if (!section) return 0;
-  if (section.classList.contains("pdf-tab-label-row")) {
-    const next = section.nextElementSibling;
+  if (isBand(section)) {
+    // A tab's label can be followed by its controls band; both belong to the row after them.
+    let next = section.nextElementSibling;
+    while (next?.classList.contains("pdf-controls-row")) {
+      next = next.nextElementSibling;
+    }
     if (
       next?.tagName === "SECTION" &&
       !next.classList.contains("pdf-tab-label-row")
@@ -273,4 +281,13 @@ export function rowIndexFor(
   );
   const index = sections.indexOf(section);
   return index === -1 ? 0 : index;
+}
+
+// A band is a section that labels the rows below it instead of holding components:
+// a tab's name (CanvasPdfExportTab) or a level's viewer controls (CanvasPdfExportControls).
+function isBand(section: Element): boolean {
+  return (
+    section.classList.contains("pdf-tab-label-row") ||
+    section.classList.contains("pdf-controls-row")
+  );
 }

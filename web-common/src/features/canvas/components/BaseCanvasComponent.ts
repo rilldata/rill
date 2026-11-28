@@ -1,3 +1,14 @@
+import {
+  applyFieldControls,
+  componentFields,
+} from "@rilldata/web-common/features/canvas/controls/apply-fields";
+import {
+  andControlFilters,
+  applyTimeControls,
+  controlFiltersExpression,
+  withoutTimeControls,
+} from "@rilldata/web-common/features/canvas/controls/apply-filters";
+import type { AppliedControl } from "@rilldata/web-common/features/canvas/controls/controls";
 import type {
   CanvasComponentType,
   ComponentSize,
@@ -46,6 +57,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   specStore: Writable<T>;
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
+  // Viewer controls in effect for this component, nearest level first, with their values
+  controls: Readable<AppliedControl[]>;
+  // The spec as viewers see it: the YAML spec with the field controls applied.
+  // Display and query code reads this; the editor reads and writes specStore.
+  viewSpecStore: Readable<T>;
   // The component's metrics view, shared by its local filter managers.
   metricsViewsProvider: MetricsViewsProvider;
   // Widget specific dimension and measure filters
@@ -77,6 +93,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
   // emissions and mutates the shared filter/time state of a deleted widget.
   private unsubscribeSpec: Unsubscriber;
+  // The time filter params last given to the widget's time state, with the viewers' time controls applied,
+  // and the same params from the YAML alone.
+  private timeFilterParams = {
+    shown: new URLSearchParams(),
+    yaml: new URLSearchParams(),
+  };
   private unsubscribeTimeFilterChanges: () => void;
 
   abstract type: CanvasComponentType;
@@ -115,6 +137,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.metricsViewName = mergedSpec["metrics_view"] as string;
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
+    this.controls = parent.controls.forPath(() => this.pathInYAML);
+    this.viewSpecStore = derived(
+      [
+        this.specStore,
+        this.controls,
+        parent.metricsView.getMetricsViewFromName(this.metricsViewName),
+      ],
+      ([spec, controls, { metricsView }]) =>
+        applyFieldControls(spec, controls, componentFields(metricsView, spec)),
+    );
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
@@ -141,22 +173,38 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     // Writes time filter changes from the controls back to the YAML.
     // Lives here rather than in the inspector so it works without the inspector open.
+    // What the viewers' time controls applied stays out of the YAML.
     this.unsubscribeTimeFilterChanges =
       this.localTimeFilterManager.storeSync.on("internal-change", (params) => {
+        const { shown, yaml } = this.timeFilterParams;
         this.updateProperty(
           "time_filters" as AllKeys<T>,
-          normalizeTimeFilters(params) as T[AllKeys<T>],
+          normalizeTimeFilters(
+            withoutTimeControls(params, shown, yaml),
+          ) as T[AllKeys<T>],
         );
       });
 
-    this.unsubscribeSpec = this.specStore.subscribe((spec) => {
+    // The time state follows the YAML's time filters with the viewers' time controls applied.
+    this.unsubscribeSpec = derived(
+      [this.specStore, this.controls],
+      ([spec, controls]) => ({ spec, controls }),
+    ).subscribe(({ spec, controls }) => {
       this.localExpressionFilters.setParamForMetricsView(
         this.metricsViewName,
         (spec["dimension_filters"] ?? "") as string,
       );
 
+      // A time range or grain picked through a control applies on top of the YAML.
+      const timeFilters = spec?.["time_filters"] as string | undefined;
+      this.timeFilterParams = {
+        shown: timeFiltersToParams(
+          applyTimeControls(timeFilters ?? "", controls).toString(),
+        ),
+        yaml: timeFiltersToParams(timeFilters),
+      };
       this.localTimeFilterManager.storeSync.setUrlParams(
-        timeFiltersToParams(spec?.["time_filters"] as string | undefined),
+        this.timeFilterParams.shown,
       );
     });
   }
@@ -191,6 +239,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           this.metricsViewName,
         ),
         this.specStore,
+        this.controls,
+        this.parent.metricsView.getMetricsViewFromName(this.metricsViewName),
       ],
       ([
         {
@@ -205,6 +255,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         },
         metricsViewFilters,
         componentSpec,
+        controls,
+        metricsView,
       ]) => {
         // Timestamps sent to the runtime must be UTC:
         // the protobuf JSON codec rejects ISO strings with both milliseconds and a timezone offset,
@@ -275,6 +327,20 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           dimensionOnlyWhere = mergeFilters(
             globalDimensionOnlyWhere,
             componentWhere,
+          );
+        }
+
+        const controlWhere = controlFiltersExpression(
+          controls,
+          this.metricsViewName,
+          (name) =>
+            !!metricsView.metricsView?.dimensions?.some((d) => d.name === name),
+        );
+        if (controlWhere) {
+          fullWhere = andControlFilters(fullWhere, controlWhere);
+          dimensionOnlyWhere = andControlFilters(
+            dimensionOnlyWhere,
+            controlWhere,
           );
         }
 

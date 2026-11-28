@@ -94,6 +94,51 @@ You can also manage containers in the visual editor:
 
 The visual editor writes a `name` for every tab group and container. A new one gets a name such as `container-2`. When you edit the layout, each unnamed one gets the name it had by default, such as `group-3`, which comes from its position. A block then keeps its name, and a tab group its deep-link key, wherever you move it.
 
+### Viewer Controls
+
+Viewer controls let the people viewing a dashboard change what its widgets show: swap a measure or a dimension, filter a dimension, or pick a time range or time grain. A control changes the widgets under the level it's declared on: the whole canvas, a container, a tab group, a tab, or a single widget. Viewer controls appear when the `canvas_controls` [feature flag](/developers/build/project-configuration#feature-flags) is on.
+
+In YAML, a level lists its controls under `controls`. This one lets viewers switch every widget on the canvas that shows `revenue` to `orders`:
+
+```yaml
+controls:
+  - measure: revenue
+    label: Metric
+    options: [revenue, orders]
+rows:
+  # ...
+```
+
+A widget that already shows `orders`, or whose metrics view has no `orders`, keeps its own measures when viewers pick it; the control still changes the other widgets.
+
+A widget can also let viewers pick which fields it shows from a list, such as the measures of a KPI grid. Declare a `slot` control with `multiple: true` on the widget:
+
+```yaml
+rows:
+  - items:
+      - name: kpis
+        controls:
+          - slot: measures
+            label: KPIs
+            multiple: true
+            options: [revenue, orders, margin]
+        kpi_grid:
+          metrics_view: sales
+          measures: [revenue, orders]
+```
+
+Viewers start from the measures the widget shows, and add or remove the options; at least one stays.
+
+See the [`controls`](/reference/project-files/canvas-dashboards#controls) reference for every kind of control and its options.
+
+You can also add controls in the visual editor:
+
+- **Whole canvas:** Click **Add control** at the top of the canvas.
+- **Container, tab group or tab:** Select **Add control** in the container's three-dot menu or in a tab's menu.
+- **One widget:** Select **Add control** in the widget's three-dot menu, or click **Let viewers choose** next to one of its fields in the right-hand panel. Next to a list of fields, such as a KPI grid's measures, **Let viewers choose** lets viewers pick which of them the widget shows.
+
+Pick what viewers can change and the options they can choose from, then click **Add control**. To edit, reorder or remove controls, select the level and use **Viewer controls** in the right-hand panel. For the whole canvas, click an empty part of the canvas first.
+
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 

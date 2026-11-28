@@ -20,6 +20,7 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import EditableCanvasContainer from "./EditableCanvasContainer.svelte";
+  import LevelControls from "./controls/LevelControls.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
@@ -55,6 +56,7 @@
     addBlockAt,
     blockHasContent,
     deleteBlock,
+    canvasItemNames,
     duplicateBlock,
     moveBlock,
     moveItemAcrossContainers,
@@ -422,6 +424,7 @@
           resolvedComponents,
           transaction,
           componentResources: componentResourceMap,
+          takenItemNames: canvasItemNames(contents),
         });
 
       if (selectedId) {
@@ -959,10 +962,23 @@
   builder
   bind:clientWidth
 >
+  <!-- The canvas's viewer controls, with the button that adds one. It shows on a canvas
+       without controls too, once there's a metrics view to choose fields from. -->
+  <LevelControls
+    {canvasEntity}
+    scopes={[[]]}
+    {maxWidth}
+    add={{
+      levels: [{ kind: "canvas", path: [], name: "" }],
+      levelPath: [],
+      whenEmpty: !!defaultMetrics,
+    }}
+  />
   {#each blocks as block, blockIndex (layoutBlockKey(block))}
     {#if block.kind === "tab-group"}
       <EditableCanvasTabGroup
         group={block.group}
+        canvas={canvasEntity}
         blockIndex={block.rowIndex}
         zIndex={blocks.length - blockIndex}
         isLastBlock={blockIndex === blocks.length - 1}

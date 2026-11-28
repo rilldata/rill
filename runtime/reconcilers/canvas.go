@@ -109,6 +109,8 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Validate refs
+	validSpec := c.Spec
+	var controlsErr error
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 	metricsViews := r.getReferencedMetricsViews(ctx, components)
 	if validateErr == nil {
@@ -123,10 +125,24 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if validateErr == nil {
 		validateErr = r.validateDefaultFilters(c.Spec, metricsViews)
 	}
+	if validateErr == nil {
+		componentSpecs := make(map[string]*runtimev1.ComponentSpec, len(components))
+		for name, res := range components {
+			if res != nil {
+				componentSpecs[name] = res.GetComponent().Spec
+			}
+		}
+		mvSpecs := make(map[string]*runtimev1.MetricsViewSpec, len(metricsViews))
+		for name, res := range metricsViews {
+			mvSpecs[name] = res.GetMetricsView().State.ValidSpec
+		}
+		// Invalid controls don't fail the canvas: they are left out of its valid spec and reported as the reconcile error.
+		validSpec, controlsErr = canvas.ValidateControls(c.Spec, componentSpecs, mvSpecs)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
-		c.State.ValidSpec = c.Spec
+		c.State.ValidSpec = validSpec
 		c.State.DataRefreshedOn = dataRefreshedOn
 	} else if cfg.StageChanges && r.checkAnyComponentHasValidSpec(components) {
 		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
@@ -144,7 +160,7 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	return runtime.ReconcileResult{Err: validateErr}
+	return runtime.ReconcileResult{Err: errors.Join(validateErr, controlsErr)}
 }
 
 // checkAnyComponentHasValidSpec returns true if one or more components have a valid spec.

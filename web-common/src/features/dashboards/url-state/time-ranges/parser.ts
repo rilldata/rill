@@ -12,6 +12,16 @@ export function parseRillTime(rillTimeRange: string): RillTime {
   return rt;
 }
 
+/** The zone a range names (`... tz Asia/Kathmandu`), or undefined if it names none or doesn't parse. */
+export function getTimeZoneOfRange(timeRange: string | undefined) {
+  if (!timeRange) return undefined;
+  try {
+    return parseRillTime(timeRange).timezone;
+  } catch {
+    return undefined;
+  }
+}
+
 export function isNewRillTimeFormat(rillTime: string): boolean {
   try {
     const parser = parseRillTime(rillTime);

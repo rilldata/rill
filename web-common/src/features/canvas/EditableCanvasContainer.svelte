@@ -11,6 +11,9 @@
   import type { CanvasEntity } from "./stores/canvas-entity";
   import type { RowsBlock } from "./stores/layout-blocks";
   import VisibilityBadge from "./VisibilityBadge.svelte";
+  import LevelControls from "./controls/LevelControls.svelte";
+  import AddControlDialog from "./controls/editor/AddControlDialog.svelte";
+  import type { ControlLevelRef } from "./controls/control-edit";
 
   // A container in the editor: the shared block region in its dashed variant, with a chip
   // in the header band that names the container and holds its grip, visibility badge and
@@ -41,6 +44,13 @@
   const name = $derived(
     isGeneratedBlockName("container", container.name) ? "" : container.name,
   );
+
+  // A new viewer control from the chip's menu or the "+" after the container's control bar
+  // goes on the container.
+  const controlLevels = $derived<ControlLevelRef[]>([
+    { kind: "container", path: ["rows", blockIndex], name: container.name },
+  ]);
+  let addingControl = $state(false);
 
   function select() {
     onSelectBlock(container.name);
@@ -108,20 +118,36 @@
             <BlockMenuItems
               kind="container"
               onDuplicate={() => onDuplicateBlock(blockIndex)}
+              onAddControl={() => (addingControl = true)}
               onUngroup={() => onUngroup(blockIndex)}
               onDelete={() => onDeleteBlock(blockIndex)}
             />
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
+      <!-- The container's viewer controls, which viewers see above its rows. -->
+      <LevelControls
+        canvasEntity={canvas}
+        scopes={[[container.name]]}
+        add={{ levels: controlLevels, levelPath: ["rows", blockIndex] }}
+      />
     </div>
   {/snippet}
 </EditableBlockRegion>
 
+{#if addingControl}
+  <AddControlDialog
+    {canvas}
+    levels={controlLevels}
+    levelPath={["rows", blockIndex]}
+    onClose={() => (addingControl = false)}
+  />
+{/if}
+
 <style lang="postcss">
   /* The band above the rows that holds the chip; px-2.5 lines the chip up with the cards. */
   .header {
-    @apply flex h-7 w-full flex-none items-center px-2.5;
+    @apply flex min-h-7 w-full flex-none items-center px-2.5;
     @apply cursor-grab active:cursor-grabbing;
   }
 

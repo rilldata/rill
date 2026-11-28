@@ -2297,6 +2297,15 @@ export type AdminServiceHibernateProjectParams = {
 export type AdminServiceGetIFrameBodyAttributes = { [key: string]: unknown };
 
 /**
+ * Values to fix for viewer controls of canvas dashboards, keyed by the control's URL key without the `c.` prefix
+(e.g. `publisher` for a canvas control, `deep_dive.publisher` for a control of the container `deep_dive`).
+Values use the format of the control's URL param: several values are comma-separated, each URI-encoded.
+A locked control applies its value and is hidden from the viewer.
+It is a presentation setting, not an access restriction: use `attributes` and security policies to restrict data.
+ */
+export type AdminServiceGetIFrameBodyLockedControls = { [key: string]: string };
+
+/**
  * DEPRECATED: Additional parameters to set outright in the generated URL query.
  */
 export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
@@ -2333,6 +2342,12 @@ Cannot be combined with `resource`, and requires the `external_user_id` of the e
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
   themeMode?: string;
+  /** Values to fix for viewer controls of canvas dashboards, keyed by the control's URL key without the `c.` prefix
+(e.g. `publisher` for a canvas control, `deep_dive.publisher` for a control of the container `deep_dive`).
+Values use the format of the control's URL param: several values are comma-separated, each URI-encoded.
+A locked control applies its value and is hidden from the viewer.
+It is a presentation setting, not an access restriction: use `attributes` and security policies to restrict data. */
+  lockedControls?: AdminServiceGetIFrameBodyLockedControls;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.

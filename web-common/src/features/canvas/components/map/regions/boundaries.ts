@@ -79,10 +79,10 @@ export function createRegionBoundariesQuery(
   runtimeClient: RuntimeClient,
   component: MapComponent,
 ) {
-  const { specStore, dataEnabled } = component;
+  const { viewSpecStore, dataEnabled } = component;
 
   const queryOptionsStore = derived(
-    [specStore, dataEnabled],
+    [viewSpecStore, dataEnabled],
     ([specVal, $visible]) => {
       const regions = (specVal as Partial<MapSpec> | undefined)?.regions;
       const boundaries = regions?.boundaries;

@@ -42,16 +42,18 @@ function block(
     widthPx: 400,
     heightPx: 200,
     rowIndex,
-    isTabLabel: false,
+    isBand: false,
     ...overrides,
   };
 }
 
 describe("groupBySheet", () => {
-  it("separates the canvas's own rows from each tab and drops label bands", () => {
+  it("separates the canvas's own rows from each tab and drops the bands", () => {
     const { main, tabs } = groupBySheet([
       block("a", 0, 0, 0),
-      block("label", 1, 0, 220, { isTabLabel: true }),
+      block("label", 1, 0, 220, { isBand: true }),
+      // A band of viewer controls has no tab attributes, so it would land on the main sheet.
+      block("controls", 1, 0, 240, { isBand: true }),
       block("b", 1, 0, 260, { tabGroup: "g", tab: "overview" }),
       block("c", 2, 0, 480, { tabGroup: "g", tab: "channels" }),
       block("d", 3, 0, 700),

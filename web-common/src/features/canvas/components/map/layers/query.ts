@@ -24,10 +24,11 @@ export function createMapLayerQuery(
   component: MapComponent,
   getFields: (spec: Partial<MapSpec>) => MapLayerFields | null,
 ) {
-  const { specStore, timeAndFilterStore, dataEnabled } = component;
+  // The spec viewers see, with the canvas's viewer controls applied.
+  const { viewSpecStore, timeAndFilterStore, dataEnabled } = component;
 
   const queryOptionsStore = derived(
-    [specStore, timeAndFilterStore, dataEnabled],
+    [viewSpecStore, timeAndFilterStore, dataEnabled],
     ([specVal, $timeAndFilterStore, $visible]) => {
       const spec = specVal ?? ({} as Partial<MapSpec>);
       const fields = getFields(spec);

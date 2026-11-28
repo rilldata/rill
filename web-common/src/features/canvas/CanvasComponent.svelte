@@ -2,6 +2,11 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
+  import ControlBar from "./controls/ControlBar.svelte";
+  import { slotFields, specUsesField } from "./controls/apply-fields";
+  import { ControlKind } from "./controls/controls";
+  import { controlLevelsForItem } from "./controls/control-edit";
+  import AddControlDialog from "./controls/editor/AddControlDialog.svelte";
   import CanvasComponentPngDialog from "./export/CanvasComponentPngDialog.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
@@ -82,6 +87,38 @@
   $: ({ id: componentName, type: renderer } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
+
+  // The menu's "Add control" opens the control dialog for this widget, with the levels
+  // around it to choose from. Widgets referencing a component file and widgets without a
+  // metrics view don't offer it, as in the inspector.
+  $: canAddControl =
+    editable && renderer !== "component_ref" && !!component.metricsViewName;
+  let addingControl = false;
+
+  // The item's own viewer controls show above it. Controls of the enclosing levels show on those levels.
+  // A slot control knows the fields the widget's YAML sets there, which it shows on its default.
+  $: ({ controls: controlsStore } = component);
+  $: ownControls = $controlsStore
+    .filter((c) => c.level === "item" && !c.locked)
+    .map((c) =>
+      c.control.kind === ControlKind.Slot
+        ? { ...c, shownValues: slotFields($specStore, c.control.target ?? "") }
+        : c,
+    );
+
+  // While a viewer points at a control of an enclosing level, the widgets it changes light up.
+  // A swap only changes widgets that show its field.
+  $: ({ hovered: hoveredControl } = component.parent.controls);
+  $: ({ specStore } = component);
+  $: controlHighlight =
+    $hoveredControl !== null &&
+    $controlsStore.some(
+      (c) =>
+        c.urlKey === $hoveredControl &&
+        ((c.control.kind !== ControlKind.Measure &&
+          c.control.kind !== ControlKind.Dimension) ||
+          specUsesField($specStore, c.control.target ?? "")),
+    );
 </script>
 
 <article
@@ -89,6 +126,7 @@
   role="presentation"
   id={componentName}
   class:selected
+  class:control-highlight={controlHighlight}
   class:active
   class:editable
   class:opacity-20={ghost}
@@ -102,6 +140,7 @@
     {onDelete}
     {onDuplicate}
     {onWrapRow}
+    onAddControl={canAddControl ? () => (addingControl = true) : undefined}
     onDownloadPng={openPngDialog}
     {editable}
     bind:dropdownOpen={open}
@@ -114,6 +153,15 @@
     onmousedown={onMouseDown}
   >
     {#if component}
+      {#if ownControls.length}
+        <div class="px-4 pt-2">
+          <ControlBar
+            controls={ownControls}
+            canvasEntity={component.parent}
+            metricsViewName={component.metricsViewName}
+          />
+        </div>
+      {/if}
       <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
@@ -122,6 +170,19 @@
     {/if}
   </div>
 </article>
+
+{#if addingControl}
+  <AddControlDialog
+    canvas={component.parent}
+    levels={controlLevelsForItem(
+      get(component.parent.parsedContent),
+      component.pathInYAML.slice(0, -1),
+    )}
+    levelPath={component.pathInYAML.slice(0, -1)}
+    metricsViewName={component.metricsViewName}
+    onClose={() => (addingControl = false)}
+  />
+{/if}
 
 {#if pngDialogOpen}
   <CanvasComponentPngDialog
@@ -139,6 +200,12 @@
 
   .component-card:has(:global(.component-error)) {
     @apply outline-destructive;
+  }
+
+  .control-highlight {
+    @apply outline-primary-300 outline-[1.5px] bg-primary-50/30;
+
+    outline-style: solid !important;
   }
 
   .selected {

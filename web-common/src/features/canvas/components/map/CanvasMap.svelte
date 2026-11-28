@@ -60,7 +60,7 @@
   // The component instance owns the stores below for the lifetime of this
   // render, so they are read once rather than tracked.
   const {
-    specStore,
+    viewSpecStore: specStore,
     parent: {
       name: canvasName,
       metricsView: { getMetricsViewFromName },

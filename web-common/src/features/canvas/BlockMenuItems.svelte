@@ -1,23 +1,28 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { Copy, Trash2, Ungroup } from "lucide-svelte";
+  import { Copy, SlidersHorizontal, Trash2, Ungroup } from "lucide-svelte";
   import type { BlockKind } from "./stores/block-edit";
 
   // The block-level items of a dropdown menu, shown for the handlers that are passed:
-  // the tab strip offers Duplicate for its group in each tab's menu, the container chip
-  // offers all of them.
+  // the tab strip offers Duplicate and Add control for its group in each tab's menu,
+  // the container chip offers all of them. Add control needs the canvasControls flag.
   let {
     kind,
     onDuplicate,
+    onAddControl,
     onUngroup,
     onDelete,
   }: {
     kind: BlockKind;
     onDuplicate?: () => void;
+    onAddControl?: () => void;
     onUngroup?: () => void;
     onDelete?: () => void;
   } = $props();
+
+  const { canvasControls } = featureFlags;
 
   const duplicateLabel = $derived(
     kind === "tab-group"
@@ -38,6 +43,15 @@
   >
     <Copy size="14px" />
     {duplicateLabel}
+  </DropdownMenu.Item>
+{/if}
+{#if onAddControl && $canvasControls}
+  <DropdownMenu.Item
+    class="flex flex-row gap-x-2 text-fg-primary"
+    onclick={onAddControl}
+  >
+    <SlidersHorizontal size="14px" />
+    {m.canvas_viewer_controls_add()}
   </DropdownMenu.Item>
 {/if}
 {#if onUngroup}

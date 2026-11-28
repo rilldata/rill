@@ -87,7 +87,7 @@
 
   const runtimeClient = useRuntimeClient();
   const themeBoundaryClass = getThemeBoundaryClass();
-  const { specStore } = untrack(() => component);
+  const { viewSpecStore: specStore } = untrack(() => component);
 
   const regions = $derived(
     ($specStore as Partial<MapSpec> | undefined)?.regions,

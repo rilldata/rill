@@ -17,7 +17,7 @@
     parent: {
       metricsView: { getMetricsViewFromName },
     },
-    specStore,
+    viewSpecStore: specStore,
     config,
     pivotState,
     pivotDataStore,

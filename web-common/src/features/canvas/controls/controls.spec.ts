@@ -1,0 +1,350 @@
+import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
+import { describe, expect, it } from "vitest";
+import {
+  collectControls,
+  controlsForPath,
+  filterValueViews,
+  controlUrlKey,
+  parseControlValue,
+  serializeControlValue,
+  lockedControlValue,
+  controlsForScopes,
+  controlMetricsViews,
+  type AppliedControl,
+} from "./controls";
+
+const spec: V1CanvasSpec = {
+  controls: [{ kind: "measure", target: "spend", name: "metric" }],
+  rows: [
+    { items: [{ component: "top", name: "top" }] },
+    {
+      container: {
+        name: "section",
+        controls: [{ kind: "filter", target: "publisher", name: "publisher" }],
+        rows: [
+          {
+            items: [
+              {
+                name: "own",
+                controls: [
+                  { kind: "filter", target: "publisher", name: "mine" },
+                ],
+              },
+              { name: "plain" },
+              {
+                name: "ignore_all",
+                ignoreAllControls: true,
+                controls: [{ kind: "time_grain", name: "time_grain" }],
+              },
+              { name: "ignore_one", ignoreControls: ["metric"] },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      tabGroup: {
+        name: "group",
+        controls: [{ kind: "time_grain", name: "time_grain" }],
+        tabs: [
+          {
+            name: "mobile",
+            controls: [{ kind: "filter", target: "os", name: "os" }],
+            rows: [{ items: [{ name: "in_tab" }] }],
+          },
+        ],
+      },
+    },
+  ],
+};
+
+const keys = (path: (string | number)[]) =>
+  controlsForPath(spec, path).map((c) => c.urlKey);
+
+describe("controlsForPath", () => {
+  it("resolves the nearest control per target, nearest level first", () => {
+    expect(keys(["rows", 0, "items", 0, "kpi"])).toEqual(["c.metric"]);
+    expect(keys(["rows", 1, "rows", 0, "items", 0, "bar_chart"])).toEqual([
+      "c.own.mine",
+      "c.metric",
+    ]);
+    expect(keys(["rows", 1, "rows", 0, "items", 1, "bar_chart"])).toEqual([
+      "c.section.publisher",
+      "c.metric",
+    ]);
+    expect(
+      keys(["rows", 2, "tabs", 0, "rows", 0, "items", 0, "bar_chart"]),
+    ).toEqual(["c.group.mobile.os", "c.group.time_grain", "c.metric"]);
+  });
+
+  it("applies ignore_controls to enclosing levels only", () => {
+    expect(keys(["rows", 1, "rows", 0, "items", 2, "bar_chart"])).toEqual([
+      "c.ignore_all.time_grain",
+    ]);
+    expect(keys(["rows", 1, "rows", 0, "items", 3, "bar_chart"])).toEqual([
+      "c.section.publisher",
+    ]);
+  });
+
+  it("returns nothing for a path that isn't on the canvas", () => {
+    expect(keys(["rows", 9, "items", 0, "kpi"])).toEqual([]);
+  });
+});
+
+describe("collectControls", () => {
+  it("lists every control once", () => {
+    expect(collectControls(spec).map((c) => c.urlKey)).toEqual([
+      "c.metric",
+      "c.section.publisher",
+      "c.own.mine",
+      "c.ignore_all.time_grain",
+      "c.group.time_grain",
+      "c.group.mobile.os",
+    ]);
+  });
+});
+
+describe("single-select filters", () => {
+  const multi = {
+    kind: "filter",
+    target: "publisher",
+    name: "publisher",
+    multiple: true,
+    default: ["Google", "Meta"],
+  };
+  const resolved = (singleSelectFilters: string[], fields = {}) =>
+    collectControls({
+      singleSelectFilters,
+      controls: [{ ...multi, fields }],
+      rows: [{ items: [{ name: "chart", controls: [multi] }] }],
+    }).map((c) => c.control);
+
+  it("holds one value when the canvas lists the dimension under single_select", () => {
+    for (const control of resolved(["publisher"])) {
+      expect(control).toMatchObject({ multiple: false, default: ["Meta"] });
+      expect(parseControlValue(control, "Google,Yahoo")).toEqual({
+        values: ["Yahoo"],
+        valid: true,
+      });
+    }
+    expect(resolved(["pub_name"], { ads: "pub_name" })[0].multiple).toBe(false);
+    expect(resolved([]).map((c) => c.multiple)).toEqual([true, true]);
+  });
+
+  it("follows it for the widget's own controls too", () => {
+    const spec = {
+      singleSelectFilters: ["publisher"],
+      rows: [{ items: [{ name: "chart", controls: [multi] }] }],
+    };
+    expect(
+      controlsForPath(spec, ["rows", 0, "items", 0, "bar_chart"])[0].control
+        .multiple,
+    ).toBe(false);
+  });
+});
+
+describe("URL keys and values", () => {
+  it("escapes dots and separators in key parts", () => {
+    expect(controlUrlKey(["a.b", "c,d"], "x")).toBe("c.a%2Eb.c%2Cd.x");
+  });
+
+  const filter = { kind: "filter", target: "publisher", multiple: true };
+
+  it("round-trips values, including separators", () => {
+    const values = ["A,B", "C&D 100%"];
+    const raw = serializeControlValue(filter, values);
+    expect(raw).toBe("A%2CB,C%26D%20100%25");
+    expect(parseControlValue(filter, raw!)).toEqual({ values, valid: true });
+  });
+
+  it("omits the default and keeps an explicit empty value", () => {
+    const withDefault = { ...filter, default: ["Google"] };
+    expect(serializeControlValue(withDefault, ["Google"])).toBeUndefined();
+    expect(serializeControlValue(withDefault, [])).toBe("");
+    expect(parseControlValue(withDefault, null).values).toEqual(["Google"]);
+    expect(parseControlValue(withDefault, "").values).toEqual([]);
+  });
+
+  it("tells an empty-string value from a cleared control", () => {
+    // A dimension's blank value is a value: selecting it must not read as "show everything".
+    expect(serializeControlValue(filter, [""])).toBe('""');
+    expect(parseControlValue(filter, '""')).toEqual({
+      values: [""],
+      valid: true,
+    });
+    expect(serializeControlValue(filter, ["Acme", ""])).toBe('Acme,""');
+    expect(parseControlValue(filter, 'Acme,""').values).toEqual(["Acme", ""]);
+    // A value that is literally two quotes is encoded like any other.
+    expect(serializeControlValue(filter, ['""'])).toBe("%22%22");
+    expect(parseControlValue(filter, "%22%22").values).toEqual(['""']);
+    // Cleared stays an empty param.
+    const withDefault = { ...filter, default: ["Acme"] };
+    expect(serializeControlValue(withDefault, [])).toBe("");
+    expect(parseControlValue(withDefault, "").values).toEqual([]);
+  });
+
+  it("falls back to the default for a value that isn't allowed", () => {
+    const metric = {
+      kind: "measure",
+      target: "spend",
+      options: ["spend", "impressions"],
+    };
+    expect(parseControlValue(metric, "impressions")).toEqual({
+      values: ["impressions"],
+      valid: true,
+    });
+    expect(parseControlValue(metric, "nope")).toEqual({
+      values: ["spend"],
+      valid: false,
+    });
+    expect(parseControlValue(metric, "spend,impressions").valid).toBe(false);
+    expect(parseControlValue(metric, "").valid).toBe(false);
+    expect(serializeControlValue(metric, ["spend"])).toBeUndefined();
+  });
+});
+
+describe("filterValueViews", () => {
+  const dims: Record<string, string[]> = {
+    bids: ["publisher", "country"],
+    sales: ["billing_country"],
+    visits: ["geo"],
+  };
+  const views = Object.keys(dims);
+  const hasDimension = (view: string, dimension: string) =>
+    dims[view].includes(dimension);
+
+  it("reads values from the views that have the target dimension", () => {
+    expect(
+      filterValueViews({ target: "publisher" }, views, hasDimension),
+    ).toEqual(["bids"]);
+    expect(
+      filterValueViews(
+        { target: "country", fields: { sales: "billing_country" } },
+        views,
+        hasDimension,
+      ),
+    ).toEqual(["bids"]);
+  });
+
+  it("falls back to mapped views when no view has the target itself", () => {
+    expect(
+      filterValueViews(
+        {
+          target: "region",
+          fields: { sales: "billing_country", visits: "geo" },
+        },
+        views,
+        hasDimension,
+      ),
+    ).toEqual(["sales"]);
+  });
+
+  it("returns nothing when no view has the dimension", () => {
+    expect(
+      filterValueViews(
+        { target: "region", fields: { sales: "missing" } },
+        views,
+        hasDimension,
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("lockedControlValue", () => {
+  it("ignores inherited property names and honors own values", () => {
+    for (const name of ["constructor", "toString", "__proto__"]) {
+      expect(lockedControlValue({}, `c.${name}`)).toBeNull();
+    }
+    expect(
+      lockedControlValue(Object.create({ metric: "revenue" }), "c.metric"),
+    ).toBeNull();
+    expect(
+      lockedControlValue({ metric: "", "c.metric": "spend" }, "c.metric"),
+    ).toBe("spend");
+    expect(lockedControlValue({ metric: "" }, "c.metric")).toBe("");
+  });
+});
+
+describe("typed filter values", () => {
+  it("round-trips numbers, booleans and null distinctly from their string forms", () => {
+    const control = { kind: "filter", multiple: true };
+    const values = [1, "1", true, "true", null, "null", ":null", "", "A,B"];
+    const raw = serializeControlValue(control, values)!;
+    expect(parseControlValue(control, raw)).toEqual({ values, valid: true });
+    expect(parseControlValue(control, "1").values).toEqual(["1"]);
+    for (const raw of [":%7B%7D", ':"x"', ":NaN"])
+      expect(parseControlValue(control, raw).valid).toBe(false);
+  });
+});
+
+describe("level and widget selectors", () => {
+  const all = collectControls(spec).map((c) => ({
+    ...c,
+    values: null,
+  })) as AppliedControl[];
+  it("shares the visible-level rule across live and PDF views", () => {
+    expect(
+      controlsForScopes(all, [["section"], ["own"]]).map((c) => c.urlKey),
+    ).toEqual(["c.section.publisher"]);
+    expect(
+      controlsForScopes(
+        all.map((c) => ({ ...c, locked: true })),
+        [[]],
+      ),
+    ).toEqual([]);
+  });
+  it("leaves out a tab group's control that the shown tab overrides", () => {
+    const tabGrain = collectControls({
+      rows: [
+        {
+          tabGroup: {
+            name: "group",
+            tabs: [
+              {
+                name: "mobile",
+                controls: [{ kind: "time_grain", name: "grain" }],
+              },
+            ],
+          },
+        },
+      ],
+    }).map((c) => ({ ...c, values: null })) as AppliedControl[];
+    const scopes = [["group"], ["group", "mobile"]];
+    expect(controlsForScopes(all, scopes).map((c) => c.urlKey)).toEqual([
+      "c.group.time_grain",
+      "c.group.mobile.os",
+    ]);
+    expect(
+      controlsForScopes([...all, ...tabGrain], scopes).map((c) => c.urlKey),
+    ).toEqual(["c.group.mobile.os", "c.group.mobile.grain"]);
+  });
+  it("uses only widgets whose resolved controls include the control", () => {
+    const components = [
+      {
+        metricsViewName: "outside",
+        controls: controlsForPath(spec, ["rows", 0, "items", 0]),
+      },
+      {
+        metricsViewName: "own",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 0]),
+      },
+      {
+        metricsViewName: "inside",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 1]),
+      },
+      {
+        metricsViewName: "ignored",
+        controls: controlsForPath(spec, ["rows", 1, "rows", 0, "items", 2]),
+      },
+    ].map((c) => ({
+      ...c,
+      controls: c.controls.map((control) => ({ ...control, values: null })),
+    }));
+    expect(controlMetricsViews(components).get("c.section.publisher")).toEqual([
+      "inside",
+    ]);
+    expect(
+      controlMetricsViews(components).get("c.group.mobile.os"),
+    ).toBeUndefined();
+  });
+});

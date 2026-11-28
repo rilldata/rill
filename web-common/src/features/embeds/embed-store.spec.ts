@@ -49,4 +49,28 @@ describe("EmbedStore", () => {
       expect(embedStore.navigationBarEnabled).toBe(false);
     });
   });
+
+  describe("lockedControls", () => {
+    it("reads the locked_controls param as a map of control key to value", () => {
+      const param = encodeURIComponent(
+        JSON.stringify({ "deep_dive.publisher": "Acme,Globex%20Inc" }),
+      );
+      expect(initEmbedStore(`locked_controls=${param}`).lockedControls).toEqual(
+        {
+          "deep_dive.publisher": "Acme,Globex%20Inc",
+        },
+      );
+    });
+
+    it("ignores a missing or malformed param and non-string values", () => {
+      expect(initEmbedStore("navigation=true").lockedControls).toEqual({});
+      expect(initEmbedStore("locked_controls=nope").lockedControls).toEqual({});
+      const param = encodeURIComponent(JSON.stringify({ a: 1, b: "x" }));
+      expect(initEmbedStore(`locked_controls=${param}`).lockedControls).toEqual(
+        {
+          b: "x",
+        },
+      );
+    });
+  });
 });

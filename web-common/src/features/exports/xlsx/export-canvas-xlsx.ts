@@ -41,7 +41,7 @@ export async function exportCanvasXlsx(
       opts.canvasName,
     );
     const blocks = measureCanvasBlocks(rowContainer).filter(
-      (block) => !block.isTabLabel,
+      (block) => !block.isBand,
     );
     if (!blocks.length) {
       throw new Error("Nothing to export on this canvas.");

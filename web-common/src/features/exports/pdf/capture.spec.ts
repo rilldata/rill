@@ -58,6 +58,45 @@ describe("captureTargetsIn", () => {
     ]);
   });
 
+  it("captures a level's viewer controls band and groups it with the row below", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <section id="pdf-controls-story" class="pdf-controls-row"></section>
+      <section id="canvas-row-story-0">
+        <article id="story-a" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-first" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-first" class="pdf-controls-row"></section>
+      <section id="canvas-row-g-first-0">
+        <article id="tab-a" class="component-card"></article>
+      </section>
+      <section id="pdf-tab-label-g-empty" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-empty" class="pdf-controls-row"></section>
+      <section id="pdf-tab-label-g-last" class="pdf-tab-label-row"></section>
+    `;
+    const indexOf = (selector: string) =>
+      rowIndexFor(container.querySelector<HTMLElement>(selector)!, container);
+
+    expect(captureTargetsIn(container).map((el) => el.id)).toStrictEqual([
+      "pdf-controls-story",
+      "story-a",
+      "pdf-tab-label-g-first",
+      "pdf-controls-g-first",
+      "tab-a",
+      "pdf-tab-label-g-empty",
+      "pdf-controls-g-empty",
+      "pdf-tab-label-g-last",
+    ]);
+    // A container's controls go with its first row.
+    expect(indexOf("#pdf-controls-story")).toBe(indexOf("#story-a"));
+    // A tab's label and controls both go with the tab's first row.
+    expect(indexOf("#pdf-tab-label-g-first")).toBe(indexOf("#tab-a"));
+    expect(indexOf("#pdf-controls-g-first")).toBe(indexOf("#tab-a"));
+    // Bands of a tab without rows keep their own places.
+    expect(indexOf("#pdf-tab-label-g-empty")).toBe(5);
+    expect(indexOf("#pdf-controls-g-empty")).toBe(6);
+  });
+
   it("groups each tab's label with the tab's first row, between the free rows", () => {
     const container = renderExportDom();
     const indexOf = (selector: string) =>
@@ -174,8 +213,9 @@ describe("captureCanvasBlocks", () => {
 
   // A raster over the browser's canvas limits comes back as an empty data URL.
   // The widget keeps its place without an image, so the PDF can say a widget is
-  // missing there, and the other blocks are still captured. A tab label isn't a
-  // widget, so one that fails is left out, as the filter bar is.
+  // missing there, and the other blocks are still captured. A tab label or a
+  // controls band isn't a widget, so one that fails is left out, as the filter
+  // bar is.
   it("keeps a widget whose capture produced no image, without one", async () => {
     const view = document.createElement("div");
     view.id = "canvas-pdf-export-view";
@@ -184,6 +224,7 @@ describe("captureCanvasBlocks", () => {
     view.innerHTML = `
       <div class="row-container">
         <section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
+        <section id="pdf-controls-g-t" class="pdf-controls-row"></section>
         <section id="canvas-row-0">
           <article id="fine" class="component-card"></article>
           <article id="broken" class="component-card"></article>
@@ -192,6 +233,7 @@ describe("captureCanvasBlocks", () => {
     `;
     document.body.appendChild(view);
     layOut(view.querySelector("#pdf-tab-label-g-t")!, { height: 40 });
+    layOut(view.querySelector("#pdf-controls-g-t")!, { height: 40 });
     layOut(view.querySelector("#fine")!, { width: 400, height: 200 });
     layOut(view.querySelector("#broken")!, {
       left: 400,
@@ -199,6 +241,7 @@ describe("captureCanvasBlocks", () => {
       height: 200,
     });
     vi.mocked(toJpeg)
+      .mockResolvedValueOnce("data:,")
       .mockResolvedValueOnce("data:,")
       .mockResolvedValueOnce("data:image/jpeg;base64,")
       .mockResolvedValueOnce("data:,");
@@ -220,12 +263,13 @@ describe("captureCanvasBlocks", () => {
     warn.mockRestore();
   });
 
-  // The filter bar and the tab labels only frame the widgets: a PDF of them
-  // and the notes of failed widgets isn't an export.
+  // The filter bar and the bands of tab labels and viewer controls only frame
+  // the widgets: a PDF of them and the notes of failed widgets isn't an export.
   it("fails when no widget could be captured", async () => {
     const view = mountExportView(
       "all-failing",
       `<section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
+       <section id="pdf-controls-g-t" class="pdf-controls-row"></section>
        <section id="canvas-row-0">
          <article id="broken" class="component-card"></article>
        </section>`,
@@ -235,6 +279,7 @@ describe("captureCanvasBlocks", () => {
     )!;
     Object.defineProperty(filterBar, "scrollHeight", { value: 40 });
     vi.mocked(toJpeg)
+      .mockResolvedValueOnce("data:image/jpeg;base64,")
       .mockResolvedValueOnce("data:image/jpeg;base64,")
       .mockResolvedValueOnce("data:image/jpeg;base64,")
       .mockResolvedValueOnce("data:,");
@@ -247,10 +292,11 @@ describe("captureCanvasBlocks", () => {
         includeFilters: true,
       }),
     ).rejects.toThrow("This canvas could not be captured.");
-    // The filter bar and the tab label were captured; the widget wasn't.
+    // The filter bar and the bands were captured; the widget wasn't.
     expect(vi.mocked(toJpeg).mock.calls.map(([node]) => node.id)).toEqual([
       "canvas-pdf-export-header",
       "pdf-tab-label-g-t",
+      "pdf-controls-g-t",
       "broken",
     ]);
     warn.mockRestore();
@@ -260,6 +306,7 @@ describe("captureCanvasBlocks", () => {
     const view = mountExportView(
       "no-widgets",
       `<section id="pdf-tab-label-g-t" class="pdf-tab-label-row"></section>
+       <section id="pdf-controls-g-t" class="pdf-controls-row"></section>
        <section id="canvas-row-0">
          <article id="hidden" class="component-card"></article>
        </section>`,
@@ -301,6 +348,7 @@ describe("measureCanvasBlocks", () => {
         <article id="free-a" class="component-card"></article>
       </section>
       <section id="pdf-tab-label-g-overview" class="pdf-tab-label-row"></section>
+      <section id="pdf-controls-g-overview" class="pdf-controls-row"></section>
       <section id="canvas-row-g-overview-0" data-tab-group="g" data-tab="overview">
         <article id="tab-a" class="component-card"></article>
       </section>
@@ -318,11 +366,12 @@ describe("measureCanvasBlocks", () => {
     const blocks = measureCanvasBlocks(container);
 
     expect(
-      blocks.map((b) => [b.id, b.rowIndex, b.isTabLabel, b.tabGroup, b.tab]),
+      blocks.map((b) => [b.id, b.rowIndex, b.isBand, b.tabGroup, b.tab]),
     ).toStrictEqual([
       ["free-a", 0, false, undefined, undefined],
-      ["pdf-tab-label-g-overview", 2, true, undefined, undefined],
-      ["tab-a", 2, false, "g", "overview"],
+      ["pdf-tab-label-g-overview", 3, true, undefined, undefined],
+      ["pdf-controls-g-overview", 3, true, undefined, undefined],
+      ["tab-a", 3, false, "g", "overview"],
     ]);
     expect(blocks[0].element).toBe(container.querySelector("#free-a"));
     expect(blocks[0]).toMatchObject({

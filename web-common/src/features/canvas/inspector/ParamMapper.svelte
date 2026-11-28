@@ -34,6 +34,12 @@
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ComponentRefComponent } from "../components/component-ref";
+  import { slotFields } from "../controls/apply-fields";
+  import { listFieldTargets, readControls } from "../controls/control-edit";
+  import { controlRequest } from "../controls/editor/control-request";
 
   export let component: BaseCanvasComponent;
 
@@ -114,6 +120,87 @@
     AllKeys<ComponentSpec>,
     ComponentInputParam,
   ][];
+
+  // "Let viewers choose" under a field input: opens the dialog for a control that lets
+  // viewers swap that field, or pick the fields of a list such as a KPI grid's measures
+  // (see ViewerControlsEditor).
+  const { canvasControls } = featureFlags;
+  $: ({ _metricsViews, parsedContent } = component.parent);
+  $: offersControls =
+    $canvasControls && !(component instanceof ComponentRefComponent);
+  $: metricsViewSpec = metricsView
+    ? $_metricsViews[metricsView]?.state?.validSpec
+    : undefined;
+  $: itemPath = component.pathInYAML.slice(0, -1);
+  // Fields the item's own controls already swap, and properties whose fields they let viewers pick.
+  $: itemControls = readControls($parsedContent, itemPath);
+  $: controlledFields = new Set(
+    itemControls.flatMap((c) =>
+      [c.measure, c.dimension].filter((f) => typeof f === "string"),
+    ),
+  );
+  $: controlledSlots = new Set(
+    itemControls.flatMap((c) => (typeof c.slot === "string" ? [c.slot] : [])),
+  );
+  $: slotTargets = new Set(
+    listFieldTargets(inputParams).map((target) => target.target),
+  );
+
+  // The measure or dimension a field input holds, if a viewer control could swap it.
+  function swappableField(
+    config: ComponentInputParam,
+    value: unknown,
+  ): { kind: "measure" | "dimension"; field: string } | null {
+    let field: unknown;
+    if (config.type === "measure" || config.type === "dimension") {
+      field = value;
+    } else if (config.type === "positional") {
+      field = (value as { field?: unknown } | undefined)?.field;
+    }
+    if (typeof field !== "string" || !field || controlledFields.has(field)) {
+      return null;
+    }
+    if (metricsViewSpec?.measures?.some((f) => f.name === field)) {
+      return { kind: "measure", field };
+    }
+    if (metricsViewSpec?.dimensions?.some((f) => f.name === field)) {
+      return { kind: "dimension", field };
+    }
+    return null;
+  }
+
+  // A list of fields: viewers pick among the ones it shows, and the designer can offer more.
+  function letViewersPick(key: string) {
+    controlRequest.set({
+      itemPath: itemPath.join("/"),
+      draft: {
+        kind: "slot",
+        field: key,
+        options: slotFields(localParamValues, key),
+        default: [],
+        multiple: true,
+        display: "",
+        label: "",
+        name: "",
+      },
+    });
+  }
+
+  function letViewersChoose(kind: "measure" | "dimension", field: string) {
+    controlRequest.set({
+      itemPath: itemPath.join("/"),
+      draft: {
+        kind,
+        field,
+        options: [],
+        default: [],
+        multiple: false,
+        display: "",
+        label: "",
+        name: "",
+      },
+    });
+  }
 </script>
 
 {#if component instanceof BaseChart}
@@ -441,6 +528,26 @@
             }}
           />
         {/if}
+        {#if offersControls}
+          {@const swappable = swappableField(config, localParamValues[key])}
+          {#if swappable}
+            <button
+              type="button"
+              class="viewers-choose"
+              onclick={() => letViewersChoose(swappable.kind, swappable.field)}
+            >
+              {m.canvas_control_let_viewers_choose()}
+            </button>
+          {:else if slotTargets.has(key) && !controlledSlots.has(key)}
+            <button
+              type="button"
+              class="viewers-choose"
+              onclick={() => letViewersPick(key)}
+            >
+              {m.canvas_control_let_viewers_choose()}
+            </button>
+          {/if}
+        {/if}
       </div>
     {/if}
   {/each}
@@ -454,6 +561,14 @@
   .component-param.grouped {
     @apply py-0;
     @apply border-none;
+  }
+
+  .viewers-choose {
+    @apply mt-1.5 text-[11px] font-medium text-primary-600;
+  }
+
+  .viewers-choose:hover {
+    @apply underline;
   }
 
   .collapsible-header {
