@@ -93,6 +93,18 @@ func TestAlertsAndReportsForUser(t *testing.T) {
 		require.ErrorIs(t, err, drivers.ErrResourceNotFound)
 	})
 
+	t.Run("doesn't delete for a user who lost access to the project", func(t *testing.T) {
+		formerUser, _ := f.fix.NewUser(t)
+		_, err := f.owner.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{Org: f.org, Project: f.project, Email: formerUser.Email, Role: database.ProjectRoleNameViewer})
+		require.NoError(t, err)
+		name, _, err := f.adm.CreateAlertForUser(ctx, formerUser.ID, alertOpts())
+		require.NoError(t, err)
+
+		_, err = f.owner.RemoveProjectMemberUser(ctx, &adminv1.RemoveProjectMemberUserRequest{Org: f.org, Project: f.project, Email: formerUser.Email})
+		require.NoError(t, err)
+		require.Equal(t, codes.PermissionDenied, status.Code(f.adm.DeleteAlertForUser(ctx, formerUser.ID, name)))
+	})
+
 	t.Run("creates and deletes reports", func(t *testing.T) {
 		opts := &adminv1.ReportOptions{
 			DisplayName:   "Weekly revenue",
@@ -136,7 +148,7 @@ type forUserFixture struct {
 
 // newForUserFixture creates a project owned by a user, with another user as viewer and a third user outside the project,
 // and a runtime instance whose admin service is this admin service, acting as the project's primary deployment.
-// The instance has the explore "e1" on the metrics view "mv1", with the measure "revenue" and the dimension "country".
+// The instance has the explores "e1" and "Revenue #1" (whose name needs escaping in URLs) on the metrics view "mv1", with the measure "revenue" and the dimension "country".
 func newForUserFixture(t *testing.T) *forUserFixture {
 	fix := testadmin.NewWithOptionalRuntime(t, true)
 	ctx := t.Context()
@@ -166,10 +178,11 @@ func newForUserFixture(t *testing.T) *forUserFixture {
 
 	repoDir := t.TempDir()
 	for path, data := range map[string]string{
-		"rill.yaml":        "",
-		"models/bar.sql":   `SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, 'Denmark' AS country, 1 AS revenue`,
-		"metrics/mv1.yaml": "version: 1\ntype: metrics_view\nmodel: bar\ntimeseries: __time\ndimensions:\n- column: country\nmeasures:\n- name: revenue\n  expression: sum(revenue)\n",
-		"explores/e1.yaml": "type: explore\nmetrics_view: mv1\n",
+		"rill.yaml":                "",
+		"models/bar.sql":           `SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, 'Denmark' AS country, 1 AS revenue`,
+		"metrics/mv1.yaml":         "version: 1\ntype: metrics_view\nmodel: bar\ntimeseries: __time\ndimensions:\n- column: country\nmeasures:\n- name: revenue\n  expression: sum(revenue)\n",
+		"explores/e1.yaml":         "type: explore\nmetrics_view: mv1\n",
+		"explores/Revenue #1.yaml": "type: explore\nmetrics_view: mv1\n",
 	} {
 		abs := filepath.Join(repoDir, path)
 		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
@@ -209,15 +222,21 @@ func newForUserFixture(t *testing.T) *forUserFixture {
 	}
 	require.NoError(t, fix.Runtime.CreateInstance(ctx, inst))
 	// Creating the instance applies the deployment's config from the admin service, which restarts its controller, so this waits for the new one.
+	// A wait on the old controller never ends once it's closed, so each wait is bounded and the next try gets the new one.
 	require.Eventually(t, func() bool {
 		ctrl, err := fix.Runtime.Controller(ctx, inst.ID)
-		if err != nil || ctrl.WaitUntilIdle(ctx, false) != nil {
+		if err != nil {
+			return false
+		}
+		waitCtx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		if ctrl.WaitUntilIdle(waitCtx, false) != nil {
 			return false
 		}
 		rs, err := ctrl.List(ctx, "", "", false)
-		return err == nil && len(rs) == 4
+		return err == nil && len(rs) == 5
 	}, 30*time.Second, 100*time.Millisecond)
-	testruntime.RequireReconcileState(t, fix.Runtime, inst.ID, 4, 0, 0)
+	testruntime.RequireReconcileState(t, fix.Runtime, inst.ID, 5, 0, 0)
 	go mirrorVirtualFiles(ctx, fix.Admin.DB, proj.ID, fix.Runtime, inst.ID, repoDir)
 
 	adm, release, err := fix.Runtime.Admin(ctx, inst.ID)

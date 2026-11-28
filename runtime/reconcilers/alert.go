@@ -1317,17 +1317,9 @@ func alertQueryForAttributes(a *runtimev1.Alert, adminMeta *drivers.AlertMetadat
 	return nil
 }
 
-// alertOpenLink builds a notification's open link.
+// alertOpenLink builds a notification's open link, which opens the alert's data at the check's execution time.
 // An AI alert's link also names the session of its analysis, which the open page redirects to.
 func alertOpenLink(openURL string, executionTime time.Time, aiSessionID string) (string, error) {
-	link, err := addExecutionTime(openURL, executionTime)
-	if err != nil || aiSessionID == "" {
-		return link, err
-	}
-	return buildAISessionURL(link, aiSessionID)
-}
-
-func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
 	u, err := url.Parse(openURL)
 	if err != nil {
 		return "", err
@@ -1337,6 +1329,9 @@ func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
 		return "", err
 	}
 	q.Set("execution_time", executionTime.UTC().Format(time.RFC3339))
+	if aiSessionID != "" {
+		q.Set("session_id", aiSessionID)
+	}
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }

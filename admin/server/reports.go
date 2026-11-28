@@ -375,12 +375,13 @@ func (s *Server) CreateReportForUser(ctx context.Context, req *adminv1.CreateRep
 		return nil, err
 	}
 
-	name, err := s.createManagedReport(ctx, proj, req.Options, user.ID, "", "", nil)
+	// The organization is looked up first, so a failed lookup can't fail the request after the report exists.
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	name, err := s.createManagedReport(ctx, proj, req.Options, user.ID, "", "", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -59,10 +59,8 @@ describe("getAIAlertResolverProps", () => {
           ],
         },
       },
-      time_range: {
-        expression: "4W as of watermark/D+1D",
-        time_dimension: "ordered_at",
-      },
+      // The analyst queries the primary time dimension, so a secondary one the filter holds is left out.
+      time_range: { expression: "4W as of watermark/D+1D" },
       time_zone: "Europe/Madrid",
     });
 
@@ -78,7 +76,6 @@ describe("getAIAlertResolverProps", () => {
       where,
       timeRange: {
         expression: "4W as of watermark/D+1D",
-        timeDimension: "ordered_at",
         timeZone: "Europe/Madrid",
       },
     });

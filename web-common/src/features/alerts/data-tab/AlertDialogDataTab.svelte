@@ -34,9 +34,10 @@
 
   // For an AI alert, the measure, dimension, filters and time range only narrow what the AI looks at.
   // Its condition says what to compare with, so the time filters don't offer a comparison.
+  // The analyst only gets the time range's start and end, so they don't offer another time dimension either.
   $: isAIAlert = $form["conditionType"] === AIConditionType;
   const aiTimeFiltersConfig: TimeFiltersConfig = {
-    showTimeDimensionSelector: true,
+    showTimeDimensionSelector: false,
     showFullRange: true,
     showWatermark: true,
     showComparisonSelector: false,
@@ -48,9 +49,11 @@
 
   // Ephemeral measures have no spec entry; synthesize one so they can be
   // selected as the alert's measure.
+  // An AI alert's resolver only gets measure names, so the analyst can't resolve an ephemeral measure's formula.
+  $: ephemeralMeasures = $form["ephemeralMeasures"] ?? [];
   $: measureOptions = [
     ...($metricsView.data?.measures ?? []),
-    ...($form["ephemeralMeasures"] ?? []).map(ephemeralMeasureToSpecMeasure),
+    ...(isAIAlert ? [] : ephemeralMeasures.map(ephemeralMeasureToSpecMeasure)),
   ]
     .filter(
       (m) =>
@@ -85,7 +88,12 @@
         {m.alert_form_condition_type_criteria()}
       </Button>
       <Button
-        onClick={() => ($form["conditionType"] = AIConditionType)}
+        onClick={() => {
+          $form["conditionType"] = AIConditionType;
+          if (ephemeralMeasures.some((d) => d.name === $form["measure"])) {
+            $form["measure"] = "";
+          }
+        }}
         selected={isAIAlert}
       >
         {m.alert_form_condition_type_ai()}
