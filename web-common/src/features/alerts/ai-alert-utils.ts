@@ -55,12 +55,10 @@ export function getAIAlertResolverProps(
 
   // The resolver evaluates the time filter's range with rill time,
   // which also reads the legacy presets the filter can hold, such as P7D or rill-PDC.
-  const { requestedTimeRange, timeDimension, timeZone } = timeFilterManager;
+  // It leaves out the time dimension, since the analyst only gets the range's start and end and queries the primary time dimension.
+  const { requestedTimeRange, timeZone } = timeFilterManager;
   if (requestedTimeRange) {
-    props.time_range = {
-      expression: requestedTimeRange,
-      ...(timeDimension ? { time_dimension: timeDimension } : {}),
-    };
+    props.time_range = { expression: requestedTimeRange };
     props.time_zone = timeZone;
   }
 

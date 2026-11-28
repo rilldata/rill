@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -71,6 +72,35 @@ func TestExploreNameFromAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := exploreNameFromAnnotations(tt.annotations, tt.fallback)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestAlertOpenLink(t *testing.T) {
+	executionTime := time.Date(2026, 10, 2, 9, 30, 0, 0, time.FixedZone("CEST", 2*60*60))
+	tests := []struct {
+		name        string
+		openURL     string
+		aiSessionID string
+		want        string
+	}{
+		{
+			name:    "criteria alert",
+			openURL: "https://ui.rilldata.com/org/project/-/alerts/a1/open?token=abc",
+			want:    "https://ui.rilldata.com/org/project/-/alerts/a1/open?execution_time=2026-10-02T07%3A30%3A00Z&token=abc",
+		},
+		{
+			name:        "AI alert",
+			openURL:     "https://ui.rilldata.com/org/project/-/alerts/a1/open?token=abc",
+			aiSessionID: "session-1",
+			want:        "https://ui.rilldata.com/org/project/-/alerts/a1/open?execution_time=2026-10-02T07%3A30%3A00Z&session_id=session-1&token=abc",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := alertOpenLink(tt.openURL, executionTime, tt.aiSessionID)
+			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
 	}
