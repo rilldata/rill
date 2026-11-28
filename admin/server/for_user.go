@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -42,6 +43,10 @@ func (s *Server) userForPrimaryDeployment(ctx context.Context, proj *database.Pr
 	if err != nil {
 		return nil, nil, err
 	}
+	// Like the user's own requests, requests for a user who lost access to the project are rejected, including deletes of their own resources.
+	if !projPerms.ReadProd {
+		return nil, nil, status.Error(codes.PermissionDenied, "user does not have access to the project")
+	}
 	return user, projPerms, nil
 }
 
@@ -57,7 +62,7 @@ func (s *Server) recipientsForUser(ctx context.Context, proj *database.Project, 
 		return []string{user.Email}, nil
 	}
 
-	for _, recipient := range append(append([]string{}, emails...), slackUsers...) {
+	for _, recipient := range slices.Concat(emails, slackUsers) {
 		if strings.EqualFold(recipient, user.Email) {
 			continue
 		}

@@ -255,12 +255,13 @@ func (s *Server) CreateAlertForUser(ctx context.Context, req *adminv1.CreateAler
 		return nil, err
 	}
 
-	name, err := s.createManagedAlert(ctx, proj, req.Options, user.ID, "", "", nil)
+	// The organization is looked up first, so a failed lookup can't fail the request after the alert exists.
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	name, err := s.createManagedAlert(ctx, proj, req.Options, user.ID, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
