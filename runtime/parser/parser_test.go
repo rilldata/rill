@@ -1940,6 +1940,7 @@ annotations:
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
+				NotifyRowsLimit:      5,
 				Renotify:             true,
 				RenotifyAfterSeconds: 24 * 60 * 60,
 				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
@@ -2064,6 +2065,7 @@ notify:
 				ExportIncludeHeader: true,
 				ExportLimit:         100,
 				NotifyOnFail:        true,
+				NotifyRowsLimit:     5,
 				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
 			},
 		},
@@ -2078,8 +2080,9 @@ notify:
 					"query_name":      "MetricsViewAggregation",
 					"query_args_json": `{"metrics_view":"mv1"}`,
 				})),
-				NotifyOnFail: true,
-				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 5,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
 			},
 		},
 	}
@@ -2103,6 +2106,166 @@ notify:
 			Message:  `"export.attach" requires email recipients`,
 			FilePath: "/alerts/a5.yaml",
 		},
+	})
+}
+
+func TestAlertNotifyRowsLimit(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Limits the rows listed in notifications
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 10
+  slack:
+    channels:
+      - alerts
+`,
+		// The limit can't exceed the maximum
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+notify:
+  rows_limit: 51
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 10,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{}, "channels": []any{"alerts"}, "webhooks": []any{}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `invalid value 51 for property "notify.rows_limit": must be at most 50`,
+			FilePath: "/alerts/a2.yaml",
+		},
+	})
+}
+
+func TestAIAlertSchedule(t *testing.T) {
+	ctx := context.Background()
+	aiAlert := func(extra string) string {
+		return `
+type: alert
+data:
+  ai:
+    prompt: Revenue dropped sharply
+    explore: e1
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+` + extra
+	}
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Checked hourly
+		`alerts/a1.yaml`: aiAlert(`
+refresh:
+  cron: 5 * * * *
+for:
+  user_id: u1
+`),
+		// Checked on data refreshes
+		`alerts/a2.yaml`: aiAlert(`
+for:
+  user_id: u1
+`),
+		// Checked every 30 minutes
+		`alerts/a3.yaml`: aiAlert(`
+refresh:
+  cron: "*/30 * * * *"
+for:
+  user_id: u1
+`),
+		`alerts/a4.yaml`: aiAlert(`
+refresh:
+  cron: "@every 30m"
+for:
+  user_id: u1
+`),
+		// Checked on data refreshes too
+		`alerts/a5.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+  ref_update: true
+for:
+  user_id: u1
+`),
+		// Checked for several intervals at once
+		`alerts/a6.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+intervals:
+  duration: PT1H
+for:
+  user_id: u1
+`),
+		// Without a user to run as
+		`alerts/a7.yaml`: aiAlert(`
+refresh:
+  cron: 0 * * * *
+`),
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindExplore, Name: "e1"}},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "5 * * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt":  "Revenue dropped sharply",
+					"explore": "e1",
+				})),
+				QueryFor:        &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: "u1"},
+				NotifyOnFail:    true,
+				NotifyRowsLimit: 5,
+				Notifiers:       []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{Message: `AI alerts must set "refresh.cron"`, FilePath: "/alerts/a2.yaml"},
+		{Message: `AI alerts can run at most once an hour, but "refresh.cron" "*/30 * * * *" runs more often`, FilePath: "/alerts/a3.yaml"},
+		{Message: `AI alerts can run at most once an hour, but "refresh.cron" "@every 30m" runs more often`, FilePath: "/alerts/a4.yaml"},
+		{Message: `AI alerts can't set "refresh.ref_update"`, FilePath: "/alerts/a5.yaml"},
+		{Message: `AI alerts can't set "intervals", since every interval is a separate AI analysis`, FilePath: "/alerts/a6.yaml"},
+		{Message: `AI alerts must set "for.user_id", the user whose access and AI session the analysis runs with`, FilePath: "/alerts/a7.yaml"},
 	})
 }
 
@@ -2950,6 +3113,97 @@ rows:
 	}
 }
 
+func TestAdminManagedCanvasComponents(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name  string
+		yaml  string
+		valid bool
+	}{
+		{
+			name: "inline components",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - markdown:
+          content: "y"
+`,
+			valid: true,
+		},
+		{
+			name: "standalone component",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- items:
+  - markdown:
+      content: "x"
+  - component: c1
+`,
+		},
+		{
+			name: "standalone component in a tab",
+			yaml: `
+type: canvas
+annotations:
+  admin_managed: "true"
+rows:
+- tabs:
+  - label: A
+    rows:
+    - items:
+      - component: c1
+`,
+		},
+		{
+			name: "standalone component in a canvas that is not admin-managed",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - component: c1
+`,
+			valid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: ``,
+				`components/c1.yaml`: `
+type: component
+markdown:
+  content: "z"
+`,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			if tc.valid {
+				require.Empty(t, p.Errors)
+				require.NotNil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+				return
+			}
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, `cannot reference the component "c1"`)
+			require.Nil(t, p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}.Normalized()])
+		})
+	}
+}
+
 // TestCanvasTabNameUniqueness verifies that tab names are uniquified when labels slugify
 // to the same value, so each tab keeps a distinct URL key.
 func TestCanvasTabNameUniqueness(t *testing.T) {
@@ -3142,6 +3396,207 @@ rows:
 			require.Len(t, p.Resources, 0)
 			require.Len(t, p.Errors, 1)
 			require.Contains(t, p.Errors[0].Message, "invalid 'if'")
+		})
+	}
+}
+
+func TestCanvasContainers(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Intro"
+- name: revenue_story
+  if: '{{ has "finance" .user.groups }}'
+  rows:
+  - items:
+    - markdown:
+        content: "Revenue"
+    - component: c1
+  - height: 320px
+    if: '{{ .user.admin }}'
+    items:
+    - width: 8
+      markdown:
+        content: "Margin"
+    - width: 4
+      if: "'{{ .user.domain }}' = 'acme.com'"
+      markdown:
+        content: "Costs"
+- rows:
+  - items:
+    - markdown:
+        content: "Unnamed"
+- name: later
+  rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	res := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}]
+	rows := res.CanvasSpec.Rows
+	require.Len(t, rows, 4)
+
+	// A container keeps its own `if` on its row, like a tab group, and holds plain rows.
+	story := rows[1]
+	require.Equal(t, `{{ has "finance" .user.groups }}`, story.ConditionExpression)
+	require.Empty(t, story.Items)
+	require.Nil(t, story.TabGroup)
+	require.Equal(t, "revenue_story", story.Container.Name)
+	require.Len(t, story.Container.Rows, 2)
+	require.Equal(t, []*runtimev1.CanvasItem{
+		{Component: "d1--component-c1-0-0", DefinedInCanvas: true},
+		{Component: "c1"},
+	}, story.Container.Rows[0].Items)
+	require.Equal(t, uint32(320), story.Container.Rows[1].GetHeight())
+	require.Equal(t, `{{ .user.admin }}`, story.Container.Rows[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, story.Container.Rows[1].Items[1].ConditionExpression)
+
+	// A container's name defaults to "container-<index>", and a container may be empty.
+	require.Equal(t, "container-2", rows[2].Container.Name)
+	require.Equal(t, "d1--component-c2-0-0", rows[2].Container.Rows[0].Items[0].Component)
+	require.Equal(t, "later", rows[3].Container.Name)
+	require.Empty(t, rows[3].Container.Rows)
+
+	// The canvas references the components in its containers.
+	require.Equal(t, []ResourceName{
+		{Kind: ResourceKindComponent, Name: "c1"},
+		{Kind: ResourceKindComponent, Name: "d1--component-0-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-0-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-1-0"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c1-1-1"},
+		{Kind: ResourceKindComponent, Name: "d1--component-c2-0-0"},
+	}, res.Refs)
+
+	// Inline components in a container inherit its `if`, along with those of their row and item.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `{{ has "finance" .user.groups }}`, component("d1--component-c1-0-0").ConditionExpression)
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-c1-1-0").ConditionExpression)
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }}) AND ('{{ .user.domain }}' = 'acme.com')`, component("d1--component-c1-1-1").ConditionExpression)
+	require.Equal(t, "", component("d1--component-c2-0-0").ConditionExpression)
+	// Components defined in their own file don't inherit a container's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasContainerErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "container in a container",
+			yaml: `
+type: canvas
+rows:
+- name: outer
+  rows:
+  - name: inner
+    rows: []
+`,
+			wantErr: "containers cannot be nested",
+		},
+		{
+			name: "items and rows together",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+  rows: []
+`,
+			wantErr: "cannot define more than one of 'items', 'tabs' and 'rows'",
+		},
+		{
+			name: "tabs and rows together",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    rows: []
+  rows: []
+`,
+			wantErr: "cannot define more than one of 'items', 'tabs' and 'rows'",
+		},
+		{
+			name: "container in a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    rows:
+    - rows: []
+`,
+			wantErr: "containers cannot be nested",
+		},
+		{
+			name: "tab group in a container",
+			yaml: `
+type: canvas
+rows:
+- rows:
+  - tabs:
+    - label: A
+      rows: []
+`,
+			wantErr: "tab groups cannot be nested",
+		},
+		{
+			name: "duplicate names across a tab group and a container",
+			yaml: `
+type: canvas
+rows:
+- name: story
+  tabs:
+  - label: A
+    rows: []
+- name: story
+  rows: []
+`,
+			wantErr: `duplicate name "story"`,
+		},
+		{
+			name: "invalid if on a container",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  rows: []
+`,
+			wantErr: "invalid 'if' for row 0",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
 		})
 	}
 }
@@ -4134,6 +4589,177 @@ light:
 					},
 				},
 			},
+		},
+		{
+			name: "variables nested under variables",
+			yaml: `
+type: theme
+light:
+  primary: red
+  variables:
+    surface-background: "#f8fafc"
+    fg-primary: "#0f172a"
+    color-sequential-1: "hsl(211deg 79% 94%)"
+dark:
+  variables:
+    surface-background: "#0f172a"
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary: "red",
+					Variables: map[string]string{
+						"surface-background": "#f8fafc",
+						"fg-primary":         "#0f172a",
+						"color-sequential-1": "hsl(211deg 79% 94%)",
+					},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-background": "#0f172a",
+					},
+				},
+			},
+		},
+		{
+			name: "nested and flat variables are merged, nested wins",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+  surface-card: white
+  border: gray
+  variables:
+    primary: blue
+    border: black
+    fg-muted: silver
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "blue",
+					Secondary: "green",
+					Variables: map[string]string{
+						"surface-card": "white",
+						"border":       "black",
+						"fg-muted":     "silver",
+					},
+				},
+			},
+		},
+		{
+			name: "deprecated names are mapped across nested and flat variables",
+			yaml: `
+type: theme
+light:
+  surface-subtle: white
+  variables:
+    background: blue
+    card: yellow
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"surface-subtle": "white",
+						"surface-card":   "yellow",
+					},
+				},
+			},
+		},
+		{
+			name: "unknown name under variables",
+			yaml: `
+type: theme
+light:
+  variables:
+    surface-background: white
+    unrecognised: blue
+`,
+			expectError: true,
+			errorMsg:    `invalid CSS variable: "unrecognised"`,
+		},
+		{
+			name: "invalid color under variables",
+			yaml: `
+type: theme
+dark:
+  variables:
+    fg-primary: gren
+`,
+			expectError: true,
+			errorMsg:    `invalid dark theme: invalid value "gren" for CSS variable "fg-primary"`,
+		},
+		{
+			name: "radius accepts lengths",
+			yaml: `
+type: theme
+light:
+  radius: 0.5rem
+dark:
+  variables:
+    radius: 0
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0.5rem"},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "0px"},
+				},
+			},
+		},
+		{
+			name: "radius in pixels",
+			yaml: `
+type: theme
+light:
+  radius: 12PX
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{"radius": "12px"},
+				},
+			},
+		},
+		{
+			name: "radius without a unit",
+			yaml: `
+type: theme
+light:
+  radius: 8
+`,
+			expectError: true,
+			errorMsg:    `invalid value "8" for CSS variable "radius": must be a length in px, rem or em`,
+		},
+		{
+			name: "radius as a percentage",
+			yaml: `
+type: theme
+light:
+  variables:
+    radius: 50%
+`,
+			expectError: true,
+			errorMsg:    `invalid value "50%" for CSS variable "radius"`,
+		},
+		{
+			name: "radius as a color",
+			yaml: `
+type: theme
+light:
+  radius: red
+`,
+			expectError: true,
+			errorMsg:    `invalid value "red" for CSS variable "radius"`,
+		},
+		{
+			name: "length for a color variable",
+			yaml: `
+type: theme
+light:
+  border: 1px
+`,
+			expectError: true,
+			errorMsg:    `invalid value "1px" for CSS variable "border"`,
 		},
 	}
 

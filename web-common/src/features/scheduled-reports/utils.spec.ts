@@ -1,6 +1,7 @@
 import {
   getDashboardNameFromReport,
   getExistingReportInitialFormValues,
+  getFilterParamsFromAggregationRequest,
   getNewCanvasReportInitialFormValues,
   getNewReportInitialFormValues,
   isAIReportSpec,
@@ -8,8 +9,14 @@ import {
 } from "@rilldata/web-common/features/scheduled-reports/utils";
 import {
   V1ExportFormat,
+  V1TimeGrain,
   type V1ReportSpec,
 } from "@rilldata/web-common/runtime-client";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { describe, expect, it } from "vitest";
 
 describe("getDashboardNameFromReport", () => {
@@ -156,5 +163,58 @@ describe("embed owner email", () => {
     );
     expect(values.emailRecipients).toEqual(["other@example.com", ""]);
     expect(values.embedOwnerEmail).toEqual("Creator@example.com");
+  });
+});
+
+describe("getFilterParamsFromAggregationRequest", () => {
+  it("maps the filter, time range, time zone and comparison", () => {
+    const params = getFilterParamsFromAggregationRequest({
+      where: createAndExpression([
+        createInExpression("publisher", ["Facebook"]),
+      ]),
+      timeRange: {
+        expression: "7D as of watermark/D",
+        timeZone: "Asia/Kolkata",
+      },
+      comparisonTimeRange: { expression: "7D as of watermark/D offset -1P" },
+    });
+
+    expect(Object.fromEntries(params)).toEqual({
+      f: "publisher IN ('Facebook')",
+      tr: "7D as of watermark/D",
+      tz: "Asia/Kolkata",
+      compare_tr: TimeComparisonOption.CONTIGUOUS,
+    });
+  });
+
+  it("maps a split previous complete range back to its preset", () => {
+    const params = getFilterParamsFromAggregationRequest({
+      timeRange: {
+        isoDuration: "P1W",
+        roundToGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+      },
+    });
+
+    expect(params.get("tr")).toEqual("rill-PWC");
+  });
+
+  it("maps an absolute range to wall-clock times in its time zone", () => {
+    const params = getFilterParamsFromAggregationRequest({
+      timeRange: {
+        start: "2026-03-01T05:00:00Z",
+        end: "2026-03-02T05:00:00Z",
+        timeZone: "America/New_York",
+      },
+    });
+
+    expect(params.get("tr")).toEqual(
+      "2026-03-01T00:00:00.000Z,2026-03-02T00:00:00.000Z",
+    );
+  });
+
+  it("defaults to all time when the request has no time range", () => {
+    const params = getFilterParamsFromAggregationRequest({});
+
+    expect(Object.fromEntries(params)).toEqual({ tr: "inf" });
   });
 });

@@ -19,6 +19,7 @@ type CustomInputTypes =
   | "sparkline"
   | "comparison_options"
   | "map_color"
+  | "map_regions"
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"
@@ -103,6 +104,11 @@ export interface ComponentInputParam {
      * under its key: the value to show. Takes precedence over the spec.
      */
     value?: string;
+    /**
+     * For a switcher: picking the `default` option removes the property from
+     * the spec instead of writing the default value.
+     */
+    omitDefault?: boolean;
     /**
      * Marks a measure/dimension field as removable, showing a remove button on
      * the selected chip. On removal the property is cleared from the spec.

@@ -16,9 +16,11 @@
 
   export let organization: string;
   export let project: string;
+  export let manageProject: boolean;
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
 
   let open = false;
 
@@ -51,9 +53,11 @@
     <ShareProjectForm
       {organization}
       {project}
+      {manageProject}
       {manageProjectAdmins}
       {manageOrgAdmins}
       {manageOrgMembers}
+      {readOrgMembers}
       enabled={open}
     />
   </PopoverContent>

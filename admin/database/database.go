@@ -78,11 +78,16 @@ type DB interface {
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*Project, error)
-	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
+	// FindProjectsForOrganization lists the projects in the org.
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindProjectsForOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user.
 	// When includeGroups is true, projects accessible through usergroup membership are also included.
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, afterProjectName string, limit int) ([]*Project, error)
-	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic, includeGroups bool, tags []string, afterProjectName string, limit int) ([]*Project, error)
+	// FindPublicProjectsInOrganization lists the public projects in the org.
+	// If tags is not empty, it only lists projects that have at least one of the tags.
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string, tags []string, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
@@ -91,6 +96,10 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	// UpdateProjectTags adds and removes tags on a project; see ApplyProjectTagChanges.
+	// It applies the changes to the tags it reads under a row lock, so concurrent updates don't overwrite each other's changes.
+	// Tags are not part of UpdateProjectOptions, so updates that write the other project fields from a stale copy never revert them.
+	UpdateProjectTags(ctx context.Context, id string, add, remove []string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -198,12 +207,20 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
+	FindMagicAuthTokenForUpdate(ctx context.Context, id string) (*MagicAuthToken, error)
 	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
+	UpdateMagicAuthToken(ctx context.Context, id string, opts *UpdateMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindMagicAuthTokenSession(ctx context.Context, id string) (*MagicAuthTokenSession, error)
+	InsertMagicAuthTokenSession(ctx context.Context, opts *InsertMagicAuthTokenSessionOptions) (*MagicAuthTokenSession, error)
+	DeleteMagicAuthTokenSession(ctx context.Context, id string) error
+	DeleteMagicAuthTokenSessionsForToken(ctx context.Context, magicAuthTokenID string) error
+	DeleteExpiredMagicAuthTokenSessions(ctx context.Context, retention time.Duration) error
 
 	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
 	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
@@ -304,6 +321,12 @@ type DB interface {
 	// FindBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
 	// resourceKind and resourceName are optional filters; when both are empty, all bookmarks in the project are returned.
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
+	// FindBookmarksByEmbedOwner returns the bookmarks in a project owned by the embed user.
+	// Unlike FindBookmarks, it never returns shared or default bookmarks.
+	// resourceKind and resourceName are optional filters; when both are empty, all of the embed user's bookmarks in the project are returned.
+	FindBookmarksByEmbedOwner(ctx context.Context, projectID, resourceKind, resourceName, embedOwnerID string) ([]*Bookmark, error)
+	// CountBookmarksByEmbedOwner returns the number of bookmarks in a project owned by the embed user.
+	CountBookmarksByEmbedOwner(ctx context.Context, projectID, embedOwnerID string) (int, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
@@ -313,6 +336,10 @@ type DB interface {
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// LockEmbedUser locks the embed user's row until the current transaction ends.
+	// It must be called within a transaction started with NewTx.
+	// It serializes quota checks for an embed user across all admin processes, such as counting their bookmarks before inserting one.
+	LockEmbedUser(ctx context.Context, id string) error
 	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
 	// It doesn't write anything otherwise, since it's called on every embed load.
 	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error
@@ -321,6 +348,8 @@ type DB interface {
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
+	// FindVirtualFilesByEmbedOwner TODO: pagination
+	FindVirtualFilesByEmbedOwner(ctx context.Context, projectID, environment, embedOwnerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -416,6 +445,7 @@ type Organization struct {
 	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
+	DisableProjectDomainAccess          bool      `db:"disable_project_domain_access"`
 	DefaultProvisioner                  string    `db:"default_provisioner"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -459,7 +489,9 @@ type InsertOrganizationOptions struct {
 	CreatedByUserID                     *string
 }
 
-// UpdateOrganizationOptions defines options for updating an existing org
+// UpdateOrganizationOptions defines options for updating an existing org.
+// Unlike the other fields, DisableProjectDomainAccess is left unchanged when nil,
+// so a caller working from an earlier read of the org can't undo a concurrent change to it.
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
@@ -470,6 +502,7 @@ type UpdateOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DisableProjectDomainAccess          *bool
 	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int
@@ -496,6 +529,9 @@ type Project struct {
 	Name string
 	// Description is a human-readable description of the project.
 	Description string
+	// Tags are user-defined labels for organizing projects, such as "prod" or "sandbox".
+	// They are normalized (see NormalizeProjectTags) and, unlike Annotations, do not propagate to deployments.
+	Tags []string `db:"tags"`
 	// Public indicates if the project is publicly accessible to anyone with the link.
 	Public bool
 	// CreatedByUserID is the ID of the user that created this project (if any).
@@ -562,6 +598,7 @@ type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
 	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
+	Tags                 []string
 	Public               bool
 	CreatedByUserID      *string
 	DirectoryName        string
@@ -863,6 +900,7 @@ type MagicAuthToken struct {
 	SecretHash             []byte            `db:"secret_hash"`
 	Secret                 []byte            `db:"secret"`
 	SecretEncryptionKeyID  string            `db:"secret_encryption_key_id"`
+	PasswordHash           []byte            `db:"password_hash"` // nil if the token is not password-protected
 	ProjectID              string            `db:"project_id"`
 	CreatedOn              time.Time         `db:"created_on"`
 	ExpiresOn              *time.Time        `db:"expires_on"`
@@ -893,6 +931,7 @@ type InsertMagicAuthTokenOptions struct {
 	ID                     string
 	SecretHash             []byte
 	Secret                 []byte
+	PasswordHash           []byte
 	ProjectID              string `validate:"required"`
 	ExpiresOn              *time.Time
 	CreatedByUserID        *string
@@ -903,6 +942,31 @@ type InsertMagicAuthTokenOptions struct {
 	State                  string
 	DisplayName            string
 	Internal               bool
+}
+
+// UpdateMagicAuthTokenOptions defines options for updating a MagicAuthToken.
+// It replaces all the fields it contains, so callers should populate unchanged fields from the current token.
+type UpdateMagicAuthTokenOptions struct {
+	DisplayName  string
+	PasswordHash []byte
+}
+
+// MagicAuthTokenSession is a short-lived token issued after a password-protected MagicAuthToken has been unlocked with its password.
+// It grants the same access as the MagicAuthToken it belongs to.
+type MagicAuthTokenSession struct {
+	ID               string
+	SecretHash       []byte    `db:"secret_hash"`
+	MagicAuthTokenID string    `db:"magic_auth_token_id"`
+	CreatedOn        time.Time `db:"created_on"`
+	ExpiresOn        time.Time `db:"expires_on"`
+}
+
+// InsertMagicAuthTokenSessionOptions defines options for creating a MagicAuthTokenSession.
+type InsertMagicAuthTokenSessionOptions struct {
+	ID               string
+	SecretHash       []byte
+	MagicAuthTokenID string `validate:"required"`
+	ExpiresOn        time.Time
 }
 
 type NotificationToken struct {
@@ -1229,6 +1293,8 @@ type InsertProjectAccessRequestOptions struct {
 	ProjectID string `validate:"required"`
 }
 
+// Bookmark is a saved dashboard state.
+// Exactly one of UserID and EmbedOwnerID is set.
 type Bookmark struct {
 	ID           string
 	DisplayName  string    `db:"display_name"`
@@ -1238,7 +1304,8 @@ type Bookmark struct {
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
-	UserID       string    `db:"user_id"`
+	UserID       *string   `db:"user_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
 	Default      bool      `db:"default"`
 	Shared       bool      `db:"shared"`
 	CreatedOn    time.Time `db:"created_on"`
@@ -1247,15 +1314,16 @@ type Bookmark struct {
 
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName  string `json:"display_name"`
-	URLSearch    string `json:"url_search"`
-	ResourceKind string `json:"resource_kind"`
-	ResourceName string `json:"resource_name"`
-	Description  string `json:"description"`
-	ProjectID    string `json:"project_id"`
-	UserID       string `json:"user_id"`
-	Default      bool   `json:"default"`
-	Shared       bool   `json:"shared"`
+	DisplayName  string  `json:"display_name"`
+	URLSearch    string  `json:"url_search"`
+	ResourceKind string  `json:"resource_kind"`
+	ResourceName string  `json:"resource_name"`
+	Description  string  `json:"description"`
+	ProjectID    string  `json:"project_id"`
+	UserID       *string `json:"user_id"`
+	EmbedOwnerID *string `json:"embed_owner_id"`
+	Default      bool    `json:"default"`
+	Shared       bool    `json:"shared"`
 }
 
 // UpdateBookmarkOptions defines options for updating an existing bookmark

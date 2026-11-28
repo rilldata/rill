@@ -1,8 +1,6 @@
 package ai_test
 
 import (
-	"encoding/json"
-	"slices"
 	"testing"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -13,70 +11,58 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAlertVerdictUnmarshal(t *testing.T) {
-	var v ai.AlertVerdict
-	err := json.Unmarshal([]byte(`{"met": false, "reason": "Revenue is within its usual range."}`), &v)
-	require.NoError(t, err)
-	require.Equal(t, ai.AlertVerdict{Met: false, Reason: "Revenue is within its usual range."}, v)
-
-	// A malformed verdict is an error, not a verdict that the condition is not met
-	for _, in := range []string{
-		`The condition holds.`,
-		`{"reason": "Revenue fell."}`,
-		`{"met": null, "reason": "Revenue fell."}`,
-		`{"met": "yes", "reason": "Revenue fell."}`,
-		`{"met": true}`,
-		`{"met": true, "reason": "  "}`,
-	} {
-		err := json.Unmarshal([]byte(in), &v)
-		require.Error(t, err, in)
-	}
-}
-
 func TestAnalystAlert(t *testing.T) {
 	alertArgs := &ai.RouterAgentArgs{
 		Prompt:           "There are orders from Denmark",
 		Agent:            ai.AnalystAgentName,
 		AnalystAgentArgs: &ai.AnalystAgentArgs{IsAlert: true},
 	}
+	analysis := "<summary>Denmark has orders.</summary> Orders come from Denmark."
 
-	t.Run("verdict", func(t *testing.T) {
-		var outputSchema *jsonschema.Schema
-		script := &scriptedAIService{turns: []turnFunc{func(opts *drivers.CompleteOptions) *aiv1.CompletionMessage {
-			outputSchema = opts.OutputSchema
-			return textTurn(`{"met": true, "reason": "Denmark has orders."}`)(opts)
-		}}}
-		s := newSkillReferencesSession(t, script)
+	cases := []struct {
+		verdict string
+		want    ai.AlertOutcome
+		wantErr string
+	}{
+		{verdict: `{"outcome": "met"}`, want: ai.AlertOutcomeMet},
+		{verdict: `{"outcome": "not_met"}`, want: ai.AlertOutcomeNotMet},
+		{verdict: `{"outcome": "cannot_determine"}`, want: ai.AlertOutcomeCannotDetermine},
+		{verdict: `{"outcome": "maybe"}`, wantErr: "invalid verdict"},
+		{verdict: `The condition holds.`, wantErr: "verdict"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.verdict, func(t *testing.T) {
+			var schemas []*jsonschema.Schema
+			recordSchema := func(turn turnFunc) turnFunc {
+				return func(opts *drivers.CompleteOptions) *aiv1.CompletionMessage {
+					schemas = append(schemas, opts.OutputSchema)
+					return turn(opts)
+				}
+			}
+			script := &scriptedAIService{turns: []turnFunc{recordSchema(textTurn(analysis)), recordSchema(textTurn(tc.verdict))}}
+			s := newSkillReferencesSession(t, script)
 
-		var res *ai.RouterAgentResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, alertArgs)
-		require.NoError(t, err)
-		require.Equal(t, &ai.AlertVerdict{Met: true, Reason: "Denmark has orders."}, res.Verdict)
+			var res *ai.RouterAgentResult
+			_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, alertArgs)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, res.AlertOutcome)
+			require.Equal(t, analysis, res.Response)
 
-		// The verdict is requested through the output schema
-		require.NotNil(t, outputSchema)
-		require.Contains(t, outputSchema.Properties, "met")
-		require.Contains(t, outputSchema.Properties, "reason")
-
-		// A verdict can't show charts
-		require.Contains(t, script.tools[0], ai.QueryMetricsViewName)
-		require.NotContains(t, script.tools[0], ai.CreateChartName)
-	})
-
-	t.Run("malformed verdict", func(t *testing.T) {
-		s := newSkillReferencesSession(t, &scriptedAIService{turns: []turnFunc{textTurn(`The condition holds.`)}})
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, nil, alertArgs)
-		require.Error(t, err)
-	})
-
-	t.Run("iteration limit", func(t *testing.T) {
-		// Outside of alerts, the loop forces a final answer without tools after the last iteration.
-		// For an alert, that would be a verdict that doesn't rest on the data, so it fails instead.
-		turns := slices.Repeat([]turnFunc{toolCallTurn(ai.ListMetricsViewsName, map[string]any{})}, 20)
-		s := newSkillReferencesSession(t, &scriptedAIService{turns: turns})
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, nil, alertArgs)
-		require.ErrorContains(t, err, "iterations")
-	})
+			// The analysis runs with tools and the verdict with an output schema, in separate requests,
+			// since some providers reject a request that combines them.
+			require.Len(t, schemas, 2)
+			require.Contains(t, script.tools[0], ai.QueryMetricsViewName)
+			require.Nil(t, schemas[0])
+			require.Empty(t, script.tools[1])
+			require.Contains(t, schemas[1].Properties, "outcome")
+			// The verdict is given on the analysis
+			require.Contains(t, script.inputs[1][len(script.inputs[1])-1].Content[0].GetText(), analysis)
+		})
+	}
 }
 
 func TestAnalystAlertEval(t *testing.T) {
@@ -115,12 +101,14 @@ metrics_view: orders
 
 	cases := []struct {
 		condition string
-		met       bool
+		want      ai.AlertOutcome
 	}{
-		{"Revenue in Spain dropped sharply in the last week compared with the previous weeks", true},
-		{"Spain is the country with the lowest revenue in the last week", true},
-		{"Revenue in France dropped sharply in the last week compared with the previous weeks", false},
-		{"There are orders from Italy", false},
+		{"Revenue in Spain dropped sharply in the last week compared with the previous weeks", ai.AlertOutcomeMet},
+		{"Spain is the country with the lowest revenue in the last week", ai.AlertOutcomeMet},
+		{"Revenue in France dropped sharply in the last week compared with the previous weeks", ai.AlertOutcomeNotMet},
+		{"There are orders from Italy", ai.AlertOutcomeNotMet},
+		// The data has no profit
+		{"The profit margin in Spain fell below 10% in the last week", ai.AlertOutcomeCannotDetermine},
 	}
 	for _, tc := range cases {
 		t.Run(tc.condition, func(t *testing.T) {
@@ -132,8 +120,7 @@ metrics_view: orders
 				AnalystAgentArgs: &ai.AnalystAgentArgs{Explore: "orders", IsAlert: true},
 			})
 			require.NoError(t, err)
-			require.NotNil(t, res.Verdict)
-			require.Equal(t, tc.met, res.Verdict.Met, res.Verdict.Reason)
+			require.Equal(t, tc.want, res.AlertOutcome, res.Response)
 		})
 	}
 }

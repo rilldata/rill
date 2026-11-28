@@ -10,6 +10,7 @@ import {
 import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import initEmbedPublicAPI from "./init-embed-public-api";
@@ -304,5 +305,47 @@ describe("initEmbedPublicAPI", () => {
 
       expect(harness.notifications("stateChange")).toHaveLength(0);
     });
+  });
+});
+
+describe("initEmbedPublicAPI on an explore", () => {
+  let harness: EmbedPublicAPIHarness;
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    EmbedStore.init(new URL("http://localhost/-/embed"));
+    harness = new EmbedPublicAPIHarness(hoistedPage, {
+      url: `http://localhost/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      routeId: "/[organization]/[project]/-/embed/explore/[name]",
+      params: { name: AD_BIDS_EXPLORE_NAME },
+    });
+    cleanup = initEmbedPublicAPI(
+      new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    harness.destroy();
+    vi.useRealTimers();
+  });
+
+  it("emits ready, followed by the other notifications, once the explore has loaded", () => {
+    vi.advanceTimersByTime(STATE_CHANGE_THROTTLE_TIMEOUT);
+    expect(harness.notifications()).toEqual([]);
+
+    EmbedStore.getInstance()?.exploreLoaded.set(true);
+    vi.advanceTimersByTime(STATE_CHANGE_THROTTLE_TIMEOUT);
+
+    expect(harness.notifications()[0].method).toBe("ready");
+    expect(harness.notifications("ready")).toHaveLength(1);
+    expect(harness.notifications("stateChange")).toHaveLength(1);
+  });
+
+  it("emits ready when the page changes from an explore that has not loaded", () => {
+    harness.setRoute("/[organization]/[project]/-/embed");
+
+    expect(harness.notifications("ready")).toHaveLength(1);
   });
 });

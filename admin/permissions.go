@@ -277,7 +277,7 @@ func (s *Service) ProjectPermissionsForEmbedToken(projectID string, tkn *EmbedTo
 	}
 
 	// Grant basic read access to the project and its prod deployment.
-	// Embed users can create reports, but can only manage the ones they own (enforced by the handlers).
+	// Embed users can create reports, alerts and bookmarks, but can only manage the ones they own (enforced by the handlers).
 	return &adminv1.ProjectPermissions{
 		Admin:                      false,
 		ReadProject:                true,
@@ -297,9 +297,9 @@ func (s *Service) ProjectPermissionsForEmbedToken(projectID string, tkn *EmbedTo
 		ManageMagicAuthTokens:      false,
 		CreateReports:              true,
 		ManageReports:              false,
-		CreateAlerts:               false,
+		CreateAlerts:               true,
 		ManageAlerts:               false,
-		CreateBookmarks:            false,
+		CreateBookmarks:            true,
 		ManageBookmarks:            false,
 	}
 }

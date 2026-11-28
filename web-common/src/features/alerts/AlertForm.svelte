@@ -14,50 +14,34 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceCreateAlert,
-    createAdminServiceEditAlert,
-  } from "@rilldata/web-admin/client";
-  import {
-    getAlertDashboardName,
-    unwrapQueryData,
-    useAlertDashboardState,
-  } from "@rilldata/web-admin/features/alerts/selectors.ts";
+  import { getAlertDashboardName } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
-  import {
-    generateAIAlertName,
-    getAggregationRequestFromAIAlertProperties,
-    AIConditionType,
-    isAIAlertSpec,
-  } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import {
-    getNewAlertInitialFiltersFormValues,
-    getNewAlertInitialFormValues,
-  } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
+  import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import {
     alertFormValidationSchema,
-    type AlertConditionType,
     type AlertFormValues,
     checkIsTabValid,
     FieldsByTab,
-    getAlertResolverOptions,
+    getAlertQueryArgsFromFormValues,
+    getNotifyRowsLimitFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils.ts";
   import {
     generateAlertName,
     isSomeFieldTainted,
   } from "@rilldata/web-common/features/alerts/utils.ts";
-  import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
-  import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import {
+    createReportFilterManagers,
+    getFilterParamsFromAggregationRequest,
+  } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { get } from "svelte/store";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -69,18 +53,31 @@
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
+  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { augmentUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
   export let props: CreateAlertProps | EditAlertProps;
+  export let provider: AlertFormMetadataProvider;
   export let initialValues: ReturnType<typeof getNewAlertInitialFormValues>;
+  // True if the form shows the field for the email of the embed user who created the alert (see AlertFormDataWrapper).
+  export let showEmbedOwnerEmail: boolean;
+
+  const isEmbedded = EmbedStore.isEmbedded();
+  // Alerts created from an embed run as the creator, and can't be sent to Slack,
+  // including when an admin edits one outside of the embed.
+  const slackAllowed =
+    !isEmbedded &&
+    !(
+      props.mode === "edit" && props.alertSpec.annotations?.admin_embed_owner_id
+    );
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ organization, project, alert: alertName } = $page.params);
+  $: ({ alert: alertName } = $page.params);
   $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
@@ -94,66 +91,33 @@
 
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
 
-  $: allTimeRangeResp = useMetricsViewTimeRange(
+  const { mutation } = provider;
+
+  // The explore's provider resolves its metrics view and yaml config,
+  // so the filter form follows the explore's settings, such as `lock_time_zone`.
+  const dashboardConfigProvider = new ExploreDashboardConfigProvider(
     runtimeClient,
-    metricsViewName,
-    undefined,
-    queryClient,
+    exploreName,
   );
-
-  const exploreState =
-    props.mode === "create"
-      ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
-
-  const mutation =
-    props.mode === "create"
-      ? createAdminServiceCreateAlert()
-      : createAdminServiceEditAlert();
-
-  let filters: ExpressionFilterManager;
-  let timeControls: TimeControls;
-  let cleanup: (() => void) | undefined = undefined;
-  $: {
-    cleanup?.();
-    ({ filters, timeControls, cleanup } =
+  const { expressionFilterManager, timeFilterManager, cleanup } =
+    createReportFilterManagers(
+      runtimeClient,
+      dashboardConfigProvider,
+      // Explore urls carry the singular `f` param.
+      true,
       props.mode === "create"
-        ? getNewAlertInitialFiltersFormValues(
-            runtimeClient,
-            metricsViewName,
-            exploreName,
-            $exploreState!,
-          )
-        : getFiltersAndTimeControlsFromAggregationRequest(
-            runtimeClient,
-            metricsViewName,
-            exploreName,
-            getEditedAlertAggregationRequest(props.alertSpec, metricsViewName),
-            $allTimeRangeResp.data?.timeRangeSummary,
-          ));
-  }
-
-  // The data context of the alert being edited: an AI alert keeps it in the ai resolver's properties, a criteria alert in its query.
-  function getEditedAlertAggregationRequest(
-    alertSpec: V1AlertSpec,
-    metricsViewName: string,
-  ) {
-    if (isAIAlertSpec(alertSpec)) {
-      return getAggregationRequestFromAIAlertProperties(
-        alertSpec.resolverProperties ?? {},
-        metricsViewName,
-      );
-    }
-    return JSON.parse(
-      alertSpec.queryArgsJson ||
-        (alertSpec.resolverProperties?.query_args_json as string | undefined) ||
-        "{}",
+        ? get(page).url.searchParams
+        : getFilterParamsFromAggregationRequest(
+            JSON.parse(
+              props.alertSpec.queryArgsJson ||
+                (props.alertSpec.resolverProperties?.query_args_json as
+                  | string
+                  | undefined) ||
+                "{}",
+            ),
+          ),
     );
-  }
-  $: ({ selectedComparisonTimeRange } = timeControls);
 
   const superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -203,20 +167,25 @@
     );
 
     await $mutation.mutateAsync({
-      org: organization,
-      project,
+      org: provider.organization,
+      project: provider.project,
       name: alertName,
       data: {
         options: {
           displayName: values.name,
-          ...getAlertResolverOptions(
-            values,
-            filters.topLevelJoiner.expr[metricsViewName],
-            timeControls.toState(),
-            exploreSpec,
-            props.mode === "edit" ? props.alertSpec : undefined,
+          queryName: "MetricsViewAggregation",
+          queryArgsJson: JSON.stringify(
+            getAlertQueryArgsFromFormValues(
+              values,
+              // Keyed by the metrics view's resource name, which can differ in casing from the explore's reference.
+              expressionFilterManager.topLevelJoiner.expr[
+                expressionFilterManager.metricsViewsProvider.metricsViewNames[0]
+              ],
+              timeFilterManager,
+            ),
           ),
           metricsViewName: values.metricsViewName,
+          notifyRowsLimit: getNotifyRowsLimitFromFormValues(values),
           slackChannels: values.enableSlackNotification
             ? values.slackChannels.filter(Boolean)
             : undefined,
@@ -226,11 +195,14 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
-          // Attachments are only sent with emails, and the export options only apply to attachments.
-          // An AI alert has no rows to attach.
-          ...(values.enableEmailNotification &&
-          values.exportAttach &&
-          values.conditionType !== AIConditionType
+          // Only sent if the field is shown, since the creator can't unsubscribe once their email is saved.
+          // The admin service ignores it unless the creator edits the alert, so other editors keep the saved email.
+          embedOwnerEmail:
+            isEmbedded && showEmbedOwnerEmail
+              ? values.embedOwnerEmail.trim()
+              : undefined,
+          // Attachments are only sent with emails, and the export options only apply to attachments
+          ...(values.enableEmailNotification && values.exportAttach
             ? {
                 exportAttach: true,
                 exportFormat: values.exportFormat,
@@ -243,7 +215,15 @@
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
-          webOpenState: getWebOpenState(),
+          webOpenState: augmentUrlParams(
+            "explore",
+            // An edited alert keeps its own state, never the current page's url.
+            props.mode === "edit"
+              ? (props.alertSpec?.annotations ?? {})
+              : undefined,
+            expressionFilterManager,
+            timeFilterManager,
+          ),
         },
       },
     });
@@ -262,12 +242,17 @@
     });
     onClose();
     if (isCreateForm) {
+      // In an embed, the alerts page is only reachable when navigation is enabled.
+      const showAlertsLink =
+        !isEmbedded || !!EmbedStore.getInstance()?.navigationEnabled;
       eventBus.emit("notification", {
         message: m.alert_form_created(),
-        link: {
-          href: `/${organization}/${project}/-/alerts`,
-          text: m.alert_form_go_to_alerts(),
-        },
+        link: showAlertsLink
+          ? {
+              href: `${provider.pageBasePath}/alerts`,
+              text: m.alert_form_go_to_alerts(),
+            }
+          : undefined,
       });
     } else {
       eventBus.emit("notification", {
@@ -275,44 +260,6 @@
         type: "success",
       });
     }
-  }
-
-  // An AI alert created through the API has no dashboard state to capture; it keeps the one it had, if any.
-  function getWebOpenState() {
-    if (
-      props.mode === "edit" &&
-      (!$exploreState || Object.keys($exploreState).length === 0)
-    ) {
-      return props.alertSpec.annotations?.web_open_state ?? "";
-    }
-    return getProtoFromDashboardState(
-      $exploreState as ExploreState,
-      exploreSpec,
-    );
-  }
-
-  // For an AI alert, a measure or dimension narrows what the AI looks at. The ones the criteria had (often prefilled from
-  // the dashboard) were not chosen for that, so switching to AI clears them; switching back restores them.
-  // This lives here rather than in the data tab, which unmounts while another tab is shown.
-  let criteriaFields: Pick<AlertFormValues, "measure" | "splitByDimension"> = {
-    measure: "",
-    splitByDimension: "",
-  };
-  function setConditionType(conditionType: AlertConditionType) {
-    if (conditionType === $form.conditionType) return;
-    if (conditionType === AIConditionType) {
-      criteriaFields = {
-        measure: $form.measure,
-        splitByDimension: $form.splitByDimension,
-      };
-      $form.measure = "";
-      $form.splitByDimension = "";
-    } else {
-      $form.measure = $form.measure || criteriaFields.measure;
-      $form.splitByDimension =
-        $form.splitByDimension || criteriaFields.splitByDimension;
-    }
-    $form.conditionType = conditionType;
   }
 
   $: measure = $form.measure;
@@ -345,21 +292,18 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name =
-      $form.conditionType === AIConditionType
-        ? generateAIAlertName($form.aiCondition)
-        : generateAlertName(
-            $form,
-            $selectedComparisonTimeRange,
-            metricsViewSpec,
-          );
+    const name = generateAlertName(
+      $form,
+      timeFilterManager.showComparison
+        ? timeFilterManager.comparisonTimeRange
+        : undefined,
+      metricsViewSpec,
+    );
     if (!name) return;
     $form.name = name;
   }
 
-  onDestroy(() => {
-    cleanup?.();
-  });
+  onDestroy(cleanup);
 </script>
 
 <!-- Cap the form to the viewport so the dialog never overflows a small window.
@@ -394,16 +338,26 @@
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab
           {superFormInstance}
-          {filters}
-          {timeControls}
-          {setConditionType}
+          {expressionFilterManager}
+          {timeFilterManager}
+          {dashboardConfigProvider}
         />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogCriteriaTab
+          {superFormInstance}
+          {expressionFilterManager}
+          {timeFilterManager}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
+        <AlertDialogDeliveryTab
+          {superFormInstance}
+          {exploreName}
+          {provider}
+          {showEmbedOwnerEmail}
+          {slackAllowed}
+        />
       </DialogTabs.Content>
     </div>
   </DialogTabs.Root>

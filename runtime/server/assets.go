@@ -1,10 +1,15 @@
 package server
 
 import (
-	"fmt"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"io/fs"
 	"net/http"
-	"os"
+	"path"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -13,14 +18,51 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// assetContentSecurityPolicy is the Content-Security-Policy of project assets.
+// It only applies when a browser opens an asset as a document, which it then renders in a sandbox without script.
+// It has no effect on assets loaded as subresources, such as images, fonts or fetch requests.
+const assetContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+
+// assetContentTypes maps the file extensions of project assets to their content types.
+// Assets with other extensions are served as application/octet-stream.
+// The type is never sniffed from the content: browsers only render some files when the type is right (notably SVG),
+// and a sniffed type would let a file's content decide how the browser treats it.
+var assetContentTypes = map[string]string{
+	".avif":  "image/avif",
+	".bmp":   "image/bmp",
+	".gif":   "image/gif",
+	".ico":   "image/x-icon",
+	".jpeg":  "image/jpeg",
+	".jpg":   "image/jpeg",
+	".png":   "image/png",
+	".svg":   "image/svg+xml",
+	".webp":  "image/webp",
+	".otf":   "font/otf",
+	".ttf":   "font/ttf",
+	".woff":  "font/woff",
+	".woff2": "font/woff2",
+	".mp3":   "audio/mpeg",
+	".wav":   "audio/wav",
+	".mp4":   "video/mp4",
+	".webm":  "video/webm",
+	".css":   "text/css; charset=utf-8",
+	".csv":   "text/csv; charset=utf-8",
+	".json":  "application/json",
+	// Map boundaries.
+	".geojson":  "application/json",
+	".topojson": "application/json",
+	".tsv":      "text/tab-separated-values; charset=utf-8",
+	".txt":      "text/plain; charset=utf-8",
+}
+
+// assetsHandler serves files from the project's public paths (see `public_paths` in rill.yaml), including files in subdirectories.
 func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
-	path := req.PathValue("path")
 
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
-		attribute.String("args.path", path),
+		attribute.String("args.path", req.PathValue("path")),
 	)
 
 	if !auth.GetClaims(req.Context(), instanceID).Can(runtime.ReadObjects) {
@@ -32,21 +74,26 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
+	// Resolve the requested path to a rooted, slash-separated path without `.` or `..` segments before matching it.
+	// This keeps a request like `public/../rill.yaml` from reading files outside the public paths.
+	// The handler can't leave it to the ServeMux: it passes on `..` segments that were percent-encoded in the URL.
+	assetPath := path.Clean("/" + filepath.ToSlash(req.PathValue("path")))
+
 	allowed := false
 	for _, p := range inst.PublicPaths {
-		// 'p' can be `/public`, `/public/`, `public/`, `public` (with os-based separators)
-		// match pattern `public/*` or `/public/*`
-		ok, err := filepath.Match(fmt.Sprintf("%s%c*", filepath.Clean(p), os.PathSeparator), path)
-		if err != nil {
-			return httputil.Error(http.StatusBadRequest, err)
+		// A public path may be written as `public`, `/public`, `./public` or `public/` (with OS-specific separators).
+		p = path.Clean("/" + filepath.ToSlash(p))
+		if p == "/" {
+			// Never expose the entire project.
+			continue
 		}
-		if ok {
+		if assetPath == p || strings.HasPrefix(assetPath, p+"/") {
 			allowed = true
 			break
 		}
 	}
 	if !allowed {
-		return httputil.Error(http.StatusForbidden, fmt.Errorf("path is not allowed"))
+		return httputil.Errorf(http.StatusForbidden, "path is not allowed")
 	}
 
 	repo, release, err := s.runtime.Repo(ctx, instanceID)
@@ -55,10 +102,35 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 	defer release()
 
-	str, err := repo.Get(ctx, path)
+	// Reading a directory fails with an error other than fs.ErrNotExist, so look for one first.
+	info, err := repo.Stat(ctx, assetPath)
+	if err == nil && info.IsDir {
+		return httputil.Errorf(http.StatusNotFound, "file %q not found", assetPath)
+	}
+
+	data, err := repo.Get(ctx, assetPath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return httputil.Errorf(http.StatusNotFound, "file %q not found", assetPath)
+		}
 		return err
 	}
-	_, err = w.Write([]byte(str))
-	return err
+
+	contentType, ok := assetContentTypes[strings.ToLower(path.Ext(assetPath))]
+	if !ok {
+		contentType = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", assetContentSecurityPolicy)
+
+	// Assets may hold licensed data, such as map boundaries, so shared caches must never store them.
+	// Browsers revalidate on every use, which is cheap thanks to the ETag.
+	sum := sha256.Sum256([]byte(data))
+	w.Header().Set("Cache-Control", "private, no-cache")
+	w.Header().Set("ETag", `"`+hex.EncodeToString(sum[:])+`"`)
+
+	// ServeContent answers conditional and range requests; it keeps the Content-Type set above.
+	http.ServeContent(w, req, assetPath, time.Time{}, strings.NewReader(data))
+	return nil
 }

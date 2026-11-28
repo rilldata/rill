@@ -120,6 +120,32 @@ describe("DebouncedRuneStore", () => {
     vi.useRealTimers();
   });
 
+  it("cancels a pending write without preventing later writes", () => {
+    vi.useFakeTimers();
+    let store!: DebouncedRuneStore<string>;
+    let underlying!: InMemoryRuneStore<string>;
+    const cleanup = $effect.root(() => {
+      underlying = new InMemoryRuneStore<string>("initial");
+      store = new DebouncedRuneStore<string>(underlying, 500);
+    });
+    try {
+      store.setter("discarded");
+      store.cancel();
+      vi.advanceTimersByTime(500);
+      expect(underlying.value).toBe("initial");
+      store.setter("kept");
+      vi.advanceTimersByTime(500);
+      expect(underlying.value).toBe("kept");
+      store.setter("discarded again");
+      store.immediateSetter("immediate");
+      vi.advanceTimersByTime(500);
+      expect(underlying.value).toBe("immediate");
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
+  });
+
   it("immediateSetter bypasses the debounce", () => {
     vi.useFakeTimers();
     const cleanup = $effect.root(() => {

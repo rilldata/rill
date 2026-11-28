@@ -7,9 +7,11 @@
   export let project: string;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
   export let open = false;
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
+  $: manageProject = !!$projectQuery.data?.projectPermissions?.manageProject;
   $: manageProjectAdmins =
     !!$projectQuery.data?.projectPermissions?.manageProjectAdmins;
 </script>
@@ -19,9 +21,11 @@
     <ShareProjectForm
       {organization}
       {project}
+      {manageProject}
       {manageProjectAdmins}
       {manageOrgAdmins}
       {manageOrgMembers}
+      {readOrgMembers}
       enabled={open}
     />
   </Dialog.Content>

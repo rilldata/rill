@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { addCanvasWidget } from "@rilldata/web-common/tests/utils/canvas-helpers";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../setup/base";
 
@@ -7,11 +8,7 @@ test.describe("canvas kpi grid measure selector", () => {
 
   test("dropdown reflects selection state after toggling", async ({ page }) => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
-    await page
-      .getByRole("button", { name: "Add widget" })
-      .waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "Add widget" }).click();
-    await page.getByRole("menuitem", { name: "KPI", exact: true }).click();
+    await addCanvasWidget(page, "KPI");
 
     await page.getByLabel("Add measure fields").click();
 

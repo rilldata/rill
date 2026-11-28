@@ -12,8 +12,9 @@ import { ResourceKind } from "../entity-management/resource-selectors";
 import { buildDefaultArgs, getDeclaredParams } from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
-import { combineConditions } from "./stores/tab-edit";
+import { combineConditions } from "./stores/block-edit";
 
+// The height a component takes in a row that has no height of its own.
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -32,20 +33,25 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   kpi_grid: 128,
   image: 80,
   table: 300,
-  pivot: 300,
+  pivot: 224,
   leaderboard: 300,
   component_ref: 320,
   map: 400,
 };
 
-// Minimum heights a component can shrink to, when smaller than its initial
-// height. Used as the CSS floor so components like pivots (whose content can be
-// short, e.g. a low row limit) don't reserve their full initial height.
+// The lowest height a row height can give a component; types not listed here
+// cannot go below their initial height. Tables and pivots can hold just a few
+// rows, so they shrink until only the column header, the totals row, one data
+// row and a horizontal scrollbar are left. The component's header (title,
+// description and widget filters) adds its own height to these (see ItemWrapper).
 export const minHeights: Partial<Record<CanvasComponentType, number>> = {
-  pivot: 224,
+  table: 114,
+  pivot: 114,
 };
 
 export const MIN_HEIGHT = 40;
+// The height of a row whose YAML sets none.
+export const DEFAULT_ROW_HEIGHT = 100;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
@@ -69,13 +75,28 @@ type YAMLItem = Record<string, unknown> & {
 export type YAMLRow = {
   items?: YAMLItem[];
   height?: string;
-  // A top-level entry may instead be a tab group (carries `tabs` and an optional `name`).
-  // These are passed through row transactions untouched so their content is preserved.
+  // A top-level entry may instead be a block that holds rows: a tab group (`tabs`) or a
+  // container (`rows`), with an optional `name`. Row transactions pass blocks through
+  // untouched so their content is preserved (see mapGuard).
   tabs?: unknown;
+  rows?: unknown;
   name?: string;
-  // Condition that decides who sees the row (or tab group). Row transactions must keep it.
+  // Condition that decides who sees the row (or block). Row transactions must keep it.
   if?: unknown;
 };
+
+// The properties a plain row can have. An entry without items that has any other property
+// is a block, including kinds of block this editor doesn't know about yet.
+const PLAIN_ROW_KEYS = new Set(["items", "height", "if"]);
+
+// Like the parser, a list under `tabs` or `rows` makes an entry a block, whatever `items` holds.
+function isBlockEntry(entry: YAMLRow): boolean {
+  if (entry.tabs != null || entry.rows != null) return true;
+  return (
+    entry.items === undefined &&
+    Object.keys(entry).some((key) => !PLAIN_ROW_KEYS.has(key))
+  );
+}
 
 export type DragItem = {
   position?: { row: number; column: number };
@@ -95,10 +116,17 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
     if (el instanceof YAMLMap) {
       const jsonObject = el.toJSON() as YAMLRow;
 
-      // Preserve tab group rows verbatim. Coercing them to `items: []` would strip their
-      // tabs and the empty-items cleanup would then delete the row, destroying the group
+      // Preserve blocks verbatim. Coercing them to `items: []` would strip their content
+      // and the empty-items cleanup would then delete the entry, destroying the block
       // whenever an unrelated top-level row transaction runs.
-      if (jsonObject?.tabs !== undefined) {
+      if (jsonObject && isBlockEntry(jsonObject)) {
+        // The parser ignores an empty `items` next to a block's content. Drop it, so the
+        // cleanup doesn't take the block for an empty row either.
+        if (Array.isArray(jsonObject.items) && jsonObject.items.length === 0) {
+          const { items, ...block } = jsonObject;
+          void items;
+          return block;
+        }
         return jsonObject;
       }
 
@@ -138,14 +166,18 @@ interface Position {
   col: number;
 }
 
-// Identifies an editable rows container. undefined targets the top-level rows; a tab target
-// scopes editing to one tab's rows (at YAML path rows[blockIndex].tabs[tabIndex].rows).
-export type EditTarget = { blockIndex: number; tabIndex: number };
+export type YAMLPath = (string | number)[];
 
-/** YAML path to a tab's rows sequence. */
+// Identifies an editable rows list by the YAML path of its rows sequence: ["rows"] for the
+// top level, ["rows", b, "tabs", t, "rows"] for a tab and ["rows", b, "rows"] for a
+// container. An undefined target is the top level.
+export type EditTarget = { rowsPath: YAMLPath };
+
+export const TOP_LEVEL_ROWS_PATH: YAMLPath = ["rows"];
+
 /**
  * Whether the canvas element at the YAML path is hidden from the current user,
- * because it or one of its ancestors (a row, tab group or tab) is in hiddenPaths.
+ * because it or one of its ancestors (a row, tab group, tab or container) is in hiddenPaths.
  */
 export function isHiddenPath(
   hiddenPaths: Set<string>,
@@ -157,29 +189,132 @@ export function isHiddenPath(
   return false;
 }
 
-export function tabRowsPath(blockIndex: number, tabIndex: number) {
+/** YAML path of a tab's rows (the YAML omits the proto's tab_group wrapper). */
+export function tabRowsPath(blockIndex: number, tabIndex: number): YAMLPath {
   return ["rows", blockIndex, "tabs", tabIndex, "rows"];
 }
 
-/** Component name prefix for a tab, matching the parser's position key (see parse_canvas.go). */
-export function tabNamePrefix(blockIndex: number, tabIndex: number) {
-  return `g${blockIndex}-t${tabIndex}-`;
+/** YAML path of a container's rows. */
+export function containerRowsPath(blockIndex: number): YAMLPath {
+  return ["rows", blockIndex, "rows"];
 }
 
-/** Derive the tab target a component path lives in, or undefined for a top-level component. */
-export function tabTargetFromPath(
-  path: (string | number)[],
+/** The rows path of the target, defaulting to the top-level rows. */
+export function rowsPathOf(target: EditTarget | undefined): YAMLPath {
+  return target?.rowsPath ?? TOP_LEVEL_ROWS_PATH;
+}
+
+/** True if two targets are the same rows list. */
+export function sameTarget(
+  a: EditTarget | undefined,
+  b: EditTarget | undefined,
+): boolean {
+  return rowsPathOf(a).join(".") === rowsPathOf(b).join(".");
+}
+
+/**
+ * The YAML path of the rows list a component lives in: its path without the trailing
+ * [row, "items", col, type].
+ */
+export function rowsPathOfComponent(componentPath: YAMLPath): YAMLPath {
+  return componentPath.slice(0, -4);
+}
+
+/** The edit target of the rows list a component lives in, or undefined for a top-level component. */
+export function targetOfComponent(
+  componentPath: YAMLPath,
 ): EditTarget | undefined {
-  if (path.length >= 5 && path[0] === "rows" && path[2] === "tabs") {
-    return { blockIndex: Number(path[1]), tabIndex: Number(path[3]) };
-  }
-  return undefined;
+  const rowsPath = rowsPathOfComponent(componentPath);
+  return rowsPath.length > 1 ? { rowsPath } : undefined;
 }
 
-/** Component name prefix for the tab a path lives in, or "" for a top-level component. */
-export function namePrefixFromPath(path: (string | number)[]): string {
-  const target = tabTargetFromPath(path);
-  return target ? tabNamePrefix(target.blockIndex, target.tabIndex) : "";
+/**
+ * Component name prefix for the rows at a rows path, matching the parser's position key
+ * (see parse_canvas.go): "" at the top level, "g<b>-t<t>-" in a tab and "c<b>-" in a container.
+ */
+export function positionKeyPrefix(rowsPath: YAMLPath): string {
+  let prefix = "";
+  // After the leading "rows", each nesting level is [b, "tabs", t, "rows"] or [b, "rows"].
+  let i = 1;
+  while (i + 1 < rowsPath.length) {
+    if (rowsPath[i + 1] === "tabs") {
+      prefix += `g${rowsPath[i]}-t${rowsPath[i + 2]}-`;
+      i += 4;
+    } else if (rowsPath[i + 1] === "rows") {
+      prefix += `c${rowsPath[i]}-`;
+      i += 2;
+    } else {
+      break;
+    }
+  }
+  return prefix;
+}
+
+/**
+ * The spec rows at a YAML rows path. The YAML and the proto shapes differ: a tab's rows are
+ * at row.tabGroup.tabs[t].rows in the spec and a container's at row.container.rows.
+ * The returned list is the one in `rows`, so mutating it mutates `rows`. When `create` is
+ * set, a missing nested list is added first (proto JSON omits empty lists, e.g. for an
+ * empty container). Returns undefined if the path doesn't exist.
+ */
+export function specRowsAt(
+  rows: V1CanvasRow[],
+  rowsPath: YAMLPath,
+  create = false,
+): V1CanvasRow[] | undefined {
+  let current: V1CanvasRow[] | undefined = rows;
+  let i = 1;
+  while (current && i < rowsPath.length) {
+    const row: V1CanvasRow | undefined = current[Number(rowsPath[i])];
+    let holder: { rows?: V1CanvasRow[] } | undefined;
+    if (rowsPath[i + 1] === "tabs") {
+      holder = row?.tabGroup?.tabs?.[Number(rowsPath[i + 2])];
+      i += 4;
+    } else if (rowsPath[i + 1] === "rows") {
+      holder = row?.container;
+      i += 2;
+    } else {
+      return undefined;
+    }
+    if (holder && create) holder.rows ??= [];
+    current = holder?.rows;
+  }
+  return current;
+}
+
+/** True if the spec row is a block (a tab group or a container) rather than a plain row. */
+export function isBlockSpecRow(row: V1CanvasRow): boolean {
+  return !!row.tabGroup || !!row.container;
+}
+
+/**
+ * Calls visit for the top-level rows and for every nested rows list (each tab's and each
+ * container's), with the YAML path of the list.
+ */
+export function forEachRowsList(
+  rows: V1CanvasRow[],
+  visit: (rows: V1CanvasRow[], rowsPath: YAMLPath) => void,
+  rowsPath: YAMLPath = TOP_LEVEL_ROWS_PATH,
+) {
+  visit(rows, rowsPath);
+  rows.forEach((row, index) => {
+    row.tabGroup?.tabs?.forEach((tab, tabIndex) =>
+      forEachRowsList(tab.rows ?? [], visit, [
+        ...rowsPath,
+        index,
+        "tabs",
+        tabIndex,
+        "rows",
+      ]),
+    );
+    if (row.container) {
+      forEachRowsList(row.container.rows ?? [], visit, [
+        ...rowsPath,
+        index,
+        "rows",
+      ]);
+    }
+  });
 }
 
 interface BaseTransaction {
@@ -377,8 +512,8 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 }
 
 // Generates the resource name for a component at a position. namePrefix disambiguates
-// components nested in tabs (e.g. "g2-t0-") so they don't collide with top-level ones;
-// it mirrors the position key used by the parser (see parse_canvas.go).
+// components nested in tabs and containers (e.g. "g2-t0-" or "c1-") so they don't collide
+// with top-level ones; it mirrors the position key used by the parser (see positionKeyPrefix).
 export function generateId(
   row: number | undefined,
   column: number | undefined,
@@ -417,7 +552,8 @@ export function generateNewAssets(params: {
   specRows: V1CanvasRow[];
   resolvedComponents: V1ResolveCanvasResponseResolvedComponents | undefined;
   canvasName: string;
-  // Prefix for generated component names, to keep tab components unique. Default "" (top level).
+  // Prefix for generated component names, to keep the components of tabs and containers
+  // unique (see positionKeyPrefix). Default "" (top level).
   namePrefix?: string;
   defaultMetrics: {
     metricsViewName: string;
@@ -471,10 +607,16 @@ export function generateNewAssets(params: {
     return undefined;
   };
 
-  const resolvedComponentsArray = specRows.map((row) => {
-    // Preserve tab group rows (no items) so this array stays index-aligned with the spec
-    // and YAML arrays through the cleanup step; their tab components remain resolvable via
-    // the existing resolvedComponents map that updateAssets merges in.
+  // Block rows (tab groups and containers) arrive with `items: []` in the spec JSON. Give
+  // them no items, like their YAML rows (see mapGuard), so the empty-row cleanup keeps them
+  // and the spec, YAML and resolved arrays stay index-aligned through it.
+  const specRowsWithBlocks = specRows.map((row) =>
+    isBlockSpecRow(row) ? { ...row, items: undefined } : row,
+  );
+
+  const resolvedComponentsArray = specRowsWithBlocks.map((row) => {
+    // Preserve block rows; their nested components remain resolvable via the existing
+    // resolvedComponents map that updateAssets merges in.
     if (!row.items)
       return { ...row, items: undefined as V1Resource[] | undefined };
     const items = row.items.map((item) => {
@@ -530,7 +672,7 @@ export function generateNewAssets(params: {
   );
 
   const updatedSpecRows = mover<V1CanvasItem, V1CanvasRow>(
-    specRows,
+    specRowsWithBlocks,
     (_, __, operationIndex) => {
       const ref = refAdd(operationIndex);
       if (ref) {
@@ -713,8 +855,24 @@ export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
-export function getMinHeight(id: string | undefined) {
-  return minHeights[id as CanvasComponentType] ?? getInitialHeight(id);
+/**
+ * Whether a row's height is one that somebody chose.
+ * The editor fills MIN_HEIGHT into rows that have no height (see mapGuard),
+ * so that value and anything below it count as no height.
+ */
+export function isRowHeightSet(height: number | undefined) {
+  return height !== undefined && height > MIN_HEIGHT;
+}
+
+/**
+ * The lowest height the component type renders at.
+ * In a row without a height of its own that is the type's initial height,
+ * which keeps tables at their default size until the row is given a height.
+ */
+export function getMinHeight(id: string | undefined, rowHasHeight: boolean) {
+  const initialHeight = getInitialHeight(id);
+  if (!rowHasHeight) return initialHeight;
+  return minHeights[id as CanvasComponentType] ?? initialHeight;
 }
 
 export function initComponentSpec(

@@ -44,7 +44,11 @@ import {
 } from "@tanstack/svelte-query";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { dimensionSearchText } from "../stores/dashboard-stores";
-import { prepareTimeSeries, transformAggregateDimensionData } from "./utils";
+import {
+  getTimeDimensionForComparison,
+  prepareTimeSeries,
+  transformAggregateDimensionData,
+} from "./utils";
 import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 const MAX_TDD_VALUES_LENGTH = 250;
@@ -303,7 +307,15 @@ function getAggregationQueryForTopList(
         dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const topListValues = dimensionValues?.values || [];
 
-      if (!topListValues.length || !dimensionName) return;
+      if (!topListValues.length || !dimensionName || !timeDimension) return;
+
+      const { dimension: timeDimensionRequest, field: timeField } =
+        getTimeDimensionForComparison(
+          dimensionName,
+          timeDimension,
+          timeGrain,
+          timeZone,
+        );
 
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
@@ -335,10 +347,7 @@ function getAggregationQueryForTopList(
             ),
             requestExactNames(measures, exactContext(exactSurface)),
           ),
-          dimensions: [
-            { name: dimensionName },
-            { name: timeDimension, timeGrain, timeZone },
-          ],
+          dimensions: [{ name: dimensionName }, timeDimensionRequest],
           where: sanitiseExpression(updatedFilter, undefined),
           timeRange,
           sort: [
@@ -346,7 +355,7 @@ function getAggregationQueryForTopList(
               desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
               name: measures[0],
             },
-            { desc: false, name: timeDimension },
+            { desc: false, name: timeField },
           ],
           limit: "10000",
           offset: "0",
@@ -415,6 +424,13 @@ export function getDimensionValueTimeSeries(
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
+      const { field: timeField } = getTimeDimensionForComparison(
+        dimensionName,
+        timeDimension,
+        timeGrain,
+        timeZone,
+      );
+
       const { batchedTopList, batchedQueries } = batchAggregationQueries(
         ctx,
         measures,
@@ -428,7 +444,7 @@ export function getDimensionValueTimeSeries(
         for (let i = 0; i < batchedTopList.length; i++) {
           transformedData = transformedData.concat(
             transformAggregateDimensionData(
-              timeDimension,
+              timeField,
               dimensionName,
               measures,
               batchedTopList[i],
@@ -443,7 +459,7 @@ export function getDimensionValueTimeSeries(
         if (includeTimeComparisonForDimension) {
           {
             comparisonData = transformAggregateDimensionData(
-              timeDimension,
+              timeField,
               dimensionName,
               measures,
               // For chart surface, we only have 1 batch

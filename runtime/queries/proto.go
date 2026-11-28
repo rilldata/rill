@@ -100,6 +100,7 @@ func ProtoToExportQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, limi
 			Limit:               limitPtr,
 			Offset:              r.Offset,
 			PivotOn:             r.PivotOn,
+			ConditionalFormats:  r.ConditionalFormats,
 			SecurityClaims:      claims,
 			Aliases:             r.Aliases,
 			Rows:                r.Rows,

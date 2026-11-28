@@ -16,7 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -422,7 +421,7 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	// Evaluate watermark unless refs check failed.
 	watermark := triggerTime
 	if rep.Spec.WatermarkInherit {
-		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
+		t, ok, err := computeInheritedWatermark(ctx, r.C, self.Meta.Refs, reportQueryPriority)
 		if err != nil {
 			return false, err
 		}
@@ -995,42 +994,6 @@ func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
 		props["is_report"] = true
 	}
 	return props
-}
-
-// computeInheritedWatermark computes the inherited watermark for the report.
-// It returns false if the watermark could not be computed.
-func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
-	var t time.Time
-	for _, ref := range refs {
-		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
-		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
-		if ref.Kind == runtime.ResourceKindExplore {
-			res, err := r.C.Get(ctx, ref, false)
-			if err != nil {
-				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
-			}
-			spec := res.GetExplore().State.ValidSpec
-			if spec == nil {
-				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
-			}
-			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
-		}
-
-		q := &queries.ResourceWatermark{
-			ResourceKind: ref.Kind,
-			ResourceName: ref.Name,
-		}
-		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, reportQueryPriority)
-		if err != nil {
-			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
-		}
-
-		if q.Result != nil && (t.IsZero() || q.Result.Before(t)) {
-			t = *q.Result
-		}
-	}
-
-	return t, !t.IsZero(), nil
 }
 
 // calculateReportExecutionTimes calculates the execution times for a report, taking into consideration the report's intervals configuration and previous executions.

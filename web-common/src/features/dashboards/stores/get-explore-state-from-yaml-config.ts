@@ -9,6 +9,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getExploreDefaultFilter } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -30,8 +31,8 @@ import {
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import {
-  DateTimeUnitToV1TimeGrain,
-  isGrainAllowed,
+  getAvailableTimeGrains,
+  TokenToV1TimeGrain,
 } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getExploreStateFromYAMLConfig(
@@ -51,8 +52,14 @@ export function getExploreStateFromYAMLConfig(
       exploreFields,
       timeRangeSummary,
       metricsViewSpec.smallestTimeGrain,
+      metricsViewSpec.timeGrains,
     ),
     ...getExploreViewStateFromYAMLConfig(exploreSpec, exploreFields),
+    ...getExploreFilterStateFromYAMLConfig(
+      metricsViewSpec,
+      exploreSpec,
+      exploreFields,
+    ),
   };
 }
 
@@ -103,6 +110,7 @@ function getExploreTimeStateFromYAMLConfig(
   exploreFields: ExploreFieldNames,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   smallestTimeGrain: V1TimeGrain | undefined,
+  timeGrains: V1TimeGrain[] | undefined,
 ): Partial<ExploreState> {
   const exploreTimeState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset || !timeRangeSummary) {
@@ -117,7 +125,7 @@ function getExploreTimeStateFromYAMLConfig(
 
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
-        DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
+        TokenToV1TimeGrain[defaultPreset.timeGrain];
       exploreTimeState.adaptiveTimeGrain = false;
     } else {
       const grainForRange = getGrainForRange(
@@ -126,9 +134,14 @@ function getExploreTimeStateFromYAMLConfig(
         timeRangeSummary,
       );
 
-      const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
-        ? grainForRange
-        : smallestTimeGrain;
+      const availableTimeGrains = getAvailableTimeGrains({
+        smallestTimeGrain,
+        timeGrains,
+      });
+      const interval =
+        grainForRange && availableTimeGrains.includes(grainForRange)
+          ? grainForRange
+          : (availableTimeGrains[0] ?? smallestTimeGrain);
 
       exploreTimeState.selectedTimeRange.interval = interval;
     }
@@ -198,6 +211,26 @@ function getDefaultComparisonTimeRangeName(
   );
 
   return comparisonTimeRangeName;
+}
+
+function getExploreFilterStateFromYAMLConfig(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  exploreFields: ExploreFieldNames,
+): Partial<ExploreState> {
+  const whereFilter = getExploreDefaultFilter(
+    metricsViewSpec,
+    exploreSpec,
+    exploreFields,
+  );
+  // Left unset without a default filter, so that the cascading merge fills it from the next source.
+  if (!whereFilter) return {};
+
+  return {
+    whereFilter,
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: [],
+  };
 }
 
 function getExploreViewStateFromYAMLConfig(

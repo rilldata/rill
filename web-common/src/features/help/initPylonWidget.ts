@@ -18,6 +18,8 @@ export function initPylonWidget() {
     const e = t.createElement("script");
     e.setAttribute("type", "text/javascript");
     e.setAttribute("async", "true");
+    // Pylon serves the loader with CORS headers, so errors it throws reach error telemetry with their message and stack instead of an opaque "Script error."
+    e.setAttribute("crossorigin", "anonymous");
     e.setAttribute("src", `https://widget.usepylon.com/widget/${appId}`);
     const n = t.getElementsByTagName("script")[0];
     n.parentNode?.insertBefore(e, n);

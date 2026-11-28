@@ -576,35 +576,42 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 
-	// Allow if the owner is accessing the alert
-	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		explicitAllow = true
-	}
+	// Alerts created from an embed are only accessible to admins and the embed user who created them (same as reports).
+	// Recipients don't get access, since they may be other embed users or project members, and the alert shouldn't leak the owner or other recipients.
+	// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
+	if spec.Annotations["admin_embed_owner_id"] != "" {
+		explicitAllow = claims.Admin() || (claims.UserID != "" && claims.UserID == spec.Annotations["admin_embed_owner_id"])
+	} else {
+		// Allow if the owner is accessing the alert
+		if spec.Annotations["admin_owner_user_id"] != "" && userID == spec.Annotations["admin_owner_user_id"] {
+			explicitAllow = true
+		}
 
-	// Allow if the user is an email recipient
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
+		// Allow if the user is an email recipient
+		for _, notifier := range spec.Notifiers {
+			switch notifier.Connector {
+			case "email":
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+				for _, recipient := range recipients {
+					if recipient == email {
+						explicitAllow = true
+					}
+				}
+			case "slack":
+				props, err := slack.DecodeProps(notifier.Properties.AsMap())
+				if err != nil {
+					p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
+					continue
+				}
+				for _, user := range props.Users {
+					if user == email {
+						explicitAllow = true
+					}
+				}
+				// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
+				if len(props.Channels) > 0 {
 					explicitAllow = true
 				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
-				continue
-			}
-			for _, user := range props.Users {
-				if user == email {
-					explicitAllow = true
-				}
-			}
-			// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
-			if len(props.Channels) > 0 {
-				explicitAllow = true
 			}
 		}
 	}
@@ -739,18 +746,8 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 		}
 	}
 
-	// Extract the calling user id
-	var userID string
-	if len(claims.UserAttributes) != 0 {
-		userID, _ = claims.UserAttributes["id"].(string)
-	}
-	ownedByUser := userID != "" && userID == spec.Annotations["admin_owner_user_id"]
-
-	shared, ok := spec.Annotations["admin_shared"]
-	sharedBool := ok && shared == "true"
-
 	// Allow if the calling user is the owner or if the canvas is shared
-	if spec.Annotations != nil && (ownedByUser || sharedBool) {
+	if adminOwnerCanAccess(claims, spec.Annotations, false) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
@@ -762,6 +759,27 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 	}
 
 	return nil
+}
+
+func adminOwnerCanAccess(claims *SecurityClaims, annotations map[string]string, skipShared bool) bool {
+	var allow bool
+	if embedOwnerID := annotations["admin_embed_owner_id"]; embedOwnerID != "" {
+		// Canvases created from an embed are only accessible to admins and the embed user who created them.
+		// The embed user is identified by the subject of the embed's runtime JWT, not by the "id" attribute,
+		// since the embedder controls the attributes.
+		// Sharing is not supported for embed-owned canvases, so "admin_shared" is ignored.
+		allow = claims.UserID != "" && claims.UserID == embedOwnerID
+	} else {
+		// Extract the calling user id
+		var userID string
+		if len(claims.UserAttributes) != 0 {
+			userID, _ = claims.UserAttributes["id"].(string)
+		}
+		ownedByUser := userID != "" && userID == annotations["admin_owner_user_id"]
+		sharedBool := !skipShared && annotations["admin_shared"] == "true"
+		allow = ownedByUser || sharedBool
+	}
+	return allow
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.

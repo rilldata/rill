@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -34,6 +35,8 @@
   $: deltaIsFavorable = lowerIsBetter ? !deltaPositive : deltaPositive;
 
   const GAP = 8;
+  // The tooltip is portalled out of the dashboard's theme boundary.
+  const themeBoundaryClass = getThemeBoundaryClass();
 
   let tooltipEl: HTMLDivElement;
   let top = 0;
@@ -61,7 +64,7 @@
 <div
   bind:this={tooltipEl}
   use:portal
-  class="tooltip-container"
+  class="tooltip-container {themeBoundaryClass ?? ''}"
   style:top="{top}px"
   style:left="{left}px"
 >

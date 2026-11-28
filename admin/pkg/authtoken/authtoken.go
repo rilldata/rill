@@ -25,12 +25,15 @@ const (
 	TypeService    Type = "svc"
 	TypeDeployment Type = "dpl"
 	TypeMagic      Type = "mgc"
+	// TypeMagicSession is a short-lived token issued after unlocking a password-protected magic token.
+	// It grants the same access as the magic token it belongs to.
+	TypeMagicSession Type = "mgs"
 )
 
 // Validate checks that the type is a known enum value.
 func (t Type) Validate() bool {
 	switch t {
-	case TypeUser, TypeService, TypeDeployment, TypeMagic:
+	case TypeUser, TypeService, TypeDeployment, TypeMagic, TypeMagicSession:
 		return true
 	default:
 		return false

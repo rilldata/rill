@@ -7,22 +7,86 @@ import type {
 
 export { default as KPI } from "./KPI.svelte";
 
-export const SPARKLINE_MIN_WIDTH = 128;
-export const BIG_NUMBER_MIN_WIDTH = 160;
-export const padding = 32;
-export const SPARK_RIGHT_MIN =
-  SPARKLINE_MIN_WIDTH + 8 + BIG_NUMBER_MIN_WIDTH + padding;
+export const KPI_SIZES = ["small", "medium", "large", "xlarge"] as const;
+export type KPISize = (typeof KPI_SIZES)[number];
+export const DEFAULT_KPI_SIZE: KPISize = "medium";
 
+/**
+ * The size preset a KPI renders at. An absent or unknown value (the runtime
+ * rejects unknown ones, but an unvalidated draft can still carry one) renders
+ * at the default size.
+ */
+export function resolveKPISize(size: unknown): KPISize {
+  return KPI_SIZES.includes(size as KPISize)
+    ? (size as KPISize)
+    : DEFAULT_KPI_SIZE;
+}
+
+/**
+ * Font size of the value in pixels per size preset.
+ * KPI.svelte sets the same sizes in rem (`--kpi-value-size`).
+ */
+export const KPI_VALUE_FONT_SIZES: Record<KPISize, number> = {
+  small: 20,
+  medium: 30,
+  large: 44,
+  xlarge: 64,
+};
+
+/**
+ * Minimum width in pixels of the column holding a medium value
+ * and all three comparison values;
+ * each comparison value left out takes 10px off.
+ */
+const MEDIUM_BIG_NUMBER_MIN_WIDTH = 160;
+
+/**
+ * Sparkline minimum width, gap between the value column and a right-hand sparkline,
+ * and card padding per size preset.
+ * They match the spacing KPI.svelte and KPIGrid.svelte apply for the same preset.
+ */
+const KPI_SIZE_SPACING: Record<
+  KPISize,
+  { sparkline: number; gap: number; padding: number }
+> = {
+  small: { sparkline: 96, gap: 4, padding: 24 },
+  medium: { sparkline: 128, gap: 8, padding: 32 },
+  large: { sparkline: 160, gap: 12, padding: 40 },
+  xlarge: { sparkline: 160, gap: 16, padding: 48 },
+};
+
+/**
+ * Minimum width in pixels of the column holding the value and its comparison values.
+ * It grows in proportion to the value's font size,
+ * so a value that fits the medium column also fits the column of a larger preset.
+ */
+export function getBigNumberMinWidth(
+  size?: KPISize,
+  comparisonCount = 3,
+): number {
+  const mediumWidth = MEDIUM_BIG_NUMBER_MIN_WIDTH - 10 * (3 - comparisonCount);
+  return Math.ceil(
+    (mediumWidth * KPI_VALUE_FONT_SIZES[size ?? DEFAULT_KPI_SIZE]) /
+      KPI_VALUE_FONT_SIZES.medium,
+  );
+}
+
+/**
+ * Minimum width in pixels of a KPI card, used to pick the grid's column count.
+ */
 export function getMinWidth(
   sparkline: "none" | "bottom" | "right" | undefined,
+  size?: KPISize,
 ): number {
+  const bigNumber = getBigNumberMinWidth(size);
+  const spacing = KPI_SIZE_SPACING[size ?? DEFAULT_KPI_SIZE];
   switch (sparkline) {
     case "right":
-      return SPARK_RIGHT_MIN;
+      return spacing.sparkline + spacing.gap + bigNumber + spacing.padding;
     case "none":
     case "bottom":
     default:
-      return BIG_NUMBER_MIN_WIDTH + padding;
+      return bigNumber + spacing.padding;
   }
 }
 
@@ -100,6 +164,8 @@ export interface KPISpec
   adhoc_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
+  // Scales the card's text, spacing and minimum footprint. Defaults to "medium"
+  size?: KPISize;
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
   hide_time_range?: boolean;

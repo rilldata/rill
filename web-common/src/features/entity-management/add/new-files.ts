@@ -6,6 +6,7 @@ import {
   type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
+  runtimeServiceGetResource,
   runtimeServicePutFile,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -17,6 +18,11 @@ import {
   BehaviourEventMedium,
 } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+import { extractFileName } from "../file-path-utils.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 
 export async function createResourceAndNavigate(
   client: RuntimeClient,
@@ -32,6 +38,10 @@ export async function createResourceAndNavigate(
   );
   if (!filePath) return;
 
+  if (kind === ResourceKind.Canvas) {
+    await waitForCanvasCreation(client, extractFileName(filePath));
+  }
+
   const previousScreenName = getScreenNameFromPage();
   await navigateToFile(filePath);
   await behaviourEvent?.fireSourceTriggerEvent(
@@ -40,6 +50,41 @@ export async function createResourceAndNavigate(
     previousScreenName,
     MetricsEventSpace.LeftPanel,
   );
+}
+
+// PutFile can finish before the parser creates the Canvas needed by ResolveCanvas.
+// Give it a short head start, but still open the editor on timeout or errors.
+async function waitForCanvasCreation(client: RuntimeClient, name: string) {
+  const controller = new AbortController();
+  const { signal } = controller;
+  // The observed creation race was about 250 ms; keep the fallback bounded to 1 s.
+  const deadline = setTimeout(() => controller.abort(), 1_000);
+  try {
+    while (!signal.aborted) {
+      try {
+        const response = await runtimeServiceGetResource(
+          client,
+          { name: { name, kind: ResourceKind.Canvas } },
+          { signal },
+        );
+        if (response.resource) return;
+      } catch (error) {
+        if (!isNotFoundError(error) && !isControllerClosedError(error)) return;
+      }
+      if (signal.aborted) return;
+      await new Promise<void>((resolve) => {
+        const finish = () => {
+          clearTimeout(timer);
+          signal.removeEventListener("abort", finish);
+          resolve();
+        };
+        const timer = setTimeout(finish, 50);
+        signal.addEventListener("abort", finish, { once: true });
+      });
+    }
+  } finally {
+    clearTimeout(deadline);
+  }
 }
 
 export async function createResourceFile(

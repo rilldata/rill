@@ -30,7 +30,7 @@ import {
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
 import {
-  isGrainAllowed,
+  getAvailableTimeGrains,
   V1TimeGrainToAlias,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains";
@@ -89,7 +89,7 @@ function getRillDefaultExploreTimeState(
     timeRangeSummary,
   );
 
-  const timeZone = getDefaultTimeZone(exploreSpec);
+  const timeZone = getDefaultTimeZone(exploreSpec.timeZones);
 
   const grainForRange = getGrainForRange(
     timeRangeName,
@@ -97,9 +97,12 @@ function getRillDefaultExploreTimeState(
     timeRangeSummary,
   );
 
-  const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
-    ? grainForRange
-    : smallestTimeGrain;
+  // Adaptive mode re-derives the grain once the range is resolved; this is the placeholder until then.
+  const availableTimeGrains = getAvailableTimeGrains(metricsViewSpec);
+  const interval =
+    grainForRange && availableTimeGrains.includes(grainForRange)
+      ? grainForRange
+      : (availableTimeGrains[0] ?? smallestTimeGrain);
 
   return {
     selectedTimeRange: {
@@ -254,8 +257,8 @@ export function getGrainForRange(
   }
 }
 
-export function getDefaultTimeZone(explore: V1ExploreSpec) {
-  const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
+export function getDefaultTimeZone(timeZones: string[] | undefined) {
+  const preference = timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {
     return getLocalIANA();

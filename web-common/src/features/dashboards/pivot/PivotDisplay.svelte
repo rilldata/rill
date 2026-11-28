@@ -1,6 +1,9 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
+  import {
+    canExportPivot,
+    getPivotExportQuery,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -26,6 +29,7 @@
   import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
+  import PivotColumnTruncationNotice from "./PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import type { PivotChipData } from "./types";
@@ -41,7 +45,7 @@
     dashboardStore,
     validSpecStore,
     selectors: {
-      pivot: { columns, measures, dimensions },
+      pivot: { rows, columns, isFlat, measures, dimensions },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
       measures: { measureLabel },
       exactMeasures: { exactMeasureContext },
@@ -78,7 +82,7 @@
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
 
-  $: ({ isFetching, assembled } = $pivotDataStore);
+  $: ({ isFetching, assembled, columnTruncation } = $pivotDataStore);
 
   // Precision chip of a measure column header; undefined when the measure has no exact variant.
   $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
@@ -131,6 +135,8 @@
 
   $: hasColumnAndNoMeasure =
     $columns.dimension.length > 0 && $columns.measure.length === 0;
+
+  $: canExport = canExportPivot($rows, $columns, $isFlat);
 
   function removeActiveCell() {
     if (!$dashboardStore.pivot.activeCell) return;
@@ -255,6 +261,7 @@
           {#if $exports}
             <ExportMenu
               label={m.dashboard_export_pivot_data()}
+              disabled={!canExport}
               includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
@@ -274,6 +281,9 @@
           {isEmbedded}
         />
       {:else}
+        {#if columnTruncation}
+          <PivotColumnTruncationNotice {columnTruncation} />
+        {/if}
         <PivotTable
           bind:this={pivotTable}
           {widthScopeKey}

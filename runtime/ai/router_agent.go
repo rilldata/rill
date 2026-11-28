@@ -38,8 +38,8 @@ type RouterAgentArgs struct {
 type RouterAgentResult struct {
 	Response string `json:"response"`
 	Agent    string `json:"agent"`
-	// Verdict is the analyst's verdict when it judged an AI alert's condition.
-	Verdict *AlertVerdict `json:"verdict,omitempty"`
+	// AlertOutcome is the analyst's verdict when it checked an AI alert's condition.
+	AlertOutcome AlertOutcome `json:"alert_outcome,omitempty"`
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
@@ -171,7 +171,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if err != nil {
 			return nil, mapAgentErr(err)
 		}
-		return &RouterAgentResult{Response: res.Response, Agent: args.Agent, Verdict: res.Verdict}, nil
+		return &RouterAgentResult{Response: res.Response, Agent: args.Agent, AlertOutcome: res.AlertOutcome}, nil
 
 	case DeveloperAgentName:
 		developerAgentArgs := args.DeveloperAgentArgs

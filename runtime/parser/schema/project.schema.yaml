@@ -2322,6 +2322,17 @@ definitions:
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+          time_grains:
+            type: array
+            description: 'Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.'
+            items:
+              type: string
+          base_time_grain:
+            type: string
+            description: 'Optional time grain the base table stores `timeseries` at, for example `day` for a Druid datasource ingested with a day query granularity. It declares that every row''s timestamp is on a boundary of this grain in `base_time_zone`. Rollup routing rounds query time bounds up to the next boundary, so a time range that starts or ends inside a day can still use a day rollup. Rill only checks that the base table''s earliest and latest timestamps are on a boundary, and skips that check when `data_time_range` is set; if other rows are not on a boundary, queries routed to a rollup return wrong results. Week boundaries start on `first_day_of_week`. Quarter and year boundaries are calendar quarters and years starting in January, regardless of `first_month_of_year`; for fiscal quarters or years whose boundaries all fall on the first day of a calendar month, use `month`, and otherwise `day` if every timestamp is at local midnight. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+          base_time_zone:
+            type: string
+            description: IANA time zone of the `base_time_grain` boundaries (e.g. America/New_York). Defaults to UTC. Requires `base_time_grain`.
           first_day_of_week:
             type: integer
             description: Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
@@ -2495,6 +2506,22 @@ definitions:
               required:
                 - name
 
+          tag_order:
+            type: array
+            description: |
+              Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+              Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+              Each tag must be set on at least one dimension or measure.
+              A derived metrics view uses the parent's order unless it sets its own.
+
+              ```yaml
+              tag_order:
+                - Revenue
+                - Engagement
+                - Geography
+              ```
+            items:
+              type: string
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
             $ref: '#/definitions/field_selector_properties'
@@ -2624,18 +2651,18 @@ definitions:
             description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
           banner:
             type: string
-            description: Refers to the custom banner displayed in the header of a Canvas dashboard.
+            description: Refers to the custom banner displayed in the header of a Canvas dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           rows:
             type: array
-            description: Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
+            description: Refers to all of the rows displayed on the Canvas. Each entry is a plain row (with `items`), a tab group (with `tabs`) or a container (with `rows`), and sets only one of them.
             items:
               type: object
               properties:
                 height:
                   type: string
-                  description: Height of the row in px
+                  description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
                 if:
                   $ref: '#/definitions/canvas_if_condition'
                 items:
@@ -2647,7 +2674,9 @@ definitions:
                       component:
                         type: string
                         description: |
-                          Name of the component to display. Each component type has its own set of properties.
+                          Name of a component defined in its own file (`type: component`), such as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz). Bind its declared params with `params`.
+                          Each project file is limited to 128 KB, so keeping a large chart in a component file also keeps the canvas file small; see [Move a Large Chart Out of the Canvas File](/developers/build/dashboards/canvas-widgets/custom-viz#move-a-large-chart-out-of-the-canvas-file).
+                          To define a widget inline instead, leave out `component` and add a key named after the component type, with the widget's properties as its value. Each component type has its own set of properties.
                           Available component types:
 
                               - **markdown** - Text component, uses markdown formatting
@@ -2680,7 +2709,7 @@ definitions:
                     additionalProperties: true
                 name:
                   type: string
-                  description: Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
+                  description: Stable identifier for a tab group or a container; a tab group also uses it as its deep-link URL key. Defaults to `group-<index>` for a tab group and `container-<index>` for a container if omitted. Names must be unique among the tab groups and containers of the canvas. Only used for tab-group and container entries.
                 tabs:
                   type: array
                   description: Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
@@ -2697,13 +2726,13 @@ definitions:
                         $ref: '#/definitions/canvas_if_condition'
                       rows:
                         type: array
-                        description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
+                        description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs` or `rows`.
                         items:
                           type: object
                           properties:
                             height:
                               type: string
-                              description: Height of the row in px
+                              description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
                             if:
                               $ref: '#/definitions/canvas_if_condition'
                             items:
@@ -2711,6 +2740,22 @@ definitions:
                               description: List of components to display in the row
                               items: *canvasRowItem
                           additionalProperties: false
+                    additionalProperties: false
+                rows:
+                  type: array
+                  description: Makes this entry a container of rows instead of a plain row. A container keeps related rows together; it has no visual element for viewers, who see its rows as plain rows. The container's `if` applies to everything inside it. Containers hold plain rows (with `items`) and cannot be nested inside a tab or another container.
+                  items:
+                    type: object
+                    properties:
+                      height:
+                        type: string
+                        description: "Height of the row in px, such as `240px`. Without it, each component takes its default height (300px for a table, 224px for a pivot). A row height below a component's minimum has no effect on it; a table or pivot can go down to 114px, plus the height of its title, description and local filter chips (174px with only a title)."
+                      if:
+                        $ref: '#/definitions/canvas_if_condition'
+                      items:
+                        type: array
+                        description: List of components to display in the row
+                        items: *canvasRowItem
                     additionalProperties: false
               additionalProperties: false
           max_width:
@@ -2734,12 +2779,17 @@ definitions:
                 description: Toggles filtering functionality for the canvas dashboard.
               pinned:
                 type: array
-                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed.
                 items:
                   type: string
               required:
                 type: array
-                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and a default value in `defaults.filters` so a value is always set. Each name must be a dimension on a metrics view referenced by the canvas.
                 items:
                   type: string
           allow_custom_time_range:
@@ -2847,7 +2897,7 @@ definitions:
             description: Refers to the description of the explore dashboard
           banner:
             type: string
-            description: Refers to the custom banner displayed at the header of an explore dashboard
+            description: Refers to the custom banner displayed at the header of an explore dashboard. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:
@@ -2934,6 +2984,7 @@ definitions:
                   time_range: P1M
                   comparison_mode: dimension #time, none
                   comparison_dimension: filename
+                  filters: "country = 'US' AND device IN ('mobile', 'tablet')"
                 ```
             properties:
               dimensions:
@@ -2955,6 +3006,39 @@ definitions:
               comparison_dimension:
                 description: 'For dimension mode, specify the comparison dimension by name.'
                 type: string
+              filters:
+                description: "Default filter applied when a user initially loads the dashboard, written as a Metrics SQL `WHERE` expression, for example `country = 'US' AND device IN ('mobile', 'tablet')`. It can only reference dimensions and measures shown in the explore. An explore has a single metrics view, so this is one expression and not a map keyed by metrics view as on a canvas dashboard."
+                type: string
+            additionalProperties: false
+          filters:
+            type: object
+            description: |
+              Configures the filters of the explore dashboard.
+                ```yaml
+                filters:
+                  pinned:
+                    - device
+                  required:
+                    - advertiser
+                  single_select:
+                    - advertiser
+                ```
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Combine with `defaults.filters` so the explore opens with a value already set. Each name must be a measure or a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value, including from a leaderboard, replaces the current one, and viewers cannot exclude values or match on text. Combine with `required` and `defaults.filters` so a value is always set. Each name must be a dimension shown in the explore, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object
@@ -2978,7 +3062,7 @@ definitions:
     title: Alert YAML
     id: alerts
     type: object
-    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+    description: Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`. Alerts defined in YAML run after you deploy the project to Rill Cloud; Rill Developer doesn't run them or send their notifications.
     examples:
       - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
         type: alert
@@ -3012,7 +3096,7 @@ definitions:
           refresh:
             $ref: '#/definitions/schedule_properties'
             description: |
-                  Refresh schedule for the alert
+                  Refresh schedule for the alert. Alerts only run in Rill Cloud, so `run_in_dev` doesn't make them run in Rill Developer.
                     ```yaml
                     refresh:
                       cron: "* * * * *"
@@ -3116,8 +3200,17 @@ definitions:
             type: string
             description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
           notify:
-            $ref: '#/definitions/notify_properties'
-            description: Notification configuration
+            type: object
+            description: Notification configuration for email and Slack delivery
+            allOf:
+              - $ref: '#/definitions/notify_properties'
+              - type: object
+                properties:
+                  rows_limit:
+                    type: integer
+                    description: Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
+                    minimum: 0
+                    maximum: 50
           annotations:
             type: object
             description: Key-value pairs used for annotations.
@@ -3335,7 +3428,7 @@ definitions:
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
-      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+      To apply that theme to a dashboard, add `theme: <name of theme>` to the YAML file for that dashboard.
     examples:
       - # Example: Basic theme with light and dark mode colors
         type: theme
@@ -3346,37 +3439,58 @@ definitions:
           primary: "#818CF8"  # Indigo-400
           secondary: "#A78BFA"  # Purple-400
 
-      - # Example: Advanced theme with custom color palettes
+      - # Example: Branded surfaces, text, borders and corners
+        type: theme
+        light:
+          primary: "#0F766E"  # Teal-700
+          secondary: "#F59E0B"  # Amber-500
+          variables:
+            surface-background: "#F8FAFC"  # Page behind the components
+            surface-card: "#FFFFFF"  # Canvas components
+            fg-primary: "#0F172A"  # Main text
+            border: "#CBD5E1"
+            radius: 1rem  # Rounder corners; use 0 for square ones
+        dark:
+          primary: "#2DD4BF"  # Teal-400
+          secondary: "#FBBF24"  # Amber-400
+          variables:
+            surface-background: "#0B1120"
+            surface-card: "#111827"
+            fg-primary: "#F1F5F9"
+            border: "#334155"
+            radius: 1rem
+
+      - # Example: Custom chart color palettes
         type: theme
         light:
           primary: "#14B8A6"  # Teal
           secondary: "#10B981"  # Emerald
-          
-          color-sequential-1: "hsl(180deg 80% 95%)"
-          color-sequential-5: "hsl(180deg 80% 50%)"
-          color-sequential-9: "hsl(180deg 80% 25%)"
-          color-qualitative-1: "hsl(156deg 56% 52%)"
-          color-qualitative-2: "hsl(27deg 100% 65%)"
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
         dark:
           primary: "2DD4BF"
           secondary: "34D399"
-          
-          color-sequential-1: "hsl(180deg 40% 30%)"
-          color-sequential-5: "hsl(180deg 50% 50%)"
-          color-sequential-9: "hsl(180deg 60% 70%)"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
 
-      - # Example: Theme with KPI delta colors (green for positive, red for negative)
+      - # Example: KPI delta colors, with the variables set directly in the block instead of under `variables`
         type: theme
         light:
-            primary: "#6366f1"
-            secondary: "#8b5cf6"
-            kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
-            kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
+          primary: "#6366f1"
+          secondary: "#8b5cf6"
+          kpi-positive: "#16a34a"  # Green for positive deltas (default: gray)
+          kpi-negative: "#dc2626"  # Red for negative deltas (default: red)
         dark:
-            primary: "#818cf8"
-            secondary: "#a78bfa"
-            kpi-positive: "#4ade80"  # Brighter green for dark mode
-            kpi-negative: "#f87171"  # Brighter red for dark mode
+          primary: "#818cf8"
+          secondary: "#a78bfa"
+          kpi-positive: "#4ade80"  # Brighter green for dark mode
+          kpi-negative: "#f87171"  # Brighter red for dark mode
     allOf:
       - title: Properties
         type: object
@@ -3414,7 +3528,7 @@ definitions:
                 description: Color for negative KPI delta values in light theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for light theme
+                description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
           dark:
@@ -3435,7 +3549,7 @@ definitions:
                 description: Color for negative KPI delta values in dark theme. Defaults to red.
               variables:
                 type: object
-                description: Custom CSS variables for dark theme
+                description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
                 additionalProperties:
                   type: string
 
@@ -3509,8 +3623,7 @@ definitions:
           kpi:
             $ref: '#/definitions/kpi_properties'
           kpi_grid:
-            type: object
-            description: Grid of KPIs
+            $ref: '#/definitions/kpi_grid_properties'
           table:
             $ref: '#/definitions/table_properties'
           pivot:
@@ -3709,6 +3822,61 @@ definitions:
       - time_range
     additionalProperties: false
 
+  # KPI Grid Properties
+  kpi_grid_properties:
+    type: object
+    description: Grid of KPI cards, one per measure, each with the measure's value, an optional time comparison and an optional sparkline
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measures:
+        type: array
+        items:
+          type: string
+        description: Measures to display, one card each. An entry is the name of a measure of the metrics view or of one of the component's `adhoc_measures`.
+      adhoc_measures:
+        type: array
+        description: Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+      comparison:
+        type: array
+        items:
+          type: string
+          enum: ["previous", "delta", "percent_change"]
+        description: Comparison values shown under each KPI while the component shows a time comparison, any of `previous` (the comparison period's value), `delta` (absolute change) and `percent_change`. Defaults to `delta` and `percent_change`.
+      sparkline:
+        type: string
+        enum: ["bottom", "right", "none"]
+        description: Where to draw each KPI's sparkline, `bottom` (below the value), `right` (beside the value) or `none`. Defaults to `bottom`.
+      size:
+        type: string
+        enum: ["small", "medium", "large", "xlarge"]
+        description: Size of the KPI cards, `small`, `medium`, `large` or `xlarge`. Scales the value, the labels, the spacing and the minimum width of each card together, so a larger size fits fewer cards per row. Defaults to `medium`.
+      hide_time_range:
+        type: boolean
+        description: Hide the time range shown under each KPI. Defaults to false.
+      title:
+        type: string
+        description: KPI grid title
+      description:
+        type: string
+        description: KPI grid description
+      show_description_as_tooltip:
+        type: boolean
+        description: Show the description as a tooltip on the title instead of below it
+      time_filters:
+        type: string
+        description: Time range and comparison for this KPI grid, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+      dimension_filters:
+        type: string
+        description: SQL filter expression applied to this KPI grid only, such as `country IN ('US')`
+      hide_local_filters:
+        type: boolean
+        description: Hide the local filter chips on the KPI grid; the filters still apply to its queries
+    required:
+      - metrics_view
+      - measures
+
   # A field entry of a table or pivot: the field name, or an object with the name and per-column presentation overrides.
   table_field_entry:
     oneOf:
@@ -3825,6 +3993,9 @@ definitions:
       row_limit:
         type: string
         description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+      click_to_filter:
+        type: boolean
+        description: Whether clicking a cell or header filters the whole canvas by its values. Set to false to keep the table read-only, so selecting a row does not filter the other components. Defaults to true.
       fit_to_width:
         type: boolean
         description: When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
@@ -3872,10 +4043,25 @@ definitions:
     properties:
       content:
         type: string
-        description: Markdown content
-      css:
+        description: Markdown text to display. Supports templating, with the `metrics_sql` and `metrics_sql_rows` functions to insert the results of [Metrics SQL](/developers/build/metrics-view/metrics-sql) queries, which follow the canvas time range and filters. See [Dynamic Markdown](/developers/build/dashboards/canvas-widgets/misc#dynamic-markdown).
+      apply_formatting:
+        type: boolean
+        description: Format the measure values that `metrics_sql` and `metrics_sql_rows` return with each measure's `format_d3` or `format_preset` from the metrics view. Defaults to false.
+      alignment:
         type: object
-        description: CSS styles
+        description: Position of the text within the component
+        properties:
+          horizontal:
+            type: string
+            enum: ["left", "center", "right"]
+            description: Horizontal position of the text, one of `left` (default), `center` or `right`
+          vertical:
+            type: string
+            enum: ["top", "middle", "bottom"]
+            description: Vertical position of the text, one of `top`, `middle` (default) or `bottom`
+      time_filters:
+        type: string
+        description: Time range for the queries in `content`, as a `tr` URL parameter such as `tr=P7D`. Defaults to the canvas time range.
       title:
         type: string
         description: Markdown title
@@ -3892,13 +4078,10 @@ definitions:
     properties:
       url:
         type: string
-        description: Image URL. Used in light mode, and in dark mode when `dark_url` is not set.
+        description: Image URL, or the path of an image file in the project's `public` directory (for example `public/img/logo.svg`). Used in light mode, and in dark mode when `dark_url` is not set.
       dark_url:
         type: string
-        description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
-      css:
-        type: object
-        description: CSS styles
+        description: Image URL or project file path to use when the dashboard is displayed in dark mode. Defaults to `url`.
       title:
         type: string
         description: Image title
@@ -3912,14 +4095,14 @@ definitions:
   # Map Properties
   map_properties:
     type: object
-    description: Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
+    description: 'Map with up to two layers: points or polygons from a geo dimension, colored by a measure and, for points, sized by a second measure; and regions such as countries or US states, filled by a measure and matched through the values of a regular dimension. At least one of `geo_dimension` and `regions` is required.'
     properties:
       metrics_view:
         type: string
         description: Reference to the metrics view to use
       geo_dimension:
         type: object
-        description: 'Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor.'
+        description: 'Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor. `color`, `size_measure` and `tooltip_dimension` apply to this layer.'
         properties:
           field:
             type: string
@@ -3931,7 +4114,7 @@ definitions:
           - field
       color:
         type: object
-        description: Measure that colors each point or region
+        description: Measure that colors each point or polygon of the `geo_dimension` layer. Required with `geo_dimension`.
         properties:
           measure:
             type: string
@@ -3979,6 +4162,57 @@ definitions:
             description: Field type, always `nominal`
         required:
           - field
+      regions:
+        type: object
+        description: Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set, such as countries or the states of a country, or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
+        properties:
+          dimension:
+            type: string
+            description: Name of the dimension whose values identify regions, such as country codes or state names
+          boundaries:
+            description: Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project.
+            oneOf:
+              - type: string
+                enum: ["countries", "states", "us_states"]
+                description: 'Built-in boundary set to draw. `countries` covers every country; `states` covers the first-level subdivisions of the country in `country`, such as states, provinces or regions; `us_states` is the same as `states` with `country: US`.'
+              - type: object
+                description: 'Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project''s `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.'
+                properties:
+                  file:
+                    type: string
+                    description: Path of the GeoJSON or TopoJSON file, relative to the project root, such as `public/dma.topojson`
+                  id:
+                    type: string
+                    description: Feature property that identifies each region, matched against the values of `dimension`. Features without this property use their top-level GeoJSON `id` instead. Only polygon features with an id are drawn.
+                  name:
+                    type: string
+                    description: Feature property shown as the region name in tooltips. Defaults to the `id` property.
+                required:
+                  - file
+                  - id
+                additionalProperties: false
+          country:
+            type: string
+            description: 'Country whose states to draw, as an ISO 3166-1 alpha-2 code such as `DE`. Required with `boundaries: states`, and not supported with other boundaries.'
+          key:
+            type: string
+            description: 'Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `states`: `code` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`, US only) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.'
+          color:
+            type: object
+            description: Measure that fills each region
+            properties:
+              measure:
+                type: string
+                description: Name of the measure
+              colorRange:
+                type: object
+                description: Color scale for the measure; same options as the top-level `color.colorRange`
+            required:
+              - measure
+        required:
+          - dimension
+          - boundaries
+          - color
       initial_view:
         type: object
         description: Camera position the map opens with. When set, the map does not zoom to fit the data.
@@ -4015,8 +4249,6 @@ definitions:
         description: Hide the local filter chips on the map; the filters still apply to its queries
     required:
       - metrics_view
-      - geo_dimension
-      - color
     additionalProperties: false
 
   # Common Properties
@@ -4153,7 +4385,7 @@ definitions:
             description: Color for negative KPI delta values in light theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for light theme
+            description: CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
       dark:
@@ -4174,7 +4406,7 @@ definitions:
             description: Color for negative KPI delta values in dark theme. Defaults to red.
           variables:
             type: object
-            description: Custom CSS variables for dark theme
+            description: CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
             additionalProperties:
               type: string
   api_data_properties:
@@ -4845,7 +5077,7 @@ definitions:
             description: Description for the explore view.
           banner:
             type: string
-            description: Custom banner displayed at the header of the explore view.
+            description: Custom banner displayed at the header of the explore view. Supports inline markdown (bold, italics, strikethrough, inline code and links).
           ai_prompts:
             $ref: '#/definitions/ai_prompts_properties'
           dimensions:
@@ -4896,6 +5128,29 @@ definitions:
               comparison_dimension:
                 type: string
                 description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+              filters:
+                type: string
+                description: "Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view."
+            additionalProperties: false
+          filters:
+            type: object
+            description: Configures the filters of the explore view.
+            properties:
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
+              single_select:
+                type: array
+                description: Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
+                items:
+                  type: string
             additionalProperties: false
           embeds:
             type: object

@@ -67,6 +67,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
+	deployCmd.Flags().StringSliceVar(&opts.Tags, "tag", nil, "Tags for a new project, such as prod or sandbox (repeat or separate with commas)")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner (superuser-only)")
 	if err := deployCmd.Flags().MarkHidden("provisioner"); err != nil {

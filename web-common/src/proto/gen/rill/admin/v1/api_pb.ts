@@ -786,6 +786,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   billingEmail?: string;
 
+  /**
+   * @generated from field: optional bool disable_project_domain_access = 19;
+   */
+  disableProjectDomainAccess?: boolean;
+
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -804,6 +809,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "disable_project_domain_access", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -870,6 +876,13 @@ export class ListProjectsForOrganizationRequest extends Message<ListProjectsForO
   org = "";
 
   /**
+   * If set, only projects that have at least one of these tags are returned.
+   *
+   * @generated from field: repeated string tags = 4;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -888,6 +901,7 @@ export class ListProjectsForOrganizationRequest extends Message<ListProjectsForO
   static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -2792,6 +2806,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   /**
    * Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
    * Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+   * Must be at most 2048 bytes.
    *
    * @generated from field: string external_user_id = 16;
    */
@@ -3939,6 +3954,14 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   description = "";
 
   /**
+   * Tags for organizing the project, such as "prod" or "sandbox".
+   * Tags are normalized to lowercase; a project can have up to 10 tags of up to 40 letters, digits, hyphens and underscores.
+   *
+   * @generated from field: repeated string tags = 18;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool public = 4;
    */
   public = false;
@@ -4015,6 +4038,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4182,6 +4206,21 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   description?: string;
 
   /**
+   * Tags to add to the project. Tags the project already has are kept.
+   *
+   * @generated from field: repeated string add_tags = 19;
+   */
+  addTags: string[] = [];
+
+  /**
+   * Tags to remove from the project. Tags the project doesn't have are ignored.
+   * A tag can't be in both add_tags and remove_tags.
+   *
+   * @generated from field: repeated string remove_tags = 20;
+   */
+  removeTags: string[] = [];
+
+  /**
    * @generated from field: optional bool public = 4;
    */
   public?: boolean;
@@ -4270,6 +4309,8 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "add_tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "remove_tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -10630,11 +10671,14 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 /**
  * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
  * the caller's own bookmarks plus shared and default bookmarks.
+ * Embed users only see their own personal bookmarks.
  *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
@@ -10825,6 +10869,8 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   resourceName = "";
 
   /**
+   * ID of the project. Optional for embed users, where it defaults to the embed's project.
+   *
    * @generated from field: string project_id = 6;
    */
   projectId = "";
@@ -11475,6 +11521,14 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   resources: ResourceName[] = [];
 
+  /**
+   * Optional password that recipients must enter before the token grants access.
+   * Must contain at least 8 characters and at most 72 UTF-8 bytes. It is stored as a hash and can't be retrieved later, only replaced.
+   *
+   * @generated from field: string password = 13;
+   */
+  password = "";
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11493,6 +11547,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 13, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -11736,6 +11791,14 @@ export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAut
    */
   token?: MagicAuthToken;
 
+  /**
+   * True when the bearer is a password-protected token that has not been unlocked.
+   * In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+   *
+   * @generated from field: bool locked = 2;
+   */
+  locked = false;
+
   constructor(data?: PartialMessage<GetCurrentMagicAuthTokenResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11745,6 +11808,7 @@ export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAut
   static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+    { no: 2, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenResponse {
@@ -11829,6 +11893,186 @@ export class RevokeMagicAuthTokenResponse extends Message<RevokeMagicAuthTokenRe
 
   static equals(a: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined, b: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined): boolean {
     return proto3.util.equals(RevokeMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateMagicAuthTokenRequest
+ */
+export class UpdateMagicAuthTokenRequest extends Message<UpdateMagicAuthTokenRequest> {
+  /**
+   * @generated from field: string token_id = 1;
+   */
+  tokenId = "";
+
+  /**
+   * New display name. Unchanged if not set.
+   *
+   * @generated from field: optional string display_name = 2;
+   */
+  displayName?: string;
+
+  /**
+   * New password (at least 8 characters, at most 72 UTF-8 bytes). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+   *
+   * @generated from field: optional string password = 3;
+   */
+  password?: string;
+
+  /**
+   * Removes the password. Can't be combined with password.
+   *
+   * @generated from field: bool remove_password = 4;
+   */
+  removePassword = false;
+
+  constructor(data?: PartialMessage<UpdateMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "remove_password", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenRequest {
+    return new UpdateMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMagicAuthTokenRequest | PlainMessage<UpdateMagicAuthTokenRequest> | undefined, b: UpdateMagicAuthTokenRequest | PlainMessage<UpdateMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateMagicAuthTokenResponse
+ */
+export class UpdateMagicAuthTokenResponse extends Message<UpdateMagicAuthTokenResponse> {
+  /**
+   * @generated from field: rill.admin.v1.MagicAuthToken token = 1;
+   */
+  token?: MagicAuthToken;
+
+  constructor(data?: PartialMessage<UpdateMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMagicAuthTokenResponse {
+    return new UpdateMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMagicAuthTokenResponse | PlainMessage<UpdateMagicAuthTokenResponse> | undefined, b: UpdateMagicAuthTokenResponse | PlainMessage<UpdateMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UnlockMagicAuthTokenRequest
+ */
+export class UnlockMagicAuthTokenRequest extends Message<UnlockMagicAuthTokenRequest> {
+  /**
+   * @generated from field: string password = 1;
+   */
+  password = "";
+
+  constructor(data?: PartialMessage<UnlockMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UnlockMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenRequest {
+    return new UnlockMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnlockMagicAuthTokenRequest | PlainMessage<UnlockMagicAuthTokenRequest> | undefined, b: UnlockMagicAuthTokenRequest | PlainMessage<UnlockMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(UnlockMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UnlockMagicAuthTokenResponse
+ */
+export class UnlockMagicAuthTokenResponse extends Message<UnlockMagicAuthTokenResponse> {
+  /**
+   * Session token to use as the bearer token instead of the magic auth token.
+   *
+   * @generated from field: string session_token = 1;
+   */
+  sessionToken = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<UnlockMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UnlockMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnlockMagicAuthTokenResponse {
+    return new UnlockMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnlockMagicAuthTokenResponse | PlainMessage<UnlockMagicAuthTokenResponse> | undefined, b: UnlockMagicAuthTokenResponse | PlainMessage<UnlockMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(UnlockMagicAuthTokenResponse, a, b);
   }
 }
 
@@ -13980,6 +14224,27 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
    */
   queryForAttributes?: Struct;
 
+  /**
+   * ID of the user to run the alert's queries as.
+   * Only set for alerts created from an embed, whose identity is resolved from the embed user's latest iframe.
+   *
+   * @generated from field: string query_for_user_id = 4;
+   */
+  queryForUserId = "";
+
+  /**
+   * If true, the alert's data must only be accessed through the resources listed in `resources`.
+   * Set for alerts created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 5;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<GetAlertMetaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13990,6 +14255,9 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetAlertMetaResponse_URLs} },
     { no: 3, name: "query_for_attributes", kind: "message", T: Struct },
+    { no: 4, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse {
@@ -14028,6 +14296,14 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
    */
   unsubscribeUrl = "";
 
+  /**
+   * If true, the recipient is the embed user who created the alert.
+   * Only set for alerts created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 4;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetAlertMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14039,6 +14315,7 @@ export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse_URLs {
@@ -15982,6 +16259,14 @@ export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBala
   org = "";
 
   /**
+   * If true, a recently fetched balance may be returned instead of querying the billing provider.
+   * If false, the balance is always fetched from the billing provider.
+   *
+   * @generated from field: bool allow_cached = 3;
+   */
+  allowCached = false;
+
+  /**
    * @generated from field: bool superuser_force_access = 2;
    */
   superuserForceAccess = false;
@@ -15995,6 +16280,7 @@ export class GetBillingCreditBalanceRequest extends Message<GetBillingCreditBala
   static readonly typeName = "rill.admin.v1.GetBillingCreditBalanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "allow_cached", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -17067,6 +17353,14 @@ export class Organization extends Message<Organization> {
   defaultProjectRoleId = "";
 
   /**
+   * When true, project admins can't add new email domain access rules to the org's projects (see CreateProjectWhitelistedDomain).
+   * Rules a project already has keep adding users.
+   *
+   * @generated from field: bool disable_project_domain_access = 20;
+   */
+  disableProjectDomainAccess = false;
+
+  /**
    * @generated from field: string default_provisioner = 19;
    */
   defaultProvisioner = "";
@@ -17129,6 +17423,7 @@ export class Organization extends Message<Organization> {
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "disable_project_domain_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -17378,6 +17673,13 @@ export class Project extends Message<Project> {
   description = "";
 
   /**
+   * User-defined tags for organizing projects, such as "prod" or "sandbox". Sorted and lowercase.
+   *
+   * @generated from field: repeated string tags = 29;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool public = 6;
    */
   public = false;
@@ -17494,6 +17796,7 @@ export class Project extends Message<Project> {
     { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 29, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 26, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -18552,6 +18855,13 @@ export class Bookmark extends Message<Bookmark> {
   shared = false;
 
   /**
+   * Whether the caller can update and remove the bookmark.
+   *
+   * @generated from field: bool can_manage = 14;
+   */
+  canManage = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
    */
   createdOn?: Timestamp;
@@ -18580,6 +18890,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "can_manage", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -18844,6 +19155,13 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   displayName = "";
 
+  /**
+   * True if recipients must enter a password before the token grants access.
+   *
+   * @generated from field: bool password_protected = 19;
+   */
+  passwordProtected = false;
+
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18869,6 +19187,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "password_protected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -19210,6 +19529,13 @@ export class AlertOptions extends Message<AlertOptions> {
   exportLimit = protoInt64.zero;
 
   /**
+   * Maximum number of rows that matched the alert criteria to include in notifications. If 0, the runtime's default limit is used.
+   *
+   * @generated from field: uint32 notify_rows_limit = 22;
+   */
+  notifyRowsLimit = 0;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -19228,6 +19554,16 @@ export class AlertOptions extends Message<AlertOptions> {
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
+
+  /**
+   * Saved email of the embed user who creates the alert; only set for alerts created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+   * It's always added to `email_recipients`, and it can't unsubscribe from the alert.
+   * If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+   *
+   * @generated from field: string embed_owner_email = 23;
+   */
+  embedOwnerEmail = "";
 
   /**
    * @generated from field: repeated string slack_users = 9;
@@ -19278,10 +19614,12 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 22, name: "notify_rows_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

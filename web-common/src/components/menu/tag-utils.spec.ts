@@ -30,6 +30,16 @@ describe("tag-utils", () => {
       ]);
     });
 
+    it("puts tags from tagOrder first and keeps the rest in first-appearance order", () => {
+      // "Missing" is on no item, e.g. because the explore leaves its fields out.
+      const idx = buildTagIndex(items, [" Product ", "Missing", "Customer"]);
+      expect(idx.tags.map((t) => t.name)).toEqual([
+        "Product",
+        "Customer",
+        "Geography",
+      ]);
+    });
+
     it("ignores empty and whitespace-only tag strings", () => {
       const idx = buildTagIndex([
         { name: "a", tags: ["", "   ", "X"] },

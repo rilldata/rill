@@ -8,6 +8,12 @@
       <mj-all font-family="Helvetica" font-size="16px" />
       <mj-text color="#000" font-size="16px" line-height="1.25" />
     </mj-attributes>
+    <mj-style>
+      .hidden {
+          display: none !important;
+          mso-hide: none;
+      }
+    </mj-style>
   </mj-head>
   <mj-body>
     <mj-section>
@@ -20,15 +26,51 @@
           {{ .DisplayName }}
         </mj-text>
 
+        <mj-raw>{{ if .Reason }}</mj-raw>
         <mj-text padding-bottom="0px">
-          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .Reason }}The AI analysis found that the condition holds:{{ else }}The first row that matched your alert criteria is:{{ end }}
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The AI analysis found that the condition holds:
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          {{ if .Reason }}{{ .Reason }}{{ else }}{{ range $key, $value := .FailRow }}
-          • <b>{{ $key }}</b>: {{ $value }}<br />
-          {{ end }}{{ end }}
+          {{ .Reason }}
         </mj-text>
+        <mj-raw>{{ else if eq (len .FailRows) 1 }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. The first row that matched your alert criteria is:
+        </mj-text>
+
+        <mj-text padding-bottom="0px">
+          {{ $row := index .FailRows 0 }}
+          {{ range $i, $column := .FailColumns }}
+          • <b>{{ $column }}</b>: {{ index $row $i }}<br />
+          {{ end }}
+        </mj-text>
+        <mj-raw>{{ else }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          Your alert triggered for <b>{{ .ExecutionTimeString }}</b>. {{ if .FailRowsTruncated }}The first {{ len .FailRows }} rows{{ else }}The rows{{ end }} that matched your alert criteria are:
+        </mj-text>
+
+        <mj-table padding-bottom="0px" font-size="14px" line-height="1.25">
+          <tr style="border-bottom:1px solid #AAA;text-align:left;">
+            {{ range .FailColumns }}
+            <th style="padding:6px 12px 6px 0;">{{ . }}</th>
+            {{ end }}
+          </tr>
+          {{ range .FailRows }}
+          <tr style="border-bottom:1px solid #EEE;">
+            {{ range . }}
+            <td style="padding:6px 12px 6px 0;">{{ . }}</td>
+            {{ end }}
+          </tr>
+          {{ end }}
+        </mj-table>
+        <mj-raw>{{ end }}</mj-raw>
+
+        <mj-raw>{{ if .FailRowsTruncated }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          More rows matched your alert criteria.
+        </mj-text>
+        <mj-raw>{{ end }}</mj-raw>
 
         <mj-raw>{{ if .Attached }}</mj-raw>
         <mj-text padding-bottom="0px">
@@ -42,7 +84,7 @@
 
         <mj-spacer height="20px" />
 
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
+        <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
           {{ if .Reason }}View full analysis{{ else }}Open in browser{{ end }}
         </mj-button>
         

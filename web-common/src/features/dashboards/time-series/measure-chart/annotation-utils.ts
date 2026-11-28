@@ -1,9 +1,9 @@
 import type { ChartScales, ChartConfig, TimeSeriesPoint } from "./types";
-import type {
-  V1MetricsViewAnnotationsResponseAnnotation,
+import {
   V1TimeGrain,
+  type V1MetricsViewAnnotationsResponseAnnotation,
 } from "@rilldata/web-common/runtime-client";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { floorToGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { dateToIndex } from "./utils";
 import type { DateTime } from "luxon";
 
@@ -41,7 +41,7 @@ export function groupAnnotations(
 ): AnnotationGroup[] {
   if (annotations.length === 0 || data.length === 0) return [];
 
-  const unit = timeGrain ? V1TimeGrainToDateTimeUnit[timeGrain] : "day";
+  const grain = timeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
   const diamondY =
     config.plotBounds.top + config.plotBounds.height - AnnotationHeight;
 
@@ -58,7 +58,7 @@ export function groupAnnotations(
   >();
 
   for (const a of annotations) {
-    let bucketStart = a.startTime.startOf(unit);
+    let bucketStart = floorToGrain(a.startTime, grain);
 
     // A range annotation that starts before the visible data but ends inside it
     // is anchored to the first data point so the visible part of its range is shown.

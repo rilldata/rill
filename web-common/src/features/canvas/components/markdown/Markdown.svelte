@@ -1,21 +1,33 @@
 <script lang="ts">
-  import DOMPurify from "dompurify";
   import { marked } from "marked";
+  import { onDestroy } from "svelte";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { ProjectAssetLoader } from "../project-assets";
+  import { loadAssetImages, sanitizeMarkdownHtml } from "./asset-images";
   import {
     getPositionClasses,
     hasTemplatingSyntax,
     formatResolvedContent,
+    unformatResolvedContent,
     getResolveTemplatedStringQueryOptions,
   } from "./util";
 
   export let component: MarkdownCanvasComponent;
 
   const runtimeClient = useRuntimeClient();
+
+  // Loads images that point at project assets, such as `<img src="public/logo.svg" />`.
+  // When the file of one changes, such as when it's saved in Rill Developer, the images are rendered again.
+  let assetsVersion = 0;
+  const assets = new ProjectAssetLoader(
+    runtimeClient,
+    () => (assetsVersion += 1),
+  );
+  onDestroy(() => assets.destroy());
 
   $: specStore = component?.specStore;
   $: spec = specStore ? $specStore : undefined;
@@ -35,23 +47,14 @@
   );
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
-  // Store the last successfully resolved content to prevent flashing during refetches
-  let lastResolvedContent: string | null = null;
+  // Store the last successfully resolved body to prevent flashing during refetches
+  let lastResolvedBody: string | null = null;
 
-  function applyFormattingIfNeeded(content: string): string {
-    if (
-      applyFormatting &&
-      metricsViews &&
-      Object.keys(metricsViews).length > 0
-    ) {
-      return formatResolvedContent(content, metricsViews);
-    }
-    return content;
-  }
-
-  $: resolvedContent = (() => {
+  // The resolved markdown before measure formatting:
+  // with formatting on, the runtime wraps each measure value in a format token.
+  $: resolvedBody = (() => {
     if (!needsTemplating) {
-      lastResolvedContent = null;
+      lastResolvedBody = null;
       return content;
     }
 
@@ -61,11 +64,11 @@
     }
 
     // If we're fetching and have a previous resolved value, use it to prevent flash
-    if ($resolveQuery?.isFetching && lastResolvedContent) {
-      return lastResolvedContent;
+    if ($resolveQuery?.isFetching && lastResolvedBody) {
+      return lastResolvedBody;
     }
 
-    // Update stored resolved content when we have new data
+    // Update stored resolved body when we have new data
     const queryData = $resolveQuery?.data;
     if (
       queryData &&
@@ -76,16 +79,19 @@
       const body = (queryData as { body?: string }).body;
       // An empty body is a valid result: the template rendered nothing.
       if (typeof body === "string") {
-        const newResolvedContent = applyFormattingIfNeeded(body);
-        lastResolvedContent = newResolvedContent;
-        return newResolvedContent;
+        lastResolvedBody = body;
+        return body;
       }
     }
 
     // Until the template resolves there is nothing to show:
     // the raw template source is not meant to be read.
-    return lastResolvedContent ?? "";
+    return lastResolvedBody ?? "";
   })();
+  $: resolvedContent =
+    applyFormatting && Object.keys(metricsViews).length > 0
+      ? formatResolvedContent(resolvedBody, metricsViews)
+      : resolvedBody;
   $: renderPromise = marked(resolvedContent || "");
 
   $: errorMessage = (() => {
@@ -94,19 +100,35 @@
 
     return extractErrorMessage(error);
   })();
+
+  // The resolved text for the workbook and CSV exports; see BaseCanvasComponent.exportPayload.
+  $: component?.exportPayload.set(
+    resolvedContent
+      ? {
+          kind: "text",
+          text: resolvedContent,
+          unformattedText: unformatResolvedContent(resolvedBody),
+        }
+      : undefined,
+  );
 </script>
 
 <div
   class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-card"
 >
-  <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
+  <div
+    class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min"
+    use:loadAssetImages={assets}
+  >
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
         <p>{errorMessage}</p>
       </div>
     {:else}
       {#await renderPromise then htmlContent}
-        {@html DOMPurify.sanitize(htmlContent)}
+        {#key assetsVersion}
+          {@html sanitizeMarkdownHtml(htmlContent)}
+        {/key}
       {/await}
     {/if}
   </div>
@@ -188,6 +210,10 @@
   }
   :global(.canvas-markdown img) {
     @apply max-w-full h-auto my-3;
+  }
+  /* A project asset that is still loading; see loadAssetImages. */
+  :global(.canvas-markdown img[data-asset-src]) {
+    @apply invisible;
   }
   .markdown-error {
     @apply bg-red-50 border border-red-200 rounded px-3 py-2 my-2 text-sm text-red-700;

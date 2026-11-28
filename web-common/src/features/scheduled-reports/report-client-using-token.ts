@@ -3,27 +3,26 @@
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
- * - Mutation creators: The token is bound when creating the mutation, so the mutation variables match the generated mutations.
+ * - Mutation creators: They delegate to the generated creators, overriding only `mutationFn`, so mutation keys and variables match the generated code.
  */
 
+import type { QueryClient } from "@tanstack/svelte-query";
 import {
-  createMutation,
-  type CreateMutationOptions,
-  type CreateMutationResult,
-  type QueryClient,
-} from "@tanstack/svelte-query";
-import {
+  createAdminServiceCreateReport,
+  createAdminServiceDeleteReport,
+  createAdminServiceEditReport,
+  createAdminServiceTriggerReport,
+  createAdminServiceUnsubscribeReport,
   type AdminServiceCreateReportBodyBody,
   type AdminServiceTriggerReconcileBodyBody,
   type AdminServiceUnsubscribeAlertBodyBody,
-  type RpcStatus,
   type V1CreateReportResponse,
   type V1DeleteReportResponse,
   type V1EditReportResponse,
   type V1TriggerReportResponse,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
-import httpClient from "@rilldata/web-admin/client/http-client.ts";
+import { httpClientWithToken } from "@rilldata/web-admin/client/http-client.ts";
 
 export const adminServiceCreateReportUsingToken = (
   org: string,
@@ -31,50 +30,27 @@ export const adminServiceCreateReportUsingToken = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
   token: string,
 ) => {
-  return httpClient<V1CreateReportResponse>({
+  return httpClientWithToken<V1CreateReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
-export const createAdminServiceCreateReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceCreateReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreateReportUsingToken>>,
-      TError,
-      { org: string; project: string; data: AdminServiceCreateReportBodyBody },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreateReportUsingToken>>,
-  TError,
-  { org: string; project: string; data: AdminServiceCreateReportBodyBody },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceCreateReport(
     {
-      mutationKey: ["adminServiceCreateReport"],
-      mutationFn: ({ org, project, data }) =>
-        adminServiceCreateReportUsingToken(org, project, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, data }) =>
+          adminServiceCreateReportUsingToken(org, project, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceEditReportUsingToken = (
   org: string,
@@ -83,60 +59,27 @@ export const adminServiceEditReportUsingToken = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
   token: string,
 ) => {
-  return httpClient<V1EditReportResponse>({
+  return httpClientWithToken<V1EditReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}`,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
-export const createAdminServiceEditReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceEditReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceEditReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceCreateReportBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceEditReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceCreateReportBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceEditReport(
     {
-      mutationKey: ["adminServiceEditReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceEditReportUsingToken(org, project, name, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceEditReportUsingToken(org, project, name, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceDeleteReportUsingToken = (
   org: string,
@@ -144,48 +87,25 @@ export const adminServiceDeleteReportUsingToken = (
   name: string,
   token: string,
 ) => {
-  return httpClient<V1DeleteReportResponse>({
+  return httpClientWithToken<V1DeleteReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}`,
     method: "DELETE",
-    headers: {
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
-export const createAdminServiceDeleteReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceDeleteReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceDeleteReportUsingToken>>,
-      TError,
-      { org: string; project: string; name: string },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceDeleteReportUsingToken>>,
-  TError,
-  { org: string; project: string; name: string },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceDeleteReport(
     {
-      mutationKey: ["adminServiceDeleteReport"],
-      mutationFn: ({ org, project, name }) =>
-        adminServiceDeleteReportUsingToken(org, project, name, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name }) =>
+          adminServiceDeleteReportUsingToken(org, project, name, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceTriggerReportUsingToken = (
   org: string,
@@ -194,60 +114,27 @@ export const adminServiceTriggerReportUsingToken = (
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
   token: string,
 ) => {
-  return httpClient<V1TriggerReportResponse>({
+  return httpClientWithToken<V1TriggerReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}/trigger`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
-export const createAdminServiceTriggerReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceTriggerReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceTriggerReconcileBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceTriggerReport(
     {
-      mutationKey: ["adminServiceTriggerReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceTriggerReportUsingToken(org, project, name, data, token),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceTriggerReportUsingToken(org, project, name, data, token),
+      },
     },
     queryClient,
   );
-};
 
 export const adminServiceUnsubscribeReportUsingToken = (
   org: string,
@@ -256,63 +143,30 @@ export const adminServiceUnsubscribeReportUsingToken = (
   adminServiceUnsubscribeAlertBodyBody: AdminServiceUnsubscribeAlertBodyBody,
   token: string,
 ) => {
-  return httpClient<V1UnsubscribeReportResponse>({
+  return httpClientWithToken<V1UnsubscribeReportResponse>(token, {
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}/unsubscribe`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // We use the bearer token to authenticate the request
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     data: adminServiceUnsubscribeAlertBodyBody,
-    // To be explicit, we don't need to send credentials (cookies) with the request
-    withCredentials: false,
   });
 };
 
-export const createAdminServiceUnsubscribeReportUsingToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
+export const createAdminServiceUnsubscribeReportUsingToken = (
   token: string,
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceUnsubscribeReportUsingToken>>,
-      TError,
-      {
-        org: string;
-        project: string;
-        name: string;
-        data: AdminServiceUnsubscribeAlertBodyBody;
-      },
-      TContext
-    >;
-  },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceUnsubscribeReportUsingToken>>,
-  TError,
-  {
-    org: string;
-    project: string;
-    name: string;
-    data: AdminServiceUnsubscribeAlertBodyBody;
-  },
-  TContext
-> => {
-  return createMutation(
+) =>
+  createAdminServiceUnsubscribeReport(
     {
-      mutationKey: ["adminServiceUnsubscribeReport"],
-      mutationFn: ({ org, project, name, data }) =>
-        adminServiceUnsubscribeReportUsingToken(
-          org,
-          project,
-          name,
-          data,
-          token,
-        ),
-      ...options?.mutation,
+      mutation: {
+        mutationFn: ({ org, project, name, data }) =>
+          adminServiceUnsubscribeReportUsingToken(
+            org,
+            project,
+            name,
+            data,
+            token,
+          ),
+      },
     },
     queryClient,
   );
-};

@@ -300,6 +300,80 @@ Unexpected " ".`,
       selectedDimensionName: "",
     },
   },
+  {
+    title: "Invalid pivot sort: measure not in the pivot",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=domain,impressions&sort_by=bid_price&sort_dir=DESC&table_mode=nest",
+    errors: [`Selected pivot sort field: "bid_price" is not valid.`],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: {
+        rows: [
+          {
+            id: "publisher",
+            title: "publisher",
+            type: PivotChipType.Dimension,
+          },
+        ],
+        columns: [
+          { id: "domain", title: "domain", type: PivotChipType.Dimension },
+          {
+            id: "impressions",
+            title: "impressions",
+            type: PivotChipType.Measure,
+          },
+        ],
+        // The sort is dropped since the pivot's queries cannot sort by it.
+        sorting: [],
+        expanded: {},
+        columnPage: 1,
+        rowPage: 1,
+        enableComparison: true,
+        activeCell: null,
+        showTotalsColumn: true,
+        showTotalsRow: true,
+        totalsRowPosition: "top",
+        tableMode: "nest",
+        rowLimit: undefined,
+        measureFormatting: undefined,
+      },
+    },
+  },
+  {
+    title: "Valid pivot sort: comparison column of a measure in the pivot",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=impressions&sort_by=impressions__delta_abs&sort_dir=DESC&table_mode=nest",
+    errors: [],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: {
+        rows: [
+          {
+            id: "publisher",
+            title: "publisher",
+            type: PivotChipType.Dimension,
+          },
+        ],
+        columns: [
+          {
+            id: "impressions",
+            title: "impressions",
+            type: PivotChipType.Measure,
+          },
+        ],
+        sorting: [{ id: "impressions__delta_abs", desc: true }],
+        expanded: {},
+        columnPage: 1,
+        rowPage: 1,
+        enableComparison: true,
+        activeCell: null,
+        showTotalsColumn: true,
+        showTotalsRow: true,
+        totalsRowPosition: "top",
+        tableMode: "nest",
+        rowLimit: undefined,
+        measureFormatting: undefined,
+      },
+    },
+  },
 ];
 
 /**
@@ -413,6 +487,32 @@ describe("legacy state url param", () => {
       expect.arrayContaining([
         `Selected filter dimension: "stale_dimension" is not valid.`,
         `Selected filter field: "stale_measure" is not valid.`,
+      ]),
+    );
+  });
+});
+
+describe("single-select filters", () => {
+  it("narrows a filter with several values to the last one", () => {
+    const { partialExploreState } = convertURLSearchParamsToExploreState(
+      new URLSearchParams({
+        f: `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google','Facebook') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com','facebook.com')`,
+      }),
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      {
+        ...AD_BIDS_EXPLORE_INIT,
+        singleSelectFilters: [AD_BIDS_PUBLISHER_DIMENSION],
+      },
+      {},
+    );
+
+    expect(partialExploreState.whereFilter).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
+          "google.com",
+          "facebook.com",
+        ]),
       ]),
     );
   });

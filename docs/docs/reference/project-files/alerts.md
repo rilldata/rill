@@ -4,7 +4,7 @@ title: Alert YAML
 sidebar_position: 37
 ---
 
-Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`. Alerts defined in YAML run after you deploy the project to Rill Cloud; Rill Developer doesn't run them or send their notifications.
 
 ## Properties
 
@@ -14,7 +14,7 @@ _[string]_ - Refers to the resource type and must be `alert` _(required)_
 
 ### `refresh`
 
-_[object]_ - Refresh schedule for the alert
+_[object]_ - Refresh schedule for the alert. Alerts only run in Rill Cloud, so `run_in_dev` doesn't make them run in Rill Developer.
   ```yaml
   refresh:
     cron: "* * * * *"
@@ -206,6 +206,8 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
     - **`channels`** - _[array of string]_ - An array of Slack channel names to notify.
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
+
+  - **`rows_limit`** - _[integer]_ - Maximum number of rows that matched the alert criteria to include in notifications for failed checks, for example one row per dimension value when the alert is split by a dimension. Defaults to 5.
 
 ### `annotations`
 

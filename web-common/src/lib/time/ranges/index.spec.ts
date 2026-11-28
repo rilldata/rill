@@ -50,6 +50,20 @@ const getAdjustedFetchTimeTestCases = [
 ];
 
 describe("getAdjustedFetchTime", () => {
+  it("should not adjust the start before 0001-01-01", () => {
+    expect(
+      getAdjustedFetchTime(
+        new Date("0001-01-01T00:00:00.000Z"),
+        new Date("0001-01-03T00:00:00.000Z"),
+        "UTC",
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+    ).toEqual({
+      start: "0001-01-01T00:00:00.000Z",
+      end: "0001-01-04T00:00:00.000Z",
+    });
+  });
+
   getAdjustedFetchTimeTestCases.forEach((testCase) => {
     it(testCase.test, () => {
       const defaultTimeGrain = getAdjustedFetchTime(

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,6 +54,19 @@ func TestGrainDerivableFrom(t *testing.T) {
 		{"minute from hour", runtimev1.TimeGrain_TIME_GRAIN_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_HOUR, false},
 		{"day from month", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_MONTH, false},
 
+		// Multiples: the rollup bucket must divide the query bucket
+		{"10m from minute", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_MINUTE, true},
+		{"10m from 5m", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE, true},
+		{"30m from 15m", runtimev1.TimeGrain_TIME_GRAIN_30_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE, true},
+		{"10m from 15m", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_15_MINUTE, false},
+		{"10m from hour", runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, runtimev1.TimeGrain_TIME_GRAIN_HOUR, false},
+		{"hour from 10m", runtimev1.TimeGrain_TIME_GRAIN_HOUR, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, true},
+		{"6h from hour", runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, runtimev1.TimeGrain_TIME_GRAIN_HOUR, true},
+		{"8h from 6h", runtimev1.TimeGrain_TIME_GRAIN_8_HOUR, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, false},
+		{"day from 6h", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, true},
+		{"week from 10m", runtimev1.TimeGrain_TIME_GRAIN_WEEK, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, true},
+		{"month from 12h", runtimev1.TimeGrain_TIME_GRAIN_MONTH, runtimev1.TimeGrain_TIME_GRAIN_12_HOUR, true},
+
 		// Unspecified
 		{"unspecified query", runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, runtimev1.TimeGrain_TIME_GRAIN_DAY, false},
 		{"unspecified rollup", runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, false},
@@ -62,6 +76,31 @@ func TestGrainDerivableFrom(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := grainDerivableFrom(tt.query, tt.rollup)
 			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestExtractQueryTimeGrain(t *testing.T) {
+	timeFloor := func(g metricsview.TimeGrain) metricsview.Dimension {
+		return metricsview.Dimension{Name: string(g), Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "ts", Grain: g}}}
+	}
+	tests := []struct {
+		name     string
+		grains   []metricsview.TimeGrain
+		expected runtimev1.TimeGrain
+	}{
+		{"single multiple", []metricsview.TimeGrain{metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"minute finer than 6h", []metricsview.TimeGrain{metricsview.TimeGrain6Hour, metricsview.TimeGrainMinute}, runtimev1.TimeGrain_TIME_GRAIN_MINUTE},
+		{"10m finer than hour", []metricsview.TimeGrain{metricsview.TimeGrainHour, metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"12h finer than day", []metricsview.TimeGrain{metricsview.TimeGrainDay, metricsview.TimeGrain12Hour}, runtimev1.TimeGrain_TIME_GRAIN_12_HOUR},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &metricsview.Query{}
+			for _, g := range tt.grains {
+				qry.Dimensions = append(qry.Dimensions, timeFloor(g))
+			}
+			require.Equal(t, tt.expected, extractQueryTimeGrain(qry))
 		})
 	}
 }
@@ -104,6 +143,48 @@ func TestTimeAligned(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := timeAligned(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
 			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestCeilTime(t *testing.T) {
+	utc := time.UTC
+	saoPaulo, err := time.LoadLocation("America/Sao_Paulo")
+	require.NoError(t, err)
+	havana, err := time.LoadLocation("America/Havana")
+	require.NoError(t, err)
+	kathmandu, err := time.LoadLocation("Asia/Kathmandu")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		t              time.Time
+		grain          runtimev1.TimeGrain
+		tz             *time.Location
+		firstDayOfWeek uint32
+		want           time.Time
+	}{
+		{"zero time", time.Time{}, runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Time{}},
+		{"day aligned", time.Date(2024, 1, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Date(2024, 1, 15, 0, 0, 0, 0, utc)},
+		{"day not aligned", time.Date(2024, 1, 15, 12, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, time.Date(2024, 1, 16, 0, 0, 0, 0, utc)},
+		// DST changes at midnight are not rounded: Sao Paulo skipped midnight on 2018-11-04, and Havana repeated it on 2024-11-03
+		{"day without a midnight", time.Date(2018, 11, 4, 12, 0, 0, 0, saoPaulo), runtimev1.TimeGrain_TIME_GRAIN_DAY, saoPaulo, 1, time.Date(2018, 11, 4, 12, 0, 0, 0, saoPaulo)},
+		{"day before a skipped midnight", time.Date(2018, 11, 3, 23, 30, 0, 0, saoPaulo), runtimev1.TimeGrain_TIME_GRAIN_DAY, saoPaulo, 1, time.Date(2018, 11, 3, 23, 30, 0, 0, saoPaulo)},
+		{"day between repeated midnights", time.Date(2024, 11, 3, 4, 30, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, havana, 1, time.Date(2024, 11, 3, 4, 30, 0, 0, utc)},
+		{"week from Wednesday", time.Date(2024, 1, 3, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, time.Date(2024, 1, 8, 0, 0, 0, 0, utc)},
+		{"week aligned Monday", time.Date(2024, 1, 8, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 1, time.Date(2024, 1, 8, 0, 0, 0, 0, utc)},
+		{"week starting Sunday", time.Date(2024, 1, 3, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_WEEK, utc, 7, time.Date(2024, 1, 7, 0, 0, 0, 0, utc)},
+		{"month into next year", time.Date(2024, 12, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, time.Date(2025, 1, 1, 0, 0, 0, 0, utc)},
+		{"quarter", time.Date(2024, 2, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, time.Date(2024, 4, 1, 0, 0, 0, 0, utc)},
+		{"year", time.Date(2024, 4, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_YEAR, utc, 1, time.Date(2025, 1, 1, 0, 0, 0, 0, utc)},
+		// Kathmandu is UTC+05:45, so its hours start at 15 minutes past each UTC hour
+		{"hour with minute offset", time.Date(2024, 1, 10, 12, 20, 30, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, kathmandu, 1, time.Date(2024, 1, 10, 13, 15, 0, 0, utc)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ceilTime(tt.t, tt.grain, tt.tz, tt.firstDayOfWeek)
+			require.True(t, tt.want.Equal(got), "want %s, got %s", tt.want, got)
 		})
 	}
 }

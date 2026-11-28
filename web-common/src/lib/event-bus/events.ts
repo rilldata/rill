@@ -26,8 +26,12 @@ export interface BannerEvent {
 }
 export interface BannerMessage {
   type: "default" | "success" | "info" | "warning" | "error";
+  // Shown as plain text, unless one of the flags below is set.
   message: string;
+  // The message is HTML built by the app.
   includesHtml?: boolean;
+  // The message is inline markdown written by a project developer, such as a dashboard's `banner`.
+  includesMarkdown?: boolean;
 
   iconType: "none" | "alert" | "check" | "sleep" | "loading";
 
@@ -50,6 +54,7 @@ export interface BannerMessage {
     // ID used to calculate ttl for.
     // The same key can switch IDs. This means we need to start a new counter but save under the same `key`
     id: string;
+    // How long the banner stays dismissed, in milliseconds.
     // If value is 0 then banner is dismissed forever.
     ttl: number;
   };

@@ -12,41 +12,52 @@
   export let onToggleExcludeMode: () => void;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
+  // A single-select filter has no exclude, select all or apply, only a way to clear its value.
+  export let singleSelect = false;
+  export let hasValue = false;
+  export let onClear: () => void = () => {};
 </script>
 
 <footer>
-  <div class="flex items-center gap-x-1.5">
-    <Switch
-      checked={excludeMode}
-      id="include-exclude"
-      small
-      onCheckedChange={onToggleExcludeMode}
-      label={m.dashboard_include_exclude_toggle()}
-    />
-    <Label class="font-normal text-xs" for="include-exclude"
-      >{m.dashboard_exclude()}</Label
-    >
-  </div>
-  <div class="flex gap-2">
-    {#if mode === DimensionFilterMode.Select}
-      <Button onClick={onToggleSelectAll} type="tertiary">
-        {#if allSelected}
-          {m.dashboard_deselect_all()}
-        {:else}
-          {m.dashboard_select_all()}
-        {/if}
-      </Button>
-    {:else}
-      <Button
-        onClick={onApply}
-        type="primary"
-        class="justify-end"
-        disabled={disableApplyButton}
+  {#if singleSelect}
+    <div class="grow"></div>
+    <Button onClick={onClear} type="tertiary" disabled={!hasValue}>
+      {m.common_clear_selection()}
+    </Button>
+  {:else}
+    <div class="flex items-center gap-x-1.5">
+      <Switch
+        checked={excludeMode}
+        id="include-exclude"
+        small
+        onCheckedChange={onToggleExcludeMode}
+        label={m.dashboard_include_exclude_toggle()}
+      />
+      <Label class="font-normal text-xs" for="include-exclude"
+        >{m.dashboard_exclude()}</Label
       >
-        {m.common_apply()}
-      </Button>
-    {/if}
-  </div>
+    </div>
+    <div class="flex gap-2">
+      {#if mode === DimensionFilterMode.Select}
+        <Button onClick={onToggleSelectAll} type="tertiary">
+          {#if allSelected}
+            {m.dashboard_deselect_all()}
+          {:else}
+            {m.dashboard_select_all()}
+          {/if}
+        </Button>
+      {:else}
+        <Button
+          onClick={onApply}
+          type="primary"
+          class="justify-end"
+          disabled={disableApplyButton}
+        >
+          {m.common_apply()}
+        </Button>
+      {/if}
+    </div>
+  {/if}
 </footer>
 
 <style lang="postcss">

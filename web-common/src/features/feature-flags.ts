@@ -3,9 +3,11 @@ import { derived, writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
   runtimeServiceGetInstance,
-  type V1InstanceFeatureFlags,
 } from "../runtime-client";
 import type { RuntimeClient } from "../runtime-client/v2";
+
+/** `Instance.featureFlags`: flag name to enabled. */
+type InstanceFeatureFlags = Record<string, boolean>;
 
 class FeatureFlag {
   private _internal = false;
@@ -69,6 +71,7 @@ class FeatureFlags {
   rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
+  canvasExcelExport = new FeatureFlag("user", false);
   // Do not check reports directly to gate UI; use reportsEnabled instead,
   // which also checks that the environment can reach the admin APIs for them.
   alerts = new FeatureFlag("user", true);
@@ -84,6 +87,7 @@ class FeatureFlags {
   customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);
   personalCanvases = new FeatureFlag("user", false);
+  embeddedBookmarks = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 
@@ -115,7 +119,7 @@ class FeatureFlags {
     });
   }
 
-  private updateFlags(userFlags: V1InstanceFeatureFlags) {
+  private updateFlags(userFlags: InstanceFeatureFlags) {
     this._resolveReady();
 
     // First, reset all user flags to their defaults
@@ -163,9 +167,19 @@ export const reportsEnabled = derived(
     reports && (adminServer || embedAdminActions),
 );
 
+export const alertsEnabled = derived(
+  [
+    featureFlags.alerts,
+    featureFlags.adminServer,
+    featureFlags.embedAdminActions,
+  ],
+  ([alerts, adminServer, embedAdminActions]) =>
+    alerts && (adminServer || embedAdminActions),
+);
+
 export async function getFeatureFlags(
   client: RuntimeClient,
-): Promise<V1InstanceFeatureFlags> {
+): Promise<InstanceFeatureFlags> {
   try {
     const data = await runtimeServiceGetInstance(client, {});
     return data.instance?.featureFlags ?? {};

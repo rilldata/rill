@@ -1,6 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { tryUseRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
@@ -11,10 +12,16 @@
     type VisualizationSpec,
   } from "svelte-vega";
   import type { Config } from "vega-lite";
+  import {
+    fitLegends,
+    setContainerSize,
+    setLegendLabels,
+  } from "./legend-layout";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import { pickViewDatasets } from "./view-datasets";
+  import { refitOnPlotResize } from "./view-refit";
   import "./vega.css";
 
   // Null outside a RuntimeProvider (e.g. the MCP chart widget); the view then has no loader.
@@ -40,6 +47,7 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
+  const themeBoundaryClass = getThemeBoundaryClass();
   // The container is measured asynchronously after mount. The view is only embedded once a
   // real size is known, so the first render is already at the right dimensions.
   let measured = false;
@@ -72,7 +80,10 @@
       tooltipHandler.destroy();
     }
 
-    tooltipHandler = new VegaLiteTooltipHandler(tooltipFormatter);
+    tooltipHandler = new VegaLiteTooltipHandler(
+      tooltipFormatter,
+      themeBoundaryClass,
+    );
     viewVL.tooltip(tooltipHandler.handleTooltip);
     void viewVL.runAsync();
   }
@@ -98,6 +109,7 @@
     expressionFunctions,
     colorMapping: stableColorMapping,
     hasComparison: stableHasComparison,
+    themeBoundaryClass,
   });
 
   // svelte-vega tears down and re-embeds the view (a full Vega-Lite compile, parse and
@@ -116,6 +128,36 @@
     return { ...base, width, height };
   }
 
+  // Every legend is laid out to fit the chart, by the theme's legend settings and its labels.
+  $: fittedSpec = fitLegends(spec, baseOptions.config as Config);
+
+  // The labels are read from the data and handed to the live view, which lays its legends out
+  // again by them; a spec that held them was rebuilt, and the chart drawn anew, by each refresh
+  // that brought other labels. Keyed on identity, as `viewData` is.
+  let labelledView: View | undefined;
+  let labelledSpec: VisualizationSpec | undefined;
+  let labelledData: Record<string, unknown> | undefined;
+  $: if (
+    viewVL !== labelledView ||
+    fittedSpec !== labelledSpec ||
+    data !== labelledData
+  ) {
+    labelledView = viewVL;
+    labelledSpec = fittedSpec;
+    labelledData = data;
+    if (viewVL && setLegendLabels(viewVL, fittedSpec, data)) {
+      void viewVL.runAsync();
+    }
+  }
+
+  // Each view, from its first embed and from every re-embed, is fitted again whenever a fit
+  // leaves its plot at a new size (see `refitOnPlotResize`).
+  let refittedView: View | undefined;
+  $: if (viewVL !== refittedView) {
+    refittedView = viewVL;
+    if (viewVL) refitOnPlotResize(viewVL);
+  }
+
   $: if (viewVL && measured) applySize(viewVL, width, height);
 
   function applySize(view: View, w: number, h: number) {
@@ -129,6 +171,9 @@
 
     // Resize the existing view in place. vega-embed applies `options.width`/`height` the same
     // way, so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
+    // The legends are sized against the container too, which Vega's signals only hold the
+    // plot's share of once the chart is fitted.
+    setContainerSize(view, w, h);
     view.width(w);
     view.height(h);
     void view.runAsync();
@@ -179,7 +224,7 @@
       {#if measured}
         <VegaLite
           data={viewData}
-          {spec}
+          spec={fittedSpec}
           {signalListeners}
           {options}
           bind:view={viewVL}

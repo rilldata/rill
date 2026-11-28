@@ -128,7 +128,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
@@ -137,13 +139,21 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = d.EscapeIdentifier(dim.Column)
 	}
 
-	// ClickHouse rejects date_trunc at sub-day grains on Date and Date32 values, so cast those to DateTime64 first.
+	// ClickHouse rejects date_trunc and toStartOfInterval at sub-day grains on Date and Date32 values, so cast those to DateTime64 first.
 	// The type is unknown when type detection failed or the dimension was synthesized (e.g. the comparison offset expression),
 	// so cast in that case too; only known DateTime columns skip the cast.
-	// The time zone path below already casts its input.
+	// The time zone paths below already cast their input.
 	isDateOrUnknown := dim.DataType == nil || dim.DataType.Code == runtimev1.Type_CODE_DATE
-	if tz == "" && isDateOrUnknown && grain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && grain < runtimev1.TimeGrain_TIME_GRAIN_DAY {
+	if tz == "" && isDateOrUnknown && unit != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && unit < runtimev1.TimeGrain_TIME_GRAIN_DAY {
 		expr = fmt.Sprintf("%s::DateTime64", expr)
+	}
+
+	if n > 1 {
+		// Multiples bucket with toStartOfInterval, which aligns minute and hour intervals to the start of the local day.
+		if tz == "" {
+			return fmt.Sprintf("toStartOfInterval(%s, INTERVAL %d %s)::DateTime64", expr, n, specifier), nil
+		}
+		return fmt.Sprintf("toStartOfInterval(%s::DateTime64(6, '%s'), INTERVAL %d %s)::DateTime64(6, '%s')", expr, tz, n, specifier, tz), nil
 	}
 
 	var shift string
@@ -175,6 +185,12 @@ func (d *dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string,
 
 func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
+}
+
+func (d *dialect) IntervalSubtractInTimeZone(tsExpr, unitExpr string, grain runtimev1.TimeGrain, tz string) (string, bool) {
+	// ClickHouse does interval arithmetic in a value's own time zone, so cast to tz like DateTruncExpr does.
+	// The cast is a no-op for buckets from DateTruncExpr, and casts Date values to local midnight in tz.
+	return fmt.Sprintf("((%s)::DateTime64(6, '%s') - INTERVAL (%s) %s)", tsExpr, tz, unitExpr, d.ConvertToDateTruncSpecifier(grain)), true
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {

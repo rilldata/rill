@@ -38,6 +38,9 @@ const (
 	_modelPendingPartitionsBatchSize = 1000
 )
 
+// Allows cancellation regression tests to stop after execution but before progress is published.
+var modelFirstPartitionExecutedHook atomic.Pointer[func(context.Context, string, *runtimev1.ResourceName)]
+
 var errPartitionsHaveErrors = errors.New("some partitions have errors")
 
 func init() {
@@ -894,10 +897,8 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 // updateTriggerFullToNormal replaces the model's spec.TriggerFull with spec.Trigger.
 // It is called once a full refresh has reset the model's output,
 // so that if the reconcile is cancelled, the next reconcile resumes incrementally instead of resetting again.
-func (r *ModelReconciler) updateTriggerFullToNormal(ctx context.Context, n *runtimev1.ResourceName) error {
-	r.C.Lock(ctx)
-	defer r.C.Unlock(ctx)
-
+// The caller must hold the controller lock while publishing the first partition's state and updating the trigger.
+func (r *ModelReconciler) updateTriggerFullToNormal(ctx context.Context, n *runtimev1.ResourceName, expectedSpecVersion int64) error {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
@@ -906,6 +907,10 @@ func (r *ModelReconciler) updateTriggerFullToNormal(ctx context.Context, n *runt
 	model := self.GetModel()
 	if model == nil {
 		return fmt.Errorf("not a model")
+	}
+	// A newer spec may contain a new full-refresh request that this invocation did not consume.
+	if self.Meta.SpecVersion != expectedSpecVersion {
+		return nil
 	}
 	if !model.Spec.TriggerFull {
 		return nil
@@ -1309,6 +1314,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		if !ok {
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
 		}
+		if hook := modelFirstPartitionExecutedHook.Load(); hook != nil {
+			(*hook)(ctx, r.C.InstanceID, self.Meta.Name)
+		}
 
 		// Update the state so the next invocations will be incremental.
 		// We also update incrementalState so that templating (e.g. the "incremental" helper) reflects the flip.
@@ -1323,13 +1331,18 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		if statsErr != nil {
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", self.Meta.Name.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
-		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, syncWarnings, newRowsTotal, newBytesTotal)
-		if err != nil {
-			return "", nil, false, 0, err
-		}
+		err = func() error {
+			// Execution succeeded, so persist its progress even if cancellation arrived meanwhile.
+			// Publish the state and consumed trigger together, before subscribers can request another reconcile.
+			commitCtx := context.WithoutCancel(ctx)
+			r.C.Lock(commitCtx)
+			defer r.C.Unlock(commitCtx)
 
-		// The reset is done, so a manual full refresh must not reset again if this reconcile is cancelled.
-		err = r.updateTriggerFullToNormal(ctx, self.Meta.Name)
+			if err := r.updateStateAfterExecution(commitCtx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, syncWarnings, newRowsTotal, newBytesTotal); err != nil {
+				return err
+			}
+			return r.updateTriggerFullToNormal(commitCtx, self.Meta.Name, self.Meta.SpecVersion)
+		}()
 		if err != nil {
 			return "", nil, false, 0, err
 		}

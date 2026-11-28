@@ -49,13 +49,24 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples bucket on the epoch with DATETIMECONVERT; like the standard grains, the time zone is ignored.
+		unit := "MINUTES"
+		if specifier == "HOUR" {
+			unit = "HOURS"
+		}
+		return fmt.Sprintf("CAST(DATETIMECONVERT(%s, '1:MILLISECONDS:EPOCH', '1:MILLISECONDS:EPOCH', '%d:%s') AS TIMESTAMP)", expr, n, unit), nil
 	}
 
 	/// TODO: Handle tz instead of ignoring it.

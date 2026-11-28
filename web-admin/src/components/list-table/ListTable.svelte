@@ -30,6 +30,8 @@
   export let pinnedRows: string[] = [];
   export let maxRows: number | undefined = undefined;
   export let getRowId: (row: unknown, index: number) => string;
+  // Minimum width of the rows in px; narrower containers scroll horizontally within the border.
+  export let minWidth: number | undefined = undefined;
 
   function setSorting(newSorting: SortingState) {
     options.update((old) => ({
@@ -103,9 +105,13 @@
     </slot>
   {/if}
 
-  <div class="w-full">
-    <slot name="header" />
-    <ul role="list" class="list-table">
+  <slot name="header" />
+  <div class="list-table-container">
+    <ul
+      role="list"
+      class="list-table"
+      style:min-width={minWidth ? `${minWidth}px` : undefined}
+    >
       {#each limitedRows as row (row.id)}
         <li
           class="list-table-item"
@@ -147,33 +153,26 @@
 </div>
 
 <style lang="postcss">
+  /* The border lives on the scroll container so horizontal scrolling stays inside it */
+  .list-table-container {
+    @apply w-full overflow-x-auto border rounded-lg bg-surface-background;
+  }
+
   .list-table {
     @apply list-none p-0 m-0 w-full;
   }
 
   .list-table-item,
   .list-table-item-empty {
-    @apply block w-full border bg-surface-background;
+    @apply block w-full;
   }
 
   .list-table-item.fixed-height {
     @apply h-[60px];
   }
 
-  /* Remove top border on non-first items to avoid double borders */
   .list-table-item + .list-table-item {
-    @apply border-t-0;
-  }
-
-  /* Rounded corners on first and last items */
-  .list-table-item:first-child,
-  .list-table-item-empty:first-child {
-    @apply rounded-t-lg;
-  }
-
-  .list-table-item:last-child,
-  .list-table-item-empty:last-child {
-    @apply rounded-b-lg;
+    @apply border-t;
   }
 
   /* Hover effect on list items */

@@ -1,5 +1,8 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import { V1TimeGrainToAlias } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  isStandardGrain,
+  V1TimeGrainToAlias,
+} from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import type { RangeBuckets } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
@@ -7,7 +10,17 @@ const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [],
   [V1TimeGrain.TIME_GRAIN_SECOND]: [],
   [V1TimeGrain.TIME_GRAIN_MINUTE]: [15, 60],
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: [],
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: [],
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: [],
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: [],
   [V1TimeGrain.TIME_GRAIN_HOUR]: [6, 12, 24],
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: [],
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: [],
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: [],
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: [],
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: [],
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: [],
   [V1TimeGrain.TIME_GRAIN_DAY]: [7, 14, 30],
   [V1TimeGrain.TIME_GRAIN_WEEK]: [4],
   [V1TimeGrain.TIME_GRAIN_MONTH]: [3, 6, 12],
@@ -30,9 +43,11 @@ export function getDefaultRangeBuckets(
   allowedGrains.forEach((grain) => {
     const primaryGrainAlias = V1TimeGrainToAlias[grain];
 
+    // Multiples such as 10 minutes share their base unit's ranges.
     if (
       grain === V1TimeGrain.TIME_GRAIN_MILLISECOND ||
-      grain === V1TimeGrain.TIME_GRAIN_SECOND
+      grain === V1TimeGrain.TIME_GRAIN_SECOND ||
+      !isStandardGrain(grain)
     ) {
       return;
     }

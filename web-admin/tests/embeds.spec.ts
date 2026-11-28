@@ -186,6 +186,59 @@ test.describe("Embeds", () => {
       );
     });
 
+    test("setValidState sent on ready is kept when the explore loads slowly", async ({
+      embedPage,
+    }) => {
+      // Load the embed again with the explore's time range summary held back, like a slow client or runtime.
+      // The explore cannot finish loading before the summary arrives.
+      let summaryReleased = false;
+      await embedPage
+        .context()
+        .route(
+          "**/rill.runtime.v1.QueryService/MetricsViewTimeRange",
+          async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+            summaryReleased = true;
+            await route.continue().catch(() => {});
+          },
+        );
+      const embedUrl = embedPage.url();
+      await embedPage.close();
+      const page = await embedPage.context().newPage();
+      const recorder = new EmbedMessageRecorder(page);
+      await page.goto(embedUrl);
+
+      // `ready` waits for the explore to load, so it cannot come before the summary.
+      await recorder.waitForReady();
+      expect(summaryReleased).toBe(true);
+
+      // Like a host that restores a saved state as soon as the embed is ready.
+      await page.evaluate(() => {
+        document
+          .querySelector("iframe")
+          ?.contentWindow?.postMessage(
+            { id: 1, method: "setValidState", params: { state: "tr=PT6H" } },
+            "*",
+          );
+      });
+      await recorder.expectContaining(
+        `{"id":1,"result":{"success":true,"appliedState":"tr=PT6H`,
+      );
+
+      // The explore's default time range (P7D) does not replace the state.
+      await expect(
+        page
+          .frameLocator("iframe")
+          .getByRole("button", { name: "Select time range" }),
+      ).toContainText("Last 6 Hours");
+      await page.evaluate(() => {
+        document
+          .querySelector("iframe")
+          ?.contentWindow?.postMessage({ id: 2, method: "getState" }, "*");
+      });
+      await recorder.expectContaining(`{"id":2,"result":{"state":"tr=PT6H`);
+    });
+
     test("getThemeMode returns current theme mode", async ({ embedPage }) => {
       const recorder = new EmbedMessageRecorder(embedPage);
       await recorder.waitForReady();
@@ -526,7 +579,7 @@ test.describe("Embeds", () => {
 
       // The navigation bar is gone. Assert on DOM presence rather than
       // visibility, since Playwright's locators also match hidden elements.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
       await expect(frame.getByText("Home", { exact: true })).toHaveCount(0);
 
       // The component's drill-through to an explore dashboard is still offered.
@@ -555,7 +608,7 @@ test.describe("Embeds", () => {
       await expect(frame.getByLabel("Select time range")).toBeVisible();
 
       // The navigation bar stays hidden on the dashboard we drilled into.
-      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.locator("nav")).toHaveCount(0);
     });
   });
 
@@ -563,6 +616,12 @@ test.describe("Embeds", () => {
     const recorder = new EmbedMessageRecorder(embedPage);
     await recorder.waitForReady();
     const frame = embedPage.frameLocator("iframe");
+    // Clicking the current dashboard's breadcrumb opens the dashboard switcher.
+    const openDashboardSwitcher = (currentDashboard: string) =>
+      frame
+        .getByRole("navigation")
+        .getByRole("button", { name: currentDashboard, exact: true })
+        .click();
 
     // Time range is the default
     await expect(frame.getByText("Last 7 days")).toBeVisible();
@@ -578,7 +637,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", {
         name: "Programmatic Ads Auction",
@@ -593,7 +652,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Auction");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()
@@ -616,7 +675,7 @@ test.describe("Embeds", () => {
     ).not.toBeVisible();
 
     // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Bids Canvas Dashboard");
     await frame
       .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
@@ -628,7 +687,7 @@ test.describe("Embeds", () => {
     await expect(frame.getByText("Last 14 days")).toBeVisible();
 
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
-    await frame.getByLabel("Breadcrumb dropdown").click();
+    await openDashboardSwitcher("Programmatic Ads Bids");
     await frame
       .getByRole("menuitemcheckbox", { name: "Bids Canvas Dashboard" })
       .first()

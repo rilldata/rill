@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/bits"
 	"net/mail"
 	"strings"
 	"time"
@@ -12,8 +13,17 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/robfig/cron/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+// alertNotifyRowsLimitDefault is the value for "notify.rows_limit" when an alert doesn't set it.
+// Keep in sync with AlertNotifyRowsLimitDefault in web-common/src/features/alerts/form-utils.ts.
+const alertNotifyRowsLimitDefault = 5
+
+// alertNotifyRowsLimitMax is the maximum value for "notify.rows_limit".
+// It keeps notifications for alerts split by a high-cardinality dimension readable (and within Slack's message size limits).
+const alertNotifyRowsLimitMax = 50
 
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
 type AlertYAML struct {
@@ -56,7 +66,8 @@ type AlertYAML struct {
 	Renotify      *bool  `yaml:"renotify"`
 	RenotifyAfter string `yaml:"renotify_after"`
 	Notify        struct {
-		Email struct {
+		RowsLimit uint `yaml:"rows_limit"`
+		Email     struct {
 			Recipients []string `yaml:"recipients"`
 		} `yaml:"email"`
 		Slack struct {
@@ -239,6 +250,20 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 	}
 
+	// Every check of an AI alert runs an AI analysis, so AI alerts are checked on a schedule of at most once an hour.
+	if resolver == "ai" {
+		err := validateAIAlertSchedule(tmp.Refresh)
+		if err != nil {
+			return err
+		}
+		if tmp.Intervals.Duration != "" {
+			return errors.New(`AI alerts can't set "intervals", since every interval is a separate AI analysis`)
+		}
+		if queryForUserID == "" {
+			return errors.New(`AI alerts must set "for.user_id", the user whose access and AI session the analysis runs with`)
+		}
+	}
+
 	// Parse export options, which only apply to the export attached to email notifications for failed checks.
 	var exportFormat runtimev1.ExportFormat
 	if tmp.Export.Attach {
@@ -262,6 +287,11 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
+	}
+
+	// Validate the number of matching rows to include in notifications; 0 means the default.
+	if tmp.Notify.RowsLimit > alertNotifyRowsLimitMax {
+		return fmt.Errorf(`invalid value %d for property "notify.rows_limit": must be at most %d`, tmp.Notify.RowsLimit, alertNotifyRowsLimitMax)
 	}
 
 	isLegacyNotify := len(tmp.Email.Recipients) > 0
@@ -343,6 +373,10 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.NotifyOnRecover = false
 	r.AlertSpec.NotifyOnFail = true
 	r.AlertSpec.NotifyOnError = false
+	r.AlertSpec.NotifyRowsLimit = uint32(tmp.Notify.RowsLimit)
+	if r.AlertSpec.NotifyRowsLimit == 0 {
+		r.AlertSpec.NotifyRowsLimit = alertNotifyRowsLimitDefault
+	}
 	r.AlertSpec.Renotify = false
 
 	if isLegacyNotify {
@@ -417,5 +451,40 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	r.AlertSpec.Annotations = tmp.Annotations
 
+	return nil
+}
+
+// validateAIAlertSchedule checks that an AI alert is checked on a cron schedule that runs at most once an hour.
+// AI alerts can't be checked when their data refreshes or on a ticker, which can run far more often.
+func validateAIAlertSchedule(raw *ScheduleYAML) error {
+	if raw != nil && raw.Disable {
+		return nil
+	}
+	if raw == nil || raw.Cron == "" {
+		return errors.New(`AI alerts must set "refresh.cron"`)
+	}
+	if raw.Every != "" {
+		return errors.New(`AI alerts can't set "refresh.every"; use "refresh.cron"`)
+	}
+	if raw.RefUpdate != nil && *raw.RefUpdate {
+		return errors.New(`AI alerts can't set "refresh.ref_update"`)
+	}
+
+	schedule, err := cron.ParseStandard(raw.Cron)
+	if err != nil {
+		return fmt.Errorf("invalid cron schedule: %w", err)
+	}
+	switch schedule := schedule.(type) {
+	case *cron.SpecSchedule:
+		// A cron schedule runs at most once an hour if it runs at a single minute of the hour.
+		// The highest bit marks a "*" field.
+		if bits.OnesCount64(schedule.Minute&^(1<<63)) > 1 {
+			return fmt.Errorf(`AI alerts can run at most once an hour, but "refresh.cron" %q runs more often`, raw.Cron)
+		}
+	case cron.ConstantDelaySchedule:
+		if schedule.Delay < time.Hour {
+			return fmt.Errorf(`AI alerts can run at most once an hour, but "refresh.cron" %q runs more often`, raw.Cron)
+		}
+	}
 	return nil
 }

@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/driverutil"
 	"go.uber.org/zap"
 )
 
@@ -106,7 +109,7 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 }
 
 // executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
-func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST, pivot *pivotAST, format drivers.FileFormat, headers []string) (string, error) {
+func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST, pivot *pivotAST, format drivers.FileFormat, headers []string, conditionalFormats []*runtimev1.MetricsViewAggregationConditionalFormat) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultPivotExportTimeout)
 	defer cancel()
 
@@ -123,7 +126,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		path, err := e.executeExport(ctx, "parquet", e.metricsView.Connector, map[string]any{
 			"sql":  underlyingSQL,
 			"args": args,
-		}, headers)
+		}, headers, nil)
 		if err != nil {
 			return "", fmt.Errorf("failed to execute pre-pivot export: %w", err)
 		}
@@ -194,7 +197,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		// Execute the pivot export
 		path, err = e.executeExport(wrappedCtx, format, pivotConnector, map[string]any{
 			"sql": pivotSQL,
-		}, headers)
+		}, headers, pivot.conditionalFormats(conditionalFormats))
 		if err != nil {
 			// Backstop for wide pivots that slip past checkPivotColumns (e.g. wide column types overflow the block size
 			// at a lower column count than the limit). DuckDB reports this as a "tuple width exceeds block size" error.
@@ -375,6 +378,25 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 	}
 
 	return b.String(), nil
+}
+
+// conditionalFormats locates the columns of the measures in the output of SQL.
+// The output has a column per kept dimension, followed by a group of columns per combination of pivoted values,
+// each group holding a column per measure in the order of a.using.
+func (a *pivotAST) conditionalFormats(cfs []*runtimev1.MetricsViewAggregationConditionalFormat) []driverutil.XLSXConditionalFormat {
+	var res []driverutil.XLSXConditionalFormat
+	for _, cf := range cfs {
+		i := slices.Index(a.using, cf.Measure)
+		if i < 0 {
+			continue
+		}
+		res = append(res, driverutil.XLSXConditionalFormat{
+			Column: len(a.keep) + i,
+			Stride: len(a.using),
+			Format: cf.Format,
+		})
+	}
+	return res
 }
 
 func randomString(prefix string, n int) (string, error) {

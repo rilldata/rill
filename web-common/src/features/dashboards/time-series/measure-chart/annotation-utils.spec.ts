@@ -130,3 +130,28 @@ describe("groupAnnotations", () => {
     expect(groups).toEqual([]);
   });
 });
+
+describe("groupAnnotations with a 10-minute grain", () => {
+  // Four 10-minute data points from 04:00 to 04:30.
+  const tenMinuteData: TimeSeriesPoint[] = [0, 10, 20, 30].map((minute) => ({
+    ts: DateTime.utc(2024, 3, 10, 4, minute),
+    value: minute,
+  }));
+
+  it("groups annotations into the chart's 10-minute buckets", () => {
+    const groups = groupAnnotations(
+      [
+        annotation("2024-03-10T04:03:00Z"),
+        annotation("2024-03-10T04:07:00Z"),
+        annotation("2024-03-10T04:12:00Z"),
+      ],
+      scales,
+      tenMinuteData,
+      config,
+      V1TimeGrain.TIME_GRAIN_10_MINUTE,
+    );
+
+    expect(groups.map((g) => g.index)).toEqual([0, 1]);
+    expect(groups[0].items).toHaveLength(2);
+  });
+});

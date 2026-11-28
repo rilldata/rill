@@ -23,7 +23,7 @@ import (
 )
 
 func TestLegacyAlert(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -95,6 +95,7 @@ email:
 					})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
+					NotifyRowsLimit:      5,
 					NotifyOnError:        false,
 					Renotify:             false,
 					RenotifyAfterSeconds: 0,
@@ -165,7 +166,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 			Result: &runtimev1.AssertionResult{
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
-					"country":   "Denmark",
+					"Country":   "Denmark",
 					"Measure 0": "4",
 				})),
 			},
@@ -183,7 +184,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 }
 
 func TestAlert(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -256,6 +257,7 @@ notify:
 					})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
+					NotifyRowsLimit:      5,
 					NotifyOnError:        false,
 					Renotify:             false,
 					RenotifyAfterSeconds: 0,
@@ -323,7 +325,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 			Result: &runtimev1.AssertionResult{
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
-					"country":   "Denmark",
+					"Country":   "Denmark",
 					"Measure 0": "4",
 				})),
 			},
@@ -340,8 +342,264 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 	require.Contains(t, emails[0].Body, "Denmark")
 }
 
+func TestAlertNotifyRows(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Norway'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Sweden'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Finland')
+) AS t(__time, country)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			// Every country matches, but the notification lists only the two largest
+			"alerts/a1.yaml": `
+type: alert
+display_name: Limited alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    sort:
+    - name: total
+      desc: true
+notify:
+  rows_limit: 2
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Two countries match, which is within the default limit
+			"alerts/a2.yaml": `
+type: alert
+display_name: Default alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+    sort:
+    - name: total
+      desc: true
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: total
+        - val: 2
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Not split by a dimension, so there is a single row
+			"alerts/a3.yaml": `
+type: alert
+display_name: Total alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    measures:
+    - name: total
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Equal(t, uint32(2), a1.Spec.NotifyRowsLimit)
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	// The execution history stores the first row only
+	require.Equal(t, map[string]any{"Country": "Denmark", "Total": "3"}, a1.State.ExecutionHistory[0].Result.FailRow.AsMap())
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 3)
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "Limited alert"):
+			require.Contains(t, e.Body, "The first 2 rows that matched your alert criteria are:")
+			// The columns are in the query's order, with the dimension first, and use display names like the alert preview
+			require.Less(t, strings.Index(e.Body, ">Country</th>"), strings.Index(e.Body, ">Total</th>"))
+			require.Contains(t, e.Body, ">Denmark</td>")
+			require.Contains(t, e.Body, ">Norway</td>")
+			require.NotContains(t, e.Body, "Sweden")
+			require.NotContains(t, e.Body, "Finland")
+			require.Contains(t, e.Body, "More rows matched your alert criteria.")
+		case strings.HasPrefix(e.Subject, "Default alert"):
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			require.Contains(t, e.Body, ">Denmark</td>")
+			require.Contains(t, e.Body, ">Norway</td>")
+			require.NotContains(t, e.Body, "More rows matched")
+		case strings.HasPrefix(e.Subject, "Total alert"):
+			require.Contains(t, e.Body, "The first row that matched your alert criteria is:")
+			require.Contains(t, e.Body, "<b>Total</b>: 7")
+			require.NotContains(t, e.Body, "More rows matched")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+}
+
+func TestAlertNotifyRowsColumns(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'EU', 'south'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'US', 'north'),
+	('2024-01-02T00:00:00Z'::TIMESTAMP, 'EU', 'south')
+) AS t(__time, region, zone)
+`,
+			// The region dimension and the measure share a display name
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- name: region
+  display_name: Orders
+  column: region
+- column: zone
+measures:
+- name: order_count
+  display_name: Orders
+  expression: count(*)
+`,
+			"alerts/a1.yaml": `
+type: alert
+display_name: Duplicate labels alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: region
+    measures:
+    - name: order_count
+    sort:
+    - name: order_count
+      desc: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+			// Legacy comparison queries have no schema of their own
+			"alerts/a2.yaml": `
+type: alert
+display_name: Comparison alert
+refs:
+- type: MetricsView
+  name: mv1
+query:
+  name: MetricsViewComparison
+  args:
+    metrics_view_name: mv1
+    dimension:
+      name: zone
+    measures:
+    - name: order_count
+    sort:
+    - name: order_count
+      sort_type: METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+      desc: true
+    time_range:
+      start: "2024-01-02T00:00:00Z"
+      end: "2024-01-03T00:00:00Z"
+    comparison_time_range:
+      start: "2024-01-01T00:00:00Z"
+      end: "2024-01-02T00:00:00Z"
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	// Both fields keep their values, with the later one disambiguated by its name
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Len(t, a1.State.ExecutionHistory, 1)
+	require.Equal(t, map[string]any{"Orders": "US", "Orders (order_count)": "3"}, a1.State.ExecutionHistory[0].Result.FailRow.AsMap())
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "Duplicate labels alert"):
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			require.Contains(t, e.Body, ">Orders</th>")
+			require.Contains(t, e.Body, ">Orders (order_count)</th>")
+			require.Less(t, strings.Index(e.Body, ">Orders</th>"), strings.Index(e.Body, ">Orders (order_count)</th>"))
+			require.Contains(t, e.Body, ">US</td>")
+			require.Contains(t, e.Body, ">EU</td>")
+		case strings.HasPrefix(e.Subject, "Comparison alert"):
+			// The dimension leads, followed by the measure and its comparison fields
+			require.Contains(t, e.Body, "The rows that matched your alert criteria are:")
+			headers := []string{">zone</th>", ">Orders</th>", ">Orders (prev)</th>", ">Orders (Δ)</th>", ">Orders (Δ%)</th>"}
+			for i, h := range headers {
+				require.Contains(t, e.Body, h)
+				if i > 0 {
+					require.Less(t, strings.Index(e.Body, headers[i-1]), strings.Index(e.Body, h), h)
+				}
+			}
+			require.Contains(t, e.Body, ">north</td>")
+			require.Contains(t, e.Body, ">south</td>")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+}
+
 func TestAlertDataYAMLSQL(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 -- @materialize: true
@@ -388,6 +646,7 @@ notify:
 					ResolverProperties:     must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from bar where country <> 'Denmark'"})),
 					NotifyOnRecover:        false,
 					NotifyOnFail:           true,
+					NotifyRowsLimit:        5,
 					NotifyOnError:          false,
 					Renotify:               false,
 					RenotifyAfterSeconds:   0,
@@ -467,7 +726,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 }
 
 func TestAlertDataYAMLMetricsSQL(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{AdminService: &alertAdmin{}})
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
@@ -524,6 +783,7 @@ notify:
 					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0"})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
+					NotifyRowsLimit:      5,
 					NotifyOnError:        false,
 					Renotify:             false,
 					RenotifyAfterSeconds: 0,
@@ -672,6 +932,7 @@ func must[T any](v T, err error) T {
 
 func TestAlertExportAttach(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/bar.sql": `
@@ -823,6 +1084,7 @@ notify:
 
 func TestAlertExportAttachTooLarge(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &alertAdmin{},
 		Files: map[string]string{
 			"rill.yaml": "",
 			// Exports to a CSV file of more than 10 MB (with fewer rows than the alert check's row cap)
@@ -880,6 +1142,29 @@ notify:
 	require.Empty(t, emails[0].Attachments)
 }
 
+// TestAlertWithoutAdminSupport checks that alerts don't run if the admin service doesn't support them, like in Rill Developer.
+func TestAlertWithoutAdminSupport(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"alerts/a1.yaml": `
+type: alert
+data:
+  sql: SELECT 'Denmark' AS country
+notify:
+  email:
+    recipients:
+    - somebody@example.com
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
+	require.Empty(t, a1.State.ExecutionHistory)
+	require.Empty(t, rt.Email.Sender.(*email.TestSender).Emails)
+}
+
 func TestAIAlert(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
@@ -915,6 +1200,8 @@ metrics_view: orders_mv
 			"alerts/a1.yaml": `
 type: alert
 display_name: Orders from HiddenLand
+refresh:
+  cron: 0 * * * *
 watermark: inherit
 data:
   ai:
@@ -929,12 +1216,12 @@ notify:
       - somebody@example.com
 `,
 		},
-		AdminService: &aiAlertAdmin{queryForAttributes: map[string]any{"country": "VisibleLand"}},
+		AdminService: &alertAdmin{queryForAttributes: map[string]any{"country": "VisibleLand"}},
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 
 	// The check runs at the watermark of the explore's metrics view.
-	// It ends in an error instead of a pass or fail, and the error is notified.
+	// Without a valid verdict, it ends in an error instead of a pass or fail, and the error is notified.
 	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1").GetAlert()
 	require.Len(t, a1.State.ExecutionHistory, 1)
 	require.Equal(t, time.Date(2026, 10, 2, 0, 0, 1, 0, time.UTC), a1.State.ExecutionHistory[0].ExecutionTime.AsTime())
@@ -945,7 +1232,7 @@ notify:
 	require.Len(t, emails, 1)
 	require.Contains(t, emails[0].Body, "verdict")
 
-	// The analyst ran in a session owned by the alert's "for" user, and only saw that user's rows
+	// The analysis ran in a session owned by the alert's "for" user, and only saw that user's rows
 	catalog, release, err := rt.Catalog(t.Context(), id)
 	require.NoError(t, err)
 	defer release()
@@ -964,16 +1251,25 @@ notify:
 	require.NotContains(t, summary, "HiddenLand")
 }
 
-// aiAlertAdmin is an admin service that resolves an alert's "for" user to fixed attributes.
-type aiAlertAdmin struct {
+// alertAdmin is an admin service that returns alert metadata the way the admin service does for alerts that aren't created from an embed:
+// email recipients get an open and an unsubscribe link, and anonymous recipients (e.g. Slack) get an open and an edit link.
+// The alert's "for" user resolves to queryForAttributes.
+type alertAdmin struct {
 	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
 	queryForAttributes   map[string]any
 }
 
-func (a *aiAlertAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
+func (a *alertAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
 	return &drivers.Config{}, nil
 }
 
-func (a *aiAlertAdmin) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
-	return &drivers.AlertMetadata{QueryForAttributes: a.queryForAttributes}, nil
+func (a *alertAdmin) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+	urls := make(map[string]drivers.AlertURLs)
+	for _, recipient := range emailRecipients {
+		urls[recipient] = drivers.AlertURLs{OpenURL: "https://example.com/open", UnsubscribeURL: "https://example.com/unsubscribe"}
+	}
+	if anonRecipients {
+		urls[""] = drivers.AlertURLs{OpenURL: "https://example.com/open", EditURL: "https://example.com/edit"}
+	}
+	return &drivers.AlertMetadata{RecipientURLs: urls, QueryForAttributes: a.queryForAttributes}, nil
 }

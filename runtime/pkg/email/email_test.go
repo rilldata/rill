@@ -94,7 +94,8 @@ func TestAlertFail(t *testing.T) {
 		DisplayName:   "Foobar",
 		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
 		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:       map[string]any{"hello": "world", "pi": 3.14},
+		FailColumns:   []string{"hello", "pi"},
+		FailRows:      [][]string{{"world", "3.14"}},
 		OpenLink:      "https://example.com",
 		EditLink:      "https://example.com",
 	}
@@ -106,10 +107,10 @@ func TestAlertFail(t *testing.T) {
 	require.NotEmpty(t, mock.subject)
 	require.Contains(t, mock.body, opts.DisplayName)
 	require.Contains(t, mock.body, opts.ExecutionTime.Format(time.RFC1123))
-	for k, v := range opts.FailRow {
-		require.Contains(t, mock.body, k)
-		require.Contains(t, mock.body, fmt.Sprintf("%v", v))
-	}
+	require.Contains(t, mock.body, "The first row that matched your alert criteria is:")
+	require.Contains(t, mock.body, "<b>hello</b>: world")
+	require.Contains(t, mock.body, "<b>pi</b>: 3.14")
+	require.NotContains(t, mock.body, "More rows matched")
 	require.NotContains(t, mock.body, "are attached")
 	require.NotContains(t, mock.body, "too large to attach")
 	require.Empty(t, mock.attachments)
@@ -128,30 +129,37 @@ func TestAlertFail(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, mock.body, "too large to attach to this email")
 	require.Empty(t, mock.attachments)
-}
 
-func TestAIAlertFail(t *testing.T) {
-	mock := &mockSender{}
-	client := New(mock)
-
-	opts := &AlertStatus{
-		ToEmail:       uuid.New().String(),
-		DisplayName:   "Foobar",
-		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
-		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:       map[string]any{"reason": "Revenue fell 40% against the previous four weeks.", "ai_session_id": "s1"},
-		Reason:        "Revenue fell 40% against the previous four weeks.",
-		OpenLink:      "https://example.com",
-		EditLink:      "https://example.com",
-	}
-	err := client.SendAlertStatus(opts)
+	// Several rows are listed in a table
+	opts.AttachmentTooLarge = false
+	opts.FailColumns = []string{"country", "orders"}
+	opts.FailRows = [][]string{{"US", "12.3k"}, {"<b>CA</b>", "4.5k"}}
+	err = client.SendAlertStatus(opts)
 	require.NoError(t, err)
+	require.Contains(t, mock.body, "The rows that matched your alert criteria are:")
+	require.Contains(t, mock.body, ">country</th>")
+	require.Contains(t, mock.body, ">orders</th>")
+	require.Contains(t, mock.body, ">US</td>")
+	require.Contains(t, mock.body, ">12.3k</td>")
+	require.Contains(t, mock.body, ">&lt;b&gt;CA&lt;/b&gt;</td>")
+	require.NotContains(t, mock.body, "More rows matched")
 
-	// The email shows the reason instead of the fail row's fields
+	// More rows matched than are listed
+	opts.FailRowsTruncated = true
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The first 2 rows that matched your alert criteria are:")
+	require.Contains(t, mock.body, "More rows matched your alert criteria.")
+
+	// An AI alert shows the analysis's reason instead of rows, and links to the analysis
+	opts.FailColumns, opts.FailRows, opts.FailRowsTruncated = nil, nil, false
+	opts.Reason = "Revenue fell 40% against the previous four weeks."
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The AI analysis found that the condition holds:")
 	require.Contains(t, mock.body, opts.Reason)
 	require.Contains(t, mock.body, "View full analysis")
-	require.NotContains(t, mock.body, "ai_session_id")
-	require.NotContains(t, mock.body, "The first row")
+	require.NotContains(t, mock.body, "matched your alert criteria")
 }
 
 func TestAlertRecover(t *testing.T) {

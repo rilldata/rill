@@ -7,6 +7,7 @@
  */
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { clampToTimestampBounds } from "@rilldata/web-common/lib/time/timestamp-bounds";
 import {
   addZoneOffset,
   removeLocalTimezoneOffset,
@@ -34,8 +35,17 @@ import {
   type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
-import { DateTime, type DateTimeUnit } from "luxon";
-import { V1TimeGrainToDateTimeUnit } from "../new-grains";
+import {
+  DateTime,
+  type DateTimeUnit,
+  type DurationLike,
+  Interval,
+} from "luxon";
+import {
+  floorToGrain,
+  plusGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "../new-grains";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -182,19 +192,31 @@ export function getAdjustedFetchTime(
   if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
 
-  const luxonUnit = V1TimeGrainToDateTimeUnit[interval];
-
   // Should only fail if somehow the Luxon unit is invalid
   try {
-    const start = DateTime.fromJSDate(startTime, { zone: zone || "UTC" })
-      .minus({
-        [luxonUnit]: 1,
-      })
-      .startOf(luxonUnit);
+    // The window grows by one grain on each side. Keep it within the bounds of a protobuf timestamp,
+    // which a range starting at a placeholder date such as 0001-01-01 would otherwise cross.
+    const start = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(startTime, { zone: zone || "UTC" }),
+          interval,
+          -1,
+        ),
+        interval,
+      ),
+    );
 
-    const end = DateTime.fromJSDate(endTime, { zone: zone || "UTC" })
-      .plus({ [luxonUnit]: 1 })
-      .startOf(luxonUnit);
+    const end = clampToTimestampBounds(
+      floorToGrain(
+        plusGrain(
+          DateTime.fromJSDate(endTime, { zone: zone || "UTC" }),
+          interval,
+          1,
+        ),
+        interval,
+      ),
+    );
 
     return {
       start: start.toUTC().toISO(),
@@ -202,6 +224,36 @@ export function getAdjustedFetchTime(
     };
   } catch {
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
+  }
+}
+
+/**
+ * Return Interval such that the results include extra data points for extrapolating the chart on both ends.
+ * Variant of {@link getAdjustedFetchTime} that takes and returns luxon Interval
+ */
+export function getAdjustedInterval(
+  interval: Interval,
+  grain: V1TimeGrain | undefined,
+  zone: string,
+): Interval | undefined {
+  if (!interval?.isValid || !interval.start || !interval.end || !grain) {
+    return undefined;
+  }
+
+  const luxonUnit = V1TimeGrainToDateTimeUnit[grain];
+  const duration: DurationLike = { [luxonUnit]: 1 };
+
+  // Should only fail if somehow the Luxon unit is invalid
+  try {
+    const start = interval.start
+      .setZone(zone)
+      .minus(duration)
+      .startOf(luxonUnit);
+    const end = interval.end.setZone(zone).plus(duration).startOf(luxonUnit);
+
+    return Interval.fromDateTimes(start, end);
+  } catch {
+    return undefined;
   }
 }
 

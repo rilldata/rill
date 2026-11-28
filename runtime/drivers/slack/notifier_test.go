@@ -2,9 +2,9 @@ package slack
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,35 +13,73 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAIAlertFail(t *testing.T) {
-	var text string
+func TestSendAlertFail(t *testing.T) {
+	var texts []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		var msg struct {
+		var payload struct {
 			Text string `json:"text"`
 		}
-		require.NoError(t, json.Unmarshal(body, &msg))
-		text = msg.Text
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		texts = append(texts, payload.Text)
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
 
 	n, err := newNotifier("", EncodeProps(nil, nil, []string{srv.URL}))
 	require.NoError(t, err)
-	err = n.SendAlertStatus(&drivers.AlertStatus{
-		DisplayName:   "Revenue drop",
-		ExecutionTime: time.Date(2026, 10, 27, 7, 0, 0, 0, time.UTC),
-		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
-		FailRow:       map[string]any{"reason": "Revenue fell 40% against the previous four weeks.", "ai_session_id": "s1"},
-		Reason:        "Revenue fell 40% against the previous four weeks.",
-		OpenLink:      "https://example.com/alerts/a1/open?session_id=s1",
-		EditLink:      "https://example.com/alerts/a1",
-	})
-	require.NoError(t, err)
 
-	// The message shows the reason instead of the fail row's fields
-	require.Contains(t, text, "Revenue fell 40% against the previous four weeks.")
-	require.Contains(t, text, "https://example.com/alerts/a1/open?session_id=s1")
-	require.NotContains(t, text, "first row")
-	require.NotContains(t, text, "ai_session_id")
+	status := &drivers.AlertStatus{
+		DisplayName:   "Orders by country",
+		ExecutionTime: time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC),
+		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		FailColumns:   []string{"country", "Orders", "Orders (Δ%)"},
+		OpenLink:      "https://example.com/open",
+		EditLink:      "https://example.com/edit",
+	}
+
+	// A single row lists its fields
+	status.FailRows = [][]string{{"US", "12.3k", "-8%"}}
+	require.NoError(t, n.SendAlertStatus(status))
+	require.Len(t, texts, 1)
+	require.Contains(t, texts[0], "The first row that matched your alert criteria is:\n\n• *country*: US\n• *Orders*: 12.3k\n• *Orders (Δ%)*: -8%\n")
+	require.NotContains(t, texts[0], "More rows matched")
+
+	// Several rows are listed one per line, with values Slack would interpret as mentions escaped
+	status.FailRows = [][]string{{"US", "12.3k", "-8%"}, {"<!channel>", "4.5k", "-12%"}}
+	require.NoError(t, n.SendAlertStatus(status))
+	require.Len(t, texts, 2)
+	require.Contains(t, texts[1], "The rows that matched your alert criteria are listed by *country*:\n\n• *US*: Orders 12.3k, Orders (Δ%) -8%\n• *&lt;!channel&gt;*: Orders 4.5k, Orders (Δ%) -12%\n")
+	require.NotContains(t, texts[1], "<!channel>")
+	require.NotContains(t, texts[1], "More rows matched")
+
+	// More rows matched than are listed
+	status.FailRowsTruncated = true
+	require.NoError(t, n.SendAlertStatus(status))
+	require.Len(t, texts, 3)
+	require.Contains(t, texts[2], "The first 2 rows that matched your alert criteria are listed by *country*:")
+	require.Contains(t, texts[2], "More rows matched your alert criteria.")
+
+	// An AI alert shows the analysis's reason instead of rows, and links to the analysis
+	reason := strings.Repeat("Revenue fell 40% against the previous four weeks. ", 5)
+	require.NoError(t, n.SendAlertStatus(&drivers.AlertStatus{
+		DisplayName:   "Revenue drop",
+		ExecutionTime: time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC),
+		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+		Reason:        reason,
+		OpenLink:      "https://example.com/open?session_id=s1",
+		EditLink:      "https://example.com/edit",
+	}))
+	require.Len(t, texts, 4)
+	require.Contains(t, texts[3], "The AI analysis found that the condition holds:\n\n"+reason+"\n")
+	require.Contains(t, texts[3], "<https://example.com/open?session_id=s1|View full analysis>")
+	require.NotContains(t, texts[3], "matched your alert criteria")
+}
+
+func TestSlackText(t *testing.T) {
+	require.Equal(t, "a &amp; b &lt;c&gt;", slackText("a & b <c>"))
+
+	long := strings.Repeat("x", slackTextMaxLen+10)
+	truncated := slackText(long)
+	require.Equal(t, slackTextMaxLen, len([]rune(truncated)))
+	require.True(t, strings.HasSuffix(truncated, "…"))
 }

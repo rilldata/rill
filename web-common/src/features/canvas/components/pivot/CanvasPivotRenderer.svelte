@@ -1,6 +1,7 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import PivotColumnTruncationNotice from "@rilldata/web-common/features/dashboards/pivot/PivotColumnTruncationNotice.svelte";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
@@ -42,6 +43,10 @@
   export let component: PivotCanvasComponent;
   export let editable = false;
 
+  // The space left for the table. A short row leaves little of it,
+  // so the loading, empty and error states adapt to its height.
+  let contentRect: DOMRectReadOnly | undefined;
+
   // Column drags and header-click sorts are written back to the YAML only in
   // the editor. Without a file artifact `updateYAML` is a no-op but the spec
   // store would still drift from the file, so both conditions are required.
@@ -56,6 +61,8 @@
   $: wrapLines = $spec ? wrapLinesFromSpec($spec) : WRAP_LINES_DEFAULT;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
+
+  $: columnTruncation = $pivotDataStore?.columnTruncation;
 
   $: hasColumnAndNoMeasure =
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
@@ -104,11 +111,20 @@
 
   onDestroy(() => clickToFilter?.destroy());
 
+  // `click_to_filter: false` only detaches the handlers and the selection
+  // highlight. Recreating the orchestration above when the spec toggles throws
+  // inside the Svelte runtime, so it stays in place.
+  $: clickToFilterEnabled = $spec?.click_to_filter !== false;
+  $: activeClickToFilter = clickToFilterEnabled ? clickToFilter : undefined;
+  // Turned off after a click: the table would otherwise keep ignoring the
+  // filters it applied.
+  $: if (!clickToFilterEnabled) component.releaseClickToFilter();
+
   // Unwrap stores from the factory result for template use
-  $: clickSelectionStore = clickToFilter?.clickSelection;
+  $: clickSelectionStore = activeClickToFilter?.clickSelection;
   $: clickSelection = clickSelectionStore ? $clickSelectionStore : undefined;
 
-  $: rowSelectionStateStore = clickToFilter?.rowSelectionState;
+  $: rowSelectionStateStore = activeClickToFilter?.rowSelectionState;
   $: rowSelectionState = rowSelectionStateStore
     ? $rowSelectionStateStore
     : undefined;
@@ -134,7 +150,8 @@
 </script>
 
 <div
-  class="size-full overflow-hidden"
+  bind:contentRect
+  class="size-full overflow-hidden flex flex-col gap-y-1"
   style:max-height="inherit"
   class:p-4={hasHeader}
   class:pt-1={hasHeader}
@@ -143,15 +160,22 @@
     <ComponentError error={schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     {#if $pivotDataStore?.error?.length}
-      <PivotError errors={$pivotDataStore.error} />
+      <PivotError
+        errors={$pivotDataStore.error}
+        availableHeight={contentRect?.height}
+      />
     {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
       <PivotEmpty
         assembled={$pivotDataStore.assembled}
         isFetching={$pivotDataStore.isFetching}
         {hasColumnAndNoMeasure}
         isEmbedded={EmbedStore.isEmbedded()}
+        availableHeight={contentRect?.height}
       />
     {:else}
+      {#if columnTruncation}
+        <PivotColumnTruncationNotice {columnTruncation} />
+      {/if}
       <PivotTable
         {widthScopeKey}
         border={hasHeader}
@@ -163,7 +187,7 @@
         {rowSelectionState}
         {clickSelection}
         fillWidth
-        enableClickToFilter
+        enableClickToFilter={clickToFilterEnabled}
         {columnStyles}
         fitToWidth={$spec?.fit_to_width === true}
         wrapText={$spec?.wrap === true}
@@ -221,8 +245,8 @@
             activeCell: null,
           }));
         }}
-        onCellClickToFilter={clickToFilter?.handleCellClickToFilter}
-        onColumnHeaderClick={clickToFilter?.handleColumnHeaderClick}
+        onCellClickToFilter={activeClickToFilter?.handleCellClickToFilter}
+        onColumnHeaderClick={activeClickToFilter?.handleColumnHeaderClick}
       />
     {/if}
   {/if}

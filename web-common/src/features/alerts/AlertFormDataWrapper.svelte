@@ -1,81 +1,115 @@
 <script lang="ts">
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import {
-    getAlertDashboardName,
-    unwrapQueryData,
-    useAlertDashboardState,
-  } from "@rilldata/web-admin/features/alerts/selectors.ts";
+  import { getAlertDashboardName } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import { isAIAlertSpec } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import AlertForm, {
     type CreateAlertProps,
     type EditAlertProps,
   } from "@rilldata/web-common/features/alerts/AlertForm.svelte";
-  import { derived } from "svelte/store";
+  import {
+    alertDeleteMutationFactory,
+    getAlertMutationFactory,
+  } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { readable } from "svelte/store";
 
-  export let onClose: () => void;
-  export let onCancel: () => void;
-  export let props: CreateAlertProps | EditAlertProps;
+  let {
+    onClose,
+    onCancel,
+    props,
+  }: {
+    onClose: () => void;
+    onCancel: () => void;
+    props: CreateAlertProps | EditAlertProps;
+  } = $props();
 
-  const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
 
-  // The dialog opens for one alert or dashboard, so these are read once.
+  // The dialog is mounted fresh for each alert, so deriving these once at init is safe.
+  // svelte-ignore state_referenced_locally
+  const provider = createFormMetadataProvider(
+    runtimeClient,
+    getAlertMutationFactory(props.mode === "edit"),
+    alertDeleteMutationFactory,
+  );
+  $effect(() => () => provider.cleanup());
+
+  // svelte-ignore state_referenced_locally
   const exploreName =
     props.mode === "create"
       ? props.exploreName
       : getAlertDashboardName(props.alertSpec);
+
   const validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
+  const metricsViewName = $derived(
+    $validExploreSpec.data?.explore?.metricsView ?? "",
+  );
 
+  // svelte-ignore state_referenced_locally
   const exploreStateStore =
-    props.mode === "create"
-      ? useExploreState(props.exploreName)
-      : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
+    props.mode === "create" ? useExploreState(props.exploreName) : readable({}); // TODO: handle edit in a better way
 
-  // An AI alert created through the API has no captured dashboard state, and editing it does not need one.
-  const needsExploreState =
-    props.mode === "create" || !isAIAlertSpec(props.alertSpec);
-
-  // The form captures its initial values once, so they wait for everything they are built from, the explore's metrics view included:
-  // without it the alert would be saved with an empty metrics view, which its managed YAML refs.
-  const initialValuesStore = derived(
-    [exploreStateStore, user, validExploreSpec],
-    ([exploreState, userResp, exploreResp]) => {
-      const metricsViewName = exploreResp.data?.explore?.metricsView ?? "";
-      if (
-        userResp.isPending ||
-        !metricsViewName ||
-        (needsExploreState &&
-          (!exploreState || Object.keys(exploreState).length === 0))
-      )
-        return {
-          isLoading: true,
-          data: undefined,
-        };
-
-      const initialValues =
-        props.mode === "create"
-          ? getNewAlertInitialFormValues(
-              metricsViewName,
-              exploreName,
-              exploreState ?? {}, // Defined: creating needs the explore state (see needsExploreState)
-              userResp.data?.user,
-            )
-          : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
-
-      return {
-        isLoading: false,
-        data: initialValues,
-      };
+  // The creator of an alert created from an embed has a field for their email, which always gets the alert:
+  // in an embed, if rill.yaml configures `embeds.open_url`, since only that email gets the open link to the embedder's app;
+  // and for alerts with a saved creator email, which the admin service always keeps as a recipient.
+  // Outside of an embed, the field is read-only, since only the creator can change it.
+  const isEmbedded = EmbedStore.isEmbedded();
+  const embedOpenUrlQuery = createRuntimeServiceGetInstance(
+    runtimeClient,
+    {},
+    {
+      query: {
+        enabled: isEmbedded,
+        select: (data) => data?.instance?.embedOpenUrl ?? "",
+      },
     },
   );
-  $: ({ data: initialValues, isLoading } = $initialValuesStore);
+  // svelte-ignore state_referenced_locally
+  const hasSavedEmbedOwnerEmail =
+    props.mode === "edit" &&
+    !!props.alertSpec.annotations?.admin_embed_owner_email;
+  const showEmbedOwnerEmail = $derived(
+    hasSavedEmbedOwnerEmail || (isEmbedded && !!$embedOpenUrlQuery.data),
+  );
+
+  const initialValues = $derived.by(() => {
+    const exploreState = $exploreStateStore;
+    if (
+      provider.isLoading ||
+      (isEmbedded && $embedOpenUrlQuery.isPending) ||
+      !exploreState
+    ) {
+      return undefined;
+    }
+    return props.mode === "create"
+      ? getNewAlertInitialFormValues(
+          metricsViewName,
+          exploreName,
+          exploreState,
+          provider.userEmail,
+          showEmbedOwnerEmail,
+        )
+      : getExistingAlertInitialFormValues(
+          props.alertSpec,
+          metricsViewName,
+          provider.userEmail,
+          showEmbedOwnerEmail,
+        );
+  });
 </script>
 
-{#if !isLoading && initialValues}
-  <AlertForm {props} {initialValues} {onClose} {onCancel} />
+{#if initialValues}
+  <AlertForm
+    {props}
+    {provider}
+    {initialValues}
+    {showEmbedOwnerEmail}
+    {onClose}
+    {onCancel}
+  />
 {/if}

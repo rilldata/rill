@@ -37,8 +37,8 @@ type aiProps struct {
 	Where      map[string]any `mapstructure:"where"`
 	// IsReport indicates if the AI resolver is used for an automated report.
 	IsReport bool `mapstructure:"is_report"`
-	// IsAlert indicates if the AI resolver judges an AI alert's condition, which is the prompt.
-	// It then returns one row with the verdict's reason if the condition is met, and no rows if it is not.
+	// IsAlert indicates if the AI resolver checks an AI alert's condition, which is the prompt.
+	// It then returns a row with the analysis's summary if the condition holds, and no rows if it doesn't.
 	IsAlert      bool           `mapstructure:"is_alert"`
 	UnusedFields map[string]any `mapstructure:",remain"`
 }
@@ -179,12 +179,6 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 
 // ResolveInteractive implements runtime.Resolver.
 func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	// An AI alert queries the data with the alert's own claims (its owner or "for" attributes).
-	// Claims that skip security checks would let the condition be judged on rows the alert's owner can't see.
-	if r.props.IsAlert && r.claims.SkipChecks {
-		return nil, errors.New("AI alerts must run with the alert's own claims, not claims that skip security checks")
-	}
-
 	// Resolve time ranges if provided
 	err := r.resolveTimeRange(ctx, r.props.TimeRange, r.props.TimeZone)
 	if err != nil {
@@ -266,11 +260,22 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		}
 	}
 
-	// An AI alert returns the verdict as rows, which the alert reconciler reads like any alert's rows.
+	// An AI alert returns a row if its condition holds, which the alert reconciler notifies like any alert's rows.
+	// The row's reason is the analysis's summary, whose numbers the analyst checked against its query results.
 	if r.props.IsAlert {
-		rows, err := aiAlertRows(result.Verdict, session.ID())
-		if err != nil {
-			return nil, err
+		reason := extractSummary(result.Response)
+		if reason == "" {
+			reason = result.Response
+		}
+		var rows []map[string]any
+		switch result.AlertOutcome {
+		case ai.AlertOutcomeMet:
+			rows = append(rows, map[string]any{"reason": reason, "ai_session_id": session.ID()})
+		case ai.AlertOutcomeNotMet:
+		case ai.AlertOutcomeCannotDetermine:
+			return nil, fmt.Errorf("the AI analysis could not determine whether the condition holds: %s", reason)
+		default:
+			return nil, fmt.Errorf("the AI analysis returned no verdict on the condition")
 		}
 		schema := &runtimev1.StructType{
 			Fields: []*runtimev1.StructType_Field{
@@ -429,18 +434,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
-}
-
-// aiAlertRows maps an AI alert's verdict to the resolver's rows: one row with the reason and the conversation when the condition is met, none when it is not.
-// The alert reconciler fires when the resolver returns a row, so the verdict fits its rule unchanged.
-func aiAlertRows(verdict *ai.AlertVerdict, sessionID string) ([]map[string]any, error) {
-	if verdict == nil {
-		return nil, errors.New("the analyst did not return a verdict for the alert's condition")
-	}
-	if !verdict.Met {
-		return nil, nil
-	}
-	return []map[string]any{{"reason": verdict.Reason, "ai_session_id": sessionID}}, nil
 }
 
 // extractSummary extracts the summary from the <summary> tag in the AI response.

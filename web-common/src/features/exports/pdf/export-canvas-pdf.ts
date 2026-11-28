@@ -43,10 +43,6 @@ export async function exportCanvasPdf(
         onProgress: (ratio) => opts.onProgress?.({ phase: "capturing", ratio }),
       });
 
-    if (!blocks.length) {
-      throw new Error("Nothing to export on this canvas.");
-    }
-
     const title = get(canvasEntity.titleStore) || opts.canvasName;
 
     opts.onProgress?.({ phase: "assembling", ratio: 0 });

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -32,13 +33,19 @@ func (s *Server) ListPersonalFiles(ctx context.Context, req *adminv1.ListPersona
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	owner, err := personalFileOwnerFromClaims(claims)
+	if err != nil {
+		return nil, err
+	}
+
 	var virtualFileNames []string
-	virtualFiles, err := s.admin.DB.FindVirtualFilesByOwner(ctx, proj.ID, "prod", auth.GetClaims(ctx).OwnerID())
+	virtualFiles, err := s.findPersonalFiles(ctx, proj.ID, owner)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list personal files: %w", err)
 	}
@@ -69,9 +76,26 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	owner, err := personalFileOwnerFromClaims(claims)
+	if err != nil {
+		return nil, err
+	}
+
+	// Embed users are untrusted outside users, so we cap how many personal files they can create.
+	if owner.isEmbed() {
+		existing, err := s.findPersonalFiles(ctx, proj.ID, owner)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list personal files: %w", err)
+		}
+		if len(existing) >= maxPersonalFilesPerEmbedUser {
+			return nil, status.Errorf(codes.ResourceExhausted, "cannot create more than %d personal files", maxPersonalFilesPerEmbedUser)
+		}
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
@@ -87,10 +111,9 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 		return nil, err
 	}
 
-	userID := auth.GetClaims(ctx).OwnerID()
 	virtualPath := virtualFilePathForPersonalFile(name)
 
-	yaml, err := yamlForPersonalFile(req.DisplayName, auth.GetClaims(ctx).OwnerID(), req.Kind, req.Yaml)
+	yaml, err := yamlForPersonalFile(req.DisplayName, owner, req.Kind, req.Yaml)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +122,8 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 		ProjectID:    proj.ID,
 		Environment:  "prod",
 		Path:         virtualPath,
-		OwnerID:      &userID,
-		EmbedOwnerID: nil,
+		OwnerID:      owner.userIDPtr(),
+		EmbedOwnerID: owner.embedUserIDPtr(),
 		Data:         yaml,
 	})
 	if err != nil {
@@ -129,12 +152,17 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	userID := auth.GetClaims(ctx).OwnerID()
+	owner, err := personalFileOwnerFromClaims(claims)
+	if err != nil {
+		return nil, err
+	}
+
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
@@ -142,7 +170,7 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if vf.OwnerID != nil && *vf.OwnerID != userID {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read file")
 	}
 
@@ -170,9 +198,15 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	owner, err := personalFileOwnerFromClaims(claims)
+	if err != nil {
+		return nil, err
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
@@ -180,7 +214,6 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		return nil, err
 	}
 
-	userID := auth.GetClaims(ctx).OwnerID()
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
@@ -188,12 +221,12 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if vf.OwnerID != nil && *vf.OwnerID != userID {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update file")
 	}
 
 	// TODO: display name can be changed from yaml, so we dont need it here
-	yaml, err := yamlForPersonalFile("", auth.GetClaims(ctx).OwnerID(), req.Kind, req.Yaml)
+	yaml, err := yamlForPersonalFile("", owner, req.Kind, req.Yaml)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +235,8 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 		ProjectID:    proj.ID,
 		Environment:  "prod",
 		Path:         virtualPath,
-		OwnerID:      &userID,
-		EmbedOwnerID: nil,
+		OwnerID:      owner.userIDPtr(),
+		EmbedOwnerID: owner.embedUserIDPtr(),
 		Data:         yaml,
 	})
 	if err != nil {
@@ -230,9 +263,15 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	owner, err := personalFileOwnerFromClaims(claims)
+	if err != nil {
+		return nil, err
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
@@ -240,7 +279,6 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 		return nil, err
 	}
 
-	ownerID := auth.GetClaims(ctx).OwnerID()
 	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
@@ -248,7 +286,7 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
 
-	if vf.OwnerID != nil && *vf.OwnerID != ownerID {
+	if !owner.matches(vf.OwnerID, vf.EmbedOwnerID) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete file")
 	}
 
@@ -266,9 +304,61 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 	return &adminv1.DeletePersonalFileResponse{}, nil
 }
 
-func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error) {
-	if data == "" {
-		return blankYamlForPersonalFile(displayName, ownerID, kind)
+// findPersonalFiles returns the non-deleted personal files owned by the owner in the project's prod environment.
+func (s *Server) findPersonalFiles(ctx context.Context, projectID string, owner *owner) ([]*database.VirtualFile, error) {
+	if owner.isEmbed() {
+		return s.admin.DB.FindVirtualFilesByEmbedOwner(ctx, projectID, "prod", owner.embedUserID)
+	}
+	return s.admin.DB.FindVirtualFilesByOwner(ctx, projectID, "prod", owner.userID)
+}
+
+// maxPersonalFilesPerEmbedUser caps the number of live personal files an embed user can have in a project.
+const maxPersonalFilesPerEmbedUser = 50
+
+// personalFileOwnerFromClaims resolves the personal file owner for the caller.
+// Only Rill users and embed users can own personal files.
+func personalFileOwnerFromClaims(claims auth.Claims) (*owner, error) {
+	o, err := ownerFromClaims(claims)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, "only users can manage personal files")
+	}
+	if o.isEmbed() {
+		// Embeds with fixed resources issue runtime JWTs that only grant access to those resources,
+		// so a personal canvas created from them could never be opened.
+		tkn, ok := claims.AuthTokenModel().(*admin.EmbedToken)
+		if !ok {
+			return nil, status.Error(codes.Internal, "unexpected embed token model")
+		}
+		if len(tkn.Resources) > 0 {
+			return nil, status.Error(codes.FailedPrecondition, "personal files are not available for embeds limited to specific resources")
+		}
+	}
+	return o, nil
+}
+
+// personalFileBlockedKeys are top-level properties that personal files may not set.
+// They either change the resource's identity (name, kind) or are irrelevant for canvases.
+// The environment override keys are blocked because the runtime parser applies them on top of the stored YAML,
+// which would bypass the type and annotation enforcement in yamlForPersonalFile.
+var personalFileBlockedKeys = map[string]bool{
+	"env":                   true,
+	"environment_overrides": true,
+	"dev":                   true,
+	"prod":                  true,
+	"name":                  true,
+	"namespace":             true,
+	"kind":                  true,
+	"refs":                  true,
+	"connector":             true,
+	"sql":                   true,
+}
+
+// yamlForPersonalFile builds the YAML stored for a personal file.
+// If data is empty, it creates a blank file.
+// It strips any client-supplied admin_* annotations and sets the server-controlled ones for the owner.
+func yamlForPersonalFile(displayName string, owner *owner, kind, data string) ([]byte, error) {
+	if kind != runtime.ResourceKindCanvas {
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported personal file kind: %s", kind)
 	}
 
 	var doc map[string]any
@@ -276,56 +366,47 @@ func yamlForPersonalFile(displayName, ownerID, kind, data string) ([]byte, error
 		return nil, status.Errorf(codes.InvalidArgument, "invalid YAML: %s", err.Error())
 	}
 	if doc == nil {
-		doc = map[string]any{}
+		doc = map[string]any{"rows": []any{}}
+	}
+
+	for k := range doc {
+		if personalFileBlockedKeys[k] {
+			return nil, status.Errorf(codes.InvalidArgument, "property %q is not allowed in personal files", k)
+		}
 	}
 
 	if displayName != "" {
 		doc["display_name"] = displayName
 	}
-	if kind == runtime.ResourceKindCanvas {
-		// Hardcode the kind to prevent client from changing it
-		doc["type"] = "canvas"
-		// Delete the legacy key to prevent client using that as an override
-		_, hasKind := doc["kind"]
-		if hasKind {
-			delete(doc, "kind")
-		}
-	} else {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unsupported personal file kind: %s", kind))
-	}
+
+	// Hardcode the kind to prevent client from changing it
+	doc["type"] = "canvas"
 
 	annotations, _ := doc["annotations"].(map[string]any)
-	if annotations == nil {
-		annotations = map[string]any{}
+	sanitized := map[string]any{}
+	for k, v := range annotations {
+		if !strings.HasPrefix(k, "admin_") {
+			sanitized[k] = v
+		}
 	}
-	annotations["admin_owner_user_id"] = ownerID
-	annotations["admin_managed"] = "true"
-	annotations["admin_nonce"] = time.Now().Format(time.RFC3339Nano)
-	doc["annotations"] = annotations
+	if owner.isEmbed() {
+		// Sharing is not supported for embed-owned files.
+		sanitized["admin_embed_owner_id"] = owner.embedUserID
+	} else {
+		if shared, ok := annotations["admin_shared"]; ok {
+			sanitized["admin_shared"] = shared
+		}
+		sanitized["admin_owner_user_id"] = owner.userID
+	}
+	sanitized["admin_managed"] = "true"
+	sanitized["admin_nonce"] = time.Now().Format(time.RFC3339Nano)
+	doc["annotations"] = sanitized
 
 	out, err := yaml.Marshal(doc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal YAML: %s", err.Error())
 	}
 	return out, nil
-}
-
-func blankYamlForPersonalFile(displayName, ownerID, kind string) ([]byte, error) {
-	doc := map[string]any{
-		"type":         kind,
-		"display_name": displayName,
-		"annotations": map[string]any{
-			"admin_owner_user_id": ownerID,
-			"admin_managed":       "true",
-			"admin_nonce":         time.Now().Format(time.RFC3339Nano),
-		},
-	}
-	if kind == runtime.ResourceKindCanvas {
-		doc["type"] = "canvas"
-		doc["rows"] = []any{}
-	}
-
-	return yaml.Marshal(doc)
 }
 
 // generateVirtualFileName generates a random virtual file name with the display name as a seed.

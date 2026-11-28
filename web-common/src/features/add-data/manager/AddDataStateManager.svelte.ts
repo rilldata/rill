@@ -9,7 +9,8 @@ import {
   isConnectorType,
   isExplorerType,
 } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { connectorFormCache } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
 import {
   behaviourEvent,
@@ -31,13 +32,13 @@ export enum TransitionEventType {
 type SchemaSelectedEvent = {
   type: TransitionEventType.SchemaSelected;
   schema: string;
-  driver: V1ConnectorDriver;
+  driver: PartialMessage<ConnectorDriver>;
 };
 type ConnectorSelectedEvent = {
   type: TransitionEventType.ConnectorSelected;
   connector: string;
   schema: string;
-  driver: V1ConnectorDriver;
+  driver: PartialMessage<ConnectorDriver>;
   connectorFormValues: Record<string, any>;
 };
 export type TransitionEvent =
@@ -45,7 +46,7 @@ export type TransitionEvent =
       type: TransitionEventType.Init;
       connector?: string;
       schema?: string;
-      driver?: V1ConnectorDriver;
+      driver?: PartialMessage<ConnectorDriver>;
     }
   | SchemaSelectedEvent
   | ConnectorSelectedEvent
@@ -364,7 +365,7 @@ export class AddDataStateManager {
 
 function getStepForSchema(
   schema: string,
-  driver: V1ConnectorDriver,
+  driver: PartialMessage<ConnectorDriver>,
 ): AddDataState {
   if (isConnectorType(driver)) {
     return {
@@ -385,7 +386,7 @@ function getStepForSchema(
 function getStepForConnector(
   schema: string,
   connector: string,
-  driver: V1ConnectorDriver,
+  driver: PartialMessage<ConnectorDriver>,
   connectorFormValues: Record<string, any> = {},
 ): AddDataState {
   if (isExplorerType(driver))

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -36,7 +38,12 @@ type ExploreDefinitionYAML struct {
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
 	Defaults             *ExploreDefaultsYAML   `yaml:"defaults"`
-	Embeds               struct {
+	Filters              struct {
+		Pinned       []string `yaml:"pinned"`
+		Required     []string `yaml:"required"`
+		SingleSelect []string `yaml:"single_select"`
+	} `yaml:"filters"`
+	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
 	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
@@ -49,6 +56,7 @@ type ExploreDefaultsYAML struct {
 	TimeRange           string             `yaml:"time_range"`
 	ComparisonMode      string             `yaml:"comparison_mode"`
 	ComparisonDimension string             `yaml:"comparison_dimension"`
+	Filters             yaml.Node          `yaml:"filters"` // Metrics SQL filter expression (string)
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -311,6 +319,26 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
 
+		// Parse the default filter.
+		// An explore has a single metrics view, so it takes one expression;
+		// a canvas takes a map of expressions keyed by metrics view instead.
+		// The fields it references are validated in the reconciler, when the explore's fields are known.
+		var where *runtimev1.Expression
+		if !tmp.Defaults.Filters.IsZero() {
+			var filter string
+			err := tmp.Defaults.Filters.Decode(&filter)
+			if err != nil {
+				return nil, errors.New(`invalid defaults.filters: must be a single Metrics SQL filter expression, for example "country = 'US'"`)
+			}
+			if filter != "" {
+				expr, err := metricssql.ParseFilter(filter)
+				if err != nil {
+					return nil, fmt.Errorf("invalid filter expression in defaults: %w", err)
+				}
+				where = metricsview.ExpressionToProto(expr)
+			}
+		}
+
 		var tr *string
 		if tmp.Defaults.TimeRange != "" {
 			tr = &tmp.Defaults.TimeRange
@@ -324,6 +352,7 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 			DimensionsSelector:  presetDimensionsSelector,
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
+			Where:               where,
 			TimeRange:           tr,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
@@ -360,6 +389,9 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.TimeRanges = d.timeRanges
 	spec.TimeZones = tmp.TimeZones
 	spec.DefaultPreset = d.defaultPreset
+	spec.PinnedFilters = tmp.Filters.Pinned
+	spec.RequiredFilters = tmp.Filters.Required
+	spec.SingleSelectFilters = tmp.Filters.SingleSelect
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange

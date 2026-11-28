@@ -19,6 +19,7 @@ rill deploy [<path>] [flags]
       --org string              Org to deploy project in
       --project string          Project name (default: Git repo name)
       --description string      Project description
+      --tag strings             Tags for a new project, such as prod or sandbox (repeat or separate with commas)
       --public                  Make dashboards publicly accessible
       --primary-branch string   Git branch to deploy from (default: the default Git branch)
       --push-env                Push local .env file to Rill Cloud (default true)

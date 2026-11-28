@@ -16,6 +16,7 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
+  import { installResizeObserverTracker } from "@rilldata/web-common/metrics/resize-observer-tracker";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
@@ -36,6 +37,14 @@
   export let data: LayoutData;
 
   const { deploy } = featureFlags;
+
+  const shouldSendAnalytics =
+    data.metadata.analyticsEnabled &&
+    !import.meta.env.VITE_PLAYWRIGHT_TEST &&
+    !dev;
+
+  // Before any component mounts, so ResizeObserver loop notices in error telemetry can name the callbacks that preceded them
+  if (shouldSendAnalytics) installResizeObserverTracker();
 
   queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
     errorEventHandler?.requestErrorEventHandler(error, query);
@@ -59,9 +68,6 @@
   let removeJavascriptListeners: () => void;
   onMount(async () => {
     const config = data.metadata;
-
-    const shouldSendAnalytics =
-      config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
       await initMetrics(config, host); // Proxies events through the Rill "intake" service

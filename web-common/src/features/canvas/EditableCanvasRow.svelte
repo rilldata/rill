@@ -10,6 +10,8 @@
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
     COLUMN_COUNT,
+    DEFAULT_ROW_HEIGHT,
+    isRowHeightSet,
     MIN_HEIGHT,
     MIN_WIDTH,
     mousePosition,
@@ -19,6 +21,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import VisibilityBadge from "./VisibilityBadge.svelte";
+  import type { BlockKind } from "./stores/block-edit";
   import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
@@ -31,9 +34,9 @@
   export let columnWidth: number;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
-  // True while a whole tab group is being dragged. Top-level rows (zoneScope "canvas") then
-  // expose their row drop zones as landing slots for the group; rows inside a tab do not, and
-  // all rows suspend component interaction for the duration of the drag.
+  // True while a whole block (a tab group or a container) is being dragged. Top-level rows
+  // (zoneScope "canvas") then expose their row drop zones as landing slots for the block; rows
+  // inside a block do not, and all rows suspend component interaction for the duration of the drag.
   export let blockDragging = false;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
@@ -47,10 +50,12 @@
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
   export let onDelete: (params: { component: BaseCanvasComponent }) => void;
-  // Optional: convert this row into a tab group (top-level rows only).
-  export let onConvertToTabGroup: (() => void) | undefined = undefined;
-  // Optional: insert a tab group at a given top-level index (top-level rows only).
-  export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
+  // Optional: wrap this row into a new block of the kind (top-level rows only).
+  export let onWrapRow: ((kind: BlockKind) => void) | undefined = undefined;
+  // Optional: insert a block of the kind at a given top-level index (top-level rows only).
+  export let onAddBlock:
+    | ((kind: BlockKind, index: number) => void)
+    | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -58,12 +63,16 @@
     index: number,
     newWidths: number[],
   ) => void;
-  // Disambiguates row DOM ids across tab containers so height-resize querySelectors
+  // Disambiguates row DOM ids across tabs and containers so height-resize querySelectors
   // don't collide with same-index rows elsewhere on the canvas.
   export let idPrefix: string = "";
   export let zoneScope = "canvas";
 
-  let rowHeight = get(row.height) ?? MIN_HEIGHT;
+  // The row's height: from the YAML, or from the resize handle while that
+  // change is on its way there. Undefined when the row has no height.
+  let rowHeight = get(row.height);
+  // True while the row's resize handle is dragged.
+  let resizingHeight = false;
   let hasLocalChange = false;
   let initialMousePosition: { x: number; y: number };
   let initialHeight: number;
@@ -80,6 +89,7 @@
   // Either kind of drag suspends component and divider interaction in this row.
   $: interactionSuspended = activelyDragging || blockDragging;
   $: allowBlockDrop = blockDragging && zoneScope === "canvas";
+  $: rowHasHeight = resizingHeight || isRowHeightSet(rowHeight);
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
@@ -89,6 +99,7 @@
   function onRowResizeStart() {
     initialMousePosition = $mousePosition;
     hasLocalChange = true;
+    resizingHeight = true;
 
     initialHeight =
       document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
@@ -108,10 +119,12 @@
         unsubscriber = undefined;
         const actualHeight = Math.floor(
           document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
-            rowHeight,
+            rowHeight ??
+            initialHeight,
         );
 
         rowHeight = actualHeight;
+        resizingHeight = false;
         updateRowHeight(actualHeight, rowIndex);
       },
       { once: true },
@@ -119,8 +132,6 @@
   }
 
   function updateHeightFromSpec(newSpecHeight: number | undefined) {
-    if (newSpecHeight === undefined) return;
-
     const matchesLocal = newSpecHeight === rowHeight;
 
     if (hasLocalChange && matchesLocal) {
@@ -196,7 +207,7 @@
 <RowWrapper
   {zIndex}
   {maxWidth}
-  height={rowHeight}
+  height={rowHeight ?? DEFAULT_ROW_HEIGHT}
   {heightUnit}
   {id}
   gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
@@ -204,7 +215,7 @@
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
     {@const itemCount = itemIds.length}
-    <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
+    <ItemWrapper type={component?.type} zIndex={4 - columnIndex} {rowHasHeight}>
       {#if columnIndex === 0}
         <ElementDivider
           {rowIndex}
@@ -265,11 +276,12 @@
           onDelete={() => {
             onDelete({ component });
           }}
-          onConvertToTabGroup={onConvertToTabGroup
-            ? () => onConvertToTabGroup?.()
-            : undefined}
+          {onWrapRow}
         />
-        <VisibilityBadge {component} />
+        <VisibilityBadge
+          canvas={component.parent}
+          path={component.pathInYAML.slice(0, -1)}
+        />
       {:else}
         <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
@@ -285,8 +297,8 @@
     addItem={(type) => {
       initializeRow(rowIndex + 1, type);
     }}
-    onAddTabGroup={onAddTabGroup
-      ? () => onAddTabGroup?.(rowIndex + 1)
+    onAddBlock={onAddBlock
+      ? (kind) => onAddBlock?.(kind, rowIndex + 1)
       : undefined}
   />
 
@@ -299,7 +311,7 @@
       addItem={(type) => {
         initializeRow(rowIndex, type);
       }}
-      onAddTabGroup={onAddTabGroup ? () => onAddTabGroup?.(0) : undefined}
+      onAddBlock={onAddBlock ? (kind) => onAddBlock?.(kind, 0) : undefined}
     />
   {/if}
 </RowWrapper>

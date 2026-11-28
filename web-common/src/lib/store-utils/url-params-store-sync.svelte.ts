@@ -76,13 +76,14 @@ export class UrlParamsChangeTracker {
       return;
     }
 
-    const relevantParams = copySubsetParams(
-      expandedUrlParams,
-      this.store.paramKeys,
+    // Normalized before the comparison: a url that differs from the current params only in what
+    // normalizing changes, a legacy param for example, matches them and is not parsed again.
+    const relevantParams = this.store.normalizeParams(
+      copySubsetParams(expandedUrlParams, this.store.paramKeys),
     );
     if (this.searchParams?.toString() === relevantParams.toString()) return;
 
-    this.searchParams = this.store.normalizeParams(relevantParams);
+    this.searchParams = relevantParams;
     this.store.setUrlParams(this.searchParams);
     this.events.emit("change", this.searchParams);
   }

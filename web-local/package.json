@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "npm run generate:sveltekit -w web-common && vite build",
+    "dev": "npm run generate:map-boundaries -w web-common && vite dev",
+    "build": "npm run generate:sveltekit -w web-common && npm run generate:map-boundaries -w web-common && vite build",
     "install-and-build": "npm install && npm run build",
     "check": "svelte-kit sync && svelte-check --no-tsconfig",
     "check:watch": "svelte-check --no-ts-config --watch",

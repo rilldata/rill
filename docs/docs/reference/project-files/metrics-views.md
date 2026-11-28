@@ -68,6 +68,18 @@ _[string]_ - Optional [time range syntax](/reference/time-syntax) expression des
 
 _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
 
+### `time_grains`
+
+_[array of string]_ - Time grains offered by dashboards for bucketing the time dimension. Accepts the standard grains (second, minute, hour, day, week, month, quarter, year) and the multiples 5m, 10m, 15m, 30m, 2h, 3h, 4h, 6h, 8h and 12h (also spelled like `10 minutes`). When set, it replaces the default list, which is the standard grains at or above `smallest_time_grain`. Multiples are aligned to the start of the day in the dashboard time zone.
+
+### `base_time_grain`
+
+_[string]_ - Optional time grain the base table stores `timeseries` at, for example `day` for a Druid datasource ingested with a day query granularity. It declares that every row's timestamp is on a boundary of this grain in `base_time_zone`. Rollup routing rounds query time bounds up to the next boundary, so a time range that starts or ends inside a day can still use a day rollup. Rill only checks that the base table's earliest and latest timestamps are on a boundary, and skips that check when `data_time_range` is set; if other rows are not on a boundary, queries routed to a rollup return wrong results. Week boundaries start on `first_day_of_week`. Quarter and year boundaries are calendar quarters and years starting in January, regardless of `first_month_of_year`; for fiscal quarters or years whose boundaries all fall on the first day of a calendar month, use `month`, and otherwise `day` if every timestamp is at local midnight. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
+
+### `base_time_zone`
+
+_[string]_ - IANA time zone of the `base_time_grain` boundaries (e.g. America/New_York). Defaults to UTC. Requires `base_time_grain`.
+
 ### `first_day_of_week`
 
 _[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
@@ -215,6 +227,21 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`treat_nulls_as`** - _[string]_ - Configures the value to fill in for missing time buckets. This also works generally as COALESCE over non-empty time buckets.
 
   - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+
+### `tag_order`
+
+_[array of string]_ - Display order of the `tags` set on dimensions and measures, for example in the tag lists of the dimension and measure pickers and the pivot table.
+Tags listed here come first, in this order, followed by any other tags in the order they first appear on a dimension or measure.
+Each tag must be set on at least one dimension or measure.
+A derived metrics view uses the parent's order unless it sets its own.
+
+```yaml
+tag_order:
+  - Revenue
+  - Engagement
+  - Geography
+```
+
 
 ### `parent_dimensions`
 
@@ -407,7 +434,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
   - **`description`** - _[string]_ - Description for the explore view.
 
-  - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view.
+  - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view. Supports inline markdown (bold, italics, strikethrough, inline code and links).
 
   - **`ai_prompts`** - _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
 
@@ -475,7 +502,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for light theme
+        - **`variables`** - _[object]_ - CSS variables for the light theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `light`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
       - **`dark`** - _[object]_ - Dark theme color configuration
 
@@ -487,7 +514,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for dark theme
+        - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
 
@@ -548,6 +575,16 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
     - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension).
 
     - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
+
+    - **`filters`** - _[string]_ - Default filter applied when the explore view loads, written as a Metrics SQL `WHERE` expression, for example `country = 'US'`. It can only reference dimensions and measures shown in the explore view.
+
+  - **`filters`** - _[object]_ - Configures the filters of the explore view.
+
+    - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them. The filter bar shows them in the order listed. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the explore view renders. Required filters are implicitly pinned, and come before the pinned filters in the order listed; to place a required filter among the pinned ones, list it under `pinned` as well. Each name must be a measure or a dimension shown in the explore view, other than a time dimension.
+
+    - **`single_select`** - _[array of string]_ - Dimension names whose filter holds one value at a time. Picking a value replaces the current one, and viewers cannot exclude values or match on text. Each name must be a dimension shown in the explore view, other than a time dimension.
 
   - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
 

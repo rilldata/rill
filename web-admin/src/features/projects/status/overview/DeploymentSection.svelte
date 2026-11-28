@@ -4,6 +4,7 @@
     createAdminServiceGetProject,
     createAdminServiceGetBillingSubscription,
     V1DeploymentStatus,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import {
     isFreePlan,
@@ -15,6 +16,7 @@
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
 
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { structToJson } from "@rilldata/web-common/lib/proto-utils";
   import { createQueryServiceProjectStorage } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
@@ -114,7 +116,13 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
-  $: olapEngineLabel = getOlapEngineLabel(olapConnector);
+  // Spread so every field the helper reads carries over; only the Struct config needs converting.
+  $: olapEngineLabel = getOlapEngineLabel(
+    olapConnector && {
+      ...olapConnector,
+      config: structToJson(olapConnector.config),
+    },
+  );
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
@@ -122,8 +130,16 @@
   // Slots
   $: currentSlots = Number(projectData?.prodSlots) || 0;
 
-  // Billing plan detection
-  $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
+  // Billing plan detection. Only org admins can read the subscription, so the cluster size
+  // stays hidden for project admins who are not org admins.
+  $: organizationPermissions = $page.data.organizationPermissions as
+    | V1OrganizationPermissions
+    | undefined;
+  $: subscriptionQuery = createAdminServiceGetBillingSubscription(
+    organization,
+    undefined,
+    { query: { enabled: !!organizationPermissions?.manageOrg } },
+  );
   $: planName = $subscriptionQuery?.data?.subscription?.plan?.name ?? "";
   $: showSlots =
     isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);

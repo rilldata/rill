@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/MicahParks/keyfunc"
-	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -77,7 +77,7 @@ func NewIssuer(issuerURL, signingKeyID string, jwksJSON []byte) (*Issuer, error)
 // NewEphemeralIssuer creates an Issuer using a generated JWKS.
 // It is useful for development and testing, but should not be used in production.
 func NewEphemeralIssuer(issuerURL string) (*Issuer, error) {
-	// NOTE: JWKS generation based on: https://github.com/go-jose/go-jose/blob/v3/jose-util/generate.go
+	// NOTE: JWKS generation based on: https://github.com/go-jose/go-jose/blob/v4/jose-util/generate.go
 
 	// Generate RSA private key
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)

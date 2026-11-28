@@ -1,13 +1,20 @@
 import { MAX_PIVOT_COMPARISON_MEASURES } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import {
   canEnablePivotComparison,
+  getSortForAccessor,
   sortAcessors,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotChipData,
+  PivotDataStoreConfig,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { SortingState } from "tanstack-table-8-svelte-5";
 import { describe, expect, it } from "vitest";
 
 describe("sortAcessors function", () => {
@@ -75,5 +82,133 @@ describe("canEnablePivotComparison", () => {
   it("is disabled without a comparison time range", () => {
     const state = stateWithColumns(chips(PivotChipType.Measure, 1));
     expect(canEnablePivotComparison(state, undefined)).toBe(false);
+  });
+});
+
+describe("getSortForAccessor", () => {
+  const timeRange = {
+    start: "2024-01-01T00:00:00Z",
+    end: "2024-02-01T00:00:00Z",
+  };
+  const columnDimensionAxes = { touched_by_name: ["alice", "bob"] };
+
+  function config(sorting: SortingState): PivotDataStoreConfig {
+    return {
+      measureNames: ["touches"],
+      rowDimensionNames: ["mutation_path"],
+      colDimensionNames: ["touched_by_name"],
+      allMeasures: [],
+      allDimensions: [],
+      whereFilter: createAndExpression([]),
+      pivot: {
+        rows: [],
+        columns: [],
+        sorting,
+        expanded: {},
+        columnPage: 1,
+        rowPage: 1,
+        enableComparison: true,
+        tableMode: "nest",
+        activeCell: null,
+        showTotalsColumn: true,
+        showTotalsRow: true,
+      },
+      time: {
+        timeStart: timeRange.start,
+        timeEnd: timeRange.end,
+        timeZone: "UTC",
+        timeDimension: "eventDate",
+      },
+      comparisonTime: undefined,
+      enableComparison: false,
+      searchText: undefined,
+      isFlat: false,
+    };
+  }
+
+  it("sorts the row axis by the anchor dimension", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "mutation_path", desc: true }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({
+      sortPivotBy: [{ name: "mutation_path", desc: true }],
+      timeRange,
+    });
+  });
+
+  it("sorts by a measure's row total", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "touches", desc: false }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({
+      sortPivotBy: [{ name: "touches", desc: false }],
+      timeRange,
+    });
+  });
+
+  it("sorts by a measure under one column value", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "c0v1m0", desc: true }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({
+      where: createAndExpression([
+        createInExpression("touched_by_name", ["bob"]),
+      ]),
+      sortPivotBy: [{ name: "touches", desc: true }],
+      timeRange,
+    });
+  });
+
+  // A sort outlives its field in the URL, bookmarks and reports; the time
+  // dimension's own name is the common case since its column is keyed by grain.
+  it("ignores a sort on a field that is not in the pivot", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "eventDate", desc: true }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({ sortPivotBy: [], timeRange });
+  });
+
+  it("ignores a sort on a row dimension that is not the anchor", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "touched_by_name", desc: true }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({ sortPivotBy: [], timeRange });
+  });
+
+  it("ignores a comparison sort while the comparison is off", () => {
+    expect(
+      getSortForAccessor(
+        "mutation_path",
+        config([{ id: "touches__delta_abs", desc: true }]),
+        columnDimensionAxes,
+      ),
+    ).toEqual({ sortPivotBy: [], timeRange });
+  });
+
+  it("ignores an accessor beyond the pivot's columns or measures", () => {
+    for (const id of ["c1v0m0", "c0v0m1"]) {
+      expect(
+        getSortForAccessor(
+          "mutation_path",
+          config([{ id, desc: true }]),
+          columnDimensionAxes,
+        ),
+      ).toEqual({ sortPivotBy: [], timeRange });
+    }
   });
 });

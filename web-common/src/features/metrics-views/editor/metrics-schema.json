@@ -211,6 +211,11 @@
       },
       "description": "Numeric aggregates of columns from your data model."
     },
+    "tag_order": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Display order of the tags set on dimensions and measures. Listed tags come first, in this order, followed by any other tags in the order they first appear. Each tag must be set on at least one dimension or measure."
+    },
     "parent_dimensions": {
       "type": "object",
       "description": "Dimensions to include from parent metrics view. It supports \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will inherit all dimensions from the parent metrics view.",

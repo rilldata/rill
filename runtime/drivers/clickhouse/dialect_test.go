@@ -37,6 +37,11 @@ func TestDateTruncExpr(t *testing.T) {
 		{name: "untyped column at day grain", dim: untypedCol, grain: runtimev1.TimeGrain_TIME_GRAIN_DAY, want: `date_trunc('day', "ts")::DateTime64`},
 		// Known DateTime columns are not wrapped in a cast.
 		{name: "timestamp column at hour grain", dim: timestampCol, grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: `date_trunc('hour', "ts")::DateTime64`},
+		// Multiples bucket with toStartOfInterval, which also rejects Date values at sub-day intervals.
+		{name: "date column at 10 minute grain", dim: dateCol, grain: runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE, want: `toStartOfInterval("d"::DateTime64, INTERVAL 10 minute)::DateTime64`},
+		{name: "untyped column at 6 hour grain", dim: untypedCol, grain: runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, want: `toStartOfInterval("ts"::DateTime64, INTERVAL 6 hour)::DateTime64`},
+		{name: "timestamp column at 6 hour grain", dim: timestampCol, grain: runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, want: `toStartOfInterval("ts", INTERVAL 6 hour)::DateTime64`},
+		{name: "date column at 6 hour grain in a time zone", dim: dateCol, grain: runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, tz: "America/New_York", want: `toStartOfInterval("d"::DateTime64(6, 'America/New_York'), INTERVAL 6 hour)::DateTime64(6, 'America/New_York')`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

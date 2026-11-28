@@ -29,7 +29,7 @@ tests:
       sql: "select * from all_datatypes_duckdb order by id"
     result_csv: |
       ID,BOOLEAN_COL,TINYINT_COL,SMALLINT_COL,INT32_COL,INT64_COL,NUMBER_COL,FLOAT_COL,DOUBLE_COL,DECIMAL_COL,STRING_COL,TEXT_COL,DATE_COL,TIMESTAMP_NTZ_COL,TIMESTAMP_LTZ_COL,TIMESTAMP_TZ_COL,VARIANT_COL,ARRAY_COL,OBJECT_COL,BINARY_COL,GEOGRAPHY_COL,GEOMETRY_COL
-      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,2025-03-26T03:35:51.195Z,2025-03-26T10:35:51.195Z,2025-03-26T10:35:51.195Z,"{
+      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,2026-11-15T21:49:55.647Z,2026-11-16T05:49:55.647Z,2026-11-16T05:49:55.647Z,"{
         ""key"": ""value""
       }","[
         1,
@@ -60,7 +60,7 @@ tests:
         ],
         ""type"": ""LineString""
       }"
-      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,2025-03-26T03:35:51.195Z,2025-03-26T10:35:51.195Z,2025-03-26T10:35:51.195Z,{},[],{},,"{
+      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,2026-11-15T21:49:55.647Z,2026-11-16T05:49:55.647Z,2026-11-16T05:49:55.647Z,{},[],{},,"{
         ""coordinates"": [
           0,
           0
@@ -109,8 +109,8 @@ tests:
       sql: "select * from all_datatypes_clickhouse order by ID"
     result_csv: |
       ID,BOOLEAN_COL,TINYINT_COL,SMALLINT_COL,INT32_COL,INT64_COL,NUMBER_COL,FLOAT_COL,DOUBLE_COL,DECIMAL_COL,STRING_COL,TEXT_COL,DATE_COL,TIME_COL,TIMESTAMP_NTZ_COL,VARIANT_COL,ARRAY_COL,OBJECT_COL,BINARY_COL,GEOGRAPHY_COL,GEOMETRY_COL
-      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,1970-01-01T14:30:00Z,2025-03-26T03:35:51.195Z,"{""key"":""value""}","[1,2,3]","{""city"":""New York""}",Hello,"{""coordinates"":[-122.4194,37.7749],""type"":""Point""}","{""coordinates"":[[0.000000000000000e+00,0.000000000000000e+00],[1.000000000000000e+00,1.000000000000000e+00],[2.000000000000000e+00,2.000000000000000e+00]],""type"":""LineString""}"
-      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,1970-01-01T00:00:00Z,2025-03-26T03:35:51.195Z,{},[],{},,"{""coordinates"":[0,0],""type"":""Point""}","{""coordinates"":[0.000000000000000e+00,0.000000000000000e+00],""type"":""Point""}"
+      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,1970-01-01T14:30:00Z,2026-11-15T21:49:55.647Z,"{""key"":""value""}","[1,2,3]","{""city"":""New York""}",Hello,"{""coordinates"":[-122.4194,37.7749],""type"":""Point""}","{""coordinates"":[[0.000000000000000e+00,0.000000000000000e+00],[1.000000000000000e+00,1.000000000000000e+00],[2.000000000000000e+00,2.000000000000000e+00]],""type"":""LineString""}"
+      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,1970-01-01T00:00:00Z,2026-11-15T21:49:55.647Z,{},[],{},,"{""coordinates"":[0,0],""type"":""Point""}","{""coordinates"":[0.000000000000000e+00,0.000000000000000e+00],""type"":""Point""}"
       3,,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_clickhouse
     resolver: sql
@@ -120,7 +120,7 @@ tests:
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
     result_csv: |
       name,type
-      ID,"Nullable(Decimal(38, 0))"
+      ID,"Decimal(38, 0)"
       BOOLEAN_COL,Nullable(Bool)
       TINYINT_COL,"Nullable(Decimal(38, 0))"
       SMALLINT_COL,"Nullable(Decimal(38, 0))"
@@ -133,7 +133,7 @@ tests:
       STRING_COL,Nullable(String)
       TEXT_COL,Nullable(String)
       DATE_COL,Nullable(Date32)
-      TIME_COL,Nullable(DateTime64(3))
+      TIME_COL,"Nullable(DateTime64(3, 'UTC'))"
       TIMESTAMP_NTZ_COL,"Nullable(DateTime64(3, 'UTC'))"
       VARIANT_COL,Nullable(String)
       ARRAY_COL,Nullable(String)

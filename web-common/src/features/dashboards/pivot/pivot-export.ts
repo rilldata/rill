@@ -1,10 +1,11 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { convertTimeManagerRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
+  type MetricsViewSpecMeasure,
+  type V1MetricsViewAggregationConditionalFormat,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Query,
@@ -14,8 +15,9 @@ import { get } from "svelte/store";
 import { requestExactNames } from "../exact-measures/exact-measures";
 import { exploreExactSurface } from "../exact-measures/explore-surfaces";
 import type { StateManagers } from "../state-managers/state-managers";
+import { toExportConditionalFormats } from "./pivot-conditional-formatting";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasuresForRequest } from "./pivot-utils";
+import { pivotShowsData, prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -27,34 +29,32 @@ import {
 export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewName = get(ctx.metricsViewName);
   const validSpecStore = get(ctx.validSpecStore);
-  const timeControlState = get(useTimeControlStore(ctx));
+  const timeFilterManager = ctx.timeFilterManager;
   const exploreState = get(ctx.dashboardStore);
   const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
+  // Read from the dashboard: the pivot config reports a nested table while the time range summary refetches.
+  const isFlat = get(ctx.selectors.pivot.isFlat);
 
-  if (!validSpecStore.data?.explore || !timeControlState.ready)
+  if (!validSpecStore.data?.explore || !timeFilterManager.ready)
     return undefined;
 
+  if (!canExportPivot(rows, columns, isFlat)) return undefined;
+
   const enableComparison = configStore.enableComparison;
-  const isFlat = configStore.isFlat;
   const comparisonTime = configStore.comparisonTime;
   const pivotState = configStore.pivot;
 
   const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
-  const exploreSpec = validSpecStore.data?.explore ?? {};
 
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState.selectedTimeRange,
-      exploreState.selectedTimezone,
-      exploreSpec,
-    );
+    timeRange = convertTimeManagerRangeToV1TimeRange(timeFilterManager);
   } else {
     timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
+      start: timeFilterManager.timeStart,
+      end: timeFilterManager.timeEnd,
     };
   }
 
@@ -91,10 +91,51 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       isFlat,
       pivotState,
       exactMeasures,
+      conditionalFormats: getPivotExportConditionalFormats(
+        pivotState,
+        columns.measure,
+        metricsViewSpec.measures ?? [],
+      ),
     }),
   };
 
   return query;
+}
+
+// Whether the pivot's fields show data to export, under the same rule as the pivot's empty state.
+// An export without such fields fails in the runtime and the browser lands on the raw error,
+// and column dimensions without a measure export bare counts.
+// A pivot whose filters match no rows stays exportable, so a scheduled report over a rolling range keeps working.
+export function canExportPivot(
+  rows: PivotChipData[],
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
+  isFlat: boolean,
+): boolean {
+  return pivotShowsData({
+    rowDimensions: isFlat ? columns.dimension.length : rows.length,
+    columnDimensions: isFlat ? 0 : columns.dimension.length,
+    measures: columns.measure.length,
+  });
+}
+
+// The conditional formats of the pivot's measures, which Excel exports keep.
+// They are resolved from the active theme when the export is made, so a
+// scheduled report keeps the colors of the theme it was created with.
+export function getPivotExportConditionalFormats(
+  pivotState: PivotState,
+  measureChips: PivotChipData[],
+  measureSpecs: MetricsViewSpecMeasure[],
+): V1MetricsViewAggregationConditionalFormat[] {
+  return measureChips.flatMap(({ id }) => {
+    const fmt = pivotState.measureFormatting?.[id];
+    if (!fmt) return [];
+    const lowerIsBetter =
+      measureSpecs.find((m) => m.name === id)?.lowerIsBetter ?? false;
+    return toExportConditionalFormats(fmt, lowerIsBetter).map((format) => ({
+      measure: id,
+      format,
+    }));
+  });
 }
 
 export function getPivotAggregationRequest({
@@ -110,6 +151,7 @@ export function getPivotAggregationRequest({
   isFlat,
   pivotState,
   exactMeasures,
+  conditionalFormats,
 }: {
   instanceId: string;
   metricsViewName: string;
@@ -124,6 +166,8 @@ export function getPivotAggregationRequest({
   pivotState: PivotState;
   // Measures to request with `exact: true`; see `requestExactNames`.
   exactMeasures?: string[];
+  // Colors for the measures' cells in Excel exports.
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
 }): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
@@ -179,18 +223,32 @@ export function getPivotAggregationRequest({
   let sort: V1MetricsViewAggregationSort[] = [];
 
   if (isFlat) {
-    if (pivotState.sorting.length > 0) {
+    // A flat table's sort id is a measure name or a dimension's request
+    // alias or name. A sort on a field the request does not carry (its
+    // chip was removed, or its comparison column is off) falls back to the
+    // default sort, since the runtime rejects names it cannot resolve.
+    const requestFields = new Set([
+      ...measures.map((m) => m.name),
+      ...allDimensions.map((d) => d.alias ?? d.name),
+    ]);
+    const sortConfig = pivotState.sorting[0];
+    if (sortConfig && requestFields.has(sortConfig.id)) {
       sort = [
         {
-          name: pivotState.sorting[0].id,
-          desc: pivotState.sorting[0].desc,
+          name: sortConfig.id,
+          desc: sortConfig.desc,
         },
       ];
     } else {
+      // Without a measure, sort by the first dimension's request alias:
+      // a time column is selected as `<time>_rill_<grain>`, not by its name.
       sort = [
         {
           desc: measures?.[0] ? true : false,
-          name: measures?.[0]?.name || allDimensions?.[0]?.name,
+          name:
+            measures?.[0]?.name ||
+            allDimensions?.[0]?.alias ||
+            allDimensions?.[0]?.name,
         },
       ];
     }
@@ -219,5 +277,6 @@ export function getPivotAggregationRequest({
     pivotOn,
     sort,
     offset: "0",
+    ...(conditionalFormats?.length && { conditionalFormats }),
   };
 }

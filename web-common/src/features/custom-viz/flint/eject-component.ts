@@ -9,7 +9,7 @@ import {
   type ComponentParamType,
 } from "@rilldata/web-common/features/custom-viz/params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 import {
   V1TimeGrain,
   type V1ComponentParam,
@@ -72,7 +72,7 @@ export async function ejectComponent(
     resolver: "metrics_sql",
     resolverProperties: {
       sql: metricsSQL,
-      additional_time_grain: V1TimeGrainToDateTimeUnit[EJECT_TIME_GRAIN],
+      additional_time_grain: V1TimeGrainToToken[EJECT_TIME_GRAIN],
     } as unknown as PartialMessage<Struct>,
   });
   const rows = (data.data ?? []) as Record<string, unknown>[];

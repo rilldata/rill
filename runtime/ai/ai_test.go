@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -181,4 +182,23 @@ func newRecordingAIMessages(msg *aiv1.CompletionMessage) []recordingAIMessage {
 	}
 
 	return res
+}
+
+func TestMessagesWithChildrenSkipsCallsWithoutResults(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
+	s := newSession(t, rt, instanceID)
+
+	// A previous analyst turn whose second tool call was cancelled before producing a result.
+	agentCall := s.AddMessage(&ai.AddMessageOptions{Role: ai.RoleUser, Type: ai.MessageTypeCall, Tool: ai.AnalystAgentName, ContentType: ai.MessageContentTypeJSON, Content: "{}"})
+	as := s.WithParent(agentCall.ID)
+	doneCall := as.AddMessage(&ai.AddMessageOptions{Role: ai.RoleAssistant, Type: ai.MessageTypeCall, Tool: ai.ListMetricsViewsName, ContentType: ai.MessageContentTypeJSON, Content: "{}"})
+	doneResult := as.WithParent(doneCall.ID).AddMessage(&ai.AddMessageOptions{Role: ai.RoleAssistant, Type: ai.MessageTypeResult, Tool: ai.ListMetricsViewsName, ContentType: ai.MessageContentTypeJSON, Content: "{}"})
+	as.AddMessage(&ai.AddMessageOptions{Role: ai.RoleAssistant, Type: ai.MessageTypeCall, Tool: ai.ListMetricsViewsName, ContentType: ai.MessageContentTypeJSON, Content: "{}"})
+
+	msgs := s.MessagesWithChildren(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.AnalystAgentName))
+	var ids []string
+	for _, m := range msgs {
+		ids = append(ids, m.ID)
+	}
+	require.Equal(t, []string{agentCall.ID, doneCall.ID, doneResult.ID}, ids)
 }

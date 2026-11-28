@@ -10,6 +10,8 @@ import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-view
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { toStore, type Readable } from "svelte/store";
+import { SvelteMap } from "svelte/reactivity";
+import { untrack } from "svelte";
 import {
   type DimensionOrMeasureManager,
   JoinerFilterManager,
@@ -20,8 +22,12 @@ import type {
   FilterChangeSource,
   FilterEvents,
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
-import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
+import {
+  mergeFilterParams,
+  narrowSingleSelectFilterParam,
+} from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
+import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
 import {
   UrlParamsChangeTracker,
   type UrlParamsStore,
@@ -43,6 +49,12 @@ export class ExpressionFilterManager implements UrlParamsStore {
   public exprByMetricsViewStore: Readable<Record<string, V1Expression>>;
   public inList: string[];
   public hasSomeFilter: boolean;
+  // Names of the required filters that have no value yet.
+  // A dashboard is not shown until every one has a value,
+  // so that it is never seen aggregated across the values of a required filter.
+  public missingRequiredFilters: string[];
+  // Temporary svelte4 store for legacy components
+  public missingRequiredFiltersStore: Readable<string[]>;
 
   // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
   public temporaryFilterName: string | undefined = $state(undefined);
@@ -53,6 +65,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     dimensions: DimensionFilterManager[];
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
+  // Exclude mode of a dimension, keyed by dimension name, kept while its filter has no values.
+  // Only dimensions registered through `keepExcludeModeWhileEmpty` are tracked.
+  private readonly pendingExcludes = new SvelteMap<string, boolean>();
 
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
@@ -101,9 +116,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events.emit("ready");
     });
     // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
-    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
-      this.topLevelJoiner.addRequiredAndPinnedFilters(),
-    );
+    const unsubYamlConfig = yamlConfigProvider.on("update", () => {
+      this.topLevelJoiner.addRequiredAndPinnedFilters();
+      this.topLevelJoiner.enforceSingleSelectFilters();
+      this.applyPendingExcludes();
+    });
     this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
     this.topLevelJoiner = $state(
@@ -116,6 +133,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
       ) as JoinerFilterManager,
     );
     this.on("filter-changed", () => {
+      // A chip edits its manager directly, so this is where a mode chosen in the filter bar is seen.
+      this.syncPendingExcludes();
       this.topLevelJoiner?.removeEmptyManagers();
       this.storeSync.stateChanged();
     });
@@ -144,6 +163,16 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
+    this.missingRequiredFilters = $derived(
+      getMissingRequiredFilters(
+        this,
+        this.metricsViewsProvider,
+        this.yamlConfigProvider,
+      ),
+    );
+    this.missingRequiredFiltersStore = toStore(
+      () => this.missingRequiredFilters,
+    );
   }
 
   public clone() {
@@ -169,7 +198,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   /**
-   * Folds the legacy singular `f` param into a param per metrics view.
+   * Folds the legacy singular `f` param into a param per metrics view,
+   * then narrows the single-select filters to the one value each can hold.
    *
    * A metrics view that already has a param of its own keeps it, since that is the newer state:
    * an embed host passes the singular param, and the dashboard then writes per metrics view params
@@ -178,14 +208,43 @@ export class ExpressionFilterManager implements UrlParamsStore {
    */
   public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
     const singularParam = urlParams.get(ExploreStateURLParams.Filters);
-    if (!singularParam || this.singleParamFormMv) return urlParams;
+    if (!singularParam || this.singleParamFormMv) {
+      return this.narrowSingleSelectParams(urlParams);
+    }
 
     const newUrlParams = new URLSearchParams();
     this.metricsViewsProvider.metricsViewNames.forEach((mvName) => {
       const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
       newUrlParams.set(paramKey, urlParams.get(paramKey) ?? singularParam);
     });
-    return newUrlParams;
+    return this.narrowSingleSelectParams(newUrlParams);
+  }
+
+  /**
+   * A url or bookmark can hold several values for a single-select filter, so the params are
+   * narrowed the way the chip narrows its value. See `narrowSingleSelectFilters`.
+   * A filter that only becomes single-select once the config loads is narrowed by `enforceSingleSelectFilters`.
+   */
+  private narrowSingleSelectParams(urlParams: URLSearchParams) {
+    if (!Object.keys(this.yamlConfigProvider.singleSelectFilters).length) {
+      return urlParams;
+    }
+
+    let narrowedParams: URLSearchParams | undefined;
+    for (const [key, param] of urlParams) {
+      const narrowedParam = narrowSingleSelectFilterParam(param, (name) =>
+        this.yamlConfigProvider.isSingleSelectFilter(name),
+      );
+      if (narrowedParam === undefined) continue;
+
+      narrowedParams ??= new URLSearchParams(urlParams);
+      if (narrowedParam) {
+        narrowedParams.set(key, narrowedParam);
+      } else {
+        narrowedParams.delete(key);
+      }
+    }
+    return narrowedParams ?? urlParams;
   }
 
   public setUrlParams(searchParams: URLSearchParams) {
@@ -200,6 +259,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
+    // Empty pinned and required filters are rebuilt here, so they take the mode back first.
+    this.applyPendingExcludes();
+    this.syncPendingExcludes();
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
@@ -248,10 +310,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
       const dfm = DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
       if (!dfm) return;
 
+      this.applyPendingExclude(dfm);
       this.topLevelJoiner.maybeAddDimensionFilter(dfm);
       this.temporaryFilterName = name;
     } else if (this.metricsViewsProvider.measureSpecs[name]) {
@@ -267,10 +330,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     }
   }
 
-  // TODO: add return type based on callback type?
-  public dimensionFilterAction(
+  public dimensionFilterAction<T>(
     name: string,
-    callback: (dimensionFilterManager: DimensionFilterManager) => any,
+    callback: (dimensionFilterManager: DimensionFilterManager) => T,
     // Anything other than the filter bar reaches the managers through here,
     // so this is where a caller names itself as the cause of the change.
     source?: FilterChangeSource,
@@ -280,9 +342,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
       DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
-        { events: this.events },
+        { events: this.events, yamlConfigProvider: this.yamlConfigProvider },
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
+
+    this.applyPendingExclude(dimensionFilterManager);
 
     const ret = dimensionFilterManager.runWithSource(source, () =>
       callback(dimensionFilterManager),
@@ -291,7 +355,70 @@ export class ExpressionFilterManager implements UrlParamsStore {
     if (dimensionFilterManager.expr) {
       this.topLevelJoiner.maybeAddDimensionFilter(dimensionFilterManager);
     }
+    // A new manager left out of the filter is never seen by `syncPendingExcludes`, so its mode is kept here.
+    if (this.pendingExcludes.has(name)) {
+      this.pendingExcludes.set(name, dimensionFilterManager.exclude);
+    }
     return ret;
+  }
+
+  /**
+   * Whether the filter on dimension `name` excludes its values.
+   * Falls back to the pending exclude mode while the dimension has no filter manager.
+   */
+  public isDimensionExcluded(name: string) {
+    const manager = this.filterManagersMap[name];
+    if (manager) {
+      return manager instanceof DimensionFilterManager && manager.exclude;
+    }
+    return !!this.pendingExcludes.get(name);
+  }
+
+  /**
+   * Keeps the exclude mode of dimension `name` while its filter has no values,
+   * so toggling exclude before selecting a value is not lost.
+   * Used by views with an exclude toggle, the dimension table for example.
+   * Returns a function that stops tracking and forgets the mode.
+   */
+  public keepExcludeModeWhileEmpty(name: string) {
+    this.pendingExcludes.set(name, false);
+    return () => {
+      this.pendingExcludes.delete(name);
+    };
+  }
+
+  /** Starts an empty manager from the exclude mode kept for its dimension. */
+  private applyPendingExclude(dimensionFilterManager: DimensionFilterManager) {
+    if (
+      !dimensionFilterManager.expr &&
+      untrack(() => this.pendingExcludes.get(dimensionFilterManager.name))
+    ) {
+      dimensionFilterManager.exclude = true;
+    }
+  }
+
+  private applyPendingExcludes() {
+    // Untracked so that callers running inside an effect don't start depending on these maps.
+    untrack(() => {
+      for (const name of this.pendingExcludes.keys()) {
+        const manager = this.filterManagersMap[name];
+        if (manager instanceof DimensionFilterManager) {
+          this.applyPendingExclude(manager);
+        }
+      }
+    });
+  }
+
+  private syncPendingExcludes() {
+    // Untracked so that callers running inside an effect don't start depending on these maps.
+    untrack(() => {
+      for (const name of this.pendingExcludes.keys()) {
+        const manager = this.filterManagersMap[name];
+        if (manager instanceof DimensionFilterManager) {
+          this.pendingExcludes.set(name, manager.exclude);
+        }
+      }
+    });
   }
 
   public measureFilterAction(
@@ -320,6 +447,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public clear() {
     this.temporaryFilterName = undefined;
+    for (const name of this.pendingExcludes.keys()) {
+      this.pendingExcludes.set(name, false);
+    }
     // `setUrlParams` is the only other writer of this flag,
     // and the navigation after a clear skips it because the params already match the cleared state.
     this.isComplexFilter = false;
@@ -346,11 +476,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return exprs.length === 0 ? undefined : createAndExpression(exprs);
   }
 
-  public createLocalFilterStore(metricsViewName: string) {
+  /**
+   * A manager scoped to the metrics views of `metricsViewsProvider`, sharing this manager's yaml config.
+   * The caller owns the provider, and cleans it up.
+   */
+  public createLocalFilterStore(metricsViewsProvider: MetricsViewsProvider) {
     return new ExpressionFilterManager(
-      new MetricsViewsProvider(this.metricsViewsProvider.runtimeClient, [
-        metricsViewName,
-      ]),
+      metricsViewsProvider,
       this.yamlConfigProvider,
     );
   }

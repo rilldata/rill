@@ -16,7 +16,7 @@
     type V1Expression,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { metricsSQLFilterProperties } from "../custom/expression-utils";
@@ -26,6 +26,7 @@
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onDestroy, tick } from "svelte";
@@ -63,6 +64,11 @@
    */
   export let onFixError:
     | ((error: string, metricsSQL?: string) => void)
+    | undefined = undefined;
+  // Reports the rows and schema of the query once it has loaded (undefined until then),
+  // for the canvas exports.
+  export let onResults:
+    | ((results: CustomChartExportResult[] | undefined) => void)
     | undefined = undefined;
 
   $: viewOptions = [m.canvas_chart(), m.component_preview_data()];
@@ -110,7 +116,7 @@
         // the dashboard's time controls rather than one per raw timestamp. A component that writes
         // its own date_trunc keeps that bucket instead.
         ...(timeGrain && timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-          ? { additional_time_grain: V1TimeGrainToDateTimeUnit[timeGrain] }
+          ? { additional_time_grain: V1TimeGrainToToken[timeGrain] }
           : {}),
         // The time zone rides on the time range, which the resolver reads as a filter only; the
         // grain needs it as well, or the buckets are cut on UTC boundaries.
@@ -146,6 +152,10 @@
     type: field.type?.code,
   })) as VirtualizedTableColumns[];
 
+  $: onResults?.(
+    $dataQuery.isSuccess ? [{ data: rows, schema: tableColumns }] : undefined,
+  );
+
   // Measures present in the result, so their Rill formatters can be registered and referenced.
   $: ({ fields, measures } = deriveResultFields(
     columns,
@@ -153,17 +163,23 @@
     timeGrain,
   ));
 
-  $: expressionFunctions = measures.reduce<
-    Record<string, { fn: (val: number) => string }>
-  >((acc, measure) => {
-    const fieldName = sanitizeFieldName(measure.name as string);
-    const formatter = createMeasureValueFormatter<null | undefined>(measure);
-    return {
-      ...acc,
-      // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
-      [fieldName]: { fn: (val: number) => formatter(val) ?? String(val) },
-    };
-  }, {});
+  $: measureFormatters = Object.fromEntries(
+    measures.map((measure) => {
+      const formatter = createMeasureValueFormatter<null | undefined>(measure);
+      return [
+        measure.name as string,
+        // The formatter returns null/undefined for values it cannot handle; fall back to the raw value.
+        (val: number) => formatter(val) ?? String(val),
+      ];
+    }),
+  );
+
+  $: expressionFunctions = Object.fromEntries(
+    Object.entries(measureFormatters).map(([measure, fn]) => [
+      sanitizeFieldName(measure),
+      { fn },
+    ]),
+  );
 
   $: ejected = parseVegaSpec(vegaSpec);
 
@@ -179,6 +195,7 @@
               ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
+          measureFormatters,
         })
       : null;
 

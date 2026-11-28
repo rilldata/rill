@@ -45,7 +45,8 @@ export const FILTER_BAR_ROW_INDEX = -1;
 // and size in the canvas content area, measured in CSS pixels.
 export interface CapturedBlock {
   id: string;
-  dataUrl: string;
+  // Undefined when the block's capture failed; the PDF then shows a note in its place.
+  dataUrl?: string;
   // Position relative to the content area's top-left, in CSS pixels.
   xPx: number;
   yPx: number;

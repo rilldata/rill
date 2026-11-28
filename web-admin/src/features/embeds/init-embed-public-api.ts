@@ -9,7 +9,7 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { get } from "svelte/store";
+import { derived, get, readable } from "svelte/store";
 import {
   emitNotification,
   registerRPCMethod,
@@ -36,7 +36,7 @@ type SetValidStateParams = {
 type NavigateParams =
   | {
       type: "page";
-      name: "home" | "reports";
+      name: "home" | "reports" | "alerts";
     }
   | {
       type: "explore";
@@ -206,6 +206,32 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     return true;
   });
 
+  // `ready` tells the host it can send its state.
+  // An explore applies its initial state when it loads, which would overwrite a state sent before that,
+  // so on an explore `ready` waits until the explore has loaded, or has failed to load.
+  const readyToSend = derived(
+    [page, embedStore?.exploreLoaded ?? readable(true)],
+    ([{ route, params }, exploreLoaded]) =>
+      exploreLoaded ||
+      getDashboardFromEmbedRoute(route.id, params)?.kind !==
+        ResourceKind.Explore,
+  );
+  let stopNotifications: (() => void) | undefined;
+  const unsubscribeReady = readyToSend.subscribe((ready) => {
+    if (ready && !stopNotifications) stopNotifications = startNotifications();
+  });
+
+  return () => {
+    unsubscribeReady();
+    stopNotifications?.();
+  };
+}
+
+/**
+ * Sends the `ready` notification and starts the notifications that follow it.
+ * Returns a function that stops them.
+ */
+function startNotifications(): () => void {
   emitNotification("ready");
 
   const stateChangeThrottler = new Throttler(
@@ -278,6 +304,8 @@ const EmbedParams = [
   "theme_mode",
   "user_email",
   "external_user_id",
+  "open_kind",
+  "open_name",
   "open_report",
   "open_execution_time",
 ];

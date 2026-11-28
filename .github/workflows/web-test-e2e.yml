@@ -85,13 +85,16 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
 
+      - name: Cache map boundaries
+        uses: ./.github/actions/map-boundaries-cache
+
       - name: NPM Install
         run: npm ci
 
       - name: Set up go for E2E
         uses: actions/setup-go@v5
         with:
-          go-version: 1.26.5
+          go-version: 1.26.10
 
       - name: Build and embed static UI
         if: matrix.name != 'web-admin'

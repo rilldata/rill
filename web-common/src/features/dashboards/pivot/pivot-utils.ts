@@ -35,6 +35,7 @@ import {
 } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import { canSortPivotBy } from "./pivot-sorting";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import {
   applyExactMeasures,
@@ -157,6 +158,22 @@ export function getTimeForQuery(
   });
 
   return { start: timeStart, end: timeEnd };
+}
+
+/**
+ * Time filter spanning the given buckets of a time dimension,
+ * from the first bucket through the end of the last one.
+ */
+export function getTimeFilterSpanningValues(
+  dimension: string,
+  values: string[],
+): TimeFilters {
+  const dates = values.map((d) => new Date(d).getTime());
+  return {
+    timeStart: new Date(Math.min(...dates)).toISOString(),
+    timeEnd: new Date(Math.max(...dates)).toISOString(),
+    interval: getTimeGrainFromDimension(dimension),
+  };
 }
 
 /**
@@ -451,8 +468,11 @@ export function getSortForAccessor(
     end: config.time.timeEnd,
   };
 
-  // Return un-changed filter if no sorting is applied or in flat mode
-  if (config.pivot?.sorting?.length === 0 || config.isFlat) {
+  const sorting = config.pivot?.sorting?.[0];
+  // No sort to apply for a flat table (its cell query sorts) or when the
+  // sort's field is no longer in the pivot: a sort outlives its field in
+  // URLs, bookmarks and reports, and the runtime rejects unknown names.
+  if (!sorting || config.isFlat || !canSortPivotBy(sorting.id, config)) {
     return {
       sortPivotBy,
       timeRange: defaultTimeRange,
@@ -460,14 +480,14 @@ export function getSortForAccessor(
   }
 
   const { rowDimensionNames, measureNames } = config;
-  const accessor = config.pivot.sorting[0].id;
+  const accessor = sorting.id;
 
   // For the first column, the accessor is the row dimension name
   const firstDimension = rowDimensionNames?.[0];
   if (firstDimension === accessor) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: anchorDimension,
       },
     ];
@@ -481,7 +501,7 @@ export function getSortForAccessor(
   if (measureNames.includes(accessor)) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: accessor,
       },
     ];
@@ -503,7 +523,7 @@ export function getSortForAccessor(
   if (measureName) {
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sorting.desc,
         name: measureName,
       },
     ];
@@ -609,6 +629,23 @@ export function canEnablePivotComparison(
   }
 
   return true;
+}
+
+/**
+ * Whether the pivot's fields show any data: a measure, or row dimensions without column dimensions.
+ * It takes the counts after a flat table's dimension columns are moved into rows, as `getPivotConfig` does.
+ */
+export function pivotShowsData({
+  rowDimensions,
+  columnDimensions,
+  measures,
+}: {
+  rowDimensions: number;
+  columnDimensions: number;
+  measures: number;
+}): boolean {
+  if (measures > 0) return true;
+  return rowDimensions > 0 && columnDimensions === 0;
 }
 
 export function getSortFilteredMeasureBody(

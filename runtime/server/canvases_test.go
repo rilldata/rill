@@ -3,13 +3,21 @@ package server_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
+	"net/http"
+	"net/http/httptest"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/canvas"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
@@ -933,10 +941,27 @@ rows:
       - kpi:
           metrics_view: orders
           measure: order_count
+- name: sales_story
+  if: '{{ has "sales" .user.groups }}'
+  rows:
+  - items:
+    - kpi:
+        metrics_view: orders
+        measure: order_count
+  - items:
+    - width: 6
+      kpi:
+        metrics_view: orders
+        measure: total_revenue
+    - width: 6
+      if: '{{ .user.admin }}'
+      table:
+        metrics_view: costs
+        columns: [cost_center, total_cost]
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 13, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 16, 0, 0)
 
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -954,8 +979,9 @@ rows:
 		})
 	}
 
-	// layout lists the components on each row (or "tabs:" and the visible tab names for a tab group), with their widths.
-	layout := func(rows []*runtimev1.CanvasRow) []string {
+	// layout lists the components on each row (or "tabs:" and the visible tab names for a tab group, or "container:" and the layout of its rows), with their widths.
+	var layout func(rows []*runtimev1.CanvasRow) []string
+	layout = func(rows []*runtimev1.CanvasRow) []string {
 		var res []string
 		for _, row := range rows {
 			if tg := row.GetTabGroup(); tg != nil {
@@ -964,6 +990,10 @@ rows:
 					line += " " + tab.Name
 				}
 				res = append(res, line)
+				continue
+			}
+			if c := row.GetContainer(); c != nil {
+				res = append(res, "container: "+strings.Join(layout(c.Rows), " | "))
 				continue
 			}
 			line := ""
@@ -991,6 +1021,7 @@ rows:
 	}
 
 	// Priya (finance) doesn't see the admin-only cost table; the margin KPI keeps its width, and the frontend widens it to fill the row.
+	// She doesn't see the sales container either, nor any of the components inside it.
 	res := resolve(viewerCtx(priya))
 	require.Equal(t, []string{"0-0(0)", "1-0(8)", "2-0(6) 2-1(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
 	require.Len(t, res.ResolvedComponents, 4)
@@ -1005,9 +1036,11 @@ rows:
 	require.Empty(t, cmp.Resource.GetComponent().Spec.ConditionExpression)
 	require.Empty(t, cmp.Resource.GetComponent().State.ValidSpec.ConditionExpression)
 
-	// Sam (sales) sees the Pipeline tab but not the finance row.
+	// Sam (sales) sees the Pipeline tab and the sales container, but not the finance row or the admin-only cost table in the container.
 	res = resolve(viewerCtx(sam))
-	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline", "container: c4-0-0(0) | c4-1-0(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Len(t, res.ResolvedComponents, 6)
+	require.NotContains(t, res.ReferencedMetricsViews, "costs")
 
 	// The embed tenant has no domain or groups; built-in attributes default, so their conditions are false rather than errors.
 	res = resolve(viewerCtx(tenant))
@@ -1020,19 +1053,26 @@ rows:
 	// Local development (open access) shows everything, conditions included.
 	res, err = srv.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1"})
 	require.NoError(t, err)
-	require.Len(t, res.ResolvedComponents, 7)
+	require.Len(t, res.ResolvedComponents, 10)
 	require.Len(t, canvas.Conditions(res.Canvas.GetCanvas().State.ValidSpec.Rows), 5)
 
 	// The visual editor gets the full canvas with its conditions, plus what's hidden from the caller.
-	editorCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
-		UserAttributes: priya,
-		Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.EditRepo},
-	})
-	res, err = srv.ResolveCanvas(editorCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
+	editorCtx := func(attrs map[string]any) context.Context {
+		return auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+			UserAttributes: attrs,
+			Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.EditRepo},
+		})
+	}
+	res, err = srv.ResolveCanvas(editorCtx(priya), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
 	require.NoError(t, err)
-	require.Len(t, res.ResolvedComponents, 7)
+	require.Len(t, res.ResolvedComponents, 10)
 	require.Len(t, canvas.Conditions(res.Canvas.GetCanvas().State.ValidSpec.Rows), 5)
-	require.Equal(t, []string{"rows.1.items.1", "rows.3.tabs.0", "rows.3.tabs.1"}, res.HiddenPaths)
+	require.Equal(t, []string{"rows.1.items.1", "rows.3.tabs.0", "rows.3.tabs.1", "rows.4"}, res.HiddenPaths)
+
+	// An editor in sales sees the container, so the content hidden inside it is listed by its path in the container.
+	res, err = srv.ResolveCanvas(editorCtx(sam), &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1", IncludeHidden: true})
+	require.NoError(t, err)
+	require.Equal(t, []string{"rows.1", "rows.3.tabs.1", "rows.4.rows.1.items.1"}, res.HiddenPaths)
 
 	// Other reads of the canvas resource are pruned the same way.
 	ctrl, err := rt.Controller(context.Background(), instanceID)
@@ -1043,7 +1083,7 @@ rows:
 	pruned, access, err := rt.ApplySecurityPolicy(context.Background(), instanceID, claims, canvasRes)
 	require.NoError(t, err)
 	require.True(t, access)
-	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline"}, layout(pruned.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "2-0(6) 2-1(6)", "tabs: pipeline", "container: c4-0-0(0) | c4-1-0(6)"}, layout(pruned.GetCanvas().State.ValidSpec.Rows))
 
 	// A hidden inline component can't be read directly.
 	_, err = srv.ResolveComponent(viewerCtx(priya), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-1-1"})
@@ -1051,12 +1091,18 @@ rows:
 	_, err = srv.ResolveComponent(viewerCtx(financeAdmin), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-1-1"})
 	require.NoError(t, err)
 
+	// Nor can a component in a hidden container, which inherits the container's condition even without one of its own.
+	_, err = srv.ResolveComponent(viewerCtx(priya), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-c4-0-0"})
+	require.ErrorContains(t, err, "does not have access")
+	_, err = srv.ResolveComponent(viewerCtx(sam), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "c1--component-c4-0-0"})
+	require.NoError(t, err)
+
 	// A public link created by Priya only grants what Priya can see on the canvas.
 	linkRules := []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
 		Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "c1"},
 	}}}}
 	link := auth.GetClaims(viewerCtx(priya, linkRules...), instanceID)
-	for name, want := range map[string]bool{"c1--component-1-0": true, "c1--component-1-1": false, "c1--component-g3-t0-0-0": false} {
+	for name, want := range map[string]bool{"c1--component-1-0": true, "c1--component-1-1": false, "c1--component-g3-t0-0-0": false, "c1--component-c4-0-0": false} {
 		cmp, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
 		require.NoError(t, err)
 		_, access, err := rt.ApplySecurityPolicy(context.Background(), instanceID, link, cmp)
@@ -1206,6 +1252,151 @@ rows:
 			require.Equal(t, tc.want, access, name.Name)
 		}
 	}
+}
+
+// TestResolveCanvasWhileNewVersionReconciles checks that viewers keep getting the last valid canvas while a publish that changes its layout reconciles.
+// The publish renames the canvas's position-named inline components and a metrics view,
+// and the canvas keeps its old valid spec until the model they depend on finishes.
+func TestResolveCanvasWhileNewVersionReconciles(t *testing.T) {
+	// The published model downloads its data from this server, which holds the request until released.
+	requested := make(chan struct{}, 1)
+	release := make(chan struct{})
+	releaseModel := sync.OnceFunc(func() { close(release) })
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case requested <- struct{}{}:
+		default:
+		}
+		<-release
+		fmt.Fprint(w, "country\nUS\n")
+	}))
+	t.Cleanup(srv.Close)
+
+	metricsView := `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.yaml": `
+type: model
+sql: SELECT 'US' AS country
+`,
+			"mv1.yaml": metricsView,
+			"mv2.yaml": metricsView,
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+  - kpi: {metrics_view: mv1, measure: count}
+- items:
+  - kpi: {metrics_view: mv2, measure: count}
+`,
+			"c2.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+  - kpi: {metrics_view: mv2, measure: count}
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 11, 0, 0)
+	t.Cleanup(releaseModel) // Runs before the instance closes, which waits for the model.
+
+	srvr, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	// resolve resolves a canvas for a viewer, or for the visual editor if the permissions allow editing.
+	resolve := func(canvas string, perms ...runtime.Permission) (*runtimev1.ResolveCanvasResponse, error) {
+		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{Permissions: perms})
+		editor := slices.Contains(perms, runtime.EditRepo)
+		return srvr.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: canvas, Unsafe: editor, IncludeHidden: editor})
+	}
+	items := func(res *runtimev1.ResolveCanvasResponse) [][]string {
+		var rows [][]string
+		for _, row := range res.Canvas.GetCanvas().State.ValidSpec.Rows {
+			var names []string
+			for _, item := range row.Items {
+				names = append(names, item.Component)
+			}
+			rows = append(rows, names)
+		}
+		return rows
+	}
+
+	// Publish a new layout of c1 that removes the second item of its first row, so the old c1--component-0-1 is deleted,
+	// rename mv2 to mv3, and change the model the metrics views depend on.
+	testruntime.DeleteFiles(t, rt, instanceID, "mv2.yaml")
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"m1.yaml": fmt.Sprintf(`
+type: model
+connector: https
+path: %s/data.csv
+`, srv.URL),
+		"mv3.yaml": metricsView,
+		"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+- items:
+  - kpi: {metrics_view: mv3, measure: count}
+`,
+		"c2.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi: {metrics_view: mv1, measure: count}
+  - kpi: {metrics_view: mv3, measure: count}
+`,
+	})
+	ctrl, err := rt.Controller(t.Context(), instanceID)
+	require.NoError(t, err)
+	require.NoError(t, ctrl.Reconcile(t.Context(), runtime.GlobalProjectParserName))
+	select {
+	case <-requested:
+	case <-time.After(time.Minute):
+		require.FailNow(t, "the model did not start reconciling")
+	}
+	require.Eventually(t, func() bool {
+		_, err := ctrl.Get(t.Context(), &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: "c1--component-0-1"}, false)
+		return errors.Is(err, drivers.ErrResourceNotFound)
+	}, 10*time.Second, 10*time.Millisecond)
+
+	// While the model reconciles, viewers get the old layout without the items that can't render:
+	// the deleted c1--component-0-1, and c1--component-1-0, whose valid spec still uses the renamed mv2.
+	res, err := resolve("c1", runtime.ReadAPI)
+	require.NoError(t, err)
+	require.Equal(t, [][]string{{"c1--component-0-0"}}, items(res))
+	require.Equal(t, []string{"c1--component-0-0"}, slices.Collect(maps.Keys(res.ResolvedComponents)))
+	require.Equal(t, []string{"mv1"}, slices.Collect(maps.Keys(res.ReferencedMetricsViews)))
+
+	// The editor maps items to their YAML paths by position, so it doesn't get a layout with items removed.
+	// It gets an error for the deleted component, and the paths of the items that use the renamed metrics view.
+	_, err = resolve("c1", runtime.ReadAPI, runtime.EditRepo)
+	require.ErrorContains(t, err, `component "c1--component-0-1" in valid spec not found`)
+	res, err = resolve("c2", runtime.ReadAPI, runtime.EditRepo)
+	require.NoError(t, err)
+	require.Equal(t, [][]string{{"c2--component-0-0", "c2--component-0-1"}}, items(res))
+	require.Equal(t, []string{"rows.0.items.1"}, res.HiddenPaths)
+
+	// Once the model finishes, the canvas serves the new layout.
+	releaseModel()
+	require.NoError(t, ctrl.WaitUntilIdle(t.Context(), false))
+	testruntime.RequireReconcileState(t, rt, instanceID, 10, 0, 0)
+	res, err = resolve("c1", runtime.ReadAPI)
+	require.NoError(t, err)
+	require.Equal(t, [][]string{{"c1--component-0-0"}, {"c1--component-1-0"}}, items(res))
+	require.ElementsMatch(t, []string{"mv1", "mv3"}, slices.Collect(maps.Keys(res.ReferencedMetricsViews)))
 }
 
 func TestResolveComponentWithParams(t *testing.T) {

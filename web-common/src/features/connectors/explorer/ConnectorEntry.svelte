@@ -1,7 +1,7 @@
 <script lang="ts">
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../../components/tag";
-  import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { AnalyzedConnector } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
@@ -9,7 +9,7 @@
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
-  export let connector: V1AnalyzedConnector;
+  export let connector: AnalyzedConnector;
   export let store: ConnectorExplorerStore;
 
   const client = useRuntimeClient();

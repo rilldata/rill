@@ -28,6 +28,18 @@ const colors = {
   },
 };
 
+/**
+ * Several legends on one side of the plot stand one above the other, each with the plot's width
+ * to wrap in (see `fitLegends`); side by side, the second ran off the chart.
+ * Vega-Lite passes Vega's legend `layout` through without typing it, hence the cast.
+ */
+const stackedLegends = {
+  layout: {
+    top: { direction: "vertical" },
+    bottom: { direction: "vertical" },
+  },
+} as object;
+
 export interface RillThemeOptions {
   /**
    * Font family for axis labels and titles, legends and text marks.
@@ -150,6 +162,9 @@ export const getRillTheme: (
     title: { color: axisLabelColor, font: axisFont },
     legend: {
       orient: "top",
+      // Vega's 18px between a legend and the plot reads as a gap of its own in a small widget.
+      offset: 10,
+      ...stackedLegends,
       ...(options?.fontFamily && {
         labelFont: options.fontFamily,
         titleFont: options.fontFamily,

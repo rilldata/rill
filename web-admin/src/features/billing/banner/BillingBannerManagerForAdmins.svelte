@@ -30,6 +30,7 @@
       message: {
         type: message.type,
         message: [message.title, message.description].filter(Boolean).join(" "),
+        includesHtml: message.includesHtml,
         iconType: message.iconType,
         ...(message.cta
           ? {

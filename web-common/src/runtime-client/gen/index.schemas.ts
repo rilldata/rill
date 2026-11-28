@@ -19,33 +19,6 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   sqlName?: string;
 }
 
-export interface ConnectorDriverProperty {
-  key?: string;
-  type?: ConnectorDriverPropertyType;
-  required?: boolean;
-  displayName?: string;
-  description?: string;
-  docsUrl?: string;
-  hint?: string;
-  default?: string;
-  placeholder?: string;
-  secret?: boolean;
-  noPrompt?: boolean;
-}
-
-export type ConnectorDriverPropertyType =
-  (typeof ConnectorDriverPropertyType)[keyof typeof ConnectorDriverPropertyType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorDriverPropertyType = {
-  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_NUMBER: "TYPE_NUMBER",
-  TYPE_BOOLEAN: "TYPE_BOOLEAN",
-  TYPE_STRING: "TYPE_STRING",
-  TYPE_FILE: "TYPE_FILE",
-  TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
-} as const;
-
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
@@ -304,6 +277,8 @@ export interface V1AlertSpec {
   notifyOnRecover?: boolean;
   notifyOnFail?: boolean;
   notifyOnError?: boolean;
+  /** Maximum number of rows that matched the alert criteria to include in notifications for failed checks. */
+  notifyRowsLimit?: number;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   notifiers?: V1Notifier[];
@@ -345,39 +320,8 @@ export interface V1AnalystAgentContext {
   timeEnd?: string;
 }
 
-export interface V1AnalyzeConnectorsResponse {
-  connectors?: V1AnalyzedConnector[];
-}
-
 export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
-}
-
-export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
-
-export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
-
-export type V1AnalyzedConnectorProvisionArgs = { [key: string]: unknown };
-
-/**
- * AnalyzedConnector contains information about a connector that is referenced in the project files.
- */
-export interface V1AnalyzedConnector {
-  name?: string;
-  driver?: V1ConnectorDriver;
-  config?: V1AnalyzedConnectorConfig;
-  presetConfig?: V1AnalyzedConnectorPresetConfig;
-  projectConfig?: V1AnalyzedConnectorProjectConfig;
-  envConfig?: V1AnalyzedConnectorEnvConfig;
-  provision?: boolean;
-  provisionArgs?: V1AnalyzedConnectorProvisionArgs;
-  hasAnonymousAccess?: boolean;
-  usedBy?: V1ResourceName[];
-  errorMessage?: string;
 }
 
 export interface V1AnalyzedVariable {
@@ -478,16 +422,26 @@ Defaults to "group-<index>" if not provided in the canvas YAML. */
   tabs?: V1CanvasTab[];
 }
 
+export interface V1CanvasContainer {
+  /** Stable identifier of the container.
+Defaults to "container-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Rows in the container. These are always plain rows;
+a container never holds a tab group or another container. */
+  rows?: V1CanvasRow[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. Empty when the row is a tab group. */
+  /** Items to render in the row. Empty when the row is a tab group or a container. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  container?: V1CanvasContainer;
   /** Templated boolean expression from the row's `if` property.
-The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+The row (or tab group, or container) is only shown to viewers for whom it evaluates to true. */
   conditionExpression?: string;
 }
 
@@ -524,6 +478,9 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  /** Array of dimension names whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   annotations?: Record<string, string>;
   /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
   aiPrompts?: V1AIPrompt[];
@@ -723,43 +680,6 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: unknown };
-
-export type V1ConnectorProvisionArgs = { [key: string]: unknown };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
-  templatedProperties?: string[];
-  provision?: boolean;
-  provisionArgs?: V1ConnectorProvisionArgs;
-}
-
-/**
- * ConnectorDriver represents a connector driver available in the runtime.
- */
-export interface V1ConnectorDriver {
-  name?: string;
-  configProperties?: ConnectorDriverProperty[];
-  sourceProperties?: ConnectorDriverProperty[];
-  displayName?: string;
-  description?: string;
-  docsUrl?: string;
-  implementsRegistry?: boolean;
-  implementsCatalog?: boolean;
-  implementsRepo?: boolean;
-  implementsAdmin?: boolean;
-  implementsAi?: boolean;
-  implementsSqlStore?: boolean;
-  implementsOlap?: boolean;
-  implementsObjectStore?: boolean;
-  implementsFileStore?: boolean;
-  implementsNotifier?: boolean;
-  implementsWarehouse?: boolean;
-}
-
 export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
@@ -816,35 +736,6 @@ export interface V1ConvertExpressionToMetricsSQLResponse {
   sql?: string;
 }
 
-export interface V1CreateDirectoryResponse {
-  [key: string]: unknown;
-}
-
-export type V1CreateInstanceRequestVariables = { [key: string]: string };
-
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
-
-/**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  frontendUrl?: string;
-}
-
-export interface V1CreateInstanceResponse {
-  instance?: V1Instance;
-}
-
 export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
@@ -856,14 +747,6 @@ export interface V1DatabaseSchemaInfo {
 
 export interface V1DefaultMetricsSQLFilter {
   expression?: V1Expression;
-}
-
-export interface V1DeleteFileResponse {
-  [key: string]: unknown;
-}
-
-export interface V1DeleteInstanceResponse {
-  [key: string]: unknown;
 }
 
 /**
@@ -884,15 +767,6 @@ export interface V1UIAction {
   id?: string;
   /** Human-readable accessible label for the action. */
   label?: string;
-}
-
-export interface V1DirEntry {
-  path?: string;
-  isDir?: boolean;
-}
-
-export interface V1EditInstanceResponse {
-  instance?: V1Instance;
 }
 
 /**
@@ -1011,7 +885,17 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
+  /** Preset UI state to show by default.
+Its `where` holds the default filter, parsed from `defaults.filters`. */
   defaultPreset?: V1ExplorePreset;
+  /** Dimension or measure names whose filter chip is always shown in the filter bar. */
+  pinnedFilters?: string[];
+  /** Dimension or measure names that must have a filter value before the explore renders.
+Required filters are implicitly pinned. */
+  requiredFilters?: string[];
+  /** Dimensions whose filter holds at most one value at a time.
+Selecting a value replaces the current one, and the filter cannot exclude values or match on text. */
+  singleSelectFilters?: string[];
   /** If true, the pivot tab will be hidden when the explore is embedded. */
   embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
@@ -1058,6 +942,55 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
+
+export interface V1ExportCellRule {
+  operator?: V1ExportCellRuleOperator;
+  value?: number;
+  /** Upper bound of the between operator, inclusive. */
+  upperValue?: number;
+  fillColor?: string;
+  /** Optional. Leaves the text color as it is if empty. */
+  textColor?: string;
+}
+
+export type V1ExportCellRuleOperator =
+  (typeof V1ExportCellRuleOperator)[keyof typeof V1ExportCellRuleOperator];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportCellRuleOperator = {
+  EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED:
+    "EXPORT_CELL_RULE_OPERATOR_UNSPECIFIED",
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN:
+    "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN",
+  EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL:
+    "EXPORT_CELL_RULE_OPERATOR_GREATER_THAN_OR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN: "EXPORT_CELL_RULE_OPERATOR_LESS_THAN",
+  EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL:
+    "EXPORT_CELL_RULE_OPERATOR_LESS_THAN_OR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_EQUAL: "EXPORT_CELL_RULE_OPERATOR_EQUAL",
+  EXPORT_CELL_RULE_OPERATOR_BETWEEN: "EXPORT_CELL_RULE_OPERATOR_BETWEEN",
+} as const;
+
+export interface V1ExportColorScale {
+  minColor?: string;
+  /** Color of the midpoint between the lowest and the highest value. Optional; without it the scale has two colors. */
+  midColor?: string;
+  maxColor?: string;
+}
+
+/**
+ * Colors cells of an Excel export the way a pivot or table colors them on its dashboard.
+ * Set one of the fields. Colors are hex RGB strings like "#1a9850".
+ */
+export interface V1ExportConditionalFormat {
+  colorScale?: V1ExportColorScale;
+  dataBar?: V1ExportDataBar;
+  cellRule?: V1ExportCellRule;
+}
+
+export interface V1ExportDataBar {
+  color?: string;
+}
 
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
@@ -1231,15 +1164,6 @@ export interface V1GetExploreResponse {
   metricsView?: V1Resource;
 }
 
-export interface V1GetFileResponse {
-  blob?: string;
-  updatedOn?: string;
-}
-
-export interface V1GetInstanceResponse {
-  instance?: V1Instance;
-}
-
 export interface V1GetLogsResponse {
   logs?: V1Log[];
 }
@@ -1336,45 +1260,6 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export type V1InstanceVariables = { [key: string]: string };
-
-export type V1InstanceProjectVariables = { [key: string]: string };
-
-export type V1InstanceFeatureFlags = { [key: string]: boolean };
-
-export type V1InstanceAnnotations = { [key: string]: string };
-
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  projectDisplayName?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  featureFlags?: V1InstanceFeatureFlags;
-  annotations?: V1InstanceAnnotations;
-  aiInstructions?: string;
-  aiPrompts?: V1AIPrompt[];
-  frontendUrl?: string;
-  theme?: string;
-  embedOpenUrl?: string;
-}
-
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
 
 export interface V1InstanceHealth {
@@ -1415,10 +1300,6 @@ export interface V1ListBucketsResponse {
   buckets?: string[];
 }
 
-export interface V1ListConnectorDriversResponse {
-  connectors?: V1ConnectorDriver[];
-}
-
 export interface V1ListConversationsResponse {
   conversations?: V1Conversation[];
 }
@@ -1432,10 +1313,6 @@ export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
 
-export interface V1ListFilesResponse {
-  files?: V1DirEntry[];
-}
-
 export interface V1ListGitBranchesResponse {
   currentBranch?: string;
   branches?: V1GitBranch[];
@@ -1444,16 +1321,6 @@ export interface V1ListGitBranchesResponse {
 export interface V1ListGitCommitsResponse {
   commits?: V1GitCommit[];
   nextPageToken?: string;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
-export interface V1ListNotifierConnectorsResponse {
-  /** Note: In this list, the Connector.config property will always be empty. */
-  connectors?: V1Connector[];
 }
 
 export interface V1ListObjectsResponse {
@@ -1522,6 +1389,12 @@ export interface V1Message {
 export interface V1MetricsView {
   spec?: V1MetricsViewSpec;
   state?: V1MetricsViewState;
+}
+
+export interface V1MetricsViewAggregationConditionalFormat {
+  /** Name of the measure. Under pivot_on, the format spans all of the measure's columns. */
+  measure?: string;
+  format?: V1ExportConditionalFormat;
 }
 
 export interface V1MetricsViewAggregationDimension {
@@ -1608,6 +1481,8 @@ export interface V1MetricsViewAggregationRequest {
   havingSql?: string;
   limit?: string;
   offset?: string;
+  /** Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order. */
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
@@ -1822,10 +1697,15 @@ export interface V1MetricsViewSpec {
   aiInstructions?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
+  /** Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse. Empty means the standard grains at or above smallest_time_grain. */
+  timeGrains?: V1TimeGrain[];
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  /** Display order of the tags set on dimensions and measures.
+Dashboards list these tags first, in this order, followed by any other tags in the order they first appear on a dimension or measure. */
+  tagOrder?: string[];
   parentDimensions?: V1FieldSelector;
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];
@@ -2238,10 +2118,6 @@ export interface V1ProjectParserState {
   watching?: boolean;
 }
 
-export interface V1PutFileResponse {
-  filePath?: string;
-}
-
 export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
@@ -2337,10 +2213,6 @@ export interface V1RefreshTriggerState {
 }
 
 export interface V1ReloadConfigResponse {
-  [key: string]: unknown;
-}
-
-export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
 
@@ -2758,6 +2630,16 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
+  TIME_GRAIN_5_MINUTE: "TIME_GRAIN_5_MINUTE",
+  TIME_GRAIN_10_MINUTE: "TIME_GRAIN_10_MINUTE",
+  TIME_GRAIN_15_MINUTE: "TIME_GRAIN_15_MINUTE",
+  TIME_GRAIN_30_MINUTE: "TIME_GRAIN_30_MINUTE",
+  TIME_GRAIN_2_HOUR: "TIME_GRAIN_2_HOUR",
+  TIME_GRAIN_3_HOUR: "TIME_GRAIN_3_HOUR",
+  TIME_GRAIN_4_HOUR: "TIME_GRAIN_4_HOUR",
+  TIME_GRAIN_6_HOUR: "TIME_GRAIN_6_HOUR",
+  TIME_GRAIN_8_HOUR: "TIME_GRAIN_8_HOUR",
+  TIME_GRAIN_12_HOUR: "TIME_GRAIN_12_HOUR",
 } as const;
 
 export interface V1TimeRange {
@@ -2890,21 +2772,6 @@ export type RuntimeServiceGetInstanceParams = {
   sensitive?: boolean;
 };
 
-export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
-
-/**
- * Request message for RuntimeService.EditInstance.
-See message Instance for field descriptions.
- */
-export type RuntimeServiceEditInstanceBody = {
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-};
-
 export type RuntimeServiceCompleteBody = {
   /** Conversation ID to continue. If empty, a new conversation is created. */
   conversationId?: string;
@@ -2985,32 +2852,6 @@ export type ConnectorServiceListObjectsParams = {
   pageToken?: string;
 };
 
-export type RuntimeServiceListFilesParams = {
-  glob?: string;
-};
-
-export type RuntimeServiceCreateDirectoryBody = {
-  path?: string;
-};
-
-export type RuntimeServiceGetFileParams = {
-  path?: string;
-};
-
-export type RuntimeServiceDeleteFileParams = {
-  path?: string;
-  force?: boolean;
-};
-
-export type RuntimeServicePutFileBody = {
-  path?: string;
-  blob?: string;
-  create?: boolean;
-  /** Will cause the operation to fail if the file already exists.
-It should only be set when create = true. */
-  createOnly?: boolean;
-};
-
 export type RuntimeServiceGenerateCanvasFileBody = {
   /** Metrics view name to base the canvas on. */
   metricsViewName?: string;
@@ -3044,11 +2885,6 @@ Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
   /** Optional prompt to guide AI generation. */
   prompt?: string;
-};
-
-export type RuntimeServiceRenameFileBody = {
-  fromPath?: string;
-  toPath?: string;
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
@@ -3230,6 +3066,8 @@ export type QueryServiceMetricsViewAggregationBody = {
   havingSql?: string;
   limit?: string;
   offset?: string;
+  /** Optional. Conditional formats for the measures' cells when the result is exported to Excel, in priority order. */
+  conditionalFormats?: V1MetricsViewAggregationConditionalFormat[];
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;

@@ -60,6 +60,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 
 func (s *Server) GetBillingCreditBalance(ctx context.Context, req *adminv1.GetBillingCreditBalanceRequest) (*adminv1.GetBillingCreditBalanceResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.Bool("args.allow_cached", req.AllowCached))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -76,7 +77,9 @@ func (s *Server) GetBillingCreditBalance(ctx context.Context, req *adminv1.GetBi
 		return &adminv1.GetBillingCreditBalanceResponse{}, nil
 	}
 
-	balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+	balance, err := s.creditBalance.get(ctx, org.ID, req.AllowCached, func(ctx context.Context) (float64, error) {
+		return s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch credit balance: %w", err)
 	}
@@ -549,6 +552,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		DefaultProvisioner:                  org.DefaultProvisioner,
+		DisableProjectDomainAccess:          nil,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -786,6 +790,8 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.AmountUsd, billing.CreditsCurrency, description, nil); err != nil {
 		return nil, fmt.Errorf("failed to grant credits: %w", err)
 	}
+	// Drop the cached balance so the trial banner shows the new grant instead of the pre-grant balance.
+	s.creditBalance.invalidate(org.ID)
 
 	s.logger.Named("billing").Info("granted trial credits",
 		zap.String("org_id", org.ID),
@@ -1168,6 +1174,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		DefaultProvisioner:                  org.DefaultProvisioner,
+		DisableProjectDomainAccess:          nil,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -1262,6 +1269,7 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			DefaultProvisioner:                  org.DefaultProvisioner,
+			DisableProjectDomainAccess:          nil,
 			QuotaProjects:                       org.QuotaProjects,
 			QuotaDeployments:                    org.QuotaDeployments,
 			QuotaSlotsTotal:                     org.QuotaSlotsTotal,

@@ -72,6 +72,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			DefaultProvisioner:                  org.DefaultProvisioner,
+			DisableProjectDomainAccess:          nil,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,
 			QuotaSlotsTotal:                     0,
@@ -95,7 +96,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 		afterProjectName := ""
 		projectCount := 0
 		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, nil, afterProjectName, limit)
 			if err != nil {
 				return err
 			}

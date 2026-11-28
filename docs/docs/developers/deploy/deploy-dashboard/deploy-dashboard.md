@@ -176,6 +176,10 @@ Once completed, you will see the following in the settings page. Note that the G
 
 ![Cli Upload](/img/deploy/existing-project/cli-upload.png)
 
+:::tip Tag the project
+To label a new project, for example as `prod` or as a `sandbox` for review, pass `--tag` to `rill project deploy` or `rill project connect-github`. See [Project Tags](/guide/administration/project-settings/project-tags).
+:::
+
 
 
 ## Continuous Deployment 

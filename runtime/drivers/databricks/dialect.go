@@ -102,7 +102,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
@@ -125,6 +127,13 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 
 	var result string
 	switch {
+	case n > 1:
+		// Multiples floor the unit within its parent: minutes within the hour, hours within the day.
+		parent := "DAY"
+		if specifier == "MINUTE" {
+			parent = "HOUR"
+		}
+		result = fmt.Sprintf("DATEADD(%s, FLOOR(EXTRACT(%s FROM %s) / %d) * %d, DATE_TRUNC('%s', %s))", specifier, specifier, inner, n, n, parent, inner)
 	case grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1:
 		offset := 8 - firstDayOfWeek
 		result = fmt.Sprintf("DATEADD(DAY, -%d, DATE_TRUNC('%s', DATEADD(DAY, %d, %s)))", offset, specifier, offset, inner)
@@ -156,6 +165,8 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	startStr := start.Format(time.RFC3339)
 	endStr := end.Format(time.RFC3339)
 	tzStr := tz.String()
+	// Multiples such as TIME_GRAIN_10_MINUTE step by their base unit times the multiple.
+	unit, n := timeutil.TimeGrainBase(grain)
 	// Databricks SEQUENCE does not support INTERVAL 1 QUARTER or INTERVAL 1 WEEK;
 	// convert to the equivalent MONTH/DAY intervals.
 	var stepExpr string
@@ -165,14 +176,22 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
 		stepExpr = "INTERVAL 7 DAY"
 	default:
-		stepExpr = fmt.Sprintf("INTERVAL 1 %s", d.ConvertToDateTruncSpecifier(grain))
+		stepExpr = fmt.Sprintf("INTERVAL %d %s", n, d.ConvertToDateTruncSpecifier(unit))
 	}
 
-	switch grain {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_SECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
-		runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+	switch {
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
+		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		// They step from the bucket's wall-clock start, which is earlier than its local start time when it falls in a DST gap.
+		// Like FROM_UTC_TIMESTAMP values, the start holds the local time as if it were UTC.
+		return fmt.Sprintf(
+			"SELECT TO_UTC_TIMESTAMP(ts, '%s') AS %s FROM (SELECT EXPLODE(SEQUENCE(CAST('%s' AS TIMESTAMP), FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), %s)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, '%s') < CAST('%s' AS TIMESTAMP)",
+			tzStr, d.EscapeAlias(alias), timeutil.WallClockBucketStart(start, n, tz).Format(time.RFC3339), endStr, tzStr, stepExpr, tzStr, endStr,
+		), nil, nil
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR:
 		// Sub-day grains: generate timestamps directly
 		return fmt.Sprintf(
 			"SELECT ts AS %s FROM (SELECT EXPLODE(SEQUENCE(CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP), %s)) AS ts) WHERE ts < CAST('%s' AS TIMESTAMP)",

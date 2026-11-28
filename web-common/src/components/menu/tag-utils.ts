@@ -35,7 +35,12 @@ export type TagIndex = {
   allItems: Taggable[];
 };
 
-export function buildTagIndex(items: Taggable[]): TagIndex {
+// Tags listed in tagOrder (the metrics view's `tag_order`) come first, in that
+// order. The rest follow in the order they first appear on an item.
+export function buildTagIndex(
+  items: Taggable[],
+  tagOrder?: string[],
+): TagIndex {
   const itemsByTag = new Map<string, Taggable[]>();
   for (const item of items) {
     if (!item.tags) continue;
@@ -53,6 +58,16 @@ export function buildTagIndex(items: Taggable[]): TagIndex {
   const tags: DimensionTag[] = [];
   for (const [name, bucket] of itemsByTag) {
     tags.push({ name, totalCount: bucket.length });
+  }
+  // The REST API can send an unset list as null.
+  const order = tagOrder ?? [];
+  if (order.length > 0) {
+    const rank = new Map(order.map((tag, i) => [tag.trim(), i]));
+    // Unlisted tags share the last rank; the stable sort keeps their order.
+    tags.sort(
+      (a, b) =>
+        (rank.get(a.name) ?? order.length) - (rank.get(b.name) ?? order.length),
+    );
   }
   return { tags, itemsByTag, allItems: items };
 }

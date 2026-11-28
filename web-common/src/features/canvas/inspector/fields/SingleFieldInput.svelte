@@ -5,11 +5,13 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasuresFirst } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { MetricsViewSpecDimensionType } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { PencilIcon, PlusIcon } from "lucide-svelte";
+  import { PencilIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import { canvasEphemeralMeasureEditor } from "./ephemeral-editor-store";
 
@@ -90,6 +92,12 @@
     type === "measure" ? ephemeralMeasures : undefined,
     geoOnly,
   );
+  // Ephemeral measures first, newest first, like in the other measure pickers.
+  $: items = ephemeralMeasuresFirst(
+    $fieldData.filteredItems,
+    (item) => item,
+    ephemeralDefsByName.keys(),
+  );
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -133,8 +141,17 @@
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content class="p-0" sameWidth>
-      <div class="p-3 pb-1">
-        <Search bind:value={searchValue} autofocus={false} />
+      <!-- Wraps so the create action's full-width note can sit below the search. -->
+      <div class="flex flex-wrap items-center gap-2 p-3 pb-1">
+        <div class="flex-1 min-w-[140px]">
+          <Search bind:value={searchValue} autofocus={false} />
+        </div>
+        {#if ephemeralEnabled}
+          <CreateEphemeralMeasureButton
+            count={ephemeralDefsByName.size}
+            onCreate={() => openEphemeralEditor(null)}
+          />
+        {/if}
       </div>
       <div class="max-h-64 overflow-y-auto pb-2">
         {#if type == "dimension" && includeTime && $timeDimension}
@@ -149,7 +166,7 @@
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
         {/if}
-        {#each $fieldData.filteredItems as item (item)}
+        {#each items as item (item)}
           {#if item !== selectedItem}
             {@const ephemeralDef = ephemeralDefsByName.get(item)}
             <DropdownMenu.Item
@@ -195,18 +212,6 @@
           {/if}
         {/each}
       </div>
-      {#if ephemeralEnabled}
-        <footer class="border-t bg-gray-100">
-          <button
-            class="flex w-full items-center gap-x-1.5 h-8 px-3 text-xs text-fg-primary hover:bg-surface-hover"
-            type="button"
-            onclick={() => openEphemeralEditor(null)}
-          >
-            <PlusIcon size="14px" />
-            {m.dashboard_pivot_ephemeral_create()}
-          </button>
-        </footer>
-      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 </div>

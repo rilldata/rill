@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -44,7 +43,7 @@ type AnalystAgentArgs struct {
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
 	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
 	IsReport            bool                    `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
-	IsAlert             bool                    `json:"is_alert" yaml:"is_alert" jsonschema:"Flag indicating this judges an AI alert's condition. The prompt is the condition, and the agent ends with a verdict."`
+	IsAlert             bool                    `json:"is_alert" yaml:"is_alert" jsonschema:"Flag indicating this checks an AI alert's condition, which is the prompt. The result then includes a verdict."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -57,36 +56,18 @@ func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
 
 type AnalystAgentResult struct {
 	Response string `json:"response"`
-	// Verdict is set when the agent judged an AI alert's condition (see AnalystAgentArgs.IsAlert).
-	Verdict *AlertVerdict `json:"verdict,omitempty"`
+	// AlertOutcome is the verdict on an AI alert's condition (see AnalystAgentArgs.IsAlert).
+	AlertOutcome AlertOutcome `json:"alert_outcome,omitempty"`
 }
 
-// AlertVerdict is the analyst's verdict on an AI alert's condition.
-type AlertVerdict struct {
-	Met    bool   `json:"met" jsonschema:"True only if the data shows that the condition holds."`
-	Reason string `json:"reason" jsonschema:"One to three plain sentences explaining the verdict with the figures it rests on."`
-}
+// AlertOutcome is the analyst's verdict on whether an AI alert's condition holds.
+type AlertOutcome string
 
-// UnmarshalJSON rejects a verdict with a missing or empty field.
-// A malformed verdict must surface as an error, not decode silently to "not met".
-func (v *AlertVerdict) UnmarshalJSON(data []byte) error {
-	var raw struct {
-		Met    *bool   `json:"met"`
-		Reason *string `json:"reason"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("malformed alert verdict: %w", err)
-	}
-	if raw.Met == nil {
-		return errors.New(`malformed alert verdict: missing "met"`)
-	}
-	if raw.Reason == nil || strings.TrimSpace(*raw.Reason) == "" {
-		return errors.New(`malformed alert verdict: missing "reason"`)
-	}
-	v.Met = *raw.Met
-	v.Reason = *raw.Reason
-	return nil
-}
+const (
+	AlertOutcomeMet             AlertOutcome = "met"
+	AlertOutcomeNotMet          AlertOutcome = "not_met"
+	AlertOutcomeCannotDetermine AlertOutcome = "cannot_determine"
+)
 
 func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
 	return &aiv1.ContentBlock{
@@ -226,9 +207,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
-	// Judging an AI alert offers no charts: a verdict cannot show one,
-	// and Gemini rejects a request that pairs the verdict's output schema with both query_metrics_view and create_chart.
-	if !args.DisableCharts && !args.IsAlert {
+	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
 	if len(skills) > 0 {
@@ -271,36 +250,55 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	ctx = WithDashboardFilters(ctx, dashboardFilters)
 
-	// Judging an AI alert ends with a structured verdict instead of a free-form answer.
-	// The loop fails rather than force a verdict after the tool budget runs out, since that verdict would not rest on the data.
-	if args.IsAlert {
-		verdict := &AlertVerdict{}
-		err = s.Complete(ctx, "Analyst loop", verdict, &CompleteOptions{
-			Messages:             messages,
-			Tools:                tools,
-			MaxIterations:        20,
-			UnwrapCall:           true,
-			FailOnIterationLimit: true,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to reach a verdict on the alert's condition: %w", err)
-		}
-		return &AnalystAgentResult{Response: verdict.Reason, Verdict: verdict}, nil
-	}
-
-	// Run an LLM tool call loop
+	// Run an LLM tool call loop.
+	// The prompt forbids manual calculations, but models still do them and get them wrong,
+	// so the numbers in the response are also checked against the tool results.
 	var response string
 	err = s.Complete(ctx, "Analyst loop", &response, &CompleteOptions{
 		Messages:      messages,
 		Tools:         tools,
 		MaxIterations: 20,
+		CheckResponse: checkNumbersGrounded,
 		UnwrapCall:    true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// An AI alert's analysis ends with a verdict on its condition.
+	// The verdict is a separate call without tools, since some providers (e.g. Gemini) reject requests that combine tools with an output schema.
+	if args.IsAlert {
+		outcome, err := alertOutcome(ctx, s, args.Prompt, response)
+		if err != nil {
+			return nil, err
+		}
+		return &AnalystAgentResult{Response: response, AlertOutcome: outcome}, nil
+	}
+
 	return &AnalystAgentResult{Response: response}, nil
+}
+
+// alertOutcome classifies the analysis of an AI alert's condition as met, not met, or not answerable from the data.
+func alertOutcome(ctx context.Context, s *Session, condition, analysis string) (AlertOutcome, error) {
+	var verdict struct {
+		Outcome AlertOutcome `json:"outcome" jsonschema:"One of \"met\", \"not_met\" or \"cannot_determine\"."`
+	}
+	err := s.Complete(ctx, "Alert verdict", &verdict, &CompleteOptions{
+		Messages: []*aiv1.CompletionMessage{
+			NewTextCompletionMessage(RoleSystem, `You read an analysis that checked whether an alert's condition holds, and give the analysis's verdict.
+The outcome is "met" if the analysis shows that the condition holds, "not_met" if it shows that the condition does not hold,
+and "cannot_determine" if the analysis could not tell, for example because the data has no measure or dimension that the condition refers to.`),
+			NewTextCompletionMessage(RoleUser, fmt.Sprintf("The alert's condition:\n%s\n\nThe analysis:\n%s", condition, analysis)),
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get a verdict on the alert's condition: %w", err)
+	}
+	switch verdict.Outcome {
+	case AlertOutcomeMet, AlertOutcomeNotMet, AlertOutcomeCannotDetermine:
+		return verdict.Outcome, nil
+	}
+	return "", fmt.Errorf("invalid verdict on the alert's condition: %q", verdict.Outcome)
 }
 
 func (t *AnalystAgent) systemPrompt(ctx context.Context) (string, error) {
@@ -398,11 +396,12 @@ You are operating in an automated scheduled insight report mode where you will c
 {{ end }}
 
 {{ if .is_alert }}
-You are operating as the judge of an automated alert, without additional user input.
-The alert's condition is given at the end of this message: a statement about the data that either holds or does not.
-Query the data to decide whether the condition holds. Do not ask questions, since nobody will answer them.
-Your final response is a verdict: "met" is true only if the data shows that the condition holds, and "reason" explains the verdict in one to three plain sentences with the figures it rests on, without citation links.
-{{ if (and .time_start .time_end) }}Relative expressions in the condition, such as "this month", "this week", "today", "yesterday" or "compared with the previous period", refer to the time range start={{.time_start}}, end={{.time_end}}, not to today's date.{{ else }}Relative expressions in the condition, such as "this month", "this week", "today", "yesterday" or "compared with the previous period", refer to the latest data available, not to today's date.{{ end }}
+You are checking the condition of an automated alert, without additional user input.
+The condition is the user's request at the end of this message: a statement about the data that either holds or does not.
+Query the data to decide whether it holds. Do not ask questions, since nobody will answer them.
+If the data can't tell whether the condition holds, for example because it refers to a measure or dimension that doesn't exist, say so instead of guessing.
+Relative expressions in the condition, such as "this month", "today" or "compared with the previous period", refer to {{ if (and .time_start .time_end) }}the time range start={{.time_start}}, end={{.time_end}}{{ else }}the latest data available{{ end }}, not to today's date.
+Begin your final response with a summary wrapped in <summary></summary> tags: one to three plain sentences that say whether the condition holds and give the figures it rests on, without citation links.
 {{ end }}
 
 {{ if .explore }}
@@ -502,7 +501,7 @@ If a memory conflicts with the user's current request, follow the current reques
 {{ end }}
 
 {{ if .is_prompt }}
-{{ if .is_alert }}The alert's condition:{{ else }}The user's request:{{ end }}
+The user's request:
 {{ .prompt }}
 {{ end }}
 `, data)

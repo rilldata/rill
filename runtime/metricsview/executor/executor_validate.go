@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -130,6 +131,14 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 	}
 
+	// Check that tag_order only lists tags that are set on a dimension or measure
+	tags := fieldTags(mv)
+	for _, tag := range mv.TagOrder {
+		if !tags[tag] {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("tag %q referenced in 'tag_order' is not set on any dimension or measure", tag))
+		}
+	}
+
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
 	if e.olap.Dialect().String() == drivers.DialectNameClickHouse {
@@ -237,8 +246,13 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			mv.SmallestTimeGrain = smallestPossibleGrain
-		} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(mv.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(mv.SmallestTimeGrain), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
+		for _, tg := range mv.TimeGrains {
+			if timeutil.TimeGrainFromAPI(tg).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time_grains entry %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(tg), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+			}
 		}
 	}
 	for _, d := range mv.Dimensions {
@@ -264,7 +278,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if d.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			d.SmallestTimeGrain = smallestPossibleGrain
-		} else if d.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(d.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q for time dimension %q is smaller than the smallest possible grain %q based on the data type of the time dimension", metricsview.TimeGrainFromProto(d.SmallestTimeGrain), d.Name, metricsview.TimeGrainFromProto(smallestPossibleGrain)))
 		}
 	}
@@ -492,6 +506,16 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	// If the metrics view doesn't have ai instructions, use the parent's ai instructions
 	if e.metricsView.AiInstructions == "" {
 		e.metricsView.AiInstructions = parent.AiInstructions
+	}
+	// If the metrics view doesn't have a tag order, use the parent's tag order,
+	// leaving out tags that none of the selected dimensions and measures have.
+	if len(e.metricsView.TagOrder) == 0 {
+		tags := fieldTags(e.metricsView)
+		for _, tag := range parent.TagOrder {
+			if tags[tag] {
+				e.metricsView.TagOrder = append(e.metricsView.TagOrder, tag)
+			}
+		}
 	}
 
 	return nil
@@ -990,4 +1014,21 @@ func isNumericMeasureType(typ *runtimev1.Type) bool {
 	default:
 		return true
 	}
+}
+
+// fieldTags returns the tags set on the metrics view's dimensions and measures.
+// It trims them the same way dashboards do.
+func fieldTags(mv *runtimev1.MetricsViewSpec) map[string]bool {
+	tags := make(map[string]bool)
+	for _, d := range mv.Dimensions {
+		for _, tag := range d.Tags {
+			tags[strings.TrimSpace(tag)] = true
+		}
+	}
+	for _, m := range mv.Measures {
+		for _, tag := range m.Tags {
+			tags[strings.TrimSpace(tag)] = true
+		}
+	}
+	return tags
 }

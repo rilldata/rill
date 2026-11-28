@@ -1,28 +1,15 @@
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
-import {
-  mapMetricsResolverQueryToDashboard,
-  type MetricsResolverQueryMapperArgs,
-} from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
+import type { MetricsResolverQueryMapperArgs } from "@rilldata/web-common/features/explore-mappers/url-mappers/types.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getQueryServiceMetricsViewTimeRangeQueryKey,
-  getRuntimeServiceGetExploreQueryKey,
+  getRuntimeServiceGetResourceQueryOptions,
   getRuntimeServiceListResourcesQueryKey,
-  queryServiceMetricsViewTimeRange,
-  runtimeServiceGetExplore,
   runtimeServiceListResources,
-  type V1ExploreSpec,
-  type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { error, redirect } from "@sveltejs/kit";
-import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
-import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation.ts";
-import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
+import { convertMetricsResolverQueryToUrlParams } from "@rilldata/web-common/features/explore-mappers/url-mappers/convert-metrics-resolver-query-to-url-params.ts";
 
 export async function openQuery({
   mapArgs,
@@ -50,25 +37,20 @@ export async function openQuery({
       metricsViewName,
     );
 
-    const { metricsViewSpec, exploreSpec } = await getExploreSpecs(
-      client,
-      exploreName,
+    // A filter on the time dimension is moved to the explore's time range.
+    const metricsViewResp = await queryClient.fetchQuery(
+      getRuntimeServiceGetResourceQueryOptions(client, {
+        name: { kind: ResourceKind.MetricsView, name: metricsViewName },
+      }),
     );
-
-    // Convert query to ExploreState
-    const exploreState = mapMetricsResolverQueryToDashboard(
-      metricsViewSpec,
-      exploreSpec,
-      mapArgs,
-    );
+    const timeDimension =
+      metricsViewResp.resource?.metricsView?.state?.validSpec?.timeDimension;
 
     // Generate the final explore URL
-    exploreURL = await generateExploreLink(
-      client,
-      exploreState,
-      metricsViewSpec,
-      exploreSpec,
+    exploreURL = generateExploreLink(
+      mapArgs,
       exploreName,
+      timeDimension,
       organization,
       project,
     );
@@ -118,83 +100,26 @@ async function findExploreForMetricsView(
   );
 }
 
-async function getExploreSpecs(client: RuntimeClient, exploreName: string) {
-  const request = { name: exploreName };
-  const getExploreResponse = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetExploreQueryKey(client.instanceId, request),
-    queryFn: ({ signal }) =>
-      runtimeServiceGetExplore(client, request, { signal }),
-  });
-  const exploreResource = getExploreResponse.explore;
-  const metricsViewResource = getExploreResponse.metricsView;
-
-  if (!exploreResource?.explore?.state?.validSpec) {
-    throw new Error("Could not load explore specification");
-  }
-
-  if (!metricsViewResource?.metricsView?.state?.validSpec) {
-    throw new Error("Could not load metrics view specification");
-  }
-
-  const metricsViewSpec = metricsViewResource?.metricsView?.state?.validSpec;
-  const exploreSpec = exploreResource.explore.state.validSpec;
-
-  return { metricsViewSpec, exploreSpec };
-}
-
 /**
  * Generates the explore page URL with proper search parameters
  */
-async function generateExploreLink(
-  client: RuntimeClient,
-  exploreState: Partial<ExploreState>,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
+function generateExploreLink(
+  args: MetricsResolverQueryMapperArgs,
   exploreName: string,
+  timeDimension: string | undefined,
   organization?: string | undefined,
   project?: string | undefined,
-): Promise<string> {
-  try {
-    const url = getUrlForExplore(exploreName, organization, project);
+): string {
+  const url = getUrlForExplore(exploreName, organization, project);
 
-    const metricsViewName = exploreSpec.metricsView;
-    let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined;
-    if (metricsViewSpec.timeDimension && metricsViewName) {
-      const request = { metricsViewName };
-      fullTimeRange = await queryClient.fetchQuery({
-        queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-          client.instanceId,
-          request,
-        ),
-        queryFn: ({ signal }) =>
-          queryServiceMetricsViewTimeRange(client, request, { signal }),
-        staleTime: Infinity,
-        gcTime: Infinity,
-      });
-    }
+  const searchParams = convertMetricsResolverQueryToUrlParams(
+    args,
+    timeDimension,
+  );
 
-    const searchParams = convertPartialExploreStateToUrlParams(
-      exploreSpec,
-      metricsViewSpec,
-      exploreState,
-      getTimeControlState(
-        metricsViewSpec,
-        exploreSpec,
-        fullTimeRange?.timeRangeSummary,
-        exploreState,
-      ),
-    );
+  searchParams.forEach((value, key) => {
+    url.searchParams.set(key, value);
+  });
 
-    searchParams.forEach((value, key) => {
-      url.searchParams.set(key, value);
-    });
-
-    return url.toString();
-  } catch (error) {
-    throw createLinkError(
-      ExploreLinkErrorType.TRANSFORMATION_ERROR,
-      `Failed to generate explore link: ${error.message}`,
-      error,
-    );
-  }
+  return url.toString();
 }

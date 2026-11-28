@@ -4,7 +4,11 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import { normalizeSizeArray } from "./layout-util";
+  import {
+    DEFAULT_ROW_HEIGHT,
+    isRowHeightSet,
+    normalizeSizeArray,
+  } from "./layout-util";
   import type { Row } from "./stores/row";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
@@ -19,6 +23,9 @@
   // When false, components render eagerly without lazy-load (PDF export).
   export let lazy: boolean = true;
   export let idPrefix: string = "";
+  // Set when the row renders inside a tab (see CanvasPdfExportTab).
+  export let tabGroupName: string | undefined = undefined;
+  export let tabName: string | undefined = undefined;
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -32,14 +39,20 @@
 <RowWrapper
   {zIndex}
   {maxWidth}
-  height={$height}
+  height={$height ?? DEFAULT_ROW_HEIGHT}
   {heightUnit}
   {id}
+  {tabGroupName}
+  {tabName}
   gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
 >
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
-    <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
+    <ItemWrapper
+      type={component?.type}
+      zIndex={4 - columnIndex}
+      rowHasHeight={isRowHeightSet($height)}
+    >
       {#if component}
         <CanvasComponent
           {component}

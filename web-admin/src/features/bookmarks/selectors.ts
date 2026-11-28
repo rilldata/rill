@@ -19,18 +19,24 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState.ts";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { HTTPError } from "@rilldata/web-common/lib/errors";
+import type {
+  V1ExploreSpec,
+  V1MetricsViewSpec,
+  V1TimeRangeSummary,
+} from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
+import { convertProtoToUrlParams } from "@rilldata/web-common/features/dashboards/proto-state/convert-proto-to-url-params.ts";
 
 export function getBookmarksQueryOptions(
   orgAndProjectNameStore: OrgAndProjectNameStore,
@@ -150,32 +156,47 @@ export function getHomeBookmarkExploreState(
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
       const exploreSpec = exploreSpecResp?.explore ?? {};
 
-      if (homeBookmark.data) {
-        // Legacy bookmark data stored in proto format.
-        const exploreStateFromLegacyProto = getDashboardStateFromUrl(
-          homeBookmark.data,
-          metricsViewSpec,
-          exploreSpec,
-        );
-        return exploreStateFromLegacyProto;
-      }
+      const urlSearch = homeBookmark.data
+        ? // Legacy bookmark data stored in proto format.
+          convertProtoToUrlParams(homeBookmark.data).toString() // TODO: any way to avoid URLSearchParams => string => URLSearchParams?
+        : homeBookmark.urlSearch;
 
-      const explorePreset = getDefaultExplorePreset(
-        exploreSpec,
+      return getExploreStateFromHomeBookmarkUrl(
+        urlSearch ?? "",
         metricsViewSpec,
+        exploreSpec,
         timeRangeResp?.timeRangeSummary,
       );
-
-      const { partialExploreState: exploreStateFromHomeBookmark } =
-        convertURLSearchParamsToExploreState(
-          new URLSearchParams(homeBookmark.urlSearch ?? ""),
-          metricsViewSpec,
-          exploreSpec,
-          explorePreset,
-        );
-      return exploreStateFromHomeBookmark;
     },
   );
+}
+
+/**
+ * The explore state that a home bookmark opens, from the url params it was saved with.
+ * A param the bookmark does not hold takes the explore's default, other than the filter.
+ */
+export function getExploreStateFromHomeBookmarkUrl(
+  urlSearch: string,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+): Partial<ExploreState> {
+  const explorePreset = getDefaultExplorePreset(
+    exploreSpec,
+    metricsViewSpec,
+    timeRangeSummary,
+  );
+  // A bookmark keeps the filter it was saved with, and one saved with no filter applied can hold no filter param.
+  // It must still open unfiltered, so the explore's default filter does not stand in for the missing param.
+  explorePreset.where = createAndExpression([]);
+
+  const { partialExploreState } = convertURLSearchParamsToExploreState(
+    new URLSearchParams(urlSearch),
+    metricsViewSpec,
+    exploreSpec,
+    explorePreset,
+  );
+  return partialExploreState;
 }
 
 export function getCanvasCategorisedBookmarks(

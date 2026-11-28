@@ -563,8 +563,8 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		})
 
 		timeRanges[i] = &runtimev1.ResolvedTimeRange{
-			Start:         timestamppb.New(start),
-			End:           timestamppb.New(end),
+			Start:         pbutil.ClampedTimestamp(start),
+			End:           pbutil.ClampedTimestamp(end),
 			Grain:         timeutil.TimeGrainToAPI(grain),
 			TimeDimension: timeDimension,
 			TimeZone:      req.TimeZone,
@@ -783,5 +783,5 @@ func valOrNullTime(v time.Time) *timestamppb.Timestamp {
 	if v.IsZero() {
 		return nil
 	}
-	return timestamppb.New(v)
+	return pbutil.ClampedTimestamp(v)
 }

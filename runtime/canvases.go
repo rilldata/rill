@@ -16,31 +16,15 @@ import (
 )
 
 // CollectCanvasComponentNames collects the names of all components referenced by the given rows,
-// descending into tab groups (one level deep, since tabs cannot be nested).
+// including the rows of tab groups and containers.
 func CollectCanvasComponentNames(rows []*runtimev1.CanvasRow, out map[string]bool) {
-	for _, row := range rows {
-		for _, item := range row.Items {
-			out[item.Component] = true
-		}
-		if tg := row.GetTabGroup(); tg != nil {
-			for _, tab := range tg.Tabs {
-				CollectCanvasComponentNames(tab.Rows, out)
-			}
-		}
-	}
+	canvas.WalkRows(rows, canvas.Visit{Item: func(item *runtimev1.CanvasItem) { out[item.Component] = true }})
 }
 
 // CollectCanvasItems collects all items in the given rows,
-// descending into tab groups (one level deep, since tabs cannot be nested).
+// including the rows of tab groups and containers.
 func CollectCanvasItems(rows []*runtimev1.CanvasRow, out *[]*runtimev1.CanvasItem) {
-	for _, row := range rows {
-		*out = append(*out, row.Items...)
-		if tg := row.GetTabGroup(); tg != nil {
-			for _, tab := range tg.Tabs {
-				CollectCanvasItems(tab.Rows, out)
-			}
-		}
-	}
+	canvas.WalkRows(rows, canvas.Visit{Item: func(item *runtimev1.CanvasItem) { *out = append(*out, item) }})
 }
 
 // ResolveCanvasOptions configures ResolveCanvas.
@@ -58,7 +42,7 @@ type ResolveCanvasResult struct {
 	Canvas                 *runtimev1.Resource
 	ResolvedComponents     map[string]*runtimev1.Resource
 	ReferencedMetricsViews map[string]*runtimev1.Resource
-	// HiddenPaths are the YAML paths of the canvas elements hidden from the claims, such as "rows.0.items.1" or "rows.3.tabs.0".
+	// HiddenPaths are the YAML paths of the canvas elements hidden from the claims, such as "rows.0.items.1", "rows.3.tabs.0" or "rows.2.rows.1".
 	// It's only set when ResolveCanvasOptions.IncludeHidden is set.
 	HiddenPaths []string
 }
@@ -110,22 +94,41 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 
 	components := make(map[string]*runtimev1.Resource)
 
-	// Collect all referenced component names, descending into tab groups.
+	// Collect all referenced component names, descending into tab groups and containers.
 	componentNames := make(map[string]bool)
 	CollectCanvasComponentNames(spec.Rows, componentNames)
 
+	missingComponents := make(map[string]bool)
 	for componentName := range componentNames {
 		// Get component resource.
 		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: componentName}, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return nil, fmt.Errorf("component %q in valid spec not found", componentName)
+				// The visual editor maps items to their YAML paths by position,
+				// so removing the items of missing components (see below) would point its edits at other items.
+				if includeHidden {
+					return nil, fmt.Errorf("component %q in valid spec not found", componentName)
+				}
+				missingComponents[componentName] = true
+				continue
 			}
 			return nil, err
 		}
 
 		// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
 		components[componentName] = cmp
+	}
+
+	// The valid spec can reference components that no longer exist while a new version of the canvas reconciles.
+	// For example, inline components are named by their position, so a layout change deletes the old ones,
+	// but the canvas only replaces its valid spec once its components, metrics views and models have reconciled.
+	// Viewers get the canvas without the items of the missing components, so it keeps serving the rest of its last valid version.
+	if len(missingComponents) > 0 {
+		res = pruneCanvasItems(res, components, func(item *runtimev1.CanvasItem) bool { return !missingComponents[item.Component] })
+		spec = res.GetCanvas().State.ValidSpec
+		if spec == nil && opts.Unsafe {
+			spec = res.GetCanvas().Spec
+		}
 	}
 
 	// Track the components the claims can't see or query; viewers don't get them, and the editor gets their paths.
@@ -296,13 +299,15 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	// Lookup the metrics views and apply their security policies.
 	// A metrics view whose policy fails to evaluate for the claims is treated as inaccessible instead of failing the canvas.
 	// For example, a policy like '{{ .user.admin }}' doesn't evaluate for an embed token that carries no 'admin' attribute.
+	// A metrics view that no longer exists is treated as inaccessible too;
+	// like a missing component, it's referenced by a valid spec that a new version of the project is replacing (e.g. after renaming the metrics view).
 	referencedMetricsViews := make(map[string]*runtimev1.Resource, len(metricsViews))
 	securities := make(map[string]*ResolvedSecurity, len(metricsViews))
 	for name := range metricsViews {
 		rmv := resolveMetricsView(ctx, name)
 		if rmv.getErr != nil {
 			if errors.Is(rmv.getErr, drivers.ErrResourceNotFound) {
-				return nil, fmt.Errorf("metrics view %q in valid spec not found", name)
+				continue
 			}
 			return nil, rmv.getErr
 		}
@@ -342,7 +347,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	}
 
 	// Remove the fields and components the claims can't query, so viewers don't see errors for content they aren't allowed to see.
-	res, components = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
+	res = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
 
 	// Remove the default filters for metrics views that are no longer on the canvas for the claims.
 	// If some component's metrics views are unknown, the filters for any metrics view the claims can access are kept, since that component may use them.
@@ -373,19 +378,27 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 // pruneInaccessibleContent removes the fields that the claims can't query from the components' renderer properties,
 // and removes the items that can't render without them (see inaccessibleComponents and inaccessibleItem),
 // along with the components that no remaining item references.
-// The provided resources are not modified; anything that changes is cloned.
-func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) (*runtimev1.Resource, map[string]*runtimev1.Resource) {
+// It updates components in place, but the provided resources are not modified; anything that changes is cloned.
+func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) *runtimev1.Resource {
 	removed, pruned := inaccessibleComponents(components, metricsViews, securities, forbiddenComponents, unsafe)
 	for name, cmp := range pruned {
 		components[name] = cmp
 	}
-	keep := canvas.Keep{Item: func(item *runtimev1.CanvasItem) bool {
+	return pruneCanvasItems(canvasRes, components, func(item *runtimev1.CanvasItem) bool {
 		return !removed[item.Component] && !inaccessibleItem(item, components, metricsViews, unsafe)
-	}}
-	validRows, validPaths := canvas.PruneRows(canvasRes.GetCanvas().GetState().GetValidSpec().GetRows(), keep)
-	rows, paths := canvas.PruneRows(canvasRes.GetCanvas().GetSpec().GetRows(), keep)
+	})
+}
+
+// pruneCanvasItems removes the items that keep rejects from the canvas's spec and valid spec,
+// along with the rows, tabs, tab groups and containers left without content (see canvas.PruneRows).
+// The components that neither spec references anymore are removed from the canvas's refs and from components.
+// The provided canvas is not modified; it's cloned if anything changes.
+func pruneCanvasItems(canvasRes *runtimev1.Resource, components map[string]*runtimev1.Resource, keep func(item *runtimev1.CanvasItem) bool) *runtimev1.Resource {
+	k := canvas.Keep{Item: keep}
+	validRows, validPaths := canvas.PruneRows(canvasRes.GetCanvas().GetState().GetValidSpec().GetRows(), k)
+	rows, paths := canvas.PruneRows(canvasRes.GetCanvas().GetSpec().GetRows(), k)
 	if len(validPaths) == 0 && len(paths) == 0 {
-		return canvasRes, components
+		return canvasRes
 	}
 
 	canvasRes = proto.Clone(canvasRes).(*runtimev1.Resource)
@@ -412,7 +425,7 @@ func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metrics
 	}
 	canvasRes.Meta.Refs = refs
 
-	return canvasRes, components
+	return canvasRes
 }
 
 // inaccessibleComponents determines which components the claims can't query.

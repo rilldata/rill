@@ -1,5 +1,5 @@
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // A component's `time_filters` uses the explore URL vocabulary (`tr`, `compare_tr`, `grain`, `tz`).
@@ -52,7 +52,7 @@ export function resolveTimeFilters(
   return {
     hasLocalTimeRange,
     comparison,
-    grain: grain ? DateTimeUnitToV1TimeGrain[grain] : undefined,
+    grain: grain ? TokenToV1TimeGrain[grain] : undefined,
   };
 }
 
@@ -96,18 +96,19 @@ export function normalizeTimeFilters(
   return ordered.toString();
 }
 
-/** The params a widget's own time state understands: `inherit` is not a range it can resolve. */
-export function stripInheritedTimeFilters(
-  params: URLSearchParams,
+/**
+ * The params a widget's time filter manager reads from its `time_filters`.
+ * A missing `tr` follows the canvas range, and with neither `tr` nor `compare_tr` the comparison follows too.
+ */
+export function timeFiltersToParams(
+  timeFilters: string | undefined,
 ): URLSearchParams {
-  const local = new URLSearchParams(params);
-  if (local.get(ExploreStateURLParams.TimeRange) === TIME_FILTER_INHERIT) {
-    local.delete(ExploreStateURLParams.TimeRange);
+  const params = new URLSearchParams(timeFilters ?? "");
+  if (params.has(ExploreStateURLParams.TimeRange)) return params;
+
+  if (!params.has(ExploreStateURLParams.ComparisonTimeRange)) {
+    params.set(ExploreStateURLParams.ComparisonTimeRange, TIME_FILTER_INHERIT);
   }
-  if (
-    local.get(ExploreStateURLParams.ComparisonTimeRange) === TIME_FILTER_INHERIT
-  ) {
-    local.delete(ExploreStateURLParams.ComparisonTimeRange);
-  }
-  return local;
+  params.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
+  return params;
 }

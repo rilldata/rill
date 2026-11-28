@@ -25,7 +25,7 @@ Wait for the `ready` notification (see [Notifications](#notifications)) before s
 Embed the iframe in your page:
 
 ```html
-<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400"></iframe>
+<iframe id="my-iframe" src="<your rill embed url>" width="600" height="400" allow="clipboard-write"></iframe>
 ```
 
 Set up message handling and send requests from the parent window:
@@ -307,13 +307,32 @@ iframe.contentWindow.postMessage({
 
 **Note:** The AI pane is only available for dashboards when the chat feature is enabled. If the AI pane is not available, calling this method will not cause an error, but the pane will not be shown.
 
+### `navigate({ type, name })`
+
+Navigates the embed to a page or dashboard.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 9,
+  method: "navigate",
+  params: { type: "explore", name: "dashboardName" }
+}, "*");
+```
+
+**Parameters:**
+- `type` (string): One of:
+  - `"page"`: A page of the embed; `name` is `"home"` for the project home page, `"reports"` for the user's scheduled reports, or `"alerts"` for the user's alerts.
+  - `"explore"`: An explore dashboard; `name` is the dashboard name.
+  - `"canvas"`: A canvas dashboard; `name` is the dashboard name.
+- `name` (string): The page or dashboard to navigate to.
+
 ## Notifications
 
 Notifications are sent **from the iframe** to the parent window. These do not include an `id`.
 
 ### `ready()`
 
-Fired once when the iframe is initialized and ready to receive messages.
+Fired once when the iframe is initialized and ready to receive messages. On an explore dashboard, this is once the dashboard has loaded (or failed to load), so a state you send after `ready` is not replaced by the dashboard's initial state.
 
 ```json
 { "method": "ready" }

@@ -1,19 +1,25 @@
 *{{ .DisplayName }}*
 
 Your alert triggered for {{ .ExecutionTimeString }}.
-{{ if .Reason }}
+
+{{ if .Reason -}}
 The AI analysis found that the condition holds:
 
 {{ .Reason }}
-
-<{{ .OpenLink }}|View full analysis>
-{{ else }}
+{{- else if .FailFields -}}
 The first row that matched your alert criteria is:
-
-{{ range $key, $value := .FailRow }}
-• *{{ $key }}*: {{ $value }}
+{{ range .FailFields }}
+• *{{ .Name }}*: {{ .Value }}
+{{- end }}
+{{- else -}}
+{{ if .FailRowsTruncated }}The first {{ len .FailRowLines }} rows{{ else }}The rows{{ end }} that matched your alert criteria are listed by *{{ .FailRowsLeadColumn }}*:
+{{ range .FailRowLines }}
+• {{ . }}
+{{- end }}
+{{- end }}
+{{ if .FailRowsTruncated }}
+More rows matched your alert criteria.
 {{ end }}
+<{{ .OpenLink }}|{{ if .Reason }}View full analysis{{ else }}Open in browser{{ end }}>
 
-<{{ .OpenLink }}|Open in browser>
-{{ end }}
 To edit or unsubscribe from this alert, <{{ .EditLink }}|click here>.

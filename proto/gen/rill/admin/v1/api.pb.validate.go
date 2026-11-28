@@ -39,6 +39,9 @@ var (
 	_ = runtimev1.ExportFormat(0)
 )
 
+// define the regex for a UUID once up-front
+var _api_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on PingRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1514,19 +1517,83 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 	}
 
 	if m.LogoAssetId != nil {
-		// no validation rules for LogoAssetId
+
+		if m.GetLogoAssetId() != "" {
+
+			if err := m._validateUuid(m.GetLogoAssetId()); err != nil {
+				err = UpdateOrganizationRequestValidationError{
+					field:  "LogoAssetId",
+					reason: "value must be a valid UUID",
+					cause:  err,
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+
 	}
 
 	if m.LogoDarkAssetId != nil {
-		// no validation rules for LogoDarkAssetId
+
+		if m.GetLogoDarkAssetId() != "" {
+
+			if err := m._validateUuid(m.GetLogoDarkAssetId()); err != nil {
+				err = UpdateOrganizationRequestValidationError{
+					field:  "LogoDarkAssetId",
+					reason: "value must be a valid UUID",
+					cause:  err,
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+
 	}
 
 	if m.FaviconAssetId != nil {
-		// no validation rules for FaviconAssetId
+
+		if m.GetFaviconAssetId() != "" {
+
+			if err := m._validateUuid(m.GetFaviconAssetId()); err != nil {
+				err = UpdateOrganizationRequestValidationError{
+					field:  "FaviconAssetId",
+					reason: "value must be a valid UUID",
+					cause:  err,
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+
 	}
 
 	if m.ThumbnailAssetId != nil {
-		// no validation rules for ThumbnailAssetId
+
+		if m.GetThumbnailAssetId() != "" {
+
+			if err := m._validateUuid(m.GetThumbnailAssetId()); err != nil {
+				err = UpdateOrganizationRequestValidationError{
+					field:  "ThumbnailAssetId",
+					reason: "value must be a valid UUID",
+					cause:  err,
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+
 	}
 
 	if m.DefaultProjectRole != nil {
@@ -1547,6 +1614,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 
+	}
+
+	if m.DisableProjectDomainAccess != nil {
+		// no validation rules for DisableProjectDomainAccess
 	}
 
 	if len(errors) > 0 {
@@ -1604,6 +1675,14 @@ func (m *UpdateOrganizationRequest) _validateEmail(addr string) error {
 	}
 
 	return m._validateHostname(parts[1])
+}
+
+func (m *UpdateOrganizationRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
 }
 
 // UpdateOrganizationRequestMultiError is an error wrapping multiple validation
@@ -1991,12 +2070,34 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 
 	// no validation rules for Branch
 
-	// no validation rules for UserId
+	if m.GetUserId() != "" {
+
+		if err := m._validateUuid(m.GetUserId()); err != nil {
+			err = ListDeploymentsRequestValidationError{
+				field:  "UserId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return ListDeploymentsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListDeploymentsRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2503,7 +2604,17 @@ func (m *GetDeploymentRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = GetDeploymentRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for AccessTokenTtlSeconds
 
@@ -2659,6 +2770,14 @@ func (m *GetDeploymentRequest) _validateEmail(addr string) error {
 	}
 
 	return m._validateHostname(parts[1])
+}
+
+func (m *GetDeploymentRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
 }
 
 // GetDeploymentRequestMultiError is an error wrapping multiple validation
@@ -2866,12 +2985,30 @@ func (m *StartDeploymentRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = StartDeploymentRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return StartDeploymentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *StartDeploymentRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3103,12 +3240,30 @@ func (m *StopDeploymentRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = StopDeploymentRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return StopDeploymentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *StopDeploymentRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3313,10 +3468,28 @@ func (m *DeleteDeploymentRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = DeleteDeploymentRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeleteDeploymentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteDeploymentRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3675,10 +3848,11 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetUserId()) < 1 {
-		err := ListProjectsForOrganizationAndUserRequestValidationError{
+	if err := m._validateUuid(m.GetUserId()); err != nil {
+		err = ListProjectsForOrganizationAndUserRequestValidationError{
 			field:  "UserId",
-			reason: "value length must be at least 1 runes",
+			reason: "value must be a valid UUID",
+			cause:  err,
 		}
 		if !all {
 			return err
@@ -3709,6 +3883,14 @@ func (m *ListProjectsForOrganizationAndUserRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ListProjectsForOrganizationAndUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListProjectsForOrganizationAndUserRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4813,10 +4995,28 @@ func (m *GetProjectByIDRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = GetProjectByIDRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetProjectByIDRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetProjectByIDRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -6263,7 +6463,18 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-		// no validation rules for UserId
+
+		if utf8.RuneCountInString(m.GetUserId()) < 1 {
+			err := GetDeploymentCredentialsRequestValidationError{
+				field:  "UserId",
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
 	case *GetDeploymentCredentialsRequest_UserEmail:
 		if v == nil {
 			err := GetDeploymentCredentialsRequestValidationError{
@@ -6656,7 +6867,18 @@ func (m *GetIFrameRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-		// no validation rules for UserId
+
+		if utf8.RuneCountInString(m.GetUserId()) < 1 {
+			err := GetIFrameRequestValidationError{
+				field:  "UserId",
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
 	case *GetIFrameRequest_UserEmail:
 		if v == nil {
 			err := GetIFrameRequestValidationError{
@@ -9892,7 +10114,21 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for GitRemote
 
-	// no validation rules for ArchiveAssetId
+	if m.GetArchiveAssetId() != "" {
+
+		if err := m._validateUuid(m.GetArchiveAssetId()); err != nil {
+			err = CreateProjectRequestValidationError{
+				field:  "ArchiveAssetId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for ProdVersion
 
@@ -9902,6 +10138,14 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *CreateProjectRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -10392,7 +10636,19 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	}
 
 	if m.ArchiveAssetId != nil {
-		// no validation rules for ArchiveAssetId
+
+		if err := m._validateUuid(m.GetArchiveAssetId()); err != nil {
+			err = UpdateProjectRequestValidationError{
+				field:  "ArchiveAssetId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
 	}
 
 	if m.ProdSlots != nil {
@@ -10429,6 +10685,14 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *UpdateProjectRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -11334,10 +11598,28 @@ func (m *TriggerReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = TriggerReconcileRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return TriggerReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *TriggerReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -11540,10 +11822,28 @@ func (m *TriggerRefreshSourcesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+		err = TriggerRefreshSourcesRequestValidationError{
+			field:  "DeploymentId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return TriggerRefreshSourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *TriggerRefreshSourcesRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -11752,10 +12052,32 @@ func (m *TriggerRedeployRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for DeploymentId
+	if m.GetDeploymentId() != "" {
+
+		if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+			err = TriggerRedeployRequestValidationError{
+				field:  "DeploymentId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return TriggerRedeployRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *TriggerRedeployRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -11958,7 +12280,21 @@ func (m *ProvisionRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if m.GetDeploymentId() != "" {
+
+		if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+			err = ProvisionRequestValidationError{
+				field:  "DeploymentId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Type
 
@@ -11995,6 +12331,14 @@ func (m *ProvisionRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ProvisionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ProvisionRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -12224,10 +12568,32 @@ func (m *GetDeploymentConfigRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DeploymentId
+	if m.GetDeploymentId() != "" {
+
+		if err := m._validateUuid(m.GetDeploymentId()); err != nil {
+			err = GetDeploymentConfigRequestValidationError{
+				field:  "DeploymentId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return GetDeploymentConfigRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetDeploymentConfigRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -22235,10 +22601,11 @@ func (m *ListUsergroupsForOrganizationAndUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetUserId()) < 1 {
-		err := ListUsergroupsForOrganizationAndUserRequestValidationError{
+	if err := m._validateUuid(m.GetUserId()); err != nil {
+		err = ListUsergroupsForOrganizationAndUserRequestValidationError{
 			field:  "UserId",
-			reason: "value length must be at least 1 runes",
+			reason: "value must be a valid UUID",
+			cause:  err,
 		}
 		if !all {
 			return err
@@ -22265,6 +22632,14 @@ func (m *ListUsergroupsForOrganizationAndUserRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ListUsergroupsForOrganizationAndUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListUsergroupsForOrganizationAndUserRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -29466,7 +29841,21 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if m.GetProjectId() != "" {
+
+		if err := m._validateUuid(m.GetProjectId()); err != nil {
+			err = ListBookmarksRequestValidationError{
+				field:  "ProjectId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if m.ResourceKind != nil {
 		// no validation rules for ResourceKind
@@ -29478,6 +29867,14 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ListBookmarksRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListBookmarksRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -29714,10 +30111,28 @@ func (m *GetBookmarkRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for BookmarkId
+	if err := m._validateUuid(m.GetBookmarkId()); err != nil {
+		err = GetBookmarkRequestValidationError{
+			field:  "BookmarkId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetBookmarkRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -29959,7 +30374,21 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for ResourceName
 
-	// no validation rules for ProjectId
+	if m.GetProjectId() != "" {
+
+		if err := m._validateUuid(m.GetProjectId()); err != nil {
+			err = CreateBookmarkRequestValidationError{
+				field:  "ProjectId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Default
 
@@ -29967,6 +30396,14 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return CreateBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *CreateBookmarkRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -30198,7 +30635,17 @@ func (m *UpdateBookmarkRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for BookmarkId
+	if err := m._validateUuid(m.GetBookmarkId()); err != nil {
+		err = UpdateBookmarkRequestValidationError{
+			field:  "BookmarkId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for DisplayName
 
@@ -30212,6 +30659,14 @@ func (m *UpdateBookmarkRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return UpdateBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *UpdateBookmarkRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -30414,10 +30869,28 @@ func (m *RemoveBookmarkRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for BookmarkId
+	if err := m._validateUuid(m.GetBookmarkId()); err != nil {
+		err = RemoveBookmarkRequestValidationError{
+			field:  "BookmarkId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return RemoveBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RemoveBookmarkRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -31682,6 +32155,8 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Password
+
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
 	}
@@ -32407,6 +32882,8 @@ func (m *GetCurrentMagicAuthTokenResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Locked
+
 	if len(errors) > 0 {
 		return GetCurrentMagicAuthTokenResponseMultiError(errors)
 	}
@@ -32696,6 +33173,510 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RevokeMagicAuthTokenResponseValidationError{}
+
+// Validate checks the field values on UpdateMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateMagicAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateMagicAuthTokenRequestMultiError, or nil if none found.
+func (m *UpdateMagicAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateMagicAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateUuid(m.GetTokenId()); err != nil {
+		err = UpdateMagicAuthTokenRequestValidationError{
+			field:  "TokenId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for RemovePassword
+
+	if m.DisplayName != nil {
+		// no validation rules for DisplayName
+	}
+
+	if m.Password != nil {
+		// no validation rules for Password
+	}
+
+	if len(errors) > 0 {
+		return UpdateMagicAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *UpdateMagicAuthTokenRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// UpdateMagicAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by UpdateMagicAuthTokenRequest.ValidateAll() if
+// the designated constraints aren't met.
+type UpdateMagicAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateMagicAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateMagicAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// UpdateMagicAuthTokenRequestValidationError is the validation error returned
+// by UpdateMagicAuthTokenRequest.Validate if the designated constraints
+// aren't met.
+type UpdateMagicAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateMagicAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateMagicAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateMagicAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateMagicAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateMagicAuthTokenRequestValidationError) ErrorName() string {
+	return "UpdateMagicAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateMagicAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateMagicAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateMagicAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateMagicAuthTokenRequestValidationError{}
+
+// Validate checks the field values on UpdateMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateMagicAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateMagicAuthTokenResponseMultiError, or nil if none found.
+func (m *UpdateMagicAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateMagicAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetToken()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateMagicAuthTokenResponseValidationError{
+					field:  "Token",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateMagicAuthTokenResponseValidationError{
+					field:  "Token",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetToken()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateMagicAuthTokenResponseValidationError{
+				field:  "Token",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateMagicAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateMagicAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateMagicAuthTokenResponse.ValidateAll() if
+// the designated constraints aren't met.
+type UpdateMagicAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateMagicAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateMagicAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// UpdateMagicAuthTokenResponseValidationError is the validation error returned
+// by UpdateMagicAuthTokenResponse.Validate if the designated constraints
+// aren't met.
+type UpdateMagicAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateMagicAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateMagicAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateMagicAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateMagicAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateMagicAuthTokenResponseValidationError) ErrorName() string {
+	return "UpdateMagicAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateMagicAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateMagicAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateMagicAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateMagicAuthTokenResponseValidationError{}
+
+// Validate checks the field values on UnlockMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnlockMagicAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnlockMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnlockMagicAuthTokenRequestMultiError, or nil if none found.
+func (m *UnlockMagicAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnlockMagicAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Password
+
+	if len(errors) > 0 {
+		return UnlockMagicAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnlockMagicAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by UnlockMagicAuthTokenRequest.ValidateAll() if
+// the designated constraints aren't met.
+type UnlockMagicAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnlockMagicAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnlockMagicAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// UnlockMagicAuthTokenRequestValidationError is the validation error returned
+// by UnlockMagicAuthTokenRequest.Validate if the designated constraints
+// aren't met.
+type UnlockMagicAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnlockMagicAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnlockMagicAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnlockMagicAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnlockMagicAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnlockMagicAuthTokenRequestValidationError) ErrorName() string {
+	return "UnlockMagicAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnlockMagicAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnlockMagicAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnlockMagicAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnlockMagicAuthTokenRequestValidationError{}
+
+// Validate checks the field values on UnlockMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnlockMagicAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnlockMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnlockMagicAuthTokenResponseMultiError, or nil if none found.
+func (m *UnlockMagicAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnlockMagicAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SessionToken
+
+	if all {
+		switch v := interface{}(m.GetExpiresOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UnlockMagicAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UnlockMagicAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpiresOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UnlockMagicAuthTokenResponseValidationError{
+				field:  "ExpiresOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UnlockMagicAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnlockMagicAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by UnlockMagicAuthTokenResponse.ValidateAll() if
+// the designated constraints aren't met.
+type UnlockMagicAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnlockMagicAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnlockMagicAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// UnlockMagicAuthTokenResponseValidationError is the validation error returned
+// by UnlockMagicAuthTokenResponse.Validate if the designated constraints
+// aren't met.
+type UnlockMagicAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnlockMagicAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnlockMagicAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnlockMagicAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnlockMagicAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnlockMagicAuthTokenResponseValidationError) ErrorName() string {
+	return "UnlockMagicAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnlockMagicAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnlockMagicAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnlockMagicAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnlockMagicAuthTokenResponseValidationError{}
 
 // Validate checks the field values on GetGithubRepoStatusRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -36038,10 +37019,28 @@ func (m *GetRepoMetaRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = GetRepoMetaRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetRepoMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetRepoMetaRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -36347,7 +37346,17 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = PullVirtualRepoRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Environment
 
@@ -36372,6 +37381,14 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return PullVirtualRepoRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *PullVirtualRepoRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -36610,7 +37627,17 @@ func (m *GetVirtualFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = GetVirtualFileRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Environment
 
@@ -36620,6 +37647,14 @@ func (m *GetVirtualFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return GetVirtualFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetVirtualFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -36851,7 +37886,17 @@ func (m *DeleteVirtualFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = DeleteVirtualFileRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Environment
 
@@ -36861,6 +37906,14 @@ func (m *DeleteVirtualFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return DeleteVirtualFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteVirtualFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -37063,11 +38116,35 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = GetReportMetaRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Report
 
-	// no validation rules for OwnerId
+	if m.GetOwnerId() != "" {
+
+		if err := m._validateUuid(m.GetOwnerId()); err != nil {
+			err = GetReportMetaRequestValidationError{
+				field:  "OwnerId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
@@ -37140,6 +38217,14 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetReportMetaRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -37388,13 +38473,37 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
+	if err := m._validateUuid(m.GetProjectId()); err != nil {
+		err = GetAlertMetaRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Alert
 
 	// no validation rules for Annotations
 
-	// no validation rules for OwnerId
+	if m.GetOwnerId() != "" {
+
+		if err := m._validateUuid(m.GetOwnerId()); err != nil {
+			err = GetAlertMetaRequestValidationError{
+				field:  "OwnerId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for AnonRecipients
 
@@ -37410,7 +38519,19 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-		// no validation rules for QueryForUserId
+
+		if err := m._validateUuid(m.GetQueryForUserId()); err != nil {
+			err = GetAlertMetaRequestValidationError{
+				field:  "QueryForUserId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
 	case *GetAlertMetaRequest_QueryForUserEmail:
 		if v == nil {
 			err := GetAlertMetaRequestValidationError{
@@ -37429,6 +38550,14 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return GetAlertMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetAlertMetaRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -37602,6 +38731,44 @@ func (m *GetAlertMetaResponse) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	// no validation rules for QueryForUserId
+
+	// no validation rules for RestrictResources
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetAlertMetaResponseValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetAlertMetaResponseValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetAlertMetaResponseValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -43120,6 +44287,8 @@ func (m *GetBillingCreditBalanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for AllowCached
+
 	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
@@ -44246,10 +45415,28 @@ func (m *GetProjectAccessRequestRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = GetProjectAccessRequestRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetProjectAccessRequestRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetProjectAccessRequestRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -44456,12 +45643,30 @@ func (m *ApproveProjectAccessRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = ApproveProjectAccessRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Role
 
 	if len(errors) > 0 {
 		return ApproveProjectAccessRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ApproveProjectAccessRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -44666,10 +45871,28 @@ func (m *DenyProjectAccessRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
+	if err := m._validateUuid(m.GetId()); err != nil {
+		err = DenyProjectAccessRequestValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DenyProjectAccessRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DenyProjectAccessRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -45933,6 +47156,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for CustomDomain
 
 	// no validation rules for DefaultProjectRoleId
+
+	// no validation rules for DisableProjectDomainAccess
 
 	// no validation rules for DefaultProvisioner
 
@@ -48729,6 +49954,8 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for Shared
 
+	// no validation rules for CanManage
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -49493,6 +50720,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for PasswordProtected
+
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
 	}
@@ -49987,11 +51216,24 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for ExportLimit
 
+	if m.GetNotifyRowsLimit() > 50 {
+		err := AlertOptionsValidationError{
+			field:  "NotifyRowsLimit",
+			reason: "value must be less than or equal to 50",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	// no validation rules for MetricsViewName
 
 	// no validation rules for Renotify
 
 	// no validation rules for RenotifyAfterSeconds
+
+	// no validation rules for EmbedOwnerEmail
 
 	// no validation rules for WebOpenPath
 
@@ -53206,6 +54448,8 @@ func (m *GetAlertMetaResponse_URLs) validate(all bool) error {
 	// no validation rules for EditUrl
 
 	// no validation rules for UnsubscribeUrl
+
+	// no validation rules for EmbedOwner
 
 	if len(errors) > 0 {
 		return GetAlertMetaResponse_URLsMultiError(errors)

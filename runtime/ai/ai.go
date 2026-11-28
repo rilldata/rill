@@ -959,18 +959,18 @@ func (s *BaseSession) MessagesWithChildren(predicates ...Predicate) []*Message {
 			return res
 		}
 
-		// Find it's children and return them too
-		subMsgs := s.Messages(FilterByParent(m.ID))
-		res = append(res, subMsgs...)
-
-		// For each child that's a call, add its result too
-		for _, sm := range subMsgs {
-			if sm.Type == MessageTypeCall {
-				subResMsg, ok := s.Message(FilterByParent(sm.ID), FilterByType(MessageTypeResult))
-				if ok {
-					res = append(res, subResMsg)
-				}
+		// Find its children and return them too; for each child that's a call, add its result too
+		for _, sm := range s.Messages(FilterByParent(m.ID)) {
+			if sm.Type != MessageTypeCall {
+				res = append(res, sm)
+				continue
 			}
+			subResMsg, ok := s.Message(FilterByParent(sm.ID), FilterByType(MessageTypeResult))
+			if !ok {
+				// Skip the call if there isn't a corresponding result (e.g. it was cancelled).
+				continue
+			}
+			res = append(res, sm, subResMsg)
 		}
 
 		return res
@@ -1333,13 +1333,16 @@ type CompleteOptions struct {
 	Messages      []*aiv1.CompletionMessage
 	Tools         []string
 	MaxIterations int
+	// CheckResponse optionally checks the final text response before Complete returns it.
+	// It gets the response and the messages the LLM saw when writing it, and returns feedback if the response fails the check.
+	// The loop then shows the LLM its response and the feedback, and continues so the LLM can revise it;
+	// the rejected response is not added to the session, so the user never sees it.
+	// This happens at most once per completion and not on the last iteration, so a revision is returned even if it also fails.
+	CheckResponse func(response string, messages []*aiv1.CompletionMessage) string
 	// The complete loop will add intermediate messages for LLM thinking and tool calls to session under the current call.
 	// In some cases, it's desirable to capture these intermediate messages in the parent call's context, in other cases it's better to isolate them and only expose the final result to the parent context.
 	// When UnwrapCall is true, we run the completion loop within the current call, otherwise we wrap the complete loop in a new call to isolate internal messages.
 	UnwrapCall bool
-	// FailOnIterationLimit makes the loop return an error when the model is still calling tools after MaxIterations-1 turns,
-	// instead of taking a final turn without tools that forces it to answer with what it has.
-	FailOnIterationLimit bool
 }
 
 // Complete runs LLM completions.
@@ -1442,6 +1445,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// Telemetry
 		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens int
 		var provider string
+		var responseChecked, responseRejected bool
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
 			zap.Int("tools_count", len(tools)),
@@ -1477,6 +1481,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("cached_input_tokens", cachedInputTokens),
 				attribute.Int("cache_write_input_tokens", cacheWriteInputTokens),
 				attribute.String("provider", provider),
+				attribute.Bool("response_rejected", responseRejected),
 			)
 
 			// Emit billable token metrics. Tagged with the request source, the LLM provider, and whether the completion used
@@ -1506,9 +1511,6 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		for i := range opts.MaxIterations {
 			// Disable tool calls in the last iteration
 			final := i+1 == opts.MaxIterations
-			if final && i != 0 && opts.FailOnIterationLimit {
-				return nil, fmt.Errorf("reached the limit of %d iterations without a final response", opts.MaxIterations)
-			}
 			if final {
 				tools = nil
 				if i != 0 {
@@ -1574,6 +1576,20 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				}
 			}
 			if !hasCall {
+				// Let the LLM revise a response that fails the check, while it can still call tools to do so.
+				if opts.CheckResponse != nil && !responseChecked && !final {
+					responseChecked = true
+					var response strings.Builder
+					for _, block := range res.Message.Content {
+						response.WriteString(block.GetText())
+					}
+					if feedback := opts.CheckResponse(response.String(), messages); feedback != "" {
+						responseRejected = true
+						s.logger.Debug("completion response failed check", zap.Int("iteration", i), observability.ZapCtx(ctx))
+						messages = append(messages, NewTextCompletionMessage(RoleAssistant, response.String()), NewTextCompletionMessage(RoleUser, feedback))
+						continue
+					}
+				}
 				result = res.Message
 				break
 			}

@@ -3,13 +3,16 @@ package postgres
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
@@ -39,17 +42,20 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
+	t.Run("TestProjectsWithTags", func(t *testing.T) { testProjectsWithTags(t, db) })
 	t.Run("TestProjectsWithPagination", func(t *testing.T) { testProjectsWithPagination(t, db) })
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestConnectorOAuth", func(t *testing.T) { testConnectorOAuth(t, db) })
 	t.Run("TestEmbedUsers", func(t *testing.T) { testEmbedUsers(t, db) })
+	t.Run("TestEmbedUsersConcurrentUpsert", func(t *testing.T) { testEmbedUsersConcurrentUpsert(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
 	t.Run("TestOrganizationInviteUsergroups", func(t *testing.T) { testOrganizationInviteUsergroups(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
+	t.Run("TestNilAttributes", func(t *testing.T) { testNilAttributes(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -170,6 +176,20 @@ func testOrganizations(t *testing.T, db database.DB) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "", org.DefaultProvisioner)
+
+	// Check that DisableProjectDomainAccess is only changed when set
+	disableProjectDomainAccess := true
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                       org.Name,
+		DisableProjectDomainAccess: &disableProjectDomainAccess,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.True(t, org.DisableProjectDomainAccess)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
@@ -330,6 +350,130 @@ func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 }
 
+func testProjectsWithTags(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "tags"})
+	require.NoError(t, err)
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "tags@example.com"})
+	require.NoError(t, err)
+	viewer, err := db.FindProjectRole(ctx, database.ProjectRoleNameViewer)
+	require.NoError(t, err)
+
+	// Tags default to empty and are normalized on insert
+	untagged, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "untagged"})
+	require.NoError(t, err)
+	require.Empty(t, untagged.Tags)
+	prod, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "prod", Tags: []string{"Prod", "eu", "prod"}, Public: true})
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "prod"}, prod.Tags)
+	stage, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "stage", Tags: []string{"stage"}})
+	require.NoError(t, err)
+	sandbox, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "sandbox", Tags: []string{"sandbox"}})
+	require.NoError(t, err)
+	require.NoError(t, db.InsertProjectMemberUser(ctx, sandbox.ID, user.ID, viewer.ID, false, nil))
+	_, err = db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "invalid", Tags: []string{"not valid"}})
+	require.ErrorIs(t, err, database.ErrValidation)
+
+	// UpdateProjectTags adds and removes tags
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, []string{"EU", "tmp"}, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage", "tmp"}, stage.Tags)
+	stage, err = db.UpdateProjectTags(ctx, stage.ID, nil, []string{"tmp"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+	_, err = db.UpdateProjectTags(ctx, stage.ID, []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}, nil)
+	require.ErrorIs(t, err, database.ErrValidation)
+
+	// Concurrent updates keep each other's changes, and the limit applies to the tags they add together
+	concurrent, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "concurrent"})
+	require.NoError(t, err)
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make([]error, database.MaxProjectTags+1)
+	for i := range errs {
+		wg.Go(func() {
+			<-start
+			_, errs[i] = db.UpdateProjectTags(ctx, concurrent.ID, []string{fmt.Sprintf("tag%d", i)}, nil)
+		})
+	}
+	close(start)
+	wg.Wait()
+	var added []string
+	for i, err := range errs {
+		if err == nil {
+			added = append(added, fmt.Sprintf("tag%d", i))
+		} else {
+			require.ErrorIs(t, err, database.ErrValidation)
+		}
+	}
+	require.Len(t, added, database.MaxProjectTags)
+	concurrent, err = db.FindProject(ctx, concurrent.ID)
+	require.NoError(t, err)
+	require.ElementsMatch(t, added, concurrent.Tags)
+	require.NoError(t, db.DeleteProject(ctx, concurrent.ID))
+
+	// Updating the other fields keeps the tags
+	stage, err = db.UpdateProject(ctx, stage.ID, &database.UpdateProjectOptions{Name: stage.Name, Description: "staging"})
+	require.NoError(t, err)
+	require.Equal(t, "staging", stage.Description)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+	stage, err = db.FindProject(ctx, stage.ID)
+	require.NoError(t, err)
+	require.Equal(t, []string{"eu", "stage"}, stage.Tags)
+
+	names := func(projs []*database.Project) []string {
+		res := make([]string, len(projs))
+		for i, p := range projs {
+			res[i] = p.Name
+		}
+		return res
+	}
+
+	// Filtering matches any of the tags, and nil or empty tags mean no filter
+	projs, err := db.FindProjectsForOrganization(ctx, org.ID, nil, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox", "stage", "untagged"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{}, "", 10)
+	require.NoError(t, err)
+	require.Len(t, projs, 4)
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox", "stage"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"missing"}, "", 10)
+	require.NoError(t, err)
+	require.Empty(t, projs)
+
+	// Pagination continues after the last project of the filtered page
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, "", 2)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox"}, names(projs))
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, []string{"eu", "sandbox"}, projs[1].Name, 2)
+	require.NoError(t, err)
+	require.Equal(t, []string{"stage"}, names(projs))
+
+	// The user sees the public project and the project they are a member of
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "sandbox"}, names(projs))
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, []string{"sandbox", "stage"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"sandbox"}, names(projs))
+
+	projs, err = db.FindPublicProjectsInOrganization(ctx, org.ID, []string{"prod"}, "", 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod"}, names(projs))
+	projs, err = db.FindPublicProjectsInOrganization(ctx, org.ID, []string{"sandbox"}, "", 10)
+	require.NoError(t, err)
+	require.Empty(t, projs)
+
+	for _, p := range []*database.Project{untagged, prod, stage, sandbox} {
+		require.NoError(t, db.DeleteProject(ctx, p.ID))
+	}
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
 func testProjectsWithPagination(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
@@ -361,14 +505,14 @@ func testProjectsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "other", proj3.Name)
 
 	// fetch project name without name filter
-	projs, err := db.FindProjectsForOrganization(ctx, org.ID, "", 2)
+	projs, err := db.FindProjectsForOrganization(ctx, org.ID, nil, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrganization(ctx, org.ID, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, nil, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -422,14 +566,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, "", 2)
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, true, nil, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -719,6 +863,84 @@ func testEmbedUsers(t *testing.T, db database.DB) {
 	require.Nil(t, vf.EmbedOwnerID)
 	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
 	require.NoError(t, err)
+
+	// An external user ID of the maximum size that GetIFrame accepts (2048 bytes) fits in the unique index on it.
+	// The ID is random, since Postgres compresses large index entries and only rejects those that are still too large.
+	longID := make([]byte, 1536)
+	_, err = rand.Read(longID)
+	require.NoError(t, err)
+	externalUserID := base64.RawURLEncoding.EncodeToString(longID)
+	require.Len(t, externalUserID, 2048)
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_2",
+		ProjectID:      projectID,
+		ExternalUserID: externalUserID,
+	})
+	require.NoError(t, err)
+	u, err = db.FindEmbedUser(ctx, "ext_2")
+	require.NoError(t, err)
+	require.Equal(t, externalUserID, u.ExternalUserID)
+}
+
+// testEmbedUsersConcurrentUpsert tests that concurrent first upserts of the same embed user all succeed and store one row.
+// It covers a host page that loads several iframes in parallel for an external user that isn't stored yet.
+func testEmbedUsersConcurrentUpsert(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	conn := db.(*connection)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "embed-users-concurrent"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteOrganization(ctx, org.Name)) }()
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "embed-users-concurrent"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteProject(ctx, proj.ID)) }()
+
+	// The race window is narrow, so it takes many new users to hit it reliably.
+	// Two calls per user keep the test fast, since database/sql only keeps two idle connections by default.
+	const users = 200
+	const callsPerUser = 2
+	for i := range users {
+		// Every other user gets calls with different identities, in which case the identity of any one call may be stored.
+		identities := make([]map[string]any, callsPerUser)
+		for j := range callsPerUser {
+			identities[j] = map[string]any{"tenant": "t1"}
+			if i%2 == 1 {
+				identities[j]["call"] = float64(j)
+			}
+		}
+
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		errs := make([]error, callsPerUser)
+		for j := range callsPerUser {
+			wg.Go(func() {
+				<-start
+				errs[j] = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+					ID:             fmt.Sprintf("ext_concurrent_%d", i),
+					ProjectID:      proj.ID,
+					ExternalUserID: fmt.Sprintf("user%d", i),
+					Attributes:     identities[j],
+				})
+			})
+		}
+		close(start)
+		wg.Wait()
+		for _, err := range errs {
+			require.NoError(t, err)
+		}
+
+		u, err := db.FindEmbedUser(ctx, fmt.Sprintf("ext_concurrent_%d", i))
+		require.NoError(t, err)
+		require.Equal(t, proj.ID, u.ProjectID)
+		require.Equal(t, fmt.Sprintf("user%d", i), u.ExternalUserID)
+		require.Nil(t, u.Email)
+		require.Contains(t, identities, u.Attributes)
+	}
+
+	var count int
+	err = conn.db.QueryRowxContext(ctx, "SELECT count(*) FROM embed_users WHERE project_id = $1", proj.ID).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, users, count)
 }
 
 func testUpsertProjectVariable(t *testing.T, db database.DB) {
@@ -953,6 +1175,70 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	})
 
 	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+// testNilAttributes checks that nil attribute maps are written to NOT NULL JSONB columns as before the move to pgx v5,
+// which encodes a nil map argument as SQL NULL instead of a JSON null.
+func testNilAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "nil-attrs@rilldata.com"})
+	require.NoError(t, err)
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "nil-attrs"})
+	require.NoError(t, err)
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "nil-attrs"})
+	require.NoError(t, err)
+
+	t.Run("InsertOrganizationMemberUser if not exists", func(t *testing.T) {
+		inserted, err := db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, true)
+		require.NoError(t, err)
+		require.True(t, inserted)
+
+		members, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
+		require.NoError(t, err)
+		require.Len(t, members, 1)
+		require.Empty(t, members[0].Attributes)
+	})
+
+	t.Run("InsertMagicAuthToken without attributes", func(t *testing.T) {
+		tkn, err := db.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
+			ID:         uuid.NewString(),
+			SecretHash: []byte("hash"),
+			ProjectID:  proj.ID,
+		})
+		require.NoError(t, err)
+		require.Nil(t, tkn.Attributes)
+		require.Equal(t, []string{}, tkn.Fields)
+
+		tkn, err = db.FindMagicAuthToken(ctx, tkn.ID, false)
+		require.NoError(t, err)
+		require.Nil(t, tkn.Attributes)
+		require.Equal(t, []string{}, tkn.Fields)
+	})
+
+	t.Run("InsertMagicAuthToken with attributes and fields", func(t *testing.T) {
+		attrs := map[string]any{"email": "nil-attrs@rilldata.com"}
+		fields := []string{"a", "b c", "d,e"}
+		tkn, err := db.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
+			ID:         uuid.NewString(),
+			SecretHash: []byte("hash"),
+			ProjectID:  proj.ID,
+			Attributes: attrs,
+			Fields:     fields,
+		})
+		require.NoError(t, err)
+
+		tkn, err = db.FindMagicAuthToken(ctx, tkn.ID, false)
+		require.NoError(t, err)
+		require.Equal(t, attrs, tkn.Attributes)
+		require.Equal(t, fields, tkn.Fields)
+	})
+
+	require.NoError(t, db.DeleteProject(ctx, proj.ID))
 	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }

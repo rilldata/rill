@@ -63,6 +63,7 @@
   export let projectPermissions: V1ProjectPermissions;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readOrgMembers: boolean;
   export let readProjects: boolean;
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
@@ -261,9 +262,11 @@
         <ShareProjectPopover
           {organization}
           {project}
+          manageProject={!!projectPermissions.manageProject}
           manageProjectAdmins={projectPermissions.manageProjectAdmins}
           {manageOrgAdmins}
           {manageOrgMembers}
+          {readOrgMembers}
         />
       {/if}
     {/if}

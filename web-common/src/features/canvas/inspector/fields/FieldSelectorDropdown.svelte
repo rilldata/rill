@@ -4,6 +4,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasuresFirst } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricFieldData } from "../selectors";
@@ -29,6 +30,7 @@
 
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
+  let selectionIntents = new Map<string, boolean>();
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(
@@ -46,18 +48,22 @@
           <SearchableFilterSelectableGroup>{
             name: "measure",
             label: "MEASURES",
-            items: $fieldData.filteredItems
-              .filter((item) => $fieldData.displayMap[item]?.type === "measure")
-              .map((item) => {
-                const def = ephemeralMeasures?.find((d) => d.name === item);
-                return {
-                  name: item,
-                  label: $fieldData.displayMap[item].label,
-                  ...(def
-                    ? { description: def.expression, ephemeral: true }
-                    : {}),
-                };
-              }),
+            items: ephemeralMeasuresFirst(
+              $fieldData.filteredItems.filter(
+                (item) => $fieldData.displayMap[item]?.type === "measure",
+              ),
+              (item) => item,
+              (ephemeralMeasures ?? []).map((def) => def.name),
+            ).map((item) => {
+              const def = ephemeralMeasures?.find((d) => d.name === item);
+              return {
+                name: item,
+                label: $fieldData.displayMap[item].label,
+                ...(def
+                  ? { description: def.expression, ephemeral: true }
+                  : {}),
+              };
+            }),
           },
         ]
       : []),
@@ -93,19 +99,36 @@
       : []),
   ];
 
-  $: {
-    localSelectedItems = selectedItems;
+  $: if (!open && selectionIntents.size) selectionIntents = new Map();
+  $: localSelectedItems = applySelectionIntents(
+    selectedItems,
+    selectionIntents,
+  );
+
+  function applySelectionIntents(
+    items: string[],
+    intents: Map<string, boolean>,
+  ) {
+    const selected = new Set(items);
+    for (const [name, included] of intents) {
+      if (included) selected.add(name);
+      else selected.delete(name);
+    }
+    return Array.from(selected);
   }
 
   function handleSelect(name: string) {
     if (allowMultiSelect) {
-      const selectedProxy = new Set(localSelectedItems);
-      if (selectedProxy.has(name)) {
-        selectedProxy.delete(name);
-      } else {
-        selectedProxy.add(name);
-      }
-      localSelectedItems = Array.from(selectedProxy);
+      // Keep this session's toggles when an older reconciled spec is echoed back,
+      // while still accepting external changes to other fields.
+      selectionIntents = new Map(selectionIntents).set(
+        name,
+        !localSelectedItems.includes(name),
+      );
+      localSelectedItems = applySelectionIntents(
+        selectedItems,
+        selectionIntents,
+      );
       onMultiSelect(localSelectedItems);
     } else {
       localSelectedItems = [name];
@@ -139,6 +162,7 @@
     >
       <CreateEphemeralMeasureButton
         slot="action"
+        count={ephemeralMeasures?.length ?? 0}
         onOpen={() => (open = false)}
         onCreate={onCreateEphemeral}
       />

@@ -5,7 +5,8 @@ import { COLUMN_COUNT } from "../layout-util";
 export class Row {
   items = writable<string[]>([]);
   widths = writable<number[]>([]);
-  height = writable<number>(100);
+  // The row's height in the YAML; undefined when the row sets none.
+  height = writable<number | undefined>(undefined);
 
   constructor(private grid: Grid) {}
 

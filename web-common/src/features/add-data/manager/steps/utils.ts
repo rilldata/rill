@@ -1,4 +1,5 @@
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import type { ConnectorDriver } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import {
   connectorInfoMap,
   getBackendConnectorName,
@@ -16,7 +17,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 
 export function getConnectorDriverForSchema(
   schemaName: string,
-): V1ConnectorDriver | undefined {
+): PartialMessage<ConnectorDriver> | undefined {
   const connectorInfo = connectorInfoMap.get(schemaName);
   if (!connectorInfo) return undefined;
   const schema = getConnectorSchema(connectorInfo.name);
@@ -62,7 +63,9 @@ export async function maybeGetConnectorDriver(
   return null;
 }
 
-export function isConnectorType(connectorDriver: V1ConnectorDriver) {
+export function isConnectorType(
+  connectorDriver: PartialMessage<ConnectorDriver>,
+) {
   return (
     connectorDriver?.implementsObjectStore ||
     connectorDriver?.implementsOlap ||
@@ -72,7 +75,9 @@ export function isConnectorType(connectorDriver: V1ConnectorDriver) {
   );
 }
 
-export function isExplorerType(connectorDriver: V1ConnectorDriver) {
+export function isExplorerType(
+  connectorDriver: PartialMessage<ConnectorDriver>,
+) {
   return (
     connectorDriver?.implementsOlap ||
     connectorDriver?.implementsSqlStore ||
@@ -81,7 +86,7 @@ export function isExplorerType(connectorDriver: V1ConnectorDriver) {
 }
 
 export function isLiveConnectorType(
-  connectorDriver: V1ConnectorDriver,
+  connectorDriver: PartialMessage<ConnectorDriver>,
   projectOlapConnector = "",
 ) {
   if (!connectorDriver?.implementsOlap) return false;
@@ -100,7 +105,7 @@ const FullListOfSteps = [ImportDataStep.CreateModel, ...NonModelSteps];
 
 export function getImportStepsForConnector(
   config: AddDataConfig,
-  driver: V1ConnectorDriver,
+  driver: PartialMessage<ConnectorDriver>,
   projectOlapConnector = "",
 ) {
   const live = isLiveConnectorType(driver, projectOlapConnector);
