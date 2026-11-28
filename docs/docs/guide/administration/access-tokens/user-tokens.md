@@ -19,6 +19,17 @@ User tokens are designed for:
 
 ## Creating User Tokens
 
+### In Rill Cloud
+
+1. Click your avatar in the top right corner and select **Access tokens**.
+2. Click **New token**.
+3. Enter a name, choose an expiration and click **Create token**.
+4. Copy the token. Rill shows it only once.
+
+Tokens expire after 90 days by default. You can pick 7 days, 30 days, 1 year, a custom date up to a year away, or no expiration.
+
+The MCP dialog in a private project's AI tab creates the same kind of token and adds it to the configuration snippet.
+
 ### Basic Creation
 
 Create a user token with the CLI:
@@ -64,9 +75,11 @@ For more details on roles, see [Roles and Permissions](/guide/administration/use
 
 ## Managing User Tokens
 
+In Rill Cloud, the **Access tokens** page lists your tokens with when each was created, last used and expires. Click **Revoke** next to a token to revoke it; apps and scripts that use it stop working within a few seconds.
+
 ### Listing Your Tokens
 
-View all your active user tokens:
+View all your active user tokens with the CLI:
 
 ```bash
 rill token list

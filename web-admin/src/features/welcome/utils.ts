@@ -1,4 +1,5 @@
 import {
+  isAccountPage,
   isAuthPage,
   isWelcomePage,
   withinOrganization,
@@ -14,13 +15,15 @@ import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-u
 
 /**
  * Redirect users through the welcome flow when they have no organizations.
- * Skip for org-specific routes (invite accepts), auth pages, and welcome pages themselves.
+ * Skip for org-specific routes (invite accepts), auth pages, welcome pages themselves,
+ * and account pages, which manage things like access tokens that don't need an organization.
  */
 export async function maybeRedirectToWelcomePage(route: Page["route"]) {
   if (
     withinOrganization({ route }) ||
     isEmbedPage({ route }) ||
     isAuthPage({ route }) ||
+    isAccountPage({ route }) ||
     isWelcomePage({ route })
   ) {
     return;

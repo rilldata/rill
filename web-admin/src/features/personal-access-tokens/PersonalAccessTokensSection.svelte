@@ -1,32 +1,56 @@
 <script lang="ts">
-  import { createAdminServiceIssueUserAuthToken } from "@rilldata/web-admin/client";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import ExpirationSelect from "./ExpirationSelect.svelte";
+  import {
+    ACCOUNT_TOKENS_PATH,
+    DEFAULT_TOKEN_EXPIRATION,
+    issuePersonalAccessToken,
+    TOKEN_NAME_MAX_LENGTH,
+    type TokenExpiration,
+  } from "./personal-access-tokens";
 
-  export let issuedToken: string | null = null;
+  let {
+    project,
+    issuedToken = $bindable(null),
+  }: {
+    project: string;
+    issuedToken?: string | null;
+  } = $props();
 
-  let error: string | null = null;
-  let issuing = false;
+  const queryClient = useQueryClient();
 
-  const issueTokenMutation = createAdminServiceIssueUserAuthToken();
-  const manualClientId = "12345678-0000-0000-0000-000000000005"; // This comes from admin/database/database.go
+  // svelte-ignore state_referenced_locally
+  let name = $state(m.mcp_token_name_default({ project }));
+  let expiration = $state<TokenExpiration>(DEFAULT_TOKEN_EXPIRATION);
+  let customDate = $state("");
+  let error = $state<string | null>(null);
+  let issuing = $state(false);
+
+  let trimmedName = $derived(name.trim());
+  let nameError = $derived(
+    trimmedName.length > TOKEN_NAME_MAX_LENGTH
+      ? m.access_tokens_name_too_long({ max: TOKEN_NAME_MAX_LENGTH })
+      : "",
+  );
 
   async function issueToken() {
-    issuing = true;
     error = null;
     issuedToken = null;
+    issuing = true;
     try {
-      const resp = await $issueTokenMutation.mutateAsync({
-        userId: "current",
-        data: {
-          displayName: "MCP Token",
-          clientId: manualClientId,
-          ttlMinutes: "0",
-        },
-      });
-      issuedToken = resp.token;
+      const { token } = await issuePersonalAccessToken(
+        queryClient,
+        trimmedName,
+        expiration,
+        customDate,
+      );
+      issuedToken = token || null;
     } catch (e) {
-      error = e?.message || m.mcp_token_failed();
+      error = (e as HTTPError).response?.data?.message || m.mcp_token_failed();
     } finally {
       issuing = false;
     }
@@ -45,9 +69,24 @@
         m.mcp_personal_access_token() +
         "</span>",
     })}
+    <a href={ACCOUNT_TOKENS_PATH}>{m.mcp_manage_tokens()}</a>
   </p>
+
+  <Input
+    id="mcp-token-name"
+    label={m.common_name()}
+    bind:value={name}
+    errors={nameError}
+    alwaysShowError
+  />
+  <ExpirationSelect id="mcp-token-expiration" bind:expiration bind:customDate />
+
   <div>
-    <Button type="primary" onClick={issueToken} disabled={issuing}>
+    <Button
+      type="primary"
+      onClick={issueToken}
+      disabled={issuing || !trimmedName || !!nameError}
+    >
       {issuing ? m.mcp_issuing() : m.mcp_create_token()}
     </Button>
   </div>

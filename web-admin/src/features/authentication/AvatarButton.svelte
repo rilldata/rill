@@ -27,6 +27,7 @@
   } from "../../client";
   import LanguageSwitcher from "@rilldata/web-common/components/i18n/LanguageSwitcher.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ACCOUNT_TOKENS_PATH } from "../personal-access-tokens/personal-access-tokens";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -125,6 +126,9 @@
       {/if}
     {/if}
 
+    <DropdownMenu.Item href={ACCOUNT_TOKENS_PATH}>
+      {m.access_tokens_menu_item()}
+    </DropdownMenu.Item>
     <ThemeToggle />
     <LanguageSwitcher />
     <DropdownMenu.Separator />
