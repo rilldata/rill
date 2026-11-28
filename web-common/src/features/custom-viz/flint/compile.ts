@@ -123,6 +123,9 @@ export function compileFlintSpec({
     case "Marginal Plot":
       fitMarginalPlot(vegaSpec, rows, fields, size, measureFormatters);
       break;
+    case "Sparkline":
+      sortSparklineRows(vegaSpec);
+      break;
   }
   labelDerivedEncodings(vegaSpec, fields, measureFields);
   formatMeasureLegends(vegaSpec);
@@ -1435,7 +1438,10 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
  *
  * A mark that summarizes its rows, such as a box plot, keeps no such column: its series are
  * listed by name alone. So are the series the author typed as ordinal: their values, such as
- * years or levels, have an order of their own, which their totals would scramble.
+ * years or levels, have an order of their own, which their totals would scramble. So are the
+ * series of a view a facet draws in each of its panels, whatever its axes draw: Vega-Lite derives
+ * the column within each panel, where a Sparkline's series, one to a panel, all came first, and it
+ * threw on the window that derives it, so the chart was not drawn.
  *
  * A layer draws the measure of the view it is layered in where it does not draw one of its own,
  * as a bullet chart's bars do.
@@ -1443,20 +1449,25 @@ const SERIES_PLACE_FIELD = "__rill_series_place";
 function orderSeries(
   view: Record<string, unknown>,
   inherited: Record<string, EncodingRecord> = {},
+  faceted = false,
 ): void {
   const own = encodingsOf(view);
   const encodings = { ...inherited, ...own };
-  orderViewSeries(view, own, encodings);
+  orderViewSeries(view, own, encodings, faceted);
   for (const { view: child, layered } of childViews(view)) {
-    orderSeries(child, layered ? encodings : {});
+    orderSeries(child, layered ? encodings : {}, faceted || "facet" in view);
   }
 }
 
-/** Orders the series a view draws itself, by the measure it draws or is layered over. */
+/**
+ * Orders the series a view draws itself, by the measure it draws or is layered over, or by name
+ * in the panels of a facet.
+ */
 function orderViewSeries(
   view: Record<string, unknown>,
   own: Record<string, EncodingRecord>,
   encodings: Record<string, EncodingRecord>,
+  faceted: boolean,
 ): void {
   const mark = view.mark as string | Record<string, unknown> | undefined;
   const markType = typeof mark === "object" ? mark.type : mark;
@@ -1470,7 +1481,8 @@ function orderViewSeries(
       !encoding.field.startsWith("__") &&
       !encoding.bin,
   );
-  if (measures.length !== 1) return;
+  // The series of a facet are listed by name, which needs no measure.
+  if (measures.length !== 1 && !faceted) return;
   // The column each field's series are placed in: several channels may draw one field.
   const places = new Map<string, string>();
   for (const channel of SERIES_CHANNELS) {
@@ -1488,7 +1500,8 @@ function orderViewSeries(
     }
     if (
       encoding.type === "ordinal" ||
-      COMPOSITE_MARKS.has(markType as string)
+      COMPOSITE_MARKS.has(markType as string) ||
+      faceted
     ) {
       encoding.sort = "ascending";
       continue;
@@ -1515,6 +1528,21 @@ function orderViewSeries(
       ];
     }
     encoding.sort = { field: place, op: "min" };
+  }
+}
+
+/**
+ * Flint stacks a Sparkline's series in rows, in each of its columns of names, trends and values,
+ * in the order their rows arrive, and drops any order the author gives them. The query of a chart
+ * over time is ordered by time, which leaves the order of each bucket's rows to the database, so a
+ * refresh moved the series from row to row. Their rows are listed by name, as their colors are
+ * (see `orderSeries`).
+ */
+function sortSparklineRows(spec: Record<string, unknown>): void {
+  for (const { view } of childViews(spec)) {
+    const row = (view.facet as { row?: Record<string, unknown> } | undefined)
+      ?.row;
+    if (row && Array.isArray(row.sort)) row.sort = "ascending";
   }
 }
 
