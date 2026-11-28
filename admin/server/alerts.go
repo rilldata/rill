@@ -220,26 +220,81 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
 
+	name, err := s.createManagedAlert(ctx, proj, req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateAlertResponse{
+		Name: name,
+	}, nil
+}
+
+// CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+func (s *Server) CreateAlertForUser(ctx context.Context, req *adminv1.CreateAlertForUserRequest) (*adminv1.CreateAlertForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, permissions, err := s.userForPrimaryDeployment(ctx, proj, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	if !permissions.CreateAlerts {
+		return nil, status.Error(codes.PermissionDenied, "user does not have permission to create alerts")
+	}
+
+	req.Options.EmailRecipients, err = s.recipientsForUser(ctx, proj, user, req.Options.EmailRecipients, req.Options.SlackUsers, req.Options.SlackChannels, req.Options.SlackWebhooks)
+	if err != nil {
+		return nil, err
+	}
+
+	// The organization is looked up first, so a failed lookup can't fail the request after the alert exists.
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := s.createManagedAlert(ctx, proj, req.Options, user.ID, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateAlertForUserResponse{
+		Name: name,
+		Url:  s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, name),
+	}, nil
+}
+
+// createManagedAlert adds a virtual file for an alert created from the UI or by the AI, and waits for the alert to be added to the runtime catalog.
+// It returns the alert's name.
+func (s *Server) createManagedAlert(ctx context.Context, proj *database.Project, opts *adminv1.AlertOptions, ownerID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) (string, error) {
 	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
+		return "", status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+	name, err := s.generateVirtualFileName(ctx, opts.DisplayName, func(ctx context.Context, name string) error {
 		_, err := s.admin.LookupAlert(ctx, depl, name)
 		return err
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
+	data, err := s.yamlForManagedAlert(opts, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
+		return "", status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
 	var embedOwnerIDPtr *string
@@ -255,20 +310,18 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		EmbedOwnerID: embedOwnerIDPtr,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
+		return "", fmt.Errorf("failed to insert virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be created")
+			return "", status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be created")
 		}
-		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
+		return "", fmt.Errorf("failed to reconcile alert: %w", err)
 	}
 
-	return &adminv1.CreateAlertResponse{
-		Name: name,
-	}, nil
+	return name, nil
 }
 
 func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (*adminv1.EditAlertResponse, error) {
@@ -570,20 +623,70 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
+	err = s.deleteManagedAlert(ctx, proj, depl, req.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
-	}
-
-	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be deleted")
-		}
-		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
+		return nil, err
 	}
 
 	return &adminv1.DeleteAlertResponse{}, nil
+}
+
+// DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+// Unlike DeleteAlert, it only deletes the user's own alerts, even if the user can manage other users' alerts.
+func (s *Server) DeleteAlertForUser(ctx context.Context, req *adminv1.DeleteAlertForUserRequest) (*adminv1.DeleteAlertForUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.name", req.Name),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, _, err := s.userForPrimaryDeployment(ctx, proj, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("could not get alert: %w", err)
+	}
+	annotations := parseAlertAnnotations(spec.Annotations)
+	if !annotations.AdminManaged || annotations.AdminOwnerUserID != user.ID {
+		return nil, status.Error(codes.PermissionDenied, "can only delete alerts the user owns")
+	}
+
+	err = s.deleteManagedAlert(ctx, proj, depl, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.DeleteAlertForUserResponse{}, nil
+}
+
+// deleteManagedAlert deletes the virtual file of an alert created from the UI or by the AI, and waits for the alert to be removed from the runtime catalog.
+func (s *Server) deleteManagedAlert(ctx context.Context, proj *database.Project, depl *database.Deployment, name string) error {
+	err := s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(name))
+	if err != nil {
+		return fmt.Errorf("failed to delete virtual file: %w", err)
+	}
+
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be deleted")
+		}
+		return fmt.Errorf("failed to reconcile alert: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) GenerateAlertYAML(ctx context.Context, req *adminv1.GenerateAlertYAMLRequest) (*adminv1.GenerateAlertYAMLResponse, error) {

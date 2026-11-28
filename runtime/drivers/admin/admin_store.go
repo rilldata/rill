@@ -237,3 +237,49 @@ func (h *Handle) DeleteConnectorOAuthToken(ctx context.Context, connector, confi
 	}
 	return nil
 }
+
+// CreateAlertForUser implements drivers.AdminService.
+func (h *Handle) CreateAlertForUser(ctx context.Context, userID string, opts *adminv1.AlertOptions) (string, string, error) {
+	res, err := h.admin.CreateAlertForUser(ctx, &adminv1.CreateAlertForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Options:   opts,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return res.Name, res.Url, nil
+}
+
+// DeleteAlertForUser implements drivers.AdminService.
+func (h *Handle) DeleteAlertForUser(ctx context.Context, userID, name string) error {
+	_, err := h.admin.DeleteAlertForUser(ctx, &adminv1.DeleteAlertForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Name:      name,
+	})
+	return err
+}
+
+// CreateReportForUser implements drivers.AdminService.
+func (h *Handle) CreateReportForUser(ctx context.Context, userID string, opts *adminv1.ReportOptions) (string, string, error) {
+	res, err := h.admin.CreateReportForUser(ctx, &adminv1.CreateReportForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Options:   opts,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return res.Name, res.Url, nil
+}
+
+// DeleteReportForUser implements drivers.AdminService.
+func (h *Handle) DeleteReportForUser(ctx context.Context, userID, name string) error {
+	_, err := h.admin.DeleteReportForUser(ctx, &adminv1.DeleteReportForUserRequest{
+		ProjectId: h.config.ProjectID,
+		UserId:    userID,
+		Name:      name,
+	})
+	return err
+}

@@ -504,6 +504,14 @@ components:
                     $ref: '#/components/schemas/v1ToolResult'
             title: Content block within a message
             type: object
+        v1CreateAlertForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL of the alert's page.
+                    type: string
+            type: object
         v1CreateAlertResponse:
             properties:
                 name:
@@ -595,6 +603,14 @@ components:
             type: object
         v1CreateProjectWhitelistedDomainResponse:
             type: object
+        v1CreateReportForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL of the report's page.
+                    type: string
+            type: object
         v1CreateReportResponse:
             properties:
                 name:
@@ -611,6 +627,8 @@ components:
                     $ref: '#/components/schemas/v1Usergroup'
             type: object
         v1CreateWhitelistedDomainResponse:
+            type: object
+        v1DeleteAlertForUserResponse:
             type: object
         v1DeleteAlertResponse:
             type: object
@@ -638,6 +656,8 @@ components:
             properties:
                 id:
                     type: string
+            type: object
+        v1DeleteReportForUserResponse:
             type: object
         v1DeleteReportResponse:
             type: object
@@ -4172,10 +4192,14 @@ paths:
     /v1/projects-for-fingerprint: {}
     /v1/projects/-/redeploy: {}
     /v1/projects/{id}: {}
+    /v1/projects/{projectId}/alerts/{name}/for-user: {}
+    /v1/projects/{projectId}/alerts/for-user: {}
     /v1/projects/{projectId}/alerts/meta: {}
     /v1/projects/{projectId}/repo/meta: {}
     /v1/projects/{projectId}/repo/virtual: {}
     /v1/projects/{projectId}/repo/virtual/file: {}
+    /v1/projects/{projectId}/reports/{name}/for-user: {}
+    /v1/projects/{projectId}/reports/for-user: {}
     /v1/projects/{projectId}/reports/meta: {}
     /v1/roles: {}
     /v1/services/tokens/{tokenId}: {}

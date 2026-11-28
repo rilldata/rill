@@ -14680,6 +14680,184 @@ export class DeleteReportResponse extends Message<DeleteReportResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.CreateReportForUserRequest
+ */
+export class CreateReportForUserRequest extends Message<CreateReportForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the report.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: rill.admin.v1.ReportOptions options = 3;
+   */
+  options?: ReportOptions;
+
+  constructor(data?: PartialMessage<CreateReportForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateReportForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "options", kind: "message", T: ReportOptions },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateReportForUserRequest {
+    return new CreateReportForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateReportForUserRequest {
+    return new CreateReportForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateReportForUserRequest {
+    return new CreateReportForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateReportForUserRequest | PlainMessage<CreateReportForUserRequest> | undefined, b: CreateReportForUserRequest | PlainMessage<CreateReportForUserRequest> | undefined): boolean {
+    return proto3.util.equals(CreateReportForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateReportForUserResponse
+ */
+export class CreateReportForUserResponse extends Message<CreateReportForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL of the report's page.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<CreateReportForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateReportForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateReportForUserResponse {
+    return new CreateReportForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateReportForUserResponse {
+    return new CreateReportForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateReportForUserResponse {
+    return new CreateReportForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateReportForUserResponse | PlainMessage<CreateReportForUserResponse> | undefined, b: CreateReportForUserResponse | PlainMessage<CreateReportForUserResponse> | undefined): boolean {
+    return proto3.util.equals(CreateReportForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteReportForUserRequest
+ */
+export class DeleteReportForUserRequest extends Message<DeleteReportForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the report.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<DeleteReportForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteReportForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteReportForUserRequest {
+    return new DeleteReportForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteReportForUserRequest {
+    return new DeleteReportForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteReportForUserRequest {
+    return new DeleteReportForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteReportForUserRequest | PlainMessage<DeleteReportForUserRequest> | undefined, b: DeleteReportForUserRequest | PlainMessage<DeleteReportForUserRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteReportForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteReportForUserResponse
+ */
+export class DeleteReportForUserResponse extends Message<DeleteReportForUserResponse> {
+  constructor(data?: PartialMessage<DeleteReportForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteReportForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteReportForUserResponse {
+    return new DeleteReportForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteReportForUserResponse {
+    return new DeleteReportForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteReportForUserResponse {
+    return new DeleteReportForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteReportForUserResponse | PlainMessage<DeleteReportForUserResponse> | undefined, b: DeleteReportForUserResponse | PlainMessage<DeleteReportForUserResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteReportForUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.TriggerReportRequest
  */
 export class TriggerReportRequest extends Message<TriggerReportRequest> {
@@ -15186,6 +15364,184 @@ export class DeleteAlertResponse extends Message<DeleteAlertResponse> {
 
   static equals(a: DeleteAlertResponse | PlainMessage<DeleteAlertResponse> | undefined, b: DeleteAlertResponse | PlainMessage<DeleteAlertResponse> | undefined): boolean {
     return proto3.util.equals(DeleteAlertResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateAlertForUserRequest
+ */
+export class CreateAlertForUserRequest extends Message<CreateAlertForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the alert.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: rill.admin.v1.AlertOptions options = 3;
+   */
+  options?: AlertOptions;
+
+  constructor(data?: PartialMessage<CreateAlertForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateAlertForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "options", kind: "message", T: AlertOptions },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAlertForUserRequest {
+    return new CreateAlertForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAlertForUserRequest {
+    return new CreateAlertForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAlertForUserRequest {
+    return new CreateAlertForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAlertForUserRequest | PlainMessage<CreateAlertForUserRequest> | undefined, b: CreateAlertForUserRequest | PlainMessage<CreateAlertForUserRequest> | undefined): boolean {
+    return proto3.util.equals(CreateAlertForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateAlertForUserResponse
+ */
+export class CreateAlertForUserResponse extends Message<CreateAlertForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL of the alert's page.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<CreateAlertForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateAlertForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAlertForUserResponse {
+    return new CreateAlertForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAlertForUserResponse {
+    return new CreateAlertForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAlertForUserResponse {
+    return new CreateAlertForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAlertForUserResponse | PlainMessage<CreateAlertForUserResponse> | undefined, b: CreateAlertForUserResponse | PlainMessage<CreateAlertForUserResponse> | undefined): boolean {
+    return proto3.util.equals(CreateAlertForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteAlertForUserRequest
+ */
+export class DeleteAlertForUserRequest extends Message<DeleteAlertForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the alert.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<DeleteAlertForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteAlertForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAlertForUserRequest {
+    return new DeleteAlertForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAlertForUserRequest {
+    return new DeleteAlertForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAlertForUserRequest {
+    return new DeleteAlertForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAlertForUserRequest | PlainMessage<DeleteAlertForUserRequest> | undefined, b: DeleteAlertForUserRequest | PlainMessage<DeleteAlertForUserRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteAlertForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteAlertForUserResponse
+ */
+export class DeleteAlertForUserResponse extends Message<DeleteAlertForUserResponse> {
+  constructor(data?: PartialMessage<DeleteAlertForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteAlertForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAlertForUserResponse {
+    return new DeleteAlertForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAlertForUserResponse {
+    return new DeleteAlertForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAlertForUserResponse {
+    return new DeleteAlertForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAlertForUserResponse | PlainMessage<DeleteAlertForUserResponse> | undefined, b: DeleteAlertForUserResponse | PlainMessage<DeleteAlertForUserResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteAlertForUserResponse, a, b);
   }
 }
 

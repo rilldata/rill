@@ -31,6 +31,7 @@ import type {
   AdminServiceCancelBillingSubscriptionParams,
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
+  AdminServiceCreateAlertForUserBody,
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
   AdminServiceCreateGithubPullRequestBody,
@@ -39,8 +40,11 @@ import type {
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
+  AdminServiceCreateReportForUserBody,
   AdminServiceCreateServiceBody,
   AdminServiceCreateUsergroupBody,
+  AdminServiceDeleteAlertForUserParams,
+  AdminServiceDeleteReportForUserParams,
   AdminServiceDeleteUserParams,
   AdminServiceDeleteVirtualFileParams,
   AdminServiceEditPersonalFileBody,
@@ -117,6 +121,7 @@ import type {
   V1CompleteRequest,
   V1CompleteResponse,
   V1ConnectProjectToGithubResponse,
+  V1CreateAlertForUserResponse,
   V1CreateAlertResponse,
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
@@ -129,10 +134,12 @@ import type {
   V1CreatePersonalFileResponse,
   V1CreateProjectResponse,
   V1CreateProjectWhitelistedDomainResponse,
+  V1CreateReportForUserResponse,
   V1CreateReportResponse,
   V1CreateServiceResponse,
   V1CreateUsergroupResponse,
   V1CreateWhitelistedDomainResponse,
+  V1DeleteAlertForUserResponse,
   V1DeleteAlertResponse,
   V1DeleteConnectorOAuthTokenRequest,
   V1DeleteConnectorOAuthTokenResponse,
@@ -140,6 +147,7 @@ import type {
   V1DeleteOrganizationResponse,
   V1DeletePersonalFileResponse,
   V1DeleteProjectResponse,
+  V1DeleteReportForUserResponse,
   V1DeleteReportResponse,
   V1DeleteServiceResponse,
   V1DeleteUserResponse,
@@ -13754,6 +13762,207 @@ export function createAdminServiceGetProjectByID<
 }
 
 /**
+ * @summary DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+ */
+export const adminServiceDeleteAlertForUser = (
+  projectId: string,
+  name: string,
+  params?: AdminServiceDeleteAlertForUserParams,
+) => {
+  return httpClient<V1DeleteAlertForUserResponse>({
+    url: `/v1/projects/${projectId}/alerts/${name}/for-user`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceDeleteAlertForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>,
+    TError,
+    {
+      projectId: string;
+      name: string;
+      params?: AdminServiceDeleteAlertForUserParams;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>,
+  TError,
+  {
+    projectId: string;
+    name: string;
+    params?: AdminServiceDeleteAlertForUserParams;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteAlertForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>,
+    {
+      projectId: string;
+      name: string;
+      params?: AdminServiceDeleteAlertForUserParams;
+    }
+  > = (props) => {
+    const { projectId, name, params } = props ?? {};
+
+    return adminServiceDeleteAlertForUser(projectId, name, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteAlertForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>
+>;
+
+export type AdminServiceDeleteAlertForUserMutationError = RpcStatus;
+
+/**
+ * @summary DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+ */
+export const createAdminServiceDeleteAlertForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>,
+      TError,
+      {
+        projectId: string;
+        name: string;
+        params?: AdminServiceDeleteAlertForUserParams;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteAlertForUser>>,
+  TError,
+  {
+    projectId: string;
+    name: string;
+    params?: AdminServiceDeleteAlertForUserParams;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteAlertForUserMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session.
+It's currently only called by AI tools in the runtime, so it only notifies project members:
+recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+ */
+export const adminServiceCreateAlertForUser = (
+  projectId: string,
+  adminServiceCreateAlertForUserBody: AdminServiceCreateAlertForUserBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateAlertForUserResponse>({
+    url: `/v1/projects/${projectId}/alerts/for-user`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAlertForUserBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateAlertForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>,
+    TError,
+    { projectId: string; data: AdminServiceCreateAlertForUserBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceCreateAlertForUserBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateAlertForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>,
+    { projectId: string; data: AdminServiceCreateAlertForUserBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return adminServiceCreateAlertForUser(projectId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateAlertForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>
+>;
+export type AdminServiceCreateAlertForUserMutationBody =
+  AdminServiceCreateAlertForUserBody;
+export type AdminServiceCreateAlertForUserMutationError = RpcStatus;
+
+/**
+ * @summary CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session.
+It's currently only called by AI tools in the runtime, so it only notifies project members:
+recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+ */
+export const createAdminServiceCreateAlertForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>,
+      TError,
+      { projectId: string; data: AdminServiceCreateAlertForUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateAlertForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceCreateAlertForUserBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateAlertForUserMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
  */
 export const adminServiceGetAlertMeta = (
@@ -14232,6 +14441,207 @@ export const createAdminServiceDeleteVirtualFile = <
 > => {
   const mutationOptions =
     getAdminServiceDeleteVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+ */
+export const adminServiceDeleteReportForUser = (
+  projectId: string,
+  name: string,
+  params?: AdminServiceDeleteReportForUserParams,
+) => {
+  return httpClient<V1DeleteReportForUserResponse>({
+    url: `/v1/projects/${projectId}/reports/${name}/for-user`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceDeleteReportForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>,
+    TError,
+    {
+      projectId: string;
+      name: string;
+      params?: AdminServiceDeleteReportForUserParams;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>,
+  TError,
+  {
+    projectId: string;
+    name: string;
+    params?: AdminServiceDeleteReportForUserParams;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteReportForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>,
+    {
+      projectId: string;
+      name: string;
+      params?: AdminServiceDeleteReportForUserParams;
+    }
+  > = (props) => {
+    const { projectId, name, params } = props ?? {};
+
+    return adminServiceDeleteReportForUser(projectId, name, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteReportForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>
+>;
+
+export type AdminServiceDeleteReportForUserMutationError = RpcStatus;
+
+/**
+ * @summary DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+ */
+export const createAdminServiceDeleteReportForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>,
+      TError,
+      {
+        projectId: string;
+        name: string;
+        params?: AdminServiceDeleteReportForUserParams;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteReportForUser>>,
+  TError,
+  {
+    projectId: string;
+    name: string;
+    params?: AdminServiceDeleteReportForUserParams;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteReportForUserMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session.
+It's currently only called by AI tools in the runtime, so it only delivers to project members:
+recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+ */
+export const adminServiceCreateReportForUser = (
+  projectId: string,
+  adminServiceCreateReportForUserBody: AdminServiceCreateReportForUserBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateReportForUserResponse>({
+    url: `/v1/projects/${projectId}/reports/for-user`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateReportForUserBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateReportForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateReportForUser>>,
+    TError,
+    { projectId: string; data: AdminServiceCreateReportForUserBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateReportForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceCreateReportForUserBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateReportForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateReportForUser>>,
+    { projectId: string; data: AdminServiceCreateReportForUserBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return adminServiceCreateReportForUser(projectId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateReportForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateReportForUser>>
+>;
+export type AdminServiceCreateReportForUserMutationBody =
+  AdminServiceCreateReportForUserBody;
+export type AdminServiceCreateReportForUserMutationError = RpcStatus;
+
+/**
+ * @summary CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+It can only be called by the project's primary deployment, for the user of its session.
+It's currently only called by AI tools in the runtime, so it only delivers to project members:
+recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+ */
+export const createAdminServiceCreateReportForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateReportForUser>>,
+      TError,
+      { projectId: string; data: AdminServiceCreateReportForUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateReportForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceCreateReportForUserBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateReportForUserMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

@@ -370,6 +370,12 @@ export interface V1ContentBlock {
   reasoning?: V1Reasoning;
 }
 
+export interface V1CreateAlertForUserResponse {
+  name?: string;
+  /** URL of the alert's page. */
+  url?: string;
+}
+
 export interface V1CreateAlertResponse {
   name?: string;
 }
@@ -436,6 +442,12 @@ export interface V1CreateProjectWhitelistedDomainResponse {
   [key: string]: unknown;
 }
 
+export interface V1CreateReportForUserResponse {
+  name?: string;
+  /** URL of the report's page. */
+  url?: string;
+}
+
 export interface V1CreateReportResponse {
   name?: string;
 }
@@ -449,6 +461,10 @@ export interface V1CreateUsergroupResponse {
 }
 
 export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteAlertForUserResponse {
   [key: string]: unknown;
 }
 
@@ -480,6 +496,10 @@ export interface V1DeletePersonalFileResponse {
 
 export interface V1DeleteProjectResponse {
   id?: string;
+}
+
+export interface V1DeleteReportForUserResponse {
+  [key: string]: unknown;
 }
 
 export interface V1DeleteReportResponse {
@@ -2560,6 +2580,19 @@ export type AdminServiceListProjectsForFingerprintParams = {
   rillMgdGitRemote?: string;
 };
 
+export type AdminServiceDeleteAlertForUserParams = {
+  /**
+   * User who owns the alert.
+   */
+  userId?: string;
+};
+
+export type AdminServiceCreateAlertForUserBody = {
+  /** User who owns the alert. */
+  userId?: string;
+  options?: V1AlertOptions;
+};
+
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
@@ -2622,6 +2655,19 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * If set and the caller is a superuser, force access regardless of project permissions.
    */
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteReportForUserParams = {
+  /**
+   * User who owns the report.
+   */
+  userId?: string;
+};
+
+export type AdminServiceCreateReportForUserBody = {
+  /** User who owns the report. */
+  userId?: string;
+  options?: V1ReportOptions;
 };
 
 export type AdminServiceGetReportMetaBody = {

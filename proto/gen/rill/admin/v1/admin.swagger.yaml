@@ -3951,6 +3951,68 @@ paths:
           in: path
           required: true
           type: string
+  /v1/projects/{projectId}/alerts/{name}/for-user:
+    delete:
+      summary: |-
+        DeleteAlertForUser deletes an alert owned by a user, like DeleteAlert does for the calling user.
+        It can only be called by the project's primary deployment, for the user of its session, and only deletes alerts the user owns.
+      operationId: AdminService_DeleteAlertForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteAlertForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: userId
+          description: User who owns the alert.
+          in: query
+          required: false
+          type: string
+  /v1/projects/{projectId}/alerts/for-user:
+    post:
+      summary: |-
+        CreateAlertForUser creates an alert owned by a user, like CreateAlert does for the calling user.
+        It can only be called by the project's primary deployment, for the user of its session.
+        It's currently only called by AI tools in the runtime, so it only notifies project members:
+        recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+      operationId: AdminService_CreateAlertForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAlertForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the alert.
+              options:
+                $ref: '#/definitions/v1AlertOptions'
   /v1/projects/{projectId}/alerts/meta:
     post:
       summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -4125,6 +4187,68 @@ paths:
           in: query
           required: false
           type: boolean
+  /v1/projects/{projectId}/reports/{name}/for-user:
+    delete:
+      summary: |-
+        DeleteReportForUser deletes a report owned by a user, like DeleteReport does for the calling user.
+        It can only be called by the project's primary deployment, for the user of its session, and only deletes reports the user owns.
+      operationId: AdminService_DeleteReportForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteReportForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: userId
+          description: User who owns the report.
+          in: query
+          required: false
+          type: string
+  /v1/projects/{projectId}/reports/for-user:
+    post:
+      summary: |-
+        CreateReportForUser creates a report owned by a user, like CreateReport does for the calling user.
+        It can only be called by the project's primary deployment, for the user of its session.
+        It's currently only called by AI tools in the runtime, so it only delivers to project members:
+        recipients default to the user, other email recipients and Slack users must be members of the project, and Slack channels and webhooks are rejected.
+      operationId: AdminService_CreateReportForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateReportForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the report.
+              options:
+                $ref: '#/definitions/v1ReportOptions'
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -5533,6 +5657,14 @@ definitions:
       reasoning:
         $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
+  v1CreateAlertForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL of the alert's page.
   v1CreateAlertResponse:
     type: object
     properties:
@@ -5624,6 +5756,14 @@ definitions:
         $ref: '#/definitions/v1Project'
   v1CreateProjectWhitelistedDomainResponse:
     type: object
+  v1CreateReportForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL of the report's page.
   v1CreateReportResponse:
     type: object
     properties:
@@ -5640,6 +5780,8 @@ definitions:
       usergroup:
         $ref: '#/definitions/v1Usergroup'
   v1CreateWhitelistedDomainResponse:
+    type: object
+  v1DeleteAlertForUserResponse:
     type: object
   v1DeleteAlertResponse:
     type: object
@@ -5668,6 +5810,8 @@ definitions:
     properties:
       id:
         type: string
+  v1DeleteReportForUserResponse:
+    type: object
   v1DeleteReportResponse:
     type: object
   v1DeleteServiceResponse:

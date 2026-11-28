@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -59,6 +60,22 @@ func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector
 
 func (n *noopAdminService) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
 	return nil
+}
+
+func (n *noopAdminService) CreateAlertForUser(ctx context.Context, userID string, opts *adminv1.AlertOptions) (string, string, error) {
+	return "", "", drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) DeleteAlertForUser(ctx context.Context, userID, name string) error {
+	return drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) CreateReportForUser(ctx context.Context, userID string, opts *adminv1.ReportOptions) (string, string, error) {
+	return "", "", drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) DeleteReportForUser(ctx context.Context, userID, name string) error {
+	return drivers.ErrNotImplemented
 }
 
 // HasAnonymousSourceAccess implements [drivers.Driver].
