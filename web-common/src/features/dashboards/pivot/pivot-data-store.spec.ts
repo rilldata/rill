@@ -7,10 +7,15 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get, readable } from "svelte/store";
+import { get, readable, writable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
 import { createPivotDataStore } from "./pivot-data-store";
-import type { PivotDashboardContext, PivotDataStoreConfig } from "./types";
+import { buildExpandKey } from "./pivot-expand-keys";
+import type {
+  PivotDashboardContext,
+  PivotDataState,
+  PivotDataStoreConfig,
+} from "./types";
 
 vi.mock("@rilldata/web-common/runtime-client", async (importOriginal) => {
   const actual =
@@ -131,4 +136,93 @@ describe("createPivotDataStore column truncation", () => {
 
     expect(state.columnTruncation).toEqual({ shown: 50, total: undefined });
   });
+});
+
+it("reloads an expanded child after its parent's rows arrive for a new measure", () => {
+  const rowDimensions = ["country", "device", "campaign"];
+  const parentRows = writable<{
+    isFetching: boolean;
+    data?: { data: Record<string, unknown>[] };
+  }>({ isFetching: true });
+  vi.mocked(createQueryServiceMetricsViewAggregation).mockImplementation(((
+    _client: RuntimeClient,
+    request: V1MetricsViewAggregationRequest,
+  ) => {
+    const dimension = request.dimensions?.[0]?.name;
+    if (
+      dimension === "device" &&
+      request.measures?.some((measure) => measure.name === "clicks")
+    ) {
+      return parentRows;
+    }
+    const values: Record<string, string> = {
+      country: "US",
+      device: "Mobile",
+      campaign: "campaign-1",
+    };
+    return readable({
+      isFetching: false,
+      data: {
+        data: [
+          {
+            ...(dimension ? { [dimension]: values[dimension] } : {}),
+            impressions: 10,
+            clicks: 2,
+          },
+        ],
+      },
+    });
+  }) as unknown as typeof createQueryServiceMetricsViewAggregation);
+
+  const configStore = writable<PivotDataStoreConfig>({
+    ...config,
+    allMeasures: [{ name: "impressions" }, { name: "clicks" }],
+    colDimensionNames: [],
+    rowDimensionNames: rowDimensions,
+    pivot: {
+      ...config.pivot,
+      expanded: {
+        [buildExpandKey(rowDimensions, ["US"])]: true,
+        [buildExpandKey(rowDimensions, ["US", "Mobile"])]: true,
+      },
+    },
+  });
+  let state: PivotDataState | undefined;
+  const unsubscribe = createPivotDataStore(ctx, configStore).subscribe(
+    (next) => (state = next),
+  );
+  const leaf = () => state?.data[0]?.subRows?.[0]?.subRows?.[0];
+  const childQueries = () =>
+    vi
+      .mocked(createQueryServiceMetricsViewAggregation)
+      .mock.calls.filter(
+        ([, request]) =>
+          request.dimensions?.[0]?.name === "campaign" &&
+          request.measures?.some((measure) => measure.name === "clicks"),
+      );
+
+  try {
+    expect(leaf()).toMatchObject({ country: "campaign-1", impressions: 10 });
+
+    configStore.update((current) => ({
+      ...current,
+      measureNames: ["impressions", "clicks"],
+    }));
+    // The saved child key cannot resolve while its parent is still loading.
+    expect(childQueries()).toHaveLength(0);
+
+    parentRows.set({
+      isFetching: false,
+      data: { data: [{ device: "Mobile", impressions: 10, clicks: 2 }] },
+    });
+
+    expect(childQueries().length).toBeGreaterThan(0);
+    expect(leaf()).toMatchObject({
+      country: "campaign-1",
+      impressions: 10,
+      clicks: 2,
+    });
+  } finally {
+    unsubscribe();
+  }
 });

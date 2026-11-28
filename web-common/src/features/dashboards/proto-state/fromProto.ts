@@ -478,7 +478,8 @@ function fromPivotProto(
   return {
     rows,
     columns,
-    expanded: dashboard.pivotExpanded,
+    // Expanded rows are runtime-only, not restored from saved dashboard state.
+    expanded: {},
     // The sorted field may have left the pivot since the state was saved.
     sorting: (dashboard.pivotSort ?? []).filter((sort) =>
       pivotHasSortField(sort.id, { rows, columns, tableMode }),

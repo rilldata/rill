@@ -2,6 +2,7 @@ import {
   itemsInTag,
   type TagIndex,
 } from "@rilldata/web-common/components/menu/tag-utils";
+import { buildExpandKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -674,21 +675,21 @@ export function getValuesForFlatTable(
   rowDimensions: string[],
   rowId: string,
 ): string[] {
-  const dimensionValues: string[] = [];
   // The totals row is not part of the table data and has no dimension values.
-  if (rowId === PIVOT_TOTALS_ROW_ID) return dimensionValues;
+  if (rowId === PIVOT_TOTALS_ROW_ID) return [];
 
-  const row = tableData?.[parseInt(rowId, 10)];
-  if (!row) return dimensionValues;
+  const row = tableData?.find(
+    (candidate) =>
+      buildExpandKey(
+        rowDimensions,
+        rowDimensions.map((dim) => candidate[dim]),
+      ) === rowId,
+  );
+  if (!row) return [];
 
-  // For flat tables, collect all dimension values in order
-  rowDimensions.forEach((dim) => {
-    if (dim in row) {
-      dimensionValues.push(row[dim] as string);
-    }
-  });
-
-  return dimensionValues;
+  return rowDimensions
+    .filter((dim) => dim in row)
+    .map((dim) => row[dim] as string);
 }
 
 /**
@@ -704,7 +705,7 @@ export function getValuesForFlatTable(
  * merge config.whereFilter themselves.
  *
  * Every public getFiltersFor* function delegates here after extracting its
- * dimension entries from whichever data source it uses (positional rowId,
+ * dimension entries from whichever data source it uses (value-based rowId,
  * direct rowData, column header path, etc.).
  */
 export function buildPivotFilter(
