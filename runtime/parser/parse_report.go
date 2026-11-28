@@ -164,7 +164,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 
 	// Parse export format
-	exportFormat, err := parseExportFormat(tmp.Export.Format)
+	exportFormat, err := ParseExportFormat(tmp.Export.Format)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,8 @@ func (p *Parser) parseReport(node *Node) error {
 	return nil
 }
 
-func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
+// ParseExportFormat parses an export format as written in YAML, such as "csv" or "xlsx".
+func ParseExportFormat(s string) (runtimev1.ExportFormat, error) {
 	switch strings.ToLower(s) {
 	case "":
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, nil

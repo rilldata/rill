@@ -40,7 +40,7 @@ type Schedule struct {
 }
 
 // Recipients are who an alert or report is sent to.
-// They can only be members of the project (see drivers.AdminService.CreateAlertForUser).
+// They can only be members of the project (see drivers.AdminService.CreateAlertForUser and CreateReportForUser).
 type Recipients struct {
 	Emails     []string `json:"emails,omitempty" jsonschema:"Emails of project members to send to. If no recipient is given, it is sent to the user."`
 	SlackUsers []string `json:"slack_users,omitempty" jsonschema:"Emails of project members to send to in Slack, if the project has Slack configured."`

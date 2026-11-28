@@ -273,7 +273,7 @@ func (p *Parser) parseAlert(node *Node) error {
 		if len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0 {
 			return errors.New(`"export.attach" requires email recipients`)
 		}
-		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		exportFormat, err = ParseExportFormat(tmp.Export.Format)
 		if err != nil {
 			return err
 		}
