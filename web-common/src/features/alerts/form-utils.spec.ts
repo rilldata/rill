@@ -1,3 +1,4 @@
+import { AIConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import {
   alertFormValidationSchema,
   AlertNotifyRowsLimitDefault,
@@ -101,6 +102,27 @@ describe("alertFormValidationSchema", () => {
       getValidFormValues({ splitByDimension: "", criteria: [] }),
     );
     expect(result.success).toBe(true);
+  });
+
+  it("requires an AI alert's condition instead of a measure and criteria", async () => {
+    const values = getValidFormValues({
+      conditionType: AIConditionType,
+      aiCondition: "Revenue dropped",
+      measure: "",
+      // Criteria left over from the criteria mode
+      criteria: [{ ...valueCriteria, measure: "", value1: "" }],
+    });
+    expect((await alertFormValidationSchema.validate(values)).success).toBe(
+      true,
+    );
+    expect(checkIsTabValid(0, values, {})).toBe(true);
+    expect(checkIsTabValid(1, values, {})).toBe(true);
+
+    const blank = { ...values, aiCondition: "  " };
+    expect((await alertFormValidationSchema.validate(blank)).success).toBe(
+      false,
+    );
+    expect(checkIsTabValid(1, blank, {})).toBe(false);
   });
 });
 

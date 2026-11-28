@@ -22,6 +22,11 @@
     formatRefreshSchedule,
   } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
+  import {
+    type AIAlertResolverProps,
+    getAlertAggregationRequest,
+    isAIAlertSpec,
+  } from "@rilldata/web-common/features/alerts/ai-alert-utils";
   import { AlertNotifyRowsLimitDefault } from "@rilldata/web-common/features/alerts/form-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -30,7 +35,6 @@
   import {
     getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
-    type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -41,7 +45,10 @@
   import { convertStateParamToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/augment-url-params.ts";
   import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-  import { getMappedExploreUrlQueryOptions } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
+  import {
+    getMappedExploreUrlQueryOptions,
+    type MappedExploreUrlSource,
+  } from "@rilldata/web-common/features/explore-mappers/url-mappers/get-mapped-url.ts";
   import { getDashboardPath } from "@rilldata/web-common/features/explore-mappers/utils";
 
   export let organization: string;
@@ -83,9 +90,11 @@
   $: queryName =
     alertSpec?.queryName ||
     (alertSpec?.resolverProperties?.query_name as string);
-  $: metricsViewAggregationRequest = JSON.parse(
-    queryArgsJson,
-  ) as V1MetricsViewAggregationRequest;
+  // An AI alert's resolver properties narrow its data the way a criteria alert's query does, and its condition replaces the criteria.
+  $: isAIAlert = !!alertSpec && isAIAlertSpec(alertSpec);
+  $: metricsViewAggregationRequest = alertSpec
+    ? getAlertAggregationRequest(alertSpec, metricsViewName ?? "")
+    : undefined;
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -111,19 +120,29 @@
     }
   }
 
+  // AI alerts link to the explore they analyze, with the alert's resolver properties applied.
+  $: exploreUrlSource = (
+    isAIAlert
+      ? {
+          type: "ai",
+          exploreName: $exploreName.data ?? "",
+          props: alertSpec?.resolverProperties as AIAlertResolverProps,
+        }
+      : {
+          type: "query",
+          request: {
+            exploreName: $exploreName.data ?? "",
+            queryName,
+            queryArgsJson,
+          },
+          options: {
+            exploreProtoState: alertSpec?.annotations?.web_open_state,
+          },
+        }
+  ) as MappedExploreUrlSource;
   $: exploreUrlQueryOptions = getMappedExploreUrlQueryOptions(
     runtimeClient,
-    {
-      type: "query",
-      request: {
-        exploreName: $exploreName.data ?? "",
-        queryName,
-        queryArgsJson,
-      },
-      options: {
-        exploreProtoState: alertSpec?.annotations?.web_open_state,
-      },
-    },
+    exploreUrlSource,
     { organization, project, embedded },
   );
   // Until the explore name loads, the url would fall back to the metrics view's name.
@@ -246,8 +265,8 @@
         </MetadataValue>
       </div>
 
-      <!-- Rows in notifications, which only matters when split by a dimension -->
-      {#if metricsViewAggregationRequest?.dimensions?.length}
+      <!-- Rows in notifications, which only matters when a criteria alert is split by a dimension -->
+      {#if metricsViewAggregationRequest?.dimensions?.length && !isAIAlert}
         <div class="flex flex-col gap-y-3">
           <MetadataLabel>{m.alert_rows_in_notifications()}</MetadataLabel>
           <MetadataValue>
@@ -295,11 +314,20 @@
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
-    <!-- Criteria -->
-    <AlertFilterCriteria
-      filters={metricsViewAggregationRequest?.having}
-      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
-    />
+    <!-- Criteria, or an AI alert's condition -->
+    {#if isAIAlert}
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>{m.alert_condition()}</MetadataLabel>
+        <MetadataValue>
+          {alertSpec.resolverProperties?.prompt}
+        </MetadataValue>
+      </div>
+    {:else}
+      <AlertFilterCriteria
+        filters={metricsViewAggregationRequest?.having}
+        comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
+      />
+    {/if}
 
     <!-- Slack notification -->
     {#if slackNotifier}

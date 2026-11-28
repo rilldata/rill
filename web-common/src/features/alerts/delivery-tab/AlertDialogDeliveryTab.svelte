@@ -7,6 +7,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { AIConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
@@ -41,6 +42,11 @@
   const runtimeClient = useRuntimeClient();
 
   const { form, errors } = $derived(superFormInstance);
+  const isAIAlert = $derived($form["conditionType"] === AIConditionType);
+  // An AI alert is always checked on a schedule, which runs at most once a day, since data can refresh far more often.
+  const checksOnSchedule = $derived(
+    isAIAlert || !$form["refreshWhenDataRefreshes"],
+  );
 
   // Time zone options from the dashboard's spec
   const exploreSpecQuery = $derived(
@@ -63,22 +69,26 @@
     />
   </FormSection>
 
-  <FormSection title={m.alert_form_trigger()}>
+  <FormSection
+    title={m.alert_form_trigger()}
+    description={isAIAlert ? m.alert_form_trigger_ai_desc() : ""}
+  >
     <div class="grid grid-cols-2">
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = true)}
-        selected={$form["refreshWhenDataRefreshes"]}
+        selected={!checksOnSchedule}
+        disabled={isAIAlert}
       >
         {m.alert_form_trigger_data_refresh()}
       </Button>
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = false)}
-        selected={!$form["refreshWhenDataRefreshes"]}
+        selected={checksOnSchedule}
       >
         {m.alert_form_trigger_set_schedule()}
       </Button>
     </div>
-    {#if !$form["refreshWhenDataRefreshes"]}
+    {#if checksOnSchedule}
       <ScheduleForm data={form} {availableTimeZones} />
     {/if}
   </FormSection>
@@ -180,17 +190,20 @@
       plural="emails"
       preventFocus={true}
     />
-    <Checkbox
-      bind:checked={$form["exportAttach"]}
-      id="exportAttach"
-      onCheckedChange={(checked) => {
-        $form["exportAttach"] = Boolean(checked);
-      }}
-      inverse
-      label={m.alert_form_attach_rows()}
-      hint={m.alert_form_attach_rows_hint()}
-    />
-    {#if $form["exportAttach"]}
+    <!-- An AI alert has no rows to attach. -->
+    {#if !isAIAlert}
+      <Checkbox
+        bind:checked={$form["exportAttach"]}
+        id="exportAttach"
+        onCheckedChange={(checked) => {
+          $form["exportAttach"] = Boolean(checked);
+        }}
+        inverse
+        label={m.alert_form_attach_rows()}
+        hint={m.alert_form_attach_rows_hint()}
+      />
+    {/if}
+    {#if $form["exportAttach"] && !isAIAlert}
       <div
         class="flex items-start gap-x-2 rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-300"
       >

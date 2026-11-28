@@ -77,12 +77,15 @@
     hasSavedEmbedOwnerEmail || (isEmbedded && !!$embedOpenUrlQuery.data),
   );
 
+  // The form reads its initial values once, so it waits for the explore's metrics view:
+  // an AI alert's resolver properties don't name it, and the alert's YAML refs it.
   const initialValues = $derived.by(() => {
     const exploreState = $exploreStateStore;
     if (
       provider.isLoading ||
       (isEmbedded && $embedOpenUrlQuery.isPending) ||
-      !exploreState
+      !exploreState ||
+      !metricsViewName
     ) {
       return undefined;
     }

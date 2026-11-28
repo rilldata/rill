@@ -105,6 +105,7 @@
   "alert_form_tab_data": "Data",
   "alert_form_tab_delivery": "Delivery",
   "alert_form_trigger": "Trigger",
+  "alert_form_trigger_ai_desc": "AI alerts are checked on a schedule, since each check is an analysis by the AI.",
   "alert_form_trigger_data_refresh": "Whenever data refreshes",
   "alert_form_trigger_set_schedule": "Set schedule",
   "alert_form_update": "Update",

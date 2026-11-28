@@ -17,6 +17,12 @@
   import { getAlertDashboardName } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import {
+    AIConditionType,
+    generateAIAlertName,
+    getAIAlertResolverProps,
+    getAlertAggregationRequest,
+  } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
@@ -67,13 +73,12 @@
   export let showEmbedOwnerEmail: boolean;
 
   const isEmbedded = EmbedStore.isEmbedded();
-  // Alerts created from an embed run as the creator, and can't be sent to Slack,
+  // Alerts created from an embed run as the creator, can't be sent to Slack and can't use an AI condition,
   // including when an admin edits one outside of the embed.
-  const slackAllowed =
-    !isEmbedded &&
-    !(
-      props.mode === "edit" && props.alertSpec.annotations?.admin_embed_owner_id
-    );
+  const isCreatedFromEmbed =
+    isEmbedded ||
+    (props.mode === "edit" &&
+      !!props.alertSpec.annotations?.admin_embed_owner_id);
 
   const runtimeClient = useRuntimeClient();
 
@@ -109,12 +114,9 @@
       props.mode === "create"
         ? get(page).url.searchParams
         : getFilterParamsFromAggregationRequest(
-            JSON.parse(
-              props.alertSpec.queryArgsJson ||
-                (props.alertSpec.resolverProperties?.query_args_json as
-                  | string
-                  | undefined) ||
-                "{}",
+            getAlertAggregationRequest(
+              props.alertSpec,
+              initialValues.metricsViewName,
             ),
           ),
     );
@@ -166,6 +168,13 @@
       values.dayOfMonth,
     );
 
+    const isAIAlert = values.conditionType === AIConditionType;
+    // Keyed by the metrics view's resource name, which can differ in casing from the explore's reference.
+    const where =
+      expressionFilterManager.topLevelJoiner.expr[
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0]
+      ];
+
     await $mutation.mutateAsync({
       org: provider.organization,
       project: provider.project,
@@ -173,17 +182,25 @@
       data: {
         options: {
           displayName: values.name,
-          queryName: "MetricsViewAggregation",
-          queryArgsJson: JSON.stringify(
-            getAlertQueryArgsFromFormValues(
-              values,
-              // Keyed by the metrics view's resource name, which can differ in casing from the explore's reference.
-              expressionFilterManager.topLevelJoiner.expr[
-                expressionFilterManager.metricsViewsProvider.metricsViewNames[0]
-              ],
-              timeFilterManager,
-            ),
-          ),
+          ...(isAIAlert
+            ? {
+                resolver: "ai",
+                resolverProperties: getAIAlertResolverProps(
+                  values,
+                  where,
+                  timeFilterManager,
+                ),
+              }
+            : {
+                queryName: "MetricsViewAggregation",
+                queryArgsJson: JSON.stringify(
+                  getAlertQueryArgsFromFormValues(
+                    values,
+                    where,
+                    timeFilterManager,
+                  ),
+                ),
+              }),
           metricsViewName: values.metricsViewName,
           notifyRowsLimit: getNotifyRowsLimitFromFormValues(values),
           slackChannels: values.enableSlackNotification
@@ -201,8 +218,11 @@
             isEmbedded && showEmbedOwnerEmail
               ? values.embedOwnerEmail.trim()
               : undefined,
-          // Attachments are only sent with emails, and the export options only apply to attachments
-          ...(values.enableEmailNotification && values.exportAttach
+          // Attachments are only sent with emails, and the export options only apply to attachments.
+          // An AI alert has no rows to attach.
+          ...(values.enableEmailNotification &&
+          values.exportAttach &&
+          !isAIAlert
             ? {
                 exportAttach: true,
                 exportFormat: values.exportFormat,
@@ -210,7 +230,9 @@
                 exportIncludeHeader: values.exportIncludeHeader,
               }
             : { exportAttach: false }),
-          refreshCron: !values.refreshWhenDataRefreshes ? refreshCron : "", // for testing: "* * * * *"
+          // An AI alert is always checked on a schedule (see AlertDialogDeliveryTab).
+          refreshCron:
+            isAIAlert || !values.refreshWhenDataRefreshes ? refreshCron : "", // for testing: "* * * * *"
           refreshTimeZone: values.timeZone,
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
@@ -292,13 +314,16 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name = generateAlertName(
-      $form,
-      timeFilterManager.showComparison
-        ? timeFilterManager.comparisonTimeRange
-        : undefined,
-      metricsViewSpec,
-    );
+    const name =
+      $form.conditionType === AIConditionType
+        ? generateAIAlertName($form.aiCondition)
+        : generateAlertName(
+            $form,
+            timeFilterManager.showComparison
+              ? timeFilterManager.comparisonTimeRange
+              : undefined,
+            metricsViewSpec,
+          );
     if (!name) return;
     $form.name = name;
   }
@@ -341,6 +366,7 @@
           {expressionFilterManager}
           {timeFilterManager}
           {dashboardConfigProvider}
+          aiConditionAllowed={!isCreatedFromEmbed}
         />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
@@ -356,7 +382,7 @@
           {exploreName}
           {provider}
           {showEmbedOwnerEmail}
-          {slackAllowed}
+          slackAllowed={!isCreatedFromEmbed}
         />
       </DialogTabs.Content>
     </div>

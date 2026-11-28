@@ -105,6 +105,7 @@
   "alert_form_tab_data": "Datos",
   "alert_form_tab_delivery": "Entrega",
   "alert_form_trigger": "Disparador",
+  "alert_form_trigger_ai_desc": "Las alertas con IA se revisan según una programación, ya que cada revisión es un análisis de la IA.",
   "alert_form_trigger_data_refresh": "Cada vez que los datos se actualicen",
   "alert_form_trigger_set_schedule": "Establecer horario",
   "alert_form_update": "Actualizar",

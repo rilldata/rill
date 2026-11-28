@@ -1,66 +1,53 @@
 import {
-  getAggregationRequestFromAIAlertProperties,
-  getAIAlertResolverProperties,
+  generateAIAlertName,
+  getAIAlertResolverProps,
+  getAlertAggregationRequest,
 } from "@rilldata/web-common/features/alerts/ai-alert-utils";
-import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import {
-  alertFormValidationSchema,
-  type AlertFormValues,
-  checkIsTabValid,
-  getAlertResolverOptions,
-} from "@rilldata/web-common/features/alerts/form-utils";
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import {
-  V1Operation,
-  type V1AlertSpec,
-  type V1Expression,
-} from "@rilldata/web-common/runtime-client";
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { describe, expect, it } from "vitest";
 
-const CountryIsSpain: V1Expression = {
-  cond: {
-    op: V1Operation.OPERATION_AND,
-    exprs: [
-      {
-        cond: {
-          op: V1Operation.OPERATION_IN,
-          exprs: [{ ident: "country" }, { val: "Spain" }],
-        },
-      },
-    ],
-  },
-};
+const Condition = "Revenue dropped unusually against the previous weeks";
 
-// An AI alert as the API creates it: no dashboard annotations, only the ai resolver's properties.
-const AIAlertSpec: V1AlertSpec = {
-  displayName: "Revenue drop",
-  resolver: "ai",
-  resolverProperties: {
-    prompt: "Revenue dropped unusually against the previous weeks",
-    explore: "orders",
-    measures: ["revenue"],
-    comparison_time_range: { expression: "-4W to ref" },
-  },
-  annotations: {},
-  notifiers: [
-    { connector: "email", properties: { recipients: ["a@example.com"] } },
-  ],
-};
+function getFormValues(overrides: Partial<AlertFormValues>): AlertFormValues {
+  return {
+    aiCondition: `  ${Condition}  `,
+    exploreName: "orders",
+    measure: "",
+    splitByDimension: "",
+    ...overrides,
+  } as AlertFormValues;
+}
 
-describe("getAIAlertResolverProperties", () => {
-  it("writes the condition, the explore and the context that narrows it, and reads them back", () => {
-    const props = getAIAlertResolverProperties({
-      condition: "  Revenue dropped unusually against the previous weeks  ",
-      exploreName: "orders",
-      measure: "revenue",
-      splitByDimension: "country",
-      where: CountryIsSpain,
-      selectedTimeRange: { name: "P4W" },
-      timeZone: "Europe/Madrid",
-    });
+function getTimeFilterManager(
+  overrides: Partial<TimeFilterManager>,
+): TimeFilterManager {
+  return {
+    requestedTimeRange: undefined,
+    timeDimension: undefined,
+    timeZone: "UTC",
+    ...overrides,
+  } as TimeFilterManager;
+}
+
+describe("getAIAlertResolverProps", () => {
+  it("writes the condition and the data it is narrowed to, which the alert reads back", () => {
+    const where = createAndExpression([createInExpression("country", ["ES"])]);
+    const props = getAIAlertResolverProps(
+      getFormValues({ measure: "revenue", splitByDimension: "country" }),
+      where,
+      getTimeFilterManager({
+        requestedTimeRange: "4W as of watermark/D+1D",
+        timeDimension: "ordered_at",
+        timeZone: "Europe/Madrid",
+      }),
+    );
     expect(props).toEqual({
-      prompt: "Revenue dropped unusually against the previous weeks",
+      prompt: Condition,
       explore: "orders",
       measures: ["revenue"],
       dimensions: ["country"],
@@ -68,128 +55,52 @@ describe("getAIAlertResolverProperties", () => {
         cond: {
           op: "and",
           exprs: [
-            {
-              cond: {
-                op: "in",
-                exprs: [{ name: "country" }, { val: "Spain" }],
-              },
-            },
+            { cond: { op: "in", exprs: [{ name: "country" }, { val: "ES" }] } },
           ],
         },
       },
-      time_range: { expression: "P4W" },
+      time_range: {
+        expression: "4W as of watermark/D+1D",
+        time_dimension: "ordered_at",
+      },
       time_zone: "Europe/Madrid",
     });
 
     expect(
-      getAggregationRequestFromAIAlertProperties(props, "orders_mv"),
+      getAlertAggregationRequest(
+        { resolver: "ai", resolverProperties: props },
+        "orders_mv",
+      ),
     ).toEqual({
       metricsView: "orders_mv",
       measures: [{ name: "revenue" }],
       dimensions: [{ name: "country" }],
-      where: CountryIsSpain,
-      timeRange: { isoDuration: "P4W", timeZone: "Europe/Madrid" },
-    });
-  });
-
-  it("leaves out the context that does not narrow anything", () => {
-    expect(
-      getAIAlertResolverProperties({
-        condition: "Revenue dropped",
-        exploreName: "orders",
-        measure: "",
-        splitByDimension: "",
-        where: { cond: { op: V1Operation.OPERATION_AND, exprs: [] } },
-        selectedTimeRange: { name: TimeRangePreset.ALL_TIME },
-        timeZone: "UTC",
-      }),
-    ).toEqual({ prompt: "Revenue dropped", explore: "orders" });
-  });
-
-  it("keeps the properties the dialog does not edit", () => {
-    const props = getAIAlertResolverProperties({
-      condition: "Revenue dropped",
-      exploreName: "orders",
-      measure: "revenue",
-      splitByDimension: "",
-      where: undefined,
-      selectedTimeRange: undefined,
-      timeZone: "UTC",
-      previous: {
-        prompt: "old condition",
-        measures: ["revenue", "orders"],
-        comparison_time_range: { expression: "-4W to ref" },
-        time_zone: "Europe/Madrid",
+      where,
+      timeRange: {
+        expression: "4W as of watermark/D+1D",
+        timeDimension: "ordered_at",
+        timeZone: "Europe/Madrid",
       },
     });
-    expect(props).toEqual({
-      prompt: "Revenue dropped",
-      explore: "orders",
-      // The dialog shows the first measure; the rest are kept while it is unchanged
-      measures: ["revenue", "orders"],
-      comparison_time_range: { expression: "-4W to ref" },
-      // Without a time range, the dialog has no time zone to write, but the comparison is still resolved in this one
-      time_zone: "Europe/Madrid",
-    });
+  });
+
+  it("leaves out the data that does not narrow anything", () => {
+    expect(
+      getAIAlertResolverProps(
+        getFormValues({}),
+        createAndExpression([]),
+        getTimeFilterManager({}),
+      ),
+    ).toEqual({ prompt: Condition, explore: "orders" });
   });
 });
 
-describe("the alert form with an AI alert", () => {
-  it("loads the condition and writes the explore's default time range explicitly", () => {
-    const values = getExistingAlertInitialFormValues(AIAlertSpec, "orders_mv");
-    expect(values.conditionType).toBe("ai");
-    expect(values.aiCondition).toBe(
-      "Revenue dropped unusually against the previous weeks",
+describe("generateAIAlertName", () => {
+  it("shortens a long condition to a single line", () => {
+    const name = generateAIAlertName(`${Condition},\n  ${Condition}`);
+    expect(name).toHaveLength(60);
+    expect(name).toBe(
+      "Revenue dropped unusually against the previous weeks, Reven…",
     );
-    expect(values.exploreName).toBe("orders");
-    expect(values.measure).toBe("revenue");
-
-    // What the user sees is what is judged, even if the explore's default changes later
-    const options = getAlertResolverOptions(
-      values,
-      undefined,
-      {
-        selectedTimeRange: { name: TimeRangePreset.DEFAULT },
-        selectedTimezone: "Europe/Madrid",
-      } as unknown as TimeControlState,
-      { defaultPreset: { timeRange: "P14D" } },
-      AIAlertSpec,
-    );
-    expect(options).toEqual({
-      resolver: "ai",
-      resolverProperties: {
-        prompt: "Revenue dropped unusually against the previous weeks",
-        explore: "orders",
-        measures: ["revenue"],
-        comparison_time_range: { expression: "-4W to ref" },
-        time_range: { expression: "P14D" },
-        time_zone: "Europe/Madrid",
-      },
-    });
-  });
-
-  it("requires a condition instead of a measure and criteria", async () => {
-    const values = {
-      ...getExistingAlertInitialFormValues(AIAlertSpec, "orders_mv"),
-      measure: "",
-      name: "Revenue drop",
-    } as AlertFormValues;
-    expect((await alertFormValidationSchema.validate(values)).success).toBe(
-      true,
-    );
-    expect(checkIsTabValid(0, values, {})).toBe(true);
-    expect(checkIsTabValid(1, values, {})).toBe(true);
-
-    const noCondition = { ...values, aiCondition: "  " };
-    expect(
-      (await alertFormValidationSchema.validate(noCondition)).success,
-    ).toBe(false);
-    expect(checkIsTabValid(1, noCondition, {})).toBe(false);
-
-    const criteria = { ...values, conditionType: "criteria" } as const;
-    expect((await alertFormValidationSchema.validate(criteria)).success).toBe(
-      false,
-    );
-    expect(checkIsTabValid(0, criteria, {})).toBe(false);
   });
 });

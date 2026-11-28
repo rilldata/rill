@@ -1,4 +1,8 @@
 import {
+  AIConditionType,
+  type AlertConditionType,
+} from "@rilldata/web-common/features/alerts/ai-alert-utils";
+import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
@@ -36,6 +40,9 @@ export const AlertNotifyRowsLimitMax = 50;
 
 export type AlertFormValues = {
   name: string;
+  conditionType: AlertConditionType;
+  // The condition the AI analyst judges, when conditionType is AIConditionType.
+  aiCondition: string;
   measure: string;
   splitByDimension: string;
   // The maximum number of matching rows listed in notifications, which only matters when the alert is split by a dimension
@@ -133,13 +140,17 @@ export function getAlertQueryArgsFromFormValues(
 }
 
 // Returns the limit on the number of matching rows listed in notifications to save for an alert.
-// It returns 0, which means the runtime's default, when the alert isn't split by a dimension (so there's a single row)
-// or when the limit is the default. Leaving the limit unset keeps it out of the alert's YAML,
-// which runtimes that predate the limit can't parse.
+// It returns 0, which means the runtime's default, when the alert isn't split by a dimension (so there's a single row),
+// for AI alerts (which notify with the AI's reason instead of rows), or when the limit is the default.
+// Leaving the limit unset keeps it out of the alert's YAML, which runtimes that predate the limit can't parse.
 export function getNotifyRowsLimitFromFormValues(
   formValues: AlertFormValues,
 ): number {
-  if (!formValues.splitByDimension) return 0;
+  if (
+    !formValues.splitByDimension ||
+    formValues.conditionType === AIConditionType
+  )
+    return 0;
   const limit = Number(formValues.notifyRowsLimit);
   return limit === AlertNotifyRowsLimitDefault ? 0 : limit;
 }
@@ -147,10 +158,20 @@ export function getNotifyRowsLimitFromFormValues(
 export const alertFormValidationSchema = yup(
   object({
     name: string().required("Required"),
-    measure: string().required("Required"),
-    // The rows limit input is hidden unless the alert is split by a dimension
-    notifyRowsLimit: string().when("splitByDimension", {
-      is: (splitByDimension: string) => !!splitByDimension,
+    aiCondition: string().when("conditionType", {
+      is: AIConditionType,
+      then: (schema) =>
+        schema.test("required", "Required", (value) => !!value?.trim()),
+    }),
+    // An AI alert's measure only narrows what the AI looks at, so it is optional.
+    measure: string().when("conditionType", {
+      is: AIConditionType,
+      otherwise: (schema) => schema.required("Required"),
+    }),
+    // The rows limit input is hidden unless a criteria alert is split by a dimension
+    notifyRowsLimit: string().when(["splitByDimension", "conditionType"], {
+      is: (splitByDimension: string, conditionType: AlertConditionType) =>
+        !!splitByDimension && conditionType !== AIConditionType,
       then: (schema) =>
         schema.test(
           "notify-rows-limit",
@@ -165,57 +186,63 @@ export const alertFormValidationSchema = yup(
             Number(value) <= AlertNotifyRowsLimitMax,
         ),
     }),
-    criteria: array().of(
-      object().shape({
-        measure: string().required("Required"),
-        operation: string().required("Required"),
-        type: string().required("Required"),
-        value1: string()
-          .required("Required")
-          .test((value, context) => {
-            // `number` doest allow for string representation of number with the superforms yup adapter.
-            // So we use `string` and check for NaN
-            // TODO: do a greater refactor changing the type of value1 in all the places to a number
-            const numValue = Number(value);
-            if (Number.isNaN(numValue)) {
-              return context.createError({
-                message: m.alert_form_criteria_value_invalid({
-                  field: context.path,
-                }),
-              });
-            }
+    criteria: array()
+      .of(
+        object().shape({
+          measure: string().required("Required"),
+          operation: string().required("Required"),
+          type: string().required("Required"),
+          value1: string()
+            .required("Required")
+            .test((value, context) => {
+              // `number` doest allow for string representation of number with the superforms yup adapter.
+              // So we use `string` and check for NaN
+              // TODO: do a greater refactor changing the type of value1 in all the places to a number
+              const numValue = Number(value);
+              if (Number.isNaN(numValue)) {
+                return context.createError({
+                  message: m.alert_form_criteria_value_invalid({
+                    field: context.path,
+                  }),
+                });
+              }
 
-            const criteria = context.parent as MeasureFilterEntry;
-            // Percent of total compares each dimension value's share of the measure, so it needs a split.
-            // Removing the split keeps such criteria but blocks saving until a split is chosen again,
-            // instead of saving an alert that has lost its condition.
-            const formValues = context.from?.at(-1)?.value as
-              | AlertFormValues
-              | undefined;
-            if (
-              criteria.type === MeasureFilterType.PercentOfTotal &&
-              !formValues?.splitByDimension
-            ) {
-              return context.createError({
-                message: m.alert_form_criteria_percent_of_total_needs_split({
-                  field: context.path,
-                }),
-              });
-            }
-            if (
-              criteria.type === MeasureFilterType.PercentOfTotal &&
-              (numValue < 0 || numValue > 100)
-            ) {
-              return context.createError({
-                message: m.alert_form_criteria_value_percent_range({
-                  field: context.path,
-                }),
-              });
-            }
-            return true;
-          }),
+              const criteria = context.parent as MeasureFilterEntry;
+              // Percent of total compares each dimension value's share of the measure, so it needs a split.
+              // Removing the split keeps such criteria but blocks saving until a split is chosen again,
+              // instead of saving an alert that has lost its condition.
+              const formValues = context.from?.at(-1)?.value as
+                | AlertFormValues
+                | undefined;
+              if (
+                criteria.type === MeasureFilterType.PercentOfTotal &&
+                !formValues?.splitByDimension
+              ) {
+                return context.createError({
+                  message: m.alert_form_criteria_percent_of_total_needs_split({
+                    field: context.path,
+                  }),
+                });
+              }
+              if (
+                criteria.type === MeasureFilterType.PercentOfTotal &&
+                (numValue < 0 || numValue > 100)
+              ) {
+                return context.createError({
+                  message: m.alert_form_criteria_value_percent_range({
+                    field: context.path,
+                  }),
+                });
+              }
+              return true;
+            }),
+        }),
+      )
+      // An AI alert's condition replaces the criteria.
+      .when("conditionType", {
+        is: AIConditionType,
+        then: () => array(),
       }),
-    ),
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
@@ -226,17 +253,26 @@ export const alertFormValidationSchema = yup(
       (_, context) => hasNotification(context.parent as AlertFormValues),
     ),
     embedOwnerEmail: string().email("Invalid email"),
-    // The row limit input is hidden unless attachments are enabled for email delivery
-    exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
-      is: (enableEmailNotification: boolean, exportAttach: boolean) =>
-        enableEmailNotification && exportAttach,
-      then: () => getExportLimitSchema(),
-    }),
+    // The row limit input is hidden unless attachments are enabled for email delivery of a criteria alert
+    exportLimit: string().when(
+      ["enableEmailNotification", "exportAttach", "conditionType"],
+      {
+        is: (
+          enableEmailNotification: boolean,
+          exportAttach: boolean,
+          conditionType: AlertConditionType,
+        ) =>
+          enableEmailNotification &&
+          exportAttach &&
+          conditionType !== AIConditionType,
+        then: () => getExportLimitSchema(),
+      },
+    ),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure", "notifyRowsLimit"],
-  ["criteria", "criteriaOperation"],
+  ["criteria", "criteriaOperation", "aiCondition"],
   ["name", "snooze", "slackUsers", "emailRecipients", "embedOwnerEmail"],
 ];
 
@@ -251,8 +287,12 @@ export function checkIsTabValid(
   let hasErrors: boolean;
 
   if (tabIndex === 0) {
-    hasRequiredFields = formValues.measure !== "";
+    hasRequiredFields =
+      formValues.conditionType === AIConditionType || formValues.measure !== "";
     hasErrors = !!errors.measure || !!errors.notifyRowsLimit;
+  } else if (tabIndex === 1 && formValues.conditionType === AIConditionType) {
+    hasRequiredFields = formValues.aiCondition.trim() !== "";
+    hasErrors = !!errors.aiCondition;
   } else if (tabIndex === 1) {
     hasRequiredFields = true;
     formValues.criteria.forEach((criteria) => {

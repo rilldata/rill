@@ -90,6 +90,7 @@ function renderDataTab() {
       expressionFilterManager: {} as ExpressionFilterManager,
       timeFilterManager: {} as TimeFilterManager,
       dashboardConfigProvider: {} as DashboardConfigProvider,
+      aiConditionAllowed: false,
     },
   });
   return form;

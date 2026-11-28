@@ -1,7 +1,8 @@
 import {
   AIConditionType,
+  type AIAlertResolverProps,
   CriteriaConditionType,
-  getAggregationRequestFromAIAlertProperties,
+  getAlertAggregationRequest,
   isAIAlertSpec,
 } from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
@@ -112,22 +113,14 @@ export function getExistingAlertInitialFormValues(
   userEmail = "",
   showEmbedOwnerEmail = false,
 ): AlertFormValues {
-  // An AI alert keeps its data context in the ai resolver's properties, which may have been written without the dialog (through the API).
-  const isAI = isAIAlertSpec(alertSpec);
-  const queryArgsJson = isAI
-    ? getAggregationRequestFromAIAlertProperties(
-        alertSpec.resolverProperties ?? {},
-        metricsViewName,
-      )
-    : (JSON.parse(
-        (alertSpec.resolverProperties?.query_args_json ??
-          alertSpec.queryArgsJson) as string,
-      ) as V1MetricsViewAggregationRequest);
+  const isAIAlert = isAIAlertSpec(alertSpec);
+  const aiProps = alertSpec.resolverProperties as AIAlertResolverProps;
+  const queryArgsJson = getAlertAggregationRequest(alertSpec, metricsViewName);
 
-  let exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
-  if (isAI && !exploreName) {
-    exploreName = (alertSpec.resolverProperties?.explore as string) ?? "";
-  }
+  // An AI alert also names its explore in the resolver's properties, which is all one created through the API has.
+  const exploreName =
+    getExploreName(alertSpec.annotations?.web_open_path ?? "") ||
+    (isAIAlert ? aiProps.explore : "");
 
   // The creator's saved email is in its own field rather than in the recipients,
   // since the admin service always keeps it as a recipient (the creator can't unsubscribe).
@@ -141,10 +134,8 @@ export function getExistingAlertInitialFormValues(
 
   return {
     name: alertSpec.displayName as string,
-    conditionType: isAI ? AIConditionType : CriteriaConditionType,
-    aiCondition: isAI
-      ? ((alertSpec.resolverProperties?.prompt as string) ?? "")
-      : "",
+    conditionType: isAIAlert ? AIConditionType : CriteriaConditionType,
+    aiCondition: isAIAlert ? aiProps.prompt : "",
     exploreName: exploreName ?? metricsViewName,
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
