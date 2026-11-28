@@ -94,12 +94,17 @@ func TestAlertsAndReportsForUser(t *testing.T) {
 			{Type: "sqlite", Name: "catalog", Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s-catalog?mode=memory&cache=shared", t.Name())}))},
 			{Type: "admin", Name: "admin", Config: testruntime.Must(structpb.NewStruct(map[string]any{"admin_url": fix.ExternalURL(), "access_token": tkn.Token().String(), "project_id": proj.ID}))},
 		},
-		Variables: map[string]string{"rill.stage_changes": "false"},
 	}
 	require.NoError(t, fix.Runtime.CreateInstance(ctx, inst))
-	ctrl, err := fix.Runtime.Controller(ctx, inst.ID)
-	require.NoError(t, err)
-	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+	// Creating the instance applies the deployment's config from the admin service, which restarts its controller, so this waits for the new one.
+	require.Eventually(t, func() bool {
+		ctrl, err := fix.Runtime.Controller(ctx, inst.ID)
+		if err != nil || ctrl.WaitUntilIdle(ctx, false) != nil {
+			return false
+		}
+		rs, err := ctrl.List(ctx, "", "", false)
+		return err == nil && len(rs) == 4
+	}, 30*time.Second, 100*time.Millisecond)
 	testruntime.RequireReconcileState(t, fix.Runtime, inst.ID, 4, 0, 0)
 	go mirrorVirtualFiles(ctx, fix.Admin.DB, proj.ID, repoDir)
 
@@ -164,6 +169,8 @@ func TestAlertsAndReportsForUser(t *testing.T) {
 		name, _, err := adm.CreateAlertForUser(ctx, viewerUser.ID, alertOpts())
 		require.NoError(t, err)
 		require.NoError(t, adm.DeleteAlertForUser(ctx, viewerUser.ID, name))
+		ctrl, err := fix.Runtime.Controller(ctx, inst.ID)
+		require.NoError(t, err)
 		_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: name}, false)
 		require.ErrorIs(t, err, drivers.ErrResourceNotFound)
 	})
