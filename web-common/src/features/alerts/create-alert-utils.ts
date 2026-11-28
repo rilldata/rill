@@ -1,3 +1,4 @@
+import { CriteriaConditionType } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
 import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import {
   AlertNotifyRowsLimitDefault,
@@ -36,6 +37,8 @@ export function getNewAlertInitialFormValues(
 
   return {
     name: "",
+    conditionType: CriteriaConditionType,
+    aiCondition: "",
     measure,
     splitByDimension: dimension,
     notifyRowsLimit: String(AlertNotifyRowsLimitDefault),

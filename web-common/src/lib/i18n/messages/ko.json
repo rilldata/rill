@@ -105,6 +105,7 @@
   "alert_form_tab_data": "데이터",
   "alert_form_tab_delivery": "전송",
   "alert_form_trigger": "트리거",
+  "alert_form_trigger_ai_desc": "AI 알림은 확인할 때마다 AI가 분석하므로 일정에 따라 확인됩니다.",
   "alert_form_trigger_data_refresh": "데이터가 새로고침될 때마다",
   "alert_form_trigger_set_schedule": "일정 설정",
   "alert_form_update": "업데이트",

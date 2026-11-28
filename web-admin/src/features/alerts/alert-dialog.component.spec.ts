@@ -1,28 +1,35 @@
 import "@testing-library/jest-dom/vitest";
 import AlertDialogTest from "@rilldata/web-admin/features/alerts/AlertDialogTest.svelte";
 import {
+  getFilterChip,
   mockPointerEventsForComponentTesting,
   mockResizeObserverForComponentTesting,
   useDashboardFetchMocksForComponentTests,
   waitForBodyScrollCleanup,
 } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
   type HoistedPageForComponentTests,
   PageMockForComponentTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import { getRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {
+  V1ExportFormat,
   type V1AlertSpec,
   type V1MetricsViewAggregationRequest,
   V1Operation,
@@ -78,6 +85,8 @@ const editAlert = vi.hoisted(() =>
           queryName?: string;
           queryArgsJson?: string;
           metricsViewName?: string;
+          refreshCron?: string;
+          exportAttach?: boolean;
         };
       };
     }) => Promise<unknown>
@@ -126,7 +135,7 @@ vi.mock("$app/stores", () => {
     },
   };
 });
-// The dialog saves through the admin API, which web-common unit tests cannot reach.
+// The dialog saves through the admin API, which component tests cannot reach.
 vi.mock("@rilldata/web-admin/client", async () => {
   const { readable } = await import("svelte/store");
   return {
@@ -138,48 +147,32 @@ vi.mock("@rilldata/web-admin/client", async () => {
       readable({ mutateAsync: vi.fn(), error: null }),
     createAdminServiceEditAlert: () =>
       readable({ mutateAsync: editAlert, error: null }),
+    createAdminServiceDeleteAlert: () =>
+      readable({ mutateAsync: vi.fn(), error: null }),
   };
 });
 
-// The properties the ai resolver accepts (aiProps in runtime/resolvers/ai.go).
-const AIResolverProperties = [
-  "agent",
-  "prompt",
-  "time_range",
-  "comparison_time_range",
-  "time_zone",
-  "explore",
-  "dimensions",
-  "measures",
-  "where",
-];
+const AIConditionText = "Impressions dropped against the previous weeks";
 
-/** A formula alert created in the dialog, as the parser stores it: the legacy metrics resolver over the dialog's query. */
-function getFormulaAlertSpec(): V1AlertSpec {
+/** A criteria alert created in the dialog, checked whenever its data refreshes. */
+function getCriteriaAlertSpec(annotations: Record<string, string> = {}) {
   const queryArgs: V1MetricsViewAggregationRequest = {
     metricsView: AD_BIDS_METRICS_NAME,
     measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
     dimensions: [],
+    where: createAndExpression([
+      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+    ]),
     timeRange: { isoDuration: "P7D", timeZone: "UTC" },
-    having: {
-      cond: {
-        op: V1Operation.OPERATION_AND,
-        exprs: [
-          {
-            cond: {
-              op: V1Operation.OPERATION_GT,
-              exprs: [{ ident: AD_BIDS_IMPRESSIONS_MEASURE }, { val: 10 }],
-            },
-          },
-        ],
+    having: createAndExpression([
+      {
+        cond: {
+          op: V1Operation.OPERATION_GT,
+          exprs: [{ ident: AD_BIDS_IMPRESSIONS_MEASURE }, { val: 10 }],
+        },
       },
-    },
+    ]),
   };
-  const exploreState = getInitExploreStateForTest(
-    AD_BIDS_METRICS_INIT_WITH_TIME,
-    AD_BIDS_EXPLORE_INIT,
-    AD_BIDS_TIME_RANGE_SUMMARY,
-  );
   return {
     displayName: "Impressions alert",
     resolver: "legacy_metrics",
@@ -190,32 +183,37 @@ function getFormulaAlertSpec(): V1AlertSpec {
     notifiers: [
       { connector: "email", properties: { recipients: ["user@rilldata.com"] } },
     ],
+    exportAttach: true,
+    exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
     annotations: {
       admin_owner_user_id: "owner-1",
       web_open_path: `/explore/${AD_BIDS_EXPLORE_NAME}`,
-      web_open_state: getProtoFromDashboardState(
-        exploreState,
-        AD_BIDS_EXPLORE_INIT,
-      ),
+      ...annotations,
     },
-  };
+  } satisfies V1AlertSpec;
 }
 
-/** An AI alert created through the API: the ai resolver's properties, and no captured dashboard state. */
-function getAPIAIAlertSpec(): V1AlertSpec {
-  return {
-    displayName: "Impressions drop",
-    resolver: "ai",
-    resolverProperties: {
-      prompt: "Impressions dropped against the previous weeks",
-      explore: AD_BIDS_EXPLORE_NAME,
+/** The resolver properties the dialog writes for the criteria alert's data and the AI condition. */
+const AIAlertResolverProperties = {
+  prompt: AIConditionText,
+  explore: AD_BIDS_EXPLORE_NAME,
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  where: {
+    cond: {
+      op: "and",
+      exprs: [
+        {
+          cond: {
+            op: "in",
+            exprs: [{ name: AD_BIDS_PUBLISHER_DIMENSION }, { val: "Facebook" }],
+          },
+        },
+      ],
     },
-    notifiers: [
-      { connector: "email", properties: { recipients: ["user@rilldata.com"] } },
-    ],
-    annotations: { admin_owner_user_id: "owner-1" },
-  };
-}
+  },
+  time_range: { expression: "P7D" },
+  time_zone: "UTC",
+};
 
 async function openEditDialog(alertSpec: V1AlertSpec) {
   render(AlertDialogTest, {
@@ -228,27 +226,22 @@ async function openEditDialog(alertSpec: V1AlertSpec) {
       ],
     ]),
   });
-  await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Next" })).toBeTruthy(),
-  );
+  // The filters and the time range are applied once the metrics view loads.
+  await waitFor(() => {
+    expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toBeVisible();
+    expect(
+      screen.getByLabelText(m.dashboard_select_time_range()),
+    ).toHaveTextContent(getRangeLabel("P7D"));
+  });
 }
 
-async function typeCondition(text: string) {
-  const condition = await waitFor(() =>
-    screen.getByPlaceholderText(
-      "Revenue dropped unusually against the previous weeks",
-    ),
-  );
-  await fireEvent.input(condition, { target: { value: text } });
+async function clickButton(name: string) {
+  await act(() => screen.getByRole("button", { name }).click());
 }
 
 async function getSavedOptions() {
   await waitFor(() => expect(editAlert).toHaveBeenCalledOnce());
   return editAlert.mock.calls[0][0].data.options;
-}
-
-async function clickButton(name: string) {
-  await act(() => screen.getByRole("button", { name }).click());
 }
 
 describe("the alert dialog", () => {
@@ -279,6 +272,9 @@ describe("the alert dialog", () => {
       AD_BIDS_METRICS_NAME,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!,
     );
+    mocks.mockResolvedRillTimes(AD_BIDS_METRICS_NAME, {
+      P7D: { start: "2022-03-24T00:00:00Z", end: "2022-03-31T00:00:00Z" },
+    });
 
     localStorage.clear();
     sessionStorage.clear();
@@ -287,95 +283,75 @@ describe("the alert dialog", () => {
 
   afterAll(waitForBodyScrollCleanup);
 
-  it("converts a formula alert to an AI condition without carrying the formula's properties", async () => {
-    await openEditDialog(getFormulaAlertSpec());
+  it("turns a criteria alert into an AI alert over the same data, checked on a schedule", async () => {
+    await openEditDialog(getCriteriaAlertSpec());
 
-    // The mode is chosen on the data tab, since it changes which data fields are needed.
-    await clickButton("AI condition");
-    await clickButton("Next");
-    await typeCondition("Impressions dropped against the previous weeks");
-    await clickButton("Next");
-    await clickButton("Update");
+    await clickButton(m.alert_form_condition_type_ai());
+    await clickButton(m.alert_form_next());
+    await fireEvent.input(
+      screen.getByPlaceholderText(m.alert_form_ai_condition_placeholder()),
+      { target: { value: AIConditionText } },
+    );
+    await clickButton(m.alert_form_next());
+    // AI alerts can't be checked whenever their data refreshes, and have no rows to attach.
+    expect(
+      screen.getByRole("button", { name: m.alert_form_trigger_data_refresh() }),
+    ).toBeDisabled();
+    expect(screen.queryByLabelText(m.alert_form_attach_rows())).toBeNull();
+    await clickButton(m.alert_form_update());
 
     const options = await getSavedOptions();
-    expect(options.resolver).toBe("ai");
+    expect(options).toMatchObject({
+      resolver: "ai",
+      resolverProperties: AIAlertResolverProperties,
+      metricsViewName: AD_BIDS_METRICS_NAME,
+      exportAttach: false,
+    });
     expect(options.queryName).toBeUndefined();
     expect(options.queryArgsJson).toBeUndefined();
-    // Only the ai resolver's own properties: the formula's query_name and query_args_json would fail under strict resolver properties.
-    const props = options.resolverProperties ?? {};
-    expect(props).toMatchObject({
-      prompt: "Impressions dropped against the previous weeks",
-      explore: AD_BIDS_EXPLORE_NAME,
-    });
-    for (const key of Object.keys(props)) {
-      expect(AIResolverProperties).toContain(key);
-    }
-    // The formula's measure was not chosen for the AI, so it does not narrow what the AI looks at.
-    expect(props).not.toHaveProperty("measures");
+    expect(options.refreshCron).toMatch(/^\d+ \d+ \* \* \d$/);
   });
 
-  it("restores the formula's measure after leaving the data tab in AI mode", async () => {
-    await openEditDialog(getFormulaAlertSpec());
-
-    // The data tab unmounts while another tab is shown, so what it remembers must outlive it.
-    await clickButton("AI condition");
-    await clickButton("Next");
-    await clickButton("Back");
-    await clickButton("Criteria");
-    await clickButton("Next");
-    await clickButton("Next");
-    await clickButton("Update");
-
-    const options = await getSavedOptions();
-    expect(options.resolver).toBeUndefined();
-    const queryArgs = JSON.parse(
-      options.queryArgsJson ?? "{}",
-    ) as V1MetricsViewAggregationRequest;
-    expect(queryArgs.measures?.[0]?.name).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
-  });
-
-  it("waits for the explore before editing an AI alert created through the API", async () => {
-    // Such an alert has no captured dashboard state. Hold the explore response until after the current user's,
-    // which is when the dialog would otherwise start without knowing the alert's metrics view.
-    let releaseExplore = () => {};
-    const exploreGate = new Promise<void>((resolve) => {
-      releaseExplore = resolve;
+  it("saves an AI alert created through the API as it was", async () => {
+    // Such an alert has no dashboard annotations, so its explore and metrics view are read from its resolver properties.
+    await openEditDialog({
+      displayName: "Impressions drop",
+      resolver: "ai",
+      resolverProperties: AIAlertResolverProperties,
+      refreshSchedule: { cron: "0 9 * * 1", timeZone: "UTC" },
+      notifiers: [
+        {
+          connector: "email",
+          properties: { recipients: ["user@rilldata.com"] },
+        },
+      ],
+      annotations: { admin_owner_user_id: "owner-1" },
     });
-    const mockedFetch = globalThis.fetch;
-    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-      if (String(url).endsWith("/GetExplore")) await exploreGate;
-      return mockedFetch(url, init);
-    });
-    try {
-      render(AlertDialogTest, {
-        props: { alertSpec: getAPIAIAlertSpec() },
-        context: new Map<string | symbol, unknown>([
-          ["$$_queryClient", queryClient],
-          [
-            RUNTIME_CONTEXT_KEY,
-            new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
-          ],
-        ]),
-      });
-      await new Promise((r) => setTimeout(r, 50));
-      releaseExplore();
-      await waitFor(() =>
-        expect(screen.getByRole("button", { name: "Next" })).toBeTruthy(),
-      );
 
-      await clickButton("Next");
-      await clickButton("Next");
-      await clickButton("Update");
+    await clickButton(m.alert_form_next());
+    expect(
+      screen.getByPlaceholderText(m.alert_form_ai_condition_placeholder()),
+    ).toHaveValue(AIConditionText);
+    await clickButton(m.alert_form_next());
+    await clickButton(m.alert_form_update());
 
-      const options = await getSavedOptions();
+    expect(await getSavedOptions()).toMatchObject({
+      resolver: "ai",
+      resolverProperties: AIAlertResolverProperties,
       // The managed alert's YAML refs MetricsView/<metricsViewName>, so it must not be empty.
-      expect(options.metricsViewName).toBe(AD_BIDS_METRICS_NAME);
-      expect(options.resolverProperties).toMatchObject({
-        prompt: "Impressions dropped against the previous weeks",
-        explore: AD_BIDS_EXPLORE_NAME,
-      });
-    } finally {
-      vi.stubGlobal("fetch", mockedFetch);
-    }
+      metricsViewName: AD_BIDS_METRICS_NAME,
+      refreshCron: "0 9 * * 1",
+    });
+  });
+
+  it("does not offer an AI condition for an alert created from an embed", async () => {
+    // The admin service only lets such alerts run a query, including when an admin edits one outside of the embed.
+    await openEditDialog(
+      getCriteriaAlertSpec({ admin_embed_owner_id: "embed-user-1" }),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: m.alert_form_condition_type_ai() }),
+    ).toBeNull();
   });
 });
