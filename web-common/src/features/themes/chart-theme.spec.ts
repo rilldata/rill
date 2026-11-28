@@ -133,6 +133,64 @@ function values(items: SceneNode[], property: string): unknown[] {
   );
 }
 
+/**
+ * The bars Vega draws for a built-in chart over days of a time unit, as Rill's queries give them,
+ * leaving out those it cannot place on the axis and those a clip hides: a mark that clips is cut to
+ * the group it is drawn in.
+ */
+async function drawnBars(
+  chartType: ChartType,
+  chartSpec: ChartSpec,
+  chartTheme: V1ThemeChartStyle | undefined,
+) {
+  const data = chartData(chartTheme);
+  data.fields.day = {
+    field: "day",
+    displayName: "Day",
+    timeUnit: "yearmonthdate",
+  };
+  const spec = generateSpec(chartType, chartSpec, data);
+  const view = new vega.View(
+    vega.parse(
+      compile(
+        {
+          ...spec,
+          data: { values: rows },
+          width: 400,
+          height: 300,
+        } as TopLevelSpec,
+        { config: getRillTheme(false, undefined, { chart: chartTheme }) },
+      ).spec,
+    ),
+    { renderer: "none" },
+  );
+  await view.runAsync();
+
+  const bars: SceneNode[] = [];
+  const visit = (mark: SceneNode, group: SceneNode | undefined) => {
+    for (const item of mark.items ?? []) {
+      const hidden =
+        mark.clip === true &&
+        !(Number(group?.width) > 0 && Number(group?.height) > 0);
+      // The bar that highlights a hovered category is transparent until then.
+      if (
+        mark.marktype === "rect" &&
+        mark.role === "mark" &&
+        !hidden &&
+        item.fill !== "transparent"
+      ) {
+        bars.push(item);
+      }
+      // A group Vega cannot place draws nothing in it.
+      if (mark.marktype !== "group" || Number.isFinite(item.x ?? 0)) {
+        item.items?.forEach((child) => visit(child, item));
+      }
+    }
+  };
+  visit((view.scenegraph() as unknown as { root: SceneNode }).root, undefined);
+  return bars;
+}
+
 describe("a theme's chart style on built-in charts", () => {
   beforeAll(() => {
     stubCanvasContext();
@@ -354,6 +412,51 @@ describe("a theme's chart style on built-in charts", () => {
         await gridOf(sideways, { measure: true, category: true }),
       ).sort(),
     ).toEqual([false, true]);
+  });
+
+  it("draws the bars it rounds, and the bars of a stack square", async () => {
+    const day = { field: "day", type: "temporal" };
+    const region = { field: "region", type: "nominal" };
+    const revenue = { field: "revenue", type: "quantitative" };
+    const charts: [ChartType, object][] = [
+      ["bar_chart", { x: day, y: revenue }],
+      ["bar_chart", { x: revenue, y: region }],
+      ["bar_chart", { x: day, y: revenue, color: region }],
+      ["bar_chart", { x: day, y: { ...revenue, fields: ["revenue", "cost"] } }],
+      ["stacked_bar", { x: day, y: revenue, color: region }],
+      ["stacked_bar_normalized", { x: day, y: revenue, color: region }],
+      [
+        "combo_chart",
+        {
+          x: day,
+          y1: { ...revenue, mark: "bar" },
+          y2: { field: "cost", type: "quantitative", mark: "line" },
+        },
+      ],
+    ];
+    const rounded = { bar: { cornerRadius: 4 } };
+    for (const [chartType, fields] of charts) {
+      const spec = { metrics_view: "sales", ...fields } as ChartSpec;
+      const name = `${chartType} ${JSON.stringify(fields)}`;
+      // Vega-Lite rounds a stack in a group of its own, where these bars were not drawn at all.
+      const bars = await drawnBars(chartType, spec, rounded);
+      const square = await drawnBars(chartType, spec, undefined);
+      expect(bars.length, name).toBeGreaterThan(0);
+      expect(bars.length, name).toBe(square.length);
+    }
+    const corners = async (chartType: ChartType, fields: object) =>
+      values(
+        await drawnBars(
+          chartType,
+          { metrics_view: "sales", ...fields } as ChartSpec,
+          rounded,
+        ),
+        "cornerRadiusTopRight",
+      );
+    expect(await corners("bar_chart", { x: day, y: revenue })).toContain(4);
+    expect(
+      await corners("stacked_bar", { x: day, y: revenue, color: region }),
+    ).not.toContain(4);
   });
 });
 

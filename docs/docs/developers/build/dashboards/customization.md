@@ -379,7 +379,7 @@ Every property is optional, and a chart keeps Rill's default for anything the th
 | `axis` | Whether an axis has a `line` and `ticks`, and their `line_width` and `color`. |
 | `line` | The `width` of lines. |
 | `area` | The `fill_opacity` of areas, and the `line_width` of the line along their top. |
-| `bar` | The `opacity` and `corner_radius` of bars. |
+| `bar` | The `opacity` and `corner_radius` of bars. The stacked bars of built-in charts stay square. |
 | `point` | The `size` and `opacity` of points. |
 | `legend` | The default `position` of legends and the `symbol` beside each entry. |
 

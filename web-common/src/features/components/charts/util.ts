@@ -1,10 +1,14 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import {
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1ThemeChartStyle,
+} from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
+import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
 import { getChroma } from "../../themes/theme-utils";
 import { OTHER_VALUE } from "./circular/constants";
@@ -164,8 +168,123 @@ export function generateSpec(
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
+  const spec = CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
+  return spec && roundBarsOutsideStacks(spec, data.chartTheme);
 }
+
+/**
+ * Keeps the bars of a built-in chart drawn when their corners are rounded, by the project theme's
+ * `bar.corner_radius` or by a widget's `vl_config`.
+ *
+ * Vega-Lite stacks every bar it is not told otherwise of, and rounds the end of a stack by drawing
+ * it in a group of its own. The builders' bars were lost in such groups: one clipped to the plot
+ * (`clip: true`) was clipped to an inner group with no height, and one over a time unit was placed
+ * from fields the group does not keep. So no bar is drawn in one. A bar that stands for its own
+ * value, the only bar of its series or one of a group side by side, is not stacked, and keeps the
+ * zero its stack gave the axis; Vega-Lite rounds it on its own. The bars of a stack are drawn square.
+ */
+function roundBarsOutsideStacks(
+  spec: VisualizationSpec,
+  chartTheme: V1ThemeChartStyle | undefined,
+): VisualizationSpec {
+  const config = (spec as { config?: Config }).config;
+  const rounds = (section: object | undefined) =>
+    Object.entries(section ?? {}).some(
+      ([key, value]) => key.startsWith("cornerRadius") && !!value,
+    );
+  if (
+    !chartTheme?.bar?.cornerRadius &&
+    !rounds(config?.bar) &&
+    !rounds(config?.mark)
+  ) {
+    return spec;
+  }
+
+  type ChannelDef = {
+    type?: string;
+    field?: unknown;
+    aggregate?: unknown;
+    stack?: unknown;
+    scale?: object;
+  };
+  type Encoding = Record<string, ChannelDef | ChannelDef[] | undefined>;
+  type View = { mark?: unknown; encoding?: Encoding; layer?: View[] };
+
+  const visit = (view: View, inherited: Encoding) => {
+    const encoding: Encoding = { ...inherited, ...view.encoding };
+    const defOf = (channel: string) => {
+      const def = encoding[channel];
+      return Array.isArray(def) ? undefined : def;
+    };
+    const measure = (["x", "y"] as const).find(
+      (channel) =>
+        view.encoding?.[channel] && defOf(channel)?.type === "quantitative",
+    );
+    const mark = view.mark as { type?: string } | undefined;
+    if (view.encoding && measure && mark?.type === "bar") {
+      const def = defOf(measure) as ChannelDef;
+      const category = measure === "x" ? "y" : "x";
+      // Vega-Lite stacks a bar by a field it is drawn by besides its place on the axis, as a color.
+      const positions = [category, `${category}Offset`].map(
+        (channel) => defOf(channel)?.field,
+      );
+      const stackBy = STACK_BY_CHANNELS.some((channel) => {
+        const by = defOf(channel);
+        return (
+          by?.field !== undefined &&
+          !by.aggregate &&
+          !positions.includes(by.field)
+        );
+      });
+      // It stacks every bar it is not told not to, but for a range and for an aggregate that
+      // has nothing to stack by, such as the measures of a chart of several side by side.
+      const stacks =
+        def.stack !== null &&
+        def.stack !== false &&
+        !encoding[`${measure}2`] &&
+        (stackBy ||
+          !Object.values(encoding).some((channel) =>
+            [channel].flat().some((d) => d?.aggregate),
+          ));
+      if (stacks && (stackBy || def.stack !== undefined)) {
+        view.mark = {
+          ...mark,
+          ...Object.fromEntries(CORNER_RADIUS_PROPERTIES.map((p) => [p, 0])),
+        };
+      } else if (stacks) {
+        view.encoding[measure] = {
+          ...def,
+          stack: null,
+          scale: { ...def.scale, zero: true },
+        };
+      }
+    }
+    view.layer?.forEach((layer) => visit(layer, encoding));
+  };
+  visit(spec as View, {});
+  return spec;
+}
+
+/** The channels besides position that Vega-Lite stacks a bar by when they draw a field. */
+const STACK_BY_CHANNELS = [
+  "color",
+  "fill",
+  "stroke",
+  "opacity",
+  "fillOpacity",
+  "strokeOpacity",
+  "detail",
+];
+
+/** The properties that round the corners of a Vega-Lite bar. */
+const CORNER_RADIUS_PROPERTIES = [
+  "cornerRadius",
+  "cornerRadiusEnd",
+  "cornerRadiusTopLeft",
+  "cornerRadiusTopRight",
+  "cornerRadiusBottomLeft",
+  "cornerRadiusBottomRight",
+];
 
 export function isDomainStringArray(
   values: string[] | number[] | undefined,

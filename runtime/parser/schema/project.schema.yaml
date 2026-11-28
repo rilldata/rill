@@ -4581,7 +4581,7 @@ definitions:
             description: Opacity of the bars, from 0 to 1.
           corner_radius:
             type: number
-            description: Radius of the corners at the value end of a bar, in pixels.
+            description: Radius of the corners at the value end of a bar, in pixels. The stacked bars of built-in charts stay square.
       point:
         type: object
         description: Point marks, such as the dots of a scatter plot.

@@ -147,7 +147,7 @@ _[object]_ - Styling for charts. It applies to built-in canvas charts, to Vega-L
 
     - **`opacity`** - _[number]_ - Opacity of the bars, from 0 to 1.
 
-    - **`corner_radius`** - _[number]_ - Radius of the corners at the value end of a bar, in pixels.
+    - **`corner_radius`** - _[number]_ - Radius of the corners at the value end of a bar, in pixels. The stacked bars of built-in charts stay square.
 
   - **`point`** - _[object]_ - Point marks, such as the dots of a scatter plot.
 
