@@ -38,7 +38,7 @@ func TestYAMLForResolverProperties(t *testing.T) {
 	}
 
 	generators := map[string]func() ([]byte, error){
-		"managed alert":    func() ([]byte, error) { return s.yamlForManagedAlert(alert, "owner") },
+		"managed alert":    func() ([]byte, error) { return s.yamlForManagedAlert(alert, "owner", "", "", nil) },
 		"committed alert":  func() ([]byte, error) { return s.yamlForCommittedAlert(alert) },
 		"managed report":   func() ([]byte, error) { return s.yamlForManagedReport(report, "owner", "", "", nil) },
 		"committed report": func() ([]byte, error) { return s.yamlForCommittedReport(report) },
