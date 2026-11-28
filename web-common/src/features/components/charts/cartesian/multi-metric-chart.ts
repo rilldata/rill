@@ -389,7 +389,9 @@ export function generateVLMultiMetricChartSpec(
     ...(vegaConfig && { config: vegaConfig }),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }
 
 /**

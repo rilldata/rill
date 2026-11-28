@@ -347,6 +347,13 @@ describe("a theme's chart style on built-in charts", () => {
     expect(
       horizontal(await gridOf(bars, { measure: true, category: true })).sort(),
     ).toEqual([false, true]);
+    // A horizontal bar chart draws the lines the theme states for each axis, too.
+    expect(await gridOf(sideways, { measure: false })).toEqual([]);
+    expect(
+      horizontal(
+        await gridOf(sideways, { measure: true, category: true }),
+      ).sort(),
+    ).toEqual([false, true]);
   });
 });
 

@@ -139,5 +139,7 @@ export function generateVLStackedBarChartSpec(
       : {}),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }

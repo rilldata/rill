@@ -161,5 +161,7 @@ export function generateVLBarChartSpec(
       : {}),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }
