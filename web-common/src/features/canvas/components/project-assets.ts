@@ -95,22 +95,35 @@ export class ProjectAssetLoader {
   }
 
   private async fetchAsBlobUrl(segments: string[]): Promise<string> {
-    const { host, instanceId } = this.client;
-    const headers: Record<string, string> = {};
-    const jwt = await this.client.getFreshJwt();
-    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-
-    // Encode each segment, so that characters such as `#` and `?` reach the runtime as part of the file name.
-    const path = segments.map(encodeURIComponent).join("/");
-    const response = await fetch(
-      `${host}/v1/instances/${instanceId}/assets/${path}`,
-      { headers },
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to load ${path}: HTTP ${response.status}`);
-    }
+    const response = await fetchProjectAsset(this.client, segments);
     return URL.createObjectURL(await response.blob());
   }
+}
+
+/**
+ * Fetches a project asset from the runtime's assets API with the user's token,
+ * waiting for a token that is about to expire to be refreshed, like queries do.
+ * `segments` are the decoded segments of the asset's project-relative path.
+ * Rejects when the runtime doesn't return the file.
+ */
+export async function fetchProjectAsset(
+  client: RuntimeClient,
+  segments: string[],
+): Promise<Response> {
+  const headers: Record<string, string> = {};
+  const jwt = await client.getFreshJwt();
+  if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+
+  // Encode each segment, so that characters such as `#` and `?` reach the runtime as part of the file name.
+  const path = segments.map(encodeURIComponent).join("/");
+  const response = await fetch(
+    `${client.host}/v1/instances/${client.instanceId}/assets/${path}`,
+    { headers },
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to load ${path}: HTTP ${response.status}`);
+  }
+  return response;
 }
 
 /**

@@ -23,6 +23,7 @@
   import { onDestroy } from "svelte";
   import type { SignalListeners, View } from "svelte-vega";
   import type { Readable } from "svelte/store";
+  import { getThemeChartFont } from "../../themes/theme-font";
   import { getChroma } from "../../themes/theme-utils";
   import { discoverTemporalBrushSignal } from "./brush-builder";
   import { clearExternalBrush, setExternalBrush } from "./highlight-controller";
@@ -53,6 +54,8 @@
   export let externalBrushEndMs: number | undefined = undefined;
 
   export let view: View;
+
+  const chartFont = getThemeChartFont();
 
   $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
@@ -288,7 +291,9 @@
       renderer="canvas"
       {expressionFunctions}
       {hasComparison}
-      config={getRillTheme(isThemeModeDark, theme)}
+      config={getRillTheme(isThemeModeDark, theme, {
+        fontFamily: $chartFont,
+      })}
     />
   </div>
 {/if}

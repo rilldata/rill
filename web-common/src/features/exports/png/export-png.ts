@@ -1,5 +1,8 @@
-import { getFontEmbedCSS } from "html-to-image";
-import { needsCanvasWarmup, rasterizeNode } from "../rasterize";
+import {
+  needsCanvasWarmup,
+  rasterizeNode,
+  resolveFontEmbedCSS,
+} from "../rasterize";
 
 // Rasterizes a single on-screen node to a PNG and triggers a browser download.
 // Shares the PDF export's capture path (SVG style inlining, font embedding, the
@@ -10,7 +13,7 @@ export async function downloadNodeAsPng(
   filename: string,
 ): Promise<void> {
   const warmUpCanvas = await needsCanvasWarmup();
-  const fontEmbedCSS = await getFontEmbedCSS(node);
+  const fontEmbedCSS = await resolveFontEmbedCSS(node);
   await document.fonts.ready;
   const dataUrl = await rasterizeNode(node, {
     backgroundColor: getComputedStyle(node).backgroundColor,

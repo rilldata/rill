@@ -25,6 +25,7 @@
     type FlintChartSpec,
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
+  import { getThemeChartFont } from "@rilldata/web-common/features/themes/theme-font";
   import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
   import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -70,6 +71,8 @@
   export let onResults:
     | ((results: CustomChartExportResult[] | undefined) => void)
     | undefined = undefined;
+
+  const chartFont = getThemeChartFont();
 
   $: viewOptions = [m.canvas_chart(), m.component_preview_data()];
 
@@ -348,7 +351,9 @@
               canvasDashboard
               scrollX
               {themeMode}
-              config={getRillTheme(themeMode === "dark", theme)}
+              config={getRillTheme(themeMode === "dark", theme, {
+                fontFamily: $chartFont,
+              })}
               {expressionFunctions}
               bind:viewVL
             />

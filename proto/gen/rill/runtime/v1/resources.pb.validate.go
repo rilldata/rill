@@ -9541,6 +9541,64 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	// no validation rules for SecondaryColorRaw
 
+	if all {
+		switch v := interface{}(m.GetFont()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Font",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Font",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFont()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeSpecValidationError{
+				field:  "Font",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetChrome()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Chrome",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeSpecValidationError{
+					field:  "Chrome",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetChrome()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeSpecValidationError{
+				field:  "Chrome",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if m.PrimaryColor != nil {
 
 		if all {
@@ -9953,6 +10011,360 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ThemeColorsValidationError{}
+
+// Validate checks the field values on ThemeFont with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeFont) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeFont with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeFontMultiError, or nil
+// if none found.
+func (m *ThemeFont) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeFont) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Family
+
+	for idx, item := range m.GetFiles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ThemeFontValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ThemeFontValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ThemeFontValidationError{
+					field:  fmt.Sprintf("Files[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ThemeFontMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeFontMultiError is an error wrapping multiple validation errors returned
+// by ThemeFont.ValidateAll() if the designated constraints aren't met.
+type ThemeFontMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeFontMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeFontMultiError) AllErrors() []error { return m }
+
+// ThemeFontValidationError is the validation error returned by
+// ThemeFont.Validate if the designated constraints aren't met.
+type ThemeFontValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeFontValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeFontValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeFontValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeFontValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeFontValidationError) ErrorName() string { return "ThemeFontValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeFontValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeFont.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeFontValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeFontValidationError{}
+
+// Validate checks the field values on ThemeFontFile with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeFontFile) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeFontFile with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeFontFileMultiError, or
+// nil if none found.
+func (m *ThemeFontFile) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeFontFile) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for WeightMin
+
+	// no validation rules for WeightMax
+
+	// no validation rules for Italic
+
+	if len(errors) > 0 {
+		return ThemeFontFileMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeFontFileMultiError is an error wrapping multiple validation errors
+// returned by ThemeFontFile.ValidateAll() if the designated constraints
+// aren't met.
+type ThemeFontFileMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeFontFileMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeFontFileMultiError) AllErrors() []error { return m }
+
+// ThemeFontFileValidationError is the validation error returned by
+// ThemeFontFile.Validate if the designated constraints aren't met.
+type ThemeFontFileValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeFontFileValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeFontFileValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeFontFileValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeFontFileValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeFontFileValidationError) ErrorName() string { return "ThemeFontFileValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeFontFileValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeFontFile.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeFontFileValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeFontFileValidationError{}
+
+// Validate checks the field values on ThemeChrome with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeChrome) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeChrome with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeChromeMultiError, or
+// nil if none found.
+func (m *ThemeChrome) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeChrome) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.BorderWidthPx != nil {
+		// no validation rules for BorderWidthPx
+	}
+
+	if m.FontSizePx != nil {
+		// no validation rules for FontSizePx
+	}
+
+	if m.FontWeight != nil {
+		// no validation rules for FontWeight
+	}
+
+	if len(errors) > 0 {
+		return ThemeChromeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeChromeMultiError is an error wrapping multiple validation errors
+// returned by ThemeChrome.ValidateAll() if the designated constraints aren't met.
+type ThemeChromeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeChromeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeChromeMultiError) AllErrors() []error { return m }
+
+// ThemeChromeValidationError is the validation error returned by
+// ThemeChrome.Validate if the designated constraints aren't met.
+type ThemeChromeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeChromeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeChromeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeChromeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeChromeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeChromeValidationError) ErrorName() string { return "ThemeChromeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeChromeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeChrome.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeChromeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeChromeValidationError{}
 
 // Validate checks the field values on Component with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

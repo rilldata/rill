@@ -7,6 +7,7 @@
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import { getThemeChartFont } from "@rilldata/web-common/features/themes/theme-font";
   import {
     createRuntimeServiceQueryResolver,
     type V1Expression,
@@ -33,6 +34,8 @@
   export let onResults:
     | ((results: CustomChartExportResult[] | undefined) => void)
     | undefined = undefined;
+
+  const chartFont = getThemeChartFont();
 
   const viewOptions = ["Chart", "Data"];
 
@@ -174,7 +177,9 @@
             {renderer}
             spec={parsedSpec}
             canvasDashboard
-            config={getRillTheme(true)}
+            config={getRillTheme(true, undefined, {
+              fontFamily: $chartFont,
+            })}
             data={vegaData}
             bind:viewVL
           />

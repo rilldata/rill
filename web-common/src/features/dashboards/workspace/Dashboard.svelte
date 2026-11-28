@@ -174,7 +174,7 @@
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
+      class="chrome-border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}

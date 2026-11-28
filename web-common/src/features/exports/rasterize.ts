@@ -1,4 +1,5 @@
-import { toJpeg, toPng } from "html-to-image";
+import { themeFontEmbedCSS } from "@rilldata/web-common/features/themes/theme-font";
+import { getFontEmbedCSS, toJpeg, toPng } from "html-to-image";
 
 // Properties that don't reliably serialize from <svg> subtrees during cloning,
 // so we pin their computed values inline before capture. Mirrors the approach in
@@ -123,6 +124,13 @@ async function isBlank(dataUrl: string): Promise<boolean> {
     if (data[i] > 128) return false;
   }
   return true;
+}
+
+// Resolves the web fonts used inside a node to data URIs, for RasterizeOptions.fontEmbedCSS.
+// html-to-image finds the fonts declared in the page's stylesheets; a theme's own font is
+// registered from script instead, so it is added here.
+export async function resolveFontEmbedCSS(node: HTMLElement): Promise<string> {
+  return (await getFontEmbedCSS(node)) + themeFontEmbedCSS(node);
 }
 
 export type RasterFormat = "jpeg" | "png";

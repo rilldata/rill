@@ -1,9 +1,12 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"maps"
+	"path"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/mazznoer/csscolorparser"
@@ -17,8 +20,10 @@ type ThemeYAML struct {
 		Primary   string `yaml:"primary"`
 		Secondary string `yaml:"secondary"`
 	} `yaml:"colors"`
-	Light *ThemeColors `yaml:"light"`
-	Dark  *ThemeColors `yaml:"dark"`
+	Light  *ThemeColors     `yaml:"light"`
+	Dark   *ThemeColors     `yaml:"dark"`
+	Font   *ThemeFontYAML   `yaml:"font"`
+	Chrome *ThemeChromeYAML `yaml:"chrome"`
 }
 
 // ThemeColors is the raw structure of a theme's `light` or `dark` block.
@@ -30,6 +35,53 @@ type ThemeColors struct {
 	Variables     map[string]string `yaml:"variables"`
 	FlatVariables map[string]string `yaml:",inline"`
 }
+
+// ThemeFontYAML is the raw structure of a theme's font.
+type ThemeFontYAML struct {
+	Family string `yaml:"family"`
+	Files  []struct {
+		Path   string `yaml:"path"`
+		Weight string `yaml:"weight"` // A single weight like "400", or a range like "100 900" for a variable font
+		Style  string `yaml:"style"`  // "normal" or "italic"
+	} `yaml:"files"`
+}
+
+// ThemeChromeYAML is the raw structure of a theme's chrome tokens.
+// The lengths are in pixels, with an optional "px" suffix.
+type ThemeChromeYAML struct {
+	BorderWidth string `yaml:"border_width"`
+	FontSize    string `yaml:"font_size"`
+	FontWeight  string `yaml:"font_weight"`
+}
+
+// themeFontFamilyRegexp matches a single font family name.
+// It excludes quotes, commas and other CSS syntax, so that the name can be used in a font-family declaration as is.
+var themeFontFamilyRegexp = regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{N} ._-]*$`)
+
+// themeFontGenericFamilies are the CSS keywords that name a font the browser picks, which can't be provided by files.
+var themeFontGenericFamilies = map[string]bool{
+	"serif":         true,
+	"sans-serif":    true,
+	"monospace":     true,
+	"cursive":       true,
+	"fantasy":       true,
+	"system-ui":     true,
+	"ui-serif":      true,
+	"ui-sans-serif": true,
+	"ui-monospace":  true,
+	"ui-rounded":    true,
+}
+
+// themeFontFileExtensions are the font file formats that browsers can load.
+var themeFontFileExtensions = map[string]bool{
+	".woff2": true,
+	".woff":  true,
+	".ttf":   true,
+	".otf":   true,
+}
+
+// maxThemeFontFiles limits the number of files a viewer's browser downloads for a theme.
+const maxThemeFontFiles = 16
 
 // cssLengthRegexp matches the lengths accepted for theme variables: a non-negative number with a px, rem or em unit.
 var cssLengthRegexp = regexp.MustCompile(`^(\d+(\.\d+)?|\.\d+)(px|rem|em)$`)
@@ -59,6 +111,28 @@ func (p *Parser) parseTheme(node *Node) error {
 
 func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	spec := &runtimev1.ThemeSpec{}
+
+	if tmp.Font != nil {
+		// Same default as in rill.yaml, for when rill.yaml is missing or invalid.
+		publicPaths := []string{"public"}
+		if p.RillYAML != nil {
+			publicPaths = p.RillYAML.PublicPaths
+		}
+
+		font, err := tmp.Font.validate(publicPaths)
+		if err != nil {
+			return nil, fmt.Errorf("invalid font: %w", err)
+		}
+		spec.Font = font
+	}
+
+	if tmp.Chrome != nil {
+		chrome, err := tmp.Chrome.validate()
+		if err != nil {
+			return nil, fmt.Errorf("invalid chrome: %w", err)
+		}
+		spec.Chrome = chrome
+	}
 
 	hasLegacyColors := tmp.Colors.Primary != "" || tmp.Colors.Secondary != ""
 	hasCSSProperties := tmp.Light != nil || tmp.Dark != nil
@@ -183,4 +257,123 @@ func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
 	}
 
 	return res, nil
+}
+
+// validate checks the font and converts it to its spec.
+// The font files must be inside one of publicPaths, since those are the only project files served to viewers.
+func (f *ThemeFontYAML) validate(publicPaths []string) (*runtimev1.ThemeFont, error) {
+	family := strings.TrimSpace(f.Family)
+	if family == "" {
+		return nil, errors.New(`"family" is required`)
+	}
+	if len(family) > 64 || !themeFontFamilyRegexp.MatchString(family) {
+		return nil, fmt.Errorf("invalid family %q: must be a single font family name of letters, digits, spaces, dots, hyphens and underscores", f.Family)
+	}
+
+	if len(f.Files) > 0 && themeFontGenericFamilies[strings.ToLower(family)] {
+		return nil, fmt.Errorf("the generic family %q is provided by the browser and can't have files", family)
+	}
+	if len(f.Files) > maxThemeFontFiles {
+		return nil, fmt.Errorf("at most %d files are supported, got %d", maxThemeFontFiles, len(f.Files))
+	}
+
+	font := &runtimev1.ThemeFont{Family: family}
+	for i, file := range f.Files {
+		// Same normalized form as the paths that the runtime's assets endpoint serves.
+		filePath := strings.TrimPrefix(path.Clean("/"+strings.ReplaceAll(file.Path, `\`, "/")), "/")
+		if file.Path == "" || filePath == "" {
+			return nil, fmt.Errorf(`files[%d]: "path" is required`, i)
+		}
+
+		public := false
+		for _, publicPath := range publicPaths {
+			dir := strings.Trim(path.Clean("/"+strings.ReplaceAll(publicPath, `\`, "/")), "/")
+			if dir != "" && strings.HasPrefix(filePath, dir+"/") {
+				public = true
+				break
+			}
+		}
+		if !public {
+			return nil, fmt.Errorf("files[%d]: path %q must be inside a public path (%s)", i, file.Path, strings.Join(publicPaths, ", "))
+		}
+
+		if !themeFontFileExtensions[strings.ToLower(path.Ext(filePath))] {
+			return nil, fmt.Errorf("files[%d]: path %q must be a .woff2, .woff, .ttf or .otf file", i, file.Path)
+		}
+
+		// A single weight, or the lowest and highest weight of a variable font.
+		weights := strings.Fields(file.Weight)
+		if len(weights) == 0 {
+			weights = []string{"400"}
+		}
+		if len(weights) == 1 {
+			weights = append(weights, weights[0])
+		}
+		weightMin, minErr := strconv.ParseUint(weights[0], 10, 32)
+		weightMax, maxErr := strconv.ParseUint(weights[1], 10, 32)
+		if len(weights) > 2 || minErr != nil || maxErr != nil || weightMin < 1 || weightMax > 1000 || weightMin > weightMax {
+			return nil, fmt.Errorf(`files[%d]: invalid weight %q: must be a number between 1 and 1000, or a range such as "100 900" for a variable font`, i, file.Weight)
+		}
+
+		var italic bool
+		switch strings.ToLower(file.Style) {
+		case "", "normal":
+		case "italic":
+			italic = true
+		default:
+			return nil, fmt.Errorf(`files[%d]: invalid style %q: must be "normal" or "italic"`, i, file.Style)
+		}
+
+		font.Files = append(font.Files, &runtimev1.ThemeFontFile{
+			Path:      filePath,
+			WeightMin: uint32(weightMin),
+			WeightMax: uint32(weightMax),
+			Italic:    italic,
+		})
+	}
+
+	return font, nil
+}
+
+// validate checks the chrome tokens and converts them to their spec.
+func (c *ThemeChromeYAML) validate() (*runtimev1.ThemeChrome, error) {
+	chrome := &runtimev1.ThemeChrome{}
+
+	if c.BorderWidth != "" {
+		v, err := parseThemeNumber(strings.TrimSuffix(c.BorderWidth, "px"), 0, 8)
+		if err != nil {
+			return nil, fmt.Errorf("invalid border_width %q: must be between 0px and 8px", c.BorderWidth)
+		}
+		chrome.BorderWidthPx = &v
+	}
+
+	if c.FontSize != "" {
+		v, err := parseThemeNumber(strings.TrimSuffix(c.FontSize, "px"), 10, 20)
+		if err != nil {
+			return nil, fmt.Errorf("invalid font_size %q: must be between 10px and 20px", c.FontSize)
+		}
+		chrome.FontSizePx = &v
+	}
+
+	if c.FontWeight != "" {
+		v, err := parseThemeNumber(c.FontWeight, 100, 900)
+		if err != nil {
+			return nil, fmt.Errorf("invalid font_weight %q: must be a number between 100 and 900", c.FontWeight)
+		}
+		chrome.FontWeight = &v
+	}
+
+	return chrome, nil
+}
+
+// parseThemeNumber parses a whole number in the range from minVal to maxVal.
+func parseThemeNumber(s string, minVal, maxVal uint32) (uint32, error) {
+	v, err := strconv.ParseUint(strings.TrimSpace(s), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	if v < uint64(minVal) || v > uint64(maxVal) {
+		return 0, fmt.Errorf("%d is out of range", v)
+	}
+	return uint32(v), nil
 }

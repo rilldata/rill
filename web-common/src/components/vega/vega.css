@@ -11,7 +11,8 @@
   background: var(--tooltip) !important;
   color: var(--fg-inverse) !important;
 
-  font-family: "Inter";
+  /* The tooltip sits on <body>, outside the dashboard; it carries the theme boundary class while shown. */
+  font-family: var(--theme-font-family, "Inter");
   border-radius: 5px;
 
   & h2 {

@@ -4662,6 +4662,132 @@ light:
 			expectError: true,
 			errorMsg:    `invalid value "1px" for CSS variable "border"`,
 		},
+		{
+			name: "font with files and chrome tokens",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans-Regular.woff2
+    - path: /public/fonts/BrandSans-Italic.otf
+      weight: 700
+      style: italic
+    - path: public/BrandSans-Variable.ttf
+      weight: 100 900
+chrome:
+  border_width: 0
+  font_size: 13px
+  font_weight: 600
+light:
+  primary: red
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "red",
+					Variables: map[string]string{},
+				},
+				Font: &runtimev1.ThemeFont{
+					Family: "Brand Sans",
+					Files: []*runtimev1.ThemeFontFile{
+						{Path: "public/BrandSans-Regular.woff2", WeightMin: 400, WeightMax: 400},
+						{Path: "public/fonts/BrandSans-Italic.otf", WeightMin: 700, WeightMax: 700, Italic: true},
+						{Path: "public/BrandSans-Variable.ttf", WeightMin: 100, WeightMax: 900},
+					},
+				},
+				Chrome: &runtimev1.ThemeChrome{
+					BorderWidthPx: asPtr(uint32(0)),
+					FontSizePx:    asPtr(uint32(13)),
+					FontWeight:    asPtr(uint32(600)),
+				},
+			},
+		},
+		{
+			name: "generic font family with legacy colors",
+			yaml: `
+type: theme
+colors:
+  primary: red
+font:
+  family: system-ui
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				PrimaryColor:    &runtimev1.Color{Red: 1, Alpha: 1},
+				PrimaryColorRaw: "red",
+				Font:            &runtimev1.ThemeFont{Family: "system-ui"},
+			},
+		},
+		{
+			name: "font family with CSS syntax should fail",
+			yaml: `
+type: theme
+font:
+  family: "Brand Sans, sans-serif; } body { display: none"
+`,
+			expectError: true,
+			errorMsg:    "invalid font: invalid family",
+		},
+		{
+			name: "font file outside a public path should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/../models/BrandSans.woff2
+`,
+			expectError: true,
+			errorMsg:    `invalid font: files[0]: path "public/../models/BrandSans.woff2" must be inside a public path (public)`,
+		},
+		{
+			name: "font file that is not a font should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/logo.svg
+`,
+			expectError: true,
+			errorMsg:    "must be a .woff2, .woff, .ttf or .otf file",
+		},
+		{
+			name: "font file with an invalid weight should fail",
+			yaml: `
+type: theme
+font:
+  family: Brand Sans
+  files:
+    - path: public/BrandSans.woff2
+      weight: 900 100
+`,
+			expectError: true,
+			errorMsg:    `invalid font: files[0]: invalid weight "900 100"`,
+		},
+		{
+			name: "files for a generic font family should fail",
+			yaml: `
+type: theme
+font:
+  family: sans-serif
+  files:
+    - path: public/BrandSans.woff2
+`,
+			expectError: true,
+			errorMsg:    `the generic family "sans-serif" is provided by the browser and can't have files`,
+		},
+		{
+			name: "chrome token out of range should fail",
+			yaml: `
+type: theme
+chrome:
+  border_width: 40px
+`,
+			expectError: true,
+			errorMsg:    `invalid chrome: invalid border_width "40px": must be between 0px and 8px`,
+		},
 	}
 
 	for _, tt := range tests {

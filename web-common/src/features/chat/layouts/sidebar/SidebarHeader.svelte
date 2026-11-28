@@ -148,13 +148,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    font-weight: 500;
-    font-size: 0.875rem;
+    /* The AI panel is part of the dashboard chrome, which a theme can restyle. */
+    font-weight: var(--chrome-font-weight, 500);
+    font-size: var(--chrome-font-size, 0.875rem);
     min-height: 1.5rem;
   }
 
   .chatbot-title {
-    @apply flex min-w-0 max-w-80 text-fg-secondary text-sm font-semibold;
+    @apply flex min-w-0 max-w-80 text-fg-secondary;
+    font-weight: var(--chrome-font-weight, 600);
+    font-size: var(--chrome-font-size, 0.875rem);
+    line-height: 1.25rem;
   }
 
   .chatbot-title-editor {

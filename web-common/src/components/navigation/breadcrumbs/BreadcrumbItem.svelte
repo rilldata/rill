@@ -162,7 +162,9 @@
 
 <style lang="postcss">
   .current {
-    @apply text-fg-muted font-medium;
+    @apply text-fg-muted;
+    /* A theme's chrome tokens reach the navigation bar of an embedded dashboard. */
+    font-weight: var(--chrome-font-weight, 500);
   }
 
   .trigger {

@@ -9130,6 +9130,21 @@ definitions:
         $ref: '#/definitions/v1ThemeSpec'
       state:
         $ref: '#/definitions/v1ThemeState'
+  v1ThemeChrome:
+    type: object
+    properties:
+      borderWidthPx:
+        type: integer
+        format: int64
+        description: Width in pixels of the borders of the chrome. Unset means the default width.
+      fontSizePx:
+        type: integer
+        format: int64
+        description: Font size in pixels of the chrome's labels. Unset means each label's default size.
+      fontWeight:
+        type: integer
+        format: int64
+        description: Font weight of the chrome's labels. Unset means each label's default weight.
   v1ThemeColors:
     type: object
     properties:
@@ -9141,6 +9156,38 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1ThemeFont:
+    type: object
+    properties:
+      family:
+        type: string
+        description: A single CSS font family name, or a generic family such as "system-ui".
+      files:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ThemeFontFile'
+        description: |-
+          Font files that provide the family.
+          If empty, the family must already be available in the viewer's browser.
+  v1ThemeFontFile:
+    type: object
+    properties:
+      path:
+        type: string
+        description: Path of the font file relative to the project root. It is inside one of the project's public paths.
+      weightMin:
+        type: integer
+        format: int64
+        description: |-
+          Lowest and highest font weight the file provides, in the range 1 to 1000.
+          They are equal for a static font and differ for a variable font.
+      weightMax:
+        type: integer
+        format: int64
+      italic:
+        type: boolean
+        description: Whether the file provides the italic style instead of the normal style.
   v1ThemeSpec:
     type: object
     properties:
@@ -9156,6 +9203,12 @@ definitions:
         $ref: '#/definitions/v1ThemeColors'
       dark:
         $ref: '#/definitions/v1ThemeColors'
+      font:
+        $ref: '#/definitions/v1ThemeFont'
+        description: Font for the text of the themed dashboard. Unset means Rill's default font.
+      chrome:
+        $ref: '#/definitions/v1ThemeChrome'
+        description: 'Border and font tokens for the dashboard''s chrome: navigation bar, filter bar, pills and AI panel.'
   v1ThemeState:
     type: object
   v1TimeGrain:

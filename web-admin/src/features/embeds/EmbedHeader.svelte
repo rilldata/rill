@@ -109,11 +109,11 @@
 {#if shouldRender}
   <div
     class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
-    class:border-b={!onProjectPage}
+    class:chrome-border-b={!onProjectPage}
   >
     {#if $isErrorStoreEmpty}
       {#if navigationBarEnabled}
-        <nav class="flex-1">
+        <nav class="flex-1 text-[length:var(--chrome-font-size,inherit)]">
           <ol class="flex items-center pl-4">
             {#if !onProjectPage}
               <div class="flex gap-x-2">
