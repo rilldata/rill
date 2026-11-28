@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"maps"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -107,15 +108,14 @@ func parseThemeChart(node *yaml.Node) (*runtimev1.ThemeChart, error) {
 	}
 
 	// A typo in a property name would otherwise be dropped silently and the chart would keep its default.
-	// yaml.Node.Decode has no strict mode, so the section goes through a decoder that does.
-	data, err := yaml.Marshal(node)
-	if err != nil {
+	// yaml.Node.Decode has no strict mode, and a strict decoder reads the section as text of its own,
+	// which counts lines from the section's start and drops its blank lines.
+	// So the keys are checked on the node, whose lines are the file's.
+	if err := checkYAMLKeys(node, reflect.TypeFor[ThemeChartYAML](), ""); err != nil {
 		return nil, err
 	}
 	tmp := &ThemeChartYAML{}
-	dec := yaml.NewDecoder(bytes.NewReader(data))
-	dec.KnownFields(true)
-	if err := dec.Decode(tmp); err != nil {
+	if err := node.Decode(tmp); err != nil {
 		return nil, newYAMLError(err)
 	}
 
@@ -336,4 +336,71 @@ func validateThemeChartDash(dash []float64) error {
 		return errors.New("grid.dash: needs a length greater than 0")
 	}
 	return nil
+}
+
+// checkYAMLKeys reports the first key of node that the struct type t has no field for, at the key's line, as a strict decoder would.
+// path is the dotted path of node, which the message names the key by.
+func checkYAMLKeys(node *yaml.Node, t reflect.Type, path string) error {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if node.Kind == yaml.AliasNode {
+		node = node.Alias
+	}
+	switch {
+	case t.Kind() == reflect.Struct && node.Kind == yaml.MappingNode:
+		fields := yamlFields(t)
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key, value := node.Content[i], node.Content[i+1]
+			if key.Tag == "!!merge" {
+				// `<<: *base` brings in the keys of the mappings it refers to.
+				merged := []*yaml.Node{value}
+				if value.Kind == yaml.SequenceNode {
+					merged = value.Content
+				}
+				for _, m := range merged {
+					if err := checkYAMLKeys(m, t, path); err != nil {
+						return err
+					}
+				}
+				continue
+			}
+			field, ok := fields[key.Value]
+			if !ok {
+				return locationError{
+					err:      fmt.Errorf("line %d: %s%s: unknown property", key.Line, path, key.Value),
+					location: &runtimev1.CharLocation{Line: uint32(key.Line)},
+				}
+			}
+			if err := checkYAMLKeys(value, field, path+key.Value+"."); err != nil {
+				return err
+			}
+		}
+	case t.Kind() == reflect.Slice && node.Kind == yaml.SequenceNode:
+		for _, item := range node.Content {
+			if err := checkYAMLKeys(item, t.Elem(), path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// yamlFields maps the keys yaml.v3 decodes into the struct type t to the types of their fields, the keys of inlined structs included.
+func yamlFields(t reflect.Type) map[string]reflect.Type {
+	fields := make(map[string]reflect.Type)
+	for i := range t.NumField() {
+		f := t.Field(i)
+		name, opts, _ := strings.Cut(f.Tag.Get("yaml"), ",")
+		switch {
+		case opts == "inline":
+			maps.Copy(fields, yamlFields(f.Type))
+		case name == "-" || !f.IsExported():
+		case name == "":
+			fields[strings.ToLower(f.Name)] = f.Type
+		default:
+			fields[name] = f.Type
+		}
+	}
+	return fields
 }

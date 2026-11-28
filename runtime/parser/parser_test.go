@@ -4783,7 +4783,48 @@ chart:
     style: dashed
 `,
 			expectError: true,
-			errorMsg:    "field gird not found",
+			errorMsg:    "invalid chart: line 4: gird: unknown property",
+		},
+		{
+			name: "unknown chart property after blank lines and comments",
+			yaml: `
+type: theme
+
+chart:
+  # Text
+  text:
+    axis_label:
+      size: 12
+
+  dark:
+    grid:
+      colr: red
+`,
+			expectError: true,
+			errorMsg:    "invalid chart: line 12: dark.grid.colr: unknown property",
+		},
+		{
+			name: "chart properties merged from an anchor",
+			yaml: `
+type: theme
+chart:
+  light: &base
+    grid:
+      color: "#e2e8f0"
+  dark:
+    <<: *base
+    legend:
+      position: bottom
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Chart: &runtimev1.ThemeChart{
+					Light: &runtimev1.ThemeChartStyle{Grid: &runtimev1.ThemeChartGrid{Color: "#e2e8f0"}},
+					Dark: &runtimev1.ThemeChartStyle{
+						Grid:   &runtimev1.ThemeChartGrid{Color: "#e2e8f0"},
+						Legend: &runtimev1.ThemeChartLegend{Position: "bottom"},
+					},
+				},
+			},
 		},
 		{
 			name: "chart opacity out of range",
