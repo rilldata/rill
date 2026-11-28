@@ -1,5 +1,4 @@
 import { getOpenExploreName } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
-import { isAIAlertSpec } from "@rilldata/web-common/features/alerts/ai-alert-utils";
 import { redirect } from "@sveltejs/kit";
 
 export async function load({ parent, url, params }) {
@@ -8,13 +7,12 @@ export async function load({ parent, url, params }) {
   const token = url.searchParams.get("token");
 
   // AI alerts open the AI conversation behind the check that fired, as AI reports do.
-  // The runtime adds the session ID to the open link, which keeps opening the conversation if the alert was switched to criteria since.
+  // The runtime adds the session ID to the open link, so the link opens the conversation whatever the alert's condition is now.
+  // Links without one open the dashboard, or the alert's page if the alert has no query (see AlertOpen).
   // In creator mode the link also carries a magic token, which grants read access to the shared conversation and must be forwarded.
   const sessionId = url.searchParams.get("session_id");
-  if (sessionId || isAIAlertSpec(alertSpec)) {
-    const path = sessionId
-      ? `/${params.organization}/${params.project}/-/ai/${sessionId}`
-      : `/${params.organization}/${params.project}/-/ai`;
+  if (sessionId) {
+    const path = `/${params.organization}/${params.project}/-/ai/${sessionId}`;
     const search = token ? new URLSearchParams({ token }).toString() : "";
     redirect(307, search ? `${path}?${search}` : path);
   }
