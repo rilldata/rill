@@ -203,37 +203,47 @@ export function getBreadcrumbOptions(
   exploreResources: V1Resource[],
   canvasResources: V1Resource[],
 ): Map<string, PathOption> {
+  // Same order as Rill Cloud's dashboard switcher: canvases first, then explores, each by name.
+  const byName = (a: V1Resource, b: V1Resource) =>
+    (a.meta?.name?.name ?? "").localeCompare(b.meta?.name?.name ?? "");
+
   // Keyed by kind as well as name: an explore and a canvas may share a name.
-  const exploreOptions = exploreResources.reduce((map, exploreResource) => {
-    const name = exploreResource.meta?.name?.name ?? "";
-    const label =
-      exploreResource.explore?.state?.validSpec?.displayName || name;
+  const exploreOptions = [...exploreResources]
+    .sort(byName)
+    .reduce((map, exploreResource) => {
+      const name = exploreResource.meta?.name?.name ?? "";
+      const label =
+        exploreResource.explore?.state?.validSpec?.displayName || name;
 
-    if (label && name)
-      map.set(resourceKey(ResourceKind.Explore, name), {
-        label,
-        section: "explore",
-        depth: 0,
-        param: name.toLowerCase(),
-      });
+      if (label && name)
+        map.set(resourceKey(ResourceKind.Explore, name), {
+          label,
+          section: "explore",
+          depth: 0,
+          param: name.toLowerCase(),
+          resourceKind: ResourceKind.Explore,
+        });
 
-    return map;
-  }, new Map<string, PathOption>());
+      return map;
+    }, new Map<string, PathOption>());
 
-  const canvasOptions = canvasResources.reduce((map, canvasResource) => {
-    const name = canvasResource.meta?.name?.name ?? "";
-    const label = canvasResource?.canvas?.spec?.displayName || name;
+  const canvasOptions = [...canvasResources]
+    .sort(byName)
+    .reduce((map, canvasResource) => {
+      const name = canvasResource.meta?.name?.name ?? "";
+      const label = canvasResource?.canvas?.spec?.displayName || name;
 
-    if (label && name)
-      map.set(resourceKey(ResourceKind.Canvas, name), {
-        label,
-        section: "canvas",
-        depth: 0,
-        param: name.toLowerCase(),
-      });
+      if (label && name)
+        map.set(resourceKey(ResourceKind.Canvas, name), {
+          label,
+          section: "canvas",
+          depth: 0,
+          param: name.toLowerCase(),
+          resourceKind: ResourceKind.Canvas,
+        });
 
-    return map;
-  }, new Map<string, PathOption>());
+      return map;
+    }, new Map<string, PathOption>());
 
-  return new Map([...exploreOptions, ...canvasOptions]);
+  return new Map([...canvasOptions, ...exploreOptions]);
 }
