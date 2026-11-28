@@ -125,6 +125,12 @@ _[integer]_ - Horizontal gap in pixels of the canvas
 
 _[integer]_ - Vertical gap in pixels of the canvas
 
+### `text_size`
+
+_[string]_ - Size of the text in the canvas's components: chart axes, legends and data labels, table and pivot cells, leaderboards, markdown, and component titles. One of `small`, `medium`, `large` or `xlarge`. Defaults to `medium`.
+Each size multiplies the sizes that Rill and the theme set, so it works with a theme's fonts. A component's own `text_size` takes precedence. KPI cards, map legends, the filter bar and tooltips keep their size.
+
+
 ### `filters`
 
 _[object]_ - Indicates if filters should be enabled for the canvas.

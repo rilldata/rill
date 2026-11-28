@@ -95,7 +95,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--wrap-lines, 2);
     overflow-wrap: anywhere;
-    line-height: 1rem;
+    line-height: calc(1rem * var(--text-scale, 1));
   }
 
   .external-link {

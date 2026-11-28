@@ -25,11 +25,13 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import { getTextSizeOption } from "../../text-size";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
   ComponentComparisonOptions,
   ComponentFilterProperties,
+  ComponentTextProperties,
 } from "../types";
 import Leaderboard from "./LeaderboardDisplay.svelte";
 
@@ -44,7 +46,8 @@ export const defaultComparisonOptions: ComponentComparisonOptions[] = [
 
 export interface LeaderboardSpec
   extends ComponentCommonProperties,
-    ComponentFilterProperties {
+    ComponentFilterProperties,
+    ComponentTextProperties {
   metrics_view: string;
   measures: string[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
@@ -128,6 +131,7 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
         },
         num_rows: { type: "number", label: m.canvas_number_of_rows_label() },
         ...getCommonOptions(),
+        text_size: getTextSizeOption(),
       },
       filter: getFilterOptions(),
     };

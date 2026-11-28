@@ -6,6 +6,7 @@
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
   import type { BlockKind } from "./stores/block-edit";
+  import { textScaleStyle } from "./text-size";
 </script>
 
 <script lang="ts">
@@ -79,7 +80,7 @@
     pngDialogOpen = true;
   }
 
-  $: ({ id: componentName, type: renderer } = component);
+  $: ({ id: componentName, type: renderer, textScale } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -93,6 +94,7 @@
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
+  style:--text-scale={textScaleStyle($textScale)}
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
   class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-border bg-surface-card overflow-hidden rounded-sm"

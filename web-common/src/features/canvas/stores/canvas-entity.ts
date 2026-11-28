@@ -148,6 +148,9 @@ export class CanvasEntity {
   // such as "rows.0.items.1". Only the editor receives them; viewers get a canvas without that content.
   hiddenPaths = writable<Set<string>>(new Set());
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
+  // The canvas's `text_size` preset: the default for its components' text.
+  // Undefined when the canvas does not set one. See features/canvas/text-size.ts.
+  textSize = writable<string | undefined>(undefined);
   titleStore = writable<string>("");
   // True only while this canvas is capturing a PDF export. Gates the off-screen
   // export render (see CanvasPdfExportView) and force-enables every component's
@@ -330,6 +333,7 @@ export class CanvasEntity {
     this.checkAndSetMaxWidth(validSpec);
 
     this.titleStore.set(validSpec.displayName ?? "");
+    this.textSize.set(validSpec.textSize || undefined);
     this.checkAndSetHiddenPaths(response.hiddenPaths);
 
     this.processRows({ canvas, components, metricsViews, filePath });

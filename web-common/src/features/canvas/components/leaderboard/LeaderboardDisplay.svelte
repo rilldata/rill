@@ -45,6 +45,7 @@
   let leaderboardState = $derived(component.leaderboardState);
   let toggleSort = $derived(component.toggleSort);
   let dataEnabled = $derived(component.dataEnabled);
+  let textScale = $derived(component.textScale);
 
   let leaderboardProperties = $derived($specStore);
 
@@ -141,13 +142,17 @@
     ),
   );
 
+  // The comparison columns have a fixed width, which the leaderboard scales
+  // with its text. The value columns are measured from their content.
+  let comparisonColumnWidth = $derived(COMPARISON_COLUMN_WIDTH * $textScale);
+
   let totalContextWidth = $derived(
     leaderboardMeasureNames.reduce(
       (sum, measureName) =>
         sum +
         $valueColumn +
-        (showTimeComparison ? $deltaColumn + COMPARISON_COLUMN_WIDTH : 0) +
-        (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
+        (showTimeComparison ? $deltaColumn + comparisonColumnWidth : 0) +
+        (isValidPercentOfTotal(measureName) ? comparisonColumnWidth : 0),
       0,
     ),
   );
@@ -309,8 +314,11 @@
     grid-auto-rows: auto;
   }
 
+  /* The leaderboard's text inherits this size, which is the page's base size
+     multiplied by the component's text size preset. */
   .leaderboard-wrapper {
     @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200;
+    font-size: calc(12px * var(--text-scale, 1));
   }
 
   .border-overlay {

@@ -188,6 +188,15 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 		}
 	}
 
+	// The text size preset is shared by most renderers, so it is validated for all of them.
+	// A templated value is resolved per viewer, and is left for the frontend to check.
+	if v, ok := props["text_size"]; ok {
+		s, isString := v.(string)
+		if !isString || (!canvas.IsTemplated(s) && !slices.Contains(canvasTextSizes, s)) {
+			return nil, nil, fmt.Errorf(`renderer property "text_size" must be one of %v`, canvasTextSizes)
+		}
+	}
+
 	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,
 	// and adding it to refs generally makes for nicer error messages, we specifically search for and link it here.
 	var refs []ResourceName

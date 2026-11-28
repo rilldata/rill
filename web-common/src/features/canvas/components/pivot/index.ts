@@ -37,6 +37,7 @@ import type {
   CanvasComponentType,
   ComponentCommonProperties,
   ComponentFilterProperties,
+  ComponentTextProperties,
 } from "../types";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
 import {
@@ -61,6 +62,7 @@ import {
   splitComparisonColumnId,
 } from "./field-config";
 import { getItemPropertiesExcept } from "../../layout-util";
+import { getTextSizeOption } from "../../text-size";
 import {
   createPivotConfig,
   ROW_LIMIT_ALL_VALUE,
@@ -158,6 +160,7 @@ export interface TablePresentationProperties {
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties,
+    ComponentTextProperties,
     TablePresentationProperties {
   metrics_view: string;
   measures: PivotFieldEntry[];
@@ -175,6 +178,7 @@ export interface PivotSpec
 export interface TableSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties,
+    ComponentTextProperties,
     TablePresentationProperties {
   metrics_view: string;
   columns: PivotFieldEntry[];
@@ -685,6 +689,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
           },
           ...this.presentationOptions(spec, metricsViewSpec),
           ...getCommonOptions(),
+          text_size: getTextSizeOption(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -732,6 +737,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
           },
           ...this.presentationOptions(spec, metricsViewSpec),
           ...getCommonOptions(),
+          text_size: getTextSizeOption(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -804,6 +810,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     // across the switch.
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
+      ComponentTextProperties &
       TablePresentationProperties &
       Pick<
         PivotSpec,
@@ -814,6 +821,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       > = {
       title: currentSpec.title,
       description: currentSpec.description,
+      text_size: currentSpec.text_size,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,

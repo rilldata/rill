@@ -43,6 +43,7 @@
     timeAndFilterStore,
     chartType: type,
     dataEnabled: visible,
+    textScale,
   } = component);
 
   $: chartType = $type;
@@ -168,6 +169,7 @@
           bind:view={viewVL}
           themeMode={$isThemeModeDark ? "dark" : "light"}
           theme={currentTheme}
+          textScale={$textScale}
         />
       {/if}
     {/if}

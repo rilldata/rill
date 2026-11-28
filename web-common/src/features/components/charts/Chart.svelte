@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
+  import { scaleVegaText } from "@rilldata/web-common/components/vega/text-scale";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import {
     resolveSignalField,
@@ -40,6 +41,11 @@
    */
   export let theme: Record<string, string> | undefined = undefined;
   export let isCanvas: boolean;
+  /**
+   * Multiplier for every font size in the chart: axes, legends and text marks.
+   * A canvas passes its component's text size preset; see features/canvas/text-size.ts.
+   */
+  export let textScale = 1;
 
   export let temporalField: string | undefined = undefined;
   export let onBrushEnd: ((interval: TimeRange) => void) | undefined =
@@ -73,7 +79,13 @@
       }
     : $chartData;
 
-  $: rawSpec = generateSpec(chartType, chartSpec, chartDataWithTheme);
+  // The spec builders get the scale for the text they measure or size from
+  // the chart's dimensions; the fixed font sizes they write are multiplied
+  // here, together with the config below.
+  $: rawSpec = scaleVegaText(
+    generateSpec(chartType, chartSpec, { ...chartDataWithTheme, textScale }),
+    textScale,
+  );
 
   // Memoize spec with deep equality so VegaLiteRenderer doesn't recreate the
   // view (and kill brush state) on store re-emissions that produce the same spec.
@@ -288,7 +300,7 @@
       renderer="canvas"
       {expressionFunctions}
       {hasComparison}
-      config={getRillTheme(isThemeModeDark, theme)}
+      config={getRillTheme(isThemeModeDark, theme, { textScale })}
     />
   </div>
 {/if}

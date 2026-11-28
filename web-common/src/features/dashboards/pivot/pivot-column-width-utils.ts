@@ -51,6 +51,9 @@ export type FillWidthColumn = {
   pinned?: boolean;
 };
 
+// Estimated width of one character of the table's 12px text.
+const CHAR_WIDTH = 7;
+
 const DIMENSION_FILL_WEIGHT = 1.4;
 const MEASURE_FILL_WEIGHT = 1;
 
@@ -156,17 +159,22 @@ export function layoutColumnWidths(
 /**
  * Width estimate for a dimension column. Values are sampled by the column id
  * (the field name the data rows are keyed by), while the header basis uses the
- * display label, which may differ from the id.
+ * display label, which may differ from the id. `textScale` is the multiplier
+ * of the table's font size, which the text's width grows with.
  */
 export function calculateColumnWidth(
   columnId: string,
   label: string,
   timeDimension: string,
   dataRows: PivotDataRow[],
+  textScale = 1,
 ) {
   // Dates are displayed as shorter values
   if (isTimeDimension(columnId, timeDimension))
-    return COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH;
+    return Math.max(
+      COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH,
+      Math.round(COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH * textScale),
+    );
 
   const samples = extractSamples(dataRows.map((row) => row[columnId])).filter(
     (v): v is string => typeof v === "string",
@@ -177,7 +185,7 @@ export function calculateColumnWidth(
   }, 0);
 
   const finalBasis = Math.max(label.length, maxValueLength);
-  const pixelLength = finalBasis * 7;
+  const pixelLength = Math.round(finalBasis * CHAR_WIDTH * textScale);
   const final = clamp(
     COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH,
     pixelLength + 16,
@@ -202,6 +210,7 @@ export function calculateMeasureWidth(
   totalsRow: PivotDataRow | undefined,
   dataRows: PivotDataRow[],
   columnDimensionHeader?: string,
+  textScale = 1,
 ) {
   let maxValueLength: number;
   if (totalsRow) {
@@ -241,7 +250,7 @@ export function calculateMeasureWidth(
     maxValueLength,
     columnDimensionLength,
   );
-  const pixelLength = finalBasis * 7;
+  const pixelLength = Math.round(finalBasis * CHAR_WIDTH * textScale);
   return clamp(
     COLUMN_WIDTH_CONSTANTS.MIN_MEASURE_WIDTH,
     pixelLength + COLUMN_WIDTH_CONSTANTS.MEASURE_PADDING,
@@ -252,17 +261,27 @@ export function calculateMeasureWidth(
 /**
  * Width estimate for the nested table's row header column. The values are
  * sampled by the first row dimension's name; the label is the joined label of
- * all row dimensions.
+ * all row dimensions. A time dimension is not sampled: it takes the minimum
+ * width, which grows with `textScale` like the estimate does.
  */
 export function calculateRowDimensionWidth(
   columnId: string,
   label: string,
   timeDimension: string,
   dataRows: PivotDataRow[],
+  textScale = 1,
 ) {
-  let width = COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH;
+  let width = Math.round(
+    COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH * textScale,
+  );
   if (!isTimeDimension(columnId, timeDimension)) {
-    width = calculateColumnWidth(columnId, label, timeDimension, dataRows);
+    width = calculateColumnWidth(
+      columnId,
+      label,
+      timeDimension,
+      dataRows,
+      textScale,
+    );
   }
 
   return clamp(

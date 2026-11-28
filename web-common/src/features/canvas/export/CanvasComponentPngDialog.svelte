@@ -4,6 +4,7 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { hideBorder } from "@rilldata/web-common/features/canvas/layout-util";
+  import { textScaleStyle } from "@rilldata/web-common/features/canvas/text-size";
   import ReadonlyFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyFilters.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
@@ -47,6 +48,7 @@
   let { interval, timeGrain, timeZone, showComparison, comparisonInterval } =
     $derived(timeFilterManager);
   let spec = $derived(component.specStore);
+  let textScale = $derived(component.textScale);
 
   let includeHeader = $state(true);
   let downloading = $state(false);
@@ -163,6 +165,7 @@
                   <article
                     class="size-full flex flex-col bg-surface-card overflow-hidden rounded-sm"
                     class:bordered={allowBorder}
+                    style:--text-scale={textScaleStyle($textScale)}
                   >
                     <component.component {component} editable={false} />
                   </article>

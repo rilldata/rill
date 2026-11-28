@@ -40,6 +40,7 @@ describe("ComponentRefComponent", () => {
     const parent = {
       allowUnvalidatedSpec: false,
       exportMode: writable(false),
+      textSize: writable(undefined),
       client: {},
       dashboardProvider: { yamlConfigProvider: {} },
       timeFilterManager: {},

@@ -149,8 +149,14 @@ test.describe("canvas containers", () => {
       "content: Loose row",
     ]);
 
-    // Rename the story in its inspector, which a click on the chip opens.
-    await blockRegion(page, 0).locator(".chip .label").click();
+    // Rename the story in its inspector, which a click on the chip opens. Click the story's
+    // own chip: a spec from an earlier edit that arrives after the drop shows the old order
+    // until the next reconcile, so the first block can briefly be the header container again.
+    await blockRegion(page, 0)
+      .locator(".chip")
+      .filter({ has: page.getByText("story", { exact: true }) })
+      .locator(".label")
+      .click();
     const name = page.getByLabel("Container name");
     await expect(name).toHaveValue("story");
 

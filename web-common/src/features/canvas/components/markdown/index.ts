@@ -2,10 +2,12 @@ import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/compon
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import { getTextSizeOption } from "../../text-size";
 import {
   type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
+  type ComponentTextProperties,
 } from "../types";
 import Markdown from "./Markdown.svelte";
 
@@ -18,7 +20,9 @@ export const defaultMarkdownAlignment: ComponentAlignment = {
   horizontal: "left",
 };
 
-export interface MarkdownSpec extends ComponentCommonProperties {
+export interface MarkdownSpec
+  extends ComponentCommonProperties,
+    ComponentTextProperties {
   content: string;
   alignment?: ComponentAlignment;
   apply_formatting?: boolean;
@@ -68,6 +72,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           label: m.canvas_apply_measure_formatting_label(),
           description: m.canvas_apply_measure_formatting_description(),
         },
+        text_size: getTextSizeOption(),
       },
       filter: {},
     };

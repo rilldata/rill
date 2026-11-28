@@ -387,6 +387,10 @@
   );
 
   $: onData?.(isFetching ? [] : [...aboveTheFold, ...belowTheFoldRows]);
+
+  // The comparison columns have a fixed width. It follows `--text-scale`, the
+  // text size preset of a canvas leaderboard, which is unset elsewhere.
+  const comparisonColumnWidth = `calc(${COMPARISON_COLUMN_WIDTH}px * var(--text-scale, 1))`;
 </script>
 
 <div
@@ -409,15 +413,12 @@
         {#if isValidPercentOfTotal(measureName) && measuresWithContext.has(measureName)}
           <col
             data-percent-of-total-column
-            style:width="{COMPARISON_COLUMN_WIDTH}px"
+            style:width={comparisonColumnWidth}
           />
         {/if}
         {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
           <col data-absolute-change-column style:width="{$deltaColumn}px" />
-          <col
-            data-percent-change-column
-            style:width="{COMPARISON_COLUMN_WIDTH}px"
-          />
+          <col data-percent-change-column style:width={comparisonColumnWidth} />
         {/if}
       {/each}
     </colgroup>
@@ -528,6 +529,7 @@
   }
 
   .table-message {
-    @apply h-[22px] flex items-center w-fit;
+    @apply flex items-center w-fit;
+    height: calc(22px * var(--text-scale, 1));
   }
 </style>

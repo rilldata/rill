@@ -72,6 +72,7 @@
   $: filterManager = canvasEntity.expressionFilterManager;
 
   $: spec = component.specStore;
+  $: textScale = component.textScale;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
 
@@ -189,6 +190,7 @@
         fillWidth
         enableClickToFilter={clickToFilterEnabled}
         {columnStyles}
+        textScale={$textScale}
         fitToWidth={$spec?.fit_to_width === true}
         wrapText={$spec?.wrap === true}
         wrapHeaders={$spec?.wrap_headers === true}

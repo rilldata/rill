@@ -56,11 +56,10 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const BASE_ROW_HEIGHT = 24;
-  const BASE_HEADER_HEIGHT = 30;
-  // Wrapped rows and headers keep a uniform height: the text-xs line height
-  // per line plus the cell's vertical padding, so virtualization stays fixed-size.
-  const WRAP_LINE_HEIGHT = 16;
+  // Rows and headers keep a uniform height: the text-xs line height per line
+  // plus the cell's vertical padding, so virtualization stays fixed-size.
+  // That is 24px for a row and 30px for a header of one line.
+  const LINE_HEIGHT = 16;
   const CELL_VERTICAL_PADDING = 8;
   const HEADER_VERTICAL_PADDING = 14;
 
@@ -87,6 +86,9 @@
   export let wrapText = false;
   export let wrapHeaders = false;
   export let wrapLines = 2;
+  // Multiplier for the table's font size, such as a canvas component's text
+  // size preset. Row heights and the column width estimates follow it.
+  export let textScale = 1;
   // Called when the user finishes resizing a column; null means the column was
   // reset to its automatic width.
   export let onColumnResizeEnd:
@@ -211,12 +213,14 @@
   $: effectiveFitToWidth = fitToWidth && fillWidth;
   $: wrapAnyCells =
     wrapText || Object.values(columnStyles).some((style) => style?.wrap);
-  $: rowHeight = wrapAnyCells
-    ? WRAP_LINE_HEIGHT * wrapLines + CELL_VERTICAL_PADDING
-    : BASE_ROW_HEIGHT;
-  $: headerHeight = wrapHeaders
-    ? WRAP_LINE_HEIGHT * wrapLines + HEADER_VERTICAL_PADDING
-    : BASE_HEADER_HEIGHT;
+  // The line height follows the text scale; the padding does not.
+  $: lineHeight = LINE_HEIGHT * textScale;
+  $: rowHeight = Math.round(
+    lineHeight * (wrapAnyCells ? wrapLines : 1) + CELL_VERTICAL_PADDING,
+  );
+  $: headerHeight = Math.round(
+    lineHeight * (wrapHeaders ? wrapLines : 1) + HEADER_VERTICAL_PADDING,
+  );
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * headerHeight;
@@ -533,6 +537,7 @@
   style:--header-height="{headerHeight}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   style:--wrap-lines={wrapLines}
+  style:--text-scale={textScale === 1 ? undefined : textScale}
   bind:this={containerRefElement}
   bind:clientWidth={containerWidth}
   class:w-full={fillWidth}
@@ -568,6 +573,7 @@
       {fillWidth}
       {containerWidth}
       {headerHeight}
+      {textScale}
       {columnStyles}
       fitToWidth={effectiveFitToWidth}
       {wrapText}
@@ -609,6 +615,7 @@
       {fillWidth}
       {containerWidth}
       {headerHeight}
+      {textScale}
       {columnStyles}
       fitToWidth={effectiveFitToWidth}
       {wrapText}

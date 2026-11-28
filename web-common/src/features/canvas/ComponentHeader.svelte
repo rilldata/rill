@@ -133,9 +133,10 @@
     @apply flex items-center gap-x-1 flex-shrink-0;
   }
 
+  /* `--text-scale` is the component's text size preset, set on its card. */
   .title {
-    font-size: 15px;
-    line-height: 26px;
+    font-size: calc(15px * var(--text-scale, 1));
+    line-height: calc(26px * var(--text-scale, 1));
     @apply flex-shrink-0;
     @apply font-medium text-fg-primary truncate;
   }
@@ -145,7 +146,7 @@
   }
 
   .description {
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     @apply flex-shrink-0;
     @apply text-fg-secondary font-normal leading-none;
   }

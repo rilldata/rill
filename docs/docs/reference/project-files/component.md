@@ -122,6 +122,8 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Chart description
 
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
+
 ### `bar_chart`
 
 _[object]_ - (no description)
@@ -186,6 +188,8 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Chart description
 
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
+
 ### `stacked_bar`
 
 _[object]_ - (no description)
@@ -249,6 +253,8 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Chart title
 
   - **`description`** - _[string]_ - Chart description
+
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
 
 ### `stacked_bar_normalized`
 
@@ -494,6 +500,8 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Table description
 
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
+
 ### `pivot`
 
 _[object]_ - Pivot table
@@ -521,6 +529,8 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Markdown title
 
   - **`description`** - _[string]_ - Markdown description
+
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
 
 ### `image`
 
@@ -567,6 +577,8 @@ See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
   Template values are JSON-escaped, so place placeholders inside JSON strings.
   See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
 
+
+  - **`text_size`** - _[string]_ - Size of the component's text. One of `small`, `medium`, `large` or `xlarge`. Defaults to the canvas's `text_size`, which defaults to `medium`. Each size multiplies the sizes that Rill and the theme set.
 
 ### `map`
 

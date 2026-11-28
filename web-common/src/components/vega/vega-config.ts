@@ -7,6 +7,7 @@ import {
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
+import { scaleConfigText } from "./text-scale";
 
 function resolveCSSVariable(
   cssVar: string,
@@ -46,13 +47,18 @@ export interface RillThemeOptions {
    * Unset keeps Rill's Inter for the axes and Vega's default elsewhere.
    */
   fontFamily?: string;
+  /**
+   * Multiplier for every font size in the config, from a canvas text size preset.
+   * Applied last, so it multiplies the sizes set here or by a theme. Defaults to 1.
+   */
+  textScale?: number;
 }
 
-export const getRillTheme: (
-  isDarkMode?: boolean,
+const baseRillTheme: (
+  isDarkMode: boolean,
   theme?: Record<string, string>,
   options?: RillThemeOptions,
-) => Config = (isDarkMode = false, theme, options) => {
+) => Config = (isDarkMode, theme, options) => {
   const axisFont = options?.fontFamily ?? "Inter, sans-serif";
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
@@ -278,6 +284,21 @@ export const getRillTheme: (
     customFormatTypes: true,
   };
 };
+
+/**
+ * Rill's chart config for Vega-Lite: colors from the theme, Rill's fonts and
+ * sizes, and `options.textScale` applied to every font size.
+ */
+export function getRillTheme(
+  isDarkMode = false,
+  theme?: Record<string, string>,
+  options?: RillThemeOptions,
+): Config {
+  return scaleConfigText(
+    baseRillTheme(isDarkMode, theme, options),
+    options?.textScale ?? 1,
+  );
+}
 
 /** The project theme's `color-<palette>-<n>` colors, or undefined when it sets none. */
 function themePalette(

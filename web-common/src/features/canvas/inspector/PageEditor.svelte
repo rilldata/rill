@@ -2,6 +2,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
@@ -38,6 +39,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+  import { DEFAULT_TEXT_SIZE, isTextSize, textSizeOptions } from "../text-size";
 
   import CanvasTabs from "./CanvasTabs.svelte";
 
@@ -65,6 +67,7 @@
   $: rawTimeRanges = $parsedDocument.get("time_ranges");
   $: rawTimeZones = $parsedDocument.get("time_zones");
   $: rawMaxWidth = $parsedDocument.get("max_width");
+  $: rawTextSize = $parsedDocument.get("text_size");
 
   $: resourcesQuery = createRuntimeServiceListResources(
     client,
@@ -111,6 +114,8 @@
 
   $: maxWidth = numberGuard(rawMaxWidth) ?? DEFAULT_DASHBOARD_WIDTH;
 
+  $: textSize = isTextSize(rawTextSize) ? rawTextSize : DEFAULT_TEXT_SIZE;
+
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
 
   $: themesQuery = useFilteredResources(client, ResourceKind.Theme);
@@ -150,6 +155,15 @@
 
     if (!updatedShowFilterBar) {
       await goto("?default=true");
+    }
+  }
+
+  // The default is not written to the file.
+  async function updateTextSize(size: string) {
+    if (size === DEFAULT_TEXT_SIZE) {
+      await updateProperties({}, ["text_size"]);
+    } else {
+      await updateProperties({ text_size: size });
     }
   }
 
@@ -211,6 +225,20 @@
         onEnter={async () => {
           await updateProperties({ max_width: maxWidth });
         }}
+      />
+    </div>
+    <div class="page-param">
+      <Select
+        id="canvas-text-size"
+        label={m.canvas_text_size_label()}
+        tooltip={m.canvas_text_size_hint()}
+        options={textSizeOptions()}
+        value={textSize}
+        full
+        size="sm"
+        sameWidth
+        fontSize={12}
+        onChange={updateTextSize}
       />
     </div>
     <div class="page-param flex flex-col gap-y-2">

@@ -2,6 +2,7 @@
   import type { PartialMessage, Struct } from "@bufbuild/protobuf";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import { scaleVegaText } from "@rilldata/web-common/components/vega/text-scale";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
@@ -48,6 +49,8 @@
   export let showDataTable = false;
   export let name: string = "Custom Chart";
   export let themeMode: "light" | "dark" = "light";
+  // Multiplier for every font size in the chart, the spec's own included.
+  export let textScale = 1;
   /**
    * Full theme object with all CSS variables (primary, secondary, background, etc.)
    * If provided, the chart uses these directly. If not, colors resolve from CSS variables.
@@ -343,12 +346,12 @@
           >
             <VegaLiteRenderer
               {renderer}
-              spec={renderedSpec}
+              spec={scaleVegaText(renderedSpec, textScale)}
               data={namedData}
               canvasDashboard
               scrollX
               {themeMode}
-              config={getRillTheme(themeMode === "dark", theme)}
+              config={getRillTheme(themeMode === "dark", theme, { textScale })}
               {expressionFunctions}
               bind:viewVL
             />

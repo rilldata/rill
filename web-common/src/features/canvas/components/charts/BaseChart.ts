@@ -51,9 +51,11 @@ import {
   positionKeyPrefix,
   rowsPathOfComponent,
 } from "../../layout-util";
+import { getTextSizeOption } from "../../text-size";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
+  ComponentTextProperties,
 } from "../types";
 import Chart from "./CanvasChart.svelte";
 
@@ -62,6 +64,7 @@ import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
   ComponentCommonProperties &
+  ComponentTextProperties &
   CommonChartProperties;
 
 export abstract class BaseChart<
@@ -138,6 +141,7 @@ export abstract class BaseChart<
         vl_config: { type: "config", showInUI: false },
         ...this.getChartSpecificOptions(),
         ...getCommonOptions(),
+        text_size: getTextSizeOption(),
       },
       filter: getFilterOptions(this.supportsComparison()),
     };
@@ -291,6 +295,7 @@ export abstract class BaseChart<
       title,
       description,
       vl_config,
+      text_size,
       time_filters,
       dimension_filters,
     } = spec;
@@ -325,6 +330,7 @@ export abstract class BaseChart<
       title,
       description,
       vl_config,
+      ...(text_size ? { text_size } : {}),
       time_filters,
       dimension_filters,
       ...commonPropsObject,

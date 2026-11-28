@@ -1,5 +1,7 @@
 import {
   calculateColumnWidth,
+  calculateMeasureWidth,
+  calculateRowDimensionWidth,
   clampColumnWidth,
   distributeColumnWidthsToFillContainer,
   fitColumnWidthsToContainer,
@@ -279,5 +281,85 @@ describe("calculateColumnWidth", () => {
     expect(
       calculateColumnWidth("ts_rill_TIME_GRAIN_DAY", "Time (Day)", "ts", rows),
     ).toBe(100);
+  });
+
+  it("widens the text, but not the padding, with the text scale", () => {
+    // 19 characters at 7px each, times the scale, plus the 16px of padding.
+    expect(
+      calculateColumnWidth("missing", "A long header label", "ts", rows, 1.5),
+    ).toBe(Math.round(19 * 7 * 1.5) + 16);
+    expect(
+      calculateColumnWidth(
+        "ts_rill_TIME_GRAIN_DAY",
+        "Time (Day)",
+        "ts",
+        rows,
+        1.5,
+      ),
+    ).toBe(150);
+  });
+
+  it("never estimates below the minimum width at a small text scale", () => {
+    expect(
+      calculateColumnWidth(
+        "ts_rill_TIME_GRAIN_DAY",
+        "Time (Day)",
+        "ts",
+        rows,
+        0.875,
+      ),
+    ).toBe(100);
+  });
+});
+
+describe("calculateMeasureWidth", () => {
+  const format = (value: string | number | null | undefined) => String(value);
+
+  it("widens a measure column with the text scale, within its bounds", () => {
+    const totals = { impressions: 1234567890 };
+    // "1234567890" is 10 characters: 10 * 7 + 24.
+    expect(
+      calculateMeasureWidth("impressions", "Impressions", format, totals, []),
+    ).toBe(11 * 7 + 24);
+    expect(
+      calculateMeasureWidth(
+        "impressions",
+        "Impressions",
+        format,
+        totals,
+        [],
+        undefined,
+        1.5,
+      ),
+    ).toBe(Math.round(11 * 7 * 1.5) + 24);
+    // A long label is capped at the measure maximum, whatever the scale.
+    expect(
+      calculateMeasureWidth(
+        "impressions",
+        "A measure label of forty characters long",
+        format,
+        totals,
+        [],
+        undefined,
+        1.5,
+      ),
+    ).toBe(300);
+  });
+});
+
+describe("calculateRowDimensionWidth", () => {
+  it("widens a time row header with the text scale, never below its minimum", () => {
+    const width = (textScale?: number) =>
+      calculateRowDimensionWidth(
+        "ts_rill_TIME_GRAIN_DAY",
+        "Time (Day)",
+        "ts",
+        [],
+        textScale,
+      );
+    expect(width()).toBe(160);
+    expect(width(0.875)).toBe(160);
+    expect(width(1.25)).toBe(200);
+    expect(width(1.5)).toBe(240);
   });
 });

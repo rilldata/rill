@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ type CanvasYAML struct {
 	MaxWidth             uint32                 `yaml:"max_width"`
 	GapX                 uint32                 `yaml:"gap_x"`
 	GapY                 uint32                 `yaml:"gap_y"`
+	TextSize             string                 `yaml:"text_size"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
@@ -50,6 +52,10 @@ type CanvasYAML struct {
 	Annotations map[string]string        `yaml:"annotations"`
 	AIPrompts   []AIPromptYAML           `yaml:"ai_prompts"`
 }
+
+// canvasTextSizes are the presets that "text_size" accepts, on a canvas and in a component's renderer properties.
+// The frontend maps each preset to a multiplier for the component's font sizes.
+var canvasTextSizes = []string{"small", "medium", "large", "xlarge"}
 
 // canvasRowYAML is a single entry in a canvas's (or tab's, or container's) rows list.
 // It is a plain row (items), a tab group (tabs) or a container (rows), never more than one of them.
@@ -111,6 +117,11 @@ func (p *Parser) parseCanvas(node *Node) error {
 	allowCustomTimeRange := true
 	if tmp.AllowCustomTimeRange != nil {
 		allowCustomTimeRange = *tmp.AllowCustomTimeRange
+	}
+
+	// Validate the text size preset
+	if tmp.TextSize != "" && !slices.Contains(canvasTextSizes, tmp.TextSize) {
+		return fmt.Errorf(`invalid "text_size" %q: must be one of %v`, tmp.TextSize, canvasTextSizes)
 	}
 
 	// Parse theme if present.
@@ -255,6 +266,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.MaxWidth = tmp.MaxWidth
 	r.CanvasSpec.GapX = tmp.GapX
 	r.CanvasSpec.GapY = tmp.GapY
+	r.CanvasSpec.TextSize = tmp.TextSize
 	r.CanvasSpec.Theme = themeName
 	r.CanvasSpec.AllowCustomTimeRange = allowCustomTimeRange
 	r.CanvasSpec.TimeRanges = timeRanges

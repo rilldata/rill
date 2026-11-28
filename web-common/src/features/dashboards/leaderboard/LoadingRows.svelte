@@ -16,7 +16,7 @@
 
 <style lang="postcss">
   td {
-    height: 22px;
+    height: calc(22px * var(--text-scale, 1));
     @apply p-1 py-[5px];
   }
   div {

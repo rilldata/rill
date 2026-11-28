@@ -43,7 +43,13 @@ function getInnerRadius(innerRadiusPercentage: number | undefined) {
   return { expr: `${decimal}*min(width,height)/2` };
 }
 
-function getTotalFontSize(innerRadiusPercentage: number | undefined) {
+// The sizes below that are expressions follow the chart's text scale here:
+// the renderer only multiplies fixed sizes (see `scaleVegaText`).
+
+function getTotalFontSize(
+  innerRadiusPercentage: number | undefined,
+  textScale: number,
+) {
   if (
     !innerRadiusPercentage ||
     innerRadiusPercentage <= 0 ||
@@ -52,8 +58,12 @@ function getTotalFontSize(innerRadiusPercentage: number | undefined) {
     return 16;
   }
 
+  // Sized to the donut's hole. The text scale moves the bounds, but not the
+  // fit, so that a larger total still stays inside the hole.
   const decimal = innerRadiusPercentage / 100;
-  return { expr: `max(11, min(32, ${decimal}*min(width,height)/4))` };
+  return {
+    expr: `max(${11 * textScale}, min(${32 * textScale}, ${decimal}*min(width,height)/4))`,
+  };
 }
 
 function getLabelRadius(innerRadiusPercentage: number | undefined) {
@@ -67,8 +77,9 @@ function getLabelRadius(innerRadiusPercentage: number | undefined) {
   return { expr: `${ratio}*min(width,height)/2` };
 }
 
-function getLabelFontSize() {
-  return { expr: "max(9, min(16, min(width, height) / 22))" };
+function getLabelFontSize(textScale: number) {
+  const fitted = "max(9, min(16, min(width, height) / 22))";
+  return { expr: textScale === 1 ? fitted : `${textScale} * ${fitted}` };
 }
 
 export function generateVLPieChartSpec(
@@ -238,7 +249,7 @@ export function generateVLPieChartSpec(
       mark: {
         type: "text",
         radius: getLabelRadius(config.innerRadius),
-        fontSize: getLabelFontSize(),
+        fontSize: getLabelFontSize(data.textScale ?? 1),
         fontWeight: "bold",
         color: {
           expr: `luminance(scale('color', datum['${sanitizeValueForVega(colorFieldRaw)}'])) > 0.45 ? '${darkTextColor}' : '${lightTextColor}'`,
@@ -276,7 +287,7 @@ export function generateVLPieChartSpec(
           color: data.isDarkMode ? "#eeeeee" : "#353535",
           baseline: "middle",
           fontWeight: "bold",
-          fontSize: getTotalFontSize(config.innerRadius),
+          fontSize: getTotalFontSize(config.innerRadius, data.textScale ?? 1),
         },
         encoding: {
           text: {

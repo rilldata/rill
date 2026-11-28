@@ -2365,6 +2365,7 @@ type: canvas
 max_width: 4
 gap_x: 1
 gap_y: 2
+text_size: large
 
 time_ranges:
   - P2W
@@ -2390,6 +2391,7 @@ rows:
   - width: 2
     markdown:
       content: "Foo"
+      text_size: small
 `,
 	})
 
@@ -2419,7 +2421,7 @@ rows:
 			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo", "text_size": "small"})),
 				DefinedInCanvas:    true,
 			},
 		},
@@ -2436,6 +2438,7 @@ rows:
 				MaxWidth:    4,
 				GapX:        1,
 				GapY:        2,
+				TextSize:    "large",
 				TimeRanges: []*runtimev1.ExploreTimeRange{
 					{Range: "P2W"},
 					{Range: "P4W"},
@@ -2476,6 +2479,71 @@ rows:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestCanvasTextSizeErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "unknown preset on the canvas",
+			yaml: `
+type: canvas
+text_size: huge
+rows:
+- items:
+  - markdown:
+      content: "x"
+`,
+			wantErr: `invalid "text_size" "huge": must be one of [small medium large xlarge]`,
+		},
+		{
+			name: "unknown preset on a component",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+      text_size: 1.5
+`,
+			wantErr: `renderer property "text_size" must be one of [small medium large xlarge]`,
+		},
+		{
+			// Resolved per viewer, so the parser can't check it.
+			name: "templated preset on a component",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+      text_size: '{{ if eq .user.domain "example.com" }}large{{ else }}medium{{ end }}'
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			if tc.wantErr == "" {
+				require.Empty(t, p.Errors)
+				return
+			}
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
+		})
+	}
 }
 
 func TestComponentInputDateValue(t *testing.T) {
