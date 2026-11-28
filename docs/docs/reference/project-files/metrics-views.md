@@ -516,6 +516,8 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`variables`** - _[object]_ - CSS variables for the dark theme, as a map from variable name to value. See [Variables](/reference/project-files/themes#variables) for the supported names. A variable can also be set directly in `dark`, next to `primary`; if it is set in both places, the value under `variables` is used.
 
+      - **`chart`** - _[object]_ - Styling for charts. Takes the same properties as `chart` in a [theme file](themes.md#chart).
+
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
 
     - **option 1** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection.

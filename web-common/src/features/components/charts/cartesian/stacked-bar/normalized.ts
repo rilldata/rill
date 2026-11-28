@@ -42,7 +42,11 @@ export function generateVLStackedBarNormalizedSpec(
 
   const spec = createMultiLayerBaseSpec();
   const baseEncoding = createEncoding(config, data);
-  const vegaConfig = createConfigWithLegend(config, config.color);
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    data.chartTheme,
+  );
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
@@ -203,5 +207,7 @@ export function generateVLStackedBarNormalizedSpec(
     ...(vegaConfig && { config: vegaConfig }),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"gopkg.in/yaml.v3"
 )
 
 // ThemeYAML is the raw structure of a Theme for the UI in YAML (does not include common fields)
@@ -19,6 +20,8 @@ type ThemeYAML struct {
 	} `yaml:"colors"`
 	Light *ThemeColors `yaml:"light"`
 	Dark  *ThemeColors `yaml:"dark"`
+	// Chart is the chart styling. It is decoded separately (see ThemeChartYAML) so that unknown properties are rejected.
+	Chart yaml.Node `yaml:"chart"`
 }
 
 // ThemeColors is the raw structure of a theme's `light` or `dark` block.
@@ -58,7 +61,11 @@ func (p *Parser) parseTheme(node *Node) error {
 }
 
 func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
-	spec := &runtimev1.ThemeSpec{}
+	chart, err := parseThemeChart(&tmp.Chart)
+	if err != nil {
+		return nil, fmt.Errorf("invalid chart: %w", err)
+	}
+	spec := &runtimev1.ThemeSpec{Chart: chart}
 
 	hasLegacyColors := tmp.Colors.Primary != "" || tmp.Colors.Secondary != ""
 	hasCSSProperties := tmp.Light != nil || tmp.Dark != nil
@@ -89,7 +96,6 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 		return spec, nil
 	}
 
-	var err error
 	if tmp.Light != nil {
 		spec.Light, err = tmp.Light.validate()
 		if err != nil {

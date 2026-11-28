@@ -1,4 +1,9 @@
-import type { ChartWarning, RawEncodingValue } from "flint-chart/core";
+import type {
+  ChartWarning,
+  RawEncodingValue,
+  ThemeSpec,
+} from "flint-chart/core";
+import { resolveThemeSpec } from "flint-chart/core";
 import { assembleVegaLite } from "flint-chart/vegalite";
 import { extent, ticks } from "d3-array";
 import type { VisualizationSpec } from "svelte-vega";
@@ -39,6 +44,17 @@ export interface CompileOptions {
    * layout can make room for the labels it prints.
    */
   measureFormatters?: Record<string, (value: number) => string>;
+  /**
+   * The project theme's chart style as a Flint theme (see `flintTheme`). Flint then lays the
+   * chart out for that style and writes it into the marks and scales it styles itself.
+   * Unset compiles the chart as Flint draws it without a theme.
+   */
+  theme?: ThemeSpec;
+  /**
+   * The side the project theme states for legends. A chart that lays its legends out itself,
+   * such as a Marginal Plot, puts them there, and keeps its own side where the theme states none.
+   */
+  legendPosition?: string;
 }
 
 export interface CompileResult {
@@ -54,6 +70,8 @@ export function compileFlintSpec({
   size,
   measureFields = [],
   measureFormatters = {},
+  theme,
+  legendPosition,
 }: CompileOptions): CompileResult {
   if (!spec?.chartType) {
     return { spec: null, warnings: [], error: "No chart type provided" };
@@ -92,6 +110,7 @@ export function compileFlintSpec({
         // chart read fine down to 40px, so fewer categories are left out of a short box.
         minSubplotSize: 40,
       },
+      ...(theme ? { theme_spec: theme } : {}),
     }) as Record<string, unknown>;
   } catch (e) {
     return {
@@ -104,7 +123,15 @@ export function compileFlintSpec({
   const warnings = (assembled._warnings as ChartWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
-  deferToTheme(vegaSpec, authored);
+  if (theme) restorePalette(vegaSpec, theme);
+  // A Flint preset is a design of its own, so the chart keeps the surface, typography and legend
+  // layout Flint gives it. Any other theme states Rill's own style (see `flintTheme`), which the
+  // renderer's config draws exactly: what Flint wrote of it is removed, as for a chart compiled
+  // without a theme.
+  if (!theme?.extends) {
+    if (theme) clearThemeSurface(vegaSpec);
+    deferToTheme(vegaSpec, authored);
+  }
   orderSeries(vegaSpec);
   applyMeasureFormatters(vegaSpec, measureFields);
   switch (spec.chartType) {
@@ -121,7 +148,14 @@ export function compileFlintSpec({
       placeRoseLabels(vegaSpec, rows);
       break;
     case "Marginal Plot":
-      fitMarginalPlot(vegaSpec, rows, fields, size, measureFormatters);
+      fitMarginalPlot(
+        vegaSpec,
+        rows,
+        fields,
+        size,
+        measureFormatters,
+        legendPosition,
+      );
       break;
   }
   labelDerivedEncodings(vegaSpec, fields, measureFields);
@@ -827,9 +861,11 @@ const MARGINAL_Y_AXIS_GUTTER = 32;
 const MARGINAL_X_AXIS_HEIGHT = 45;
 /** Flint's smallest Marginal Plot, in pixels. */
 const MARGINAL_MIN_PLOT = 80;
-/** The channels a Marginal Plot's plot draws a legend for, each at its right. */
+/** The channels a Marginal Plot's plot draws a legend for. */
 const MARGINAL_LEGEND_CHANNELS = ["color", "size", "shape", "opacity"];
-/** The gap between a Marginal Plot's right margin and its legends, and between two legends. */
+/** The sides of a Marginal Plot a theme can place its legends on. */
+const MARGINAL_LEGEND_SIDES = new Set(["top", "bottom", "left", "right"]);
+/** The gap between a Marginal Plot and its legends, and between two legends. */
 const MARGINAL_LEGEND_GAP = 8;
 /** Room after a legend symbol's fill for its stroke and the gap before its label, in pixels. */
 const LEGEND_SYMBOL_GAP = 6;
@@ -849,12 +885,15 @@ const LEGEND_TITLE_HEIGHT = RILL_LEGEND_TITLE_FONT_SIZE + 5;
 const LEGEND_ROW_HEIGHT = 14;
 /** Vega's gap between a legend's rows, in pixels. */
 const LEGEND_ROW_PADDING = 2;
+/** Vega's gap between a legend's columns, in pixels. */
+const LEGEND_COLUMN_PADDING = 10;
 /** The entries Vega lists for a measure on a symbol legend: the ticks of a count of five. */
 const LEGEND_TICK_COUNT = 5;
 
 /**
  * A Marginal Plot is a column of the margin over x above a row of the plot and the margin over y,
- * with its legends at the right. Flint sizes the three panels to its canvas less a fixed
+ * with its legends on the side the theme states, or else at the right.
+ * Flint sizes the three panels to its canvas less a fixed
  * allowance for the axes and the legends, and the chart is drawn at those sizes: Vega-Lite cannot
  * fit a concatenation to its box. Rill's theme draws the axes larger than that allowance, and
  * Flint's legends, side by side or below the plot, were laid out at its own text sizes, so the
@@ -863,10 +902,13 @@ const LEGEND_TICK_COUNT = 5;
  * The plot takes the width its y axis, its legends and Vega's padding leave, and with a continuous
  * x axis the height that axis leaves; the margins keep Flint's thickness and run along the plot.
  * The y axis's labels get the width they take once formatted. The legends, whether of
- * categories, sizes, shapes, opacities or a measure's colors, stack in one column at the right,
- * with their labels and titles cut to a third of the box at most, less where the y axis and the
- * plot need it. Where the column would outgrow the box's height, its tallest legends end early,
- * in Vega's "…N entries".
+ * categories, sizes, shapes, opacities or a measure's colors, stack in one column on their side.
+ * Beside the plot, their labels and titles are cut to a third of the box at most, less where the
+ * y axis and the plot need it, and the column may run the box's height. Above or below it, each
+ * legend runs from the plot's left edge with its entries in rows, labels cut to a third of the
+ * box's width, and the column takes its height from the plot, a third of the box at most. Where
+ * the column would outgrow that height, its tallest legends end early, in Vega's "…N entries".
+ * Vega sets such a column past the view's height, which `FlintChartRenderer` shrinks by as much.
  */
 function fitMarginalPlot(
   spec: Record<string, unknown>,
@@ -874,6 +916,7 @@ function fitMarginalPlot(
   fields: FlintFields,
   size: { width: number; height: number } | undefined,
   formatters: Record<string, (value: number) => string>,
+  legendPosition: string | undefined,
 ): void {
   const [top, row] =
     (spec.vconcat as Record<string, unknown>[] | undefined) ?? [];
@@ -939,21 +982,65 @@ function fitMarginalPlot(
     yLabelLimit +
     (Number(right.width) || 0) +
     columnGap;
-  // The legends' column takes a third of the box at most, and no more than the plot leaves at its
-  // smallest. Vega takes a limit of 0 or less as none.
-  const room = Math.max(
-    2 * LEGEND_SYMBOL_WIDTH,
-    Math.min(
-      Math.floor(size.width / 3),
-      size.width - besidePlot - MARGINAL_MIN_PLOT,
-    ) - MARGINAL_LEGEND_GAP,
-  );
+  // With a continuous x axis the plot takes the height that axis leaves; with a discrete one, it
+  // keeps Flint's.
+  const rowGap = Number(spec.spacing) || 0;
+  const plotHeight = isDiscrete(x)
+    ? Number(plot.height)
+    : Math.round(
+        size.height -
+          2 * VEGA_PADDING -
+          MARGINAL_X_AXIS_HEIGHT -
+          (Number(top.height) || 0) -
+          rowGap,
+      );
+
+  const side =
+    legendPosition && MARGINAL_LEGEND_SIDES.has(legendPosition)
+      ? legendPosition
+      : "right";
+  const beside = side === "left" || side === "right";
+  // Beside the plot, the legends' column takes a third of the box at most, and no more than the
+  // plot leaves at its smallest. Above or below it, Vega starts a legend at the plot's left edge,
+  // and the legend runs to the box's, each of its entries a third of the box at most.
+  // Vega takes a limit of 0 or less as none.
+  const room = beside
+    ? Math.max(
+        2 * LEGEND_SYMBOL_WIDTH,
+        Math.min(
+          Math.floor(size.width / 3),
+          size.width - besidePlot - MARGINAL_MIN_PLOT,
+        ) - MARGINAL_LEGEND_GAP,
+      )
+    : Math.max(
+        2 * LEGEND_SYMBOL_WIDTH,
+        size.width - 2 * VEGA_PADDING - MARGINAL_Y_AXIS_GUTTER - yLabelLimit,
+      );
+  const entryRoom = beside
+    ? room
+    : Math.min(
+        room,
+        Math.max(2 * LEGEND_SYMBOL_WIDTH, Math.floor(size.width / 3)),
+      );
+  // The entries a legend lists in a row: one beside the plot, as many as fit above or below it.
+  const columnsOf = (keyWidth: number, labelLimit: number) =>
+    beside
+      ? 1
+      : Math.max(
+          1,
+          Math.floor(
+            (room + LEGEND_COLUMN_PADDING) /
+              (keyWidth + labelLimit + LEGEND_COLUMN_PADDING),
+          ),
+        );
   const legends: {
     channel: string;
     field: string;
     entries: number;
     keyWidth: number;
     labelWidth: number;
+    labelLimit: number;
+    columns: number;
     titleLimit: number;
     titleHeight: number;
     rowHeight: number;
@@ -1021,12 +1108,17 @@ function fitMarginalPlot(
             0,
           );
     const titleHeight = title === null ? 0 : LEGEND_TITLE_HEIGHT;
+    const labelLimit = Math.min(entryRoom - keyWidth, labelWidth);
+    const columns = columnsOf(keyWidth, labelLimit);
+    const lines = Math.ceil(entries / columns);
     legends.push({
       channel,
       field,
       entries,
       keyWidth,
       labelWidth,
+      labelLimit,
+      columns,
       titleLimit: Math.min(
         room,
         textWidth(titleChars, RILL_LEGEND_TITLE_FONT_SIZE),
@@ -1035,18 +1127,25 @@ function fitMarginalPlot(
       rowHeight,
       height:
         titleHeight +
-        entries * rowHeight +
-        Math.max(0, entries - 1) * LEGEND_ROW_PADDING,
+        lines * rowHeight +
+        Math.max(0, lines - 1) * LEGEND_ROW_PADDING,
     });
   }
 
-  // Where the column would outgrow the box's height, the tallest legends give way first, each to
-  // an equal share of the height the shorter ones leave.
+  // Where the column would outgrow the height it has, the tallest legends give way first, each to
+  // an equal share of the height the shorter ones leave. Beside the plot, the column runs the
+  // box's height; above or below it, each legend's gap and the legend itself come out of the
+  // plot's height, a third of the box at most.
   let share = Infinity;
-  let left =
-    size.height -
-    2 * VEGA_PADDING -
-    MARGINAL_LEGEND_GAP * Math.max(0, legends.length - 1);
+  let left = beside
+    ? size.height -
+      2 * VEGA_PADDING -
+      MARGINAL_LEGEND_GAP * Math.max(0, legends.length - 1)
+    : Math.min(
+        Math.floor(size.height / 3),
+        Number.isFinite(plotHeight) ? plotHeight - MARGINAL_MIN_PLOT : Infinity,
+      ) -
+      MARGINAL_LEGEND_GAP * legends.length;
   const heights = legends.map((legend) => legend.height).sort((a, b) => a - b);
   for (const [index, height] of heights.entries()) {
     const shorter = heights.length - index;
@@ -1058,41 +1157,64 @@ function fitMarginalPlot(
   }
 
   let legendWidth = 0;
+  let legendsHeight = 0;
   for (const legend of legends) {
     // A measure's colors are listed as symbols too, as Vega draws them already: the points take
     // a color as both fill and stroke, and Vega keeps gradients for legends of one.
     const layout: Record<string, unknown> = {
       type: "symbol",
-      orient: "right",
+      orient: side,
+      // Flint's config states the direction of legends where it places them for the theme, which
+      // can be another side.
+      direction: beside ? "vertical" : "horizontal",
       offset: MARGINAL_LEGEND_GAP,
       titleLimit: legend.titleLimit,
     };
-    let labelWidth = legend.labelWidth;
+    let { labelLimit, columns } = legend;
+    let shown = legend.entries;
     if (legend.height > share) {
       // Vega lists one entry fewer than its limit, and then how many it left out.
-      const limit = Math.max(
-        2,
+      const lines = Math.max(
+        1,
         Math.floor(
           (share - legend.titleHeight + LEGEND_ROW_PADDING) /
             (legend.rowHeight + LEGEND_ROW_PADDING),
         ),
       );
-      layout.symbolLimit = limit;
+      let limit = Math.max(2, lines * columns);
       if (limit < legend.entries) {
         const leftOut = `\u2026${legend.entries - limit + 1} entries`;
-        labelWidth = Math.max(
-          labelWidth,
-          textWidth(leftOut.length, RILL_LABEL_FONT_SIZE),
+        labelLimit = Math.min(
+          entryRoom - legend.keyWidth,
+          Math.max(
+            legend.labelWidth,
+            textWidth(leftOut.length, RILL_LABEL_FONT_SIZE),
+          ),
         );
+        // A wider label leaves room for fewer entries in a row.
+        columns = columnsOf(legend.keyWidth, labelLimit);
+        limit = Math.max(2, lines * columns);
       }
+      layout.symbolLimit = limit;
+      shown = Math.min(shown, limit);
     }
-    const labelLimit = Math.min(room - legend.keyWidth, labelWidth);
     layout.labelLimit = labelLimit;
-    legendWidth = Math.max(
-      legendWidth,
-      MARGINAL_LEGEND_GAP +
-        Math.max(legend.keyWidth + labelLimit, legend.titleLimit),
-    );
+    if (beside) {
+      legendWidth = Math.max(
+        legendWidth,
+        MARGINAL_LEGEND_GAP +
+          Math.max(legend.keyWidth + labelLimit, legend.titleLimit),
+      );
+    } else {
+      layout.columns = columns;
+      layout.columnPadding = LEGEND_COLUMN_PADDING;
+      const lines = Math.ceil(shown / columns);
+      legendsHeight +=
+        MARGINAL_LEGEND_GAP +
+        legend.titleHeight +
+        lines * legend.rowHeight +
+        Math.max(0, lines - 1) * LEGEND_ROW_PADDING;
+    }
     // Flint states a legend on each panel, and Vega-Lite draws the one they share with the
     // settings of whichever states them first.
     for (const view of layersOf(spec)) {
@@ -1110,26 +1232,18 @@ function fitMarginalPlot(
   );
   top.width = plot.width;
 
-  if (!isDiscrete(x)) {
-    const rowGap = Number(spec.spacing) || 0;
-    const plotHeight = Math.round(
-      size.height -
-        2 * VEGA_PADDING -
-        MARGINAL_X_AXIS_HEIGHT -
-        (Number(top.height) || 0) -
-        rowGap,
-    );
-    plot.height = Math.max(MARGINAL_MIN_PLOT, plotHeight);
+  if (Number.isFinite(plotHeight) && (!isDiscrete(x) || legendsHeight > 0)) {
+    plot.height = Math.max(MARGINAL_MIN_PLOT, plotHeight - legendsHeight);
     right.height = plot.height;
   }
 
-  // Flint arranges several legends side by side, where they would outgrow the width the plot
-  // leaves them.
+  // Flint arranges several legends side by side, where they would outgrow the room the plot
+  // leaves them; they stack in one column instead.
   const config = (spec.config ?? {}) as Record<string, unknown>;
   config.legend = {
     ...(config.legend as Record<string, unknown> | undefined),
     layout: {
-      right: {
+      [side]: {
         direction: "vertical",
         anchor: "start",
         margin: MARGINAL_LEGEND_GAP,
@@ -1202,6 +1316,53 @@ function stripInternalKeys(
     }
   }
   return spec;
+}
+
+/**
+ * A themed chart comes with the theme's surface painted behind it. Rill's own style names the card
+ * of the canvas component as that surface, and the chart is drawn on the card, so the chart itself
+ * stays transparent.
+ */
+function clearThemeSurface(spec: Record<string, unknown>): void {
+  delete spec.background;
+  delete (spec.config as Record<string, unknown> | undefined)?.background;
+  // The room Flint leaves around a chart on a painted surface, which the card already gives it.
+  delete spec.padding;
+}
+
+/**
+ * Flint hands a color scale as many of the theme's categorical inks as it counts series, and for
+ * a stack it lists those series as the scale's domain. It does not count the series for rows
+ * without a value. Under a domain that series has no color at all, and without one it wraps
+ * around to the first ink, so two series share a color. The scale gets the theme's whole palette
+ * back, and Vega-Lite derives the domain from the data, in the order the encoding's `sort` gives.
+ */
+function restorePalette(spec: Record<string, unknown>, theme: ThemeSpec): void {
+  const palette = resolveThemeSpec(theme)?.ink?.series?.categorical;
+  if (!palette?.length) return;
+  // A palette the theme states itself is the project's, which the renderer's config holds in
+  // full (see `flintTheme`), so the scale is left to the config. A preset's own palette is in no
+  // config and is stated on the scale.
+  const inConfig = theme.ink?.series?.categorical !== undefined;
+
+  for (const view of layersOf(spec)) {
+    for (const [channel, encoding] of channelsOf(view)) {
+      if (Array.isArray(encoding) || !COLOR_CHANNELS.has(channel)) continue;
+      const scale = encoding.scale as Record<string, unknown> | undefined;
+      const range = scale?.range;
+      if (
+        !scale ||
+        !Array.isArray(range) ||
+        !range.every((color, i) => color === palette[i])
+      ) {
+        continue;
+      }
+      if (inConfig) delete scale.range;
+      else scale.range = palette;
+      delete scale.domain;
+      if (Object.keys(scale).length === 0) delete encoding.scale;
+    }
+  }
 }
 
 /** Flint's config keys that style text; Rill's theme owns typography and colors. */
@@ -1507,6 +1668,9 @@ function orderViewSeries(
         },
         {
           window: [{ op: "dense_rank", as: place }],
+          // Vega-Lite adds a facet's fields to the groupby of a window under it, and threw on
+          // one that had none: a Sparkline was not drawn.
+          groupby: [],
           sort: [
             { field: total, order: "descending" },
             { field: encoding.field, order: "ascending" },

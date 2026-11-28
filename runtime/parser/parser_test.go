@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -4662,6 +4663,215 @@ light:
 			expectError: true,
 			errorMsg:    `invalid value "1px" for CSS variable "border"`,
 		},
+		{
+			name: "chart styling is merged into each mode",
+			yaml: `
+type: theme
+chart:
+  extends: economist
+  font_family: "IBM Plex Sans, sans-serif"
+  text:
+    axis_label:
+      size: 12
+      weight: medium
+    axis_title:
+      weight: 600
+  grid:
+    category: false
+    style: dashed
+    dash: [4, 2]
+    width: 0
+  line:
+    width: 2.5
+  area:
+    fill_opacity: 0
+  legend:
+    position: bottom
+    symbol: line
+  light:
+    text:
+      axis_label:
+        color: "#475569"
+    grid:
+      color: "#e2e8f0"
+  dark:
+    grid:
+      style: solid
+      color: "#334155"
+    area:
+      fill_opacity: 0.4
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Chart: &runtimev1.ThemeChart{
+					Light: &runtimev1.ThemeChartStyle{
+						Extends:    "economist",
+						FontFamily: "IBM Plex Sans, sans-serif",
+						Text: &runtimev1.ThemeChartText{
+							AxisLabel: &runtimev1.ThemeChartTextRole{Size: new(12.0), Weight: new(uint32(500)), Color: "#475569"},
+							AxisTitle: &runtimev1.ThemeChartTextRole{Weight: new(uint32(600))},
+						},
+						Grid: &runtimev1.ThemeChartGrid{
+							Category: new(false),
+							Style:    "dashed",
+							Dash:     []float64{4, 2},
+							Width:    new(0.0),
+							Color:    "#e2e8f0",
+						},
+						Line:   &runtimev1.ThemeChartLine{Width: new(2.5)},
+						Area:   &runtimev1.ThemeChartArea{FillOpacity: new(0.0)},
+						Legend: &runtimev1.ThemeChartLegend{Position: "bottom", Symbol: "line"},
+					},
+					Dark: &runtimev1.ThemeChartStyle{
+						Extends:    "economist",
+						FontFamily: "IBM Plex Sans, sans-serif",
+						Text: &runtimev1.ThemeChartText{
+							AxisLabel: &runtimev1.ThemeChartTextRole{Size: new(12.0), Weight: new(uint32(500))},
+							AxisTitle: &runtimev1.ThemeChartTextRole{Weight: new(uint32(600))},
+						},
+						// The mode's solid style drops the shared dash pattern, which would otherwise keep the lines dashed.
+						Grid: &runtimev1.ThemeChartGrid{
+							Category: new(false),
+							Style:    "solid",
+							Width:    new(0.0),
+							Color:    "#334155",
+						},
+						Line:   &runtimev1.ThemeChartLine{Width: new(2.5)},
+						Area:   &runtimev1.ThemeChartArea{FillOpacity: new(0.4)},
+						Legend: &runtimev1.ThemeChartLegend{Position: "bottom", Symbol: "line"},
+					},
+				},
+			},
+		},
+		{
+			name: "chart styling for one mode leaves the other unset",
+			yaml: `
+type: theme
+colors:
+  primary: red
+chart:
+  dark:
+    grid:
+      dash: [1, 3]
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				PrimaryColor:    &runtimev1.Color{Red: 1, Alpha: 1},
+				PrimaryColorRaw: "red",
+				Chart: &runtimev1.ThemeChart{
+					Dark: &runtimev1.ThemeChartStyle{
+						Grid: &runtimev1.ThemeChartGrid{Dash: []float64{1, 3}},
+					},
+				},
+			},
+		},
+		{
+			name: "chart section that sets nothing is dropped",
+			yaml: `
+type: theme
+chart:
+  text:
+    axis_label: {}
+  light: {}
+`,
+			expectedSpec: &runtimev1.ThemeSpec{},
+		},
+		{
+			name: "unknown chart property",
+			yaml: `
+type: theme
+chart:
+  gird:
+    style: dashed
+`,
+			expectError: true,
+			errorMsg:    "invalid chart: line 4: gird: unknown property",
+		},
+		{
+			name: "unknown chart property after blank lines and comments",
+			yaml: `
+type: theme
+
+chart:
+  # Text
+  text:
+    axis_label:
+      size: 12
+
+  dark:
+    grid:
+      colr: red
+`,
+			expectError: true,
+			errorMsg:    "invalid chart: line 12: dark.grid.colr: unknown property",
+		},
+		{
+			name: "chart properties merged from an anchor",
+			yaml: `
+type: theme
+chart:
+  light: &base
+    grid:
+      color: "#e2e8f0"
+  dark:
+    <<: *base
+    legend:
+      position: bottom
+`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Chart: &runtimev1.ThemeChart{
+					Light: &runtimev1.ThemeChartStyle{Grid: &runtimev1.ThemeChartGrid{Color: "#e2e8f0"}},
+					Dark: &runtimev1.ThemeChartStyle{
+						Grid:   &runtimev1.ThemeChartGrid{Color: "#e2e8f0"},
+						Legend: &runtimev1.ThemeChartLegend{Position: "bottom"},
+					},
+				},
+			},
+		},
+		{
+			name: "chart opacity out of range",
+			yaml: `
+type: theme
+chart:
+  dark:
+    area:
+      fill_opacity: 40
+`,
+			expectError: true,
+			errorMsg:    "invalid chart: dark: area.fill_opacity: must be between 0 and 1, got 40",
+		},
+		{
+			name: "chart font weight that is not a weight",
+			yaml: `
+type: theme
+chart:
+  text:
+    legend_title:
+      weight: 450
+`,
+			expectError: true,
+			errorMsg:    `invalid chart: text.legend_title.weight: must be a multiple of 100 from 100 to 900 or a weight name such as "medium", got "450"`,
+		},
+		{
+			name: "chart color that is not a color",
+			yaml: `
+type: theme
+chart:
+  grid:
+    color: gren
+`,
+			expectError: true,
+			errorMsg:    "invalid chart: grid.color: Invalid color format, gren",
+		},
+		{
+			name: "chart grid style that does not exist",
+			yaml: `
+type: theme
+chart:
+  grid:
+    style: dotdash
+`,
+			expectError: true,
+			errorMsg:    `invalid chart: grid.style: must be one of solid, dashed, dotted, got "dotdash"`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -4699,7 +4909,7 @@ light:
 			if tt.expectedSpec != nil {
 				res, ok := p.Resources[ResourceName{Kind: ResourceKindTheme, Name: "test"}]
 				require.True(t, ok)
-				require.Equal(t, tt.expectedSpec, res.ThemeSpec)
+				require.True(t, proto.Equal(tt.expectedSpec, res.ThemeSpec), "expected: %v\nactual: %v", tt.expectedSpec, res.ThemeSpec)
 			}
 		})
 	}

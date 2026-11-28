@@ -10,6 +10,7 @@
   import {
     createRuntimeServiceQueryResolver,
     type V1Expression,
+    type V1ThemeChartStyle,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -25,6 +26,11 @@
   export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
+  export let themeMode: "light" | "dark" = "light";
+  /** The project theme's variables for the current mode; unset resolves colors from CSS variables. */
+  export let theme: Record<string, string> | undefined = undefined;
+  /** The project theme's chart style for the current mode: text, gridline, mark and legend styling. */
+  export let chartTheme: V1ThemeChartStyle | undefined = undefined;
   export let onMetaChange:
     | ((meta: Record<string, unknown> | undefined) => void)
     | undefined = undefined;
@@ -174,7 +180,10 @@
             {renderer}
             spec={parsedSpec}
             canvasDashboard
-            config={getRillTheme(true)}
+            {themeMode}
+            config={getRillTheme(themeMode === "dark", theme, {
+              chart: chartTheme,
+            })}
             data={vegaData}
             bind:viewVL
           />

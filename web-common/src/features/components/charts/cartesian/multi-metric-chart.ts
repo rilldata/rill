@@ -21,6 +21,8 @@ import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import type { Transform } from "vega-lite/types_unstable/transform.js";
 import {
+  areaEdgeConfig,
+  buildAreaEdgeLayer,
   buildHoverPointOverlay,
   buildHoverRuleLayer,
   centerGroupedBars,
@@ -61,7 +63,12 @@ export function generateVLMultiMetricChartSpec(
   const measureNormalizedField = "Measure_normalized";
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, config.color);
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    data.chartTheme,
+    markType === "stacked_area" ? areaEdgeConfig(data) : undefined,
+  );
 
   const measures = config.y?.fields || [];
 
@@ -307,7 +314,7 @@ export function generateVLMultiMetricChartSpec(
           },
           layer: [
             { mark: { type: "area", clip: true } },
-            { mark: { type: "line", opacity: 0.5 } },
+            buildAreaEdgeLayer(),
             hoverPointLayer,
           ],
         },
@@ -382,7 +389,9 @@ export function generateVLMultiMetricChartSpec(
     ...(vegaConfig && { config: vegaConfig }),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }
 
 /**

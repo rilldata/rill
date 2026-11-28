@@ -1,5 +1,7 @@
 <script lang="ts">
   import CustomChartRenderer from "@rilldata/web-common/features/components/charts/custom/CustomChartRenderer.svelte";
+  import { resolveChartTheme } from "@rilldata/web-common/features/themes/chart-theme";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { onDestroy } from "svelte";
   import AgenticChartPrompt from "./AgenticChartPrompt.svelte";
   import { clearComponentConversation } from "./chart-ai-agent";
@@ -13,7 +15,16 @@
     clearComponentConversation(component.id);
   });
 
-  $: ({ specStore, timeAndFilterStore, usesTimeRange } = component);
+  $: ({
+    specStore,
+    timeAndFilterStore,
+    usesTimeRange,
+    parent: { theme },
+  } = component);
+
+  // Theme mode (light/dark) is separate from which theme is selected.
+  let themeMode: "light" | "dark";
+  $: themeMode = $themeControl === "dark" ? "dark" : "light";
 
   $: hasValidSpec = component.isValid($specStore);
   $: hasContent = component.hasContent($specStore);
@@ -34,6 +45,9 @@
     whereFilter={$timeAndFilterStore?.where}
     timeRange={$usesTimeRange ? $timeAndFilterStore?.timeRange : undefined}
     metricsSQL={$specStore.metrics_sql}
+    {themeMode}
+    theme={$theme?.resolvedThemeObject?.[themeMode]}
+    chartTheme={resolveChartTheme($theme?.spec, themeMode === "dark")}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
     onResults={(results: CustomChartExportResult[] | undefined) =>

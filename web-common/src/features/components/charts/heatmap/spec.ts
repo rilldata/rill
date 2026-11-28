@@ -39,6 +39,7 @@ export function generateVLHeatmapSpec(
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
+    data.chartTheme,
     {
       axis: { grid: true, tickBand: "extent" },
       axisX: {

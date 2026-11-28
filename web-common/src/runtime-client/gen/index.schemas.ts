@@ -2595,6 +2595,113 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+/**
+ * ThemeChart is a theme's chart styling, resolved per mode.
+The parser merges the settings a theme states for both modes into each of them, so a consumer only reads the style for its mode.
+ */
+export interface V1ThemeChart {
+  light?: V1ThemeChartStyle;
+  dark?: V1ThemeChartStyle;
+}
+
+export interface V1ThemeChartArea {
+  /** Opacity of the fill, from 0 to 1. */
+  fillOpacity?: number;
+  /** Stroke width of the line along the top of an area, in pixels. */
+  lineWidth?: number;
+}
+
+export interface V1ThemeChartAxis {
+  /** Whether to draw the axis line. */
+  line?: boolean;
+  /** Stroke width of the axis line in pixels. */
+  lineWidth?: number;
+  /** Whether to draw tick marks. */
+  ticks?: boolean;
+  /** CSS color of the axis line and tick marks. */
+  color?: string;
+}
+
+export interface V1ThemeChartBar {
+  /** Opacity of the bars, from 0 to 1. */
+  opacity?: number;
+  /** Radius of the corners at the value end of a bar, in pixels. */
+  cornerRadius?: number;
+}
+
+export interface V1ThemeChartGrid {
+  /** Whether to draw the gridlines values are read off: those across the measure axis. */
+  measure?: boolean;
+  /** Whether to draw the gridlines across the category or time axis. */
+  category?: boolean;
+  /** One of "solid", "dashed" or "dotted". */
+  style?: string;
+  /** Alternating dash and gap lengths in pixels. Overrides the dash pattern of `style`. */
+  dash?: number[];
+  /** Stroke width in pixels. */
+  width?: number;
+  /** CSS color. */
+  color?: string;
+}
+
+export interface V1ThemeChartLegend {
+  /** Default position: one of "top", "bottom", "left" or "right". A chart's own legend position takes precedence. */
+  position?: string;
+  /** Symbol beside each entry: one of "circle", "square" or "line". */
+  symbol?: string;
+}
+
+export interface V1ThemeChartLine {
+  /** Stroke width in pixels. */
+  width?: number;
+}
+
+export interface V1ThemeChartPoint {
+  /** Area of a point in square pixels. */
+  size?: number;
+  /** Opacity of the points, from 0 to 1. */
+  opacity?: number;
+}
+
+/**
+ * ThemeChartStyle is the chart styling for one mode. Unset properties keep Rill's defaults.
+ */
+export interface V1ThemeChartStyle {
+  /** Name of a Flint theme preset to start from. Only custom charts compiled by Flint have presets; other charts ignore it. */
+  extends?: string;
+  /** CSS font family of all chart text. */
+  fontFamily?: string;
+  text?: V1ThemeChartText;
+  grid?: V1ThemeChartGrid;
+  axis?: V1ThemeChartAxis;
+  line?: V1ThemeChartLine;
+  area?: V1ThemeChartArea;
+  bar?: V1ThemeChartBar;
+  point?: V1ThemeChartPoint;
+  legend?: V1ThemeChartLegend;
+}
+
+/**
+ * ThemeChartText styles the roles text plays in a chart.
+ */
+export interface V1ThemeChartText {
+  title?: V1ThemeChartTextRole;
+  axisLabel?: V1ThemeChartTextRole;
+  axisTitle?: V1ThemeChartTextRole;
+  legendLabel?: V1ThemeChartTextRole;
+  legendTitle?: V1ThemeChartTextRole;
+  valueLabel?: V1ThemeChartTextRole;
+}
+
+export interface V1ThemeChartTextRole {
+  /** Font size in pixels. */
+  size?: number;
+  /** CSS font weight: a multiple of 100 from 100 to 900. */
+  weight?: number;
+  /** CSS color. */
+  color?: string;
+}
+
 export type V1ThemeColorsVariables = { [key: string]: string };
 
 export interface V1ThemeColors {
@@ -2610,6 +2717,7 @@ export interface V1ThemeSpec {
   secondaryColorRaw?: string;
   light?: V1ThemeColors;
   dark?: V1ThemeColors;
+  chart?: V1ThemeChart;
 }
 
 export interface V1ThemeState {

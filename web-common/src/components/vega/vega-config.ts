@@ -5,7 +5,10 @@ import {
   getSequentialColorsAsHex,
 } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
+import { chartThemeVegaConfig } from "@rilldata/web-common/features/themes/chart-theme";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
+import type { V1ThemeChartStyle } from "@rilldata/web-common/runtime-client";
+import merge from "deepmerge";
 import type { Config } from "vega-lite";
 
 function resolveCSSVariable(
@@ -46,13 +49,37 @@ export interface RillThemeOptions {
    * Unset keeps Rill's Inter for the axes and Vega's default elsewhere.
    */
   fontFamily?: string;
+  /**
+   * The chart style of the project theme for the current mode (see `resolveChartTheme`). What it
+   * sets overrides the defaults below, and its font family overrides `fontFamily`.
+   */
+  chart?: V1ThemeChartStyle;
 }
 
+/**
+ * Rill's Vega-Lite config: the defaults, with the project theme's colors and chart style applied.
+ * A spec's own `config` takes precedence over it.
+ */
 export const getRillTheme: (
   isDarkMode?: boolean,
   theme?: Record<string, string>,
   options?: RillThemeOptions,
 ) => Config = (isDarkMode = false, theme, options) => {
+  const defaults = getRillDefaults(isDarkMode, theme, {
+    fontFamily: options?.chart?.fontFamily || options?.fontFamily,
+  });
+  if (!options?.chart) return defaults;
+  return merge(defaults, chartThemeVegaConfig(options.chart), {
+    // A dash pattern replaces the default's rather than extending it.
+    arrayMerge: (_, source: unknown[]) => source,
+  });
+};
+
+const getRillDefaults: (
+  isDarkMode: boolean,
+  theme: Record<string, string> | undefined,
+  options: Pick<RillThemeOptions, "fontFamily">,
+) => Config = (isDarkMode, theme, options) => {
   const axisFont = options?.fontFamily ?? "Inter, sans-serif";
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode

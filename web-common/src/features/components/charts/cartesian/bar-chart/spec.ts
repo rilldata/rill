@@ -39,7 +39,11 @@ export function generateVLBarChartSpec(
   const config = toVerticalSpec(chartConfig);
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, config.color);
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    data.chartTheme,
+  );
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
@@ -157,5 +161,7 @@ export function generateVLBarChartSpec(
       : {}),
   };
 
-  return horizontal ? transposeCartesianSpec(result) : result;
+  return horizontal
+    ? transposeCartesianSpec(result, data.chartTheme?.grid)
+    : result;
 }

@@ -1,3 +1,4 @@
+import type { V1ThemeChartGrid } from "@rilldata/web-common/runtime-client";
 import type { VisualizationSpec } from "svelte-vega";
 import { ChartSortType, type ChartType, type FieldConfig } from "../types";
 import type { CartesianChartSpec } from "./CartesianChartProvider";
@@ -123,7 +124,8 @@ type AnyRecord = Record<string, unknown>;
  * fixed set of properties:
  *   - `encoding.x` <-> `encoding.y` and `encoding.xOffset` <-> `encoding.yOffset`
  *   - `axis.orient` and string `sort` on the moved position defs
- *   - `axis.grid` so grid lines follow the measure axis, matching the vertical look
+ *   - `axis.grid` so grid lines follow the measure axis, matching the vertical look,
+ *     where the project theme's `grid` leaves an axis's lines unset
  *   - `mark.width` <-> `mark.height` (relative band sizes)
  *   - selection params' `select.encodings` ("x" <-> "y")
  * applied to the top-level encoding and recursively to every layer.
@@ -133,17 +135,21 @@ type AnyRecord = Record<string, unknown>;
  */
 export function transposeCartesianSpec(
   spec: VisualizationSpec,
+  grid?: V1ThemeChartGrid,
 ): VisualizationSpec {
   return {
-    ...transposeLayer(spec as AnyRecord),
+    ...transposeLayer(spec as AnyRecord, grid),
     height: "container",
   } as VisualizationSpec;
 }
 
-function transposeLayer(layer: AnyRecord): AnyRecord {
+function transposeLayer(
+  layer: AnyRecord,
+  grid: V1ThemeChartGrid | undefined,
+): AnyRecord {
   const out: AnyRecord = { ...layer };
   if (isRecord(layer.encoding)) {
-    out.encoding = transposeEncoding(layer.encoding);
+    out.encoding = transposeEncoding(layer.encoding, grid);
   }
   if (isRecord(layer.mark)) {
     out.mark = transposeMark(layer.mark);
@@ -155,18 +161,21 @@ function transposeLayer(layer: AnyRecord): AnyRecord {
   }
   if (Array.isArray(layer.layer)) {
     out.layer = (layer.layer as unknown[]).map((l) =>
-      isRecord(l) ? transposeLayer(l) : l,
+      isRecord(l) ? transposeLayer(l, grid) : l,
     );
   }
   return out;
 }
 
-function transposeEncoding(encoding: AnyRecord): AnyRecord {
+function transposeEncoding(
+  encoding: AnyRecord,
+  grid: V1ThemeChartGrid | undefined,
+): AnyRecord {
   const { x, y, xOffset, yOffset, ...rest } = encoding;
   return {
     ...rest,
-    ...(isRecord(y) && { x: transposePositionDef(y, "measure") }),
-    ...(isRecord(x) && { y: transposePositionDef(x, "category") }),
+    ...(isRecord(y) && { x: transposePositionDef(y, "measure", grid) }),
+    ...(isRecord(x) && { y: transposePositionDef(x, "category", grid) }),
     ...(yOffset !== undefined && { xOffset: yOffset }),
     ...(xOffset !== undefined && { yOffset: xOffset }),
   };
@@ -175,6 +184,7 @@ function transposeEncoding(encoding: AnyRecord): AnyRecord {
 function transposePositionDef(
   def: AnyRecord,
   role: "category" | "measure",
+  grid: V1ThemeChartGrid | undefined,
 ): AnyRecord {
   const out: AnyRecord = { ...def };
 
@@ -185,8 +195,11 @@ function transposePositionDef(
     }
     // The shared Vega config hides the grid on the x axis and shows it on the
     // y axis. Pin the grid to the measure axis so a horizontal chart keeps the
-    // same look as a vertical one.
-    if (axis.grid === undefined) {
+    // same look as a vertical one. Where the project theme states an axis's
+    // gridlines, its config draws them by what the axis holds (see
+    // `chartThemeVegaConfig`), and a grid on the encoding would override it.
+    const themed = role === "measure" ? grid?.measure : grid?.category;
+    if (axis.grid === undefined && themed === undefined) {
       axis.grid = role === "measure";
     }
     out.axis = axis;
