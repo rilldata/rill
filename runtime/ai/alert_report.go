@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
-	"github.com/robfig/cron/v3"
 )
 
 // This file has the helpers shared by the tools that create, list and delete the user's alerts and reports.
@@ -35,7 +35,7 @@ type DimensionFilter struct {
 
 // Schedule is when a report is sent or an alert is checked.
 type Schedule struct {
-	Cron     string `json:"cron" jsonschema:"Standard 5-field cron expression, for example '0 9 * * 1' for Mondays at 9:00."`
+	Cron     string `json:"cron" jsonschema:"Cron expression at a minute M and hour H of the day: 'M H * * *' daily, 'M H * * 1-5' on weekdays, 'M H * * D' weekly on day D (0 is Sunday, 6 Saturday) or 'M H 1 * *' monthly on the 1st. For example '0 9 * * 1' for Mondays at 9:00. Other schedules are not available."`
 	TimeZone string `json:"time_zone,omitempty" jsonschema:"IANA time zone of the cron expression, for example 'Europe/Madrid'. Defaults to UTC; use the user's time zone if you know it."`
 }
 
@@ -176,13 +176,18 @@ func comparisonExpression(expr, comparison string) (string, error) {
 	return cmp, nil
 }
 
-// checkSchedule checks that a schedule's cron expression and time zone are valid.
+// dialogCron matches the cron expressions the alert and report dialogs can edit (see ScheduleForm.svelte):
+// at one time of day, daily, on weekdays, weekly on one day, or monthly on the 1st.
+// The dialogs read other expressions as the closest of these, so saving an edit from the dialog would move the schedule.
+var dialogCron = regexp.MustCompile(`^([0-9]|[1-5][0-9]) ([0-9]|1[0-9]|2[0-3]) (\* \* (\*|1-5|[0-6])|1 \* \*)$`)
+
+// checkSchedule checks that a schedule's cron expression is one the user can edit in the dialogs, and that its time zone is valid.
 func checkSchedule(s *Schedule) error {
 	if s.Cron == "" {
 		return errors.New("invalid input: schedule.cron is required")
 	}
-	if _, err := cron.ParseStandard(s.Cron); err != nil {
-		return fmt.Errorf("invalid cron expression %q: %w", s.Cron, err)
+	if !dialogCron.MatchString(s.Cron) {
+		return fmt.Errorf("invalid cron expression %q: use 'M H * * *' for daily, 'M H * * 1-5' for weekdays, 'M H * * D' for weekly on day D from 0 (Sunday) to 6, or 'M H 1 * *' for monthly on the 1st", s.Cron)
 	}
 	return checkTimeZone(s.TimeZone)
 }
@@ -260,7 +265,7 @@ func resourcePageURL(ctx context.Context, rt *runtime.Runtime, dir, name string)
 // DeleteResourceArgs are the arguments of the tools that delete one of the user's alerts or reports.
 type DeleteResourceArgs struct {
 	Name      string `json:"name" jsonschema:"Name of the alert or report to delete, as listed."`
-	Confirmed bool   `json:"confirmed,omitempty" jsonschema:"Set it only once the user confirmed, in a message after your first call for this name, that they want to delete it."`
+	Confirmed bool   `json:"confirmed,omitempty" jsonschema:"Set it only once the user confirmed, in their message right after your first call for this name, that they want to delete it."`
 }
 
 // DeleteResourceResult is the result of the tools that delete one of the user's alerts or reports.
@@ -272,8 +277,9 @@ type DeleteResourceResult struct {
 }
 
 // deleteOwnedResource deletes an alert or report the user owns, once they confirmed it.
-// The first call for a name only returns "confirmation_required". A later call with confirmed=true deletes it,
-// but only if the user sent a message since that first call: what the tools read can't stand in for the user's confirmation.
+// The first call for a name only returns "confirmation_required". A call with confirmed=true deletes it,
+// but only in the turn that answers that first call: what the tools read can't stand in for the user's confirmation,
+// and a proposal the user moved on from doesn't stay open.
 func deleteOwnedResource(ctx context.Context, rt *runtime.Runtime, tool, kind string, args *DeleteResourceArgs, del func(userID, name string) error) (*DeleteResourceResult, error) {
 	owned, err := ownedResources(ctx, rt, kind)
 	if err != nil {
@@ -286,7 +292,7 @@ func deleteOwnedResource(ctx context.Context, rt *runtime.Runtime, tool, kind st
 	res := &DeleteResourceResult{Name: args.Name, DisplayName: resourceDisplayName(owned[i])}
 
 	s := GetSession(ctx)
-	if !args.Confirmed || !proposedInEarlierTurn(s, tool, args.Name) {
+	if !args.Confirmed || !proposedInPreviousTurn(s, tool, args.Name) {
 		res.Status = "confirmation_required"
 		return res, nil
 	}
@@ -297,10 +303,16 @@ func deleteOwnedResource(ctx context.Context, rt *runtime.Runtime, tool, kind st
 	return res, nil
 }
 
-// proposedInEarlierTurn returns whether a call of tool for the given name returned "confirmation_required" in an earlier turn of the conversation,
-// which means that the user sent a message since.
-func proposedInEarlierTurn(s *Session, tool, name string) bool {
+// proposedInPreviousTurn returns whether a call of tool for the given name returned "confirmation_required" in the turn right before the current one,
+// which means that the user's latest message answers it.
+func proposedInPreviousTurn(s *Session, tool, name string) bool {
 	current := s.RootID()
+	turns := s.Messages(FilterByRoot(), FilterByType(MessageTypeCall))
+	i := slices.IndexFunc(turns, func(m *Message) bool { return m.ID == current })
+	if i < 1 {
+		return false
+	}
+	previous := turns[i-1].ID
 	for _, m := range s.Messages(FilterByTool(tool), FilterByType(MessageTypeResult)) {
 		var res DeleteResourceResult
 		if json.Unmarshal([]byte(m.Content), &res) != nil || res.Name != name || res.Status != "confirmation_required" {
@@ -314,7 +326,7 @@ func proposedInEarlierTurn(s *Session, tool, name string) bool {
 			}
 			root = parent
 		}
-		if root.ID != current {
+		if root.ID == previous {
 			return true
 		}
 	}

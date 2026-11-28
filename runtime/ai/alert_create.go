@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -33,14 +34,14 @@ type CreateAlertArgs struct {
 	Explore              string            `json:"explore" jsonschema:"Name of the explore dashboard the alert watches. Its metrics view provides the measure and dimensions, and the alert opens on it."`
 	Condition            string            `json:"condition,omitempty" jsonschema:"For an AI alert: the condition the AI analyst checks on every check, in the user's words, for example 'sales drop unusually compared to recent weeks'. Don't pass it together with criteria."`
 	Measure              string            `json:"measure,omitempty" jsonschema:"Name of the measure the alert checks. Required for criteria; for an AI alert, it optionally narrows what the AI looks at."`
-	Dimension            string            `json:"dimension,omitempty" jsonschema:"Optional dimension to split the measure by, so the criteria are checked for each of its values (for an AI alert, it narrows what the AI looks at)."`
+	Dimension            string            `json:"dimension,omitempty" jsonschema:"Optional dimension to split the measure by, so the criteria are checked for each of its values (for an AI alert, it narrows what the AI looks at). Required for criteria of type 'percent_of_total'."`
 	Criteria             []AlertCriterion  `json:"criteria,omitempty" jsonschema:"For a formula alert: the conditions on the measure that trigger the alert."`
 	CriteriaOperator     string            `json:"criteria_operator,omitempty" jsonschema:"For a formula alert: how the criteria combine, 'and' (default) or 'or'."`
 	Comparison           string            `json:"comparison,omitempty" jsonschema:"For criteria of type 'absolute_change' or 'percent_change': the period the time range is compared with, 'previous_period' (default, the period of the same length right before), 'previous_day', 'previous_week', 'previous_month', 'previous_quarter' or 'previous_year'."`
 	TimeRange            string            `json:"time_range,omitempty" jsonschema:"Time range of the data on every check, as a Rill time expression relative to the latest data, for example '7D as of latest/D' for the last 7 complete days or '1M as of latest/M' for the last complete month. Required for criteria; an AI alert defaults to the explore's default time range."`
 	TimeZone             string            `json:"time_zone,omitempty" jsonschema:"IANA time zone the time range is evaluated in, for example 'Europe/Madrid'. Defaults to the schedule's time zone, or UTC."`
 	Where                []DimensionFilter `json:"where,omitempty" jsonschema:"Optional filters on dimensions of the explore."`
-	Schedule             *Schedule         `json:"schedule,omitempty" jsonschema:"When to check the alert. A formula alert without a schedule is checked whenever the data refreshes. An AI alert needs a schedule that runs at most once an hour, like '0 * * * *' or '0 9 * * *'."`
+	Schedule             *Schedule         `json:"schedule,omitempty" jsonschema:"When to check the alert. A formula alert without a schedule is checked whenever the data refreshes. An AI alert needs a schedule."`
 	Renotify             string            `json:"renotify,omitempty" jsonschema:"While the alert keeps triggering: 'every_check' (default) notifies on every check; 'after_interval' notifies again after renotify_after_seconds; 'never' notifies only when it starts triggering."`
 	RenotifyAfterSeconds uint32            `json:"renotify_after_seconds,omitempty" jsonschema:"With renotify 'after_interval', seconds to wait before notifying again, for example 86400 for daily."`
 	Recipients           *Recipients       `json:"recipients,omitempty" jsonschema:"Who to notify. Defaults to the user."`
@@ -48,7 +49,7 @@ type CreateAlertArgs struct {
 
 // AlertCriterion is a condition on the alert's measure.
 type AlertCriterion struct {
-	Type     string  `json:"type,omitempty" jsonschema:"What is compared: 'value' (default) the measure itself; 'absolute_change' or 'percent_change' its change from the period of the comparison argument; 'percent_of_total' each dimension value's share of the total."`
+	Type     string  `json:"type,omitempty" jsonschema:"What is compared: 'value' (default) the measure itself; 'absolute_change' or 'percent_change' its change from the period of the comparison argument; 'percent_of_total' each value of the dimension argument's share of the total, from 0 to 100."`
 	Operator string  `json:"operator" jsonschema:"One of 'gt', 'gte', 'lt', 'lte', 'eq' or 'neq'."`
 	Value    float64 `json:"value" jsonschema:"Threshold. For percent types, in percent: -10 for a 10% drop."`
 }
@@ -61,7 +62,7 @@ func (t *CreateAlert) Spec() *mcp.Tool {
 			"Use it when the user asks to be alerted, notified or warned about their data, for example 'alert me if revenue drops below 30k' or 'tell me if sales drop unusually'. " +
 			"An alert has a formula condition (criteria: a threshold on a measure or its change, checked exactly and at no AI cost) or an AI condition (condition: a description the AI analyst checks). " +
 			"Prefer criteria whenever the condition is a threshold on a measure; use an AI condition only for what a threshold can't express, like 'unusual', 'unexpected' or patterns across dimensions. " +
-			"Each check of an AI alert runs the AI analyst once, so it's checked on a schedule of at most once an hour: tell the user in the preview, together with how often it's checked. " +
+			"Each check of an AI alert runs the AI analyst once, so it's only checked on a schedule: tell the user in the preview how often it's checked. " +
 			"The alert belongs to the user, and they can edit or delete it on its page. Only create a file in the project's code instead when the user explicitly asks for that. " +
 			confirmBeforeCreating +
 			"This tool can't change alerts: to change one, give the user the URL of its page from list_alerts, where they can edit it. " +
@@ -102,7 +103,7 @@ func (t *CreateAlert) Handler(ctx context.Context, args *CreateAlertArgs) (*Crea
 	opts := &adminv1.AlertOptions{
 		DisplayName:     args.DisplayName,
 		MetricsViewName: explore.MetricsView,
-		WebOpenPath:     "/explore/" + args.Explore,
+		WebOpenPath:     "/explore/" + url.PathEscape(args.Explore),
 	}
 	if args.Recipients != nil {
 		opts.EmailRecipients = args.Recipients.Emails
@@ -240,6 +241,10 @@ func (t *CreateAlert) setCriteria(args *CreateAlertArgs, explore *runtimev1.Expl
 	if err != nil {
 		return err
 	}
+	// Without a split, the total's share of itself is always 100%, so the alert could never trigger, or always would.
+	if percentOfTotal && args.Dimension == "" {
+		return errors.New("invalid input: criteria of type 'percent_of_total' need a dimension, whose values' shares of the total they check")
+	}
 	q := &runtimev1.MetricsViewAggregationRequest{
 		MetricsView: explore.MetricsView,
 		Measures:    []*runtimev1.MetricsViewAggregationMeasure{{Name: args.Measure}},
@@ -275,12 +280,12 @@ func (t *CreateAlert) setCriteria(args *CreateAlertArgs, explore *runtimev1.Expl
 
 // criteriaHaving converts criteria on a measure into the having clause the alert dialog saves, and reports the computed measures it needs.
 func criteriaHaving(measure string, criteria []AlertCriterion, joiner string) (having *runtimev1.Expression, comparison, percentOfTotal bool, err error) {
-	var op runtimev1.Operation
+	var join func([]*runtimev1.Expression) *runtimev1.Expression
 	switch joiner {
 	case "", "and":
-		op = runtimev1.Operation_OPERATION_AND
+		join = expressionpb.And
 	case "or":
-		op = runtimev1.Operation_OPERATION_OR
+		join = expressionpb.Or
 	default:
 		return nil, false, false, fmt.Errorf("invalid criteria_operator %q: use 'and' or 'or'", joiner)
 	}
@@ -302,6 +307,9 @@ func criteriaHaving(measure string, criteria []AlertCriterion, joiner string) (h
 			value /= 100
 			comparison = true
 		case "percent_of_total":
+			if value < 0 || value > 100 {
+				return nil, false, false, fmt.Errorf("invalid criterion value %v: a 'percent_of_total' threshold is a percent from 0 to 100", c.Value)
+			}
 			name += "_percent_of_total"
 			value /= 100
 			percentOfTotal = true
@@ -313,7 +321,7 @@ func criteriaHaving(measure string, criteria []AlertCriterion, joiner string) (h
 			Exprs: []*runtimev1.Expression{expressionpb.Identifier(name), expressionpb.Number(value)},
 		}}})
 	}
-	return &runtimev1.Expression{Expression: &runtimev1.Expression_Cond{Cond: &runtimev1.Condition{Op: op, Exprs: exprs}}}, comparison, percentOfTotal, nil
+	return join(exprs), comparison, percentOfTotal, nil
 }
 
 var criterionOperators = map[string]runtimev1.Operation{

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -31,7 +32,7 @@ type AlertInfo struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Explore     string `json:"explore,omitempty"`
-	// Condition is the AI condition of an AI alert, or the criteria of a formula alert.
+	// Condition is the AI condition of an AI alert, or the criteria of a formula alert with the time range they compare with, if any.
 	Condition string `json:"condition,omitempty"`
 	URL       string `json:"url,omitempty"`
 }
@@ -69,8 +70,14 @@ func (t *ListAlerts) Handler(ctx context.Context, args *ListAlertsArgs) (*ListAl
 		info := &AlertInfo{
 			Name:        r.Meta.Name.Name,
 			DisplayName: spec.DisplayName,
-			Explore:     strings.TrimPrefix(spec.Annotations["web_open_path"], "/explore/"),
 			Condition:   alertCondition(spec),
+		}
+		// The open path has the explore's name escaped as a path segment, like the alert dialog writes it.
+		if explore, ok := strings.CutPrefix(spec.Annotations["web_open_path"], "/explore/"); ok {
+			info.Explore = explore
+			if decoded, err := url.PathUnescape(explore); err == nil {
+				info.Explore = decoded
+			}
 		}
 		info.URL, err = resourcePageURL(ctx, t.Runtime, "alerts", info.Name)
 		if err != nil {
@@ -81,7 +88,9 @@ func (t *ListAlerts) Handler(ctx context.Context, args *ListAlertsArgs) (*ListAl
 	return res, nil
 }
 
-// alertCondition describes an alert's condition in one line: the prompt of an AI alert, or the criteria of a formula alert as SQL.
+// alertCondition describes an alert's condition in one line: the prompt of an AI alert,
+// or the criteria of a formula alert as SQL, followed by the time range they compare with,
+// since criteria on a change read the same for a week-over-week and a year-over-year change.
 func alertCondition(spec *runtimev1.AlertSpec) string {
 	props := spec.ResolverProperties.AsMap()
 	if spec.Resolver == "ai" {
@@ -96,6 +105,9 @@ func alertCondition(spec *runtimev1.AlertSpec) string {
 	sql, err := metricsview.ExpressionToSQL(metricsview.NewExpressionFromProto(q.Having))
 	if err != nil {
 		return ""
+	}
+	if cmp := q.ComparisonTimeRange.GetExpression(); cmp != "" {
+		sql += ", compared with " + cmp
 	}
 	return sql
 }

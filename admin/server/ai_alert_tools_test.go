@@ -78,12 +78,12 @@ func TestAIAlertTools(t *testing.T) {
 		}`, mustJSON(t, query))
 	})
 
-	t.Run("creates an AI alert checked at most once an hour", func(t *testing.T) {
+	t.Run("creates an AI alert on a schedule the dialog can edit", func(t *testing.T) {
 		args := &ai.CreateAlertArgs{
 			DisplayName: "Unusual revenue",
-			Explore:     "e1",
+			Explore:     "Revenue #1",
 			Condition:   "Revenue drops unusually compared to recent weeks",
-			Schedule:    &ai.Schedule{Cron: "0 * * * *"},
+			Schedule:    &ai.Schedule{Cron: "0 9 * * 1-5"},
 		}
 		res, err := createAlert(args)
 		require.NoError(t, err)
@@ -91,15 +91,36 @@ func TestAIAlertTools(t *testing.T) {
 		aiAlert = res.Name
 		spec := testruntime.GetResource(t, f.fix.Runtime, f.instance.ID, runtime.ResourceKindAlert, res.Name).GetAlert().Spec
 		require.Equal(t, "ai", spec.Resolver)
-		require.Equal(t, map[string]any{"prompt": args.Condition, "explore": "e1"}, spec.ResolverProperties.AsMap())
+		require.Equal(t, map[string]any{"prompt": args.Condition, "explore": "Revenue #1"}, spec.ResolverProperties.AsMap())
 		require.Equal(t, f.viewerUser.ID, spec.GetQueryForUserId())
+		// The alert's page finds its explore from the open path, like for an alert from the dialog
+		require.Equal(t, "/explore/Revenue%20%231", spec.Annotations["web_open_path"])
 
-		args.Schedule = &ai.Schedule{Cron: "*/30 * * * *"}
-		_, err = createAlert(args)
-		require.ErrorContains(t, err, "at most once an hour")
+		// The dialog would read these as monthly on the 1st and as daily, so saving an edit there would move the schedule
+		for _, cron := range []string{"0 9 15 * *", "0 * * * *"} {
+			args.Schedule = &ai.Schedule{Cron: cron}
+			_, err = createAlert(args)
+			require.ErrorContains(t, err, "invalid cron expression")
+		}
 		args.Schedule = nil
 		_, err = createAlert(args)
 		require.ErrorContains(t, err, "needs a schedule")
+	})
+
+	t.Run("checks percent of total criteria like the dialog", func(t *testing.T) {
+		args := &ai.CreateAlertArgs{
+			DisplayName: "Small countries",
+			Explore:     "e1",
+			Measure:     "revenue",
+			Criteria:    []ai.AlertCriterion{{Type: "percent_of_total", Operator: "lt", Value: 20}},
+			TimeRange:   "7D as of latest/D",
+		}
+		_, err := createAlert(args)
+		require.ErrorContains(t, err, "need a dimension")
+		args.Dimension = "country"
+		args.Criteria[0].Value = 120
+		_, err = createAlert(args)
+		require.ErrorContains(t, err, "from 0 to 100")
 	})
 
 	t.Run("only sends to project members", func(t *testing.T) {
@@ -132,13 +153,13 @@ func TestAIAlertTools(t *testing.T) {
 		for _, a := range res.Alerts {
 			byName[a.Name] = a
 		}
-		require.Equal(t, "(revenue_delta_perc < -0.1)", byName[formulaAlert].Condition)
+		require.Equal(t, "(revenue_delta_perc < -0.1), compared with 7D as of latest/D offset -1P", byName[formulaAlert].Condition)
 		require.Equal(t, "Revenue drops unusually compared to recent weeks", byName[aiAlert].Condition)
-		require.Equal(t, "e1", byName[aiAlert].Explore)
+		require.Equal(t, "Revenue #1", byName[aiAlert].Explore)
 		require.Equal(t, fmt.Sprintf("%s/%s/%s/-/alerts/%s", f.fix.Admin.URLs.Frontend(), f.org, f.project, aiAlert), byName[aiAlert].URL)
 	})
 
-	t.Run("deletes an alert once the user confirmed it in a later message", func(t *testing.T) {
+	t.Run("deletes an alert once the user confirmed it in their next message", func(t *testing.T) {
 		deleteAlert := func(s *ai.Session, confirmed bool) (*ai.DeleteResourceResult, *ai.CallResult) {
 			var res *ai.DeleteResourceResult
 			call, err := s.CallTool(ctx, ai.RoleUser, ai.DeleteAlertName, &res, &ai.DeleteResourceArgs{Name: aiAlert, Confirmed: confirmed})
@@ -152,7 +173,13 @@ func TestAIAlertTools(t *testing.T) {
 		// In the same turn, it still needs a confirmation
 		res, _ = deleteAlert(&ai.Session{BaseSession: s.BaseSession, ParentID: call.Call.ID}, true)
 		require.Equal(t, "confirmation_required", res.Status)
-		// In a later turn, it deletes the alert
+		// Once the user moved on to something else, the proposal has expired
+		var list *ai.ListAlertsResult
+		_, err := s.CallTool(ctx, ai.RoleUser, ai.ListAlertsName, &list, &ai.ListAlertsArgs{})
+		require.NoError(t, err)
+		res, _ = deleteAlert(s, true)
+		require.Equal(t, "confirmation_required", res.Status)
+		// In the turn right after a proposal, it deletes the alert
 		res, _ = deleteAlert(s, true)
 		require.Equal(t, "deleted", res.Status)
 		ctrl, err := f.fix.Runtime.Controller(ctx, f.instance.ID)
