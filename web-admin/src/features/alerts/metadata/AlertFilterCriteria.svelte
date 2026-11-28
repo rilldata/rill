@@ -3,7 +3,11 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import { mapExprToMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
-  import { getComparisonOption } from "@rilldata/web-common/lib/time/comparisons";
+  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+  import {
+    getComparisonLabelFromRange,
+    getComparisonOption,
+  } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import type {
@@ -21,10 +25,25 @@
 
   $: measureFilters = filters?.cond?.exprs?.map(mapExprToMeasureFilter) ?? [];
 
-  $: comparisonOption =
-    (comparisonTimeRange && getComparisonOption(comparisonTimeRange)) ??
-    TimeComparisonOption.CONTIGUOUS;
-  $: comparisonLabel = TIME_COMPARISON[comparisonOption].label.toLowerCase();
+  $: comparisonLabel = getAlertComparisonLabel(comparisonTimeRange);
+
+  // An expression with an offset no comparison option has, such as "MTD as of latest/D offset -7D", is shown as saved;
+  // alerts saved without an expression and without a known offset compare with the previous period.
+  function getAlertComparisonLabel(range: V1TimeRange | undefined) {
+    const option = range && getComparisonOption(range);
+    if (option) return TIME_COMPARISON[option].label.toLowerCase();
+    if (range?.expression) {
+      try {
+        return getComparisonLabelFromRange(
+          range.expression,
+          parseRillTime(range.expression),
+        );
+      } catch {
+        return range.expression;
+      }
+    }
+    return TIME_COMPARISON[TimeComparisonOption.CONTIGUOUS].label.toLowerCase();
+  }
 </script>
 
 <div

@@ -30,7 +30,15 @@ describe("AlertFilterCriteria", () => {
       label: /from previous month/i,
     },
     {
+      comparisonTimeRange: { expression: "MTD as of latest/D offset -7D" },
+      label: /from MTD as of latest\/D offset -7D/,
+    },
+    {
       comparisonTimeRange: { isoDuration: "P7D", isoOffset: "P7D" },
+      label: /from previous period/i,
+    },
+    {
+      comparisonTimeRange: { isoDuration: "P7D", isoOffset: "P3D" },
       label: /from previous period/i,
     },
   ];
